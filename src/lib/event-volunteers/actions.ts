@@ -44,7 +44,7 @@ async function requireVolunteerContext(eventId: string) {
   ]);
 
   if (!user) {
-    return { error: "Sign in to manage volunteer stats." as const };
+    return { error: "Sign in to manage volunteer numbers." as const };
   }
   if (!organization) {
     return { error: "No active organization." as const };
@@ -385,7 +385,7 @@ export async function confirmVolunteerOverviewAction(input: {
   if (!canManageVolunteerStats(ctx.role)) {
     return {
       success: false as const,
-      error: "You do not have permission to confirm volunteer stats.",
+      error: "You do not have permission to confirm volunteer roles.",
     };
   }
 
@@ -428,7 +428,7 @@ export async function refreshVolunteerStatsAction(input: { eventId: string }) {
   if (!canManageVolunteerStats(ctx.role)) {
     return {
       success: false as const,
-      error: "You do not have permission to refresh volunteer stats.",
+      error: "You do not have permission to refresh volunteer numbers.",
     };
   }
 

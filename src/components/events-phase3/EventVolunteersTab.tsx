@@ -197,7 +197,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
       setPayload(result);
       setPhase("idle");
       if (!result.success) {
-        setError(result.error ?? "Unable to load volunteer stats.");
+        setError(result.error ?? "Unable to load volunteer numbers.");
       } else {
         setError(null);
       }
@@ -224,7 +224,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
         sourceUrl: validated.normalizedHref,
       });
       if (!result.success) {
-        setError(result.error ?? "Could not connect signup.");
+        setError(result.error ?? "Could not connect that signup link.");
         return;
       }
       reload();
@@ -244,7 +244,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
         includedAssignmentDates,
       });
       if (!result.success) {
-        setError(result.error ?? "Could not confirm overview.");
+        setError(result.error ?? "Could not confirm volunteer roles.");
         return;
       }
       reload();
@@ -255,7 +255,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
     startTransition(async () => {
       const result = await refreshVolunteerStatsAction({ eventId: event.id });
       if (!result.success) {
-        setError(result.error ?? "Could not refresh stats.");
+        setError(result.error ?? "Could not refresh volunteer numbers.");
       }
       reload();
     });
@@ -314,7 +314,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
   if (phase === "loading" && !payload) {
     return (
       <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-6">
-        <p className="text-sm text-cos-muted">Loading volunteer overview…</p>
+        <p className="text-sm text-cos-muted">Loading volunteers…</p>
       </section>
     );
   }
@@ -325,7 +325,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
         <p className="text-sm text-red-700">
           {payload && !payload.success
             ? payload.error
-            : error || "Unable to load volunteer stats."}
+            : error || "Unable to load volunteer numbers."}
         </p>
       </section>
     );
@@ -381,7 +381,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
         onConnect={handleConnect}
         canManage={canManage}
         isPending={isPending}
-        error={error || "Connect again to create the volunteer overview."}
+        error={error || "Connect again to finish setting up volunteers."}
       />
     );
   }
@@ -446,17 +446,17 @@ function VolunteerEmptyState({
           <Users className="h-6 w-6 text-cos-muted" strokeWidth={1.5} />
         </div>
         <h2 className="mt-4 font-display text-3xl text-cos-text">
-          Volunteer Overview
+          Volunteers for this event
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-cos-muted">
-          Connect this event’s SignUpGenius page to view volunteer coverage,
-          open assignments, and AI recommendations.
+          Connect this event’s public SignUpGenius page to see fill rate, open
+          roles, and suggested outreach.
         </p>
       </div>
 
       <div className="mx-auto mt-8 max-w-xl space-y-3">
         <Input
-          label="SignUpGenius URL"
+          label="SignUpGenius link"
           value={url}
           onChange={(event) => onUrlChange(event.target.value)}
           placeholder="https://www.signupgenius.com/go/…"
@@ -469,11 +469,11 @@ function VolunteerEmptyState({
             disabled={isPending || !url.trim()}
             className="w-full sm:w-auto"
           >
-            {isPending ? "Reading signup…" : "Connect & Read Signup"}
+            {isPending ? "Reading signup…" : "Connect signup"}
           </Button>
         ) : (
           <p className="text-sm text-cos-muted">
-            Ask an admin or president to connect the signup link.
+            Ask a team admin to connect the signup link.
           </p>
         )}
         {error ? (
@@ -483,8 +483,8 @@ function VolunteerEmptyState({
         ) : null}
         <p className="flex items-start gap-2 text-left text-xs leading-relaxed text-cos-muted">
           <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          Hey Ralli reads public assignment and availability totals only.
-          Volunteer names and contact information are not imported.
+          Hey Ralli reads public role and availability totals only. Volunteer
+          names and contact details are not imported.
         </p>
       </div>
     </section>
@@ -573,14 +573,14 @@ function VolunteerConnectionReview({
     <section className="space-y-4 rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5 sm:p-6">
       <div>
         <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-          Review detected data
+          Confirm roles
         </p>
         <h2 className="mt-1 font-display text-2xl text-cos-text">
-          We found volunteer assignments for {eventTitle}
+          We found volunteer roles for {eventTitle}
         </h2>
         <p className="mt-1 text-sm text-cos-muted">
-          Choose which dates to include for this event, then confirm. Shared
-          multi-date SignUpGenius links stay scoped on every refresh.
+          Choose which dates belong to this event, then confirm. Shared
+          multi-date SignUpGenius links keep only those dates when you refresh.
         </p>
       </div>
 
@@ -750,7 +750,7 @@ function VolunteerConnectionReview({
             onClick={() => onConfirm(selectedDates)}
             disabled={isPending || nothingSelected || scopedAssignments.length === 0}
           >
-            {isPending ? "Saving…" : "Confirm & Create Overview"}
+            {isPending ? "Saving…" : "Confirm roles"}
           </Button>
           <Button
             type="button"
@@ -889,13 +889,13 @@ function VolunteerOverview({
               <Badge variant="warning">Refresh failed</Badge>
             ) : null}
             {source.syncStatus === "syncing" || isPending ? (
-              <Badge variant="info">Syncing…</Badge>
+              <Badge variant="info">Refreshing…</Badge>
             ) : null}
             <p className="text-xs text-cos-muted">
               Last updated:{" "}
               {source.lastSuccessfulSyncAt
                 ? formatSyncTime(source.lastSuccessfulSyncAt)
-                : "Not yet synced"}
+                : "Not updated yet"}
             </p>
           </div>
           {canManage ? (
@@ -908,7 +908,7 @@ function VolunteerOverview({
                 disabled={isPending}
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-                Refresh Stats
+                Refresh numbers
               </Button>
               <Button
                 type="button"
@@ -917,7 +917,7 @@ function VolunteerOverview({
                 onClick={onToggleReplace}
               >
                 <Link2 className="h-3.5 w-3.5" />
-                Replace Link
+                Replace link
               </Button>
               <Button
                 type="button"
@@ -942,13 +942,13 @@ function VolunteerOverview({
           <div className="mt-4 flex flex-col gap-2 rounded-xl border border-cos-border bg-cos-bg/40 p-3 sm:flex-row sm:items-end">
             <div className="flex-1">
               <Input
-                label="New SignUpGenius URL"
+                label="New SignUpGenius link"
                 value={replaceUrl}
                 onChange={(e) => onReplaceUrlChange(e.target.value)}
               />
             </div>
             <Button type="button" onClick={onReplace} disabled={isPending}>
-              Connect & Read Signup
+              Connect signup
             </Button>
           </div>
         ) : null}
@@ -956,7 +956,7 @@ function VolunteerOverview({
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <section className="rounded-xl border border-cos-border/70 bg-cos-card p-3 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05)]">
-          <h3 className="font-display text-base text-cos-text">Needs Snapshot</h3>
+          <h3 className="font-display text-base text-cos-text">Needs at a glance</h3>
           <ul className="mt-2 flex flex-wrap gap-1.5">
             {needs.map((item) => (
               <li
@@ -1031,8 +1031,8 @@ function VolunteerOverview({
           hint={
             summary.quantitiesComplete
               ? filtersActive
-                ? "From filtered assignments"
-                : "From latest snapshot"
+                ? "From filtered roles"
+                : "From latest update"
               : "Partial data"
           }
           compact
@@ -1043,7 +1043,7 @@ function VolunteerOverview({
         <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-4 sm:p-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h3 className="font-display text-xl text-cos-text">
-              Volunteer Assignments
+              Volunteer roles
             </h3>
             <div className="flex flex-wrap gap-2">
               <Select
@@ -1164,7 +1164,7 @@ function VolunteerOverview({
           <section className="rounded-2xl border border-cos-border/70 bg-cos-bg-alt p-4 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)]">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-cos-muted" />
-              <h3 className="font-display text-lg text-cos-text">AI Assistant</h3>
+              <h3 className="font-display text-lg text-cos-text">Suggested outreach</h3>
             </div>
             <p className="mt-3 text-sm font-medium text-cos-text">
               {ai?.headline}
@@ -1205,7 +1205,7 @@ function VolunteerOverview({
                 onClick={onCopyMessage}
               >
                 <Copy className="h-3.5 w-3.5" />
-                Copy Suggested Message
+                Copy suggested message
               </Button>
             </div>
             {copyNote ? (
@@ -1234,8 +1234,8 @@ function VolunteerOverview({
           </div>
 
           <div className="rounded-xl border border-cos-border/70 bg-cos-card p-3 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05)]">
-            <h3 className="font-display text-base text-cos-text">Signup Source</h3>
-            <p className="mt-2 text-xs text-cos-muted">Provider: SignUpGenius</p>
+            <h3 className="font-display text-base text-cos-text">Signup link</h3>
+            <p className="mt-2 text-xs text-cos-muted">SignUpGenius</p>
             <p className="mt-1 break-all text-sm text-cos-text">
               {truncateUrl(source.sourceUrl, 48)}
             </p>
@@ -1247,7 +1247,7 @@ function VolunteerOverview({
                 onClick={onCopyUrl}
               >
                 <Copy className="h-3.5 w-3.5" />
-                Copy URL
+                Copy link
               </Button>
               <Button
                 href={source.sourceUrl}
@@ -1256,26 +1256,28 @@ function VolunteerOverview({
                 variant="secondary"
                 size="sm"
               >
-                Open source
+                Open signup
               </Button>
             </div>
           </div>
 
           <div className="rounded-xl border border-cos-border/70 bg-cos-card p-3 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05)]">
-            <h3 className="font-display text-base text-cos-text">Sync Details</h3>
+            <h3 className="font-display text-base text-cos-text">Update history</h3>
             <dl className="mt-3 space-y-2.5 text-sm">
               <Detail
-                label="Sync status"
+                label="Status"
                 value={
                   source.syncStatus === "success"
-                    ? "Successful"
+                    ? "Up to date"
                     : source.syncStatus === "error"
-                      ? "Failed"
-                      : source.syncStatus
+                      ? "Refresh failed"
+                      : source.syncStatus === "syncing"
+                        ? "Refreshing…"
+                        : "Idle"
                 }
               />
               <Detail
-                label="Last read"
+                label="Last checked"
                 value={
                   source.lastSyncAttemptAt
                     ? formatSyncTime(source.lastSyncAttemptAt)
@@ -1299,7 +1301,7 @@ function VolunteerOverview({
                 }
               />
               <Detail
-                label="Next scheduled"
+                label="Next refresh"
                 value={
                   source.nextScheduledSyncAt
                     ? formatSyncTime(source.nextScheduledSyncAt)
@@ -1314,12 +1316,12 @@ function VolunteerOverview({
               className="mt-3"
               onClick={onToggleHistory}
             >
-              {showHistory ? "Hide Sync History" : "View Sync History"}
+              {showHistory ? "Hide update history" : "View update history"}
             </Button>
             {showHistory ? (
               <ul className="mt-3 space-y-2 text-xs text-cos-muted">
                 {syncAttempts.length === 0 ? (
-                  <li>No sync attempts yet.</li>
+                  <li>No updates yet.</li>
                 ) : (
                   syncAttempts.map((attempt) => (
                     <li key={attempt.id}>
@@ -1339,8 +1341,8 @@ function VolunteerOverview({
               <Lock className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
                 <p>
-                  Volunteers sign up through SignUpGenius. Hey Ralli displays
-                  aggregate stats only.
+                  Volunteers sign up on SignUpGenius. Hey Ralli shows role
+                  counts only — no names or contact details.
                 </p>
                 <Button
                   href={source.sourceUrl}

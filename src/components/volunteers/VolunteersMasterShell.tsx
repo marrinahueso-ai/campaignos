@@ -93,7 +93,7 @@ export function VolunteersMasterShell({
     },
     upcoming: {
       title: "No upcoming volunteer events",
-      body: "Events in the next 60 days with SignUpGenius or a volunteer signup link appear here.",
+      body: "Events in the next 60 days with a SignUpGenius page or volunteer signup link appear here.",
     },
     covered: {
       title: "Nothing fully covered yet",
@@ -104,13 +104,13 @@ export function VolunteersMasterShell({
       body:
         data.events.length > 0
           ? "Try a different search."
-          : "Connect SignUpGenius or add a Volunteer Signup link on an event to see it here.",
+          : "Connect a SignUpGenius page or add a volunteer signup link on an event to see it here.",
     },
   };
 
   const healthParts: string[] = [];
   if (data.kpis.overallFillRatePercent !== null) {
-    healthParts.push(`Org fill ${data.kpis.overallFillRatePercent}%`);
+    healthParts.push(`Fill ${data.kpis.overallFillRatePercent}%`);
   }
   if (data.kpis.underfilledRoleCount > 0) {
     healthParts.push(
@@ -130,8 +130,8 @@ export function VolunteersMasterShell({
             Volunteers
           </h1>
           <p className="mt-3 max-w-xl text-base leading-relaxed text-cos-muted">
-            See who still needs people — then share the signup. Aggregate
-            counts only; no volunteer personal data.
+            See which events still need people — then share the signup. Role
+            counts only; no names or contact details.
           </p>
         </div>
 
@@ -263,11 +263,11 @@ export function VolunteersMasterShell({
       <footer className="flex items-center justify-center gap-2 pt-2 text-center text-xs text-cos-muted">
         <RefreshCw className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <p>
-          Volunteer data is synced from SignUpGenius
+          Numbers come from SignUpGenius
           {data.lastSuccessfulSyncAt
-            ? `. Last sync: ${formatDateTime(data.lastSuccessfulSyncAt)}.`
+            ? `. Last update: ${formatDateTime(data.lastSuccessfulSyncAt)}.`
             : "."}{" "}
-          Sync and connect live on each event&apos;s Volunteers tab.
+          Connect and refresh on each event&apos;s Volunteers tab.
         </p>
       </footer>
     </div>

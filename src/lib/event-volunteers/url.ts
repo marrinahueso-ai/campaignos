@@ -28,27 +28,27 @@ export function validateSignUpGeniusUrl(
 ): ValidatedSignUpGeniusUrl | { error: string } {
   const trimmed = raw.trim();
   if (!trimmed) {
-    return { error: "Enter a SignUpGenius URL." };
+    return { error: "Enter a SignUpGenius signup link." };
   }
 
   let parsed: URL;
   try {
     parsed = new URL(trimmed);
   } catch {
-    return { error: "That does not look like a valid URL." };
+    return { error: "That does not look like a valid link." };
   }
 
   if (parsed.protocol !== "https:") {
-    return { error: "Use an https SignUpGenius link." };
+    return { error: "Use a secure (https) SignUpGenius link." };
   }
 
   const hostname = parsed.hostname.toLowerCase();
   if (!ALLOWED_HOSTS.has(hostname)) {
-    return { error: "Only SignUpGenius links are supported." };
+    return { error: "Only SignUpGenius signup links are supported." };
   }
 
   if (PRIVATE_HOST_PATTERNS.some((pattern) => pattern.test(hostname))) {
-    return { error: "That URL is not allowed." };
+    return { error: "That link can’t be used." };
   }
 
   const match = parsed.pathname.match(
@@ -57,7 +57,7 @@ export function validateSignUpGeniusUrl(
   if (!match?.[1]) {
     return {
       error:
-        "Use a public SignUpGenius signup link (for example /go/…).",
+        "Use a public SignUpGenius signup link (the /go/… page parents see).",
     };
   }
 

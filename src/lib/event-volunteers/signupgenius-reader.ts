@@ -33,23 +33,23 @@ function userMessage(code: VolunteerReadErrorCode): string {
     case "invalid_url":
       return "Enter a valid SignUpGenius signup link.";
     case "unsupported_host":
-      return "Only SignUpGenius links are supported.";
+      return "Only SignUpGenius signup links are supported.";
     case "not_public":
-      return "This signup does not appear to be publicly readable.";
+      return "This signup doesn’t look publicly readable. Use the public /go/ link.";
     case "login_required":
-      return "This signup requires a login. Use a public signup link.";
+      return "This signup requires a login. Use the public signup link instead.";
     case "access_code":
-      return "This signup requires an access code and cannot be connected.";
+      return "This signup needs an access code, so it can’t be connected here.";
     case "timeout":
       return "SignUpGenius took too long to respond. Try again.";
     case "unavailable":
       return "SignUpGenius is unavailable right now. Try again shortly.";
     case "empty_parse":
-      return "No volunteer assignments were found on that signup.";
+      return "No volunteer roles were found on that signup.";
     case "changed_markup":
-      return "We could not read this signup format. Try again or replace the link.";
+      return "We couldn’t read this signup page. Try again or replace the link.";
     case "redirect_blocked":
-      return "The signup link redirected to an unsupported destination.";
+      return "That signup link sent us somewhere we can’t follow.";
   }
 }
 

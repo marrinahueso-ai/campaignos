@@ -14,6 +14,7 @@ import {
   EaseSoftActions,
   EaseSplit,
 } from "@/components/events-phase3/EventDetailEaseUi";
+import { EventVolunteersTab } from "@/components/events-phase3/EventVolunteersTab";
 import {
   connectVolunteerSourceAction,
   getEventVolunteerOverviewAction,
@@ -38,7 +39,7 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
       const result = await getEventVolunteerOverviewAction(event.id);
       setPayload(result);
       if (!result.success) {
-        setError(result.error ?? "Unable to load volunteer stats.");
+        setError(result.error ?? "Unable to load volunteer numbers.");
       } else {
         setError(null);
       }
@@ -56,14 +57,13 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
   const review =
     payload?.success && payload.state === "review" ? payload : null;
 
-  const assignments = overview?.snapshot?.assignments ?? [];
-
   const openRoles = useMemo(() => {
+    const assignments = overview?.snapshot?.assignments ?? [];
     return [...assignments]
       .filter((a) => (a.quantityOpen ?? 0) > 0)
       .sort((a, b) => (b.quantityOpen ?? 0) - (a.quantityOpen ?? 0))
       .slice(0, 5);
-  }, [assignments]);
+  }, [overview?.snapshot?.assignments]);
 
   const fill = overview?.snapshot?.summary.overallFilledPercent ?? null;
   const openSpots = overview?.snapshot?.summary.openSpots ?? null;
@@ -81,7 +81,7 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
         sourceUrl: validated.normalizedHref,
       });
       if (!result.success) {
-        setError(result.error ?? "Unable to connect.");
+        setError(result.error ?? "Unable to connect that signup link.");
         return;
       }
       setUrl("");
@@ -89,11 +89,11 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
     });
   };
 
-  const handleSync = () => {
+  const handleRefresh = () => {
     startTransition(async () => {
       const result = await refreshVolunteerStatsAction({ eventId: event.id });
       if (!result.success) {
-        setError(result.error ?? "Unable to sync.");
+        setError(result.error ?? "Unable to refresh volunteer numbers.");
         return;
       }
       reload();
@@ -106,17 +106,22 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
     );
   }
 
+  // Full connect → review → confirm lives in EventVolunteersTab (date allowlist).
+  if (review) {
+    return <EventVolunteersTab event={event} />;
+  }
+
   if (empty) {
     return (
       <section>
-        <EaseSectionLabel hint="Aggregate only — no volunteer PII">
+        <EaseSectionLabel hint="Counts only — no names or contact details">
           Staffing health
         </EaseSectionLabel>
         <EaseBox>
-          <EaseBoxTitle>Connect SignUpGenius</EaseBoxTitle>
+          <EaseBoxTitle>Connect a signup link</EaseBoxTitle>
           <EaseBoxDesc>
-            Link this event’s signup page to see fill rate and open roles —
-            without leaving event detail.
+            Paste this event’s public SignUpGenius page to see fill rate and
+            open roles — without leaving event detail.
           </EaseBoxDesc>
           {error ? (
             <p className="mb-3 text-sm text-[#a65a3a]">{error}</p>
@@ -128,32 +133,18 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
             className="mb-3 w-full rounded-2xl border border-cos-border bg-cos-card px-3.5 py-3 text-sm text-cos-text"
           />
           <EaseSoftActions>
-            <EaseBtnPrimary disabled={pending || !empty.canManage} onClick={handleConnect}>
+            <EaseBtnPrimary
+              disabled={pending || !empty.canManage}
+              onClick={handleConnect}
+            >
               Connect signup
             </EaseBtnPrimary>
           </EaseSoftActions>
-        </EaseBox>
-      </section>
-    );
-  }
-
-  if (review) {
-    return (
-      <section>
-        <EaseSectionLabel hint="Aggregate only — no volunteer PII">
-          Staffing health
-        </EaseSectionLabel>
-        <EaseBox>
-          <EaseBoxTitle>Confirm this signup</EaseBoxTitle>
-          <EaseBoxDesc>
-            A SignUpGenius link is waiting for review. Confirm roles to start
-            tracking fill on this event.
-          </EaseBoxDesc>
-          <EaseSoftActions>
-            <EaseBtnSecondary href={`/volunteers?event=${event.id}`}>
-              Finish setup
-            </EaseBtnSecondary>
-          </EaseSoftActions>
+          {!empty.canManage ? (
+            <p className="mt-3 text-sm text-cos-muted">
+              Ask a team admin to connect the signup link.
+            </p>
+          ) : null}
         </EaseBox>
       </section>
     );
@@ -164,20 +155,20 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
       <section>
         <EaseSectionLabel>Staffing health</EaseSectionLabel>
         <p className="text-sm text-cos-muted">
-          {error ?? "Volunteer overview unavailable."}
+          {error ?? "Volunteer numbers aren’t available yet."}
         </p>
       </section>
     );
   }
 
   const signupUrl = overview.source.sourceUrl;
-  const syncLabel = overview.source.lastSuccessfulSyncAt
+  const updatedLabel = overview.source.lastSuccessfulSyncAt
     ? formatSyncTime(overview.source.lastSuccessfulSyncAt)
     : "not yet";
 
   return (
     <section>
-      <EaseSectionLabel hint="Aggregate only — no volunteer PII">
+      <EaseSectionLabel hint="Counts only — no names or contact details">
         Staffing health
       </EaseSectionLabel>
 
@@ -193,7 +184,9 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
             ) : (
               <EaseChip tone="forest">On track</EaseChip>
             )}
-            <span>{fill !== null ? `${fill}% filled` : "Fill unknown"}</span>
+            <span>
+              {fill !== null ? `${fill}% filled` : "Fill not available yet"}
+            </span>
           </div>
           <EaseBoxTitle>
             {openSpots !== null && openSpots > 0
@@ -242,22 +235,22 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
             {signupUrl ? (
               <EaseBtnPrimary href={signupUrl}>Open signup</EaseBtnPrimary>
             ) : null}
-            <EaseBtnSecondary disabled={pending} onClick={handleSync}>
-              Sync SignUpGenius
+            <EaseBtnSecondary disabled={pending} onClick={handleRefresh}>
+              Refresh numbers
             </EaseBtnSecondary>
           </EaseSoftActions>
         </EaseBox>
 
         <EaseBox>
-          <EaseBoxTitle>Connected source</EaseBoxTitle>
+          <EaseBoxTitle>Signup link</EaseBoxTitle>
           <EaseBoxDesc>
-            Last sync looks fresh. Connect &amp; refresh stay here — not on
-            Volunteer Master.
+            Connect and refresh stay on this event — the Volunteers page only
+            shows organization-wide staffing.
           </EaseBoxDesc>
           <EaseQueue>
             <EaseRow
               title="SignUpGenius"
-              meta={`Connected · synced ${syncLabel}`}
+              meta={`Connected · updated ${updatedLabel}`}
               status="Live"
               statusTone="done"
               as="div"

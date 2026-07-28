@@ -103,7 +103,7 @@ function topNeedLabel(event: VolunteersMasterEventRow): string {
     return "All roles filled";
   }
   if (!event.hasSnapshot) {
-    return "Connect or sync SignUpGenius for fill stats";
+    return "Connect SignUpGenius on the event to see fill";
   }
   return "No open roles listed";
 }
@@ -136,7 +136,7 @@ export function VolunteersFocusCard({
       ? `${openRoleCount} role${openRoleCount === 1 ? "" : "s"} still open. Share the signup before the week fills up.`
       : event.isCovered
         ? "All roles are covered for this event."
-        : "Open the volunteers tab to connect SignUpGenius or review roles.";
+        : "Open Event volunteers to connect a signup or review roles.";
 
   return (
     <article
@@ -348,7 +348,7 @@ export function VolunteersQueueRow({
           <>
             —
             <span className="mt-0.5 block font-semibold text-cos-muted">
-              No sync yet
+              No fill data yet
             </span>
           </>
         )}
