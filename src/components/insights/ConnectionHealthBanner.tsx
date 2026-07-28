@@ -36,7 +36,7 @@ export function ConnectionHealthBanner({ connection }: ConnectionHealthBannerPro
           })}
           className="shrink-0 text-xs font-medium underline underline-offset-2"
         >
-          Reconnect Meta
+          Reconnect Facebook
         </Link>
       ) : null}
     </div>

@@ -31,18 +31,22 @@ export function isInstagramPublishingConfigured(connection: MetaConnection | nul
 
 const META_OAUTH_ERROR_MESSAGES: Record<string, string> = {
   no_pages:
-    "Facebook login succeeded but Hey Ralli could not resolve a Page access token. Set META_FACEBOOK_PAGE_ID to your numeric Page ID on the server, confirm business_management and pages_show_list are in your Login for Business configuration, then reconnect.",
-  not_configured: "Meta app credentials are not configured on the server.",
-  token_exchange_failed: "Meta token exchange failed. Check META_APP_ID, META_APP_SECRET, and redirect URL.",
-  long_lived_exchange_failed: "Could not exchange for a long-lived token.",
+    "Facebook sign-in worked, but we couldn’t find a Page to connect. Confirm you admin a Facebook Page, then try Connect with Facebook again.",
+  not_configured: "Facebook connection isn’t available yet. Contact support if this continues.",
+  token_exchange_failed:
+    "We couldn’t finish connecting Facebook. Try again in a moment, or contact support if it keeps failing.",
+  long_lived_exchange_failed:
+    "We couldn’t finish connecting Facebook. Try Connect with Facebook again.",
   invalid_state:
-    "OAuth session could not be verified. Close other Hey Ralli tabs, then click Connect with Facebook again. If it keeps failing, confirm META_REDIRECT_URI matches your live site URL exactly.",
-  missing_code: "Facebook did not return an authorization code.",
-  no_organization: "Set up your organization before connecting Meta.",
-  verify_failed: "Connected to Meta but Page verification failed.",
-  save_failed: "Could not save the Meta connection.",
-  migration_required: "Meta connection storage is not set up. Run database migration 021.",
-  capacity_exceeded: "Your plan's social account limit is reached. Upgrade in Billing & Plan to connect another account.",
+    "That Facebook connection timed out. Close other Hey Ralli tabs, then click Connect with Facebook again.",
+  missing_code: "Facebook didn’t finish authorizing. Try Connect with Facebook again.",
+  no_organization: "Set up your organization before connecting Facebook.",
+  verify_failed: "Connected to Facebook, but we couldn’t verify your Page. Try again.",
+  save_failed: "Could not save the Facebook connection. Try again.",
+  migration_required:
+    "Facebook connection isn’t ready on this workspace yet. Contact support for help.",
+  capacity_exceeded:
+    "Your plan’s social account limit is reached. Upgrade in Billing to connect another account.",
 };
 
 export function getMetaOAuthErrorMessage(errorCode: string | undefined): string | null {

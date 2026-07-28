@@ -28,12 +28,12 @@ export function InboxConnectionPanel({
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(
-    connectedJustNow ? "Meta connected successfully." : null,
+    connectedJustNow ? "Facebook connected successfully." : null,
   );
   const [isPending, startTransition] = useTransition();
   const [isSyncing, startSyncTransition] = useTransition();
 
-  const returnTo = "/inbox";
+  const returnTo = "/communications";
   const metaSettingsHref = buildIntegrationSettingsPath("meta", returnTo);
   const connectHref = buildMetaOAuthStartPath({ returnTo });
   const reconnectHref = buildMetaOAuthStartPath({
@@ -51,7 +51,7 @@ export function InboxConnectionPanel({
         setError(result.error ?? "Could not disconnect.");
         return;
       }
-      setMessage("Meta disconnected.");
+      setMessage("Facebook disconnected.");
       router.refresh();
     });
   }
@@ -62,14 +62,14 @@ export function InboxConnectionPanel({
     startSyncTransition(async () => {
       const result = await syncInboxNowAction();
       if (!result.success) {
-        setError(result.error ?? "Inbox sync failed.");
+        setError(result.error ?? "Couldn’t refresh the inbox.");
         return;
       }
 
       const threadCount = result.threadsUpserted ?? 0;
       const messageCount = result.messagesUpserted ?? 0;
       setMessage(
-        `Sync complete — ${threadCount} thread${threadCount === 1 ? "" : "s"}, ${messageCount} message${messageCount === 1 ? "" : "s"}.`,
+        `Inbox updated — ${threadCount} conversation${threadCount === 1 ? "" : "s"}, ${messageCount} message${messageCount === 1 ? "" : "s"}.`,
       );
       router.refresh();
     });
@@ -79,8 +79,7 @@ export function InboxConnectionPanel({
     return (
       <div className="space-y-4">
         <p className="text-sm text-cos-muted">
-          Meta is not configured on this server yet. Ask your administrator to add Meta app
-          credentials, then return here to connect.
+          Facebook isn’t available to connect yet. Contact support if you need help finishing setup.
         </p>
         <Button href={metaSettingsHref} variant="secondary">
           Open Meta settings
@@ -93,8 +92,7 @@ export function InboxConnectionPanel({
     <div className="space-y-5">
       {connection.metaConfiguredViaEnv && (
         <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          Meta is connected via server environment variables for{" "}
-          {connection.organizationName ?? "your organization"}.
+          Facebook is connected for {connection.organizationName ?? "your organization"}.
         </p>
       )}
 
@@ -110,16 +108,16 @@ export function InboxConnectionPanel({
             Connected to <strong>{connection.pageName ?? "Facebook Page"}</strong>.
             {connection.hasInstagram
               ? " Instagram is linked."
-              : " Link Instagram to your Page to enable IG channels."}
+              : " Link Instagram to your Page to bring in Instagram messages and comments."}
           </p>
           <p className="mt-2 opacity-90">
             {connection.messagingReady
-              ? "Inbox is ready. Sync now or wait for new messages."
-              : "Publishing is ready. Reconnect once to approve inbox permissions."}
+              ? "Inbox is ready. Refresh now or wait for new messages."
+              : "Publishing is ready. Reconnect once so inbox access is approved."}
           </p>
           {connection.lastSyncedAt && (
             <p className="mt-2 text-xs opacity-80">
-              Last synced {new Date(connection.lastSyncedAt).toLocaleString()}
+              Last updated {new Date(connection.lastSyncedAt).toLocaleString()}
             </p>
           )}
         </div>
@@ -128,8 +126,7 @@ export function InboxConnectionPanel({
       {!connection.metaConnected && !connection.metaConfiguredViaEnv && (
         <div className="space-y-3">
           <p className="text-sm text-cos-muted">
-            Connect once with Facebook. Approve the use cases — publishing, inbox, and Insights
-            share the same connection.
+            Connect once with Facebook. Publishing, inbox, and Insights share the same connection.
           </p>
           <Button href={connectHref} disabled={isPending}>
             Connect with Facebook
@@ -151,15 +148,15 @@ export function InboxConnectionPanel({
             disabled={isSyncing || isPending}
             onClick={handleSyncNow}
           >
-            {isSyncing ? "Syncing…" : "Sync now"}
+            {isSyncing ? "Updating…" : "Refresh inbox"}
           </Button>
           {!connection.messagingReady && (
             <Button href={reconnectHref} variant="secondary" disabled={isPending}>
-              Approve inbox permissions
+              Approve inbox access
             </Button>
           )}
           <Button href={reconnectHref} variant="secondary" disabled={isPending}>
-            Reconnect
+            Reconnect Facebook
           </Button>
           <Button href={metaSettingsHref} variant="ghost">
             Meta settings
@@ -173,14 +170,14 @@ export function InboxConnectionPanel({
       {connection.metaConnected && connection.metaConfiguredViaEnv && (
         <div className="flex flex-wrap gap-2">
           <Button type="button" disabled={isSyncing} onClick={handleSyncNow}>
-            {isSyncing ? "Syncing…" : "Sync now"}
+            {isSyncing ? "Updating…" : "Refresh inbox"}
           </Button>
         </div>
       )}
 
       {connection.lastSyncError && (
         <p className="text-sm text-red-600" role="alert">
-          Last sync error: {connection.lastSyncError}
+          Couldn’t update inbox: {connection.lastSyncError}
         </p>
       )}
       {oauthError && (

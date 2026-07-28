@@ -240,6 +240,19 @@ export async function publishMetaBundleNowAction(
     immediate: true,
   });
 
+  if (result.publishedCount > 0 || result.failedCount > 0) {
+    const { syncSchedulingItemsForMetaPublishOutcome } = await import(
+      "@/lib/approvals-scheduling/publish-outcome-sync"
+    );
+    await syncSchedulingItemsForMetaPublishOutcome({
+      eventId,
+      relativeDay,
+      milestoneTitle: bundle.title,
+      outcome: result.failedCount > 0 ? "failed" : "published",
+      errorMessage: result.error,
+    });
+  }
+
   if (result.success && surfacesNeedManualStoryEmail(bundle.metaPublishSurfaces, bundle.storyManualPublish)) {
     const emailError = await sendManualStoryPostKitIfNeeded(eventId, relativeDay, bundle);
     if (emailError) {
@@ -729,6 +742,21 @@ export async function publishMetaBundleAction(
   }
 
   const result = await publishMetaMilestoneBundle({ eventId, relativeDay });
+
+  if (result.publishedCount > 0 || result.failedCount > 0) {
+    const { syncSchedulingItemsForMetaPublishOutcome } = await import(
+      "@/lib/approvals-scheduling/publish-outcome-sync"
+    );
+    const bundles = await getMetaPublishBundles(eventId);
+    const bundle = bundles.find((entry) => entry.relativeDay === relativeDay);
+    await syncSchedulingItemsForMetaPublishOutcome({
+      eventId,
+      relativeDay,
+      milestoneTitle: bundle?.title ?? null,
+      outcome: result.failedCount > 0 ? "failed" : "published",
+      errorMessage: result.error,
+    });
+  }
 
   revalidateMetaPaths(eventId);
   return {

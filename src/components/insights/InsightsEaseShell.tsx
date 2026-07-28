@@ -24,6 +24,7 @@ import {
   formatInsightsNumber,
   formatLastSyncTitle,
 } from "@/lib/insights/format";
+import { formatMissingInsightsPermissionsMessage } from "@/lib/insights/connection-messages";
 import {
   buildIntegrationSettingsPath,
   buildMetaOAuthStartPath,
@@ -721,7 +722,7 @@ export function InsightsEaseShell({
       });
       if (result.ok) {
         setSyncMessage(
-          `Synced ${result.daysSynced} day(s) and ${result.postsSynced} post(s) from Meta.`,
+          `Updated ${result.daysSynced} day(s) and ${result.postsSynced} post(s) from your Page.`,
         );
         setDataLoading(true);
         const next = await loadInsightsPageDataAction({
@@ -732,7 +733,7 @@ export function InsightsEaseShell({
         setDataLoading(false);
         return;
       }
-      setSyncMessage(result.error ?? "Insights sync failed.");
+      setSyncMessage(result.error ?? "Couldn't refresh your Page numbers.");
     });
   }
 
@@ -775,8 +776,8 @@ export function InsightsEaseShell({
                   Insights
                 </h1>
                 <p className="mt-1.5 max-w-[52ch] text-sm leading-relaxed text-cos-muted">
-                  See how your school’s Facebook Page and Instagram posts perform
-                  — after you connect Meta once.
+                  See how your organization’s Facebook Page and Instagram posts
+                  perform — after you connect Meta once.
                 </p>
               </div>
             </header>
@@ -798,8 +799,8 @@ export function InsightsEaseShell({
                     "Event Insights"}
                 </h1>
                 <p className="mt-1.5 max-w-[52ch] text-sm leading-[1.45] text-[#5c554c]">
-                  Event → Insights tab — Meta performance for this event’s
-                  published posts only. Same org Meta connection.
+                  Organic performance for this event’s published Facebook and
+                  Instagram posts. Uses your organization’s Meta connection.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
@@ -885,8 +886,8 @@ export function InsightsEaseShell({
             </h1>
             <p className="mt-1.5 max-w-[52ch] text-sm leading-relaxed text-cos-muted">
               {showConnectEmpty
-                ? "See how your school’s Facebook Page and Instagram posts perform — after you connect Meta once."
-                : "Organic performance from your Facebook Page and Instagram account — views, reach, and engagement parents actually saw."}
+                ? "See how your organization’s Facebook Page and Instagram posts perform — after you connect Meta once."
+                : "Organic performance from your Facebook Page and Instagram account — views, reach, and engagement people actually saw."}
             </p>
           </div>
 
@@ -919,7 +920,7 @@ export function InsightsEaseShell({
                   <path d="M20 12a8 8 0 1 1-2.3-5.7" />
                   <path d="M20 4v5h-5" />
                 </svg>
-                {isPending || pageData.syncInProgress ? "Syncing…" : "Refresh"}
+                {isPending || pageData.syncInProgress ? "Refreshing…" : "Refresh"}
               </button>
               <a
                 href={exportHref}
@@ -1205,8 +1206,8 @@ export function InsightsEaseShell({
                     </>
                   ) : (
                     <div className="flex h-[200px] items-center justify-center px-4 text-center text-sm text-cos-muted">
-                      No daily metrics stored for this period. Sync insights from
-                      Meta to populate this chart.
+                      No daily numbers for this period yet. Tap Refresh to pull
+                      from your Page.
                     </div>
                   )}
                 </div>
@@ -1279,7 +1280,7 @@ export function InsightsEaseShell({
 
               {filteredTopPosts.length === 0 ? (
                 <p className="text-sm text-cos-muted">
-                  No top content for this period yet. Tap Refresh to pull recent
+                  No posts yet for this period. Tap Refresh to pull recent
                   Facebook and Instagram posts, or widen the date range.
                 </p>
               ) : (
@@ -1336,7 +1337,7 @@ function ConnectMetaEmpty({
         Connect Meta to get started
       </h2>
       <p className="mt-2.5 max-w-[38ch] text-sm leading-relaxed text-cos-muted">
-        Insights pulls organic performance — Views, Reach, Interactions, Likes,
+        Insights shows organic performance — Views, Reach, Interactions, Likes,
         and Comments — from your Facebook Page and Instagram account for{" "}
         {organizationName || "your organization"}. The same connection powers
         publishing and inbox. No ads data. No audience demographics on this page.
@@ -1367,9 +1368,9 @@ function ConnectMetaEmpty({
       </p>
       {whyOpen ? (
         <p className="mt-3 max-w-[40ch] text-xs leading-relaxed text-cos-muted">
-          Page Insights permissions show organic post performance for your school
-          Page — so committees can see what parents actually saw, without ad or
-          demographic theater on this screen.
+          Page Insights permissions show organic post performance for your
+          Page — so your team can see what people actually saw, without ads or
+          audience demographics on this screen.
         </p>
       ) : null}
     </div>
@@ -1402,16 +1403,15 @@ function SyncMetaEmpty({
         </svg>
       </div>
       <h2 className="font-display text-[28px] font-semibold tracking-[-0.02em] text-cos-text">
-        Sync insights from Meta
+        Refresh your Page numbers
       </h2>
       <p className="mt-2.5 max-w-[38ch] text-sm leading-relaxed text-cos-muted">
-        Meta is connected, but no analytics are stored yet. Run a sync to pull
+        Meta is connected, but we don’t have numbers yet. Refresh to pull
         organic views, reach, and post performance into Hey Ralli.
       </p>
       {missingScopes.length > 0 ? (
         <p className="mt-3 max-w-md text-xs text-[#a65a3a]">
-          Missing scopes: {missingScopes.join(", ")}. Reconnect Meta after adding
-          them in your Meta app, then sync again.
+          {formatMissingInsightsPermissionsMessage(missingScopes)}
         </p>
       ) : null}
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
@@ -1421,7 +1421,7 @@ function SyncMetaEmpty({
           disabled={syncing}
           className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-[#fffcf7] transition-transform hover:-translate-y-px disabled:opacity-60"
         >
-          {syncing ? "Syncing…" : "Sync now"}
+          {syncing ? "Refreshing…" : "Refresh your Page numbers"}
         </button>
         <Link
           href={buildIntegrationSettingsPath("meta", "/insights")}

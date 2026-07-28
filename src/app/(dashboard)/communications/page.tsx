@@ -3,7 +3,7 @@ import { getInboxPageData } from "@/lib/inbox/queries";
 
 export const metadata = {
   title: "Communications Hub",
-  description: "AI-Powered Inbox for Social Media",
+  description: "Reply to Facebook Page and Instagram messages in one place",
   alternates: {
     canonical: "/communications",
   },

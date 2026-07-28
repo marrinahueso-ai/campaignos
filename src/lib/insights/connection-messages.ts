@@ -1,5 +1,24 @@
 import type { InsightsConnectionHealth } from "@/lib/insights/types";
 
+/** Customer-facing copy when Page / Instagram Insights permissions are incomplete. */
+export function formatMissingInsightsPermissionsMessage(
+  missingScopes: string[],
+): string {
+  const needsFacebook = missingScopes.includes("read_insights");
+  const needsInstagram = missingScopes.includes("instagram_manage_insights");
+
+  if (needsFacebook && needsInstagram) {
+    return "Reconnect Facebook to finish setup — we still need Page and Instagram Insights permissions.";
+  }
+  if (needsFacebook) {
+    return "Reconnect Facebook to finish Page Insights setup.";
+  }
+  if (needsInstagram) {
+    return "Reconnect Facebook to finish Instagram Insights setup.";
+  }
+  return "Reconnect Facebook to finish setup.";
+}
+
 export function summarizeInsightsSyncWarning(
   connection: InsightsConnectionHealth,
 ): string | null {
@@ -9,7 +28,7 @@ export function summarizeInsightsSyncWarning(
 
   if (connection.lastSyncError) {
     if (/Post \d+:/.test(connection.lastSyncError)) {
-      return "Some metrics are unavailable. Account-level data may still have synced.";
+      return "Some post numbers are unavailable. Page-level numbers may still be ready.";
     }
     return connection.lastSyncError;
   }
@@ -52,8 +71,7 @@ export function getInsightsConnectionAlert(
 
   if (connection.reconnectRequired) {
     return {
-      message:
-        "Your Meta connection needs to be refreshed before insights can sync.",
+      message: "Reconnect Facebook to finish setup.",
       severity: "error",
       showReconnect: true,
     };
@@ -61,8 +79,9 @@ export function getInsightsConnectionAlert(
 
   if (!connection.insightsScopesGranted) {
     return {
-      message:
-        "Insights permissions are missing. Reconnect Meta to grant read_insights and instagram_manage_insights.",
+      message: formatMissingInsightsPermissionsMessage(
+        connection.missingInsightsScopes,
+      ),
       severity: "warning",
       showReconnect: true,
     };
@@ -72,7 +91,7 @@ export function getInsightsConnectionAlert(
     return {
       message:
         summarizeInsightsSyncWarning(connection) ??
-        "The last insights sync failed.",
+        "We couldn't refresh your Page numbers. Try Refresh again.",
       severity: "error",
       showReconnect: false,
     };

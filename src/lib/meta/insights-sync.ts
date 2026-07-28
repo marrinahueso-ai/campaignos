@@ -76,10 +76,10 @@ function summarizeSyncOutcome(input: {
   if (input.postFailures.length > 0) {
     const skippedCount = input.postFailures.length;
     if (skippedCount === input.totalPosts && input.totalPosts > 0) {
-      userWarnings.push("Post metrics unavailable for all published posts.");
+      userWarnings.push("We couldn't load numbers for your published posts.");
     } else {
       userWarnings.push(
-        `Some post metrics unavailable (${skippedCount} of ${input.totalPosts} posts).`,
+        `Some post numbers couldn't load (${skippedCount} of ${input.totalPosts} posts).`,
       );
     }
   }
@@ -91,7 +91,8 @@ function summarizeSyncOutcome(input: {
     ok,
     status: ok ? "completed" : "failed",
     userWarnings,
-    errorMessage: ok ? null : userWarnings.join(" ") || "No metrics synced.",
+    errorMessage:
+      ok ? null : userWarnings.join(" ") || "No Page numbers yet — try Refresh.",
   };
 }
 
@@ -447,7 +448,8 @@ async function discoverRecentPageAndIgPosts(input: {
   });
 
   if (facebook.error) {
-    input.warnings.push(`Facebook recent posts: ${facebook.error}`);
+    console.warn("Facebook recent posts unavailable:", facebook.error);
+    input.warnings.push("Couldn't load recent Facebook posts right now.");
   }
   discovered.push(...facebook.posts);
 
@@ -460,7 +462,8 @@ async function discoverRecentPageAndIgPosts(input: {
     });
 
     if (instagram.error) {
-      input.warnings.push(`Instagram recent media: ${instagram.error}`);
+      console.warn("Instagram recent media unavailable:", instagram.error);
+      input.warnings.push("Couldn't load recent Instagram posts right now.");
     }
     discovered.push(...instagram.posts);
   }
@@ -481,7 +484,7 @@ export async function syncOrganizationInsights(input: {
       ok: false,
       postsSynced: 0,
       daysSynced: 0,
-      error: "Meta is not connected for this organization.",
+      error: "Facebook isn't connected yet. Connect Facebook to see Insights.",
       warnings,
     };
   }
@@ -492,7 +495,7 @@ export async function syncOrganizationInsights(input: {
       ok: false,
       postsSynced: 0,
       daysSynced: 0,
-      error: "Meta token is invalid or expired. Reconnect to continue syncing insights.",
+      error: "Reconnect Facebook to finish setup.",
       warnings,
     };
   }
@@ -520,7 +523,8 @@ export async function syncOrganizationInsights(input: {
       });
 
       if (facebook.error) {
-        warnings.push(`Facebook account insights: ${facebook.error}`);
+        console.warn("Facebook account insights unavailable:", facebook.error);
+        warnings.push("Couldn't load Facebook Page numbers right now.");
       } else {
         daysSynced += await upsertAccountInsights({
           organizationId: input.organizationId,
@@ -529,9 +533,7 @@ export async function syncOrganizationInsights(input: {
         });
       }
     } else {
-      warnings.push(
-        "Missing read_insights scope — reconnect Meta to sync Facebook account metrics.",
-      );
+      warnings.push("Reconnect Facebook to finish Page Insights setup.");
     }
 
     if (
@@ -546,7 +548,8 @@ export async function syncOrganizationInsights(input: {
       });
 
       if (instagram.error) {
-        warnings.push(`Instagram account insights: ${instagram.error}`);
+        console.warn("Instagram account insights unavailable:", instagram.error);
+        warnings.push("Couldn't load Instagram numbers right now.");
       } else {
         daysSynced += await upsertAccountInsights({
           organizationId: input.organizationId,
@@ -555,9 +558,7 @@ export async function syncOrganizationInsights(input: {
         });
       }
     } else if (connection.instagramAccountId) {
-      warnings.push(
-        "Missing instagram_manage_insights scope — reconnect Meta to sync Instagram account metrics.",
-      );
+      warnings.push("Reconnect Facebook to finish Instagram Insights setup.");
     }
 
     const slots = await fetchPublishedSlotsForOrganization(input.organizationId);
@@ -703,7 +704,8 @@ export async function syncOrganizationInsights(input: {
       warnings: outcome.userWarnings,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Insights sync failed.";
+    console.error("Insights refresh failed:", error);
+    const message = "Couldn't refresh your Page numbers.";
     await finishSyncRun({
       runId,
       status: "failed",

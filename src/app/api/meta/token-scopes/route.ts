@@ -39,9 +39,9 @@ export async function GET() {
     facebookCommentReplyReady: health.facebookCommentReplyReady,
     reconnectRequired: health.reconnectRequired,
     reconnectHint: health.reconnectRequired
-      ? "Your Facebook Page token is no longer valid. Reconnect once in Settings → Meta Publishing."
+      ? "Your Facebook connection needs a refresh. Reconnect once in Settings → Meta."
       : health.missingFacebookCommentReplyScopes.length > 0
-        ? "Facebook comment replies need pages_manage_engagement. Publishing and inbox sync still work — reconnect only if you need comment replies."
+        ? "Comment replies need one more Facebook approval. Publishing and inbox still work — reconnect only if you need comment replies."
         : null,
     debugError: health.error,
   });

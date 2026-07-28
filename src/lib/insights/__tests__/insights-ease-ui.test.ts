@@ -123,7 +123,6 @@ describe("insights ease UI contracts", () => {
     assert.match(shell, /params\.set\("contentSort", next\.contentSort\)/);
     assert.match(shell, /history\.replaceState/);
     assert.doesNotMatch(shell, /getInsightsDataNote/);
-    assert.doesNotMatch(shell, /from your Page/);
   });
 
   it("matches Connect Meta empty purpose and organic-only scope", () => {
@@ -147,15 +146,17 @@ describe("insights ease UI contracts", () => {
   });
 
   it("matches Event Insights Ease panel: KPIs, posts, refresh footer (no comparison banner)", () => {
-    assert.match(eventPanel, /Event Insights · organic Meta metrics/);
+    assert.match(eventPanel, /Event Insights · organic only/);
     assert.match(eventPanel, /event-insights-kpi-strip/);
     assert.match(eventPanel, /Link clicks/);
     assert.match(eventPanel, /Posts for this event/);
-    assert.match(eventPanel, /Published slots linked to \{eventTitle\}/);
+    assert.match(eventPanel, /Published posts for \{eventTitle\}/);
     assert.match(eventPanel, /formatLastSyncTitle/);
     assert.match(eventPanel, /event-insights-sync-footer/);
     assert.match(eventPanel, /Open Org Insights/);
     assert.doesNotMatch(eventPanel, /Synced from Meta/);
+    assert.doesNotMatch(eventPanel, /Missing scopes:/);
+    assert.doesNotMatch(eventPanel, /read_insights/);
     assert.match(eventPanel, /shadow-none/);
     assert.doesNotMatch(eventPanel, /event-insights-comparison/);
     assert.doesNotMatch(eventPanel, /not an AI score/);
@@ -177,11 +178,26 @@ describe("insights ease UI contracts", () => {
 
   it("keeps Event Insights hub composition soft: page head + quiet picker", () => {
     assert.match(shell, /← Org Insights/);
-    assert.match(shell, /Event → Insights tab/);
+    assert.match(shell, /Organic performance for this event/);
     assert.match(shell, /insights-event-picker/);
     assert.match(shell, /bg-transparent/);
     assert.match(shell, /sr-only/);
     assert.doesNotMatch(shell, /Open full event/);
+  });
+
+  it("keeps customer-facing Insights copy free of sync/scope/school jargon", () => {
+    const connectionMessages = readSrc("../connection-messages.ts");
+    assert.match(shell, /organization’s Facebook Page/);
+    assert.match(shell, /people actually saw/);
+    assert.match(shell, /Refresh your Page numbers/);
+    assert.match(shell, /formatMissingInsightsPermissionsMessage/);
+    assert.match(connectionMessages, /Reconnect Facebook to finish setup/);
+    assert.doesNotMatch(shell, /Missing scopes:/);
+    assert.doesNotMatch(shell, /read_insights|instagram_manage_insights/);
+    assert.doesNotMatch(shell, /school’s Facebook|parents actually saw|committees/);
+    assert.doesNotMatch(shell, /analytics are stored|Sync insights from Meta/);
+    assert.doesNotMatch(shell, /Ease shell|billing_exempt|\bRLS\b/);
+    assert.doesNotMatch(connectionMessages, /read_insights and instagram_manage_insights/);
   });
 
   it("marks Insights Ease redesign as shipped in feature-list", () => {

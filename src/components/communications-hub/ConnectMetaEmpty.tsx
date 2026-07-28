@@ -10,7 +10,7 @@ import {
 const PURPOSE_CARDS = [
   {
     title: "Why we connect",
-    body: "So volunteers can answer parents who already messaged the school Page / Instagram — in one calm place.",
+    body: "So your team can answer people who already messaged your Facebook Page or Instagram — in one calm place.",
   },
   {
     title: "What AI does",
@@ -18,11 +18,11 @@ const PURPOSE_CARDS = [
   },
   {
     title: "What we don’t do",
-    body: "No spam tools, no “unlimited reach” claims, no impersonating parents, no silent replies.",
+    body: "No spam tools, no “unlimited reach” claims, no impersonating community members, no silent replies.",
   },
   {
     title: "Privacy",
-    body: "Messages stay in your Meta business messaging context. Access is limited to your PTA team in Hey Ralli.",
+    body: "Messages stay with your Page and Instagram business messaging. Only your Hey Ralli team can see them here.",
   },
 ] as const;
 
@@ -51,7 +51,7 @@ export function ConnectMetaEmpty({
             Connect Meta
           </h1>
           <p className="mt-1.5 max-w-[58ch] text-sm leading-relaxed text-cos-muted">
-            Link your Facebook Page and Instagram once. Parent messages appear here
+            Link your Facebook Page and Instagram once. Community messages appear here
             automatically — the same connection powers publishing and Insights.
           </p>
         </div>
@@ -134,8 +134,8 @@ export function ConnectMetaEmpty({
         </p>
         {whyOpen ? (
           <p className="mt-3 max-w-[40ch] text-xs leading-relaxed text-cos-muted">
-            Needed to read &amp; reply in Page Inbox / Instagram DMs your community
-            already started.
+            Needed so your team can read and reply in Page Inbox and Instagram DMs
+            your community already started.
           </p>
         ) : null}
 

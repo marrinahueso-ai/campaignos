@@ -204,9 +204,16 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
     <div className="shrink-0 border-t border-[#ebebea] bg-white px-6 py-5">
       <div className="mb-3 flex items-center gap-2">
         <Sparkles className="h-4 w-4 fill-[#f5c842] text-[#f5c842]" aria-hidden />
-        <p className="text-sm font-semibold text-[#1a1a1a]">
-          {isSent ? "Write another reply" : "AI suggested reply"}
-        </p>
+        <div>
+          <p className="text-sm font-semibold text-[#1a1a1a]">
+            {isSent ? "Write another reply" : "AI suggested reply"}
+          </p>
+          {!isSent ? (
+            <p className="mt-0.5 text-xs text-[#8a8a88]">
+              You approve before anything sends — AI never sends on its own.
+            </p>
+          ) : null}
+        </div>
         {isPending && !displayBody ? (
           <Loader2 className="ml-1 h-3.5 w-3.5 animate-spin text-[#8a8a88]" />
         ) : null}

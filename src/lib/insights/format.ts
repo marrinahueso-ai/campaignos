@@ -60,28 +60,28 @@ function formatInsightsSyncTimestamp(lastSyncAt: string): string {
   });
 }
 
-/** Native title / tooltip for Refresh — e.g. “Last Sync: Jul 26, 11:40 AM”. */
+/** Native title / tooltip for Refresh — e.g. “Last refresh: Jul 26, 11:40 AM”. */
 export function formatLastSyncTitle(lastSyncAt: string | null): string {
   if (!lastSyncAt) {
-    return "Last Sync: Never";
+    return "Last refresh: Never";
   }
   const date = new Date(lastSyncAt);
   if (Number.isNaN(date.getTime())) {
-    return "Last Sync: —";
+    return "Last refresh: —";
   }
-  return `Last Sync: ${formatInsightsSyncTimestamp(lastSyncAt)}`;
+  return `Last refresh: ${formatInsightsSyncTimestamp(lastSyncAt)}`;
 }
 
-/** Sync timestamp for event Insights footer — mockup: “Jul 26, 11:40 AM”. */
+/** Refresh timestamp for event Insights footer — mockup: “Jul 26, 11:40 AM”. */
 export function formatEventInsightsSyncLabel(
   lastSyncAt: string | null,
 ): string {
   if (!lastSyncAt) {
-    return "Not synced yet";
+    return "Not refreshed yet";
   }
   const date = new Date(lastSyncAt);
   if (Number.isNaN(date.getTime())) {
-    return "Not synced yet";
+    return "Not refreshed yet";
   }
   return formatInsightsSyncTimestamp(lastSyncAt);
 }

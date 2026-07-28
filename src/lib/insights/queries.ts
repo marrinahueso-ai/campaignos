@@ -710,18 +710,18 @@ function resolveUnavailableReason(connection: InsightsConnectionHealth): string 
   }
 
   if (connection.reconnectRequired) {
-    return "Meta token expired — reconnect to refresh metrics.";
+    return "Reconnect Facebook to finish setup.";
   }
 
   if (!connection.insightsScopesGranted) {
-    return "Reconnect Meta to grant insights permissions.";
+    return "Reconnect Facebook to finish setup.";
   }
 
   if (connection.lastSyncStatus === "running") {
-    return "Insights sync in progress.";
+    return "Updating your Page numbers…";
   }
 
-  return "No synced metrics yet — run a sync to pull data from Meta.";
+  return "No numbers yet — tap Refresh to pull from your Page.";
 }
 
 const PULSE_KPI_KEYS: Array<{ key: InsightsKpiKey; label: string }> = [

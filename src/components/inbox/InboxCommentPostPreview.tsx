@@ -71,7 +71,7 @@ export function InboxCommentPostPreview({
 
             {!preview.imageUrl ? (
               <p className="mt-1.5 text-[10px] leading-snug text-cos-muted">
-                Image unavailable — text-only or link post, or sync again to refresh.
+                Image unavailable — text-only or link post, or refresh the inbox to update.
               </p>
             ) : null}
           </div>

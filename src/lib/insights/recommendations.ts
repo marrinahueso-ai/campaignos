@@ -81,13 +81,13 @@ export function buildInsightsRecommendation(input: {
     const rounded = Math.round(Math.abs(engagementKpi.changePercent) * 10) / 10;
     const direction = engagementKpi.changePercent > 0 ? "up" : "down";
     items.push({
-      title: "Parent engagement",
-      body: `Families interacted ${direction} ${rounded}% vs the previous period (${engagementKpi.previousValue.toLocaleString()} → ${engagementKpi.value.toLocaleString()}).`,
+      title: "Engagement",
+      body: `People interacted ${direction} ${rounded}% vs the previous period (${engagementKpi.previousValue.toLocaleString()} → ${engagementKpi.value.toLocaleString()}).`,
     });
   } else if (engagementKpi?.value != null && engagementKpi.value > 0) {
     items.push({
-      title: "Parent engagement",
-      body: `Families interacted with your posts ${engagementKpi.value.toLocaleString()} times in this period.`,
+      title: "Engagement",
+      body: `People interacted with your posts ${engagementKpi.value.toLocaleString()} times in this period.`,
     });
   }
 
@@ -100,7 +100,7 @@ export function buildInsightsRecommendation(input: {
     const rounded = Math.round(Math.abs(reachKpi.changePercent) * 10) / 10;
     const direction = reachKpi.changePercent > 0 ? "up" : "down";
     items.push({
-      title: "Parents reached",
+      title: "Reach",
       body:
         direction === "up"
           ? `Your posts reached ${rounded}% more accounts vs the previous period (${reachKpi.previousValue.toLocaleString()} → ${reachKpi.value.toLocaleString()}).`
@@ -108,7 +108,7 @@ export function buildInsightsRecommendation(input: {
     });
   } else if (reachKpi?.value != null && reachKpi.value > 0) {
     items.push({
-      title: "Parents reached",
+      title: "Reach",
       body: `Your content reached ${reachKpi.value.toLocaleString()} accounts in this period.`,
     });
   }
@@ -151,7 +151,7 @@ export function buildInsightsRecommendation(input: {
         : { name: "Facebook", reach: facebook.reach, engagement: facebook.engagement };
 
     items.push({
-      title: "Where parents saw you",
+      title: "Where people saw you",
       body: `${leader.name} reached ${leader.reach.toLocaleString()} accounts vs ${other.reach.toLocaleString()} on ${other.name}.`,
     });
 
@@ -161,7 +161,7 @@ export function buildInsightsRecommendation(input: {
       (leader.engagement > 0 || other.engagement > 0)
     ) {
       items.push({
-        title: "Where parents engaged",
+        title: "Where people engaged",
         body: `${leader.name} drove ${leader.engagement.toLocaleString()} interactions vs ${other.engagement.toLocaleString()} on ${other.name}.`,
       });
     }
@@ -192,11 +192,11 @@ export function buildInsightsRecommendation(input: {
     engagementKpi.changePercent > 0
   ) {
     summaryParts.push(
-      `Parent engagement is up ${Math.round(engagementKpi.changePercent * 10) / 10}% compared to the previous period.`,
+      `Engagement is up ${Math.round(engagementKpi.changePercent * 10) / 10}% compared to the previous period.`,
     );
   } else if (engagementKpi?.value != null && engagementKpi.value > 0) {
     summaryParts.push(
-      `Families interacted with your posts ${engagementKpi.value.toLocaleString()} times in this period.`,
+      `People interacted with your posts ${engagementKpi.value.toLocaleString()} times in this period.`,
     );
   } else if (reachKpi?.value != null && reachKpi.value > 0) {
     summaryParts.push(

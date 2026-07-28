@@ -97,13 +97,13 @@ export function MetaInboxSettingsPanel({
     startSyncTransition(async () => {
       const result = await syncInboxNowAction();
       if (!result.success) {
-        setError(result.error ?? "Inbox sync failed.");
+        setError(result.error ?? "Couldn’t refresh the inbox.");
         return;
       }
 
       const threadCount = result.threadsUpserted ?? 0;
       const messageCount = result.messagesUpserted ?? 0;
-      const syncSummary = `Synced ${threadCount} conversation${threadCount === 1 ? "" : "s"}, ${messageCount} message${messageCount === 1 ? "" : "s"}.`;
+      const syncSummary = `Inbox updated — ${threadCount} conversation${threadCount === 1 ? "" : "s"}, ${messageCount} message${messageCount === 1 ? "" : "s"}.`;
       setMessage(result.warning ? `${syncSummary} ${result.warning}` : syncSummary);
       router.refresh();
     });
@@ -165,7 +165,7 @@ export function MetaInboxSettingsPanel({
             disabled={isSyncing}
             onClick={handleSyncNow}
           >
-            {isSyncing ? "Syncing…" : "Sync inbox now"}
+            {isSyncing ? "Updating…" : "Refresh inbox"}
           </Button>
           <Button
             type="button"
@@ -204,7 +204,7 @@ export function MetaInboxSettingsPanel({
             </p>
             {connection.lastSyncError ? (
               <p className="text-red-600" role="alert">
-                Last sync error: {connection.lastSyncError}
+                Couldn’t update inbox: {connection.lastSyncError}
               </p>
             ) : null}
           </div>
@@ -251,7 +251,7 @@ export function MetaInboxSettingsPanel({
           disabled={isSyncing}
           onClick={handleSyncNow}
         >
-          {isSyncing ? "Syncing…" : "Sync inbox now"}
+          {isSyncing ? "Updating…" : "Refresh inbox"}
         </Button>
         <Button
           type="button"
@@ -279,7 +279,7 @@ export function MetaInboxSettingsPanel({
             {isRefreshingScopes ? "Checking…" : "Check permissions"}
           </Button>
           <p>
-            All scopes on connect:{" "}
+            Permissions on connect:{" "}
             {META_COMBINED_OAUTH_SCOPE_LIST.map((scope) => (
               <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
                 {scope}

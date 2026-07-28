@@ -59,19 +59,19 @@ function formatReactionError(input: {
   switch (input.channelType) {
     case "facebook_comment":
       return (
-        "Facebook denied liking this comment. Reconnect Facebook in Settings → Meta so the Page token includes pages_manage_engagement."
+        "Facebook blocked this like. Go to Settings → Meta and reconnect Facebook, then try again."
       );
     case "instagram_comment":
       return (
-        "Instagram denied liking this comment. Reconnect Facebook in Settings → Meta to grant instagram_manage_engagement (in addition to instagram_manage_comments)."
+        "Instagram blocked this like. Go to Settings → Meta and reconnect Facebook, then try again."
       );
     case "facebook_message":
       return (
-        "Facebook Messenger denied this reaction. Reconnect Facebook in Settings → Meta to grant pages_messaging."
+        "Messenger blocked this reaction. Go to Settings → Meta and reconnect Facebook, then try again."
       );
     case "instagram_dm":
       return (
-        "Instagram DM denied this reaction. Reconnect Facebook in Settings → Meta to grant instagram_manage_messages."
+        "Instagram blocked this reaction. Go to Settings → Meta and reconnect Facebook, then try again."
       );
     default:
       return input.graphError;

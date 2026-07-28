@@ -14,7 +14,7 @@ export function InsightsPulseWidget({ data }: InsightsPulseWidgetProps) {
     return (
       <DashboardWidgetCard icon={BarChart3} title="Insights">
         <p className="text-sm text-cos-muted">
-          Insights aren&apos;t available for this school yet.
+          Insights aren&apos;t available for this organization yet.
         </p>
         <Link
           href="/insights"

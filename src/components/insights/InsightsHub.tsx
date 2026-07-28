@@ -116,13 +116,13 @@ export function InsightsHub({
 
       if (result.ok) {
         setSyncMessage(
-          `Synced ${result.daysSynced} day(s) and ${result.postsSynced} post(s) from Meta.`,
+          `Updated ${result.daysSynced} day(s) and ${result.postsSynced} post(s) from your Page.`,
         );
         router.refresh();
         return;
       }
 
-      setSyncMessage(result.error ?? "Insights sync failed.");
+      setSyncMessage(result.error ?? "Couldn't refresh your Page numbers.");
     });
   }
 
@@ -181,7 +181,7 @@ export function InsightsHub({
                 )}
                 strokeWidth={1.5}
               />
-              {isPending || data.syncInProgress ? "Syncing…" : "Refresh"}
+              {isPending || data.syncInProgress ? "Refreshing…" : "Refresh"}
             </Button>
           ) : null}
           <Button href={exportHref} variant="primary" size="md">
@@ -245,7 +245,7 @@ export function InsightsHub({
                     point.reach === 0 &&
                     point.engagement === 0,
                 )
-                  ? "No daily metrics stored for this period. Sync insights from Meta to populate this chart."
+                  ? "No daily numbers for this period yet. Tap Refresh to pull from your Page."
                   : "No data for this metric in the selected range."
               }
             />

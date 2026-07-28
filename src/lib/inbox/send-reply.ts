@@ -41,25 +41,21 @@ function formatSendReplyError(input: {
   switch (input.channelType) {
     case "facebook_comment":
       return (
-        "Facebook denied this comment reply. Your Page token likely lacks pages_manage_engagement. " +
-        "If you already set that permission to Ready for testing in Meta Developer Dashboard, you must still " +
-        "click Reconnect with Facebook in Settings → Meta — dashboard changes do not update existing tokens. " +
-        "If you use META_OAUTH_CONFIG_ID, add pages_manage_engagement to that Login for Business configuration too."
+        "Facebook blocked this comment reply. Go to Settings → Meta and click Reconnect with Facebook " +
+        "so comment replies are allowed, then try again."
       );
     case "instagram_comment":
       return (
-        "Instagram denied this comment reply. Reconnect Facebook in Settings → Meta to grant " +
-        "instagram_manage_comments."
+        "Instagram blocked this comment reply. Go to Settings → Meta and reconnect Facebook, " +
+        "then try again."
       );
     case "facebook_message":
       return (
-        "Facebook Messenger denied this reply. Reconnect Facebook in Settings → Meta to grant " +
-        "pages_messaging."
+        "Messenger blocked this reply. Go to Settings → Meta and reconnect Facebook, then try again."
       );
     case "instagram_dm":
       return (
-        "Instagram DM denied this reply. Reconnect Facebook in Settings → Meta to grant " +
-        "instagram_manage_messages."
+        "Instagram blocked this DM reply. Go to Settings → Meta and reconnect Facebook, then try again."
       );
     default:
       return input.graphError;

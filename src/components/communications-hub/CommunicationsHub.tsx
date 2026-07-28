@@ -221,7 +221,8 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
           Communications Hub
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cos-muted">
-          AI-Powered Inbox for Social Media
+          Reply to Facebook Page and Instagram messages in one place. AI suggests
+          drafts — you approve before anything sends.
         </p>
       </header>
 
@@ -316,7 +317,7 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
       <footer className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cos-border bg-[#fffdf8] px-4 py-3 text-xs text-cos-muted">
         <p className="flex items-center gap-2">
           <Sparkles className="h-3.5 w-3.5 text-[#f5c842]" aria-hidden />
-          Tip: AI gets smarter with every conversation you review and send.
+          Tip: AI never sends on its own — you review every reply before it goes out.
         </p>
         <Link href="/settings/inbox-ai" className="font-medium text-cos-text hover:underline">
           Manage AI sources

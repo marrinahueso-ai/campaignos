@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BarChart3, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { formatMissingInsightsPermissionsMessage } from "@/lib/insights/connection-messages";
 import {
   buildIntegrationSettingsPath,
   buildMetaOAuthStartPath,
@@ -31,9 +32,10 @@ export function InsightsEmptyState({
           Connect Meta to get started
         </h2>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-cos-muted">
-          Insights pulls performance data from your Facebook Page and Instagram
-          account for {organizationName ?? "your organization"}. Connect once —
-          the same connection powers publishing and inbox.
+          Insights shows organic performance from your Facebook Page and
+          Instagram account for {organizationName ?? "your organization"}.
+          Connect once — the same connection powers publishing and inbox. No ads
+          data. No audience demographics on this page.
         </p>
         <Button
           href={buildMetaOAuthStartPath({ returnTo: "/insights" })}
@@ -61,21 +63,20 @@ export function InsightsEmptyState({
         <RefreshCw className="h-5 w-5" strokeWidth={1.75} />
       </span>
       <h2 className="font-display mt-4 text-2xl text-cos-text">
-        Sync insights from Meta
+        Refresh your Page numbers
       </h2>
       <p className="mt-3 max-w-md text-sm leading-relaxed text-cos-muted">
-        Meta is connected, but no analytics are stored yet. Run a sync to pull
-        reach, engagement, and post performance into Hey Ralli.
+        Meta is connected, but we don’t have numbers yet. Refresh to pull
+        organic views, reach, and post performance into Hey Ralli.
       </p>
       {missingScopes.length > 0 ? (
         <p className="mt-3 max-w-md text-xs text-cos-warning-text">
-          Missing scopes: {missingScopes.join(", ")}. Reconnect Meta after adding
-          them in your Meta app, then sync again.
+          {formatMissingInsightsPermissionsMessage(missingScopes)}
         </p>
       ) : null}
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <Button onClick={onSync} disabled={syncing}>
-          {syncing ? "Syncing…" : "Sync now"}
+          {syncing ? "Refreshing…" : "Refresh your Page numbers"}
         </Button>
         <Link
           href={buildIntegrationSettingsPath("meta", "/insights")}

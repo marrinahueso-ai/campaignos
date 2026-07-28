@@ -68,7 +68,7 @@ export type InboxReplyActionResult = {
 
 export async function syncInboxNowAction(): Promise<InboxActionResult> {
   if (!(await hasPermission("upload_artwork"))) {
-    return { success: false, error: "You do not have permission to sync inbox." };
+    return { success: false, error: "You do not have permission to refresh the inbox." };
   }
 
   const organization = await getLatestOrganization();
@@ -84,7 +84,7 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
 
   const connection = await getMetaConnectionForCurrentOrg();
   if (!connection?.pageAccessToken) {
-    return { success: false, error: "Connect your Facebook Page before syncing inbox." };
+    return { success: false, error: "Connect your Facebook Page before refreshing the inbox." };
   }
 
   await refreshInboxScopesFromPageToken({
@@ -102,7 +102,9 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
   const result = await syncInboxForOrganization(organization.id);
 
   if (!result.ok && result.error) {
-    const subscribeNote = subscribe.error ? ` Webhook subscribe: ${subscribe.error}` : "";
+    const subscribeNote = subscribe.error
+      ? ` Message delivery setup note: ${subscribe.error}`
+      : "";
     revalidateInboxRoutes();
     revalidatePath("/settings/meta");
     return {
@@ -126,7 +128,7 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
 
 export async function subscribeInboxWebhooksAction(): Promise<InboxActionResult> {
   if (!(await hasPermission("upload_artwork"))) {
-    return { success: false, error: "You do not have permission to manage inbox webhooks." };
+    return { success: false, error: "You do not have permission to refresh message delivery." };
   }
 
   const connection = await getMetaConnectionForCurrentOrg();
@@ -161,7 +163,7 @@ export type RefreshMetaTokenScopesResult = {
 
 export async function refreshMetaTokenScopesAction(): Promise<RefreshMetaTokenScopesResult> {
   if (!(await hasPermission("upload_artwork"))) {
-    return { success: false, error: "You do not have permission to refresh Meta token scopes." };
+    return { success: false, error: "You do not have permission to check Facebook permissions." };
   }
 
   const organization = await getLatestOrganization();
@@ -478,9 +480,8 @@ export async function sendInboxReplyAction(input: {
       return {
         success: false,
         error:
-          "Cannot reply to Facebook comments — your stored Page token is missing pages_manage_engagement. " +
-          "Adding the scope in Meta Developer Dashboard does not update an existing token. " +
-          "Go to Settings → Meta and click Reconnect with Facebook to issue a new token with comment-reply permissions.",
+          "Can’t reply to Facebook comments yet. Go to Settings → Meta and click Reconnect with Facebook " +
+          "so comment replies are allowed, then try again.",
       };
     }
   }
@@ -491,8 +492,7 @@ export async function sendInboxReplyAction(input: {
       return {
         success: false,
         error:
-          "Cannot reply to Instagram comments — missing instagram_manage_comments on your Page token. " +
-          "Go to Settings → Meta and reconnect Facebook.",
+          "Can’t reply to Instagram comments yet. Go to Settings → Meta and reconnect Facebook, then try again.",
       };
     }
   }
@@ -671,7 +671,7 @@ export async function repostTaggedPostAction(input: {
   if (!mediaUrl) {
     return {
       success: false,
-      error: "No media URL available for this tagged post. Try syncing from Meta settings.",
+      error: "No media URL available for this tagged post. Refresh the inbox from Settings → Meta.",
     };
   }
 
@@ -840,8 +840,7 @@ export async function setInboxMessageReactionAction(input: {
         return {
           success: false,
           error:
-            "Cannot like Facebook comments — your Page token is missing pages_manage_engagement. " +
-            "Go to Settings → Meta and click Reconnect with Facebook.",
+            "Can’t like Facebook comments yet. Go to Settings → Meta and click Reconnect with Facebook, then try again.",
         };
       }
     }
@@ -864,8 +863,7 @@ export async function setInboxMessageReactionAction(input: {
         return {
           success: false,
           error:
-            "Cannot like Instagram comments — missing instagram_manage_engagement on your token. " +
-            "Go to Settings → Meta and reconnect Facebook (add the Like Media and Comments permission).",
+            "Can’t like Instagram comments yet. Go to Settings → Meta and reconnect Facebook, then try again.",
         };
       }
     }

@@ -106,7 +106,7 @@ export function CommunicationsParentPostCard({
         </div>
       ) : (
         <p className="mt-2 px-3 pb-3 text-[11px] text-cos-muted">
-          Image unavailable — text-only post, or Sync Now to refresh media.
+          Image unavailable — text-only post, or refresh inbox to update media.
         </p>
       )}
 

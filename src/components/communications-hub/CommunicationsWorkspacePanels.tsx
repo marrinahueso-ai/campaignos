@@ -504,27 +504,34 @@ export function CommunicationsReplySection({
   return (
     <div className="border-t border-cos-border px-5 py-5">
       <div className="rounded-xl border border-[#b8dcc4] bg-[#f4fbf6] p-4">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <Sparkles className="h-4 w-4 fill-[#f5c842] text-[#f5c842]" aria-hidden />
-          <p className="text-sm font-semibold text-cos-text">
-            {isSent ? "Write another reply" : "AI Suggested Reply"}
-          </p>
-          {displayBody && confidenceLabel && confidence != null ? (
-            <span
-              className={cn(
-                "rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
-                confidence >= 85
-                  ? "bg-[#e8f5ec] text-[#1a6b4a]"
-                  : confidence >= 60
-                    ? "bg-[#fff4e5] text-[#b45309]"
-                    : "bg-[#fef2f2] text-[#b91c1c]",
-              )}
-            >
-              {confidenceLabel}
-            </span>
-          ) : null}
-          {isPending && !displayBody ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-cos-muted" />
+        <div className="mb-3 space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Sparkles className="h-4 w-4 fill-[#f5c842] text-[#f5c842]" aria-hidden />
+            <p className="text-sm font-semibold text-cos-text">
+              {isSent ? "Write another reply" : "AI suggested reply"}
+            </p>
+            {displayBody && confidenceLabel && confidence != null ? (
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
+                  confidence >= 85
+                    ? "bg-[#e8f5ec] text-[#1a6b4a]"
+                    : confidence >= 60
+                      ? "bg-[#fff4e5] text-[#b45309]"
+                      : "bg-[#fef2f2] text-[#b91c1c]",
+                )}
+              >
+                {confidenceLabel}
+              </span>
+            ) : null}
+            {isPending && !displayBody ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-cos-muted" />
+            ) : null}
+          </div>
+          {!isSent ? (
+            <p className="text-xs text-cos-muted">
+              You approve before anything sends — AI never sends on its own.
+            </p>
           ) : null}
         </div>
 

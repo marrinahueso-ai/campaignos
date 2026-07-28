@@ -40,7 +40,7 @@ function MetaConnectionBadge({ connection }: { connection: InboxConnectionStatus
         href="/settings/meta"
         className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900 transition-colors hover:border-amber-300"
       >
-        Meta not configured
+        Facebook isn’t set up yet
       </Link>
     );
   }
@@ -52,7 +52,7 @@ function MetaConnectionBadge({ connection }: { connection: InboxConnectionStatus
         className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800 transition-colors hover:border-red-300"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden />
-        Reconnect Meta
+        Reconnect Facebook
       </Link>
     );
   }
@@ -77,7 +77,7 @@ function MetaConnectionBadge({ connection }: { connection: InboxConnectionStatus
       className="inline-flex items-center gap-2 rounded-full border border-[#b8dcc4] bg-[#e8f5ec] px-3 py-1.5 text-xs font-medium text-[#1a6b4a] transition-colors hover:border-[#9ecfb8]"
       title={
         connection.lastSyncError
-          ? `Last sync error: ${connection.lastSyncError}`
+          ? `Couldn’t update inbox: ${connection.lastSyncError}`
           : undefined
       }
     >

@@ -35,7 +35,7 @@ export function InsightsRecommendationsDrawer({
               Recommendations
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-cos-muted">
-              Plain-language highlights from your synced Facebook and Instagram
+              Plain-language highlights from your Facebook and Instagram
               performance — not AI-generated.
             </p>
             <p className="mt-3 text-sm leading-relaxed text-cos-text">

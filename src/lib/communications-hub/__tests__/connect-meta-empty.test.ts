@@ -25,8 +25,13 @@ describe("Communications Connect Meta Ease empty", () => {
     assert.match(empty, /Facebook Page Inbox/);
     assert.match(empty, /Instagram DMs/);
     assert.match(empty, /No ads inbox/);
-    assert.match(empty, /No Messenger[\s\S]*marketing blasts/);
+    assert.match(empty, /No[\s\S]*Messenger[\s\S]*marketing blasts/);
     assert.match(empty, /No cold outreach/);
+    assert.match(empty, /your team can answer people/);
+    assert.match(empty, /Never auto-sent/);
+    assert.match(empty, /Hey Ralli team/);
+    assert.doesNotMatch(empty, /\bPTA\b/);
+    assert.doesNotMatch(empty, /school Page/);
     assert.match(empty, /Connect with Facebook/);
     assert.match(empty, /Meta settings/);
     assert.match(empty, /Why we ask for Page messaging permissions/);

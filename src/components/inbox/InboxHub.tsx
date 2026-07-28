@@ -123,7 +123,7 @@ function InboxStatusChip({ connection }: { connection: InboxConnectionStatus }) 
         href="/settings/meta"
         className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1.5 text-xs font-medium text-amber-900 transition-colors hover:border-amber-300"
       >
-        Meta not configured
+        Facebook isn’t set up yet
       </Link>
     );
   }
@@ -147,7 +147,7 @@ function InboxStatusChip({ connection }: { connection: InboxConnectionStatus }) 
         className="inline-flex items-center gap-2 rounded-full border border-[#b8dcc4] bg-[#e8f5ec] px-3.5 py-1.5 text-xs font-medium text-[#1a6b4a] transition-colors hover:border-[#9ecfb8]"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-[#1a6b4a]" aria-hidden />
-        Connected • Pro plan
+        {connection.pageName ?? "Facebook connected"}
       </Link>
       <span className="text-xs text-[#8a8a88]">
         Updated {connection.lastSyncedAt ? formatRelativeUpdated(connection.lastSyncedAt) : "just now"}
@@ -534,8 +534,8 @@ export function InboxHub({ data }: InboxHubProps) {
             Inbox
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#8a8a88]">
-            Messages, comments, and mentions from all your channels. AI searches your content
-            first to give smart, helpful replies.
+            Messages, comments, and mentions from your Facebook Page and Instagram. AI suggests
+            drafts — you approve before anything sends.
           </p>
         </div>
         <InboxStatusChip connection={connection} />
