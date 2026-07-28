@@ -1,5 +1,7 @@
 "use client";
 
+import { WarmBreathFrame } from "@/components/motion/WarmBreathFrame";
+
 export type RevisionArtScope = "feed" | "story" | "both";
 
 type RevisionArtworkPairProps = {
@@ -9,7 +11,7 @@ type RevisionArtworkPairProps = {
   subtitle: string;
   /** Which slot(s) show the “AI updated” badge. */
   artUpdated?: RevisionArtScope | false | null;
-  /** Which slot(s) play the regen shimmer. */
+  /** Which slot(s) play the regen shimmer / warm breath while waiting. */
   animating?: RevisionArtScope | false | null;
   /** Soft hint under slots for creator edit affordance. */
   showEditHints?: boolean;
@@ -49,31 +51,36 @@ function ArtSlot({
       data-has-art={url ? "true" : "false"}
     >
       <div className="rev-art-slot-label">{label}</div>
-      <div
-        className={[
-          "rev-art",
-          isStory ? "is-story" : "is-feed",
-          !url ? "is-empty" : "",
-          animating ? "is-regen" : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        role="img"
-        aria-label={url ? `${label} preview` : `${label}: ${emptyLabel}`}
+      <WarmBreathFrame
+        active={animating}
+        label={`Generating ${isStory ? "story" : "feed"} artwork`}
       >
-        {url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" />
-        ) : null}
-        {updated ? <span className="rev-art-badge">AI updated</span> : null}
-        {!url ? (
-          <div className="rev-art-fallback">
-            <strong>{title}</strong>
-            {subtitle ? <span>{subtitle}</span> : null}
-            <span className="rev-art-empty-hint">{emptyLabel}</span>
-          </div>
-        ) : null}
-      </div>
+        <div
+          className={[
+            "rev-art",
+            isStory ? "is-story" : "is-feed",
+            !url ? "is-empty" : "",
+            animating ? "is-regen" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          role="img"
+          aria-label={url ? `${label} preview` : `${label}: ${emptyLabel}`}
+        >
+          {url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={url} alt="" />
+          ) : null}
+          {updated ? <span className="rev-art-badge">AI updated</span> : null}
+          {!url ? (
+            <div className="rev-art-fallback">
+              <strong>{title}</strong>
+              {subtitle ? <span>{subtitle}</span> : null}
+              <span className="rev-art-empty-hint">{emptyLabel}</span>
+            </div>
+          ) : null}
+        </div>
+      </WarmBreathFrame>
     </div>
   );
 }

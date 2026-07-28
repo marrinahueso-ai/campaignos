@@ -1,0 +1,315 @@
+/* Ready to Ralli — final Approve & schedule celebration */
+
+.ralli-yay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(42, 38, 34, 0.42);
+  backdrop-filter: blur(3px);
+}
+
+.ralli-yay__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ralli-yay__stage {
+  position: relative;
+  width: min(100%, 420px);
+  z-index: 1;
+}
+
+.ralli-yay__confetti {
+  position: absolute;
+  inset: -12px -8px -24px;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 6;
+}
+
+.ralli-yay__piece {
+  position: absolute;
+  top: -10px;
+  width: 7px;
+  height: 9px;
+  border-radius: 1px;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.ralli-yay__confetti.is-active .ralli-yay__piece {
+  animation: ralli-confetti-fall var(--dur, 1.6s) cubic-bezier(0.22, 0.8, 0.3, 1)
+    forwards;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes ralli-confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx, 0), var(--dy, 160px), 0)
+      rotate(var(--rot, 200deg)) scale(0.8);
+  }
+}
+
+.ralli-yay__card {
+  position: relative;
+  border-radius: 24px;
+  border: 1px solid rgba(42, 38, 34, 0.1);
+  background:
+    radial-gradient(
+      ellipse 90% 70% at 50% 0%,
+      rgba(196, 146, 46, 0.16),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 10% 90%,
+      rgba(42, 122, 134, 0.1),
+      transparent 50%
+    ),
+    #f6f2eb;
+  box-shadow: 0 20px 48px rgba(42, 38, 34, 0.16);
+  padding: 28px 22px 24px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.ralli-yay__card.is-go {
+  animation: ralli-yay-pop 2s cubic-bezier(0.34, 1.45, 0.64, 1) 1;
+}
+
+@keyframes ralli-yay-pop {
+  0% {
+    transform: scale(0.94);
+  }
+  18% {
+    transform: scale(1.035);
+  }
+  32% {
+    transform: scale(0.995);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.ralli-yay__check {
+  width: 56px;
+  height: 56px;
+  margin: 4px auto 10px;
+  border-radius: 50%;
+  background: #2f4a3c;
+  color: #f6f2eb;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 20px rgba(47, 74, 60, 0.28);
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+.ralli-yay__check svg {
+  width: 28px;
+  height: 28px;
+}
+
+.ralli-yay__card.is-go .ralli-yay__check,
+.ralli-yay__card.is-static .ralli-yay__check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ralli-yay__card.is-go .ralli-yay__check {
+  animation: ralli-check-pop 0.65s cubic-bezier(0.34, 1.45, 0.64, 1) 0.08s both;
+}
+
+@keyframes ralli-check-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ralli-yay__headline {
+  margin: 0;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: clamp(2rem, 5vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #2f4a3c;
+  opacity: 0;
+  transform: translateY(16px) scale(0.92);
+}
+
+.ralli-yay__card.is-go .ralli-yay__headline,
+.ralli-yay__card.is-static .ralli-yay__headline {
+  opacity: 1;
+  transform: none;
+}
+
+.ralli-yay__card.is-go .ralli-yay__headline {
+  animation: ralli-headline-pop 0.7s cubic-bezier(0.34, 1.45, 0.64, 1) 0.18s
+    both;
+}
+
+@keyframes ralli-headline-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.9);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ralli-yay__sub {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5c554c;
+  opacity: 0;
+}
+
+.ralli-yay__card.is-go .ralli-yay__sub,
+.ralli-yay__card.is-static .ralli-yay__sub {
+  opacity: 1;
+}
+
+.ralli-yay__card.is-go .ralli-yay__sub {
+  animation: ralli-sub-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.38s both;
+}
+
+@keyframes ralli-sub-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ralli-yay__schedule {
+  margin: 16px auto 0;
+  max-width: 320px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(
+    135deg,
+    rgba(47, 74, 60, 0.96),
+    rgba(42, 122, 134, 0.9) 70%,
+    rgba(196, 146, 46, 0.85)
+  );
+  color: #f6f2eb;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.ralli-yay__card.is-go .ralli-yay__schedule,
+.ralli-yay__card.is-static .ralli-yay__schedule {
+  opacity: 1;
+  transform: none;
+}
+
+.ralli-yay__card.is-go .ralli-yay__schedule {
+  animation: ralli-sub-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
+  box-shadow:
+    0 0 0 2px rgba(255, 252, 247, 0.4),
+    0 0 24px rgba(196, 146, 46, 0.35);
+}
+
+.ralli-yay__schedule-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 252, 247, 0.14);
+  border: 1px solid rgba(255, 252, 247, 0.22);
+}
+
+.ralli-yay__schedule-kicker {
+  margin: 0 0 2px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.ralli-yay__schedule-when {
+  margin: 0;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.ralli-yay__dismiss {
+  margin-top: 16px;
+  border: none;
+  background: #2a2622;
+  color: #fffcf7;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ralli-yay__dismiss:hover {
+  background: #1a1714;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ralli-yay__card.is-go {
+    animation: none !important;
+  }
+
+  .ralli-yay__card.is-go .ralli-yay__check,
+  .ralli-yay__card.is-go .ralli-yay__headline,
+  .ralli-yay__card.is-go .ralli-yay__sub,
+  .ralli-yay__card.is-go .ralli-yay__schedule {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .ralli-yay__confetti.is-active .ralli-yay__piece {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+}

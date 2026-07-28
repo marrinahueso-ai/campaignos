@@ -107,6 +107,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Inspiration / creative setup, logos, milestones — **shipped**
 - Artwork guidance from Creative Setup: Overall inspiration comment + per-image comments (not legacy Notes to AI); logo / brand colors / voice toggles are explicit opt-in only (org brand kit is not auto-surfaced or auto-applied) — see [create-with-ai-artwork-inputs.md](../qa/create-with-ai-artwork-inputs.md) — **shipped** (QA matrix + Playwright wiring)
 - Generate artwork + captions per milestone — **shipped**
+- Social artwork waiting motion: **Warm breath** (subtle scale + cream/amber/teal wash) while feed/story generate or regenerate in Create with AI Preview / Edit Artwork / Social composer and Approvals Revision; honors `prefers-reduced-motion` — **shipped** (mockup: [`public/approvals-celebration-motions-mockup.html`](../../public/approvals-celebration-motions-mockup.html))
 - Reject generated artwork: subtle thumbs-down icon on Preview (and Edit Artwork regenerated preview) discards that feed/story slot so you can regenerate — **shipped**
 - Artwork Apply hydrate: regenerated artwork sticks after Apply (local backup + hydrate merge so remount / Preview hydrate does not orphan richer in-memory art) — **shipped**
 - 4-step flow (Creative Setup → Milestones → Preview → Review & Approve) — **shipped**
@@ -152,6 +153,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Approvals hub: unused Filters button removed; search matches campaign/milestone, status, assignee, next action, delivery/platforms, and schedule — **shipped**
 - Approvals customer copy: hub + event Approvals tab + open review + approve/request/retry errors + change-request email use org/Page/team language — **shipped**
 - Approvals **open review** (replaces cramped drawer): side-by-side feed · 1:1 + story · 9:16, schedule hero, caption, timeline; **Approve & schedule** / **Request changes** (no note on open view — note + tags on `/approvals/revision?mode=approver`) — **shipped** (mockup: [`public/approvals-open-view-mockup.html`](../../public/approvals-open-view-mockup.html))
+- Final approve celebration: **Ready to Ralli** headline + brand confetti (~2s) after successful **Approve & schedule** (Approvals hub + event Approvals tab); reduced motion shows static headline + check — **shipped** (mockup: [`public/approvals-celebration-motions-mockup.html`](../../public/approvals-celebration-motions-mockup.html))
 - Approvals Ease focus cards: primary **Open full view** only (approve / request changes live in the open review dialog) — **shipped**
 - Event detail Approvals tab: Ease pulse filters (Needs you / Scheduled / Drafts / Posted / Failed / Changes) + open review Retry — **shipped**
 - Approvals table Actions column shows **View** only (approve / request changes stay in the open review) — **shipped**

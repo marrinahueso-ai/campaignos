@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Download, ImageIcon, ThumbsDown, X } from "lucide-react";
+import { WarmBreathFrame } from "@/components/motion/WarmBreathFrame";
 import { Button } from "@/components/ui/Button";
 import { isPlaceholderArtworkUrl } from "@/lib/campaign-builder-v2/platform-utils";
 import { cn } from "@/lib/utils/cn";
@@ -16,6 +17,8 @@ interface ArtworkPlaceholderProps {
   /** First visible preview image — helps LCP without changing layout. */
   priority?: boolean;
   alt?: string;
+  /** Soft warm-breath wait while AI generates / regenerates this slot. */
+  isGenerating?: boolean;
   /** Icon-only download control on the image corner. */
   onDownload?: () => void;
   downloadDisabled?: boolean;
@@ -42,6 +45,7 @@ export function ArtworkPlaceholder({
   className,
   priority = false,
   alt = "",
+  isGenerating = false,
   onDownload,
   downloadDisabled = false,
   downloadLabel = "Download artwork",
@@ -52,6 +56,18 @@ export function ArtworkPlaceholder({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const hasImage = Boolean(imageUrl && !isPlaceholderArtworkUrl(imageUrl));
   const hasCornerActions = Boolean(onDownload || onReject);
+  const displayLabel = isGenerating ? "Generating…" : label;
+  const displayHint = isGenerating
+    ? "Warming up feed & story artwork"
+    : hint;
+
+  function withBreath(node: ReactNode) {
+    return (
+      <WarmBreathFrame active={isGenerating} label="Generating artwork">
+        {node}
+      </WarmBreathFrame>
+    );
+  }
 
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -63,7 +79,7 @@ export function ArtworkPlaceholder({
   }, [lightboxOpen]);
 
   if (hasImage && imageUrl) {
-    return (
+    return withBreath(
       <>
         <div
           className={cn(
@@ -223,11 +239,11 @@ export function ArtworkPlaceholder({
             </div>
           </div>
         ) : null}
-      </>
+      </>,
     );
   }
 
-  return (
+  return withBreath(
     <div
       className={cn(
         "flex flex-col items-center justify-center rounded-[16px] border border-dashed border-cos-border bg-cos-bg/30 px-4 py-6 text-center",
@@ -236,8 +252,8 @@ export function ArtworkPlaceholder({
       )}
     >
       <ImageIcon className="h-8 w-8 text-cos-muted" strokeWidth={1.25} />
-      <p className="mt-3 text-sm font-medium text-cos-text">{label}</p>
-      <p className="mt-1 text-xs text-cos-muted">{hint}</p>
-    </div>
+      <p className="mt-3 text-sm font-medium text-cos-text">{displayLabel}</p>
+      <p className="mt-1 text-xs text-cos-muted">{displayHint}</p>
+    </div>,
   );
 }

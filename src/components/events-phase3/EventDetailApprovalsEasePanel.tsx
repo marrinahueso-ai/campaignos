@@ -18,6 +18,7 @@ import {
   EaseSplit,
 } from "@/components/events-phase3/EventDetailEaseUi";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
+import { ApprovalClearedCelebration } from "@/components/motion/ApprovalClearedCelebration";
 import {
   approveUnifiedItemAction,
   retryFailedUnifiedApprovalAction,
@@ -131,6 +132,10 @@ export function EventDetailApprovalsEasePanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [celebration, setCelebration] = useState<{
+    scheduleLabel: string | null;
+    scheduleSubline: string | null;
+  } | null>(null);
 
   const scoped = useMemo(
     () => items.filter((item) => item.eventId === lockedEventId),
@@ -173,6 +178,7 @@ export function EventDetailApprovalsEasePanel({
     setIsSubmitting(true);
     setActionError(null);
     try {
+      const approvedItem = reviewItem;
       const result = await approveUnifiedItemAction({
         eventId: reviewItem.eventId,
         communicationItemId: reviewItem.communicationItemId,
@@ -185,6 +191,12 @@ export function EventDetailApprovalsEasePanel({
         return;
       }
       setReviewItem(null);
+      setCelebration({
+        scheduleLabel: approvedItem.scheduleLabel,
+        scheduleSubline: approvedItem.scheduleLabel
+          ? `Ready to post · ${approvedItem.scheduleLabel}`
+          : "Approved and ready to post",
+      });
       if (result.warning) {
         setActionError(result.warning);
       }
@@ -380,6 +392,13 @@ export function EventDetailApprovalsEasePanel({
             ? canActOnUnifiedItem(reviewItem, canViewAll)
             : false
         }
+      />
+
+      <ApprovalClearedCelebration
+        open={Boolean(celebration)}
+        scheduleLabel={celebration?.scheduleLabel}
+        scheduleSubline={celebration?.scheduleSubline}
+        onDismiss={() => setCelebration(null)}
       />
     </section>
   );

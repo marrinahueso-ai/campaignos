@@ -6,6 +6,7 @@ import { DM_Sans, Fraunces } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
+import { WarmBreathFrame } from "@/components/motion/WarmBreathFrame";
 
 const smcSans = DM_Sans({
   subsets: ["latin"],
@@ -1239,49 +1240,54 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                       </div>
                       ···
                     </div>
-                    <div
-                      className="feed-art zoomable"
-                      role="button"
-                      tabIndex={0}
-                      aria-label="Enlarge artwork"
-                      onClick={() => openLightbox("feed")}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          openLightbox("feed");
-                        }
-                      }}
-                      style={
-                        feedUrl
-                          ? {
-                              backgroundImage: `url(${feedUrl})`,
-                              backgroundSize: "cover",
-                              backgroundPosition: "center",
-                            }
-                          : {
-                              background: `radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%), ${gradient}`,
-                            }
-                      }
+                    <WarmBreathFrame
+                      active={isGenerating}
+                      label="Generating feed artwork"
                     >
-                      <span className="badge">Feed</span>
-                      <div className="title">{selectedMilestone?.name ?? "Milestone"}</div>
-                      <button
-                        type="button"
-                        className="art-dl"
-                        title="Download artwork"
-                        aria-label="Download artwork"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleDownload(feedUrl, "feed");
+                      <div
+                        className="feed-art zoomable"
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Enlarge artwork"
+                        onClick={() => openLightbox("feed")}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            openLightbox("feed");
+                          }
                         }}
+                        style={
+                          feedUrl
+                            ? {
+                                backgroundImage: `url(${feedUrl})`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
+                              }
+                            : {
+                                background: `radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%), ${gradient}`,
+                              }
+                        }
                       >
-                        <svg viewBox="0 0 24 24">
-                          <path d="M12 3v12" />
-                          <path d="m7 11 5 5 5-5" />
-                          <path d="M5 21h14" />
-                        </svg>
-                      </button>
-                    </div>
+                        <span className="badge">Feed</span>
+                        <div className="title">{selectedMilestone?.name ?? "Milestone"}</div>
+                        <button
+                          type="button"
+                          className="art-dl"
+                          title="Download artwork"
+                          aria-label="Download artwork"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDownload(feedUrl, "feed");
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24">
+                            <path d="M12 3v12" />
+                            <path d="m7 11 5 5 5-5" />
+                            <path d="M5 21h14" />
+                          </svg>
+                        </button>
+                      </div>
+                    </WarmBreathFrame>
                     <div className="ig-meta">
                       <div className="likes">♡ Liked by families</div>
                       <div className="cap">
@@ -1292,47 +1298,52 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                   </div>
                 ) : (
                   <div>
-                    <div
-                      className="story-frame zoomable"
-                      role="button"
-                      tabIndex={0}
-                      aria-label="Enlarge story artwork"
-                      onClick={() => openLightbox("story")}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          openLightbox("story");
-                        }
-                      }}
-                      style={
-                        storyUrl
-                          ? {
-                              backgroundImage: `url(${storyUrl})`,
-                              backgroundSize: "cover",
-                              backgroundPosition: "center",
-                            }
-                          : { background: `linear-gradient(160deg, ${gradient})` }
-                      }
+                    <WarmBreathFrame
+                      active={isGenerating}
+                      label="Generating story artwork"
                     >
-                      <div className="st">{selectedMilestone?.name ?? "Milestone"}</div>
-                      <div className="sub">{formatLongDate(selectedMilestone?.suggestedDate)}</div>
-                      <button
-                        type="button"
-                        className="art-dl"
-                        title="Download artwork"
-                        aria-label="Download artwork"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleDownload(storyUrl, "story");
+                      <div
+                        className="story-frame zoomable"
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Enlarge story artwork"
+                        onClick={() => openLightbox("story")}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            openLightbox("story");
+                          }
                         }}
+                        style={
+                          storyUrl
+                            ? {
+                                backgroundImage: `url(${storyUrl})`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
+                              }
+                            : { background: `linear-gradient(160deg, ${gradient})` }
+                        }
                       >
-                        <svg viewBox="0 0 24 24">
-                          <path d="M12 3v12" />
-                          <path d="m7 11 5 5 5-5" />
-                          <path d="M5 21h14" />
-                        </svg>
-                      </button>
-                    </div>
+                        <div className="st">{selectedMilestone?.name ?? "Milestone"}</div>
+                        <div className="sub">{formatLongDate(selectedMilestone?.suggestedDate)}</div>
+                        <button
+                          type="button"
+                          className="art-dl"
+                          title="Download artwork"
+                          aria-label="Download artwork"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDownload(storyUrl, "story");
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24">
+                            <path d="M12 3v12" />
+                            <path d="m7 11 5 5 5-5" />
+                            <path d="M5 21h14" />
+                          </svg>
+                        </button>
+                      </div>
+                    </WarmBreathFrame>
                   </div>
                 )}
               </div>

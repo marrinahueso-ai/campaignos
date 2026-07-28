@@ -1,0 +1,78 @@
+/* Warm breath — waiting frame for social artwork generate / regenerate */
+
+.warm-breath {
+  position: relative;
+  width: 100%;
+  isolation: isolate;
+}
+
+.warm-breath__aura {
+  position: absolute;
+  inset: -14px;
+  border-radius: 28px;
+  background:
+    radial-gradient(
+      ellipse 70% 70% at 40% 35%,
+      rgba(196, 146, 46, 0.28),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 65% 65% at 65% 70%,
+      rgba(42, 122, 134, 0.22),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 80% 80% at 50% 50%,
+      rgba(47, 74, 60, 0.12),
+      transparent 70%
+    );
+  animation: warm-breath-wash 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.warm-breath__content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  transform-origin: center center;
+  animation: warm-breath-scale 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes warm-breath-scale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.028);
+  }
+}
+
+@keyframes warm-breath-wash {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .warm-breath__aura,
+  .warm-breath__content {
+    animation: none !important;
+  }
+
+  .warm-breath__aura {
+    opacity: 0.75;
+    transform: none;
+  }
+
+  .warm-breath__content {
+    transform: none;
+  }
+}

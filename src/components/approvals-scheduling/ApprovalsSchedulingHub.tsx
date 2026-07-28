@@ -15,6 +15,7 @@ import {
 } from "@/components/approvals-scheduling/ApprovalsEaseList";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
+import { ApprovalClearedCelebration } from "@/components/motion/ApprovalClearedCelebration";
 import {
   approveUnifiedItemAction,
   enrichUnifiedApprovalItemPreviewAction,
@@ -107,6 +108,10 @@ export function ApprovalsSchedulingHub({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [celebration, setCelebration] = useState<{
+    scheduleLabel: string | null;
+    scheduleSubline: string | null;
+  } | null>(null);
 
   const eventScopedItems = useMemo(() => {
     if (!lockedId) {
@@ -206,6 +211,7 @@ export function ApprovalsSchedulingHub({
 
     setIsSubmitting(true);
     try {
+      const approvedItem = reviewItem;
       const result = await approveUnifiedItemAction({
         eventId: reviewItem.eventId,
         communicationItemId: reviewItem.communicationItemId,
@@ -217,6 +223,12 @@ export function ApprovalsSchedulingHub({
 
       if (result.success) {
         setReviewItem(null);
+        setCelebration({
+          scheduleLabel: approvedItem.scheduleLabel,
+          scheduleSubline: approvedItem.scheduleLabel
+            ? `Ready to post · ${approvedItem.scheduleLabel}`
+            : "Approved and ready to post",
+        });
         if (result.warning) {
           setActionError(result.warning);
         }
@@ -536,6 +548,13 @@ export function ApprovalsSchedulingHub({
         }
         isSubmitting={isSubmitting || retryingId === reviewItem?.id}
         canAct={canActOnReviewItem}
+      />
+
+      <ApprovalClearedCelebration
+        open={Boolean(celebration)}
+        scheduleLabel={celebration?.scheduleLabel}
+        scheduleSubline={celebration?.scheduleSubline}
+        onDismiss={() => setCelebration(null)}
       />
     </div>
   );

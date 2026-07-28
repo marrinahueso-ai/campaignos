@@ -242,6 +242,7 @@ export function EditArtworkModal({
               <ArtworkPlaceholder
                 aspectClassName={aspectClassForView("feed")}
                 imageUrl={previewArtwork.feedUrl}
+                isGenerating={isGenerating}
                 onReject={
                   previewArtwork.feedUrl
                     ? () => handleRejectPreview("feed")
@@ -253,6 +254,7 @@ export function EditArtworkModal({
                 aspectClassName={aspectClassForView("story")}
                 imageUrl={previewArtwork.storyUrl}
                 className="max-h-64"
+                isGenerating={isGenerating}
                 onReject={
                   previewArtwork.storyUrl
                     ? () => handleRejectPreview("story")

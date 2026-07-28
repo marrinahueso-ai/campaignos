@@ -628,6 +628,7 @@ export function PreviewStep() {
                               imageUrl={imageUrl}
                               alt={`${viewLabel} artwork`}
                               priority={view === "feed"}
+                              isGenerating={selectedIsGenerating}
                               className={
                                 view === "story" ? "max-h-64" : undefined
                               }

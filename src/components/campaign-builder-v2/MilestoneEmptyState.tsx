@@ -24,7 +24,10 @@ export function MilestoneEmptyState({
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8 py-16">
       <div className="w-full max-w-md">
-        <ArtworkPlaceholder aspectClassName="aspect-square" />
+        <ArtworkPlaceholder
+          aspectClassName="aspect-square"
+          isGenerating={isGenerating}
+        />
       </div>
       <div className="max-w-sm text-center">
         <p className="font-display text-xl text-cos-text">
