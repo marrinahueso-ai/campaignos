@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   Calendar,
   CheckCircle2,
@@ -33,8 +32,6 @@ interface ReviewDrawerProps {
   item: UnifiedApprovalItem | null;
   open: boolean;
   onClose: () => void;
-  comment: string;
-  onCommentChange: (value: string) => void;
   onApprove: () => void;
   onRequestChanges: () => void;
   onRetry?: () => void;
@@ -50,13 +47,21 @@ function HistoryList({ entries }: { entries: UnifiedApprovalHistoryEntry[] }) {
   }
 
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-2.5">
       {entries.map((entry, index) => (
-        <li key={`${entry.timestamp}-${index}`} className="flex gap-3 text-sm">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-cos-success" />
+        <li
+          key={`${entry.timestamp}-${index}`}
+          className="grid grid-cols-[18px_1fr] gap-2.5 text-[13px] leading-snug"
+        >
+          <span
+            className="mt-0.5 grid h-[18px] w-[18px] place-items-center rounded-full bg-[rgba(47,74,60,0.12)] text-[11px] font-extrabold text-[#2f4a3c]"
+            aria-hidden
+          >
+            ✓
+          </span>
           <div>
-            <p className="text-cos-text">{entry.label}</p>
-            <p className="text-xs text-cos-muted">
+            <p className="font-bold text-cos-text">{entry.label}</p>
+            <p className="mt-0.5 text-xs text-cos-muted">
               {entry.actor} · {formatDateTime(entry.timestamp)}
             </p>
           </div>
@@ -81,12 +86,36 @@ function platformLabel(item: UnifiedApprovalItem): string {
     .join(" · ");
 }
 
+function scheduleSubline(item: UnifiedApprovalItem): string {
+  if (item.deliveryMethod === "manual-email") {
+    return "Email post kit — ready once you approve";
+  }
+  if (item.deliveryMethod === "draft-only") {
+    return "Draft — ready once you approve";
+  }
+  if (item.deliveryMethod === "publish-now" || item.deliveryMethod === "auto-publish") {
+    return "Publishes when you approve";
+  }
+  if (item.scheduleLabel) {
+    return "Scheduled — ready once you approve";
+  }
+  return "Schedule not set yet";
+}
+
+function typeChipLabel(item: UnifiedApprovalItem): string {
+  const hasFeed = Boolean(item.preview.feedArtworkUrl);
+  const hasStory = Boolean(item.preview.storyArtworkUrl);
+  if (hasFeed && hasStory) return "Social · Feed + Story";
+  if (hasStory) return "Social · Story";
+  if (hasFeed) return "Social · Feed";
+  if (item.platforms.includes("email")) return "Email";
+  return "Social";
+}
+
 export function ReviewDrawer({
   item,
   open,
   onClose,
-  comment,
-  onCommentChange,
   onApprove,
   onRequestChanges,
   onRetry,
@@ -122,47 +151,41 @@ export function ReviewDrawer({
     item.preview.storyCaptionSnippet.trim() !== caption
       ? item.preview.storyCaptionSnippet.trim()
       : null;
-  const heroUrl =
-    item.preview.feedArtworkUrl ||
-    item.preview.storyArtworkUrl ||
-    item.thumbnailUrl;
-  const hasFeed = Boolean(item.preview.feedArtworkUrl);
-  const hasStory = Boolean(item.preview.storyArtworkUrl);
-  const scheduleLine = [
-    item.scheduleLabel,
-    platformLabel(item),
-    item.deliveryMethod === "manual-email"
-      ? "Email post kit"
-      : item.deliveryMethod === "draft-only"
-        ? "Draft"
-        : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const feedUrl = item.preview.feedArtworkUrl;
+  const storyUrl = item.preview.storyArtworkUrl;
+  const platforms = platformLabel(item);
+  const whenLabel = item.scheduleLabel || "Schedule not set";
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
       <button
         type="button"
-        aria-label="Close review drawer"
-        className="flex-1 bg-[rgba(42,38,34,0.28)] transition-opacity"
+        aria-label="Close review"
+        className="absolute inset-0 bg-[rgba(42,38,34,0.4)] backdrop-blur-[2px]"
         onClick={onClose}
       />
       <aside
-        className="flex h-full w-full max-w-[440px] flex-col border-l border-cos-border bg-[#f6f2eb] shadow-[0_20px_48px_rgba(42,38,34,0.12)]"
+        className="relative z-10 flex max-h-[min(94vh,920px)] w-full max-w-[980px] flex-col overflow-hidden rounded-t-[22px] border border-cos-border bg-[#fffcf7] shadow-[0_20px_48px_rgba(42,38,34,0.12)] sm:rounded-[22px]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="review-drawer-title"
       >
-        <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 sm:px-6">
+        <div className="flex items-start justify-between gap-3 border-b border-cos-border px-5 pt-5 pb-4 sm:px-6">
           <div className="min-w-0">
             <h2
               id="review-drawer-title"
-              className="font-display text-2xl tracking-[-0.02em] text-cos-text"
+              className="font-display text-2xl tracking-[-0.02em] text-cos-text sm:text-[1.75rem]"
             >
               {item.campaignName}
             </h2>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-cos-muted">
+              Review feed + story, caption, and when it posts. Notes live on
+              Request changes — not here.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="inline-flex rounded-full bg-[rgba(42,122,134,0.12)] px-2.5 py-1 text-[11px] font-extrabold text-[#2a7a86]">
+                {typeChipLabel(item)}
+              </span>
               <span
                 className={cn(
                   "inline-flex rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] uppercase",
@@ -191,165 +214,147 @@ export function ReviewDrawer({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 pb-6 sm:px-6">
-          {heroUrl ? (
-            <div className="overflow-hidden rounded-[18px] shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
-              {hasFeed ? (
-                <ArtworkLightboxThumbnail
-                  src={item.preview.feedArtworkUrl!}
-                  alt={`${item.milestoneName} feed artwork`}
-                  label="Feed"
-                  variant="feed"
-                  wrapperClassName="w-full"
-                  frameClassName="aspect-square"
-                  placeholder="Feed"
-                />
-              ) : hasStory ? (
-                <ArtworkLightboxThumbnail
-                  src={item.preview.storyArtworkUrl!}
-                  alt={`${item.milestoneName} story artwork`}
-                  label="Story"
-                  variant="story"
-                  wrapperClassName="w-full"
-                  frameClassName="aspect-[9/16] max-h-[360px]"
-                  placeholder="Story"
-                />
-              ) : (
-                <div className="relative aspect-square bg-gradient-to-br from-[#1e4a3a] via-[#6b8171] to-[#c4922e]">
-                  <Image
-                    src={heroUrl}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="440px"
-                    unoptimized
-                  />
-                </div>
-              )}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {/* Schedule hero */}
+          <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3 bg-gradient-to-br from-[#2f4a3c]/[96%] via-[#2a7a86]/90% to-[#c4922e]/85% px-5 py-4 text-[#f6f2eb] sm:grid-cols-[auto_1fr_auto] sm:px-6 sm:py-5">
+            <div
+              className="grid h-12 w-12 place-items-center rounded-[14px] border border-[rgba(255,252,247,0.22)] bg-[rgba(255,252,247,0.14)]"
+              aria-hidden
+            >
+              <Calendar className="h-6 w-6" strokeWidth={1.75} />
             </div>
-          ) : (
-            <div className="flex aspect-square items-center justify-center rounded-[18px] border border-dashed border-cos-border bg-cos-card/60 px-4 text-center">
+            <div className="min-w-0">
+              <p className="text-[11px] font-extrabold tracking-[0.08em] uppercase opacity-85">
+                Posts
+              </p>
+              <p className="font-display text-[clamp(1.25rem,2.4vw,1.7rem)] font-semibold tracking-[-0.02em] leading-tight">
+                {whenLabel}
+              </p>
+              <p className="mt-1 text-[13px] font-medium opacity-90">
+                {scheduleSubline(item)}
+              </p>
+            </div>
+            <div className="col-span-2 inline-flex w-fit items-center gap-2 rounded-full border border-[rgba(255,252,247,0.28)] bg-[rgba(255,252,247,0.16)] px-3.5 py-2 text-[13px] font-bold whitespace-nowrap sm:col-span-1">
+              <span
+                className="h-2 w-2 rounded-full bg-[#5b9bd5] shadow-[0_0_0_2px_rgba(255,252,247,0.25)]"
+                aria-hidden
+              />
+              {platforms}
+            </div>
+          </div>
+
+          <div className="space-y-5 px-5 py-5 sm:px-6">
+            {showChangeRequestBanner ? (
+              <div className="rounded-2xl border border-[rgba(166,90,58,0.25)] bg-[rgba(166,90,58,0.08)] px-4 py-3">
+                <p className="text-[11px] font-extrabold tracking-[0.06em] text-[#a65a3a] uppercase">
+                  Changes requested
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-cos-text">
+                  {changeRequestComment ||
+                    "An approver requested changes to this content."}
+                </p>
+                {editPreviewHref || editArtworkHref ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {editArtworkHref ? (
+                      <Button href={editArtworkHref} variant="primary" size="sm">
+                        Edit artwork
+                      </Button>
+                    ) : null}
+                    {editPreviewHref ? (
+                      <Button
+                        href={editPreviewHref}
+                        variant="secondary"
+                        size="sm"
+                      >
+                        Open in Preview
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className="grid items-start gap-5 lg:grid-cols-[1.15fr_0.85fr]">
               <div>
-                <p className="text-sm font-medium text-cos-text">
-                  No artwork attached
-                </p>
-                <p className="mt-1 text-xs text-cos-muted">
-                  Artwork appears here once this milestone has creatives.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {hasFeed && hasStory ? (
-            <div className="grid grid-cols-2 gap-3">
-              <ArtworkLightboxThumbnail
-                src={item.preview.storyArtworkUrl!}
-                alt={`${item.milestoneName} story artwork`}
-                label="Story"
-                variant="story"
-                wrapperClassName="w-full"
-                frameClassName="aspect-[9/16] max-h-40"
-                placeholder="Story"
-              />
-              <div className="flex items-end text-xs leading-relaxed text-cos-muted">
-                Tap either image to enlarge.
-              </div>
-            </div>
-          ) : null}
-
-          {showChangeRequestBanner ? (
-            <div className="rounded-2xl border border-[rgba(166,90,58,0.25)] bg-[rgba(166,90,58,0.08)] px-4 py-3">
-              <p className="text-[11px] font-extrabold tracking-[0.06em] text-[#a65a3a] uppercase">
-                Changes requested
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-cos-text">
-                {changeRequestComment ||
-                  "An approver requested changes to this content."}
-              </p>
-              {editPreviewHref || editArtworkHref ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {editArtworkHref ? (
-                    <Button href={editArtworkHref} variant="primary" size="sm">
-                      Edit artwork
-                    </Button>
-                  ) : null}
-                  {editPreviewHref ? (
-                    <Button href={editPreviewHref} variant="secondary" size="sm">
-                      Open in Preview
-                    </Button>
-                  ) : null}
+                <div className="mx-auto grid max-w-[420px] grid-cols-2 items-end gap-3.5 max-[520px]:max-w-[280px] max-[520px]:grid-cols-1 max-[520px]:justify-items-center">
+                  <div className="flex min-w-0 flex-col items-center">
+                    <p className="mb-2 text-center text-[10px] font-extrabold tracking-[0.07em] text-cos-muted uppercase">
+                      Feed · 1:1
+                    </p>
+                    <ArtworkLightboxThumbnail
+                      src={feedUrl}
+                      alt={`${item.milestoneName} feed artwork`}
+                      variant="feed"
+                      wrapperClassName="w-full max-w-[280px]"
+                      frameClassName="aspect-square w-full shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                      placeholder="No feed artwork yet"
+                    />
+                  </div>
+                  <div className="flex min-w-0 flex-col items-center">
+                    <p className="mb-2 text-center text-[10px] font-extrabold tracking-[0.07em] text-cos-muted uppercase">
+                      Story · 9:16
+                    </p>
+                    <ArtworkLightboxThumbnail
+                      src={storyUrl}
+                      alt={`${item.milestoneName} story artwork`}
+                      variant="story"
+                      wrapperClassName="w-full max-w-[200px]"
+                      frameClassName="aspect-[9/16] w-full max-h-[360px] shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                      placeholder="No story artwork yet"
+                    />
+                  </div>
                 </div>
-              ) : null}
-            </div>
-          ) : null}
+                <p className="mt-2.5 text-center text-xs leading-snug text-cos-muted">
+                  Tap either image to enlarge
+                </p>
+              </div>
 
-          <div>
-            <p className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
-              Caption
-            </p>
-            <p className="mt-1.5 text-sm leading-relaxed text-cos-muted">
-              {caption || "No caption yet."}
-            </p>
-          </div>
+              <div className="flex min-w-0 flex-col gap-4">
+                <div>
+                  <p className="mb-2 text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
+                    Caption
+                  </p>
+                  <div
+                    className={cn(
+                      "rounded-[14px] border border-cos-border bg-[#f6f2eb] px-4 py-3.5 text-[15px] leading-relaxed text-cos-text",
+                      !caption && "italic text-cos-muted",
+                    )}
+                  >
+                    {caption || "No caption yet."}
+                  </div>
+                </div>
 
-          {storyCaption ? (
-            <div>
-              <p className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
-                Story caption
-              </p>
-              <p className="mt-1.5 text-sm leading-relaxed text-cos-muted">
-                {storyCaption}
-              </p>
-            </div>
-          ) : null}
+                {storyCaption ? (
+                  <div>
+                    <p className="mb-2 text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
+                      Story caption
+                    </p>
+                    <div className="rounded-[14px] border border-cos-border bg-[#f6f2eb] px-4 py-3.5 text-sm leading-relaxed text-cos-text">
+                      {storyCaption}
+                    </div>
+                  </div>
+                ) : null}
 
-          <div>
-            <p className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
-              Schedule
-            </p>
-            <p className="mt-1.5 text-sm leading-relaxed text-cos-muted">
-              {scheduleLine || "Schedule not set"}
-            </p>
-          </div>
-
-          {item.approvalHistory.length > 0 ? (
-            <div>
-              <p className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
-                Approval timeline
-              </p>
-              <div className="mt-2">
-                <HistoryList entries={item.approvalHistory} />
+                {item.approvalHistory.length > 0 ? (
+                  <div>
+                    <p className="mb-2 text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
+                      Approval timeline
+                    </p>
+                    <HistoryList entries={item.approvalHistory} />
+                  </div>
+                ) : null}
               </div>
             </div>
-          ) : null}
-
-          {canAct ? (
-            <div>
-              <label
-                className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase"
-                htmlFor="review-comment"
-              >
-                Note to your teammate (optional)
-              </label>
-              <textarea
-                id="review-comment"
-                value={comment}
-                onChange={(event) => onCommentChange(event.target.value)}
-                rows={3}
-                placeholder="If you’re asking for changes, say what to fix…"
-                className="mt-2 w-full resize-y rounded-[14px] border border-cos-border bg-cos-card px-3 py-3 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
-              />
-            </div>
-          ) : null}
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 border-t border-cos-border bg-[rgba(255,252,247,0.7)] px-5 py-4 sm:px-6">
+        <div className="flex flex-wrap items-center gap-2.5 border-t border-cos-border bg-[rgba(246,242,235,0.55)] px-5 py-4 sm:px-6">
           {showRetry ? (
             <button
               type="button"
               disabled={isSubmitting}
               onClick={onRetry}
-              className="rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card transition hover:-translate-y-px hover:bg-[#1a1714] disabled:opacity-50"
+              className="rounded-full bg-cos-text px-[18px] py-2.5 text-[13px] font-bold text-cos-card transition hover:bg-[#1a1714] disabled:opacity-50"
             >
               {isSubmitting ? "Retrying…" : "Retry"}
             </button>
@@ -360,7 +365,7 @@ export function ReviewDrawer({
                 type="button"
                 disabled={isSubmitting}
                 onClick={onApprove}
-                className="rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card transition hover:-translate-y-px hover:bg-[#1a1714] disabled:opacity-50"
+                className="rounded-full bg-cos-text px-[18px] py-2.5 text-[13px] font-bold text-cos-card transition hover:bg-[#1a1714] disabled:opacity-50"
               >
                 {isSubmitting ? "Saving…" : "Approve & schedule"}
               </button>
@@ -368,10 +373,13 @@ export function ReviewDrawer({
                 type="button"
                 disabled={isSubmitting}
                 onClick={onRequestChanges}
-                className="rounded-full border-[1.5px] border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-text transition hover:-translate-y-px disabled:opacity-50"
+                className="rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-2.5 text-[13px] font-bold text-cos-text transition hover:border-[#6b8171] disabled:opacity-50"
               >
                 Request changes
               </button>
+              <p className="min-w-[160px] flex-1 text-xs text-cos-muted">
+                Review only — leave your note on Request changes.
+              </p>
             </>
           ) : item.workflowStatus === "scheduled" ||
             item.workflowStatus === "posted" ||
@@ -379,7 +387,7 @@ export function ReviewDrawer({
             <button
               type="button"
               disabled
-              className="rounded-full border-[1.5px] border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-muted"
+              className="rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-2.5 text-[13px] font-bold text-cos-muted"
             >
               {item.deliveryMethod === "draft-only"
                 ? "Saved as draft"
@@ -478,7 +486,7 @@ export function ApprovalFlowGuide() {
     {
       icon: CheckCircle2,
       title: "Review & approve",
-      description: "Approve, ask for a tweak, or leave a note",
+      description: "Approve, or request changes with a note",
     },
     {
       icon: Calendar,

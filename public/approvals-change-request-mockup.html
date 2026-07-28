@@ -261,6 +261,48 @@
       font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
       color: var(--muted); margin-bottom: 8px;
     }
+
+    .explainer-strip {
+      margin-bottom: 16px; padding: 12px 14px; border-radius: 14px;
+      border: 1px solid rgba(42, 122, 134, 0.22);
+      background: rgba(42, 122, 134, 0.07);
+      font-size: 13px; color: var(--ink-soft); line-height: 1.45;
+      animation: rise 0.4s var(--ease) both;
+    }
+    .explainer-strip strong { color: var(--teal); font-weight: 700; }
+
+    .schedule-line {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+      margin-bottom: 14px; padding: 10px 12px; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(47, 74, 60, 0.1), rgba(42, 122, 134, 0.1));
+      border: 1px solid rgba(47, 74, 60, 0.14);
+    }
+    .schedule-line .sk {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--teal);
+    }
+    .schedule-line .sw {
+      font-family: var(--serif); font-size: 1.05rem; font-weight: 600; color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+    .schedule-line .ss { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+    .caption-block {
+      max-width: 420px; margin: 0 auto 4px;
+      border-radius: 12px; border: 1px solid var(--line); background: var(--cream);
+      padding: 12px 14px;
+    }
+    .caption-block .ck {
+      margin: 0 0 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .caption-block p {
+      margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink);
+    }
+    .preview-micro {
+      margin: 8px 0 0; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.4;
+      max-width: 420px; margin-left: auto; margin-right: auto;
+    }
   </style>
 </head>
 <body>
@@ -273,6 +315,12 @@
         <button type="button" data-view="approver">3 · Approver request</button>
         <button type="button" data-view="grow">4 · Grows with us</button>
       </div>
+    </div>
+
+    <div class="explainer-strip">
+      <strong>Simple loop:</strong> One note → tags build checklist → creator applies with AI (artwork &amp; caption together, or separately).
+      Approver reviews caption + schedule + art; creator regenerates from the note — see
+      <a href="approvals-revision-ai-regenerate-mockup.html" style="color:var(--teal);font-weight:700;">revision AI mockup</a>.
     </div>
 
     <!-- 1 Problem -->
@@ -315,13 +363,18 @@
     <!-- 2 Creator -->
     <section class="panel" id="view-creator" hidden>
       <h1>Revision workspace</h1>
-      <p class="lede">After changes are requested, creator lands here (from email, Approvals, or Create with AI). One place to see the note, tick off edits, and resubmit.</p>
+      <p class="lede">After changes are requested, creator lands here (from email, Approvals, or Create with AI). See caption + schedule, apply the note with AI (artwork &amp; caption together or separately), then resubmit.</p>
 
       <div class="card" style="margin-top:20px;">
         <div class="meta-row">
           <span class="type-chip">Social · Feed + Story</span>
           <span class="status-chip">Changes requested</span>
           <span style="font-size:12px;color:var(--muted);font-weight:600;">Fall Festival · Milestone 2</span>
+        </div>
+        <div class="schedule-line">
+          <span class="sk">Posts</span>
+          <span class="sw">Thu, Aug 12 · 9:00 AM</span>
+          <span class="ss">Facebook · schedule chip so Date tag makes sense</span>
         </div>
         <div class="split" style="margin-top:0;">
           <div>
@@ -340,7 +393,11 @@
                 </div>
               </div>
             </div>
-            <p style="margin:0;font-size:12px;color:var(--muted);text-align:center;">Feed + story · caption under preview in real app</p>
+            <div class="caption-block">
+              <p class="ck">Caption</p>
+              <p>Join us for Fall Festival on Aug 5! Volunteers welcome — sign up today.</p>
+            </div>
+            <p class="preview-micro">Creator can ✦ Update artwork &amp; caption from one instruction — see <a href="approvals-revision-ai-regenerate-mockup.html" style="color:var(--teal);font-weight:700;">AI mockup</a>.</p>
           </div>
           <div>
             <div class="compare-label">What they asked for</div>
@@ -361,14 +418,14 @@
               </li>
               <li data-item="caption">
                 <span class="check"></span>
-                <div><strong>Caption</strong><br /><span style="color:var(--ink-soft);font-size:12px;">Optional — match new date</span></div>
-                <button type="button" class="act" data-toast="Inline caption edit">Edit</button>
+                <div><strong>Caption</strong><br /><span style="color:var(--ink-soft);font-size:12px;">Still shows Aug 5 — match new date</span></div>
+                <button type="button" class="act" data-toast="Inline caption edit or AI Caption only">Edit</button>
               </li>
             </ul>
             <div class="actions">
               <button type="button" class="btn btn-primary" id="btn-resubmit" data-toast="Would return to Approvals as awaiting review + email approver">Send for re-approval</button>
               <button type="button" class="btn btn-secondary" data-toast="Back to Approvals Changes list">Back to Approvals</button>
-              <p class="hint">Primary action stays here — no second trip to Preview just to resubmit. Checklist can be suggested from note tags (Artwork / Date / Caption).</p>
+              <p class="hint">Primary action stays here — no second trip to Preview just to resubmit. Tags from the approver become this checklist; AI applies the same note to artwork and/or caption.</p>
             </div>
           </div>
         </div>
@@ -386,14 +443,21 @@
     <!-- 3 Approver -->
     <section class="panel" id="view-approver" hidden>
       <h1>Request changes (approver)</h1>
-      <p class="lede">Review feed (1:1) and story (9:16) together. Add a short note and optional tags so the creator checklist writes itself.</p>
+      <p class="lede">Review feed, story, <strong>caption</strong>, and <strong>when it posts</strong> together. Leave one short note + optional tags — you don’t run AI here. The creator regenerates artwork and/or caption from your note.</p>
       <div class="card" style="margin-top:20px;">
         <div class="meta-row">
           <span class="type-chip">Social · Feed + Story</span>
           <span class="status-chip" style="background:rgba(42,122,134,0.12);color:var(--teal);">Needs your review</span>
+          <span style="font-size:12px;color:var(--muted);font-weight:600;">Fall Festival · Milestone 2</span>
+        </div>
+        <div class="schedule-line">
+          <span class="sk">Posts</span>
+          <span class="sw">Thu, Aug 5 · 9:00 AM</span>
+          <span class="ss">Facebook · so Date feedback has context</span>
         </div>
         <div class="split" style="margin-top:0;">
           <div>
+            <div class="compare-label">Preview</div>
             <div class="art-pair">
               <div class="art-slot">
                 <div class="art-slot-label">Feed · 1:1</div>
@@ -408,25 +472,31 @@
                 </div>
               </div>
             </div>
+            <div class="caption-block">
+              <p class="ck">Caption · review this too</p>
+              <p>Join us for Fall Festival on Aug 5! Volunteers welcome — sign up today.</p>
+            </div>
+            <p class="preview-micro">Always visible before you request changes — so Caption / Date tags aren’t guessing.</p>
           </div>
           <div>
             <div class="field">
               <label>What should change?</label>
-              <textarea id="approver-note">Can we warm up the headline and move the date to Aug 12? Logo feels small.</textarea>
+              <textarea id="approver-note">Can we warm up the headline and move the date to Aug 12? Logo feels small. Caption should match.</textarea>
             </div>
             <div class="field">
               <label>Tag what needs work (helps their checklist)</label>
               <div class="chips" id="tag-chips">
                 <button type="button" class="on" data-tag="Artwork">Artwork</button>
                 <button type="button" class="on" data-tag="Date">Date</button>
-                <button type="button" data-tag="Caption">Caption</button>
+                <button type="button" class="on" data-tag="Caption">Caption</button>
+                <button type="button" data-tag="Stories">Stories</button>
                 <button type="button" data-tag="Copy">Copy</button>
               </div>
             </div>
             <div class="actions">
-              <button type="button" class="btn btn-danger-soft" data-toast="Item → Changes requested · creator gets email + Revision workspace">Request changes</button>
+              <button type="button" class="btn btn-danger-soft" data-toast="Item → Changes requested · creator gets email + Revision workspace with AI from this note">Request changes</button>
               <button type="button" class="btn btn-primary" data-toast="Approve & schedule (unchanged)">Approve &amp; schedule</button>
-              <p class="hint">Tags are optional but recommended — they become the creator’s revision checklist. Works the same when content type is Newsletter or Homepage later.</p>
+              <p class="hint">One note drives the creator’s AI: they can update artwork &amp; caption together, or each alone. No AI buttons on this side — keep it note + tags.</p>
             </div>
           </div>
         </div>
@@ -618,7 +688,9 @@
     });
 
     renderGrow("social");
-    setView("problem");
+
+    const hash = (location.hash || "").replace("#", "");
+    setView(views.includes(hash) ? hash : "problem");
   </script>
 </body>
 </html>

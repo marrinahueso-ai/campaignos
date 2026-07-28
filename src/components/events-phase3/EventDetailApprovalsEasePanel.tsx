@@ -129,7 +129,6 @@ export function EventDetailApprovalsEasePanel({
   const [reviewItem, setReviewItem] = useState<UnifiedApprovalItem | null>(
     null,
   );
-  const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -167,7 +166,6 @@ export function EventDetailApprovalsEasePanel({
       router.push(revisionPath(item.id, "creator"));
       return;
     }
-    setComment("");
     setReviewItem(item);
   };
 
@@ -188,7 +186,6 @@ export function EventDetailApprovalsEasePanel({
         return;
       }
       setReviewItem(null);
-      setComment("");
       if (result.warning) {
         setActionError(result.warning);
       }
@@ -371,8 +368,6 @@ export function EventDetailApprovalsEasePanel({
         item={reviewItem}
         open={Boolean(reviewItem)}
         onClose={() => setReviewItem(null)}
-        comment={comment}
-        onCommentChange={setComment}
         onApprove={handleApprove}
         onRequestChanges={() => {
           if (!reviewItem) return;

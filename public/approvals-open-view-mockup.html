@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Approvals open view mockup</title>
+  <meta name="description" content="Mockup: clearer Approvals item open/review surface — side-by-side artwork, schedule hero, scannable caption. Replaces the cramped Review drawer." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --danger: #a65a3a;
+      --amber: #b07a1a;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button { font: inherit; color: inherit; cursor: pointer; border: none; background: none; }
+    [hidden] { display: none !important; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .shell { max-width: 980px; margin: 0 auto; padding: 18px 18px 100px; }
+
+    .mock-banner {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+      margin-bottom: 18px; padding: 10px 14px;
+      border-radius: 14px; border: 1px dashed rgba(42, 38, 34, 0.22);
+      background: rgba(255, 252, 247, 0.75); font-size: 12px; font-weight: 600; color: var(--muted);
+      animation: rise 0.4s var(--ease) both;
+    }
+    .mock-banner strong { color: var(--forest); }
+    .mock-banner a { color: var(--teal); font-weight: 700; text-decoration: none; }
+    .mock-banner a:hover { text-decoration: underline; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tabs button {
+      padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--white); font-size: 12px; font-weight: 600; color: var(--ink-soft);
+    }
+    .tabs button.active {
+      background: var(--forest); color: var(--cream); border-color: var(--forest);
+    }
+
+    .panel { animation: rise 0.35s var(--ease) both; }
+
+    .page-head {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      gap: 12px; margin-bottom: 6px;
+    }
+    h1 {
+      margin: 0; font-family: var(--serif); font-size: clamp(1.7rem, 3vw, 2.35rem);
+      font-weight: 600; letter-spacing: -0.02em; line-height: 1.15;
+    }
+    .lede { margin: 8px 0 0; max-width: 38rem; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5; }
+
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0 0;
+    }
+    .type-chip {
+      display: inline-flex; padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; background: rgba(42, 122, 134, 0.12); color: var(--teal);
+    }
+    .status-chip {
+      display: inline-flex; padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; background: rgba(176, 122, 26, 0.16); color: var(--amber);
+    }
+    .status-chip.is-changes {
+      background: rgba(166, 90, 58, 0.12); color: var(--danger);
+    }
+    .meta-muted { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+    .caption-toggle {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 12px; padding: 4px; border-radius: 999px; border: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.8);
+    }
+    .caption-toggle button {
+      padding: 6px 11px; border-radius: 999px; font-size: 11px; font-weight: 700; color: var(--ink-soft);
+    }
+    .caption-toggle button.active {
+      background: var(--white); color: var(--forest); box-shadow: var(--shadow);
+    }
+
+    .review-card {
+      margin-top: 18px; border-radius: var(--radius); border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow); overflow: hidden;
+    }
+
+    /* Schedule hero — impossible to miss */
+    .schedule-hero {
+      display: grid; grid-template-columns: auto 1fr auto; gap: 14px 18px; align-items: center;
+      padding: 18px 20px;
+      background:
+        linear-gradient(135deg, rgba(47, 74, 60, 0.96), rgba(42, 122, 134, 0.9) 70%, rgba(196, 146, 46, 0.85));
+      color: var(--cream);
+    }
+    @media (max-width: 640px) {
+      .schedule-hero { grid-template-columns: auto 1fr; }
+      .schedule-hero .platform-pill { grid-column: 1 / -1; justify-self: start; }
+    }
+    .schedule-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: grid; place-items: center;
+      background: rgba(255, 252, 247, 0.14); border: 1px solid rgba(255, 252, 247, 0.22);
+    }
+    .schedule-icon svg { width: 24px; height: 24px; }
+    .schedule-kicker {
+      margin: 0 0 4px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; opacity: 0.85;
+    }
+    .schedule-when {
+      margin: 0; font-family: var(--serif); font-size: clamp(1.35rem, 2.6vw, 1.75rem);
+      font-weight: 600; letter-spacing: -0.02em; line-height: 1.15;
+    }
+    .schedule-sub {
+      margin: 4px 0 0; font-size: 13px; opacity: 0.9; font-weight: 500;
+    }
+    .platform-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 14px; border-radius: 999px;
+      background: rgba(255, 252, 247, 0.16); border: 1px solid rgba(255, 252, 247, 0.28);
+      font-size: 13px; font-weight: 700; white-space: nowrap;
+    }
+    .platform-pill .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #5b9bd5;
+      box-shadow: 0 0 0 2px rgba(255,252,247,0.25);
+    }
+
+    .review-body { padding: 20px; }
+
+    .changes-banner {
+      margin: 0 0 18px; padding: 12px 14px; border-radius: 14px;
+      border: 1px solid rgba(166, 90, 58, 0.25); background: rgba(166, 90, 58, 0.08);
+    }
+    .changes-banner .who {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--danger); margin-bottom: 4px;
+    }
+    .changes-banner p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink); }
+
+    /* One composition: art + caption */
+    .compose {
+      display: grid; gap: 20px; grid-template-columns: 1.15fr 0.85fr; align-items: start;
+    }
+    @media (max-width: 780px) {
+      .compose { grid-template-columns: 1fr; }
+    }
+
+    .art-pair {
+      display: grid; grid-template-columns: 1.05fr 0.72fr; gap: 14px; align-items: end;
+    }
+    @media (max-width: 520px) {
+      .art-pair { grid-template-columns: 1fr; justify-items: center; max-width: 280px; margin: 0 auto; }
+      .art-pair .art-slot { width: 100%; }
+    }
+    .art-slot { min-width: 0; display: flex; flex-direction: column; align-items: center; }
+    .art-slot-label {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px; text-align: center;
+    }
+    .art-preview {
+      position: relative; border-radius: 16px; border: 1px solid var(--line); overflow: hidden;
+      background: linear-gradient(145deg, #1a3a4a, #2f6b5a 55%, #c4922e);
+      aspect-ratio: 1; width: 100%; max-width: 280px;
+      display: grid; place-items: end center; padding: 18px; color: #fff; text-align: center;
+      cursor: zoom-in; transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+      box-shadow: var(--shadow);
+    }
+    .art-preview:hover {
+      transform: translateY(-2px); box-shadow: var(--shadow-lg);
+    }
+    .art-preview:focus-visible {
+      outline: 2px solid var(--teal); outline-offset: 3px;
+    }
+    .art-preview.is-story {
+      aspect-ratio: 9 / 16; max-height: 360px; max-width: 200px;
+      background: linear-gradient(155deg, #2a7a86, #2f4a3c 58%, #c4922e);
+    }
+    .art-preview strong { font-family: var(--serif); font-size: 1.2rem; display: block; }
+    .art-preview.is-story strong { font-size: 1.05rem; }
+    .art-preview span { font-size: 12px; opacity: 0.92; display: block; margin-top: 4px; }
+    .art-badge {
+      position: absolute; top: 10px; left: 10px;
+      padding: 4px 9px; border-radius: 999px; font-size: 10px; font-weight: 800;
+      background: rgba(255,252,247,0.92); color: var(--forest);
+    }
+    .art-pair-hint {
+      margin: 10px 0 0; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.4;
+    }
+
+    .side-stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+    .block-label {
+      margin: 0 0 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .caption-box {
+      border-radius: 14px; border: 1px solid var(--line); background: var(--cream);
+      padding: 14px 16px; font-size: 15px; line-height: 1.55; color: var(--ink);
+    }
+    .caption-box.empty {
+      color: var(--muted); font-style: italic;
+    }
+
+    .timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .timeline li {
+      display: grid; grid-template-columns: 18px 1fr; gap: 10px; align-items: start;
+      font-size: 13px; line-height: 1.4;
+    }
+    .timeline .tick {
+      width: 18px; height: 18px; border-radius: 50%; margin-top: 1px;
+      display: grid; place-items: center;
+      background: rgba(47, 74, 60, 0.12); color: var(--forest); font-size: 11px; font-weight: 800;
+    }
+    .timeline strong { font-weight: 700; color: var(--ink); display: block; }
+    .timeline .when { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .footer-actions {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      padding: 16px 20px; border-top: 1px solid var(--line);
+      background: rgba(246, 242, 235, 0.55);
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 11px 18px; border-radius: 999px; font-size: 13px; font-weight: 700;
+      border: 1px solid transparent;
+    }
+    .btn-primary { background: var(--ink); color: var(--cream); }
+    .btn-primary:hover { background: #1a1714; }
+    .btn-secondary { background: var(--white); border-color: var(--line); color: var(--ink); }
+    .btn-secondary:hover { border-color: var(--sage); }
+    .btn-danger-soft {
+      background: rgba(166, 90, 58, 0.1); color: var(--danger); border-color: rgba(166, 90, 58, 0.25);
+    }
+    .btn-danger-soft:hover { background: rgba(166, 90, 58, 0.16); }
+    .footer-hint { margin: 0; font-size: 12px; color: var(--muted); flex: 1 1 160px; }
+
+    .toast {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(12px);
+      padding: 10px 16px; border-radius: 999px; background: var(--forest); color: var(--cream);
+      font-size: 13px; font-weight: 600; box-shadow: var(--shadow-lg);
+      opacity: 0; pointer-events: none; transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+      z-index: 60; max-width: min(90vw, 420px); text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed; inset: 0; z-index: 80;
+      display: grid; place-items: center; padding: 24px;
+      background: rgba(42, 38, 34, 0.55); backdrop-filter: blur(4px);
+      animation: fade-in 0.2s ease both;
+    }
+    .lightbox-inner {
+      position: relative; max-width: min(92vw, 420px); width: 100%;
+      animation: rise 0.3s var(--ease) both;
+    }
+    .lightbox-inner .art-preview {
+      max-width: none; width: 100%; cursor: default; max-height: min(78vh, 640px);
+    }
+    .lightbox-inner .art-preview.is-story {
+      max-width: min(72vw, 280px); margin: 0 auto; max-height: min(78vh, 640px);
+    }
+    .lightbox-close {
+      position: absolute; top: -12px; right: -12px; z-index: 1;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--white); border: 1px solid var(--line); box-shadow: var(--shadow);
+      font-size: 18px; line-height: 1; color: var(--ink-soft);
+    }
+    .lightbox-close:hover { color: var(--ink); }
+    .lightbox-caption {
+      margin: 12px 0 0; text-align: center; color: var(--cream); font-size: 13px; font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="mock-banner">
+      <div>
+        <strong>Mockup</strong> — replaces the cramped Review drawer open view
+        (<code style="font-size:11px;">ReviewDrawer.tsx</code>).
+        Caption + schedule stay visible here so review is fair.
+        <a href="approvals-change-request-mockup.html#approver">Request changes</a>
+        → creator
+        <a href="approvals-revision-ai-regenerate-mockup.html">Revision AI</a>
+        uses <strong style="color:var(--forest)">one instruction</strong> for artwork &amp; caption (together or separately).
+      </div>
+      <div class="tabs" role="tablist" aria-label="Open view modes">
+        <button type="button" class="active" data-mode="pending">Approver · Pending</button>
+        <button type="button" data-mode="requested">After changes requested</button>
+      </div>
+    </div>
+
+    <section class="panel" id="view-root">
+      <div class="page-head">
+        <div>
+          <h1>Fall Festival</h1>
+          <p class="lede" id="page-lede">
+            Review feed + story, caption, and when it posts. Notes live on Request changes; creator applies that note with AI (artwork &amp; caption together, or separately).
+          </p>
+          <div class="meta-row">
+            <span class="type-chip">Social · Feed + Story</span>
+            <span class="status-chip" id="status-chip">Needs your review</span>
+            <span class="meta-muted">Milestone 2 · Week-of post</span>
+          </div>
+          <div class="caption-toggle" role="group" aria-label="Caption demo state">
+            <button type="button" class="active" data-caption="filled">Caption filled</button>
+            <button type="button" data-caption="empty">No caption</button>
+          </div>
+        </div>
+      </div>
+
+      <article class="review-card" aria-labelledby="review-title">
+        <span id="review-title" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Fall Festival review</span>
+
+        <!-- Schedule hero -->
+        <div class="schedule-hero">
+          <div class="schedule-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M3 10h18M8 3v4M16 3v4" />
+            </svg>
+          </div>
+          <div>
+            <p class="schedule-kicker">Posts</p>
+            <p class="schedule-when">Thu, Aug 27 · 9:00 AM</p>
+            <p class="schedule-sub">Scheduled — ready once you approve</p>
+          </div>
+          <div class="platform-pill">
+            <span class="dot" aria-hidden="true"></span>
+            Facebook
+          </div>
+        </div>
+
+        <div class="review-body">
+          <div class="changes-banner" id="changes-banner" hidden>
+            <div class="who">Changes requested · Jamie · Jul 27</div>
+            <p>Can we warm up the headline and move the date to Aug 12? Logo feels small.</p>
+          </div>
+
+          <div class="compose">
+            <div>
+              <div class="art-pair">
+                <div class="art-slot">
+                  <div class="art-slot-label">Feed · 1:1</div>
+                  <button type="button" class="art-preview" data-lightbox="feed" aria-label="Enlarge feed artwork">
+                    <span class="art-badge">Feed</span>
+                    <div>
+                      <strong>Fall Festival</strong>
+                      <span>Sat Aug 27 · Sign up →</span>
+                    </div>
+                  </button>
+                </div>
+                <div class="art-slot">
+                  <div class="art-slot-label">Story · 9:16</div>
+                  <button type="button" class="art-preview is-story" data-lightbox="story" aria-label="Enlarge story artwork">
+                    <span class="art-badge">Story</span>
+                    <div>
+                      <strong>Fall Festival</strong>
+                      <span>Sat Aug 27 · Sign up →</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+              <p class="art-pair-hint">Tap either image to enlarge</p>
+            </div>
+
+            <div class="side-stack">
+              <div>
+                <p class="block-label">Caption</p>
+                <div class="caption-box" id="caption-box">
+                  Join us for Fall Festival on Aug 27! Live music, local makers, and food trucks from noon to 8pm. Free admission — bring the family. Link in bio for the full schedule.
+                </div>
+              </div>
+
+              <div>
+                <p class="block-label">Approval timeline</p>
+                <ul class="timeline" id="timeline">
+                  <li>
+                    <span class="tick" aria-hidden="true">✓</span>
+                    <div>
+                      <strong>Submitted for approval</strong>
+                      <div class="when">You · Jul 27, 2026 at 9:02 PM</div>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-actions" id="footer-pending">
+          <button type="button" class="btn btn-primary" data-toast="Would approve &amp; schedule this post">Approve &amp; schedule</button>
+          <button type="button" class="btn btn-secondary" data-toast="Would open Request changes (note + tags live there)">Request changes</button>
+          <p class="footer-hint">Caption + schedule stay visible so review is fair. Leave the note on Request changes — creator AI uses one instruction for artwork &amp; caption.</p>
+        </div>
+
+        <div class="footer-actions" id="footer-requested" hidden>
+          <button type="button" class="btn btn-secondary" data-toast="Back to Approvals list">Close</button>
+          <button type="button" class="btn btn-danger-soft" data-toast="Opens Revision workspace (creator)">Open revision →</button>
+          <p class="footer-hint">Approver already acted. Creator continues in the revision shell — not this open view.</p>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <div class="lightbox-inner">
+      <button type="button" class="lightbox-close" id="lightbox-close" aria-label="Close enlarge">×</button>
+      <div class="art-preview" id="lightbox-art">
+        <span class="art-badge" id="lightbox-badge">Feed</span>
+        <div>
+          <strong>Fall Festival</strong>
+          <span>Sat Aug 27 · Sign up →</span>
+        </div>
+      </div>
+      <p class="lightbox-caption" id="lightbox-label">Feed · 1:1</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const CAPTION_FILLED =
+        "Join us for Fall Festival on Aug 27! Live music, local makers, and food trucks from noon to 8pm. Free admission — bring the family. Link in bio for the full schedule.";
+      const CAPTION_EMPTY = "No caption yet.";
+
+      const toastEl = document.getElementById("toast");
+      let toastTimer;
+
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2400);
+      }
+
+      document.querySelectorAll("[data-toast]").forEach((btn) => {
+        btn.addEventListener("click", () => showToast(btn.getAttribute("data-toast") || ""));
+      });
+
+      /* Modes */
+      const statusChip = document.getElementById("status-chip");
+      const pageLede = document.getElementById("page-lede");
+      const changesBanner = document.getElementById("changes-banner");
+      const footerPending = document.getElementById("footer-pending");
+      const footerRequested = document.getElementById("footer-requested");
+      const timeline = document.getElementById("timeline");
+
+      function setMode(mode) {
+        document.querySelectorAll(".tabs [data-mode]").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.mode === mode);
+        });
+
+        const pending = mode === "pending";
+        changesBanner.hidden = pending;
+        footerPending.hidden = !pending;
+        footerRequested.hidden = pending;
+
+        if (pending) {
+          statusChip.textContent = "Needs your review";
+          statusChip.classList.remove("is-changes");
+          pageLede.textContent =
+            "Review feed + story, caption, and when it posts. Notes live on Request changes; creator applies that note with AI (artwork & caption together, or separately).";
+          timeline.innerHTML =
+            '<li><span class="tick" aria-hidden="true">✓</span><div><strong>Submitted for approval</strong><div class="when">You · Jul 27, 2026 at 9:02 PM</div></div></li>';
+        } else {
+          statusChip.textContent = "Changes requested";
+          statusChip.classList.add("is-changes");
+          pageLede.textContent =
+            "Same open surface after changes are requested — caption + schedule stay scannable; creator continues in Revision AI with one instruction for both.";
+          timeline.innerHTML =
+            '<li><span class="tick" aria-hidden="true">✓</span><div><strong>Submitted for approval</strong><div class="when">You · Jul 27, 2026 at 9:02 PM</div></div></li>' +
+            '<li><span class="tick" aria-hidden="true">!</span><div><strong>Changes requested</strong><div class="when">Jamie · Jul 27, 2026 at 9:18 PM</div></div></li>';
+        }
+      }
+
+      document.querySelectorAll(".tabs [data-mode]").forEach((btn) => {
+        btn.addEventListener("click", () => setMode(btn.dataset.mode));
+      });
+
+      /* Caption demo */
+      const captionBox = document.getElementById("caption-box");
+      document.querySelectorAll(".caption-toggle [data-caption]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".caption-toggle [data-caption]").forEach((b) => {
+            b.classList.toggle("active", b === btn);
+          });
+          const empty = btn.dataset.caption === "empty";
+          captionBox.textContent = empty ? CAPTION_EMPTY : CAPTION_FILLED;
+          captionBox.classList.toggle("empty", empty);
+        });
+      });
+
+      /* Lightbox */
+      const lightbox = document.getElementById("lightbox");
+      const lightboxArt = document.getElementById("lightbox-art");
+      const lightboxBadge = document.getElementById("lightbox-badge");
+      const lightboxLabel = document.getElementById("lightbox-label");
+
+      function openLightbox(kind) {
+        const isStory = kind === "story";
+        lightboxArt.classList.toggle("is-story", isStory);
+        lightboxBadge.textContent = isStory ? "Story" : "Feed";
+        lightboxLabel.textContent = isStory ? "Story · 9:16" : "Feed · 1:1";
+        lightbox.hidden = false;
+        document.body.style.overflow = "hidden";
+        document.getElementById("lightbox-close").focus();
+      }
+
+      function closeLightbox() {
+        lightbox.hidden = true;
+        document.body.style.overflow = "";
+      }
+
+      document.querySelectorAll("[data-lightbox]").forEach((btn) => {
+        btn.addEventListener("click", () => openLightbox(btn.dataset.lightbox));
+      });
+      document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
+      lightbox.addEventListener("click", (e) => {
+        if (e.target === lightbox) closeLightbox();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !lightbox.hidden) closeLightbox();
+      });
+    })();
+  </script>
+</body>
+</html>

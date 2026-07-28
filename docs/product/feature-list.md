@@ -150,9 +150,10 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Approvals Ease outcomes: **Posted** / **Failed** (with **Retry**) as first-class filters + pills; dedicated **Drafts** filter (saved drafts stay pre-publish, not Posted); Retry wires Meta republish — **shipped**
 - Status summary cards as clickable workflow filters (Assigned to Me / Changes Requested / In Queue / Scheduled / Published; click again to clear to All; Posted row status remains in the table under Scheduled coverage); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.approvals_layout`; approve / request changes, campaign & view-scope filters, search, badges — **shipped**
 - Approvals hub: unused Filters button removed; search matches campaign/milestone, status, assignee, next action, delivery/platforms, and schedule — **shipped**
-- Approvals customer copy: hub + event Approvals tab + Review drawer + approve/request/retry errors + change-request email use org/Page/team language — **shipped**
-- Event detail Approvals tab: Ease pulse filters (Needs you / Scheduled / Drafts / Posted / Failed / Changes) + review drawer Retry — **shipped**
-- Approvals table Actions column shows **View** only (approve / request changes stay in the review drawer) — **shipped**
+- Approvals customer copy: hub + event Approvals tab + open review + approve/request/retry errors + change-request email use org/Page/team language — **shipped**
+- Approvals **open review** (replaces cramped drawer): side-by-side feed · 1:1 + story · 9:16, schedule hero, caption, timeline; **Approve & schedule** / **Request changes** (no note on open view — note + tags on `/approvals/revision?mode=approver`) — **shipped** (mockup: [`public/approvals-open-view-mockup.html`](../../public/approvals-open-view-mockup.html))
+- Event detail Approvals tab: Ease pulse filters (Needs you / Scheduled / Drafts / Posted / Failed / Changes) + open review Retry — **shipped**
+- Approvals table Actions column shows **View** only (approve / request changes stay in the open review) — **shipped**
 - Change-requested items show the approver comment + **Edit Artwork** / **Change Date** CTAs (Approvals drawer + email; Edit Artwork → Create with AI Preview + edit-artwork modal for that milestone; Change Date → Preview Campaign for that milestone); Preview/Review banners keep caption / Change Date / artwork paths plus **Send for re-approval**; resubmit emails the Team Access approver again (`Resubmitted for approval: …`, with fallback to the prior assignee if the current role has no email; UI confirms the recipient address) — **shipped**
 - Legacy Publishing Center → redirects to Approvals
 

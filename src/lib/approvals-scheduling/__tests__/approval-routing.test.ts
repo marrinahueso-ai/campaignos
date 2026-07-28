@@ -462,9 +462,13 @@ describe("Approval Routing — ReviewDrawer preview identity", () => {
     );
     assert.match(drawer, /ArtworkLightboxThumbnail/);
     assert.match(drawer, /item\.preview\.feedArtworkUrl/);
+    assert.match(drawer, /item\.preview\.storyArtworkUrl/);
     assert.match(drawer, /item\.preview\.captionText/);
     assert.match(drawer, /\{item\.milestoneName\}/);
+    assert.match(drawer, /Feed · 1:1/);
+    assert.match(drawer, /Story · 9:16/);
     assert.match(drawer, /onRetry/);
     assert.match(drawer, /Retry/);
+    assert.doesNotMatch(drawer, /review-comment|Note to your teammate/);
   });
 });

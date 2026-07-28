@@ -317,56 +317,68 @@ async function observeApprovalsAndBadges(
 
   await viewButtons.first().click();
   // Exact names — avoid matching the disabled "Approved" footer on scheduled rows.
-  const drawer = page.locator("aside").filter({
+  const review = page.getByRole("dialog").filter({
     has: page.getByRole("button", { name: /^(approve|request changes)$/i }),
   });
-  const drawerVisible = await drawer
+  const reviewVisible = await review
     .first()
     .isVisible({ timeout: 10_000 })
     .catch(() => false);
 
-  if (!drawerVisible) {
-    // View may open a read-only drawer without act buttons.
-    const anyDrawer = page.getByText(/approval history|comment/i);
-    const alreadyApproved = page.getByRole("button", { name: /^approved$/i });
+  if (!reviewVisible) {
+    // View may open a read-only review without act buttons.
+    const anyReview = page.getByText(/approval timeline|schedule not set/i);
+    const alreadyApproved = page.getByRole("button", {
+      name: /^(already approved|approved)$/i,
+    });
     observations.push(
       (await alreadyApproved.first().isVisible().catch(() => false))
-        ? "- Opened review drawer for an already-approved / scheduled item (no Request changes)."
-        : (await anyDrawer.first().isVisible().catch(() => false))
-          ? "- Opened review drawer (read-only / no act buttons for this user or status)."
+        ? "- Opened review for an already-approved / scheduled item (no Request changes)."
+        : (await anyReview.first().isVisible().catch(() => false))
+          ? "- Opened review (read-only / no act buttons for this user or status)."
           : "- View click did not expose Approve / Request changes (item may be non-pending).",
     );
     return;
   }
 
-  const requestChangesBtn = drawer.getByRole("button", {
+  const requestChangesBtn = review.getByRole("button", {
     name: /^request changes$/i,
   });
   await expect(requestChangesBtn).toBeVisible();
   observations.push(
-    "- Review drawer shows **Request changes** (approve_comms / assignee can act).",
+    "- Open review shows **Request changes** (approve_comms / assignee can act).",
   );
 
   if (!exerciseRequestChanges()) {
     observations.push(
       "- Request changes **observed only** (set `HEY_RALLI_EXERCISE_REQUEST_CHANGES=true` to submit a comment and mutate staging status).",
     );
-    // Close drawer via outside / escape if possible
+    // Close review via escape if possible
     await page.keyboard.press("Escape").catch(() => undefined);
     return;
   }
 
-  const comment = drawer.locator("#review-comment");
+  // Note lives on Revision (approver) — not on the open review surface.
+  await requestChangesBtn.click();
+  await expect(page).toHaveURL(/\/approvals\/revision\?.*mode=approver/, {
+    timeout: 15_000,
+  });
+  const comment = page.locator("#rev-approver-note");
   const smokeComment = `hey-ralli-smoke request-changes ${Date.now()}`;
   await comment.fill(smokeComment);
-  await requestChangesBtn.click();
+  await page
+    .getByRole("button", { name: /^request changes$/i })
+    .click();
 
-  // Drawer closes on success; hub refreshes.
-  await expect(main.locator("p").filter({ hasText: /^changes requested$/i }).first()).toBeVisible({
+  // Returns to Approvals on success; hub refreshes.
+  await expect(page).toHaveURL(/\/approvals/, { timeout: 30_000 });
+  await expect(
+    main.locator("p").filter({ hasText: /^changes requested$/i }).first(),
+  ).toBeVisible({
     timeout: 30_000,
   });
   observations.push(
-    `- Exercised Request changes with comment \`${smokeComment}\` (scheduling item → changes_requested + email hook if Resend configured).`,
+    `- Exercised Request changes with comment \`${smokeComment}\` via Revision shell (scheduling item → changes_requested + email hook if Resend configured).`,
   );
 
   // Soft check: after navigation refresh, change-request badge may appear for creator.

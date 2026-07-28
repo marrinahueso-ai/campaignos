@@ -104,7 +104,6 @@ export function ApprovalsSchedulingHub({
     lockedId ?? initialEventFilter ?? "all",
   );
   const [reviewItem, setReviewItem] = useState<UnifiedApprovalItem | null>(null);
-  const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -190,7 +189,6 @@ export function ApprovalsSchedulingHub({
       return;
     }
     setReviewItem(item);
-    setComment("");
     if (!unifiedItemNeedsPreviewEnrichment(item)) {
       return;
     }
@@ -219,7 +217,6 @@ export function ApprovalsSchedulingHub({
 
       if (result.success) {
         setReviewItem(null);
-        setComment("");
         if (result.warning) {
           setActionError(result.warning);
         }
@@ -532,12 +529,10 @@ export function ApprovalsSchedulingHub({
         item={reviewItem}
         open={Boolean(reviewItem)}
         onClose={() => setReviewItem(null)}
-        comment={comment}
-        onCommentChange={setComment}
         onApprove={handleApprove}
         onRequestChanges={() => {
           if (!reviewItem) return;
-          // Change-request UX lives only on the Revision shell — not the drawer.
+          // Change-request UX lives only on the Revision shell — not the open view.
           openRevisionApprover(reviewItem);
           setReviewItem(null);
         }}
