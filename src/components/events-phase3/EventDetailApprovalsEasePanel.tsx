@@ -8,7 +8,6 @@ import { ReviewDrawer } from "@/components/approvals-scheduling/ReviewDrawer";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import {
   EaseBtnPrimary,
-  EaseBtnSecondary,
   EaseChip,
   EaseFocusCard,
   EasePulseMini,
@@ -224,11 +223,10 @@ export function EventDetailApprovalsEasePanel({
     focusItem?.workflowStatus === "failed"
       ? focusItem.publishError ||
         focusItem.preview?.captionText?.trim() ||
-        "Open review to retry this post."
+        null
       : focusItem?.preview?.captionText?.trim() ||
         focusItem?.preview?.storyCaptionSnippet?.trim() ||
-        focusItem?.notes?.trim() ||
-        "Open review to see caption and artwork.";
+        null;
 
   const focusArt = artUrl(focusItem);
   const focusChip = focusItem ? approvalOutcomeChip(focusItem) : null;
@@ -314,9 +312,11 @@ export function EventDetailApprovalsEasePanel({
               <h2 className="font-display text-2xl font-semibold tracking-[-0.02em] text-cos-text">
                 {focusItem.milestoneName || focusItem.campaignName}
               </h2>
-              <p className="m-0 line-clamp-3 text-sm leading-relaxed text-cos-muted">
-                {caption}
-              </p>
+              {caption ? (
+                <p className="m-0 line-clamp-3 text-sm leading-relaxed text-cos-muted">
+                  {caption}
+                </p>
+              ) : null}
               <EaseSoftActions>
                 {focusRetry ? (
                   <EaseBtnPrimary
@@ -327,12 +327,9 @@ export function EventDetailApprovalsEasePanel({
                   </EaseBtnPrimary>
                 ) : (
                   <EaseBtnPrimary onClick={() => openReview(focusItem)}>
-                    Review
+                    Open full view
                   </EaseBtnPrimary>
                 )}
-                <EaseBtnSecondary onClick={() => openReview(focusItem)}>
-                  Open full review
-                </EaseBtnSecondary>
               </EaseSoftActions>
             </EaseFocusCard>
           ) : null}

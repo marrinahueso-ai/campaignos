@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
 import {
   approvalOutcomeChip,
   canRetryFailedApproval,
@@ -70,28 +69,21 @@ function ArtTile({
 
 export function ApprovalsFocusCard({
   item,
-  canViewAll,
   onReview,
-  onRequestChanges,
   onRetry,
   isRetrying = false,
 }: {
   item: UnifiedApprovalItem;
-  canViewAll: boolean;
   onReview: (item: UnifiedApprovalItem) => void;
-  /** Opens the Revision shell (approver mode) — not the legacy drawer. */
-  onRequestChanges?: (item: UnifiedApprovalItem) => void;
   onRetry?: (item: UnifiedApprovalItem) => void;
   isRetrying?: boolean;
 }) {
   const chip = approvalOutcomeChip(item);
-  const canAct = canActOnUnifiedItem(item, canViewAll);
   const showRetry = canRetryFailedApproval(item) && Boolean(onRetry);
   const caption =
     item.preview.captionText?.trim() ||
     item.preview.storyCaptionSnippet?.trim() ||
-    item.notes?.trim() ||
-    "Open the full review to see caption and artwork details.";
+    null;
 
   return (
     <article className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(200px,280px)_1fr]">
@@ -132,11 +124,15 @@ export function ApprovalsFocusCard({
             {item.milestoneName}
           </p>
         </div>
-        <p className="line-clamp-3 text-sm leading-relaxed text-cos-muted">
-          {item.workflowStatus === "failed"
-            ? item.publishError || caption
-            : caption}
-        </p>
+        {item.workflowStatus === "failed" && item.publishError ? (
+          <p className="line-clamp-3 text-sm leading-relaxed text-cos-muted">
+            {item.publishError}
+          </p>
+        ) : caption ? (
+          <p className="line-clamp-3 text-sm leading-relaxed text-cos-muted">
+            {caption}
+          </p>
+        ) : null}
         <div className="mt-auto flex flex-wrap gap-2 pt-2">
           {showRetry ? (
             <button
@@ -156,38 +152,15 @@ export function ApprovalsFocusCard({
             >
               Open revision
             </button>
-          ) : null}
-          {canAct && item.workflowStatus !== "changes_requested" ? (
-            <>
-              <button
-                type="button"
-                onClick={() => onReview(item)}
-                className="rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card transition hover:-translate-y-px hover:bg-[#1a1714]"
-              >
-                Approve &amp; schedule
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  onRequestChanges
-                    ? onRequestChanges(item)
-                    : onReview(item)
-                }
-                className="rounded-full border-[1.5px] border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
-              >
-                Request changes
-              </button>
-            </>
-          ) : null}
-          {item.workflowStatus !== "changes_requested" ? (
+          ) : (
             <button
               type="button"
               onClick={() => onReview(item)}
-              className="rounded-full px-3 py-2.5 text-[13px] font-bold text-cos-muted transition hover:text-cos-text"
+              className="rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card transition hover:-translate-y-px hover:bg-[#1a1714]"
             >
-              Open full review
+              Open full view
             </button>
-          ) : null}
+          )}
         </div>
       </div>
     </article>

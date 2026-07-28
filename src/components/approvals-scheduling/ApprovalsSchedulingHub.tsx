@@ -462,9 +462,7 @@ export function ApprovalsSchedulingHub({
             {activeFilter === "needs" && focusItem ? (
               <ApprovalsFocusCard
                 item={focusItem}
-                canViewAll={canViewAll}
                 onReview={openReview}
-                onRequestChanges={openRevisionApprover}
                 onRetry={handleRetry}
                 isRetrying={retryingId === focusItem.id}
               />
@@ -473,9 +471,7 @@ export function ApprovalsSchedulingHub({
             {activeFilter === "failed" && focusItem ? (
               <ApprovalsFocusCard
                 item={focusItem}
-                canViewAll={canViewAll}
                 onReview={openReview}
-                onRequestChanges={openRevisionApprover}
                 onRetry={handleRetry}
                 isRetrying={retryingId === focusItem.id}
               />
@@ -484,7 +480,6 @@ export function ApprovalsSchedulingHub({
             {activeFilter === "changes" && focusItem ? (
               <ApprovalsFocusCard
                 item={focusItem}
-                canViewAll={canViewAll}
                 onReview={openRevisionCreator}
                 onRetry={handleRetry}
                 isRetrying={retryingId === focusItem.id}
