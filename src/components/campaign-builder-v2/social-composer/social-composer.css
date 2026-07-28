@@ -60,9 +60,10 @@
       padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
     }
 .smc .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
-.smc .content { padding: 8px 28px 56px; position: relative; max-width: 88rem; }
+.smc .content { padding: 8px 28px 56px; position: relative; max-width: 88rem; overflow-x: clip; }
 .smc .content::before, .smc .content::after {
       content: ""; position: absolute; pointer-events: none; border-radius: 50%;
+      z-index: 0;
     }
 .smc .content::before {
       left: -30px; top: 0; width: 240px; height: 240px;
@@ -72,15 +73,18 @@
       right: 40px; top: 80px; width: 220px; height: 220px;
       background: radial-gradient(circle, rgba(47,159,179,.12), transparent 70%);
     }
+.smc .smc-intro { position: relative; z-index: 1; }
 .smc .back {
       border: none; background: none; color: var(--muted); font: inherit;
       font-weight: 600; font-size: 14px; padding: 0; margin-bottom: 10px; cursor: pointer;
+      display: inline-block;
     }
 .smc .back:hover { color: var(--ink); }
 .smc h1.serif {
       font-family: var(--serif); font-weight: 600;
       font-size: clamp(30px, 4vw, 42px); margin: 0 0 8px;
-      letter-spacing: -0.02em; line-height: 1.1;
+      letter-spacing: -0.02em; line-height: 1.15;
+      overflow-wrap: anywhere;
     }
 .smc .lede { margin: 0; color: var(--ink-soft); font-size: 15px; line-height: 1.5; max-width: 560px; }
 .smc .mock-banner {
@@ -799,9 +803,50 @@
     @media (max-width: 800px) {
 .smc .app { grid-template-columns: 1fr; }
 .smc .rail { display: none; }
-.smc .layout { grid-template-columns: 1fr; }
-.smc .steps { position: static; display: grid; grid-template-columns: repeat(2, 1fr); }
+.smc .layout { grid-template-columns: 1fr; gap: 14px; margin-top: 20px; }
+/* Keep a single vertical STEPS list (Homepage Composer pattern).
+   A 2-col grid put the heading beside step 1 and scrambled reading order. */
+.smc .steps {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+.smc .steps-heading { margin-bottom: 6px; }
+.smc .step-btn { padding: 10px 12px; }
+.smc .panel-head h2 { font-size: 22px; }
+.smc .panel-head { margin-bottom: 12px; }
+.smc .ms-head {
+  grid-template-columns: 22px 48px minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 10px;
+}
+.smc .ms-head .chev { display: none; }
+.smc .ms-body .grid-2 { grid-template-columns: 1fr; }
 .smc .grid-2, .smc .grid-3, .smc .logo-grid { grid-template-columns: 1fr 1fr; }
+.smc .insp-pool, .smc .insp-drop { grid-template-columns: repeat(2, 1fr); }
+.smc .content::before,
+.smc .content::after {
+  width: 160px;
+  height: 160px;
+}
+.smc .content::before { left: -48px; top: -20px; }
+.smc .content::after { right: -40px; top: 40px; }
+    }
+    @media (max-width: 480px) {
+.smc h1.serif { font-size: clamp(26px, 8vw, 34px); }
+.smc .lede { font-size: 14px; }
+.smc .grid-2,
+.smc .grid-3,
+.smc .logo-grid { grid-template-columns: 1fr; }
+.smc .ms-head .pill {
+  max-width: 7.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.smc .m-title { font-size: 13px; }
+.smc .box { padding: 14px; }
+.smc .phone { width: min(220px, 100%); }
     }
   
 
@@ -822,3 +867,9 @@
 .smc .rail, .smc .topbar, .smc .mock-banner { display: none !important; }
 .smc .app { display: block; min-height: 0; grid-template-columns: none; }
 .smc .content { padding: 0 0 2rem; max-width: none; }
+@media (max-width: 800px) {
+  /* After dashboard chrome override — clear fixed Report a Problem + iOS home indicator */
+  .smc .content {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}

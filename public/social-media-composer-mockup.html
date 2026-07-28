@@ -74,9 +74,10 @@
       padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
     }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
-    .content { padding: 8px 28px 56px; position: relative; max-width: 88rem; }
+    .content { padding: 8px 28px 56px; position: relative; max-width: 88rem; overflow-x: clip; }
     .content::before, .content::after {
       content: ""; position: absolute; pointer-events: none; border-radius: 50%;
+      z-index: 0;
     }
     .content::before {
       left: -30px; top: 0; width: 240px; height: 240px;
@@ -86,15 +87,18 @@
       right: 40px; top: 80px; width: 220px; height: 220px;
       background: radial-gradient(circle, rgba(47,159,179,.12), transparent 70%);
     }
+    .smc-intro { position: relative; z-index: 1; }
     .back {
       border: none; background: none; color: var(--muted); font: inherit;
       font-weight: 600; font-size: 14px; padding: 0; margin-bottom: 10px; cursor: pointer;
+      display: inline-block;
     }
     .back:hover { color: var(--ink); }
     h1.serif {
       font-family: var(--serif); font-weight: 600;
       font-size: clamp(30px, 4vw, 42px); margin: 0 0 8px;
-      letter-spacing: -0.02em; line-height: 1.1;
+      letter-spacing: -0.02em; line-height: 1.15;
+      overflow-wrap: anywhere;
     }
     .lede { margin: 0; color: var(--ink-soft); font-size: 15px; line-height: 1.5; max-width: 560px; }
     .mock-banner {
@@ -744,9 +748,44 @@
     @media (max-width: 800px) {
       .app { grid-template-columns: 1fr; }
       .rail { display: none; }
-      .layout { grid-template-columns: 1fr; }
-      .steps { position: static; display: grid; grid-template-columns: repeat(2, 1fr); }
+      .layout { grid-template-columns: 1fr; gap: 14px; margin-top: 20px; }
+      /* Single vertical STEPS list — 2-col grid scrambled reading order on phones */
+      .steps {
+        position: static;
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
+      }
+      .steps-heading { margin-bottom: 6px; }
+      .step-btn { padding: 10px 12px; }
+      .panel-head h2 { font-size: 22px; }
+      .ms-head {
+        grid-template-columns: 22px 48px minmax(0, 1fr) auto;
+        gap: 8px;
+        padding: 10px;
+      }
+      .ms-head .chev { display: none; }
+      .ms-body .grid-2 { grid-template-columns: 1fr; }
       .grid-2, .grid-3, .logo-grid { grid-template-columns: 1fr 1fr; }
+      .insp-pool, .insp-drop { grid-template-columns: repeat(2, 1fr); }
+      .content { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+      .content::before,
+      .content::after { width: 160px; height: 160px; }
+      .content::before { left: -48px; top: -20px; }
+      .content::after { right: -40px; top: 40px; }
+    }
+    @media (max-width: 480px) {
+      h1.serif { font-size: clamp(26px, 8vw, 34px); }
+      .lede { font-size: 14px; }
+      .grid-2, .grid-3, .logo-grid { grid-template-columns: 1fr; }
+      .ms-head .pill {
+        max-width: 7.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .m-title { font-size: 13px; }
+      .box { padding: 14px; }
+      .phone { width: min(220px, 100%); }
     }
   </style>
 </head>
@@ -772,12 +811,14 @@
       </div>
 
       <div class="content">
-        <button class="back" type="button">← Create with AI</button>
-        <h1 class="serif">Social Media Composer</h1>
-        <p class="lede">
-          Same studio feel as Homepage &amp; Newsletter — logos from Setup, drag-and-drop
-          inspiration, playbooks that map milestones, then edit &amp; re-approve after generate.
-        </p>
+        <div class="smc-intro">
+          <button class="back" type="button">← Create with AI</button>
+          <h1 class="serif">Social Media Composer</h1>
+          <p class="lede">
+            Same studio feel as Homepage &amp; Newsletter — logos from Setup, drag-and-drop
+            inspiration, playbooks that map milestones, then edit &amp; re-approve after generate.
+          </p>
+        </div>
         <div class="mock-banner">Interactive mock · drag tiles · expand milestones · try re-approval</div>
 
         <div class="layout">

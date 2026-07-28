@@ -332,13 +332,16 @@ export function ReportProblemButton({
         }}
         className={
           onDenseComposer
-            ? "fixed bottom-4 right-4 z-30 inline-flex items-center gap-2 rounded-md border border-cos-border bg-cos-card/95 px-3 py-2 text-xs font-medium text-cos-text shadow-sm transition hover:bg-cos-bg-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cos-dark sm:right-6"
+            ? "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30 inline-flex items-center gap-2 rounded-md border border-cos-border bg-cos-card/95 px-2.5 py-2 text-xs font-medium text-cos-text shadow-sm transition hover:bg-cos-bg-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cos-dark sm:right-6 sm:px-3"
             : "fixed bottom-36 right-4 z-40 inline-flex items-center gap-2 rounded-md border border-cos-border bg-cos-card px-3 py-2 text-xs font-medium text-cos-text shadow-sm transition hover:bg-cos-bg-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cos-dark sm:bottom-24 sm:right-6"
         }
         aria-haspopup="dialog"
+        aria-label="Report a Problem"
       >
         <Bug className="h-3.5 w-3.5 text-cos-muted" strokeWidth={1.5} aria-hidden />
-        Report a Problem
+        <span className={onDenseComposer ? "hidden sm:inline" : undefined}>
+          Report a Problem
+        </span>
       </button>
 
       {open ? (
