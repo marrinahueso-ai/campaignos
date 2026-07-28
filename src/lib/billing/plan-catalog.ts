@@ -70,7 +70,7 @@ export const PAID_PLANS: readonly PlanCatalogEntry[] = [
       "Run the school year: full core workflow with AI — capacity feels snug on a busy calendar.",
     features: [
       `${PLAN_MONTHLY_CREDITS.professional.toLocaleString()} AI credits / month`,
-      "Ask Ralli, Volunteer Center, Communication Hub",
+      "Ask Ralli, Volunteers, Communication Hub",
       "Unlimited events · 15 team seats",
       "Meta publishing (40 posts / month)",
       "Approvals, custom roles, change requests",

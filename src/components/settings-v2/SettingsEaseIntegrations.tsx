@@ -254,8 +254,8 @@ export function SettingsEaseIntegrations({ data }: SettingsEaseIntegrationsProps
 
           <IntegrationRow
             kind="soon"
-            title="Gmail · Dropbox · SignUpGenius"
-            description="Deferred — not available in soft launch."
+            title="Gmail · Dropbox"
+            description="Not available in soft launch yet."
             actions={
               <button type="button" className={btnSecondaryClassName} disabled>
                 Coming soon

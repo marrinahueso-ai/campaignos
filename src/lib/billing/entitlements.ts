@@ -141,7 +141,7 @@ export function paidPlanIdFromTier(
 
 export const FEATURE_LABELS: Record<PlanFeatureKey, string> = {
   ask_ralli: "Ask Ralli",
-  volunteer_center: "Volunteer Center",
+  volunteer_center: "Volunteers",
   communication_hub: "Communication Hub",
   inbox_ai: "AI Inbox replies",
   social_analytics: "Social Analytics",
