@@ -93,10 +93,10 @@ function renderOpportunityFace(
   options: { includeDataImages?: boolean },
 ): string {
   const hosted = exportImageUrl(role.imageUrl, options);
-  if (hosted) {
-    return `<div class="vol-art"><img src="${escapeHtml(hosted)}" alt="${escapeHtml(role.title || "Volunteer opportunity")}" /></div>`;
-  }
-  return `<div class="vol-art vol-art-fallback" aria-hidden="true"><span class="vol-emoji">${escapeHtml(role.emoji || "🤝")}</span></div>`;
+  const face = hosted
+    ? `<div class="vol-art"><img src="${escapeHtml(hosted)}" alt="${escapeHtml(role.title || "Volunteer opportunity")}" /></div>`
+    : `<div class="vol-art vol-art-fallback" aria-hidden="true"><span class="vol-emoji">${escapeHtml(role.emoji || "🤝")}</span></div>`;
+  return `<div class="vol-art-wrap">${face}</div>`;
 }
 
 function renderOpportunityCard(
@@ -303,29 +303,31 @@ ${howTo
 .vol-step-detail{display:block;font-size:13px;line-height:1.45;color:#5c554c}
 .vol-section-title{color:#2f4a3c;font-size:26px;margin:8px 0 6px;text-align:center}
 .vol-section-sub{text-align:center;color:#5c554c;font-size:14px;margin:0 0 18px;line-height:1.5}
-.vol-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;align-items:stretch}
-.vol-card{background:#fff;border:2px solid #d9e8ec;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08);display:flex;flex-direction:column;height:100%;transition:transform .25s ease,box-shadow .25s ease}
-.vol-card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(47,74,60,.18)}
+.vol-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch}
+.vol-card{background:#fff;border:2px solid #d9e8ec;border-radius:14px;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,.06);display:flex;flex-direction:column;height:100%;transition:transform .25s ease,box-shadow .25s ease}
+.vol-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(47,74,60,.14)}
 .vol-card.dimmed{opacity:.85}
-.vol-art{width:100%;aspect-ratio:1/1;background:#eef8fa;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.vol-art-wrap{display:flex;justify-content:center;padding:12px 12px 0;flex-shrink:0}
+.vol-art{width:180px;max-width:100%;aspect-ratio:1/1;border-radius:12px;background:#eef8fa;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .vol-art img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
 .vol-art-fallback{background:linear-gradient(135deg,${hc.backgroundStart},${hc.backgroundEnd})}
-.vol-emoji{font-size:64px;line-height:1}
-.vol-card-body{padding:16px 18px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;flex:1}
-.vol-status{font-size:12px;font-weight:700;margin-bottom:8px}
+.vol-emoji{font-size:40px;line-height:1}
+.vol-card-body{padding:10px 12px 14px;text-align:center;display:flex;flex-direction:column;align-items:center;flex:1}
+.vol-status{font-size:11px;font-weight:700;margin-bottom:6px}
 .vol-status.open{color:#2f4a3c}
 .vol-status.soon{color:#7a7166}
-.vol-card h3{margin:0 0 8px;font-size:19px;color:#0b2f5b;line-height:1.25;text-align:center}
-.vol-blurb{font-size:14px;line-height:1.45;color:#333;margin:0 0 10px;flex:1;text-align:center}
-.vol-when{margin:0 0 12px;font-size:14px;font-weight:700;color:#0b6f89;text-align:center}
-.vol-cta{display:inline-block;margin-top:auto;background:${hc.buttonBackground};color:${hc.buttonText}!important;padding:10px 18px;border-radius:999px;font-weight:bold;text-decoration:none!important;font-size:14px}
+.vol-card h3{margin:0 0 6px;font-size:16px;color:#0b2f5b;line-height:1.25;text-align:center}
+.vol-blurb{font-size:13px;line-height:1.4;color:#333;margin:0 0 8px;flex:1;text-align:center}
+.vol-when{margin:0 0 10px;font-size:13px;font-weight:700;color:#0b6f89;text-align:center}
+.vol-cta{display:inline-block;margin-top:auto;background:${hc.buttonBackground};color:${hc.buttonText}!important;padding:8px 14px;border-radius:999px;font-weight:bold;text-decoration:none!important;font-size:13px}
 .vol-empty{grid-column:1/-1;text-align:center;color:#7a7166;padding:24px;background:#f6f2eb;border-radius:14px}
 .vol-cta-band{margin-top:28px;background:${fc.background};color:${fc.textColor};border-radius:20px;padding:28px;text-align:center}
 .vol-cta-band h2{margin:0 0 10px;color:${fc.textColor};font-size:24px}
 .vol-cta-band p{margin:0 0 16px;line-height:1.55;color:${fc.textColor};opacity:.95}
 .vol-cta-band .vol-btn{background:${fc.buttonBackground};color:${fc.buttonText}!important}
 .vol-foot{margin-top:18px;text-align:center;font-size:12px;color:#7a7166}
-@media(max-width:800px){.vol-howto,.vol-grid{grid-template-columns:1fr}.vol-hero h1{font-size:28px}}
+@media(max-width:1000px){.vol-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.vol-howto,.vol-grid{grid-template-columns:1fr}.vol-hero h1{font-size:28px}.vol-art{width:160px}}
 --></style>
 <div class="vol-wrap" id="volunteer-with-us">
 <header class="vol-hero">

@@ -3,11 +3,14 @@
 import { EmojiPicker } from "@/components/homepage-composer/EmojiPicker";
 import { SettingsBox } from "@/components/homepage-composer/SettingsBox";
 import { Button } from "@/components/ui/Button";
+import { campaignBuilderHref } from "@/lib/campaign-builder-v2/navigation";
 import {
   contrastingText,
   normalizeHex,
 } from "@/lib/homepage-composer/colors";
 import { formatEventWhen } from "@/lib/homepage-composer/blurbs";
+import { compressImageForUpload } from "@/lib/homepage-composer/compress-image";
+import { uploadVolunteerComposerArtworkAction } from "@/lib/volunteer-composer/artwork-actions";
 import {
   buildInitialState,
   newCustomOpportunity,
@@ -20,6 +23,7 @@ import {
   saveComposerDraft,
   type DraftSaveStatus,
 } from "@/lib/volunteer-composer/draft-storage";
+import { ensureVolunteerOpportunityEventAction } from "@/lib/volunteer-composer/event-actions";
 import { exportVolunteerHtml } from "@/lib/volunteer-composer/export-html";
 import type {
   VolunteerComposerEvent,
@@ -32,7 +36,7 @@ import {
   PREVIEW_FULL_MONTH,
 } from "@/lib/volunteer-composer/visibility";
 import { cn } from "@/lib/utils/cn";
-import { Plus, Trash2 } from "lucide-react";
+import { GripVertical, Plus, Sparkles, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import {
   useCallback,
@@ -40,8 +44,80 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
+  type DragEvent,
   type ReactNode,
 } from "react";
+
+/** Reject only absurdly huge dumps (before compress). Normal chat photos are fine. */
+const MAX_SOURCE_ARTWORK_BYTES = 25 * 1024 * 1024;
+
+type OpportunitySortMode =
+  | "custom"
+  | "date-asc"
+  | "date-desc"
+  | "title-asc"
+  | "title-desc"
+  | "off-asc"
+  | "always-first";
+
+const OPPORTUNITY_SORT_OPTIONS: Array<{
+  value: OpportunitySortMode;
+  label: string;
+}> = [
+  { value: "custom", label: "Custom order" },
+  { value: "date-asc", label: "Date · soonest first" },
+  { value: "date-desc", label: "Date · latest first" },
+  { value: "title-asc", label: "A → Z" },
+  { value: "title-desc", label: "Z → A" },
+  { value: "off-asc", label: "Off date · soonest" },
+  { value: "always-first", label: "Always on first" },
+];
+
+function opportunitySortDate(op: VolunteerOpportunity): string {
+  return op.startsOn || op.expiresOn || "9999-12-31";
+}
+
+function sortOpportunities(
+  opportunities: VolunteerOpportunity[],
+  mode: OpportunitySortMode,
+): VolunteerOpportunity[] {
+  if (mode === "custom") return opportunities;
+  const next = [...opportunities];
+  next.sort((a, b) => {
+    switch (mode) {
+      case "date-asc":
+        return opportunitySortDate(a).localeCompare(opportunitySortDate(b));
+      case "date-desc":
+        return opportunitySortDate(b).localeCompare(opportunitySortDate(a));
+      case "title-asc":
+        return a.title.localeCompare(b.title, undefined, {
+          sensitivity: "base",
+        });
+      case "title-desc":
+        return b.title.localeCompare(a.title, undefined, {
+          sensitivity: "base",
+        });
+      case "off-asc": {
+        const aOff = a.alwaysOn ? "9999-12-31" : a.expiresOn || "9999-12-31";
+        const bOff = b.alwaysOn ? "9999-12-31" : b.expiresOn || "9999-12-31";
+        return aOff.localeCompare(bOff);
+      }
+      case "always-first": {
+        if (a.alwaysOn !== b.alwaysOn) return a.alwaysOn ? -1 : 1;
+        return opportunitySortDate(a).localeCompare(opportunitySortDate(b));
+      }
+      default:
+        return 0;
+    }
+  });
+  return next;
+}
+
+function formatBadgeDate(ymd: string | null): string {
+  if (!ymd || ymd.length < 10) return "—";
+  return `${ymd.slice(5, 7)}-${ymd.slice(8, 10)}`;
+}
 
 const STEPS: Array<{ id: VolunteerComposerStep; label: string; hint: string }> =
   [
@@ -167,6 +243,11 @@ export function VolunteerComposer({
   const [saveStatus, setSaveStatus] = useState<DraftSaveStatus>({
     kind: "idle",
   });
+  const [opportunitySort, setOpportunitySort] =
+    useState<OpportunitySortMode>("custom");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [compressingOpId, setCompressingOpId] = useState<string | null>(null);
+  const [linkingEventOpId, setLinkingEventOpId] = useState<string | null>(null);
 
   const organizationNameRef = useRef(organizationName);
   const organizationIdRef = useRef(organizationId);
@@ -174,6 +255,8 @@ export function VolunteerComposer({
   const hydratedRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveSeqRef = useRef(0);
+  const artworkInputRef = useRef<HTMLInputElement>(null);
+  const artworkOpIdRef = useRef<string | null>(null);
   organizationNameRef.current = organizationName;
   organizationIdRef.current = organizationId;
   stateRef.current = state;
@@ -395,22 +478,179 @@ export function VolunteerComposer({
     }));
   }, []);
 
-  const copyHtml = useCallback(async () => {
+  const applyOpportunitySort = (mode: OpportunitySortMode) => {
+    setOpportunitySort(mode);
+    if (mode === "custom") return;
+    setState((prev) => ({
+      ...prev,
+      opportunities: sortOpportunities(prev.opportunities, mode),
+    }));
+  };
+
+  const onDragStart = (opId: string) => setDragId(opId);
+  const onDragOver = (e: DragEvent, overId: string) => {
+    e.preventDefault();
+    if (!dragId || dragId === overId) return;
+    setOpportunitySort("custom");
+    setState((prev) => {
+      const from = prev.opportunities.findIndex((op) => op.id === dragId);
+      const to = prev.opportunities.findIndex((op) => op.id === overId);
+      if (from < 0 || to < 0) return prev;
+      const next = [...prev.opportunities];
+      const [moved] = next.splice(from, 1);
+      if (!moved) return prev;
+      next.splice(to, 0, moved);
+      return { ...prev, opportunities: next };
+    });
+  };
+
+  const openArtworkPicker = (opId: string) => {
+    artworkOpIdRef.current = opId;
+    artworkInputRef.current?.click();
+  };
+
+  const onArtworkSelected = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    const opId = artworkOpIdRef.current;
+    event.target.value = "";
+    artworkOpIdRef.current = null;
+    if (!file || !opId) return;
+
+    const looksLikeImage =
+      !file.type ||
+      file.type.startsWith("image/") ||
+      /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(file.name);
+    if (!looksLikeImage) {
+      window.alert("Please choose an image file (PNG, JPG, or similar).");
+      return;
+    }
+    if (file.size > MAX_SOURCE_ARTWORK_BYTES) {
+      window.alert(
+        "That file is over 25 MB. Try a normal photo or screenshot instead.",
+      );
+      return;
+    }
+
+    void (async () => {
+      setCompressingOpId(opId);
+      try {
+        const result = await compressImageForUpload(file);
+        const uploaded = await uploadVolunteerComposerArtworkAction({
+          opportunityId: opId,
+          dataUrl: result.dataUrl,
+        });
+        if (!uploaded.success || !uploaded.url) {
+          throw new Error(
+            uploaded.error ?? "Could not upload artwork. Try again.",
+          );
+        }
+        patchOpportunity(opId, { imageUrl: uploaded.url });
+      } catch (err) {
+        window.alert(
+          err instanceof Error
+            ? err.message
+            : "Could not prepare that image. Try another file.",
+        );
+      } finally {
+        setCompressingOpId(null);
+      }
+    })();
+  };
+
+  const openArtworkAi = async (op: VolunteerOpportunity) => {
+    if (op.eventId) {
+      window.location.href = campaignBuilderHref(op.eventId, "preview");
+      return;
+    }
+    setLinkingEventOpId(op.id);
     try {
-      await navigator.clipboard.writeText(exportHtml);
+      const result = await ensureVolunteerOpportunityEventAction({
+        title: op.title.trim() || "Volunteer opportunity",
+        description:
+          op.blurb.trim() ||
+          "Volunteer opportunity — create artwork for your Volunteer With Us page.",
+        date: op.expiresOn || op.startsOn || todayYmd(),
+      });
+      if (!result.success || !result.eventId || !result.href) {
+        throw new Error(
+          result.error ?? "Could not open artwork tools for this role.",
+        );
+      }
+      setState((prev) => ({
+        ...prev,
+        selectedEventIds: prev.selectedEventIds.includes(result.eventId!)
+          ? prev.selectedEventIds
+          : [...prev.selectedEventIds, result.eventId!],
+        opportunities: prev.opportunities.map((row) =>
+          row.id === op.id
+            ? { ...row, eventId: result.eventId!, source: "event" as const }
+            : row,
+        ),
+      }));
+      await flushDraft("flush");
+      window.location.href = result.href;
+    } catch (err) {
+      window.alert(
+        err instanceof Error
+          ? err.message
+          : "Could not open artwork tools. Try again.",
+      );
+      setLinkingEventOpId(null);
+    }
+  };
+
+  const copyHtml = useCallback(async () => {
+    setCopyLabel("Preparing…");
+    try {
+      let nextState = state;
+      const embedded = state.opportunities.filter((op) =>
+        op.imageUrl?.startsWith("data:"),
+      );
+      if (embedded.length > 0) {
+        const opportunities = [...nextState.opportunities];
+        for (const op of embedded) {
+          if (!op.imageUrl?.startsWith("data:")) continue;
+          const uploaded = await uploadVolunteerComposerArtworkAction({
+            opportunityId: op.id,
+            dataUrl: op.imageUrl,
+          });
+          if (uploaded.success && uploaded.url) {
+            const idx = opportunities.findIndex((row) => row.id === op.id);
+            if (idx >= 0) {
+              opportunities[idx] = {
+                ...opportunities[idx]!,
+                imageUrl: uploaded.url,
+              };
+            }
+          }
+        }
+        nextState = { ...nextState, opportunities };
+        setState(nextState);
+      }
+      const payload = exportVolunteerHtml(nextState);
+      await navigator.clipboard.writeText(payload);
       setCopyLabel("Copied!");
       window.setTimeout(() => setCopyLabel("Copy full page HTML"), 1800);
     } catch {
       setCopyLabel("Copy failed — select below");
       window.setTimeout(() => setCopyLabel("Copy full page HTML"), 2400);
     }
-  }, [exportHtml]);
+  }, [state]);
 
   const hc = state.header.colors;
   const fc = state.footer.colors;
 
   return (
     <div className="studio-page space-y-3 pb-6">
+      <input
+        ref={artworkInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={onArtworkSelected}
+        aria-hidden
+        tabIndex={-1}
+      />
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <Link
@@ -1013,150 +1253,249 @@ export function VolunteerComposer({
                   </div>
                 </div>
 
-                <SettingsBox
-                  title="Opportunity list"
-                  description="Each card is one role. Edit the blurb, signup link, and when it should appear."
-                  compact
-                >
+                <div className="rounded-[18px] border border-cos-border bg-cos-bg-alt p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h3 className="font-display text-xl text-cos-text">
+                      On page · drag to reorder
+                    </h3>
+                    <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-cos-muted">
+                      <span className="sr-only">Sort opportunities</span>
+                      <select
+                        value={opportunitySort}
+                        onChange={(e) =>
+                          applyOpportunitySort(
+                            e.target.value as OpportunitySortMode,
+                          )
+                        }
+                        disabled={state.opportunities.length < 2}
+                        className="h-9 min-w-[11.5rem] rounded-lg border border-cos-border bg-cos-card px-2.5 text-sm font-medium normal-case tracking-normal text-cos-text focus:border-cos-brand-forest focus:outline-none focus:ring-2 focus:ring-cos-brand-forest/20 disabled:opacity-50"
+                      >
+                        {OPPORTUNITY_SORT_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            Sort: {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                   {state.opportunities.length === 0 ? (
-                    <p className="text-sm text-cos-muted">
+                    <p className="mt-4 text-sm text-cos-muted">
                       Select events or add another role to get started.
                     </p>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="mt-3 space-y-3">
                       {state.opportunities.map((op) => (
                         <div
                           key={op.id}
-                          className="rounded-[16px] border border-cos-border bg-cos-bg/50 p-3"
+                          draggable
+                          onDragStart={() => onDragStart(op.id)}
+                          onDragOver={(e) => onDragOver(e, op.id)}
+                          onDragEnd={() => setDragId(null)}
+                          className={cn(
+                            "rounded-[14px] border border-cos-border bg-cos-card p-3 transition-colors duration-150 hover:border-cos-brand-sage",
+                            dragId === op.id && "opacity-50",
+                          )}
                         >
-                          <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-                            <div className="flex min-w-0 flex-1 items-center gap-2">
-                              {op.imageUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={op.imageUrl}
-                                  alt=""
-                                  className="h-12 w-12 shrink-0 rounded-[12px] border border-cos-border object-cover"
+                          <div className="grid grid-cols-[24px_72px_minmax(0,1fr)] items-start gap-3">
+                            <GripVertical
+                              className="mt-2 h-5 w-5 cursor-grab justify-self-center text-cos-muted"
+                              strokeWidth={1.5}
+                            />
+                            <div className="space-y-1.5">
+                              <div className="aspect-square h-[72px] w-[72px] overflow-hidden rounded-[14px] bg-cos-bg-alt">
+                                {op.imageUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={op.imageUrl}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full items-center justify-center">
+                                    <EmojiPicker
+                                      value={op.emoji}
+                                      onChange={(emoji) =>
+                                        patchOpportunity(op.id, { emoji })
+                                      }
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  type="button"
+                                  title={
+                                    compressingOpId === op.id
+                                      ? "Working…"
+                                      : "Upload artwork"
+                                  }
+                                  aria-label={
+                                    compressingOpId === op.id
+                                      ? "Working on artwork upload"
+                                      : "Upload artwork"
+                                  }
+                                  disabled={compressingOpId !== null}
+                                  onClick={() => openArtworkPicker(op.id)}
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[rgba(42,38,34,0.05)] text-[#8a8278] transition-colors hover:bg-[rgba(47,74,60,0.08)] hover:text-[#2f4a3c] disabled:opacity-40"
+                                >
+                                  <Upload
+                                    className="h-3 w-3"
+                                    strokeWidth={1.5}
+                                  />
+                                </button>
+                                {op.eventId ? (
+                                  <Link
+                                    href={campaignBuilderHref(
+                                      op.eventId,
+                                      "preview",
+                                    )}
+                                    title="Create artwork with AI"
+                                    aria-label="Create artwork with AI for this event"
+                                    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[rgba(42,38,34,0.05)] text-[#8a8278] transition-colors hover:bg-[rgba(47,74,60,0.08)] hover:text-[#2f4a3c]"
+                                  >
+                                    <Sparkles
+                                      className="h-3 w-3"
+                                      strokeWidth={1.5}
+                                    />
+                                  </Link>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    title="Create artwork with AI"
+                                    aria-label="Create artwork with AI for this role"
+                                    disabled={linkingEventOpId !== null}
+                                    onClick={() => void openArtworkAi(op)}
+                                    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[rgba(42,38,34,0.05)] text-[#8a8278] transition-colors hover:bg-[rgba(47,74,60,0.08)] hover:text-[#2f4a3c] disabled:opacity-40"
+                                  >
+                                    <Sparkles
+                                      className="h-3 w-3"
+                                      strokeWidth={1.5}
+                                    />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="min-w-0 space-y-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <input
+                                  className="min-w-0 flex-1 rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 font-display text-sm font-semibold text-cos-text"
+                                  value={op.title}
+                                  onChange={(e) =>
+                                    patchOpportunity(op.id, {
+                                      title: e.target.value,
+                                    })
+                                  }
+                                  aria-label="Opportunity title"
                                 />
-                              ) : (
-                                <EmojiPicker
-                                  value={op.emoji}
-                                  onChange={(emoji) =>
-                                    patchOpportunity(op.id, { emoji })
+                                <span className="rounded-full bg-cos-bg-alt px-2.5 py-1 text-[11px] font-bold text-cos-brand-sage">
+                                  {op.alwaysOn
+                                    ? "Always"
+                                    : `→ ${formatBadgeDate(op.expiresOn)}`}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="rounded-xl border border-cos-border px-2 py-1.5 text-cos-muted hover:text-cos-error"
+                                  aria-label="Remove opportunity"
+                                  onClick={() =>
+                                    setState((prev) => ({
+                                      ...prev,
+                                      selectedEventIds: op.eventId
+                                        ? prev.selectedEventIds.filter(
+                                            (id) => id !== op.eventId,
+                                          )
+                                        : prev.selectedEventIds,
+                                      opportunities: prev.opportunities.filter(
+                                        (x) => x.id !== op.id,
+                                      ),
+                                    }))
+                                  }
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                              <textarea
+                                className="w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs text-cos-text"
+                                rows={2}
+                                value={op.blurb}
+                                onChange={(e) =>
+                                  patchOpportunity(op.id, {
+                                    blurb: e.target.value,
+                                  })
+                                }
+                                aria-label="Opportunity blurb"
+                              />
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <Field
+                                  label="When"
+                                  value={op.whenLabel}
+                                  onChange={(whenLabel) =>
+                                    patchOpportunity(op.id, { whenLabel })
                                   }
                                 />
-                              )}
-                              <input
-                                className="min-w-0 flex-1 rounded-xl border border-cos-border bg-cos-card px-3 py-2 text-sm font-semibold"
-                                value={op.title}
-                                onChange={(e) =>
-                                  patchOpportunity(op.id, {
-                                    title: e.target.value,
-                                  })
-                                }
-                                aria-label="Opportunity title"
-                              />
+                                <Field
+                                  label="SignUpGenius / link URL"
+                                  value={op.signupUrl}
+                                  onChange={(signupUrl) =>
+                                    patchOpportunity(op.id, { signupUrl })
+                                  }
+                                  placeholder="https://www.signupgenius.com/go/…"
+                                />
+                              </div>
+                              <div className="flex flex-wrap items-end gap-3">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-cos-text">
+                                  <input
+                                    type="checkbox"
+                                    checked={op.alwaysOn}
+                                    onChange={(e) =>
+                                      patchOpportunity(op.id, {
+                                        alwaysOn: e.target.checked,
+                                      })
+                                    }
+                                  />
+                                  Always on
+                                </label>
+                                {!op.alwaysOn ? (
+                                  <>
+                                    <label className="block text-xs">
+                                      <span className="mb-1 block font-bold uppercase tracking-[0.05em] text-cos-muted">
+                                        On date
+                                      </span>
+                                      <input
+                                        type="date"
+                                        className="rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-sm"
+                                        value={op.startsOn ?? ""}
+                                        onChange={(e) =>
+                                          patchOpportunity(op.id, {
+                                            startsOn: e.target.value || null,
+                                          })
+                                        }
+                                      />
+                                    </label>
+                                    <label className="block text-xs">
+                                      <span className="mb-1 block font-bold uppercase tracking-[0.05em] text-cos-muted">
+                                        Off date
+                                      </span>
+                                      <input
+                                        type="date"
+                                        className="rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-sm"
+                                        value={op.expiresOn ?? ""}
+                                        onChange={(e) =>
+                                          patchOpportunity(op.id, {
+                                            expiresOn: e.target.value || null,
+                                          })
+                                        }
+                                      />
+                                    </label>
+                                  </>
+                                ) : null}
+                              </div>
                             </div>
-                            <button
-                              type="button"
-                              className="rounded-lg p-2 text-cos-muted hover:bg-white hover:text-cos-error"
-                              aria-label="Remove opportunity"
-                              onClick={() =>
-                                setState((prev) => ({
-                                  ...prev,
-                                  selectedEventIds: op.eventId
-                                    ? prev.selectedEventIds.filter(
-                                        (id) => id !== op.eventId,
-                                      )
-                                    : prev.selectedEventIds,
-                                  opportunities: prev.opportunities.filter(
-                                    (x) => x.id !== op.id,
-                                  ),
-                                }))
-                              }
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <textarea
-                            className="mb-2 w-full rounded-xl border border-cos-border bg-cos-card px-3 py-2 text-sm"
-                            rows={2}
-                            value={op.blurb}
-                            onChange={(e) =>
-                              patchOpportunity(op.id, { blurb: e.target.value })
-                            }
-                            aria-label="Opportunity blurb"
-                          />
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            <Field
-                              label="When"
-                              value={op.whenLabel}
-                              onChange={(whenLabel) =>
-                                patchOpportunity(op.id, { whenLabel })
-                              }
-                            />
-                            <Field
-                              label="SignUpGenius / link URL"
-                              value={op.signupUrl}
-                              onChange={(signupUrl) =>
-                                patchOpportunity(op.id, { signupUrl })
-                              }
-                              placeholder="https://www.signupgenius.com/go/…"
-                            />
-                          </div>
-                          <div className="mt-2 flex flex-wrap items-end gap-3">
-                            <label className="flex items-center gap-2 text-sm font-semibold text-cos-text">
-                              <input
-                                type="checkbox"
-                                checked={op.alwaysOn}
-                                onChange={(e) =>
-                                  patchOpportunity(op.id, {
-                                    alwaysOn: e.target.checked,
-                                  })
-                                }
-                              />
-                              Always on
-                            </label>
-                            {!op.alwaysOn ? (
-                              <>
-                                <label className="block text-xs">
-                                  <span className="mb-1 block font-bold uppercase tracking-[0.05em] text-cos-muted">
-                                    On date
-                                  </span>
-                                  <input
-                                    type="date"
-                                    className="rounded-xl border border-cos-border bg-cos-card px-3 py-2 text-sm"
-                                    value={op.startsOn ?? ""}
-                                    onChange={(e) =>
-                                      patchOpportunity(op.id, {
-                                        startsOn: e.target.value || null,
-                                      })
-                                    }
-                                  />
-                                </label>
-                                <label className="block text-xs">
-                                  <span className="mb-1 block font-bold uppercase tracking-[0.05em] text-cos-muted">
-                                    Off date
-                                  </span>
-                                  <input
-                                    type="date"
-                                    className="rounded-xl border border-cos-border bg-cos-card px-3 py-2 text-sm"
-                                    value={op.expiresOn ?? ""}
-                                    onChange={(e) =>
-                                      patchOpportunity(op.id, {
-                                        expiresOn: e.target.value || null,
-                                      })
-                                    }
-                                  />
-                                </label>
-                              </>
-                            ) : null}
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
-                </SettingsBox>
+                </div>
               </div>
             </section>
           )}

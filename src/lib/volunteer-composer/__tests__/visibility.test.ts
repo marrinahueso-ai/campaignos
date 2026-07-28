@@ -127,8 +127,11 @@ describe("volunteer composer defaults + export", () => {
     assert.match(html, /data-expires="2026-08-08"/);
     assert.match(html, /cdn\.example\/fair\.png/);
     assert.match(html, /class="vol-art"/);
+    assert.match(html, /vol-art-wrap/);
     assert.match(html, /vol-card-body/);
     assert.match(html, /aspect-ratio:1\/1/);
+    assert.match(html, /width:180px/);
+    assert.match(html, /repeat\(3,1fr\)/);
     assert.match(html, /text-align:center/);
     assert.match(html, /Browse events and programs below/);
     assert.doesNotMatch(html, /volunteerwithus/i);
