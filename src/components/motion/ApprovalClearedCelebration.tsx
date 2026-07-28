@@ -15,7 +15,10 @@ const CONFETTI_COLORS = [
   "#ebe4d9",
 ];
 
-const AUTO_DISMISS_MS = 2200;
+/** Readable hold; Done / backdrop dismiss anytime. */
+const AUTO_DISMISS_MS = 5500;
+const FADE_OUT_MS = 420;
+const CONFETTI_CLEAR_MS = 4200;
 
 type ConfettiPiece = {
   id: string;
@@ -70,8 +73,9 @@ function buildPieces(count: number, burstDelay = 0): ConfettiPiece[] {
 }
 
 /**
- * Final Approve & schedule win: “Ready to Ralli” + brand confetti (~2s).
- * Reduced motion: static headline + check, no particles.
+ * Final Approve & schedule win: “Ready to Ralli” + brand confetti.
+ * Manual Done / backdrop dismiss; auto-dismiss ~5.5s with a gentle fade.
+ * Reduced motion: static headline + check, still dismissable / longer hold.
  */
 export function ApprovalClearedCelebration({
   open,
@@ -83,14 +87,18 @@ export function ApprovalClearedCelebration({
   const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
   const [confettiActive, setConfettiActive] = useState(false);
   const [cardMode, setCardMode] = useState<"go" | "static" | null>(null);
+  const [exiting, setExiting] = useState(false);
   const dismissRef = useRef(onDismiss);
   dismissRef.current = onDismiss;
+  const exitingRef = useRef(false);
 
   useEffect(() => {
     if (!open) {
       setPieces([]);
       setConfettiActive(false);
       setCardMode(null);
+      setExiting(false);
+      exitingRef.current = false;
       return;
     }
 
@@ -107,7 +115,7 @@ export function ApprovalClearedCelebration({
       }, 420);
       const clearConfetti = window.setTimeout(() => {
         setConfettiActive(false);
-      }, AUTO_DISMISS_MS);
+      }, CONFETTI_CLEAR_MS);
       return () => {
         window.clearTimeout(burst);
         window.clearTimeout(clearConfetti);
@@ -115,12 +123,39 @@ export function ApprovalClearedCelebration({
     }
   }, [open, reducedMotion]);
 
+  const fadeTimerRef = useRef<number | null>(null);
+
+  const beginDismiss = () => {
+    if (exitingRef.current) return;
+    exitingRef.current = true;
+    setExiting(true);
+    if (fadeTimerRef.current != null) {
+      window.clearTimeout(fadeTimerRef.current);
+    }
+    fadeTimerRef.current = window.setTimeout(() => {
+      fadeTimerRef.current = null;
+      dismissRef.current();
+    }, FADE_OUT_MS);
+  };
+
   useEffect(() => {
     if (!open) return;
     const timer = window.setTimeout(() => {
-      dismissRef.current();
+      if (exitingRef.current) return;
+      exitingRef.current = true;
+      setExiting(true);
+      fadeTimerRef.current = window.setTimeout(() => {
+        fadeTimerRef.current = null;
+        dismissRef.current();
+      }, FADE_OUT_MS);
     }, AUTO_DISMISS_MS);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      if (fadeTimerRef.current != null) {
+        window.clearTimeout(fadeTimerRef.current);
+        fadeTimerRef.current = null;
+      }
+    };
   }, [open]);
 
   if (!open) {
@@ -133,12 +168,17 @@ export function ApprovalClearedCelebration({
     (when ? `Ready to post · ${when}` : "Approved and ready to post");
 
   return (
-    <div className="ralli-yay" role="dialog" aria-modal="true" aria-live="polite">
+    <div
+      className={`ralli-yay${exiting ? " is-exiting" : ""}`}
+      role="dialog"
+      aria-modal="true"
+      aria-live="polite"
+    >
       <button
         type="button"
         className="ralli-yay__backdrop"
         aria-label="Dismiss celebration"
-        onClick={onDismiss}
+        onClick={beginDismiss}
       />
       <div className="ralli-yay__stage">
         <div
@@ -194,7 +234,7 @@ export function ApprovalClearedCelebration({
           <button
             type="button"
             className="ralli-yay__dismiss"
-            onClick={onDismiss}
+            onClick={beginDismiss}
           >
             Done
           </button>

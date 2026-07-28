@@ -10,6 +10,30 @@
   padding: 20px;
   background: rgba(42, 38, 34, 0.42);
   backdrop-filter: blur(3px);
+  animation: ralli-yay-fade-in 0.28s ease-out both;
+}
+
+.ralli-yay.is-exiting {
+  animation: ralli-yay-fade-out 0.42s ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes ralli-yay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ralli-yay-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .ralli-yay__backdrop {
@@ -295,6 +319,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ralli-yay,
+  .ralli-yay.is-exiting {
+    animation: none !important;
+  }
+
+  .ralli-yay.is-exiting {
+    opacity: 0;
+  }
+
   .ralli-yay__card.is-go {
     animation: none !important;
   }

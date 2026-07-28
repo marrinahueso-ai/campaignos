@@ -108,9 +108,11 @@ export function ApprovalsSchedulingHub({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionWarning, setActionWarning] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<{
     scheduleLabel: string | null;
     scheduleSubline: string | null;
+    pendingWarning?: string | null;
   } | null>(null);
 
   const eventScopedItems = useMemo(() => {
@@ -210,6 +212,8 @@ export function ApprovalsSchedulingHub({
     }
 
     setIsSubmitting(true);
+    setActionError(null);
+    setActionWarning(null);
     try {
       const approvedItem = reviewItem;
       const result = await approveUnifiedItemAction({
@@ -223,15 +227,15 @@ export function ApprovalsSchedulingHub({
 
       if (result.success) {
         setReviewItem(null);
+        // Hold Meta/email follow-up warnings until celebration dismisses —
+        // never flash them as a red error under the win moment.
         setCelebration({
           scheduleLabel: approvedItem.scheduleLabel,
           scheduleSubline: approvedItem.scheduleLabel
             ? `Ready to post · ${approvedItem.scheduleLabel}`
             : "Approved and ready to post",
+          pendingWarning: result.warning?.trim() || null,
         });
-        if (result.warning) {
-          setActionError(result.warning);
-        }
         await refreshApprovalsTab();
         return;
       }
@@ -245,6 +249,7 @@ export function ApprovalsSchedulingHub({
   async function handleRetry(item: UnifiedApprovalItem) {
     setRetryingId(item.id);
     setActionError(null);
+    setActionWarning(null);
     try {
       const result = await retryFailedUnifiedApprovalAction({
         eventId: item.eventId,
@@ -312,8 +317,12 @@ export function ApprovalsSchedulingHub({
       )}
     >
       <CalendarActionToast
-        message={actionError}
-        onDismiss={() => setActionError(null)}
+        message={actionError ?? actionWarning}
+        variant={actionError ? "error" : "warning"}
+        onDismiss={() => {
+          setActionError(null);
+          setActionWarning(null);
+        }}
       />
 
       {!embedded ? (
@@ -554,7 +563,13 @@ export function ApprovalsSchedulingHub({
         open={Boolean(celebration)}
         scheduleLabel={celebration?.scheduleLabel}
         scheduleSubline={celebration?.scheduleSubline}
-        onDismiss={() => setCelebration(null)}
+        onDismiss={() => {
+          const warning = celebration?.pendingWarning?.trim() || null;
+          setCelebration(null);
+          if (warning) {
+            setActionWarning(warning);
+          }
+        }}
       />
     </div>
   );

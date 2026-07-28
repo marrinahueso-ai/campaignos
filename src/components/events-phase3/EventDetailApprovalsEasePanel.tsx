@@ -132,9 +132,11 @@ export function EventDetailApprovalsEasePanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionWarning, setActionWarning] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<{
     scheduleLabel: string | null;
     scheduleSubline: string | null;
+    pendingWarning?: string | null;
   } | null>(null);
 
   const scoped = useMemo(
@@ -177,6 +179,7 @@ export function EventDetailApprovalsEasePanel({
     if (!reviewItem) return;
     setIsSubmitting(true);
     setActionError(null);
+    setActionWarning(null);
     try {
       const approvedItem = reviewItem;
       const result = await approveUnifiedItemAction({
@@ -191,15 +194,15 @@ export function EventDetailApprovalsEasePanel({
         return;
       }
       setReviewItem(null);
+      // Hold Meta/email follow-up warnings until celebration dismisses —
+      // never flash them as a red error under the win moment.
       setCelebration({
         scheduleLabel: approvedItem.scheduleLabel,
         scheduleSubline: approvedItem.scheduleLabel
           ? `Ready to post · ${approvedItem.scheduleLabel}`
           : "Approved and ready to post",
+        pendingWarning: result.warning?.trim() || null,
       });
-      if (result.warning) {
-        setActionError(result.warning);
-      }
       await refresh();
     } finally {
       setIsSubmitting(false);
@@ -209,6 +212,7 @@ export function EventDetailApprovalsEasePanel({
   const handleRetry = async (item: UnifiedApprovalItem) => {
     setRetryingId(item.id);
     setActionError(null);
+    setActionWarning(null);
     try {
       const result = await retryFailedUnifiedApprovalAction({
         eventId: item.eventId,
@@ -248,8 +252,12 @@ export function EventDetailApprovalsEasePanel({
   return (
     <section>
       <CalendarActionToast
-        message={actionError}
-        onDismiss={() => setActionError(null)}
+        message={actionError ?? actionWarning}
+        variant={actionError ? "error" : "warning"}
+        onDismiss={() => {
+          setActionError(null);
+          setActionWarning(null);
+        }}
       />
 
       <EasePulseMini
@@ -398,7 +406,13 @@ export function EventDetailApprovalsEasePanel({
         open={Boolean(celebration)}
         scheduleLabel={celebration?.scheduleLabel}
         scheduleSubline={celebration?.scheduleSubline}
-        onDismiss={() => setCelebration(null)}
+        onDismiss={() => {
+          const warning = celebration?.pendingWarning?.trim() || null;
+          setCelebration(null);
+          if (warning) {
+            setActionWarning(warning);
+          }
+        }}
       />
     </section>
   );
