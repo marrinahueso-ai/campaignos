@@ -16,6 +16,7 @@ import {
   enrichInboxThreadsWithAvatars,
   fetchConnectedPageProfilePictures,
 } from "@/lib/inbox/sync/profile-pictures";
+import { subscribeMetaInboxWebhooks } from "@/lib/inbox/sync/subscribe-webhooks";
 import type { InboxSyncChannelResult, InboxSyncResult } from "@/lib/inbox/sync/types";
 import { upsertInboxBatch } from "@/lib/inbox/sync/upsert";
 
@@ -73,6 +74,7 @@ export async function syncInboxForOrganization(
     };
   }
 
+  const previousInstagramAccountId = connection.instagramAccountId?.trim() ?? "";
   const instagramAccountId = await refreshOrganizationInstagramAccountId({
     organizationId,
     facebookPageId: connection.facebookPageId,
@@ -85,6 +87,24 @@ export async function syncInboxForOrganization(
   const allMessages = [];
   const errors: string[] = [];
   const warnings: string[] = [];
+
+  // Instagram object webhooks are subscribed per IG professional account id.
+  // If the linked IG id was empty/stale at OAuth time, DMs never arrive until we
+  // re-subscribe after refresh.
+  if (instagramAccountId && instagramAccountId !== previousInstagramAccountId) {
+    const subscribe = await subscribeMetaInboxWebhooks({
+      pageId: connection.facebookPageId,
+      instagramAccountId,
+      pageAccessToken: connection.pageAccessToken,
+    });
+    if (subscribe.error) {
+      warnings.push(`Instagram webhook subscribe: ${subscribe.error}`);
+    } else {
+      console.info(
+        `Re-subscribed Meta inbox webhooks after IG account refresh for org ${organizationId}`,
+      );
+    }
+  }
 
   const facebookMessages = await fetchFacebookPageMessages({
     pageId: connection.facebookPageId,

@@ -2,7 +2,8 @@
 
 **Status:** Living  
 **Owner:** Product / Engineering  
-**Last updated:** July 29, 2026 — App Review screenshot pack captured (8/12); checklist matrix + UI paths verified  
+**Last updated:** July 31, 2026 — Instagram DM tester / Accounts Center note + App Review screenshot pack (8/12)  
+
 **Related:** [Meta connection](../integrations/meta.md) · [Feature list](../product/feature-list.md) · [Event Insights](../product/event-insights.md) · [Privacy & data](../security/privacy-and-data.md) · [Env & secrets](./env-and-secrets.md) · Insights mockup [`/insights-ease-mockup.html`](../../public/insights-ease-mockup.html) · Communications Hub mockup [`/communications-hub-ease-mockup.html`](../../public/communications-hub-ease-mockup.html)
 
 Living brief for **Meta App Review** (Facebook + Instagram) and internal prep. Honest to shipped product only — deferred items are marked **deferred**, not described as live.
@@ -117,7 +118,7 @@ Use a **test organization** and a **Facebook Page + linked Instagram Professiona
 1. **Sign in** — Open `/login` → sign in as the test user. (Optional: Continue with Facebook for account auth only — identity only, not Page connect.)
 2. **Connect Meta** — Header ⚙ **Settings** → **Integrations** → **Facebook & Instagram** → **Connect with Facebook** (or Sidebar → **Communications Hub** → **Connect with Facebook** on the empty state) → on the access request, approve the permissions in the consent table above and select the **test Page + linked Instagram** (and Business if prompted) → confirm Page and IG chips show connected on `/settings/meta`.
 3. **Publish** — Sidebar → **Create with AI** (`/create-with-ai/social`) or open an existing event → Sidebar → **Approvals** (`/approvals`) → Approve with **Publish Now** or schedule → confirm post appears on the test Page / IG (or as scheduled unpublished feed post).
-4. **Inbox** — Sidebar → **Communications Hub** (`/communications`; `/inbox` redirects here) → Sync if needed → open a Messenger or IG DM (from a tester) → reply with text; optionally send an org sticker or GIF on a DM thread; reply to a comment; try 👍 on a comment bubble.
+4. **Inbox** — Sidebar → **Communications Hub** (`/communications`; `/inbox` redirects here) → Sync if needed → open a Messenger or IG DM (**from an Instagram account linked to a Meta app Admin/Developer/Tester via Accounts Center** — personal IGs without a role will not webhook under Development/Standard Access) → reply with text; optionally send an org sticker or GIF on a DM thread; reply to a comment; try 👍 on a comment bubble.
 5. **Insights** — Navigate directly to `/insights` (**Insights is not in the sidebar during soft launch**) → **Refresh** → confirm organic KPIs / top content (may be empty on a brand-new Page — empty states are honest). Then Sidebar → **Events** → [event] → **Insights** tab.
 6. **Webhooks (optional)** — Confirm Meta app subscriptions point at `/api/meta/webhook`; send a test DM and see the thread update without full manual sync.
 7. **Disconnect / reconnect** — Header ⚙ Settings → Integrations → Facebook & Instagram → **Reconnect with Facebook** (rerequest) if demonstrating missing-scope recovery; Disconnect only if the review script requires it (re-connect before finishing).
