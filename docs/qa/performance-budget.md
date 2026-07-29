@@ -2,7 +2,8 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA  
-**Last updated:** July 29, 2026 (post-deploy Lighthouse re-measure)  
+**Last updated:** July 31, 2026 — Communications Hub left-rail Unread-queue badge count  
+
 **Related:** [Testing guide](./testing-guide.md) · [Launch checklist](./launch-checklist.md)
 
 ## Target
@@ -118,7 +119,7 @@ Prefer Production: `HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ral
 ## Hot path notes (July 24, 2026)
 
 - **`getMetaPublishBundles` is read-only** — does not call `syncMetaPublicationSlots` / write slots on GET. Approvals previews, calendar item preview, and planning-hub loads stay read-only. Mutations use `syncAndGetMetaPublishBundles` (or explicit `syncMetaPublicationSlots`) when slots must be created/updated.
-- **List fetch soft caps (Priority 2)** — org Files SSR caps at `FILES_ORG_FETCH_CAP` (400; event detail `FILES_EVENT_FETCH_CAP` 200); Tasks hub org load at `TASK_HUB_ORG_FETCH_CAP` (1000; event Tasks tab uncapped); Inbox threads `INBOX_THREAD_FETCH_CAP` (50), messages `INBOX_MESSAGES_PER_THREAD_CAP` (40) / `INBOX_MESSAGES_FETCH_CAP`, unread badge sums at most `INBOX_UNREAD_BADGE_THREAD_CAP` (500) thread rows; channel sidebar counts use `head: true` exact counts (no full thread row scan).
+- **List fetch soft caps (Priority 2)** — org Files SSR caps at `FILES_ORG_FETCH_CAP` (400; event detail `FILES_EVENT_FETCH_CAP` 200); Tasks hub org load at `TASK_HUB_ORG_FETCH_CAP` (1000; event Tasks tab uncapped); Inbox threads `INBOX_THREAD_FETCH_CAP` (50), messages `INBOX_MESSAGES_PER_THREAD_CAP` (40) / `INBOX_MESSAGES_FETCH_CAP`; Communications Hub left-rail badge is a `head: true` count of Unread-queue threads (not Deleted / not Done), soft-capped at `INBOX_UNREAD_BADGE_THREAD_CAP` (500); channel sidebar counts use `head: true` exact counts (no full thread row scan).
 - **Optimistic mutations skip `router.refresh` (Priority 3)** — Task Hub list/board/calendar status + reorder, GroupedTaskChecklist status/reorder, caption field generate/save/approve/unapprove/sync, Campaign Captions generate/save, and Preview clear-milestone rely on local state (create/delete and milestone-wide approve still refresh).
 - **Insights pulse is lean (Priority 4)** — Today widget uses `getInsightsPulseData` (connection + account KPIs for 7d only). Full `/insights` still uses `getInsightsPageData` (posts, series, activity, breakdowns).
 - **Membership / hot helpers (Priority 5)** — layout `listActiveMemberships` + `getActiveMembership` share one cached `organization_users` load; `getOrganizationById`, `getOrganizationUsers`, playbook-with-steps, and team-access workload are request-`cache()`’d so metadata + page do not double-fetch.
