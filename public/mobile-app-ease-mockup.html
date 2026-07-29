@@ -1810,14 +1810,14 @@
               <div class="screen-panel" data-screen="files" id="screen-files">
                 <p class="greeting" style="font-size: 1.35rem">Files</p>
                 <p class="sub">Snap a receipt, flyer, or vendor form straight from your phone.</p>
-                <div class="capture">
+                <button type="button" class="capture" id="orgFileCapture" style="width: 100%; color: inherit; font: inherit">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M4 7h3l2-2h6l2 2h3v12H4V7z" />
                     <circle cx="12" cy="13" r="3.5" />
                   </svg>
                   <strong>Take photo or choose library</strong>
                   <span>Saved to your org Files · Fun Run folder suggested</span>
-                </div>
+                </button>
                 <div class="section-label">Just added</div>
                 <div class="file-row">
                   <div class="file-thumb"></div>
@@ -2421,7 +2421,7 @@
       addEventFile("Photo " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + ".jpg");
       showToast("Saved to Fun Run files");
     });
-    document.querySelector("#screen-files .capture")?.addEventListener("click", () => {
+    document.getElementById("orgFileCapture")?.addEventListener("click", () => {
       showToast("Saved to org Files");
     });
 
