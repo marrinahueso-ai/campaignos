@@ -654,6 +654,89 @@
       color: var(--forest);
     }
     .stat span { font-size: 10px; color: var(--muted); font-weight: 700; }
+    .fill-track {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--cream-deep);
+      overflow: hidden;
+      margin: 8px 0 4px;
+    }
+    .fill-track > i {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #a65a3a, #c4922e);
+    }
+    .fill-track.ok > i { background: linear-gradient(90deg, #2f4a3c, #6b8171); }
+    .fill-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-soft);
+    }
+    .role-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+    .role-row:last-child { border-bottom: none; }
+    .role-row strong { font-weight: 700; }
+    .role-row span { color: var(--warn); font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .note-compose {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+    }
+    .note-compose textarea {
+      width: 100%;
+      border: none;
+      resize: none;
+      background: transparent;
+      font: inherit;
+      color: var(--ink);
+      min-height: 56px;
+      outline: none;
+    }
+    .note-compose .note-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .note-compose .note-actions button {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .note-compose .mic {
+      background: var(--cream-deep);
+      color: var(--ink);
+    }
+    .note-compose .save {
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .vol-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      text-align: left;
+      width: 100%;
+      color: inherit;
+    }
 
     /* Side story / gallery of other phones */
     .gallery {
@@ -765,19 +848,19 @@
     <div class="hero-copy">
       <h1>Hey Ralli on your phone</h1>
       <p>
-        See what’s coming up. Stay on top of Approvals, DMs, and comments. Generate artwork.
-        Add files from your camera. Setup, settings, and calendar integrations stay on desktop.
+        See what’s coming up and who’s still needed. Stay on top of Approvals, DMs, and comments.
+        Jot a note, generate artwork, add files from your camera. Setup stays on desktop.
       </p>
       <div class="scope" aria-label="Mobile scope">
         <span class="in">Events · upcoming</span>
+        <span class="in">Volunteers · needs people</span>
+        <span class="in">Quick event notes</span>
         <span class="in">Approvals + push</span>
-        <span class="in">Hub DMs / comments</span>
-        <span class="in">Create artwork</span>
-        <span class="in">Files from phone</span>
+        <span class="in">Hub · Create · Files</span>
         <span class="out">Settings</span>
         <span class="out">Calendar integrations</span>
+        <span class="out">SignUpGenius setup</span>
         <span class="out">Website builders</span>
-        <span class="out">Flyer pages · later</span>
       </div>
     </div>
 
@@ -829,25 +912,26 @@
                     </div>
                   </div>
                 </div>
-                <div class="attn">
+                <button type="button" class="attn" data-jump="volunteers" style="width: 100%; text-align: left; cursor: pointer">
                   <div class="attn-dot" style="background: var(--mustard)"></div>
                   <div>
-                    <h3>Comment on Facebook post</h3>
-                    <p>Parent asked about ticket prices on the carnival flyer.</p>
+                    <h3>Fun Run needs 4 more volunteers</h3>
+                    <p>Check-in and water station still open — share signup from here.</p>
                     <div class="chip-row">
-                      <span class="chip fb">Facebook</span>
+                      <span class="chip warn">68% filled</span>
+                      <span class="chip">Volunteers</span>
                     </div>
                   </div>
-                </div>
+                </button>
 
                 <div class="cta-row">
-                  <button type="button" class="cta" data-jump="create">
+                  <button type="button" class="cta" data-jump="volunteers">
+                    <strong>Volunteers</strong>
+                    <span>Needs people · open signup</span>
+                  </button>
+                  <button type="button" class="cta secondary" data-jump="create">
                     <strong>Create artwork</strong>
                     <span>With AI · square or story</span>
-                  </button>
-                  <button type="button" class="cta secondary" data-jump="files">
-                    <strong>Add a file</strong>
-                    <span>Camera or photo library</span>
                   </button>
                 </div>
 
@@ -881,10 +965,10 @@
                 <div class="event-focus">
                   <div class="eyebrow">Up next</div>
                   <h2>Spring Fun Run</h2>
-                  <p>Saturday May 9 · 8:30 AM · Field &amp; track. One approval waiting · volunteer check-in short.</p>
+                  <p>Saturday May 9 · 8:30 AM · Field &amp; track. 68% volunteers · check-in still open.</p>
                   <div class="actions">
                     <button type="button" class="solid" data-jump="event-detail">Open event</button>
-                    <button type="button" data-jump="create">Make artwork</button>
+                    <button type="button" data-jump="volunteers">Volunteers</button>
                   </div>
                 </div>
 
@@ -896,17 +980,24 @@
                   </div>
                   <div>
                     <h3>Spring Fun Run</h3>
-                    <p>School event · 2 approvals · Hub quiet</p>
+                    <p>School event · needs 4 more people</p>
+                    <div class="chip-row">
+                      <span class="chip warn">68%</span>
+                      <span class="chip">2 approvals</span>
+                    </div>
                   </div>
                 </button>
-                <button type="button" class="event-card">
+                <button type="button" class="event-card" data-jump="volunteers">
                   <div class="event-date">
                     <span class="mon">May</span>
                     <span class="day">16</span>
                   </div>
                   <div>
                     <h3>Teacher Appreciation Breakfast</h3>
-                    <p>Team event · artwork draft ready</p>
+                    <p>Team event · servers covered</p>
+                    <div class="chip-row">
+                      <span class="chip" style="background: rgba(47,74,60,0.12); color: var(--forest)">100%</span>
+                    </div>
                   </div>
                 </button>
                 <button type="button" class="event-card">
@@ -916,7 +1007,10 @@
                   </div>
                   <div>
                     <h3>Book Fair kickoff</h3>
-                    <p>School event · vendor quote photo in Files</p>
+                    <p>School event · shift leads short</p>
+                    <div class="chip-row">
+                      <span class="chip warn">82%</span>
+                    </div>
                   </div>
                 </button>
                 <button type="button" class="event-card">
@@ -926,8 +1020,64 @@
                   </div>
                   <div>
                     <h3>End-of-year Carnival</h3>
-                    <p>School event · ticket FAQ in Hub</p>
+                    <p>School event · signup just opened</p>
+                    <div class="chip-row">
+                      <span class="chip warn">41%</span>
+                    </div>
                   </div>
+                </button>
+              </div>
+
+              <!-- VOLUNTEERS -->
+              <div class="screen-panel" data-screen="volunteers" id="screen-volunteers">
+                <p class="greeting" style="font-size: 1.35rem">Volunteers</p>
+                <p class="sub">Who still needs people — fill % and open roles only. No names on phone. Connect SignUpGenius on desktop.</p>
+                <div class="pill-tabs">
+                  <button type="button" class="on">Needs people</button>
+                  <button type="button">Upcoming</button>
+                  <button type="button">Covered</button>
+                </div>
+
+                <div class="event-focus">
+                  <div class="eyebrow">Soonest shortfall</div>
+                  <h2>Spring Fun Run</h2>
+                  <p>Sat May 9 · 68% filled · 4 open spots</p>
+                  <div class="fill-track" style="background: rgba(255,252,247,0.2)">
+                    <i style="width: 68%; background: linear-gradient(90deg, #e8c07a, #c4922e)"></i>
+                  </div>
+                  <div class="fill-meta" style="color: rgba(255,252,247,0.9); margin-bottom: 12px">
+                    <span>Check-in · Water · Finish line</span>
+                    <span>4 open</span>
+                  </div>
+                  <div class="actions">
+                    <button type="button" class="solid">Open signup</button>
+                    <button type="button" data-jump="event-detail">Event detail</button>
+                  </div>
+                </div>
+
+                <div class="section-label">Open roles</div>
+                <div class="vol-card">
+                  <div class="role-row"><strong>Check-in table</strong><span>2 open</span></div>
+                  <div class="role-row"><strong>Water station</strong><span>1 open</span></div>
+                  <div class="role-row"><strong>Finish line cheer</strong><span>1 open</span></div>
+                </div>
+
+                <div class="section-label">Also short</div>
+                <button type="button" class="vol-card" data-jump="event-detail">
+                  <div style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px">
+                    <strong style="font-size: 14px">Book Fair kickoff</strong>
+                    <span class="chip warn">82%</span>
+                  </div>
+                  <p style="margin: 0; font-size: 12px; color: var(--ink-soft)">May 22 · Shift lead still open</p>
+                  <div class="fill-track"><i style="width: 82%"></i></div>
+                </button>
+                <button type="button" class="vol-card">
+                  <div style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px">
+                    <strong style="font-size: 14px">End-of-year Carnival</strong>
+                    <span class="chip warn">41%</span>
+                  </div>
+                  <p style="margin: 0; font-size: 12px; color: var(--ink-soft)">Jun 5 · Signup just opened</p>
+                  <div class="fill-track"><i style="width: 41%"></i></div>
                 </button>
               </div>
 
@@ -941,6 +1091,23 @@
                   <div class="stat"><strong>1</strong><span>Open DM</span></div>
                   <div class="stat"><strong>68%</strong><span>Volunteers</span></div>
                 </div>
+
+                <div class="section-label">Volunteers</div>
+                <div class="vol-card">
+                  <div class="fill-meta">
+                    <span>Fill rate</span>
+                    <span style="color: var(--warn)">4 open spots</span>
+                  </div>
+                  <div class="fill-track"><i style="width: 68%"></i></div>
+                  <div class="role-row"><strong>Check-in table</strong><span>2 open</span></div>
+                  <div class="role-row"><strong>Water station</strong><span>1 open</span></div>
+                  <div class="role-row"><strong>Finish line cheer</strong><span>1 open</span></div>
+                  <div class="btn-row" style="margin-top: 10px">
+                    <button type="button" class="btn primary">Open signup</button>
+                    <button type="button" class="btn ghost" data-jump="volunteers">All shortfalls</button>
+                  </div>
+                </div>
+
                 <div class="section-label">Quick actions</div>
                 <div class="cta-row">
                   <button type="button" class="cta" data-jump="approvals">
@@ -962,12 +1129,20 @@
                     <span>Add photo from phone</span>
                   </button>
                 </div>
-                <div class="section-label">Notes</div>
-                <div class="attn" style="animation: none">
+
+                <div class="section-label">Quick note</div>
+                <div class="note-compose">
+                  <textarea placeholder="Jot something for the team… e.g. bounce house arrives 7:15"></textarea>
+                  <div class="note-actions">
+                    <button type="button" class="mic">Voice</button>
+                    <button type="button" class="save">Save note</button>
+                  </div>
+                </div>
+                <div class="attn" style="animation: none; margin-top: 8px">
                   <div class="attn-dot" style="background: var(--sage); animation: none"></div>
                   <div>
-                    <h3>Check-in still short</h3>
-                    <p>Volunteer Master on desktop for role fill. On phone: reply in Hub + keep approvals moving.</p>
+                    <h3>Yesterday · Marrina</h3>
+                    <p>Rain plan: move check-in to cafeteria if radar looks wet by 7am.</p>
                   </div>
                 </div>
               </div>
