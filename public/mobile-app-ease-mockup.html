@@ -1061,15 +1061,18 @@
                 </button>
 
                 <div class="cta-row">
-                  <button type="button" class="cta" data-jump="volunteers">
+                  <button type="button" class="cta" data-jump="create">
+                    <strong>Create social</strong>
+                    <span>AI artwork → submit for approval</span>
+                  </button>
+                  <button type="button" class="cta secondary" data-jump="volunteers">
                     <strong>Volunteers</strong>
                     <span>Needs people · open signup</span>
                   </button>
-                  <button type="button" class="cta secondary" data-jump="create">
-                    <strong>Create artwork</strong>
-                    <span>With AI · square or story</span>
-                  </button>
                 </div>
+                <p class="sub" style="margin: 8px 0 0; text-align: center; font-size: 12px">
+                  Or tap the green <strong>+</strong> in the bottom bar — no need to open an event first.
+                </p>
 
                 <div class="section-label">This week</div>
                 <button type="button" class="event-card soon" data-jump="events" style="margin-bottom: 0">
@@ -1550,23 +1553,23 @@
             </div>
             <div class="mini-label">Upcoming · fill % chips</div>
           </button>
-          <button type="button" class="mini-phone" data-jump="volunteers">
+          <button type="button" class="mini-phone" data-jump="create">
             <div class="mini-inner">
-              <p class="mini-title">People</p>
+              <p class="mini-title">Create</p>
               <div class="mini-block warm"></div>
               <div class="mini-line"></div>
               <div class="mini-line short"></div>
             </div>
-            <div class="mini-label">Needs people · open signup</div>
+            <div class="mini-label">Social → submit approval</div>
           </button>
-          <button type="button" class="mini-phone" data-jump="event-detail">
+          <button type="button" class="mini-phone" data-jump="volunteers">
             <div class="mini-inner">
-              <p class="mini-title">Event</p>
-              <div class="mini-line"></div>
+              <p class="mini-title">People</p>
               <div class="mini-block"></div>
+              <div class="mini-line"></div>
               <div class="mini-line short"></div>
             </div>
-            <div class="mini-label">Roles · notes · actions</div>
+            <div class="mini-label">Needs people · open signup</div>
           </button>
         </div>
       </div>
@@ -1582,8 +1585,8 @@
         <p>Approval needed, resubmit, new Instagram DM, Facebook comment — tap opens the right screen. Built with Capacitor + APNs/FCM on top of Hey Ralli web.</p>
       </div>
       <div class="note">
-        <h3>Honest scope</h3>
-        <p>Create artwork + Files from Home / event. SignUpGenius connect stays desktop. No Settings, ICS/Google, or website builders.</p>
+        <h3>Create from anywhere</h3>
+        <p>Center <strong>+</strong> tab, Home “Create social,” or from an event. Short path: format → generate → caption → submit for approval. Full Social composer stays desktop.</p>
       </div>
     </div>
   </div>
@@ -1593,6 +1596,22 @@
     const tabs = [...document.querySelectorAll(".tabbar button")];
     const minis = [...document.querySelectorAll(".mini-phone")];
     const pushToast = document.getElementById("pushToast");
+    const createSteps = [...document.querySelectorAll(".create-step")];
+    const createDots = [...document.querySelectorAll(".step-dots i")];
+    const createPreview = document.getElementById("createPreview");
+    const formatChip = document.getElementById("formatChip");
+    let createFormat = "square";
+
+    function setCreateStep(step) {
+      createSteps.forEach((panel) => {
+        panel.classList.toggle("on", panel.dataset.createStep === String(step));
+      });
+      createDots.forEach((dot) => {
+        const n = Number(dot.dataset.dot);
+        // dots 1–3 map to steps 1–3; step 4 keeps all filled
+        dot.classList.toggle("on", step >= n || (step === 4 && n <= 3));
+      });
+    }
 
     function showScreen(id) {
       panels.forEach((panel) => {
@@ -1602,18 +1621,18 @@
         const on =
           tab.dataset.tab === id ||
           (id === "event-detail" && tab.dataset.tab === "events") ||
-          (id === "create" && tab.dataset.tab === "home") ||
+          (id === "volunteers" && tab.dataset.tab === "events") ||
           (id === "files" && tab.dataset.tab === "home");
         tab.classList.toggle("active", on);
       });
       minis.forEach((card) => {
-        const on =
-          card.dataset.jump === id ||
-          (id === "events" && card.dataset.jump === "events");
-        card.classList.toggle("active-card", on);
+        card.classList.toggle("active-card", card.dataset.jump === id);
       });
       if (id !== "home") {
         pushToast.classList.add("hide");
+      }
+      if (id === "create") {
+        setCreateStep(1);
       }
     }
 
@@ -1624,6 +1643,28 @@
       el.addEventListener("click", () => showScreen(el.dataset.jump));
     });
     pushToast.addEventListener("click", () => showScreen("approvals"));
+
+    document.querySelectorAll(".format-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".format-card").forEach((c) => c.classList.remove("on"));
+        card.classList.add("on");
+        createFormat = card.dataset.format || "square";
+        if (formatChip) {
+          formatChip.textContent = createFormat === "story" ? "Story · vertical" : "Square · feed";
+        }
+        if (createPreview) {
+          createPreview.classList.toggle("story", createFormat === "story");
+        }
+      });
+    });
+
+    document.getElementById("createGenerate")?.addEventListener("click", () => setCreateStep(2));
+    document.getElementById("resumeDraft")?.addEventListener("click", () => setCreateStep(2));
+    document.getElementById("createBack")?.addEventListener("click", () => setCreateStep(1));
+    document.getElementById("createToSubmit")?.addEventListener("click", () => setCreateStep(3));
+    document.getElementById("createBack2")?.addEventListener("click", () => setCreateStep(2));
+    document.getElementById("createSubmit")?.addEventListener("click", () => setCreateStep(4));
+    document.getElementById("createAgain")?.addEventListener("click", () => setCreateStep(1));
 
     // Re-show push toast when returning home after a beat (demo motion).
     let toastTimer;
