@@ -6,8 +6,10 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import {
   collectMessagingEventsFromEntry,
+  parseMetaWebhookJson,
   parseMetaWebhookTimestamp,
   readMetaId,
+  sanitizeMetaWebhookJson,
   verifyMetaWebhookSignatureWithSecret,
 } from "../src/lib/inbox/sync/webhook-payload.ts";
 
@@ -79,6 +81,18 @@ assert.equal(
     appSecret: secret,
   }),
   false,
+);
+
+// 16+ digit ids above Number.MAX_SAFE_INTEGER — quote before JSON.parse.
+const unsafeIgId = "9007199254740993";
+assert.notEqual(String(Number(unsafeIgId)), unsafeIgId);
+const quotedRaw = `{"object":"instagram","entry":[{"id":${unsafeIgId},"messaging":[]}]}`;
+assert.match(sanitizeMetaWebhookJson(quotedRaw), /"id":"9007199254740993"/);
+const parsedUnsafe = parseMetaWebhookJson(quotedRaw);
+const firstEntry = Array.isArray(parsedUnsafe.entry) ? parsedUnsafe.entry[0] : null;
+assert.equal(
+  firstEntry && typeof firstEntry === "object" ? firstEntry.id : null,
+  unsafeIgId,
 );
 
 console.log("Meta webhook payload tests passed.");

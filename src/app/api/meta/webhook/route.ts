@@ -3,6 +3,7 @@ import {
   processMetaWebhookPayload,
   verifyMetaWebhookSignature,
 } from "@/lib/inbox/sync/webhook-handler";
+import { parseMetaWebhookJson } from "@/lib/inbox/sync/webhook-payload";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
 
   let payload: Record<string, unknown>;
   try {
-    payload = JSON.parse(rawBody) as Record<string, unknown>;
+    payload = parseMetaWebhookJson(rawBody);
   } catch {
     console.error("[inbox webhook] POST rejected: invalid JSON", {
       bodyLength: rawBody.length,

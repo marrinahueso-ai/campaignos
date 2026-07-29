@@ -45,7 +45,10 @@ import {
   publishFacebookFeedPhoto,
   publishInstagramImage,
 } from "@/lib/meta-publishing/graph-api";
-import { getMetaConnectionForCurrentOrg } from "@/lib/meta-publishing/connection";
+import {
+  getMetaConnectionForCurrentOrg,
+  refreshOrganizationInstagramAccountId,
+} from "@/lib/meta-publishing/connection";
 import { createClient } from "@/lib/supabase/server";
 import type { InboxAiSourceUsed } from "@/types/inbox-ai-sources";
 import type { OrganizationSticker } from "@/types/organization-stickers";
@@ -93,9 +96,18 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
     enableSync: true,
   });
 
+  // Resolve the linked IG id before subscribe so Instagram `messages` webhooks
+  // are not skipped when the connection row still has an empty/stale IG id.
+  const instagramAccountId = await refreshOrganizationInstagramAccountId({
+    organizationId: organization.id,
+    facebookPageId: connection.facebookPageId,
+    pageAccessToken: connection.pageAccessToken,
+    instagramAccountId: connection.instagramAccountId ?? "",
+  });
+
   const subscribe = await subscribeMetaInboxWebhooks({
     pageId: connection.facebookPageId,
-    instagramAccountId: connection.instagramAccountId,
+    instagramAccountId,
     pageAccessToken: connection.pageAccessToken,
   });
 
@@ -131,14 +143,26 @@ export async function subscribeInboxWebhooksAction(): Promise<InboxActionResult>
     return { success: false, error: "You do not have permission to refresh message delivery." };
   }
 
+  const organization = await getLatestOrganization();
+  if (!organization?.id) {
+    return { success: false, error: "Set up your organization first." };
+  }
+
   const connection = await getMetaConnectionForCurrentOrg();
   if (!connection?.pageAccessToken) {
     return { success: false, error: "Connect your Facebook Page first." };
   }
 
+  const instagramAccountId = await refreshOrganizationInstagramAccountId({
+    organizationId: organization.id,
+    facebookPageId: connection.facebookPageId,
+    pageAccessToken: connection.pageAccessToken,
+    instagramAccountId: connection.instagramAccountId ?? "",
+  });
+
   const subscribe = await subscribeMetaInboxWebhooks({
     pageId: connection.facebookPageId,
-    instagramAccountId: connection.instagramAccountId,
+    instagramAccountId,
     pageAccessToken: connection.pageAccessToken,
   });
 

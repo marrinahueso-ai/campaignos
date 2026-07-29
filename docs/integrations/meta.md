@@ -1,7 +1,7 @@
 # Meta connection — one-click for every surface
 
 **Status:** Thin shared OAuth CTA helpers shipped; provider token exchange still per-stack. Goal remains one click → approve use cases → done.  
-**Last updated:** July 27, 2026  
+**Last updated:** July 29, 2026  
 **Related:** [Feature list](../product/feature-list.md) · [Event Insights](../product/event-insights.md) · [Meta Calendar DnD](../qa/meta-calendar-dnd.md) · [Meta App Review use cases](../ops/meta-app-review-use-cases.md) (includes **consent screen ↔ scope** map)
 
 ---
@@ -57,6 +57,18 @@ Synced via Graph Page / IG account + published-post insights (`read_insights`, `
 - **Interactions** from `page_post_engagements` / derived post reactions
 - **Top content by views** carousel from recent Facebook Page posts + Instagram media (and Hey Ralli `meta_publication_slots` when available) with synced post insights (`post_media_view` / `post_total_media_view_unique`, reactions, clicks; comments/shares from the post object); Refresh discovers Page/IG feed media so posts published outside Hey Ralli still appear. Avoid requesting invalid insights names like `post_comments` / `post_shares` — Graph rejects the whole batch (#100).
 - **Event-scoped Insights** on event detail (`/events/[id]?tab=insights`) — product UI, empty states, load-vs-sync, and gaps: [event-insights.md](../product/event-insights.md). Reuses synced `social_post_insights` via published `meta_publication_slots` for that `event_id` (`getEventInsightsPageData`). Org `/insights` hub is unchanged. Demographics (Age & gender, Top countries), Follows, and Saves remain deferred — App Review answer: [meta-app-review-use-cases.md § Demographics](../ops/meta-app-review-use-cases.md#5-demographics-age--gender--definitive-answer).
+
+### Instagram DMs in Communications Hub (current)
+
+Inbound Instagram DMs land via Meta webhooks (`object: "instagram"`, `messages`) and via Graph Conversations sync (`platform=instagram`).
+
+**Ops checklist when a personal IG DM does not appear:**
+
+1. **Linked IG id** — Settings → Meta shows an Instagram account; inbox Refresh re-resolves the linked IG professional id and re-subscribes Page + Instagram `subscribed_apps` (including Instagram `messages`).
+2. **Allow Access to Messages** — In the Instagram app for the Professional account: Settings → Connected tools / Messages access must allow the connected Meta app.
+3. **App Dashboard webhooks** — Callback `{origin}/api/meta/webhook` must be verified for **both** Page and Instagram products with `messages` subscribed.
+4. **Development / Standard Access** — Until `instagram_manage_messages` has Advanced Access (Live), Meta only delivers DMs involving Instagram accounts tied to app roles (Admin / Developer / Tester). The sender’s Instagram must be linked (Accounts Center) to the Facebook user who holds that role — adding a Facebook tester alone is not enough for a personal IG.
+5. **Hub UI** — Default queue is Unread; refresh `/communications` after sync. Sync warnings (0 conversations / missing scopes) surface on Meta settings and the connection badge tooltip.
 
 ### Inbox reactions (current)
 
