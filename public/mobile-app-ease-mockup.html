@@ -529,6 +529,81 @@
     }
     .format-card strong { display: block; font-size: 13px; }
     .format-card span { font-size: 11px; color: var(--muted); }
+    .insp-hint {
+      margin: -4px 0 8px;
+      font-size: 12px;
+      color: var(--ink-soft);
+      line-height: 1.35;
+    }
+    .insp-selected {
+      display: flex;
+      gap: 8px;
+      min-height: 64px;
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 14px;
+      border: 1px dashed rgba(47, 74, 60, 0.35);
+      background: rgba(47, 74, 60, 0.05);
+      align-items: center;
+    }
+    .insp-selected:empty::before {
+      content: "Tap library tiles or add a photo";
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0 4px;
+    }
+    .insp-tile {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      flex-shrink: 0;
+      position: relative;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      padding: 0;
+    }
+    .insp-tile.on {
+      border-color: var(--forest);
+      box-shadow: 0 0 0 2px rgba(47, 74, 60, 0.2);
+    }
+    .insp-tile .ord {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: var(--cream);
+      font-size: 9px;
+      font-weight: 800;
+      display: none;
+      place-items: center;
+    }
+    .insp-tile.on .ord { display: grid; }
+    .insp-pool {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .insp-pool .insp-tile {
+      width: 100%;
+      aspect-ratio: 1;
+      height: auto;
+    }
+    .insp-add {
+      width: 100%;
+      border: 1px dashed rgba(47, 74, 60, 0.35);
+      background: var(--cream-deep);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 4px;
+    }
     .create-step { display: none; }
     .create-step.on { display: block; animation: rise 0.3s ease both; }
     .create-preview {
@@ -1096,11 +1171,11 @@
     <div class="hero-copy">
       <h1>Hey Ralli on your phone</h1>
       <p>
-        Fully clickable demo: Create → submit, Approve / Request changes → Recreate with AI →
+        Fully clickable demo: Create with inspiration → submit, change request → recreate →
         resubmit, Hub replies, event posts, SignUpGenius, volunteers, notes, files.
       </p>
       <div class="scope" aria-label="Mobile scope">
-        <span class="in">Create → approve</span>
+        <span class="in">Create + inspiration</span>
         <span class="in">Hub replies</span>
         <span class="in">Change request → recreate</span>
         <span class="in">Event posts</span>
@@ -1349,15 +1424,15 @@
                 <p class="greeting" style="font-size: 1.45rem; margin-bottom: 2px">Spring Fun Run</p>
                 <p class="sub">Sat May 9 · 8:30 AM · Field &amp; track</p>
                 <div class="stat-row">
-                  <button type="button" class="stat" data-jump="approvals" style="cursor: pointer; border: 1px solid var(--line)">
+                  <div class="stat">
                     <strong id="eventApprovalStat">2</strong><span>Approvals</span>
-                  </button>
-                  <button type="button" class="stat" data-jump="hub" style="cursor: pointer; border: 1px solid var(--line)">
+                  </div>
+                  <div class="stat">
                     <strong>1</strong><span>Open DM</span>
-                  </button>
-                  <button type="button" class="stat" data-jump="volunteers" style="cursor: pointer; border: 1px solid var(--line)">
+                  </div>
+                  <div class="stat">
                     <strong id="eventVolStat">68%</strong><span>Volunteers</span>
-                  </button>
+                  </div>
                 </div>
 
                 <div class="section-label">Posts</div>
@@ -1431,28 +1506,6 @@
                     </div>
                     <button type="button" class="btn ghost" id="sugEdit" style="width: 100%; margin-top: 6px">Change link</button>
                   </div>
-                </div>
-
-                <div class="section-label">Quick actions</div>
-                <div class="cta-row">
-                  <button type="button" class="cta" data-jump="approvals">
-                    <strong>Approvals</strong>
-                    <span>Review waiting posts</span>
-                  </button>
-                  <button type="button" class="cta secondary" data-jump="hub-thread">
-                    <strong>Hub reply</strong>
-                    <span>Maya · check-in time</span>
-                  </button>
-                </div>
-                <div class="cta-row">
-                  <button type="button" class="cta secondary" data-jump="create">
-                    <strong>Create social</strong>
-                    <span>AI → submit approval</span>
-                  </button>
-                  <button type="button" class="cta secondary" data-jump="files">
-                    <strong>Files</strong>
-                    <span>Camera or library</span>
-                  </button>
                 </div>
 
                 <div class="section-label">Quick note</div>
@@ -1679,7 +1732,7 @@
               <div class="screen-panel" data-screen="create" id="screen-create">
                 <div class="create-hero">
                   <h2 id="createHeroTitle">Create social</h2>
-                  <p id="createHeroSub">Artwork → caption → submit for approval. Full campaign builder stays on desktop.</p>
+                  <p id="createHeroSub">Format → inspiration → artwork → caption → submit. Full campaign builder stays on desktop.</p>
                   <div class="event-pick" id="createEventPick">Event · Spring Fun Run · Sat May 9</div>
                 </div>
 
@@ -1697,7 +1750,7 @@
                   <i data-dot="3"></i>
                 </div>
 
-                <!-- Step 1: format -->
+                <!-- Step 1: format + inspiration -->
                 <div class="create-step on" data-create-step="1">
                   <div class="section-label">Format</div>
                   <div class="format-row">
@@ -1712,6 +1765,23 @@
                       <span>Vertical · Meta story</span>
                     </button>
                   </div>
+
+                  <div class="section-label">Inspiration</div>
+                  <p class="insp-hint">Pick a look direction (primary first). Add a photo from camera or your library.</p>
+                  <div class="insp-selected" id="inspSelected" aria-label="Selected inspiration"></div>
+                  <div class="insp-pool" id="inspPool">
+                    <button type="button" class="insp-tile" data-insp="a" style="background:linear-gradient(145deg,#2f4a3c,#d4a84b)" aria-label="Forest gold look"><span class="ord">1</span></button>
+                    <button type="button" class="insp-tile" data-insp="b" style="background:linear-gradient(145deg,#0b2f5b,#2f9fb3)" aria-label="Navy teal look"><span class="ord">1</span></button>
+                    <button type="button" class="insp-tile" data-insp="c" style="background:linear-gradient(145deg,#c4922e,#f5e6c2)" aria-label="Warm mustard look"><span class="ord">1</span></button>
+                    <button type="button" class="insp-tile" data-insp="d" style="background:linear-gradient(160deg,#6b8171,#b8c9bc)" aria-label="Sage look"><span class="ord">1</span></button>
+                    <button type="button" class="insp-tile" data-insp="e" style="background:linear-gradient(145deg,#8b3a3a,#e8b4a0)" aria-label="Clay look"><span class="ord">1</span></button>
+                    <button type="button" class="insp-tile" data-insp="f" style="background:linear-gradient(145deg,#3d5a4a,#c4d4a8)" aria-label="Moss look"><span class="ord">1</span></button>
+                    <button type="button" class="insp-tile" data-insp="g" style="background:linear-gradient(145deg,#2a7a86,#f0e6d0)" aria-label="Teal cream look"><span class="ord">1</span></button>
+                    <button type="button" class="insp-tile" data-insp="h" style="background:linear-gradient(145deg,#4a3a2f,#d4b896)" aria-label="Warm wood look"><span class="ord">1</span></button>
+                  </div>
+                  <button type="button" class="insp-add" id="inspAddPhoto">+ Add photo from camera or library</button>
+                  <p class="insp-hint" id="inspCountHint" style="margin-top: 6px">Optional — generate works without inspiration too.</p>
+
                   <div class="section-label">Or continue a draft</div>
                   <div class="art-grid">
                     <button type="button" class="art-tile" id="resumeDraft" style="border: none; padding: 0; cursor: pointer; text-align: left">
@@ -1736,6 +1806,7 @@
                     <span class="chip ig">Instagram</span>
                     <span class="chip fb">Facebook</span>
                     <span class="chip" id="formatChip">Square · feed</span>
+                    <span class="chip warn" id="inspChip" hidden>Inspiration</span>
                   </div>
                   <div class="caption-box">
                     <label for="captionField">Caption (optional)</label>
@@ -1891,7 +1962,7 @@
               <div class="mini-line"></div>
               <div class="mini-line short"></div>
             </div>
-            <div class="mini-label">Social → submit approval</div>
+            <div class="mini-label">Inspiration → submit</div>
           </button>
           <button type="button" class="mini-phone" data-jump="volunteers">
             <div class="mini-inner">
@@ -1909,7 +1980,7 @@
     <div class="notes">
       <div class="note">
         <h3>Events + volunteers</h3>
-        <p>Upcoming events with fill % · Volunteers “Needs people” with open roles and Open signup · event detail for roles, quick note, and shortcuts. No volunteer PII on phone.</p>
+        <p>Upcoming events with fill % · Volunteers “Needs people” with open roles and Open signup · event detail for posts, SignUpGenius, and a quick note. Tab bar covers Approvals / Hub / Create — no duplicate quick-action grid on the event.</p>
       </div>
       <div class="note">
         <h3>Push first</h3>
@@ -1917,7 +1988,7 @@
       </div>
       <div class="note">
         <h3>Create + change requests</h3>
-        <p>Center <strong>+</strong> → format → generate → caption → submit. Approvals: Request changes → feedback screen → Recreate with AI (pinned note) → resubmit to Waiting. Full Social composer stays desktop.</p>
+        <p>Center <strong>+</strong> → format → inspiration (library + camera) → generate → caption → submit. Approvals: Request changes → Recreate with AI → resubmit. Full Social composer stays desktop.</p>
       </div>
     </div>
   </div>
@@ -1952,8 +2023,10 @@
     let lastFeedback = "";
     let approvalFilter = "waiting";
     let skipCreateReset = false;
+    let selectedInspiration = [];
     let toastTimer;
     let appToastTimer;
+    const INSP_MAX = 3;
 
     function showToast(message) {
       appToast.textContent = message;
@@ -2010,7 +2083,8 @@
       document.getElementById("recreateBannerNote").textContent = "";
       document.getElementById("createHeroTitle").textContent = "Create social";
       document.getElementById("createHeroSub").textContent =
-        "Artwork → caption → submit for approval. Full campaign builder stays on desktop.";
+        "Format → inspiration → artwork → caption → submit. Full campaign builder stays on desktop.";
+      resetInspiration();
       document.getElementById("createSubmitLabel").textContent = "Send for approval";
       document.getElementById("createSubmit").textContent = "Submit for approval";
       document.getElementById("createSubmitChip").textContent = "Needs approval";
@@ -2032,7 +2106,11 @@
       document.getElementById("recreateBannerNote").textContent = lastFeedback || "Apply approver feedback and resubmit.";
       document.getElementById("createHeroTitle").textContent = "Recreate with AI";
       document.getElementById("createHeroSub").textContent =
-        "Feedback stays pinned while you regenerate artwork and caption, then resubmit.";
+        "Feedback stays pinned — keep or change inspiration, then regenerate and resubmit.";
+      if (selectedInspiration.length === 0) {
+        const first = document.querySelector('#inspPool .insp-tile[data-insp="a"]');
+        if (first) toggleInspiration(first.dataset.insp);
+      }
       document.getElementById("createSubmitLabel").textContent = "Resubmit for approval";
       document.getElementById("createSubmit").textContent = "Resubmit for approval";
       document.getElementById("createSubmitChip").textContent = "Resubmit";
@@ -2116,6 +2194,58 @@
       showScreen("changes-requested");
     });
 
+    function refreshInspirationUI() {
+      const tray = document.getElementById("inspSelected");
+      const hint = document.getElementById("inspCountHint");
+      const pool = document.getElementById("inspPool");
+      if (!tray || !pool) return;
+      tray.innerHTML = "";
+      pool.querySelectorAll(".insp-tile").forEach((tile) => {
+        const id = tile.dataset.insp;
+        const idx = selectedInspiration.indexOf(id);
+        tile.classList.toggle("on", idx >= 0);
+        const ord = tile.querySelector(".ord");
+        if (ord) ord.textContent = idx >= 0 ? String(idx + 1) : "";
+      });
+      selectedInspiration.forEach((id, i) => {
+        const src = pool.querySelector(`.insp-tile[data-insp="${id}"]`);
+        if (!src) return;
+        const clone = document.createElement("button");
+        clone.type = "button";
+        clone.className = "insp-tile on";
+        clone.style.background = src.style.background;
+        clone.dataset.insp = id;
+        clone.setAttribute("aria-label", "Remove inspiration");
+        clone.innerHTML = `<span class="ord">${i + 1}</span>`;
+        clone.addEventListener("click", () => toggleInspiration(id));
+        tray.appendChild(clone);
+      });
+      if (hint) {
+        hint.textContent =
+          selectedInspiration.length === 0
+            ? "Optional — generate works without inspiration too."
+            : `${selectedInspiration.length} of ${INSP_MAX} selected · primary first`;
+      }
+    }
+
+    function toggleInspiration(id) {
+      const idx = selectedInspiration.indexOf(id);
+      if (idx >= 0) {
+        selectedInspiration.splice(idx, 1);
+      } else if (selectedInspiration.length >= INSP_MAX) {
+        showToast(`Up to ${INSP_MAX} inspiration looks`);
+        return;
+      } else {
+        selectedInspiration.push(id);
+      }
+      refreshInspirationUI();
+    }
+
+    function resetInspiration() {
+      selectedInspiration = [];
+      refreshInspirationUI();
+    }
+
     // Create social
     document.querySelectorAll(".format-card").forEach((card) => {
       card.addEventListener("click", () => {
@@ -2128,9 +2258,47 @@
         if (createPreview) createPreview.classList.toggle("story", createFormat === "story");
       });
     });
+    document.querySelectorAll("#inspPool .insp-tile").forEach((tile) => {
+      tile.addEventListener("click", () => toggleInspiration(tile.dataset.insp));
+    });
+    document.getElementById("inspAddPhoto")?.addEventListener("click", () => {
+      const id = "photo-" + Date.now();
+      const pool = document.getElementById("inspPool");
+      if (!pool) return;
+      if (selectedInspiration.length >= INSP_MAX) {
+        showToast(`Up to ${INSP_MAX} inspiration looks — remove one first`);
+        return;
+      }
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = "insp-tile";
+      tile.dataset.insp = id;
+      tile.style.background = "linear-gradient(145deg,#a65a3a,#f0e6d0)";
+      tile.setAttribute("aria-label", "Photo from camera");
+      tile.innerHTML = '<span class="ord">1</span>';
+      tile.addEventListener("click", () => toggleInspiration(id));
+      pool.prepend(tile);
+      selectedInspiration.unshift(id);
+      if (selectedInspiration.length > INSP_MAX) selectedInspiration.pop();
+      refreshInspirationUI();
+      showToast("Photo added as primary inspiration");
+    });
     document.getElementById("createGenerate")?.addEventListener("click", () => {
       setCreateStep(2);
       if (recreateMode) applyRecreatedPreview();
+      const inspChip = document.getElementById("inspChip");
+      if (inspChip) {
+        inspChip.hidden = selectedInspiration.length === 0;
+        inspChip.textContent =
+          selectedInspiration.length === 0
+            ? ""
+            : selectedInspiration.length === 1
+              ? "1 inspiration"
+              : `${selectedInspiration.length} inspirations`;
+      }
+      if (selectedInspiration.length > 0) {
+        showToast("Generating with your inspiration look");
+      }
     });
     document.getElementById("resumeDraft")?.addEventListener("click", () => setCreateStep(2));
     document.getElementById("createBack")?.addEventListener("click", () => setCreateStep(1));
