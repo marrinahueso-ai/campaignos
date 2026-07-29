@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Mobile App Ease Mockup</title>
+  <meta name="description" content="Ease mockup of the Hey Ralli mobile app — on-the-go Approvals, Communications Hub, Create with AI artwork, Files from camera, and push notifications. No settings or calendar integrations." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 24px 56px rgba(42, 38, 34, 0.14);
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+      --fb: #1877f2;
+      --ig: #c13584;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 45% at 15% -5%, rgba(47, 74, 60, 0.14), transparent 55%),
+        radial-gradient(ellipse 55% 40% at 90% 5%, rgba(196, 146, 46, 0.12), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button { font: inherit; cursor: pointer; }
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 20px 64px;
+    }
+    .mock-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .hero-copy h1 {
+      font-family: var(--serif);
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0 0 10px;
+      max-width: 18ch;
+      line-height: 1.1;
+    }
+    .hero-copy p {
+      margin: 0 0 18px;
+      color: var(--ink-soft);
+      font-size: 1.05rem;
+      max-width: 46ch;
+      line-height: 1.5;
+    }
+    .scope {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+    .scope span {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.7);
+      color: var(--ink-soft);
+    }
+    .scope span.in {
+      background: rgba(47, 74, 60, 0.1);
+      border-color: rgba(47, 74, 60, 0.22);
+      color: var(--forest);
+    }
+    .scope span.out {
+      opacity: 0.72;
+      text-decoration: line-through;
+      text-decoration-color: rgba(122, 113, 102, 0.45);
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: minmax(280px, 340px) 1fr;
+      gap: 36px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .stage { grid-template-columns: 1fr; justify-items: center; }
+    }
+
+    /* Phone */
+    .phone-wrap {
+      position: relative;
+      width: min(100%, 340px);
+      animation: rise 0.55s ease both;
+    }
+    .phone {
+      position: relative;
+      border-radius: 42px;
+      background: linear-gradient(160deg, #3a342e, #1f1c19 55%, #2a2622);
+      padding: 12px;
+      box-shadow: var(--shadow-lg);
+    }
+    .phone-bezel {
+      border-radius: 34px;
+      overflow: hidden;
+      background: var(--cream);
+      height: 680px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .notch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 108px;
+      height: 28px;
+      background: #1f1c19;
+      border-radius: 20px;
+      z-index: 5;
+    }
+    .status-bar {
+      height: 48px;
+      padding: 16px 22px 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+      flex-shrink: 0;
+    }
+    .screen {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+      padding: 0 14px 8px;
+    }
+    .screen-panel {
+      display: none;
+      height: 100%;
+      overflow-y: auto;
+      padding-bottom: 8px;
+      animation: rise 0.35s ease both;
+      scrollbar-width: thin;
+    }
+    .screen-panel.active { display: block; }
+
+    .tabbar {
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      padding: 8px 6px 16px;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.92);
+      backdrop-filter: blur(8px);
+    }
+    .tabbar button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 2px;
+      border-radius: 12px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      position: relative;
+    }
+    .tabbar button.active { color: var(--forest); background: rgba(47, 74, 60, 0.08); }
+    .tabbar button svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .tab-badge {
+      position: absolute;
+      top: 2px;
+      right: 14px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: #c23b3b;
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+    }
+
+    /* Push toast over phone */
+    .push-toast {
+      position: absolute;
+      top: -18px;
+      left: 10px;
+      right: 10px;
+      z-index: 8;
+      background: rgba(255, 252, 247, 0.96);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      animation: drop-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      cursor: pointer;
+    }
+    .push-toast.hide { display: none; }
+    .push-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--forest);
+      color: var(--cream);
+      display: grid;
+      place-items: center;
+      font-family: var(--serif);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .push-toast strong { display: block; font-size: 13px; margin-bottom: 2px; }
+    .push-toast span { font-size: 12px; color: var(--ink-soft); line-height: 1.35; }
+    .push-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* In-phone UI */
+    .greeting {
+      font-family: var(--serif);
+      font-size: 1.55rem;
+      font-weight: 600;
+      margin: 4px 0 4px;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0 0 14px;
+      line-height: 1.4;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 16px 0 8px;
+    }
+    .attn {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      animation: rise 0.45s ease both;
+    }
+    .attn:nth-child(2) { animation-delay: 0.05s; }
+    .attn:nth-child(3) { animation-delay: 0.1s; }
+    .attn-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #c23b3b;
+      margin-top: 6px;
+      flex-shrink: 0;
+      animation: soft-pulse 1.8s ease-in-out infinite;
+    }
+    .attn h3 {
+      margin: 0 0 3px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .attn p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--ink-soft);
+      line-height: 1.35;
+    }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chip {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(47, 74, 60, 0.1);
+      color: var(--forest);
+    }
+    .chip.warn { background: rgba(166, 90, 58, 0.12); color: var(--warn); }
+    .chip.ig { background: rgba(193, 53, 132, 0.1); color: #9b2d68; }
+    .chip.fb { background: rgba(24, 119, 242, 0.1); color: #155dbf; }
+
+    .cta-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .cta {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 12px;
+      text-align: left;
+      background: var(--forest);
+      color: var(--cream);
+      box-shadow: var(--shadow);
+    }
+    .cta.secondary {
+      background: var(--white);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .cta strong { display: block; font-size: 13px; margin-bottom: 2px; }
+    .cta span { font-size: 11px; opacity: 0.85; }
+
+    .pill-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 3px;
+      border-radius: 999px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      margin-bottom: 12px;
+    }
+    .pill-tabs button {
+      flex: 1;
+      border: none;
+      background: transparent;
+      border-radius: 999px;
+      padding: 7px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-soft);
+    }
+    .pill-tabs button.on {
+      background: var(--forest);
+      color: var(--cream);
+    }
+
+    .approve-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+    }
+    .approve-art {
+      height: 140px;
+      background:
+        linear-gradient(135deg, rgba(47, 74, 60, 0.85), rgba(42, 122, 134, 0.55)),
+        repeating-linear-gradient(-12deg, transparent, transparent 12px, rgba(255,255,255,0.04) 12px, rgba(255,255,255,0.04) 24px);
+      display: grid;
+      place-items: end start;
+      padding: 14px;
+      color: var(--cream);
+    }
+    .approve-art span {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1.15;
+    }
+    .approve-body { padding: 12px; }
+    .approve-body h3 { margin: 0 0 4px; font-size: 14px; }
+    .approve-body p { margin: 0 0 10px; font-size: 12px; color: var(--ink-soft); }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .btn.primary { background: var(--forest); color: var(--cream); }
+    .btn.ghost { background: var(--cream-deep); color: var(--ink); }
+
+    .thread {
+      display: flex;
+      gap: 10px;
+      padding: 10px 4px;
+      border-bottom: 1px solid var(--line);
+      align-items: flex-start;
+    }
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #6b8171, #2f4a3c);
+      color: var(--cream);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .thread h3 { margin: 0; font-size: 13px; font-weight: 700; }
+    .thread p { margin: 2px 0 0; font-size: 12px; color: var(--ink-soft); line-height: 1.35; }
+    .thread-meta { margin-left: auto; text-align: right; flex-shrink: 0; }
+    .thread-meta time { font-size: 10px; color: var(--muted); display: block; }
+    .unread-pip {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #c23b3b;
+      margin: 6px 0 0 auto;
+    }
+
+    .create-hero {
+      border-radius: 22px;
+      padding: 18px 16px;
+      background:
+        radial-gradient(ellipse 80% 70% at 20% 0%, rgba(196, 146, 46, 0.22), transparent 55%),
+        linear-gradient(160deg, #2f4a3c, #24382e 70%);
+      color: var(--cream);
+      margin-bottom: 12px;
+    }
+    .create-hero h2 {
+      font-family: var(--serif);
+      font-size: 1.45rem;
+      font-weight: 600;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+    .create-hero p { margin: 0; font-size: 13px; opacity: 0.88; line-height: 1.4; }
+    .event-pick {
+      margin-top: 12px;
+      background: rgba(255, 252, 247, 0.12);
+      border: 1px solid rgba(255, 252, 247, 0.18);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+    .art-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .art-tile {
+      aspect-ratio: 1;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--white);
+      overflow: hidden;
+      position: relative;
+    }
+    .art-tile .swatch {
+      height: 70%;
+      background: linear-gradient(145deg, #2a7a86, #2f4a3c);
+    }
+    .art-tile:nth-child(2) .swatch {
+      background: linear-gradient(145deg, #c4922e, #a65a3a);
+    }
+    .art-tile footer {
+      padding: 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .gen-btn {
+      width: 100%;
+      margin-top: 12px;
+      border: none;
+      border-radius: 16px;
+      padding: 14px;
+      background: var(--forest);
+      color: var(--cream);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .capture {
+      border: 1.5px dashed rgba(47, 74, 60, 0.35);
+      border-radius: 20px;
+      background: rgba(47, 74, 60, 0.05);
+      padding: 28px 16px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .capture svg {
+      width: 36px;
+      height: 36px;
+      stroke: var(--forest);
+      fill: none;
+      stroke-width: 1.6;
+      margin-bottom: 8px;
+    }
+    .capture strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .capture span { font-size: 12px; color: var(--ink-soft); }
+    .file-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .file-thumb {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6b8171, #c4922e);
+      flex-shrink: 0;
+    }
+    .file-row h3 { margin: 0; font-size: 13px; }
+    .file-row p { margin: 2px 0 0; font-size: 11px; color: var(--muted); }
+
+    /* Side story / gallery of other phones */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .gallery { width: min(100%, 340px); }
+    }
+    .mini-phone {
+      border-radius: 28px;
+      background: #2a2622;
+      padding: 8px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      animation: rise 0.5s ease both;
+    }
+    .mini-phone:nth-child(2) { animation-delay: 0.06s; }
+    .mini-phone:nth-child(3) { animation-delay: 0.12s; }
+    .mini-phone:nth-child(4) { animation-delay: 0.18s; }
+    .mini-phone:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    .mini-phone.active-card {
+      outline: 2px solid var(--forest);
+      outline-offset: 3px;
+    }
+    .mini-inner {
+      border-radius: 22px;
+      background: var(--cream);
+      height: 220px;
+      overflow: hidden;
+      padding: 12px;
+      position: relative;
+    }
+    .mini-label {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-soft);
+    }
+    .mini-title {
+      font-family: var(--serif);
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 6px;
+    }
+    .mini-line {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--cream-deep);
+      margin-bottom: 6px;
+    }
+    .mini-line.short { width: 55%; }
+    .mini-block {
+      height: 64px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(47, 74, 60, 0.85), rgba(42, 122, 134, 0.5));
+      margin: 10px 0;
+    }
+    .mini-block.warm {
+      background: linear-gradient(135deg, rgba(196, 146, 46, 0.85), rgba(166, 90, 58, 0.55));
+    }
+    .notes {
+      margin-top: 36px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    @media (max-width: 800px) {
+      .notes { grid-template-columns: 1fr; }
+    }
+    .note {
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+    }
+    .note h3 {
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      margin: 0 0 6px;
+      font-weight: 600;
+    }
+    .note p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.45;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes drop-in {
+      from { opacity: 0; transform: translateY(-18px) scale(0.96); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes soft-pulse {
+      0%, 100% { opacity: 0.45; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="mock-tag">Mockup · not shipped · Mobile v1 Ease</div>
+    <div class="hero-copy">
+      <h1>Hey Ralli on your phone</h1>
+      <p>
+        Stay on top of Approvals, DMs, and comments. Generate artwork. Add files from your camera.
+        Setup, settings, and calendar integrations stay on desktop.
+      </p>
+      <div class="scope" aria-label="Mobile scope">
+        <span class="in">Approvals + push</span>
+        <span class="in">Hub DMs / comments</span>
+        <span class="in">Create artwork</span>
+        <span class="in">Files from phone</span>
+        <span class="in">Vendors glance</span>
+        <span class="out">Settings</span>
+        <span class="out">Calendar integrations</span>
+        <span class="out">Website builders</span>
+        <span class="out">Flyer pages · later</span>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="phone-wrap">
+        <div class="push-toast" id="pushToast" title="Tap to open Approvals">
+          <div class="push-icon">R</div>
+          <div>
+            <strong>Hey Ralli</strong>
+            <span>Approval needed — Spring Fun Run Instagram square</span>
+            <div class="push-meta">now · Riverside Elementary PTA</div>
+          </div>
+        </div>
+
+        <div class="phone" aria-label="Hey Ralli mobile app mockup">
+          <div class="phone-bezel">
+            <div class="notch" aria-hidden="true"></div>
+            <div class="status-bar">
+              <span>9:41</span>
+              <span>▌▌▌  co</span>
+            </div>
+
+            <div class="screen">
+              <!-- HOME -->
+              <div class="screen-panel active" data-screen="home" id="screen-home">
+                <p class="greeting">Good afternoon</p>
+                <p class="sub">Three things need you before tonight’s meeting.</p>
+
+                <div class="section-label">Needs you</div>
+                <div class="attn">
+                  <div class="attn-dot"></div>
+                  <div>
+                    <h3>Approve Fun Run Instagram</h3>
+                    <p>Jordan requested changes — new caption ready for review.</p>
+                    <div class="chip-row">
+                      <span class="chip warn">Resubmit</span>
+                      <span class="chip">Approvals</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="attn">
+                  <div class="attn-dot"></div>
+                  <div>
+                    <h3>DM from Maya P.</h3>
+                    <p>“What time do volunteers check in for setup?”</p>
+                    <div class="chip-row">
+                      <span class="chip ig">Instagram</span>
+                      <span class="chip">Hub</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="attn">
+                  <div class="attn-dot" style="background: var(--mustard)"></div>
+                  <div>
+                    <h3>Comment on Facebook post</h3>
+                    <p>Parent asked about ticket prices on the carnival flyer.</p>
+                    <div class="chip-row">
+                      <span class="chip fb">Facebook</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cta-row">
+                  <button type="button" class="cta" data-jump="create">
+                    <strong>Create artwork</strong>
+                    <span>With AI · square or story</span>
+                  </button>
+                  <button type="button" class="cta secondary" data-jump="files">
+                    <strong>Add a file</strong>
+                    <span>Camera or photo library</span>
+                  </button>
+                </div>
+
+                <div class="section-label">This week</div>
+                <div class="attn" style="animation: none">
+                  <div class="attn-dot" style="background: var(--sage); animation: none"></div>
+                  <div>
+                    <h3>Spring Fun Run · Sat</h3>
+                    <p>Volunteer coverage looks light on check-in — open Vendors / Volunteers on desktop for deep planning.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- APPROVALS -->
+              <div class="screen-panel" data-screen="approvals" id="screen-approvals">
+                <p class="greeting" style="font-size: 1.35rem">Approvals</p>
+                <p class="sub">Approve, request changes, or send a resubmit back through.</p>
+                <div class="pill-tabs" role="tablist">
+                  <button type="button" class="on">Waiting</button>
+                  <button type="button">Mine</button>
+                  <button type="button">Done</button>
+                </div>
+                <article class="approve-card">
+                  <div class="approve-art"><span>Spring Fun Run<br />Saturday</span></div>
+                  <div class="approve-body">
+                    <h3>Instagram square · Fun Run</h3>
+                    <p>Resubmitted after caption tweak. Waiting on you.</p>
+                    <div class="btn-row">
+                      <button type="button" class="btn ghost">Request changes</button>
+                      <button type="button" class="btn primary">Approve</button>
+                    </div>
+                  </div>
+                </article>
+                <article class="approve-card">
+                  <div class="approve-art" style="background: linear-gradient(135deg, rgba(196,146,46,0.9), rgba(47,74,60,0.75))">
+                    <span>Book Fair<br />volunteers</span>
+                  </div>
+                  <div class="approve-body">
+                    <h3>Facebook feed · Book Fair</h3>
+                    <p>New artwork from Create with AI — not reviewed yet.</p>
+                    <div class="btn-row">
+                      <button type="button" class="btn ghost">Request changes</button>
+                      <button type="button" class="btn primary">Approve</button>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <!-- HUB -->
+              <div class="screen-panel" data-screen="hub" id="screen-hub">
+                <p class="greeting" style="font-size: 1.35rem">Hub</p>
+                <p class="sub">Page Inbox &amp; Instagram — reply when you can.</p>
+                <div class="pill-tabs">
+                  <button type="button" class="on">Unread</button>
+                  <button type="button">Follow up</button>
+                  <button type="button">Done</button>
+                </div>
+                <div class="thread">
+                  <div class="avatar">MP</div>
+                  <div>
+                    <h3>Maya P. <span class="chip ig" style="margin-left: 4px">IG</span></h3>
+                    <p>What time do volunteers check in for setup?</p>
+                  </div>
+                  <div class="thread-meta">
+                    <time>2m</time>
+                    <div class="unread-pip"></div>
+                  </div>
+                </div>
+                <div class="thread">
+                  <div class="avatar" style="background: linear-gradient(145deg, #1877f2, #2f4a3c)">JL</div>
+                  <div>
+                    <h3>Jordan L. <span class="chip fb" style="margin-left: 4px">FB</span></h3>
+                    <p>Are tickets still $5 at the door for carnival?</p>
+                  </div>
+                  <div class="thread-meta">
+                    <time>18m</time>
+                    <div class="unread-pip"></div>
+                  </div>
+                </div>
+                <div class="thread">
+                  <div class="avatar" style="background: linear-gradient(145deg, #c4922e, #6b8171)">SK</div>
+                  <div>
+                    <h3>Sam K. · mention</h3>
+                    <p>Tagged the PTA in a story about Friday’s bake sale.</p>
+                  </div>
+                  <div class="thread-meta"><time>1h</time></div>
+                </div>
+                <div class="thread" style="border-bottom: none">
+                  <div class="avatar">RT</div>
+                  <div>
+                    <h3>Riley T.</h3>
+                    <p>Thanks for confirming the rain plan — see you Saturday!</p>
+                  </div>
+                  <div class="thread-meta"><time>Yesterday</time></div>
+                </div>
+              </div>
+
+              <!-- CREATE -->
+              <div class="screen-panel" data-screen="create" id="screen-create">
+                <div class="create-hero">
+                  <h2>Create with AI</h2>
+                  <p>Artwork for social — website builders stay on desktop. Flyer pages come later.</p>
+                  <div class="event-pick">Event · Spring Fun Run · Sat May 9</div>
+                </div>
+                <div class="section-label">Recent for this event</div>
+                <div class="art-grid">
+                  <div class="art-tile">
+                    <div class="swatch"></div>
+                    <footer>Square · feed</footer>
+                  </div>
+                  <div class="art-tile">
+                    <div class="swatch"></div>
+                    <footer>Story · vertical</footer>
+                  </div>
+                </div>
+                <button type="button" class="gen-btn">Generate new artwork</button>
+                <p class="sub" style="margin-top: 10px; text-align: center">
+                  Then send to Approvals — same flow as desktop.
+                </p>
+              </div>
+
+              <!-- FILES -->
+              <div class="screen-panel" data-screen="files" id="screen-files">
+                <p class="greeting" style="font-size: 1.35rem">Files</p>
+                <p class="sub">Snap a receipt, flyer, or vendor form straight from your phone.</p>
+                <div class="capture">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h3l2-2h6l2 2h3v12H4V7z" />
+                    <circle cx="12" cy="13" r="3.5" />
+                  </svg>
+                  <strong>Take photo or choose library</strong>
+                  <span>Saved to your org Files · Fun Run folder suggested</span>
+                </div>
+                <div class="section-label">Just added</div>
+                <div class="file-row">
+                  <div class="file-thumb"></div>
+                  <div>
+                    <h3>bounce-house-quote.jpg</h3>
+                    <p>Vendors · today · from camera</p>
+                  </div>
+                </div>
+                <div class="file-row">
+                  <div class="file-thumb" style="background: linear-gradient(135deg, #2a7a86, #2f4a3c)"></div>
+                  <div>
+                    <h3>parking-map.png</h3>
+                    <p>Fun Run · yesterday</p>
+                  </div>
+                </div>
+                <div class="file-row" style="border-bottom: none">
+                  <div class="file-thumb" style="background: linear-gradient(135deg, #a65a3a, #c4922e)"></div>
+                  <div>
+                    <h3>sponsor-logo.pdf</h3>
+                    <p>Files · this week</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <nav class="tabbar" aria-label="Mobile primary navigation">
+              <button type="button" class="active" data-tab="home" aria-label="Home">
+                <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z" /><path d="M9 20v-6h6v6" /></svg>
+                Home
+              </button>
+              <button type="button" data-tab="approvals" aria-label="Approvals">
+                <span class="tab-badge">2</span>
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="m8.5 12.5 2.2 2.2 4.8-5" /></svg>
+                Approvals
+              </button>
+              <button type="button" data-tab="hub" aria-label="Communications Hub">
+                <span class="tab-badge">3</span>
+                <svg viewBox="0 0 24 24"><path d="M4 6h16v10H7l-3 3V6z" /></svg>
+                Hub
+              </button>
+              <button type="button" data-tab="create" aria-label="Create with AI">
+                <svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4" /><path d="m7 7 2.5 2.5M14.5 14.5 17 17M17 7l-2.5 2.5M9.5 14.5 7 17" /></svg>
+                Create
+              </button>
+              <button type="button" data-tab="files" aria-label="Files">
+                <svg viewBox="0 0 24 24"><path d="M4 7h5l2 2h9v10H4V7z" /></svg>
+                Files
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="gallery" id="gallery">
+          <button type="button" class="mini-phone active-card" data-jump="home">
+            <div class="mini-inner">
+              <p class="mini-title">Home</p>
+              <div class="mini-line"></div>
+              <div class="mini-line short"></div>
+              <div class="mini-block"></div>
+              <div class="mini-line"></div>
+              <div class="mini-line short"></div>
+            </div>
+            <div class="mini-label">Needs you · push lander</div>
+          </button>
+          <button type="button" class="mini-phone" data-jump="approvals">
+            <div class="mini-inner">
+              <p class="mini-title">Approvals</p>
+              <div class="mini-block warm"></div>
+              <div class="mini-line"></div>
+              <div class="mini-line short"></div>
+            </div>
+            <div class="mini-label">Approve · request changes</div>
+          </button>
+          <button type="button" class="mini-phone" data-jump="hub">
+            <div class="mini-inner">
+              <p class="mini-title">Hub</p>
+              <div class="mini-line"></div>
+              <div class="mini-line"></div>
+              <div class="mini-line short"></div>
+              <div class="mini-line"></div>
+              <div class="mini-line short"></div>
+            </div>
+            <div class="mini-label">DMs · comments · tags</div>
+          </button>
+          <button type="button" class="mini-phone" data-jump="create">
+            <div class="mini-inner">
+              <p class="mini-title">Create</p>
+              <div class="mini-block"></div>
+              <div class="mini-block warm" style="height: 48px"></div>
+            </div>
+            <div class="mini-label">Artwork only · no web builders</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note">
+        <h3>Push first</h3>
+        <p>Approval needed, resubmit, new Instagram DM, Facebook comment — tap opens the right screen. Built with Capacitor + APNs/FCM on top of Hey Ralli web.</p>
+      </div>
+      <div class="note">
+        <h3>Phone-native capture</h3>
+        <p>Camera and photo library into Files; vendor quote photos without waiting for a laptop. Deep vendor/calendar setup stays desktop.</p>
+      </div>
+      <div class="note">
+        <h3>Honest scope</h3>
+        <p>No Settings, no Google/ICS connect, no homepage/newsletter builders. Flyer pages join mobile later when that product ships.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const panels = [...document.querySelectorAll(".screen-panel")];
+    const tabs = [...document.querySelectorAll(".tabbar button")];
+    const minis = [...document.querySelectorAll(".mini-phone")];
+    const pushToast = document.getElementById("pushToast");
+
+    function showScreen(id) {
+      panels.forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.screen === id);
+      });
+      tabs.forEach((tab) => {
+        tab.classList.toggle("active", tab.dataset.tab === id);
+      });
+      minis.forEach((card) => {
+        card.classList.toggle("active-card", card.dataset.jump === id);
+      });
+      if (id === "approvals") {
+        pushToast.classList.add("hide");
+      }
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => showScreen(tab.dataset.tab));
+    });
+    document.querySelectorAll("[data-jump]").forEach((el) => {
+      el.addEventListener("click", () => showScreen(el.dataset.jump));
+    });
+    pushToast.addEventListener("click", () => showScreen("approvals"));
+
+    // Re-show push toast when returning home after a beat (demo motion).
+    let toastTimer;
+    tabs[0].addEventListener("click", () => {
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        pushToast.classList.remove("hide");
+      }, 1200);
+    });
+  </script>
+</body>
+</html>

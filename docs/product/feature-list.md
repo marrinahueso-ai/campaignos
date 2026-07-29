@@ -8,6 +8,10 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ---
 
+## Mobile app (phone)
+- **Hey Ralli mobile Ease mockup** — **in progress** (Capacitor-shaped phone shell: Home needs-you + push toast, Approvals, Communications Hub, Create with AI **artwork only**, Files from camera/library; explicit out-of-scope: Settings, calendar integrations, website builders; flyer pages later; HTML at [`public/mobile-app-ease-mockup.html`](../../public/mobile-app-ease-mockup.html) — do not ship product UI until GO)
+- Native iOS / Android wrap + push (approvals, resubmits, DMs, comments) — **deferred** (longer vision; mockup above)
+
 ## Marketing & public
 - Landing / home — **shipped** (cinematic Hey Ralli WOW homepage: full-bleed hero, product tour, pricing teaser, invite band, cookie consent; mockup reference `public/marketing-home-wow-mockup.html`)
 - Floating marketing nav — **shipped** (bottom pill switcher on home + auth/legal: Home · Log in · Sign up · Forgot · Invite · Privacy · Terms; active forest pill; stays visible when signed in)
