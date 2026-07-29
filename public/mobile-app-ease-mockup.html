@@ -631,6 +631,117 @@
       background: #24382e;
     }
     .tabbar button.create-tab svg { stroke: currentColor; }
+    .post-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      width: 100%;
+      background: transparent;
+      border-left: none;
+      border-right: none;
+      border-top: none;
+      color: inherit;
+    }
+    .post-row:last-child { border-bottom: none; }
+    .post-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      background: linear-gradient(145deg, #2f4a3c, #2a7a86);
+    }
+    .post-thumb.warm { background: linear-gradient(145deg, #c4922e, #a65a3a); }
+    .post-row h3 { margin: 0; font-size: 13px; font-weight: 700; }
+    .post-row p { margin: 2px 0 0; font-size: 11px; color: var(--muted); }
+    .sug-box input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      background: var(--cream);
+      color: var(--ink);
+      margin: 8px 0;
+    }
+    .toast-banner {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 78px;
+      z-index: 9;
+      background: var(--forest);
+      color: var(--cream);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      animation: rise 0.3s ease both;
+    }
+    .toast-banner.show { display: block; }
+    .sheet {
+      position: absolute;
+      inset: 0;
+      z-index: 12;
+      background: rgba(42, 38, 34, 0.35);
+      display: none;
+      align-items: flex-end;
+    }
+    .sheet.show { display: flex; }
+    .sheet-card {
+      width: 100%;
+      background: var(--cream);
+      border-radius: 22px 22px 0 0;
+      padding: 16px 16px 28px;
+      animation: rise 0.3s ease both;
+      max-height: 85%;
+      overflow-y: auto;
+    }
+    .sheet-card h2 {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      margin: 0 0 8px;
+      font-weight: 600;
+    }
+    .bubble-row { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+    .bubble {
+      max-width: 85%;
+      padding: 10px 12px;
+      border-radius: 16px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .bubble.in {
+      align-self: flex-start;
+      background: var(--white);
+      border: 1px solid var(--line);
+    }
+    .bubble.out {
+      align-self: flex-end;
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .reply-bar {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      margin-top: 8px;
+    }
+    .reply-bar textarea {
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
+      font: inherit;
+      min-height: 44px;
+      resize: none;
+      background: var(--white);
+    }
+    .hidden { display: none !important; }
 
     .capture {
       border: 1.5px dashed rgba(47, 74, 60, 0.35);
@@ -1026,7 +1137,7 @@
                 <p class="sub">Three things need you before tonight’s meeting.</p>
 
                 <div class="section-label">Needs you</div>
-                <div class="attn">
+                <button type="button" class="attn" data-jump="approvals" style="width: 100%; text-align: left; cursor: pointer">
                   <div class="attn-dot"></div>
                   <div>
                     <h3>Approve Fun Run Instagram</h3>
@@ -1036,8 +1147,8 @@
                       <span class="chip">Approvals</span>
                     </div>
                   </div>
-                </div>
-                <div class="attn">
+                </button>
+                <button type="button" class="attn" data-jump="hub-thread" style="width: 100%; text-align: left; cursor: pointer">
                   <div class="attn-dot"></div>
                   <div>
                     <h3>DM from Maya P.</h3>
@@ -1047,7 +1158,7 @@
                       <span class="chip">Hub</span>
                     </div>
                   </div>
-                </div>
+                </button>
                 <button type="button" class="attn" data-jump="volunteers" style="width: 100%; text-align: left; cursor: pointer">
                   <div class="attn-dot" style="background: var(--mustard)"></div>
                   <div>
@@ -1075,14 +1186,14 @@
                 </p>
 
                 <div class="section-label">This week</div>
-                <button type="button" class="event-card soon" data-jump="events" style="margin-bottom: 0">
+                <button type="button" class="event-card soon" data-jump="event-detail" style="margin-bottom: 0">
                   <div class="event-date">
                     <span class="mon">May</span>
                     <span class="day">9</span>
                   </div>
                   <div>
                     <h3>Spring Fun Run</h3>
-                    <p>Sat · check-in still light on volunteers. Tap for event.</p>
+                    <p>Sat · posts, volunteers, notes — open event</p>
                     <div class="chip-row">
                       <span class="chip">3 days</span>
                       <span class="chip warn">Needs people</span>
@@ -1189,7 +1300,7 @@
                     <span>4 open</span>
                   </div>
                   <div class="actions">
-                    <button type="button" class="solid">Open signup</button>
+                    <button type="button" class="solid" id="volOpenSignup">Open signup</button>
                     <button type="button" data-jump="event-detail">Event detail</button>
                   </div>
                 </div>
@@ -1226,24 +1337,87 @@
                 <p class="greeting" style="font-size: 1.45rem; margin-bottom: 2px">Spring Fun Run</p>
                 <p class="sub">Sat May 9 · 8:30 AM · Field &amp; track</p>
                 <div class="stat-row">
-                  <div class="stat"><strong>2</strong><span>Approvals</span></div>
-                  <div class="stat"><strong>1</strong><span>Open DM</span></div>
-                  <div class="stat"><strong>68%</strong><span>Volunteers</span></div>
+                  <button type="button" class="stat" data-jump="approvals" style="cursor: pointer; border: 1px solid var(--line)">
+                    <strong id="eventApprovalStat">2</strong><span>Approvals</span>
+                  </button>
+                  <button type="button" class="stat" data-jump="hub" style="cursor: pointer; border: 1px solid var(--line)">
+                    <strong>1</strong><span>Open DM</span>
+                  </button>
+                  <button type="button" class="stat" data-jump="volunteers" style="cursor: pointer; border: 1px solid var(--line)">
+                    <strong id="eventVolStat">68%</strong><span>Volunteers</span>
+                  </button>
                 </div>
 
-                <div class="section-label">Volunteers</div>
-                <div class="vol-card">
-                  <div class="fill-meta">
-                    <span>Fill rate</span>
-                    <span style="color: var(--warn)">4 open spots</span>
+                <div class="section-label">Posts</div>
+                <div class="pill-tabs" id="postPills">
+                  <button type="button" class="on" data-post-filter="scheduled">Scheduled</button>
+                  <button type="button" data-post-filter="posted">Posted</button>
+                </div>
+                <div id="postsScheduled">
+                  <button type="button" class="post-row">
+                    <div class="post-thumb"></div>
+                    <div>
+                      <h3>Instagram square · Fun Run</h3>
+                      <p>Scheduled · Fri 4:00 PM · needs approval</p>
+                    </div>
+                    <span class="chip warn">Waiting</span>
+                  </button>
+                  <button type="button" class="post-row">
+                    <div class="post-thumb warm"></div>
+                    <div>
+                      <h3>Facebook feed · reminder</h3>
+                      <p>Scheduled · Sat 7:00 AM</p>
+                    </div>
+                    <span class="chip">Ready</span>
+                  </button>
+                </div>
+                <div id="postsPosted" class="hidden">
+                  <button type="button" class="post-row">
+                    <div class="post-thumb" style="background: linear-gradient(145deg, #6b8171, #2a7a86)"></div>
+                    <div>
+                      <h3>Instagram story · save the date</h3>
+                      <p>Posted · Apr 28 · 214 views</p>
+                    </div>
+                    <span class="chip">Live</span>
+                  </button>
+                  <button type="button" class="post-row">
+                    <div class="post-thumb warm"></div>
+                    <div>
+                      <h3>Facebook · volunteer call</h3>
+                      <p>Posted · May 1 · 18 comments</p>
+                    </div>
+                    <span class="chip">Live</span>
+                  </button>
+                </div>
+
+                <div class="section-label">Volunteers · SignUpGenius</div>
+                <div class="vol-card" id="sugCard">
+                  <div id="sugEmpty">
+                    <p style="margin: 0 0 4px; font-size: 13px; font-weight: 700">Add signup link to sync roles</p>
+                    <p style="margin: 0; font-size: 12px; color: var(--ink-soft); line-height: 1.4">
+                      Paste your public SignUpGenius URL. Refresh pulls fill % — full connect/review stays on desktop if needed.
+                    </p>
+                    <input id="sugUrl" type="url" placeholder="https://www.signupgenius.com/go/…" />
+                    <div class="btn-row">
+                      <button type="button" class="btn primary" id="sugSave">Save &amp; sync</button>
+                      <button type="button" class="btn ghost" data-jump="volunteers">Needs people</button>
+                    </div>
                   </div>
-                  <div class="fill-track"><i style="width: 68%"></i></div>
-                  <div class="role-row"><strong>Check-in table</strong><span>2 open</span></div>
-                  <div class="role-row"><strong>Water station</strong><span>1 open</span></div>
-                  <div class="role-row"><strong>Finish line cheer</strong><span>1 open</span></div>
-                  <div class="btn-row" style="margin-top: 10px">
-                    <button type="button" class="btn primary">Open signup</button>
-                    <button type="button" class="btn ghost" data-jump="volunteers">All shortfalls</button>
+                  <div id="sugConnected" class="hidden">
+                    <div class="fill-meta">
+                      <span id="sugStatusLabel">Synced · just now</span>
+                      <span style="color: var(--warn)" id="sugOpenLabel">4 open spots</span>
+                    </div>
+                    <div class="fill-track"><i id="sugFillBar" style="width: 68%"></i></div>
+                    <div class="role-row"><strong>Check-in table</strong><span>2 open</span></div>
+                    <div class="role-row"><strong>Water station</strong><span>1 open</span></div>
+                    <div class="role-row"><strong>Finish line cheer</strong><span>1 open</span></div>
+                    <p id="sugLinkPreview" style="margin: 8px 0 0; font-size: 11px; color: var(--muted); word-break: break-all"></p>
+                    <div class="btn-row" style="margin-top: 10px">
+                      <button type="button" class="btn primary" id="sugOpen">Open signup</button>
+                      <button type="button" class="btn ghost" id="sugRefresh">Refresh</button>
+                    </div>
+                    <button type="button" class="btn ghost" id="sugEdit" style="width: 100%; margin-top: 6px">Change link</button>
                   </div>
                 </div>
 
@@ -1251,86 +1425,96 @@
                 <div class="cta-row">
                   <button type="button" class="cta" data-jump="approvals">
                     <strong>Approvals</strong>
-                    <span>1 resubmit waiting</span>
+                    <span>Review waiting posts</span>
                   </button>
-                  <button type="button" class="cta secondary" data-jump="hub">
-                    <strong>Hub</strong>
-                    <span>Maya asked about check-in</span>
+                  <button type="button" class="cta secondary" data-jump="hub-thread">
+                    <strong>Hub reply</strong>
+                    <span>Maya · check-in time</span>
                   </button>
                 </div>
                 <div class="cta-row">
                   <button type="button" class="cta secondary" data-jump="create">
-                    <strong>Artwork</strong>
-                    <span>Generate for this event</span>
+                    <strong>Create social</strong>
+                    <span>AI → submit approval</span>
                   </button>
                   <button type="button" class="cta secondary" data-jump="files">
                     <strong>Files</strong>
-                    <span>Add photo from phone</span>
+                    <span>Camera or library</span>
                   </button>
                 </div>
 
                 <div class="section-label">Quick note</div>
                 <div class="note-compose">
-                  <textarea placeholder="Jot something for the team… e.g. bounce house arrives 7:15"></textarea>
+                  <textarea id="eventNote" placeholder="Jot something for the team… e.g. bounce house arrives 7:15"></textarea>
                   <div class="note-actions">
-                    <button type="button" class="mic">Voice</button>
-                    <button type="button" class="save">Save note</button>
+                    <button type="button" class="mic" id="noteVoice">Voice</button>
+                    <button type="button" class="save" id="noteSave">Save note</button>
                   </div>
                 </div>
-                <div class="attn" style="animation: none; margin-top: 8px">
-                  <div class="attn-dot" style="background: var(--sage); animation: none"></div>
-                  <div>
-                    <h3>Yesterday · Marrina</h3>
-                    <p>Rain plan: move check-in to cafeteria if radar looks wet by 7am.</p>
+                <div id="noteList">
+                  <div class="attn" style="animation: none; margin-top: 8px">
+                    <div class="attn-dot" style="background: var(--sage); animation: none"></div>
+                    <div>
+                      <h3>Yesterday · Marrina</h3>
+                      <p>Rain plan: move check-in to cafeteria if radar looks wet by 7am.</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <!-- APPROVALS -->
               <div class="screen-panel" data-screen="approvals" id="screen-approvals">
-                <p class="greeting" style="font-size: 1.35rem">Approvals</p>
-                <p class="sub">Approve, request changes, or send a resubmit back through.</p>
-                <div class="pill-tabs" role="tablist">
-                  <button type="button" class="on">Waiting</button>
-                  <button type="button">Mine</button>
-                  <button type="button">Done</button>
+                <div id="approvalsList">
+                  <p class="greeting" style="font-size: 1.35rem">Approvals</p>
+                  <p class="sub">Approve, request changes, or send a resubmit back through.</p>
+                  <div class="pill-tabs" role="tablist">
+                    <button type="button" class="on">Waiting</button>
+                    <button type="button">Mine</button>
+                    <button type="button">Done</button>
+                  </div>
+                  <article class="approve-card" id="approvalCard1">
+                    <div class="approve-art"><span>Spring Fun Run<br />Saturday</span></div>
+                    <div class="approve-body">
+                      <h3>Instagram square · Fun Run</h3>
+                      <p>Resubmitted after caption tweak. Waiting on you.</p>
+                      <div class="btn-row">
+                        <button type="button" class="btn ghost" data-change-request="1">Request changes</button>
+                        <button type="button" class="btn primary" data-approve="1">Approve</button>
+                      </div>
+                    </div>
+                  </article>
+                  <article class="approve-card" id="approvalCard2">
+                    <div class="approve-art" style="background: linear-gradient(135deg, rgba(196,146,46,0.9), rgba(47,74,60,0.75))">
+                      <span>Book Fair<br />volunteers</span>
+                    </div>
+                    <div class="approve-body">
+                      <h3>Facebook feed · Book Fair</h3>
+                      <p>New artwork from Create with AI — not reviewed yet.</p>
+                      <div class="btn-row">
+                        <button type="button" class="btn ghost" data-change-request="2">Request changes</button>
+                        <button type="button" class="btn primary" data-approve="2">Approve</button>
+                      </div>
+                    </div>
+                  </article>
+                  <div id="approvalsEmpty" class="hidden success-panel">
+                    <div class="check">✓</div>
+                    <p class="greeting" style="font-size: 1.25rem">Inbox clear</p>
+                    <p class="sub">Nothing waiting. Create something new or check an event.</p>
+                    <button type="button" class="gen-btn" data-jump="create">Create social</button>
+                  </div>
                 </div>
-                <article class="approve-card">
-                  <div class="approve-art"><span>Spring Fun Run<br />Saturday</span></div>
-                  <div class="approve-body">
-                    <h3>Instagram square · Fun Run</h3>
-                    <p>Resubmitted after caption tweak. Waiting on you.</p>
-                    <div class="btn-row">
-                      <button type="button" class="btn ghost">Request changes</button>
-                      <button type="button" class="btn primary">Approve</button>
-                    </div>
-                  </div>
-                </article>
-                <article class="approve-card">
-                  <div class="approve-art" style="background: linear-gradient(135deg, rgba(196,146,46,0.9), rgba(47,74,60,0.75))">
-                    <span>Book Fair<br />volunteers</span>
-                  </div>
-                  <div class="approve-body">
-                    <h3>Facebook feed · Book Fair</h3>
-                    <p>New artwork from Create with AI — not reviewed yet.</p>
-                    <div class="btn-row">
-                      <button type="button" class="btn ghost">Request changes</button>
-                      <button type="button" class="btn primary">Approve</button>
-                    </div>
-                  </div>
-                </article>
               </div>
 
-              <!-- HUB -->
+              <!-- HUB LIST -->
               <div class="screen-panel" data-screen="hub" id="screen-hub">
                 <p class="greeting" style="font-size: 1.35rem">Hub</p>
-                <p class="sub">Page Inbox &amp; Instagram — reply when you can.</p>
+                <p class="sub">Page Inbox &amp; Instagram — tap a thread to reply.</p>
                 <div class="pill-tabs">
                   <button type="button" class="on">Unread</button>
                   <button type="button">Follow up</button>
                   <button type="button">Done</button>
                 </div>
-                <div class="thread">
+                <button type="button" class="thread" data-jump="hub-thread" style="width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--line); text-align: left; cursor: pointer">
                   <div class="avatar">MP</div>
                   <div>
                     <h3>Maya P. <span class="chip ig" style="margin-left: 4px">IG</span></h3>
@@ -1340,8 +1524,8 @@
                     <time>2m</time>
                     <div class="unread-pip"></div>
                   </div>
-                </div>
-                <div class="thread">
+                </button>
+                <button type="button" class="thread" data-jump="hub-thread-fb" style="width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--line); text-align: left; cursor: pointer">
                   <div class="avatar" style="background: linear-gradient(145deg, #1877f2, #2f4a3c)">JL</div>
                   <div>
                     <h3>Jordan L. <span class="chip fb" style="margin-left: 4px">FB</span></h3>
@@ -1351,7 +1535,7 @@
                     <time>18m</time>
                     <div class="unread-pip"></div>
                   </div>
-                </div>
+                </button>
                 <div class="thread">
                   <div class="avatar" style="background: linear-gradient(145deg, #c4922e, #6b8171)">SK</div>
                   <div>
@@ -1367,6 +1551,50 @@
                     <p>Thanks for confirming the rain plan — see you Saturday!</p>
                   </div>
                   <div class="thread-meta"><time>Yesterday</time></div>
+                </div>
+              </div>
+
+              <!-- HUB THREAD REPLY -->
+              <div class="screen-panel" data-screen="hub-thread" id="screen-hub-thread">
+                <button type="button" class="event-detail-back" data-jump="hub">← Hub</button>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px">
+                  <div class="avatar">MP</div>
+                  <div>
+                    <p class="greeting" style="font-size: 1.15rem; margin: 0">Maya P.</p>
+                    <p class="sub" style="margin: 0">Instagram DM · Fun Run</p>
+                  </div>
+                </div>
+                <div class="bubble-row" id="threadBubbles">
+                  <div class="bubble in">What time do volunteers check in for setup?</div>
+                </div>
+                <div class="chip-row" style="margin-bottom: 8px">
+                  <button type="button" class="chip" data-reply-suggest="Check-in opens at 8:00 AM at the field table — thanks for volunteering!">Suggest reply</button>
+                  <button type="button" class="chip" data-jump="event-detail">Event</button>
+                </div>
+                <div class="reply-bar">
+                  <textarea id="replyText" placeholder="Write a reply…"></textarea>
+                  <button type="button" class="btn primary" id="replySend" style="height: 44px">Send</button>
+                </div>
+              </div>
+
+              <div class="screen-panel" data-screen="hub-thread-fb" id="screen-hub-thread-fb">
+                <button type="button" class="event-detail-back" data-jump="hub">← Hub</button>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px">
+                  <div class="avatar" style="background: linear-gradient(145deg, #1877f2, #2f4a3c)">JL</div>
+                  <div>
+                    <p class="greeting" style="font-size: 1.15rem; margin: 0">Jordan L.</p>
+                    <p class="sub" style="margin: 0">Facebook comment · Carnival</p>
+                  </div>
+                </div>
+                <div class="bubble-row" id="threadBubblesFb">
+                  <div class="bubble in">Are tickets still $5 at the door for carnival?</div>
+                </div>
+                <div class="chip-row" style="margin-bottom: 8px">
+                  <button type="button" class="chip" data-reply-suggest-fb="Yes — $5 at the door, or buy online ahead for $4. See you there!">Suggest reply</button>
+                </div>
+                <div class="reply-bar">
+                  <textarea id="replyTextFb" placeholder="Write a reply…"></textarea>
+                  <button type="button" class="btn primary" id="replySendFb" style="height: 44px">Send</button>
                 </div>
               </div>
 
@@ -1500,6 +1728,23 @@
               </div>
             </div>
 
+            <div class="toast-banner" id="appToast" role="status"></div>
+
+            <div class="sheet" id="changeSheet" aria-hidden="true">
+              <div class="sheet-card">
+                <h2>Request changes</h2>
+                <p class="sub" style="margin-bottom: 10px">Tell the submitter what to fix. They’ll get a push and can resubmit.</p>
+                <div class="caption-box">
+                  <label for="changeNote">What needs to change?</label>
+                  <textarea id="changeNote">Can we make the time larger and add “Field entrance”?</textarea>
+                </div>
+                <div class="btn-row">
+                  <button type="button" class="btn ghost" id="changeCancel">Cancel</button>
+                  <button type="button" class="btn primary" id="changeSend">Send request</button>
+                </div>
+              </div>
+            </div>
+
             <nav class="tabbar" aria-label="Mobile primary navigation">
               <button type="button" class="active" data-tab="home" aria-label="Home">
                 <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z" /><path d="M9 20v-6h6v6" /></svg>
@@ -1596,11 +1841,23 @@
     const tabs = [...document.querySelectorAll(".tabbar button")];
     const minis = [...document.querySelectorAll(".mini-phone")];
     const pushToast = document.getElementById("pushToast");
+    const appToast = document.getElementById("appToast");
+    const changeSheet = document.getElementById("changeSheet");
     const createSteps = [...document.querySelectorAll(".create-step")];
     const createDots = [...document.querySelectorAll(".step-dots i")];
     const createPreview = document.getElementById("createPreview");
     const formatChip = document.getElementById("formatChip");
     let createFormat = "square";
+    let pendingChangeId = null;
+    let toastTimer;
+    let appToastTimer;
+
+    function showToast(message) {
+      appToast.textContent = message;
+      appToast.classList.add("show");
+      clearTimeout(appToastTimer);
+      appToastTimer = setTimeout(() => appToast.classList.remove("show"), 2200);
+    }
 
     function setCreateStep(step) {
       createSteps.forEach((panel) => {
@@ -1608,7 +1865,6 @@
       });
       createDots.forEach((dot) => {
         const n = Number(dot.dataset.dot);
-        // dots 1–3 map to steps 1–3; step 4 keeps all filled
         dot.classList.toggle("on", step >= n || (step === 4 && n <= 3));
       });
     }
@@ -1620,20 +1876,22 @@
       tabs.forEach((tab) => {
         const on =
           tab.dataset.tab === id ||
-          (id === "event-detail" && tab.dataset.tab === "events") ||
-          (id === "volunteers" && tab.dataset.tab === "events") ||
+          ((id === "event-detail" || id === "volunteers") && tab.dataset.tab === "events") ||
+          ((id === "hub-thread" || id === "hub-thread-fb") && tab.dataset.tab === "hub") ||
           (id === "files" && tab.dataset.tab === "home");
         tab.classList.toggle("active", on);
       });
       minis.forEach((card) => {
-        card.classList.toggle("active-card", card.dataset.jump === id);
+        card.classList.toggle(
+          "active-card",
+          card.dataset.jump === id ||
+            (id === "hub-thread" && card.dataset.jump === "hub") ||
+            (id === "event-detail" && card.dataset.jump === "events"),
+        );
       });
-      if (id !== "home") {
-        pushToast.classList.add("hide");
-      }
-      if (id === "create") {
-        setCreateStep(1);
-      }
+      if (id !== "home") pushToast.classList.add("hide");
+      if (id === "create") setCreateStep(1);
+      changeSheet.classList.remove("show");
     }
 
     tabs.forEach((tab) => {
@@ -1644,6 +1902,7 @@
     });
     pushToast.addEventListener("click", () => showScreen("approvals"));
 
+    // Create social
     document.querySelectorAll(".format-card").forEach((card) => {
       card.addEventListener("click", () => {
         document.querySelectorAll(".format-card").forEach((c) => c.classList.remove("on"));
@@ -1652,27 +1911,158 @@
         if (formatChip) {
           formatChip.textContent = createFormat === "story" ? "Story · vertical" : "Square · feed";
         }
-        if (createPreview) {
-          createPreview.classList.toggle("story", createFormat === "story");
-        }
+        if (createPreview) createPreview.classList.toggle("story", createFormat === "story");
       });
     });
-
     document.getElementById("createGenerate")?.addEventListener("click", () => setCreateStep(2));
     document.getElementById("resumeDraft")?.addEventListener("click", () => setCreateStep(2));
     document.getElementById("createBack")?.addEventListener("click", () => setCreateStep(1));
     document.getElementById("createToSubmit")?.addEventListener("click", () => setCreateStep(3));
     document.getElementById("createBack2")?.addEventListener("click", () => setCreateStep(2));
-    document.getElementById("createSubmit")?.addEventListener("click", () => setCreateStep(4));
+    document.getElementById("createSubmit")?.addEventListener("click", () => {
+      setCreateStep(4);
+      showToast("Submitted for approval");
+    });
     document.getElementById("createAgain")?.addEventListener("click", () => setCreateStep(1));
 
-    // Re-show push toast when returning home after a beat (demo motion).
-    let toastTimer;
+    // Approvals
+    function refreshApprovalsEmpty() {
+      const remaining = [...document.querySelectorAll(".approve-card")].filter(
+        (card) => !card.classList.contains("hidden"),
+      );
+      document.getElementById("approvalsEmpty")?.classList.toggle("hidden", remaining.length > 0);
+    }
+    document.querySelectorAll("[data-approve]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-approve");
+        document.getElementById(`approvalCard${id}`)?.classList.add("hidden");
+        showToast("Approved — ready to schedule / publish");
+        refreshApprovalsEmpty();
+      });
+    });
+    document.querySelectorAll("[data-change-request]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        pendingChangeId = btn.getAttribute("data-change-request");
+        changeSheet.classList.add("show");
+      });
+    });
+    document.getElementById("changeCancel")?.addEventListener("click", () => {
+      changeSheet.classList.remove("show");
+      pendingChangeId = null;
+    });
+    document.getElementById("changeSend")?.addEventListener("click", () => {
+      if (pendingChangeId) {
+        document.getElementById(`approvalCard${pendingChangeId}`)?.classList.add("hidden");
+      }
+      changeSheet.classList.remove("show");
+      showToast("Change request sent — they’ll get a push");
+      pendingChangeId = null;
+      refreshApprovalsEmpty();
+    });
+    changeSheet.addEventListener("click", (event) => {
+      if (event.target === changeSheet) {
+        changeSheet.classList.remove("show");
+        pendingChangeId = null;
+      }
+    });
+
+    // Hub replies
+    function sendReply(inputId, bubblesId) {
+      const input = document.getElementById(inputId);
+      const bubbles = document.getElementById(bubblesId);
+      const text = input?.value.trim();
+      if (!text || !bubbles) return;
+      const bubble = document.createElement("div");
+      bubble.className = "bubble out";
+      bubble.textContent = text;
+      bubbles.appendChild(bubble);
+      input.value = "";
+      showToast("Reply sent to Instagram / Facebook");
+    }
+    document.getElementById("replySend")?.addEventListener("click", () =>
+      sendReply("replyText", "threadBubbles"),
+    );
+    document.getElementById("replySendFb")?.addEventListener("click", () =>
+      sendReply("replyTextFb", "threadBubblesFb"),
+    );
+    document.querySelectorAll("[data-reply-suggest]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const field = document.getElementById("replyText");
+        if (field) field.value = btn.getAttribute("data-reply-suggest") || "";
+      });
+    });
+    document.querySelectorAll("[data-reply-suggest-fb]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const field = document.getElementById("replyTextFb");
+        if (field) field.value = btn.getAttribute("data-reply-suggest-fb") || "";
+      });
+    });
+
+    // Event posts filter
+    document.querySelectorAll("#postPills button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#postPills button").forEach((b) => b.classList.remove("on"));
+        btn.classList.add("on");
+        const filter = btn.dataset.postFilter;
+        document.getElementById("postsScheduled")?.classList.toggle("hidden", filter !== "scheduled");
+        document.getElementById("postsPosted")?.classList.toggle("hidden", filter !== "posted");
+      });
+    });
+
+    // SignUpGenius on event
+    const sugEmpty = document.getElementById("sugEmpty");
+    const sugConnected = document.getElementById("sugConnected");
+    document.getElementById("sugSave")?.addEventListener("click", () => {
+      const url = document.getElementById("sugUrl")?.value.trim() || "https://www.signupgenius.com/go/fun-run";
+      document.getElementById("sugLinkPreview").textContent = url;
+      sugEmpty?.classList.add("hidden");
+      sugConnected?.classList.remove("hidden");
+      showToast("SignUpGenius linked — roles synced");
+    });
+    document.getElementById("sugRefresh")?.addEventListener("click", () => {
+      document.getElementById("sugStatusLabel").textContent = "Synced · just now";
+      showToast("Volunteer roles refreshed");
+    });
+    document.getElementById("sugEdit")?.addEventListener("click", () => {
+      sugConnected?.classList.add("hidden");
+      sugEmpty?.classList.remove("hidden");
+    });
+    document.getElementById("sugOpen")?.addEventListener("click", () => {
+      showToast("Opening signup in browser…");
+    });
+    document.getElementById("volOpenSignup")?.addEventListener("click", () => {
+      showToast("Opening signup in browser…");
+    });
+
+    // Notes
+    document.getElementById("noteVoice")?.addEventListener("click", () => {
+      const field = document.getElementById("eventNote");
+      if (field) field.value = "Bounce house delivery confirmed for 7:15 AM at the south gate.";
+      showToast("Voice captured (demo)");
+    });
+    document.getElementById("noteSave")?.addEventListener("click", () => {
+      const field = document.getElementById("eventNote");
+      const text = field?.value.trim();
+      if (!text) {
+        showToast("Add a note first");
+        return;
+      }
+      const list = document.getElementById("noteList");
+      const item = document.createElement("div");
+      item.className = "attn";
+      item.style.animation = "none";
+      item.style.marginTop = "8px";
+      item.innerHTML = `<div class="attn-dot" style="background: var(--sage); animation: none"></div><div><h3>Just now · You</h3><p></p></div>`;
+      item.querySelector("p").textContent = text;
+      list?.prepend(item);
+      field.value = "";
+      showToast("Note saved to event");
+    });
+
+    // Home push toast demo
     tabs[0].addEventListener("click", () => {
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        pushToast.classList.remove("hide");
-      }, 1200);
+      toastTimer = setTimeout(() => pushToast.classList.remove("hide"), 1200);
     });
   </script>
 </body>
