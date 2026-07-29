@@ -535,29 +535,11 @@
       color: var(--ink-soft);
       line-height: 1.35;
     }
-    .insp-selected {
-      display: flex;
-      gap: 8px;
-      min-height: 64px;
-      margin-bottom: 10px;
-      padding: 8px;
-      border-radius: 14px;
-      border: 1px dashed rgba(47, 74, 60, 0.35);
-      background: rgba(47, 74, 60, 0.05);
-      align-items: center;
-    }
-    .insp-selected:empty::before {
-      content: "Tap library tiles or add a photo";
-      font-size: 12px;
-      color: var(--muted);
-      padding: 0 4px;
-    }
     .insp-tile {
-      width: 56px;
-      height: 56px;
+      width: 100%;
+      aspect-ratio: 1;
       border-radius: 12px;
       border: 2px solid transparent;
-      flex-shrink: 0;
       position: relative;
       box-shadow: var(--shadow);
       cursor: pointer;
@@ -567,31 +549,26 @@
       border-color: var(--forest);
       box-shadow: 0 0 0 2px rgba(47, 74, 60, 0.2);
     }
-    .insp-tile .ord {
+    .insp-tile .check {
       position: absolute;
       top: 4px;
-      left: 4px;
-      width: 16px;
-      height: 16px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       background: var(--forest);
       color: var(--cream);
-      font-size: 9px;
+      font-size: 11px;
       font-weight: 800;
       display: none;
       place-items: center;
     }
-    .insp-tile.on .ord { display: grid; }
+    .insp-tile.on .check { display: grid; }
     .insp-pool {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
       margin-bottom: 8px;
-    }
-    .insp-pool .insp-tile {
-      width: 100%;
-      aspect-ratio: 1;
-      height: auto;
     }
     .insp-add {
       width: 100%;
@@ -604,6 +581,20 @@
       color: var(--forest);
       margin-bottom: 4px;
     }
+    .insp-add.on {
+      border-style: solid;
+      border-color: var(--forest);
+      background: rgba(47, 74, 60, 0.1);
+    }
+    .capture.compact {
+      padding: 16px 12px;
+      margin-bottom: 8px;
+      width: 100%;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+    .capture.compact svg { width: 28px; height: 28px; }
     .create-step { display: none; }
     .create-step.on { display: block; animation: rise 0.3s ease both; }
     .create-preview {
@@ -1171,16 +1162,16 @@
     <div class="hero-copy">
       <h1>Hey Ralli on your phone</h1>
       <p>
-        Fully clickable demo: Create with inspiration → submit, change request → recreate →
-        resubmit, Hub replies, event posts, SignUpGenius, volunteers, notes, files.
+        Phone-weight demo: quick Create, Approvals (incl. light change → recreate), Hub reply,
+        event posts / SignUpGenius / files / notes, volunteers. Desktop keeps the heavy builder.
       </p>
       <div class="scope" aria-label="Mobile scope">
-        <span class="in">Create + inspiration</span>
+        <span class="in">Quick Create</span>
         <span class="in">Hub replies</span>
-        <span class="in">Change request → recreate</span>
-        <span class="in">Event posts</span>
-        <span class="in">SignUpGenius link</span>
-        <span class="in">Volunteers · notes · files</span>
+        <span class="in">Approve / light revise</span>
+        <span class="in">Event posts · files</span>
+        <span class="in">SignUpGenius</span>
+        <span class="in">Volunteers · notes</span>
         <span class="out">Desktop settings</span>
         <span class="out">Calendar integrations</span>
         <span class="out">Website builders</span>
@@ -1508,6 +1499,32 @@
                   </div>
                 </div>
 
+                <div class="section-label">Files</div>
+                <button type="button" class="capture compact" id="eventFileCapture">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h3l2-2h6l2 2h3v12H4V7z" />
+                    <circle cx="12" cy="13" r="3.5" />
+                  </svg>
+                  <strong>Upload to this event</strong>
+                  <span>Camera or library · receipt, flyer, vendor form</span>
+                </button>
+                <div id="eventFileList">
+                  <div class="file-row">
+                    <div class="file-thumb"></div>
+                    <div>
+                      <h3>Field map.pdf</h3>
+                      <p>Added Mon · Fun Run</p>
+                    </div>
+                  </div>
+                  <div class="file-row" style="border-bottom: none">
+                    <div class="file-thumb" style="background: linear-gradient(135deg, #c4922e, #a65a3a)"></div>
+                    <div>
+                      <h3>Vendor quote.jpg</h3>
+                      <p>Added yesterday · Fun Run</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="section-label">Quick note</div>
                 <div class="note-compose">
                   <textarea id="eventNote" placeholder="Jot something for the team… e.g. bounce house arrives 7:15"></textarea>
@@ -1531,7 +1548,7 @@
               <div class="screen-panel" data-screen="approvals" id="screen-approvals">
                 <div id="approvalsList">
                   <p class="greeting" style="font-size: 1.35rem">Approvals</p>
-                  <p class="sub">Approve · request changes · recreate &amp; resubmit when feedback comes back.</p>
+                  <p class="sub">Approve, or ask for a fix — creator recreates and resubmits.</p>
                   <div class="pill-tabs" id="approvalPills" role="tablist">
                     <button type="button" class="on" data-approval-filter="waiting">Waiting</button>
                     <button type="button" data-approval-filter="mine">Needs me</button>
@@ -1580,8 +1597,8 @@
                     <div id="needsMeEmpty" class="attn" style="animation: none">
                       <div class="attn-dot" style="background: var(--sage); animation: none"></div>
                       <div>
-                        <h3>No change requests yet</h3>
-                        <p>When an approver requests changes on something you submitted, it lands here to recreate &amp; resubmit.</p>
+                        <h3>No change requests</h3>
+                        <p>When someone asks for a fix, it shows up here.</p>
                       </div>
                     </div>
                     <article class="approve-card hidden" id="needsMeCard">
@@ -1594,7 +1611,7 @@
                         <p id="needsMeFeedback" style="margin-bottom: 10px">Feedback from approver will show here.</p>
                         <div class="btn-row">
                           <button type="button" class="btn ghost" data-jump="approvals">Later</button>
-                          <button type="button" class="btn primary" id="startRecreate">Recreate with AI</button>
+                          <button type="button" class="btn primary" id="startRecreate">Fix &amp; resubmit</button>
                         </div>
                       </div>
                     </article>
@@ -1611,28 +1628,6 @@
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <!-- CHANGES REQUESTED (handoff) -->
-              <div class="screen-panel" data-screen="changes-requested" id="screen-changes-requested">
-                <button type="button" class="event-detail-back" data-jump="approvals">← Approvals</button>
-                <div class="chip-row" style="margin-bottom: 8px">
-                  <span class="chip warn">Changes requested</span>
-                  <span class="chip">Push sent</span>
-                </div>
-                <p class="greeting" style="font-size: 1.35rem">Feedback for you</p>
-                <p class="sub" id="changesRequestedSub">Approver asked for updates on Instagram square · Fun Run</p>
-                <div class="vol-card">
-                  <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em">From approver</p>
-                  <p id="changesRequestedNote" style="margin: 0; font-size: 14px; line-height: 1.45; font-weight: 600">
-                    Can we make the time larger and add “Field entrance”?
-                  </p>
-                </div>
-                <div class="create-preview" style="margin-top: 12px">
-                  <div class="art" id="changesRequestedArt">Spring Fun Run<br />Saturday</div>
-                </div>
-                <button type="button" class="gen-btn" id="recreateFromFeedback">Recreate with AI</button>
-                <button type="button" class="btn ghost" data-jump="approvals" style="width: 100%; margin-top: 8px">Back to Approvals</button>
               </div>
 
               <!-- HUB LIST -->
@@ -1732,71 +1727,51 @@
               <div class="screen-panel" data-screen="create" id="screen-create">
                 <div class="create-hero">
                   <h2 id="createHeroTitle">Create social</h2>
-                  <p id="createHeroSub">Format → inspiration → artwork → caption → submit. Full campaign builder stays on desktop.</p>
+                  <p id="createHeroSub">Quick post for this event — not the full desktop campaign builder.</p>
                   <div class="event-pick" id="createEventPick">Event · Spring Fun Run · Sat May 9</div>
                 </div>
 
                 <div id="recreateBanner" class="vol-card hidden" style="margin-bottom: 10px; border-color: rgba(166,90,58,0.35); background: rgba(166,90,58,0.08)">
                   <div class="chip-row" style="margin-bottom: 6px">
-                    <span class="chip warn">Recreating</span>
+                    <span class="chip warn">Changes requested</span>
                   </div>
-                  <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em">Change request</p>
                   <p id="recreateBannerNote" style="margin: 0; font-size: 13px; line-height: 1.4; font-weight: 600"></p>
                 </div>
 
                 <div class="step-dots" aria-hidden="true">
                   <i class="on" data-dot="1"></i>
                   <i data-dot="2"></i>
-                  <i data-dot="3"></i>
                 </div>
 
-                <!-- Step 1: format + inspiration -->
+                <!-- Step 1: format + one inspiration -->
                 <div class="create-step on" data-create-step="1">
                   <div class="section-label">Format</div>
                   <div class="format-row">
                     <button type="button" class="format-card on" data-format="square">
                       <div class="ratio"></div>
-                      <strong>Instagram / FB square</strong>
-                      <span>Feed post · 1:1</span>
+                      <strong>Square</strong>
+                      <span>IG / FB feed</span>
                     </button>
                     <button type="button" class="format-card story" data-format="story">
                       <div class="ratio"></div>
                       <strong>Story</strong>
-                      <span>Vertical · Meta story</span>
+                      <span>Vertical</span>
                     </button>
                   </div>
 
-                  <div class="section-label">Inspiration</div>
-                  <p class="insp-hint">Pick a look direction (primary first). Add a photo from camera or your library.</p>
-                  <div class="insp-selected" id="inspSelected" aria-label="Selected inspiration"></div>
+                  <div class="section-label">Look (optional)</div>
+                  <p class="insp-hint">One photo <em>or</em> one look — then generate.</p>
+                  <button type="button" class="insp-add" id="inspAddPhoto">Use a photo from camera or library</button>
                   <div class="insp-pool" id="inspPool">
-                    <button type="button" class="insp-tile" data-insp="a" style="background:linear-gradient(145deg,#2f4a3c,#d4a84b)" aria-label="Forest gold look"><span class="ord">1</span></button>
-                    <button type="button" class="insp-tile" data-insp="b" style="background:linear-gradient(145deg,#0b2f5b,#2f9fb3)" aria-label="Navy teal look"><span class="ord">1</span></button>
-                    <button type="button" class="insp-tile" data-insp="c" style="background:linear-gradient(145deg,#c4922e,#f5e6c2)" aria-label="Warm mustard look"><span class="ord">1</span></button>
-                    <button type="button" class="insp-tile" data-insp="d" style="background:linear-gradient(160deg,#6b8171,#b8c9bc)" aria-label="Sage look"><span class="ord">1</span></button>
-                    <button type="button" class="insp-tile" data-insp="e" style="background:linear-gradient(145deg,#8b3a3a,#e8b4a0)" aria-label="Clay look"><span class="ord">1</span></button>
-                    <button type="button" class="insp-tile" data-insp="f" style="background:linear-gradient(145deg,#3d5a4a,#c4d4a8)" aria-label="Moss look"><span class="ord">1</span></button>
-                    <button type="button" class="insp-tile" data-insp="g" style="background:linear-gradient(145deg,#2a7a86,#f0e6d0)" aria-label="Teal cream look"><span class="ord">1</span></button>
-                    <button type="button" class="insp-tile" data-insp="h" style="background:linear-gradient(145deg,#4a3a2f,#d4b896)" aria-label="Warm wood look"><span class="ord">1</span></button>
-                  </div>
-                  <button type="button" class="insp-add" id="inspAddPhoto">+ Add photo from camera or library</button>
-                  <p class="insp-hint" id="inspCountHint" style="margin-top: 6px">Optional — generate works without inspiration too.</p>
-
-                  <div class="section-label">Or continue a draft</div>
-                  <div class="art-grid">
-                    <button type="button" class="art-tile" id="resumeDraft" style="border: none; padding: 0; cursor: pointer; text-align: left">
-                      <div class="swatch"></div>
-                      <footer>Square draft</footer>
-                    </button>
-                    <div class="art-tile">
-                      <div class="swatch"></div>
-                      <footer>Story draft</footer>
-                    </div>
+                    <button type="button" class="insp-tile" data-insp="a" style="background:linear-gradient(145deg,#2f4a3c,#d4a84b)" aria-label="Forest gold"><span class="check">✓</span></button>
+                    <button type="button" class="insp-tile" data-insp="b" style="background:linear-gradient(145deg,#0b2f5b,#2f9fb3)" aria-label="Navy teal"><span class="check">✓</span></button>
+                    <button type="button" class="insp-tile" data-insp="c" style="background:linear-gradient(145deg,#c4922e,#f5e6c2)" aria-label="Warm mustard"><span class="check">✓</span></button>
+                    <button type="button" class="insp-tile" data-insp="d" style="background:linear-gradient(160deg,#6b8171,#b8c9bc)" aria-label="Sage"><span class="check">✓</span></button>
                   </div>
                   <button type="button" class="gen-btn" id="createGenerate">Generate with AI</button>
                 </div>
 
-                <!-- Step 2: preview + caption -->
+                <!-- Step 2: preview + caption + submit -->
                 <div class="create-step" data-create-step="2">
                   <div class="section-label">Preview</div>
                   <div class="create-preview" id="createPreview">
@@ -1806,42 +1781,25 @@
                     <span class="chip ig">Instagram</span>
                     <span class="chip fb">Facebook</span>
                     <span class="chip" id="formatChip">Square · feed</span>
-                    <span class="chip warn" id="inspChip" hidden>Inspiration</span>
+                    <span class="chip warn" id="inspChip" hidden>Photo</span>
                   </div>
                   <div class="caption-box">
-                    <label for="captionField">Caption (optional)</label>
+                    <label for="captionField">Caption</label>
                     <textarea id="captionField">Join us Saturday for the Spring Fun Run — register at the check-in table. Volunteers still needed!</textarea>
                   </div>
-                  <div class="btn-row triple">
-                    <button type="button" class="btn ghost" id="createBack">Back</button>
-                    <button type="button" class="btn primary" id="createRegen">Regenerate</button>
-                    <button type="button" class="btn primary" id="createToSubmit">Continue</button>
-                  </div>
-                </div>
-
-                <!-- Step 3: submit -->
-                <div class="create-step" data-create-step="3">
-                  <div class="section-label" id="createSubmitLabel">Send for approval</div>
-                  <div class="vol-card">
-                    <h3 style="margin: 0 0 6px; font-size: 14px" id="createSubmitTitle">Spring Fun Run · Instagram square</h3>
-                    <p style="margin: 0 0 8px; font-size: 12px; color: var(--ink-soft); line-height: 1.4" id="createSubmitCopy">
-                      Goes to Approvals for your team. Same approve / request-changes flow as desktop — not published yet.
-                    </p>
-                    <div class="chip-row">
-                      <span class="chip" id="createSubmitChip">Needs approval</span>
-                      <span class="chip">Jordan · approver</span>
-                    </div>
-                  </div>
                   <button type="button" class="gen-btn" id="createSubmit">Submit for approval</button>
-                  <button type="button" class="btn ghost" id="createBack2" style="width: 100%; margin-top: 8px">Back to preview</button>
+                  <div class="btn-row" style="margin-top: 8px">
+                    <button type="button" class="btn ghost" id="createBack">Back</button>
+                    <button type="button" class="btn ghost" id="createRegen">Try again</button>
+                  </div>
                 </div>
 
-                <!-- Step 4: done -->
-                <div class="create-step" data-create-step="4">
+                <!-- Step 3: done -->
+                <div class="create-step" data-create-step="3">
                   <div class="success-panel">
                     <div class="check">✓</div>
                     <p class="greeting" style="font-size: 1.35rem" id="createDoneTitle">Submitted</p>
-                    <p class="sub" id="createDoneSub">Waiting in Approvals. You’ll get a push when it’s reviewed.</p>
+                    <p class="sub" id="createDoneSub">Waiting in Approvals.</p>
                     <button type="button" class="gen-btn" data-jump="approvals">Open Approvals</button>
                     <button type="button" class="btn ghost" id="createAgain" style="width: 100%; margin-top: 8px">Create another</button>
                   </div>
@@ -1962,7 +1920,7 @@
               <div class="mini-line"></div>
               <div class="mini-line short"></div>
             </div>
-            <div class="mini-label">Inspiration → submit</div>
+            <div class="mini-label">Photo or look → submit</div>
           </button>
           <button type="button" class="mini-phone" data-jump="volunteers">
             <div class="mini-inner">
@@ -1980,15 +1938,15 @@
     <div class="notes">
       <div class="note">
         <h3>Events + volunteers</h3>
-        <p>Upcoming events with fill % · Volunteers “Needs people” with open roles and Open signup · event detail for posts, SignUpGenius, and a quick note. Tab bar covers Approvals / Hub / Create — no duplicate quick-action grid on the event.</p>
+        <p>Event detail: posts, SignUpGenius, <strong>file upload</strong>, quick note. Tab bar for Approvals / Hub / Create — no quick-action grid. Volunteers list for open roles + Open signup.</p>
       </div>
       <div class="note">
         <h3>Push first</h3>
         <p>Approval needed, resubmit, new Instagram DM, Facebook comment — tap opens the right screen. Built with Capacitor + APNs/FCM on top of Hey Ralli web.</p>
       </div>
       <div class="note">
-        <h3>Create + change requests</h3>
-        <p>Center <strong>+</strong> → format → inspiration (library + camera) → generate → caption → submit. Approvals: Request changes → Recreate with AI → resubmit. Full Social composer stays desktop.</p>
+        <h3>Light Create · light revise</h3>
+        <p><strong>+</strong> → format → one photo or one look → generate → caption → submit. Change request: short note → Needs me → recreate → resubmit. Multi-post campaigns stay desktop.</p>
       </div>
     </div>
   </div>
@@ -2023,10 +1981,9 @@
     let lastFeedback = "";
     let approvalFilter = "waiting";
     let skipCreateReset = false;
-    let selectedInspiration = [];
+    let selectedInspiration = null;
     let toastTimer;
     let appToastTimer;
-    const INSP_MAX = 3;
 
     function showToast(message) {
       appToast.textContent = message;
@@ -2041,7 +1998,7 @@
       });
       createDots.forEach((dot) => {
         const n = Number(dot.dataset.dot);
-        dot.classList.toggle("on", step >= n || (step === 4 && n <= 3));
+        dot.classList.toggle("on", step >= n || (step === 3 && n <= 2));
       });
     }
 
@@ -2083,16 +2040,12 @@
       document.getElementById("recreateBannerNote").textContent = "";
       document.getElementById("createHeroTitle").textContent = "Create social";
       document.getElementById("createHeroSub").textContent =
-        "Format → inspiration → artwork → caption → submit. Full campaign builder stays on desktop.";
+        "Quick post for this event — not the full desktop campaign builder.";
       resetInspiration();
-      document.getElementById("createSubmitLabel").textContent = "Send for approval";
-      document.getElementById("createSubmit").textContent = "Submit for approval";
-      document.getElementById("createSubmitChip").textContent = "Needs approval";
-      document.getElementById("createSubmitCopy").textContent =
-        "Goes to Approvals for your team. Same approve / request-changes flow as desktop — not published yet.";
+      const submitBtn = document.getElementById("createSubmit");
+      if (submitBtn) submitBtn.textContent = "Submit for approval";
       document.getElementById("createDoneTitle").textContent = "Submitted";
-      document.getElementById("createDoneSub").textContent =
-        "Waiting in Approvals. You’ll get a push when it’s reviewed.";
+      document.getElementById("createDoneSub").textContent = "Waiting in Approvals.";
       document.getElementById("createPreviewArt").innerHTML = "Spring Fun Run<br />Saturday";
       document.getElementById("captionField").value =
         "Join us Saturday for the Spring Fun Run — register at the check-in table. Volunteers still needed!";
@@ -2103,29 +2056,21 @@
       recreateMode = true;
       recreateFromId = id;
       document.getElementById("recreateBanner")?.classList.remove("hidden");
-      document.getElementById("recreateBannerNote").textContent = lastFeedback || "Apply approver feedback and resubmit.";
-      document.getElementById("createHeroTitle").textContent = "Recreate with AI";
+      document.getElementById("recreateBannerNote").textContent =
+        lastFeedback || "Apply the feedback, then resubmit.";
+      document.getElementById("createHeroTitle").textContent = "Fix & resubmit";
       document.getElementById("createHeroSub").textContent =
-        "Feedback stays pinned — keep or change inspiration, then regenerate and resubmit.";
-      if (selectedInspiration.length === 0) {
-        const first = document.querySelector('#inspPool .insp-tile[data-insp="a"]');
-        if (first) toggleInspiration(first.dataset.insp);
-      }
-      document.getElementById("createSubmitLabel").textContent = "Resubmit for approval";
+        "Feedback is pinned. Generate again, tweak caption, resubmit.";
       document.getElementById("createSubmit").textContent = "Resubmit for approval";
-      document.getElementById("createSubmitChip").textContent = "Resubmit";
-      document.getElementById("createSubmitTitle").textContent = meta.title + " · revised";
-      document.getElementById("createSubmitCopy").textContent =
-        "Returns to Waiting for the approver. They’ll see your updates against the change request.";
       document.getElementById("createDoneTitle").textContent = "Resubmitted";
-      document.getElementById("createDoneSub").textContent =
-        "Back in Approvals → Waiting. Approver gets a push to review again.";
+      document.getElementById("createDoneSub").textContent = "Back in Waiting for the approver.";
       document.getElementById("createPreviewArt").innerHTML = meta.artHtml;
       document.getElementById("captionField").value =
-        "Join us Saturday for the Spring Fun Run — check in at the Field entrance. Larger time on the flyer. Volunteers still needed!";
+        "Join us Saturday for the Spring Fun Run — check in at the Field entrance. Volunteers still needed!";
       skipCreateReset = true;
       showScreen("create");
-      setCreateStep(1);
+      setCreateStep(2);
+      applyRecreatedPreview();
     }
 
     function applyRecreatedPreview() {
@@ -2145,7 +2090,6 @@
           tab.dataset.tab === id ||
           ((id === "event-detail" || id === "volunteers") && tab.dataset.tab === "events") ||
           ((id === "hub-thread" || id === "hub-thread-fb") && tab.dataset.tab === "hub") ||
-          ((id === "changes-requested") && tab.dataset.tab === "approvals") ||
           (id === "files" && tab.dataset.tab === "home");
         tab.classList.toggle("active", on);
       });
@@ -2154,8 +2098,7 @@
           "active-card",
           card.dataset.jump === id ||
             (id === "hub-thread" && card.dataset.jump === "hub") ||
-            (id === "event-detail" && card.dataset.jump === "events") ||
-            (id === "changes-requested" && card.dataset.jump === "approvals"),
+            (id === "event-detail" && card.dataset.jump === "events"),
         );
       });
       if (id !== "home") pushToast.classList.add("hide");
@@ -2191,58 +2134,33 @@
     });
 
     document.getElementById("homeChangesAttn")?.addEventListener("click", () => {
-      showScreen("changes-requested");
+      showScreen("approvals");
+      setApprovalFilter("mine");
     });
 
     function refreshInspirationUI() {
-      const tray = document.getElementById("inspSelected");
-      const hint = document.getElementById("inspCountHint");
       const pool = document.getElementById("inspPool");
-      if (!tray || !pool) return;
-      tray.innerHTML = "";
+      const photoBtn = document.getElementById("inspAddPhoto");
+      if (!pool) return;
       pool.querySelectorAll(".insp-tile").forEach((tile) => {
-        const id = tile.dataset.insp;
-        const idx = selectedInspiration.indexOf(id);
-        tile.classList.toggle("on", idx >= 0);
-        const ord = tile.querySelector(".ord");
-        if (ord) ord.textContent = idx >= 0 ? String(idx + 1) : "";
+        tile.classList.toggle("on", selectedInspiration === tile.dataset.insp);
       });
-      selectedInspiration.forEach((id, i) => {
-        const src = pool.querySelector(`.insp-tile[data-insp="${id}"]`);
-        if (!src) return;
-        const clone = document.createElement("button");
-        clone.type = "button";
-        clone.className = "insp-tile on";
-        clone.style.background = src.style.background;
-        clone.dataset.insp = id;
-        clone.setAttribute("aria-label", "Remove inspiration");
-        clone.innerHTML = `<span class="ord">${i + 1}</span>`;
-        clone.addEventListener("click", () => toggleInspiration(id));
-        tray.appendChild(clone);
-      });
-      if (hint) {
-        hint.textContent =
-          selectedInspiration.length === 0
-            ? "Optional — generate works without inspiration too."
-            : `${selectedInspiration.length} of ${INSP_MAX} selected · primary first`;
+      photoBtn?.classList.toggle("on", selectedInspiration === "photo");
+      if (photoBtn) {
+        photoBtn.textContent =
+          selectedInspiration === "photo"
+            ? "Photo selected · tap to clear"
+            : "Use a photo from camera or library";
       }
     }
 
-    function toggleInspiration(id) {
-      const idx = selectedInspiration.indexOf(id);
-      if (idx >= 0) {
-        selectedInspiration.splice(idx, 1);
-      } else if (selectedInspiration.length >= INSP_MAX) {
-        showToast(`Up to ${INSP_MAX} inspiration looks`);
-        return;
-      } else {
-        selectedInspiration.push(id);
-      }
+    function selectInspiration(id) {
+      selectedInspiration = selectedInspiration === id ? null : id;
       refreshInspirationUI();
     }
 
     function resetInspiration() {
-      selectedInspiration = [];
+      selectedInspiration = null;
       refreshInspirationUI();
     }
 
@@ -2259,57 +2177,28 @@
       });
     });
     document.querySelectorAll("#inspPool .insp-tile").forEach((tile) => {
-      tile.addEventListener("click", () => toggleInspiration(tile.dataset.insp));
+      tile.addEventListener("click", () => selectInspiration(tile.dataset.insp));
     });
     document.getElementById("inspAddPhoto")?.addEventListener("click", () => {
-      const id = "photo-" + Date.now();
-      const pool = document.getElementById("inspPool");
-      if (!pool) return;
-      if (selectedInspiration.length >= INSP_MAX) {
-        showToast(`Up to ${INSP_MAX} inspiration looks — remove one first`);
-        return;
-      }
-      const tile = document.createElement("button");
-      tile.type = "button";
-      tile.className = "insp-tile";
-      tile.dataset.insp = id;
-      tile.style.background = "linear-gradient(145deg,#a65a3a,#f0e6d0)";
-      tile.setAttribute("aria-label", "Photo from camera");
-      tile.innerHTML = '<span class="ord">1</span>';
-      tile.addEventListener("click", () => toggleInspiration(id));
-      pool.prepend(tile);
-      selectedInspiration.unshift(id);
-      if (selectedInspiration.length > INSP_MAX) selectedInspiration.pop();
-      refreshInspirationUI();
-      showToast("Photo added as primary inspiration");
+      selectInspiration("photo");
+      if (selectedInspiration === "photo") showToast("Photo ready — generate when you are");
     });
     document.getElementById("createGenerate")?.addEventListener("click", () => {
       setCreateStep(2);
       if (recreateMode) applyRecreatedPreview();
       const inspChip = document.getElementById("inspChip");
       if (inspChip) {
-        inspChip.hidden = selectedInspiration.length === 0;
-        inspChip.textContent =
-          selectedInspiration.length === 0
-            ? ""
-            : selectedInspiration.length === 1
-              ? "1 inspiration"
-              : `${selectedInspiration.length} inspirations`;
-      }
-      if (selectedInspiration.length > 0) {
-        showToast("Generating with your inspiration look");
+        inspChip.hidden = !selectedInspiration;
+        inspChip.textContent = selectedInspiration === "photo" ? "Your photo" : selectedInspiration ? "Look" : "";
       }
     });
-    document.getElementById("resumeDraft")?.addEventListener("click", () => setCreateStep(2));
     document.getElementById("createBack")?.addEventListener("click", () => setCreateStep(1));
     document.getElementById("createRegen")?.addEventListener("click", () => {
       if (recreateMode) applyRecreatedPreview();
-      showToast(recreateMode ? "Regenerated with feedback applied" : "New artwork generated");
+      showToast(recreateMode ? "New version with feedback" : "New artwork");
     });
-    document.getElementById("createToSubmit")?.addEventListener("click", () => setCreateStep(3));
-    document.getElementById("createBack2")?.addEventListener("click", () => setCreateStep(2));
     document.getElementById("createSubmit")?.addEventListener("click", () => {
-      setCreateStep(4);
+      setCreateStep(3);
       if (recreateMode) {
         const id = recreateFromId || "1";
         const meta = approvalMeta[id] || approvalMeta[1];
@@ -2318,26 +2207,23 @@
           card.classList.remove("hidden");
           const copy = document.getElementById(`approvalCard${id}Copy`);
           const chips = document.getElementById(`approvalCard${id}Chips`);
-          if (copy) copy.textContent = "Resubmitted after changes — waiting on your review.";
-          if (chips) chips.innerHTML = `<span class="chip warn">Resubmitted</span><span class="chip">Needs approval</span>`;
+          if (copy) copy.textContent = "Resubmitted — waiting on your review.";
+          if (chips) chips.innerHTML = `<span class="chip warn">Resubmitted</span>`;
           const art = card.querySelector(".approve-art");
           if (art) {
             art.innerHTML = "<span>Spring Fun Run<br /><strong>8:00 AM</strong><br />Field entrance</span>";
             if (meta.artStyle) art.setAttribute("style", meta.artStyle);
           }
-          const actions = document.getElementById(`approvalCard${id}Actions`);
-          if (actions) actions.classList.remove("hidden");
         }
         document.getElementById("needsMeCard")?.classList.add("hidden");
         document.getElementById("homeChangesAttn")?.classList.add("hidden");
         document.getElementById("homeApproveAttn")?.classList.remove("hidden");
-        document.getElementById("homeApproveCopy").textContent =
-          "Resubmitted after changes — ready for your review.";
+        document.getElementById("homeApproveCopy").textContent = "Resubmitted — ready for your review.";
         document.getElementById("homeApproveChips").innerHTML =
           `<span class="chip warn">Resubmit</span><span class="chip">Approvals</span>`;
         refreshNeedsMe();
         refreshApprovalsEmpty();
-        showToast("Resubmitted — waiting on approver");
+        showToast("Resubmitted");
         recreateMode = false;
         document.getElementById("recreateBanner")?.classList.add("hidden");
       } else {
@@ -2419,13 +2305,8 @@
         else needsArt.removeAttribute("style");
       }
 
-      document.getElementById("changesRequestedSub").textContent =
-        "Approver asked for updates on " + meta.title;
-      document.getElementById("changesRequestedNote").textContent = note;
-      document.getElementById("changesRequestedArt").innerHTML = meta.artHtml;
-
       document.getElementById("homeChangesAttn")?.classList.remove("hidden");
-      document.getElementById("homeChangesCopy").textContent = "“" + note + "” — recreate & resubmit.";
+      document.getElementById("homeChangesCopy").textContent = "“" + note + "” — tap to fix & resubmit.";
       if (id === "1") document.getElementById("homeApproveAttn")?.classList.add("hidden");
 
       changeSheet.classList.remove("show");
@@ -2433,13 +2314,14 @@
       pendingChangeId = null;
       refreshApprovalsEmpty();
       refreshNeedsMe();
-      showToast("Change request sent — they’ll get a push");
+      showToast("Change request sent");
 
-      /* Demo continues as the creator: open feedback handoff */
+      /* Demo continues as the creator on Needs me */
       setTimeout(() => {
-        showScreen("changes-requested");
-        showToast("Creator view: changes requested");
-      }, 700);
+        showScreen("approvals");
+        setApprovalFilter("mine");
+        showToast("Needs you — fix & resubmit");
+      }, 650);
     });
     changeSheet.addEventListener("click", (event) => {
       if (event.target === changeSheet) {
@@ -2450,9 +2332,6 @@
     });
 
     document.getElementById("startRecreate")?.addEventListener("click", () => {
-      enterRecreateMode(recreateFromId || "1");
-    });
-    document.getElementById("recreateFromFeedback")?.addEventListener("click", () => {
       enterRecreateMode(recreateFromId || "1");
     });
 
@@ -2524,6 +2403,28 @@
       showToast("Opening signup in browser…");
     });
 
+    // Event files
+    function addEventFile(name) {
+      const list = document.getElementById("eventFileList");
+      if (!list) return;
+      const row = document.createElement("div");
+      row.className = "file-row";
+      row.innerHTML = `<div class="file-thumb" style="background:linear-gradient(135deg,#2a7a86,#2f4a3c)"></div><div><h3></h3><p>Just now · Fun Run</p></div>`;
+      row.querySelector("h3").textContent = name;
+      list.prepend(row);
+      const extras = list.querySelectorAll(".file-row");
+      extras.forEach((el, i) => {
+        el.style.borderBottom = i === extras.length - 1 ? "none" : "";
+      });
+    }
+    document.getElementById("eventFileCapture")?.addEventListener("click", () => {
+      addEventFile("Photo " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + ".jpg");
+      showToast("Saved to Fun Run files");
+    });
+    document.querySelector("#screen-files .capture")?.addEventListener("click", () => {
+      showToast("Saved to org Files");
+    });
+
     // Notes
     document.getElementById("noteVoice")?.addEventListener("click", () => {
       const field = document.getElementById("eventNote");
@@ -2554,6 +2455,8 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => pushToast.classList.remove("hide"), 1200);
     });
+
+    refreshInspirationUI();
   </script>
 </body>
 </html>
