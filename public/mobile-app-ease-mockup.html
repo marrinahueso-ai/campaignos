@@ -393,6 +393,7 @@
     .approve-body h3 { margin: 0 0 4px; font-size: 14px; }
     .approve-body p { margin: 0 0 10px; font-size: 12px; color: var(--ink-soft); }
     .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .btn-row.triple { grid-template-columns: 1fr 1fr 1fr; }
     .btn {
       border: none;
       border-radius: 12px;
@@ -1095,13 +1096,13 @@
     <div class="hero-copy">
       <h1>Hey Ralli on your phone</h1>
       <p>
-        Fully clickable demo: Create social → submit, Hub replies, Approve / Request changes,
-        event posts (scheduled &amp; posted), SignUpGenius link + sync, volunteers, notes, files.
+        Fully clickable demo: Create → submit, Approve / Request changes → Recreate with AI →
+        resubmit, Hub replies, event posts, SignUpGenius, volunteers, notes, files.
       </p>
       <div class="scope" aria-label="Mobile scope">
         <span class="in">Create → approve</span>
         <span class="in">Hub replies</span>
-        <span class="in">Approve / change request</span>
+        <span class="in">Change request → recreate</span>
         <span class="in">Event posts</span>
         <span class="in">SignUpGenius link</span>
         <span class="in">Volunteers · notes · files</span>
@@ -1137,13 +1138,24 @@
                 <p class="sub">Three things need you before tonight’s meeting.</p>
 
                 <div class="section-label">Needs you</div>
-                <button type="button" class="attn" data-jump="approvals" style="width: 100%; text-align: left; cursor: pointer">
+                <button type="button" class="attn hidden" id="homeChangesAttn" style="width: 100%; text-align: left; cursor: pointer">
                   <div class="attn-dot"></div>
                   <div>
-                    <h3>Approve Fun Run Instagram</h3>
-                    <p>Jordan requested changes — new caption ready for review.</p>
+                    <h3>Changes requested on Fun Run post</h3>
+                    <p id="homeChangesCopy">Approver left feedback — recreate &amp; resubmit.</p>
                     <div class="chip-row">
-                      <span class="chip warn">Resubmit</span>
+                      <span class="chip warn">Recreate</span>
+                      <span class="chip">Approvals</span>
+                    </div>
+                  </div>
+                </button>
+                <button type="button" class="attn" id="homeApproveAttn" data-jump="approvals" style="width: 100%; text-align: left; cursor: pointer">
+                  <div class="attn-dot"></div>
+                  <div>
+                    <h3 id="homeApproveTitle">Approve Fun Run Instagram</h3>
+                    <p id="homeApproveCopy">Waiting on your review before it can schedule.</p>
+                    <div class="chip-row" id="homeApproveChips">
+                      <span class="chip warn">Needs you</span>
                       <span class="chip">Approvals</span>
                     </div>
                   </div>
@@ -1466,43 +1478,108 @@
               <div class="screen-panel" data-screen="approvals" id="screen-approvals">
                 <div id="approvalsList">
                   <p class="greeting" style="font-size: 1.35rem">Approvals</p>
-                  <p class="sub">Approve, request changes, or send a resubmit back through.</p>
-                  <div class="pill-tabs" role="tablist">
-                    <button type="button" class="on">Waiting</button>
-                    <button type="button">Mine</button>
-                    <button type="button">Done</button>
+                  <p class="sub">Approve · request changes · recreate &amp; resubmit when feedback comes back.</p>
+                  <div class="pill-tabs" id="approvalPills" role="tablist">
+                    <button type="button" class="on" data-approval-filter="waiting">Waiting</button>
+                    <button type="button" data-approval-filter="mine">Needs me</button>
+                    <button type="button" data-approval-filter="done">Done</button>
                   </div>
-                  <article class="approve-card" id="approvalCard1">
-                    <div class="approve-art"><span>Spring Fun Run<br />Saturday</span></div>
-                    <div class="approve-body">
-                      <h3>Instagram square · Fun Run</h3>
-                      <p>Resubmitted after caption tweak. Waiting on you.</p>
-                      <div class="btn-row">
-                        <button type="button" class="btn ghost" data-change-request="1">Request changes</button>
-                        <button type="button" class="btn primary" data-approve="1">Approve</button>
+
+                  <div id="approvalsWaiting">
+                    <article class="approve-card" id="approvalCard1">
+                      <div class="approve-art"><span>Spring Fun Run<br />Saturday</span></div>
+                      <div class="approve-body">
+                        <h3>Instagram square · Fun Run</h3>
+                        <p id="approvalCard1Copy">Waiting on your review.</p>
+                        <div class="chip-row" id="approvalCard1Chips" style="margin-bottom: 8px">
+                          <span class="chip">Needs approval</span>
+                        </div>
+                        <div class="btn-row" id="approvalCard1Actions">
+                          <button type="button" class="btn ghost" data-change-request="1">Request changes</button>
+                          <button type="button" class="btn primary" data-approve="1">Approve</button>
+                        </div>
+                      </div>
+                    </article>
+                    <article class="approve-card" id="approvalCard2">
+                      <div class="approve-art" style="background: linear-gradient(135deg, rgba(196,146,46,0.9), rgba(47,74,60,0.75))">
+                        <span>Book Fair<br />volunteers</span>
+                      </div>
+                      <div class="approve-body">
+                        <h3>Facebook feed · Book Fair</h3>
+                        <p id="approvalCard2Copy">New artwork from Create with AI — not reviewed yet.</p>
+                        <div class="chip-row" id="approvalCard2Chips" style="margin-bottom: 8px">
+                          <span class="chip">Needs approval</span>
+                        </div>
+                        <div class="btn-row" id="approvalCard2Actions">
+                          <button type="button" class="btn ghost" data-change-request="2">Request changes</button>
+                          <button type="button" class="btn primary" data-approve="2">Approve</button>
+                        </div>
+                      </div>
+                    </article>
+                    <div id="approvalsEmpty" class="hidden success-panel">
+                      <div class="check">✓</div>
+                      <p class="greeting" style="font-size: 1.25rem">Nothing waiting</p>
+                      <p class="sub">Check <strong>Needs me</strong> if you have change requests to recreate.</p>
+                    </div>
+                  </div>
+
+                  <div id="approvalsMine" class="hidden">
+                    <div id="needsMeEmpty" class="attn" style="animation: none">
+                      <div class="attn-dot" style="background: var(--sage); animation: none"></div>
+                      <div>
+                        <h3>No change requests yet</h3>
+                        <p>When an approver requests changes on something you submitted, it lands here to recreate &amp; resubmit.</p>
                       </div>
                     </div>
-                  </article>
-                  <article class="approve-card" id="approvalCard2">
-                    <div class="approve-art" style="background: linear-gradient(135deg, rgba(196,146,46,0.9), rgba(47,74,60,0.75))">
-                      <span>Book Fair<br />volunteers</span>
-                    </div>
-                    <div class="approve-body">
-                      <h3>Facebook feed · Book Fair</h3>
-                      <p>New artwork from Create with AI — not reviewed yet.</p>
-                      <div class="btn-row">
-                        <button type="button" class="btn ghost" data-change-request="2">Request changes</button>
-                        <button type="button" class="btn primary" data-approve="2">Approve</button>
+                    <article class="approve-card hidden" id="needsMeCard">
+                      <div class="approve-art" id="needsMeArt"><span>Spring Fun Run<br />Saturday</span></div>
+                      <div class="approve-body">
+                        <div class="chip-row" style="margin-bottom: 8px">
+                          <span class="chip warn">Changes requested</span>
+                        </div>
+                        <h3 id="needsMeTitle">Instagram square · Fun Run</h3>
+                        <p id="needsMeFeedback" style="margin-bottom: 10px">Feedback from approver will show here.</p>
+                        <div class="btn-row">
+                          <button type="button" class="btn ghost" data-jump="approvals">Later</button>
+                          <button type="button" class="btn primary" id="startRecreate">Recreate with AI</button>
+                        </div>
+                      </div>
+                    </article>
+                  </div>
+
+                  <div id="approvalsDone" class="hidden">
+                    <div id="doneList"></div>
+                    <div id="doneEmpty" class="attn" style="animation: none">
+                      <div class="attn-dot" style="background: var(--sage); animation: none"></div>
+                      <div>
+                        <h3>No approvals completed yet</h3>
+                        <p>Approved posts show up here in this demo.</p>
                       </div>
                     </div>
-                  </article>
-                  <div id="approvalsEmpty" class="hidden success-panel">
-                    <div class="check">✓</div>
-                    <p class="greeting" style="font-size: 1.25rem">Inbox clear</p>
-                    <p class="sub">Nothing waiting. Create something new or check an event.</p>
-                    <button type="button" class="gen-btn" data-jump="create">Create social</button>
                   </div>
                 </div>
+              </div>
+
+              <!-- CHANGES REQUESTED (handoff) -->
+              <div class="screen-panel" data-screen="changes-requested" id="screen-changes-requested">
+                <button type="button" class="event-detail-back" data-jump="approvals">← Approvals</button>
+                <div class="chip-row" style="margin-bottom: 8px">
+                  <span class="chip warn">Changes requested</span>
+                  <span class="chip">Push sent</span>
+                </div>
+                <p class="greeting" style="font-size: 1.35rem">Feedback for you</p>
+                <p class="sub" id="changesRequestedSub">Approver asked for updates on Instagram square · Fun Run</p>
+                <div class="vol-card">
+                  <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em">From approver</p>
+                  <p id="changesRequestedNote" style="margin: 0; font-size: 14px; line-height: 1.45; font-weight: 600">
+                    Can we make the time larger and add “Field entrance”?
+                  </p>
+                </div>
+                <div class="create-preview" style="margin-top: 12px">
+                  <div class="art" id="changesRequestedArt">Spring Fun Run<br />Saturday</div>
+                </div>
+                <button type="button" class="gen-btn" id="recreateFromFeedback">Recreate with AI</button>
+                <button type="button" class="btn ghost" data-jump="approvals" style="width: 100%; margin-top: 8px">Back to Approvals</button>
               </div>
 
               <!-- HUB LIST -->
@@ -1601,9 +1678,17 @@
               <!-- CREATE SOCIAL -->
               <div class="screen-panel" data-screen="create" id="screen-create">
                 <div class="create-hero">
-                  <h2>Create social</h2>
-                  <p>Artwork → caption → submit for approval. Full campaign builder stays on desktop.</p>
-                  <div class="event-pick">Event · Spring Fun Run · Sat May 9</div>
+                  <h2 id="createHeroTitle">Create social</h2>
+                  <p id="createHeroSub">Artwork → caption → submit for approval. Full campaign builder stays on desktop.</p>
+                  <div class="event-pick" id="createEventPick">Event · Spring Fun Run · Sat May 9</div>
+                </div>
+
+                <div id="recreateBanner" class="vol-card hidden" style="margin-bottom: 10px; border-color: rgba(166,90,58,0.35); background: rgba(166,90,58,0.08)">
+                  <div class="chip-row" style="margin-bottom: 6px">
+                    <span class="chip warn">Recreating</span>
+                  </div>
+                  <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em">Change request</p>
+                  <p id="recreateBannerNote" style="margin: 0; font-size: 13px; line-height: 1.4; font-weight: 600"></p>
                 </div>
 
                 <div class="step-dots" aria-hidden="true">
@@ -1645,7 +1730,7 @@
                 <div class="create-step" data-create-step="2">
                   <div class="section-label">Preview</div>
                   <div class="create-preview" id="createPreview">
-                    <div class="art">Spring Fun Run<br />Saturday</div>
+                    <div class="art" id="createPreviewArt">Spring Fun Run<br />Saturday</div>
                   </div>
                   <div class="chip-row" style="margin-bottom: 10px">
                     <span class="chip ig">Instagram</span>
@@ -1656,22 +1741,23 @@
                     <label for="captionField">Caption (optional)</label>
                     <textarea id="captionField">Join us Saturday for the Spring Fun Run — register at the check-in table. Volunteers still needed!</textarea>
                   </div>
-                  <div class="btn-row">
+                  <div class="btn-row triple">
                     <button type="button" class="btn ghost" id="createBack">Back</button>
+                    <button type="button" class="btn primary" id="createRegen">Regenerate</button>
                     <button type="button" class="btn primary" id="createToSubmit">Continue</button>
                   </div>
                 </div>
 
                 <!-- Step 3: submit -->
                 <div class="create-step" data-create-step="3">
-                  <div class="section-label">Send for approval</div>
+                  <div class="section-label" id="createSubmitLabel">Send for approval</div>
                   <div class="vol-card">
-                    <h3 style="margin: 0 0 6px; font-size: 14px">Spring Fun Run · Instagram square</h3>
-                    <p style="margin: 0 0 8px; font-size: 12px; color: var(--ink-soft); line-height: 1.4">
+                    <h3 style="margin: 0 0 6px; font-size: 14px" id="createSubmitTitle">Spring Fun Run · Instagram square</h3>
+                    <p style="margin: 0 0 8px; font-size: 12px; color: var(--ink-soft); line-height: 1.4" id="createSubmitCopy">
                       Goes to Approvals for your team. Same approve / request-changes flow as desktop — not published yet.
                     </p>
                     <div class="chip-row">
-                      <span class="chip">Needs approval</span>
+                      <span class="chip" id="createSubmitChip">Needs approval</span>
                       <span class="chip">Jordan · approver</span>
                     </div>
                   </div>
@@ -1683,8 +1769,8 @@
                 <div class="create-step" data-create-step="4">
                   <div class="success-panel">
                     <div class="check">✓</div>
-                    <p class="greeting" style="font-size: 1.35rem">Submitted</p>
-                    <p class="sub">Waiting in Approvals. You’ll get a push when it’s reviewed.</p>
+                    <p class="greeting" style="font-size: 1.35rem" id="createDoneTitle">Submitted</p>
+                    <p class="sub" id="createDoneSub">Waiting in Approvals. You’ll get a push when it’s reviewed.</p>
                     <button type="button" class="gen-btn" data-jump="approvals">Open Approvals</button>
                     <button type="button" class="btn ghost" id="createAgain" style="width: 100%; margin-top: 8px">Create another</button>
                   </div>
@@ -1847,8 +1933,25 @@
     const createDots = [...document.querySelectorAll(".step-dots i")];
     const createPreview = document.getElementById("createPreview");
     const formatChip = document.getElementById("formatChip");
+    const approvalMeta = {
+      1: {
+        title: "Instagram square · Fun Run",
+        artHtml: "Spring Fun Run<br />Saturday",
+        artStyle: "",
+      },
+      2: {
+        title: "Facebook feed · Book Fair",
+        artHtml: "Book Fair<br />volunteers",
+        artStyle: "background: linear-gradient(135deg, rgba(196,146,46,0.9), rgba(47,74,60,0.75))",
+      },
+    };
     let createFormat = "square";
     let pendingChangeId = null;
+    let recreateMode = false;
+    let recreateFromId = null;
+    let lastFeedback = "";
+    let approvalFilter = "waiting";
+    let skipCreateReset = false;
     let toastTimer;
     let appToastTimer;
 
@@ -1869,6 +1972,92 @@
       });
     }
 
+    function setApprovalFilter(filter) {
+      approvalFilter = filter;
+      document.querySelectorAll("#approvalPills button").forEach((btn) => {
+        btn.classList.toggle("on", btn.dataset.approvalFilter === filter);
+      });
+      document.getElementById("approvalsWaiting")?.classList.toggle("hidden", filter !== "waiting");
+      document.getElementById("approvalsMine")?.classList.toggle("hidden", filter !== "mine");
+      document.getElementById("approvalsDone")?.classList.toggle("hidden", filter !== "done");
+    }
+
+    function refreshApprovalsEmpty() {
+      const remaining = [...document.querySelectorAll("#approvalsWaiting .approve-card")].filter(
+        (card) => !card.classList.contains("hidden"),
+      );
+      document.getElementById("approvalsEmpty")?.classList.toggle("hidden", remaining.length > 0);
+    }
+
+    function refreshNeedsMe() {
+      const card = document.getElementById("needsMeCard");
+      const empty = document.getElementById("needsMeEmpty");
+      const has = card && !card.classList.contains("hidden");
+      empty?.classList.toggle("hidden", !!has);
+    }
+
+    function refreshDoneEmpty() {
+      const list = document.getElementById("doneList");
+      const empty = document.getElementById("doneEmpty");
+      const has = (list?.children.length || 0) > 0;
+      empty?.classList.toggle("hidden", has);
+    }
+
+    function clearRecreateMode() {
+      recreateMode = false;
+      recreateFromId = null;
+      document.getElementById("recreateBanner")?.classList.add("hidden");
+      document.getElementById("recreateBannerNote").textContent = "";
+      document.getElementById("createHeroTitle").textContent = "Create social";
+      document.getElementById("createHeroSub").textContent =
+        "Artwork → caption → submit for approval. Full campaign builder stays on desktop.";
+      document.getElementById("createSubmitLabel").textContent = "Send for approval";
+      document.getElementById("createSubmit").textContent = "Submit for approval";
+      document.getElementById("createSubmitChip").textContent = "Needs approval";
+      document.getElementById("createSubmitCopy").textContent =
+        "Goes to Approvals for your team. Same approve / request-changes flow as desktop — not published yet.";
+      document.getElementById("createDoneTitle").textContent = "Submitted";
+      document.getElementById("createDoneSub").textContent =
+        "Waiting in Approvals. You’ll get a push when it’s reviewed.";
+      document.getElementById("createPreviewArt").innerHTML = "Spring Fun Run<br />Saturday";
+      document.getElementById("captionField").value =
+        "Join us Saturday for the Spring Fun Run — register at the check-in table. Volunteers still needed!";
+    }
+
+    function enterRecreateMode(id) {
+      const meta = approvalMeta[id] || approvalMeta[1];
+      recreateMode = true;
+      recreateFromId = id;
+      document.getElementById("recreateBanner")?.classList.remove("hidden");
+      document.getElementById("recreateBannerNote").textContent = lastFeedback || "Apply approver feedback and resubmit.";
+      document.getElementById("createHeroTitle").textContent = "Recreate with AI";
+      document.getElementById("createHeroSub").textContent =
+        "Feedback stays pinned while you regenerate artwork and caption, then resubmit.";
+      document.getElementById("createSubmitLabel").textContent = "Resubmit for approval";
+      document.getElementById("createSubmit").textContent = "Resubmit for approval";
+      document.getElementById("createSubmitChip").textContent = "Resubmit";
+      document.getElementById("createSubmitTitle").textContent = meta.title + " · revised";
+      document.getElementById("createSubmitCopy").textContent =
+        "Returns to Waiting for the approver. They’ll see your updates against the change request.";
+      document.getElementById("createDoneTitle").textContent = "Resubmitted";
+      document.getElementById("createDoneSub").textContent =
+        "Back in Approvals → Waiting. Approver gets a push to review again.";
+      document.getElementById("createPreviewArt").innerHTML = meta.artHtml;
+      document.getElementById("captionField").value =
+        "Join us Saturday for the Spring Fun Run — check in at the Field entrance. Larger time on the flyer. Volunteers still needed!";
+      skipCreateReset = true;
+      showScreen("create");
+      setCreateStep(1);
+    }
+
+    function applyRecreatedPreview() {
+      const art = document.getElementById("createPreviewArt");
+      if (!art) return;
+      art.innerHTML = "Spring Fun Run<br /><span style='font-size:1.15em'>8:00 AM</span><br />Field entrance";
+      document.getElementById("captionField").value =
+        "Spring Fun Run — Saturday 8:00 AM. Check in at the Field entrance. Rain or shine. Volunteers still needed!";
+    }
+
     function showScreen(id) {
       panels.forEach((panel) => {
         panel.classList.toggle("active", panel.dataset.screen === id);
@@ -1878,6 +2067,7 @@
           tab.dataset.tab === id ||
           ((id === "event-detail" || id === "volunteers") && tab.dataset.tab === "events") ||
           ((id === "hub-thread" || id === "hub-thread-fb") && tab.dataset.tab === "hub") ||
+          ((id === "changes-requested") && tab.dataset.tab === "approvals") ||
           (id === "files" && tab.dataset.tab === "home");
         tab.classList.toggle("active", on);
       });
@@ -1886,21 +2076,45 @@
           "active-card",
           card.dataset.jump === id ||
             (id === "hub-thread" && card.dataset.jump === "hub") ||
-            (id === "event-detail" && card.dataset.jump === "events"),
+            (id === "event-detail" && card.dataset.jump === "events") ||
+            (id === "changes-requested" && card.dataset.jump === "approvals"),
         );
       });
       if (id !== "home") pushToast.classList.add("hide");
-      if (id === "create") setCreateStep(1);
+      if (id === "create") {
+        if (!skipCreateReset && !recreateMode) {
+          clearRecreateMode();
+          setCreateStep(1);
+        } else if (skipCreateReset) {
+          skipCreateReset = false;
+        } else {
+          setCreateStep(1);
+        }
+      }
+      if (id === "approvals") setApprovalFilter(approvalFilter);
       changeSheet.classList.remove("show");
     }
 
     tabs.forEach((tab) => {
-      tab.addEventListener("click", () => showScreen(tab.dataset.tab));
+      tab.addEventListener("click", () => {
+        if (tab.dataset.tab === "create" && !recreateMode) clearRecreateMode();
+        showScreen(tab.dataset.tab);
+      });
     });
     document.querySelectorAll("[data-jump]").forEach((el) => {
-      el.addEventListener("click", () => showScreen(el.dataset.jump));
+      el.addEventListener("click", () => {
+        if (el.dataset.jump === "create" && !el.id) clearRecreateMode();
+        showScreen(el.dataset.jump);
+      });
     });
-    pushToast.addEventListener("click", () => showScreen("approvals"));
+    pushToast.addEventListener("click", () => {
+      showScreen("approvals");
+      setApprovalFilter("waiting");
+    });
+
+    document.getElementById("homeChangesAttn")?.addEventListener("click", () => {
+      showScreen("changes-requested");
+    });
 
     // Create social
     document.querySelectorAll(".format-card").forEach((card) => {
@@ -1914,56 +2128,164 @@
         if (createPreview) createPreview.classList.toggle("story", createFormat === "story");
       });
     });
-    document.getElementById("createGenerate")?.addEventListener("click", () => setCreateStep(2));
+    document.getElementById("createGenerate")?.addEventListener("click", () => {
+      setCreateStep(2);
+      if (recreateMode) applyRecreatedPreview();
+    });
     document.getElementById("resumeDraft")?.addEventListener("click", () => setCreateStep(2));
     document.getElementById("createBack")?.addEventListener("click", () => setCreateStep(1));
+    document.getElementById("createRegen")?.addEventListener("click", () => {
+      if (recreateMode) applyRecreatedPreview();
+      showToast(recreateMode ? "Regenerated with feedback applied" : "New artwork generated");
+    });
     document.getElementById("createToSubmit")?.addEventListener("click", () => setCreateStep(3));
     document.getElementById("createBack2")?.addEventListener("click", () => setCreateStep(2));
     document.getElementById("createSubmit")?.addEventListener("click", () => {
       setCreateStep(4);
-      showToast("Submitted for approval");
+      if (recreateMode) {
+        const id = recreateFromId || "1";
+        const meta = approvalMeta[id] || approvalMeta[1];
+        const card = document.getElementById(`approvalCard${id}`);
+        if (card) {
+          card.classList.remove("hidden");
+          const copy = document.getElementById(`approvalCard${id}Copy`);
+          const chips = document.getElementById(`approvalCard${id}Chips`);
+          if (copy) copy.textContent = "Resubmitted after changes — waiting on your review.";
+          if (chips) chips.innerHTML = `<span class="chip warn">Resubmitted</span><span class="chip">Needs approval</span>`;
+          const art = card.querySelector(".approve-art");
+          if (art) {
+            art.innerHTML = "<span>Spring Fun Run<br /><strong>8:00 AM</strong><br />Field entrance</span>";
+            if (meta.artStyle) art.setAttribute("style", meta.artStyle);
+          }
+          const actions = document.getElementById(`approvalCard${id}Actions`);
+          if (actions) actions.classList.remove("hidden");
+        }
+        document.getElementById("needsMeCard")?.classList.add("hidden");
+        document.getElementById("homeChangesAttn")?.classList.add("hidden");
+        document.getElementById("homeApproveAttn")?.classList.remove("hidden");
+        document.getElementById("homeApproveCopy").textContent =
+          "Resubmitted after changes — ready for your review.";
+        document.getElementById("homeApproveChips").innerHTML =
+          `<span class="chip warn">Resubmit</span><span class="chip">Approvals</span>`;
+        refreshNeedsMe();
+        refreshApprovalsEmpty();
+        showToast("Resubmitted — waiting on approver");
+        recreateMode = false;
+        document.getElementById("recreateBanner")?.classList.add("hidden");
+      } else {
+        showToast("Submitted for approval");
+      }
     });
-    document.getElementById("createAgain")?.addEventListener("click", () => setCreateStep(1));
+    document.getElementById("createAgain")?.addEventListener("click", () => {
+      clearRecreateMode();
+      setCreateStep(1);
+    });
 
-    // Approvals
-    function refreshApprovalsEmpty() {
-      const remaining = [...document.querySelectorAll(".approve-card")].filter(
-        (card) => !card.classList.contains("hidden"),
-      );
-      document.getElementById("approvalsEmpty")?.classList.toggle("hidden", remaining.length > 0);
-    }
+    // Approvals tabs + actions
+    document.querySelectorAll("#approvalPills button").forEach((btn) => {
+      btn.addEventListener("click", () => setApprovalFilter(btn.dataset.approvalFilter));
+    });
+
     document.querySelectorAll("[data-approve]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-approve");
-        document.getElementById(`approvalCard${id}`)?.classList.add("hidden");
-        showToast("Approved — ready to schedule / publish");
+        const card = document.getElementById(`approvalCard${id}`);
+        const meta = approvalMeta[id] || approvalMeta[1];
+        card?.classList.add("hidden");
+        const done = document.createElement("article");
+        done.className = "approve-card";
+        done.innerHTML = `
+          <div class="approve-art"${meta.artStyle ? ` style="${meta.artStyle}"` : ""}><span>${meta.artHtml}</span></div>
+          <div class="approve-body">
+            <div class="chip-row" style="margin-bottom: 8px"><span class="chip">Approved</span></div>
+            <h3>${meta.title}</h3>
+            <p>Ready to schedule / publish on desktop Social.</p>
+          </div>`;
+        document.getElementById("doneList")?.prepend(done);
+        refreshDoneEmpty();
         refreshApprovalsEmpty();
+        if (id === "1") document.getElementById("homeApproveAttn")?.classList.add("hidden");
+        showToast("Approved — ready to schedule / publish");
+        setApprovalFilter("done");
       });
     });
+
     document.querySelectorAll("[data-change-request]").forEach((btn) => {
       btn.addEventListener("click", () => {
         pendingChangeId = btn.getAttribute("data-change-request");
+        const note = document.getElementById("changeNote");
+        if (note && !note.value.trim()) {
+          note.value = 'Can we make the time larger and add “Field entrance”?';
+        }
         changeSheet.classList.add("show");
+        changeSheet.setAttribute("aria-hidden", "false");
       });
     });
     document.getElementById("changeCancel")?.addEventListener("click", () => {
       changeSheet.classList.remove("show");
+      changeSheet.setAttribute("aria-hidden", "true");
       pendingChangeId = null;
     });
     document.getElementById("changeSend")?.addEventListener("click", () => {
-      if (pendingChangeId) {
-        document.getElementById(`approvalCard${pendingChangeId}`)?.classList.add("hidden");
+      const note = (document.getElementById("changeNote")?.value || "").trim();
+      if (!note) {
+        showToast("Add a short note so the creator knows what to fix");
+        return;
       }
+      if (!pendingChangeId) return;
+      const id = pendingChangeId;
+      const meta = approvalMeta[id] || approvalMeta[1];
+      lastFeedback = note;
+      recreateFromId = id;
+
+      document.getElementById(`approvalCard${id}`)?.classList.add("hidden");
+      document.getElementById("needsMeEmpty")?.classList.add("hidden");
+      const needsCard = document.getElementById("needsMeCard");
+      needsCard?.classList.remove("hidden");
+      document.getElementById("needsMeTitle").textContent = meta.title;
+      document.getElementById("needsMeFeedback").textContent = "“" + note + "”";
+      const needsArt = document.getElementById("needsMeArt");
+      if (needsArt) {
+        needsArt.innerHTML = `<span>${meta.artHtml}</span>`;
+        if (meta.artStyle) needsArt.setAttribute("style", meta.artStyle);
+        else needsArt.removeAttribute("style");
+      }
+
+      document.getElementById("changesRequestedSub").textContent =
+        "Approver asked for updates on " + meta.title;
+      document.getElementById("changesRequestedNote").textContent = note;
+      document.getElementById("changesRequestedArt").innerHTML = meta.artHtml;
+
+      document.getElementById("homeChangesAttn")?.classList.remove("hidden");
+      document.getElementById("homeChangesCopy").textContent = "“" + note + "” — recreate & resubmit.";
+      if (id === "1") document.getElementById("homeApproveAttn")?.classList.add("hidden");
+
       changeSheet.classList.remove("show");
-      showToast("Change request sent — they’ll get a push");
+      changeSheet.setAttribute("aria-hidden", "true");
       pendingChangeId = null;
       refreshApprovalsEmpty();
+      refreshNeedsMe();
+      showToast("Change request sent — they’ll get a push");
+
+      /* Demo continues as the creator: open feedback handoff */
+      setTimeout(() => {
+        showScreen("changes-requested");
+        showToast("Creator view: changes requested");
+      }, 700);
     });
     changeSheet.addEventListener("click", (event) => {
       if (event.target === changeSheet) {
         changeSheet.classList.remove("show");
+        changeSheet.setAttribute("aria-hidden", "true");
         pendingChangeId = null;
       }
+    });
+
+    document.getElementById("startRecreate")?.addEventListener("click", () => {
+      enterRecreateMode(recreateFromId || "1");
+    });
+    document.getElementById("recreateFromFeedback")?.addEventListener("click", () => {
+      enterRecreateMode(recreateFromId || "1");
     });
 
     // Hub replies

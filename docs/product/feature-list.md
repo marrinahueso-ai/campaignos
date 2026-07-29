@@ -9,7 +9,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ---
 
 ## Mobile app (phone)
-- **Hey Ralli mobile Ease mockup** — **in progress** (clickable phone demo: Home needs-you + push; **Events** / event detail with **scheduled + posted** posts, **SignUpGenius URL save/sync/refresh**, volunteers fill/roles, quick notes; **People** Needs-people; center **Create social** (format → generate → caption → submit); **Approvals** approve + request-changes sheet; **Hub** thread reply + suggest; Files; out-of-scope: desktop Settings, calendar integrations, full Social composer / website builders; HTML at [`public/mobile-app-ease-mockup.html`](../../public/mobile-app-ease-mockup.html) — do not ship product UI until GO)
+- **Hey Ralli mobile Ease mockup** — **in progress** (clickable phone demo: Home needs-you + push; **Events** / event detail with **scheduled + posted** posts, **SignUpGenius URL save/sync/refresh**, volunteers fill/roles, quick notes; **People** Needs-people; center **Create social** (format → generate → caption → submit); **Approvals** Waiting / Needs me / Done — approve, **request changes** → feedback handoff → **Recreate with AI** (pinned note) → **resubmit** back to Waiting; **Hub** thread reply + suggest; Files; out-of-scope: desktop Settings, calendar integrations, full Social composer / website builders; HTML at [`public/mobile-app-ease-mockup.html`](../../public/mobile-app-ease-mockup.html) — do not ship product UI until GO)
 - Native iOS / Android wrap + push (approvals, resubmits, DMs, comments) — **deferred** (longer vision; mockup above)
 
 ## Marketing & public
