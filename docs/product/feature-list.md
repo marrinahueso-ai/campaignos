@@ -4,9 +4,13 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 28, 2026 — Create with AI copy sweep (org/team language) + Social-first landing
+**Last updated:** July 29, 2026 — Mobile app Ease mockup (on-the-go scope)
 
 ---
+
+## Mobile app (phone)
+- **Hey Ralli mobile Ease mockup** — **in progress** (phone-weight clickable demo: Home needs-you + push; **Events** / event detail — scheduled/posted posts, SignUpGenius, **event file upload**, quick note — no quick-action grid; **People** Needs-people; light **Create** — format → one photo *or* one look → generate → caption → submit; **Approvals** — approve or short change note → Needs me → fix & resubmit; **Hub** reply; org Files; heavy campaign builder stays desktop; HTML at [`public/mobile-app-ease-mockup.html`](../../public/mobile-app-ease-mockup.html) — do not ship product UI until GO)
+- Native iOS / Android wrap + push (approvals, resubmits, DMs, comments) — **deferred** (longer vision; mockup above)
 
 ## Marketing & public
 - Landing / home — **shipped** (cinematic Hey Ralli WOW homepage: full-bleed hero, product tour, pricing teaser, invite band, cookie consent; mockup reference `public/marketing-home-wow-mockup.html`)

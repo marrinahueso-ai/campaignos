@@ -1,0 +1,2462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Mobile App Ease Mockup</title>
+  <meta name="description" content="Ease mockup of the Hey Ralli mobile app — Events on the go, Approvals, Communications Hub, Create with AI artwork, Files from camera, and push notifications. No settings or calendar integrations." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 24px 56px rgba(42, 38, 34, 0.14);
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+      --fb: #1877f2;
+      --ig: #c13584;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 45% at 15% -5%, rgba(47, 74, 60, 0.14), transparent 55%),
+        radial-gradient(ellipse 55% 40% at 90% 5%, rgba(196, 146, 46, 0.12), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button { font: inherit; cursor: pointer; }
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 20px 64px;
+    }
+    .mock-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .hero-copy h1 {
+      font-family: var(--serif);
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0 0 10px;
+      max-width: 18ch;
+      line-height: 1.1;
+    }
+    .hero-copy p {
+      margin: 0 0 18px;
+      color: var(--ink-soft);
+      font-size: 1.05rem;
+      max-width: 46ch;
+      line-height: 1.5;
+    }
+    .scope {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+    .scope span {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.7);
+      color: var(--ink-soft);
+    }
+    .scope span.in {
+      background: rgba(47, 74, 60, 0.1);
+      border-color: rgba(47, 74, 60, 0.22);
+      color: var(--forest);
+    }
+    .scope span.out {
+      opacity: 0.72;
+      text-decoration: line-through;
+      text-decoration-color: rgba(122, 113, 102, 0.45);
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: minmax(280px, 340px) 1fr;
+      gap: 36px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .stage { grid-template-columns: 1fr; justify-items: center; }
+    }
+
+    /* Phone */
+    .phone-wrap {
+      position: relative;
+      width: min(100%, 340px);
+      animation: rise 0.55s ease both;
+    }
+    .phone {
+      position: relative;
+      border-radius: 42px;
+      background: linear-gradient(160deg, #3a342e, #1f1c19 55%, #2a2622);
+      padding: 12px;
+      box-shadow: var(--shadow-lg);
+    }
+    .phone-bezel {
+      border-radius: 34px;
+      overflow: hidden;
+      background: var(--cream);
+      height: 680px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .notch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 108px;
+      height: 28px;
+      background: #1f1c19;
+      border-radius: 20px;
+      z-index: 5;
+    }
+    .status-bar {
+      height: 48px;
+      padding: 16px 22px 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+      flex-shrink: 0;
+    }
+    .screen {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+      padding: 0 14px 8px;
+    }
+    .screen-panel {
+      display: none;
+      height: 100%;
+      overflow-y: auto;
+      padding-bottom: 8px;
+      animation: rise 0.35s ease both;
+      scrollbar-width: thin;
+    }
+    .screen-panel.active { display: block; }
+
+    .tabbar {
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      padding: 8px 6px 16px;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.92);
+      backdrop-filter: blur(8px);
+    }
+    .tabbar button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 2px;
+      border-radius: 12px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      position: relative;
+    }
+    .tabbar button.active { color: var(--forest); background: rgba(47, 74, 60, 0.08); }
+    .tabbar button svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .tab-badge {
+      position: absolute;
+      top: 2px;
+      right: 14px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: #c23b3b;
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+    }
+
+    /* Push toast over phone */
+    .push-toast {
+      position: absolute;
+      top: -18px;
+      left: 10px;
+      right: 10px;
+      z-index: 8;
+      background: rgba(255, 252, 247, 0.96);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      animation: drop-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      cursor: pointer;
+    }
+    .push-toast.hide { display: none; }
+    .push-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--forest);
+      color: var(--cream);
+      display: grid;
+      place-items: center;
+      font-family: var(--serif);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .push-toast strong { display: block; font-size: 13px; margin-bottom: 2px; }
+    .push-toast span { font-size: 12px; color: var(--ink-soft); line-height: 1.35; }
+    .push-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* In-phone UI */
+    .greeting {
+      font-family: var(--serif);
+      font-size: 1.55rem;
+      font-weight: 600;
+      margin: 4px 0 4px;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0 0 14px;
+      line-height: 1.4;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 16px 0 8px;
+    }
+    .attn {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      animation: rise 0.45s ease both;
+    }
+    .attn:nth-child(2) { animation-delay: 0.05s; }
+    .attn:nth-child(3) { animation-delay: 0.1s; }
+    .attn-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #c23b3b;
+      margin-top: 6px;
+      flex-shrink: 0;
+      animation: soft-pulse 1.8s ease-in-out infinite;
+    }
+    .attn h3 {
+      margin: 0 0 3px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .attn p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--ink-soft);
+      line-height: 1.35;
+    }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chip {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(47, 74, 60, 0.1);
+      color: var(--forest);
+    }
+    .chip.warn { background: rgba(166, 90, 58, 0.12); color: var(--warn); }
+    .chip.ig { background: rgba(193, 53, 132, 0.1); color: #9b2d68; }
+    .chip.fb { background: rgba(24, 119, 242, 0.1); color: #155dbf; }
+
+    .cta-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .cta {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 12px;
+      text-align: left;
+      background: var(--forest);
+      color: var(--cream);
+      box-shadow: var(--shadow);
+    }
+    .cta.secondary {
+      background: var(--white);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .cta strong { display: block; font-size: 13px; margin-bottom: 2px; }
+    .cta span { font-size: 11px; opacity: 0.85; }
+
+    .pill-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 3px;
+      border-radius: 999px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      margin-bottom: 12px;
+    }
+    .pill-tabs button {
+      flex: 1;
+      border: none;
+      background: transparent;
+      border-radius: 999px;
+      padding: 7px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-soft);
+    }
+    .pill-tabs button.on {
+      background: var(--forest);
+      color: var(--cream);
+    }
+
+    .approve-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+    }
+    .approve-art {
+      height: 140px;
+      background:
+        linear-gradient(135deg, rgba(47, 74, 60, 0.85), rgba(42, 122, 134, 0.55)),
+        repeating-linear-gradient(-12deg, transparent, transparent 12px, rgba(255,255,255,0.04) 12px, rgba(255,255,255,0.04) 24px);
+      display: grid;
+      place-items: end start;
+      padding: 14px;
+      color: var(--cream);
+    }
+    .approve-art span {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1.15;
+    }
+    .approve-body { padding: 12px; }
+    .approve-body h3 { margin: 0 0 4px; font-size: 14px; }
+    .approve-body p { margin: 0 0 10px; font-size: 12px; color: var(--ink-soft); }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .btn-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+    .btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .btn.primary { background: var(--forest); color: var(--cream); }
+    .btn.ghost { background: var(--cream-deep); color: var(--ink); }
+
+    .thread {
+      display: flex;
+      gap: 10px;
+      padding: 10px 4px;
+      border-bottom: 1px solid var(--line);
+      align-items: flex-start;
+    }
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #6b8171, #2f4a3c);
+      color: var(--cream);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .thread h3 { margin: 0; font-size: 13px; font-weight: 700; }
+    .thread p { margin: 2px 0 0; font-size: 12px; color: var(--ink-soft); line-height: 1.35; }
+    .thread-meta { margin-left: auto; text-align: right; flex-shrink: 0; }
+    .thread-meta time { font-size: 10px; color: var(--muted); display: block; }
+    .unread-pip {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #c23b3b;
+      margin: 6px 0 0 auto;
+    }
+
+    .create-hero {
+      border-radius: 22px;
+      padding: 18px 16px;
+      background:
+        radial-gradient(ellipse 80% 70% at 20% 0%, rgba(196, 146, 46, 0.22), transparent 55%),
+        linear-gradient(160deg, #2f4a3c, #24382e 70%);
+      color: var(--cream);
+      margin-bottom: 12px;
+    }
+    .create-hero h2 {
+      font-family: var(--serif);
+      font-size: 1.45rem;
+      font-weight: 600;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+    .create-hero p { margin: 0; font-size: 13px; opacity: 0.88; line-height: 1.4; }
+    .event-pick {
+      margin-top: 12px;
+      background: rgba(255, 252, 247, 0.12);
+      border: 1px solid rgba(255, 252, 247, 0.18);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+    .art-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .art-tile {
+      aspect-ratio: 1;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--white);
+      overflow: hidden;
+      position: relative;
+    }
+    .art-tile .swatch {
+      height: 70%;
+      background: linear-gradient(145deg, #2a7a86, #2f4a3c);
+    }
+    .art-tile:nth-child(2) .swatch {
+      background: linear-gradient(145deg, #c4922e, #a65a3a);
+    }
+    .art-tile footer {
+      padding: 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .gen-btn {
+      width: 100%;
+      margin-top: 12px;
+      border: none;
+      border-radius: 16px;
+      padding: 14px;
+      background: var(--forest);
+      color: var(--cream);
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .format-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .format-card {
+      border: 1px solid var(--line);
+      background: var(--white);
+      border-radius: 16px;
+      padding: 12px 10px;
+      text-align: left;
+      box-shadow: var(--shadow);
+      color: inherit;
+    }
+    .format-card.on {
+      border-color: rgba(47, 74, 60, 0.45);
+      background: rgba(47, 74, 60, 0.08);
+    }
+    .format-card .ratio {
+      height: 56px;
+      border-radius: 10px;
+      background: linear-gradient(145deg, #2f4a3c, #2a7a86);
+      margin-bottom: 8px;
+    }
+    .format-card.story .ratio {
+      width: 36px;
+      margin-left: auto;
+      margin-right: auto;
+      background: linear-gradient(145deg, #c4922e, #a65a3a);
+    }
+    .format-card strong { display: block; font-size: 13px; }
+    .format-card span { font-size: 11px; color: var(--muted); }
+    .insp-hint {
+      margin: -4px 0 8px;
+      font-size: 12px;
+      color: var(--ink-soft);
+      line-height: 1.35;
+    }
+    .insp-tile {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      position: relative;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      padding: 0;
+    }
+    .insp-tile.on {
+      border-color: var(--forest);
+      box-shadow: 0 0 0 2px rgba(47, 74, 60, 0.2);
+    }
+    .insp-tile .check {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: var(--cream);
+      font-size: 11px;
+      font-weight: 800;
+      display: none;
+      place-items: center;
+    }
+    .insp-tile.on .check { display: grid; }
+    .insp-pool {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .insp-add {
+      width: 100%;
+      border: 1px dashed rgba(47, 74, 60, 0.35);
+      background: var(--cream-deep);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 4px;
+    }
+    .insp-add.on {
+      border-style: solid;
+      border-color: var(--forest);
+      background: rgba(47, 74, 60, 0.1);
+    }
+    .capture.compact {
+      padding: 16px 12px;
+      margin-bottom: 8px;
+      width: 100%;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+    .capture.compact svg { width: 28px; height: 28px; }
+    .create-step { display: none; }
+    .create-step.on { display: block; animation: rise 0.3s ease both; }
+    .create-preview {
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--white);
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+    }
+    .create-preview .art {
+      height: 200px;
+      background:
+        linear-gradient(145deg, rgba(47, 74, 60, 0.92), rgba(42, 122, 134, 0.55)),
+        repeating-linear-gradient(-12deg, transparent, transparent 14px, rgba(255,255,255,0.04) 14px, rgba(255,255,255,0.04) 28px);
+      color: var(--cream);
+      display: grid;
+      place-items: end start;
+      padding: 16px;
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      font-weight: 600;
+      line-height: 1.15;
+    }
+    .create-preview.story .art {
+      height: 260px;
+      width: 58%;
+      margin: 0 auto;
+      border-radius: 0 0 14px 14px;
+    }
+    .caption-box {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    .caption-box label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .caption-box textarea {
+      width: 100%;
+      border: none;
+      resize: none;
+      min-height: 64px;
+      font: inherit;
+      color: var(--ink);
+      outline: none;
+      background: transparent;
+    }
+    .step-dots {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin: 4px 0 12px;
+    }
+    .step-dots i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cream-deep);
+    }
+    .step-dots i.on { background: var(--forest); }
+    .success-panel {
+      text-align: center;
+      padding: 28px 12px 12px;
+    }
+    .success-panel .check {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(47, 74, 60, 0.12);
+      color: var(--forest);
+      display: grid;
+      place-items: center;
+      margin: 0 auto 12px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      animation: rise 0.4s ease both;
+    }
+    .tabbar button.create-tab {
+      transform: translateY(-6px);
+    }
+    .tabbar button.create-tab .create-fab {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: var(--cream);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 8px 18px rgba(47, 74, 60, 0.28);
+    }
+    .tabbar button.create-tab.active .create-fab {
+      background: #24382e;
+    }
+    .tabbar button.create-tab svg { stroke: currentColor; }
+    .post-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      width: 100%;
+      background: transparent;
+      border-left: none;
+      border-right: none;
+      border-top: none;
+      color: inherit;
+    }
+    .post-row:last-child { border-bottom: none; }
+    .post-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      background: linear-gradient(145deg, #2f4a3c, #2a7a86);
+    }
+    .post-thumb.warm { background: linear-gradient(145deg, #c4922e, #a65a3a); }
+    .post-row h3 { margin: 0; font-size: 13px; font-weight: 700; }
+    .post-row p { margin: 2px 0 0; font-size: 11px; color: var(--muted); }
+    .sug-box input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      background: var(--cream);
+      color: var(--ink);
+      margin: 8px 0;
+    }
+    .toast-banner {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 78px;
+      z-index: 9;
+      background: var(--forest);
+      color: var(--cream);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      animation: rise 0.3s ease both;
+    }
+    .toast-banner.show { display: block; }
+    .sheet {
+      position: absolute;
+      inset: 0;
+      z-index: 12;
+      background: rgba(42, 38, 34, 0.35);
+      display: none;
+      align-items: flex-end;
+    }
+    .sheet.show { display: flex; }
+    .sheet-card {
+      width: 100%;
+      background: var(--cream);
+      border-radius: 22px 22px 0 0;
+      padding: 16px 16px 28px;
+      animation: rise 0.3s ease both;
+      max-height: 85%;
+      overflow-y: auto;
+    }
+    .sheet-card h2 {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      margin: 0 0 8px;
+      font-weight: 600;
+    }
+    .bubble-row { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+    .bubble {
+      max-width: 85%;
+      padding: 10px 12px;
+      border-radius: 16px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .bubble.in {
+      align-self: flex-start;
+      background: var(--white);
+      border: 1px solid var(--line);
+    }
+    .bubble.out {
+      align-self: flex-end;
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .reply-bar {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      margin-top: 8px;
+    }
+    .reply-bar textarea {
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
+      font: inherit;
+      min-height: 44px;
+      resize: none;
+      background: var(--white);
+    }
+    .hidden { display: none !important; }
+
+    .capture {
+      border: 1.5px dashed rgba(47, 74, 60, 0.35);
+      border-radius: 20px;
+      background: rgba(47, 74, 60, 0.05);
+      padding: 28px 16px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .capture svg {
+      width: 36px;
+      height: 36px;
+      stroke: var(--forest);
+      fill: none;
+      stroke-width: 1.6;
+      margin-bottom: 8px;
+    }
+    .capture strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .capture span { font-size: 12px; color: var(--ink-soft); }
+    .file-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .file-thumb {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6b8171, #c4922e);
+      flex-shrink: 0;
+    }
+    .file-row h3 { margin: 0; font-size: 13px; }
+    .file-row p { margin: 2px 0 0; font-size: 11px; color: var(--muted); }
+
+    .event-card {
+      display: flex;
+      gap: 12px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      text-align: left;
+      width: 100%;
+      color: inherit;
+      animation: rise 0.4s ease both;
+    }
+    .event-card:nth-child(2) { animation-delay: 0.04s; }
+    .event-card:nth-child(3) { animation-delay: 0.08s; }
+    .event-card:nth-child(4) { animation-delay: 0.12s; }
+    .event-date {
+      width: 48px;
+      flex-shrink: 0;
+      border-radius: 14px;
+      background: rgba(47, 74, 60, 0.1);
+      color: var(--forest);
+      text-align: center;
+      padding: 8px 4px;
+    }
+    .event-date .mon {
+      display: block;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .event-date .day {
+      display: block;
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      font-weight: 600;
+      line-height: 1.1;
+      margin-top: 2px;
+    }
+    .event-card.soon .event-date {
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .event-card h3 { margin: 0 0 3px; font-size: 14px; font-weight: 700; }
+    .event-card p { margin: 0; font-size: 12px; color: var(--ink-soft); line-height: 1.35; }
+    .event-focus {
+      border-radius: 22px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background:
+        radial-gradient(ellipse 80% 70% at 85% 0%, rgba(196, 146, 46, 0.28), transparent 50%),
+        linear-gradient(155deg, #2f4a3c, #24382e 72%);
+      color: var(--cream);
+    }
+    .event-focus .eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.8;
+      margin-bottom: 6px;
+    }
+    .event-focus h2 {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+    .event-focus p { margin: 0 0 12px; font-size: 13px; opacity: 0.9; line-height: 1.4; }
+    .event-focus .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .event-focus .actions button {
+      border: none;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(255, 252, 247, 0.16);
+      color: var(--cream);
+      border: 1px solid rgba(255, 252, 247, 0.2);
+    }
+    .event-focus .actions button.solid {
+      background: var(--cream);
+      color: var(--forest);
+      border-color: transparent;
+    }
+    .event-detail-back {
+      border: none;
+      background: transparent;
+      color: var(--forest);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 0;
+      margin-bottom: 8px;
+    }
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin: 12px 0;
+    }
+    .stat {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--forest);
+    }
+    .stat span { font-size: 10px; color: var(--muted); font-weight: 700; }
+    .fill-track {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--cream-deep);
+      overflow: hidden;
+      margin: 8px 0 4px;
+    }
+    .fill-track > i {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #a65a3a, #c4922e);
+    }
+    .fill-track.ok > i { background: linear-gradient(90deg, #2f4a3c, #6b8171); }
+    .fill-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-soft);
+    }
+    .role-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+    .role-row:last-child { border-bottom: none; }
+    .role-row strong { font-weight: 700; }
+    .role-row span { color: var(--warn); font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .note-compose {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+    }
+    .note-compose textarea {
+      width: 100%;
+      border: none;
+      resize: none;
+      background: transparent;
+      font: inherit;
+      color: var(--ink);
+      min-height: 56px;
+      outline: none;
+    }
+    .note-compose .note-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .note-compose .note-actions button {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .note-compose .mic {
+      background: var(--cream-deep);
+      color: var(--ink);
+    }
+    .note-compose .save {
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .vol-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      text-align: left;
+      width: 100%;
+      color: inherit;
+    }
+
+    /* Side story / gallery of other phones */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .gallery { width: min(100%, 340px); }
+    }
+    .mini-phone {
+      border-radius: 28px;
+      background: #2a2622;
+      padding: 8px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      animation: rise 0.5s ease both;
+    }
+    .mini-phone:nth-child(2) { animation-delay: 0.06s; }
+    .mini-phone:nth-child(3) { animation-delay: 0.12s; }
+    .mini-phone:nth-child(4) { animation-delay: 0.18s; }
+    .mini-phone:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    .mini-phone.active-card {
+      outline: 2px solid var(--forest);
+      outline-offset: 3px;
+    }
+    .mini-inner {
+      border-radius: 22px;
+      background: var(--cream);
+      height: 220px;
+      overflow: hidden;
+      padding: 12px;
+      position: relative;
+    }
+    .mini-label {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-soft);
+    }
+    .mini-title {
+      font-family: var(--serif);
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 6px;
+    }
+    .mini-line {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--cream-deep);
+      margin-bottom: 6px;
+    }
+    .mini-line.short { width: 55%; }
+    .mini-block {
+      height: 64px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(47, 74, 60, 0.85), rgba(42, 122, 134, 0.5));
+      margin: 10px 0;
+    }
+    .mini-block.warm {
+      background: linear-gradient(135deg, rgba(196, 146, 46, 0.85), rgba(166, 90, 58, 0.55));
+    }
+    .notes {
+      margin-top: 36px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    @media (max-width: 800px) {
+      .notes { grid-template-columns: 1fr; }
+    }
+    .note {
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+    }
+    .note h3 {
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      margin: 0 0 6px;
+      font-weight: 600;
+    }
+    .note p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.45;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes drop-in {
+      from { opacity: 0; transform: translateY(-18px) scale(0.96); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes soft-pulse {
+      0%, 100% { opacity: 0.45; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="mock-tag">Mockup · not shipped · Mobile v1 Ease</div>
+    <div class="hero-copy">
+      <h1>Hey Ralli on your phone</h1>
+      <p>
+        Phone-weight demo: quick Create, Approvals (incl. light change → recreate), Hub reply,
+        event posts / SignUpGenius / files / notes, volunteers. Desktop keeps the heavy builder.
+      </p>
+      <div class="scope" aria-label="Mobile scope">
+        <span class="in">Quick Create</span>
+        <span class="in">Hub replies</span>
+        <span class="in">Approve / light revise</span>
+        <span class="in">Event posts · files</span>
+        <span class="in">SignUpGenius</span>
+        <span class="in">Volunteers · notes</span>
+        <span class="out">Desktop settings</span>
+        <span class="out">Calendar integrations</span>
+        <span class="out">Website builders</span>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="phone-wrap">
+        <div class="push-toast" id="pushToast" title="Tap to open Approvals">
+          <div class="push-icon">R</div>
+          <div>
+            <strong>Hey Ralli</strong>
+            <span>Approval needed — Spring Fun Run Instagram square</span>
+            <div class="push-meta">now · Riverside Elementary PTA</div>
+          </div>
+        </div>
+
+        <div class="phone" aria-label="Hey Ralli mobile app mockup">
+          <div class="phone-bezel">
+            <div class="notch" aria-hidden="true"></div>
+            <div class="status-bar">
+              <span>9:41</span>
+              <span>▌▌▌  co</span>
+            </div>
+
+            <div class="screen">
+              <!-- HOME -->
+              <div class="screen-panel active" data-screen="home" id="screen-home">
+                <p class="greeting">Good afternoon</p>
+                <p class="sub">Three things need you before tonight’s meeting.</p>
+
+                <div class="section-label">Needs you</div>
+                <button type="button" class="attn hidden" id="homeChangesAttn" style="width: 100%; text-align: left; cursor: pointer">
+                  <div class="attn-dot"></div>
+                  <div>
+                    <h3>Changes requested on Fun Run post</h3>
+                    <p id="homeChangesCopy">Approver left feedback — recreate &amp; resubmit.</p>
+                    <div class="chip-row">
+                      <span class="chip warn">Recreate</span>
+                      <span class="chip">Approvals</span>
+                    </div>
+                  </div>
+                </button>
+                <button type="button" class="attn" id="homeApproveAttn" data-jump="approvals" style="width: 100%; text-align: left; cursor: pointer">
+                  <div class="attn-dot"></div>
+                  <div>
+                    <h3 id="homeApproveTitle">Approve Fun Run Instagram</h3>
+                    <p id="homeApproveCopy">Waiting on your review before it can schedule.</p>
+                    <div class="chip-row" id="homeApproveChips">
+                      <span class="chip warn">Needs you</span>
+                      <span class="chip">Approvals</span>
+                    </div>
+                  </div>
+                </button>
+                <button type="button" class="attn" data-jump="hub-thread" style="width: 100%; text-align: left; cursor: pointer">
+                  <div class="attn-dot"></div>
+                  <div>
+                    <h3>DM from Maya P.</h3>
+                    <p>“What time do volunteers check in for setup?”</p>
+                    <div class="chip-row">
+                      <span class="chip ig">Instagram</span>
+                      <span class="chip">Hub</span>
+                    </div>
+                  </div>
+                </button>
+                <button type="button" class="attn" data-jump="volunteers" style="width: 100%; text-align: left; cursor: pointer">
+                  <div class="attn-dot" style="background: var(--mustard)"></div>
+                  <div>
+                    <h3>Fun Run needs 4 more volunteers</h3>
+                    <p>Check-in and water station still open — share signup from here.</p>
+                    <div class="chip-row">
+                      <span class="chip warn">68% filled</span>
+                      <span class="chip">Volunteers</span>
+                    </div>
+                  </div>
+                </button>
+
+                <div class="cta-row">
+                  <button type="button" class="cta" data-jump="create">
+                    <strong>Create social</strong>
+                    <span>AI artwork → submit for approval</span>
+                  </button>
+                  <button type="button" class="cta secondary" data-jump="volunteers">
+                    <strong>Volunteers</strong>
+                    <span>Needs people · open signup</span>
+                  </button>
+                </div>
+                <p class="sub" style="margin: 8px 0 0; text-align: center; font-size: 12px">
+                  Or tap the green <strong>+</strong> in the bottom bar — no need to open an event first.
+                </p>
+
+                <div class="section-label">This week</div>
+                <button type="button" class="event-card soon" data-jump="event-detail" style="margin-bottom: 0">
+                  <div class="event-date">
+                    <span class="mon">May</span>
+                    <span class="day">9</span>
+                  </div>
+                  <div>
+                    <h3>Spring Fun Run</h3>
+                    <p>Sat · posts, volunteers, notes — open event</p>
+                    <div class="chip-row">
+                      <span class="chip">3 days</span>
+                      <span class="chip warn">Needs people</span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- EVENTS -->
+              <div class="screen-panel" data-screen="events" id="screen-events">
+                <p class="greeting" style="font-size: 1.35rem">Events</p>
+                <p class="sub">Your year at a glance — no Google/ICS setup here. Deep planning stays on desktop.</p>
+                <div class="pill-tabs">
+                  <button type="button" class="on">Upcoming</button>
+                  <button type="button">This month</button>
+                  <button type="button">All</button>
+                </div>
+
+                <div class="event-focus">
+                  <div class="eyebrow">Up next</div>
+                  <h2>Spring Fun Run</h2>
+                  <p>Saturday May 9 · 8:30 AM · Field &amp; track. 68% volunteers · check-in still open.</p>
+                  <div class="actions">
+                    <button type="button" class="solid" data-jump="event-detail">Open event</button>
+                    <button type="button" data-jump="volunteers">Volunteers</button>
+                  </div>
+                </div>
+
+                <div class="section-label">Coming up</div>
+                <button type="button" class="event-card" data-jump="event-detail">
+                  <div class="event-date">
+                    <span class="mon">May</span>
+                    <span class="day">9</span>
+                  </div>
+                  <div>
+                    <h3>Spring Fun Run</h3>
+                    <p>School event · needs 4 more people</p>
+                    <div class="chip-row">
+                      <span class="chip warn">68%</span>
+                      <span class="chip">2 approvals</span>
+                    </div>
+                  </div>
+                </button>
+                <button type="button" class="event-card" data-jump="volunteers">
+                  <div class="event-date">
+                    <span class="mon">May</span>
+                    <span class="day">16</span>
+                  </div>
+                  <div>
+                    <h3>Teacher Appreciation Breakfast</h3>
+                    <p>Team event · servers covered</p>
+                    <div class="chip-row">
+                      <span class="chip" style="background: rgba(47,74,60,0.12); color: var(--forest)">100%</span>
+                    </div>
+                  </div>
+                </button>
+                <button type="button" class="event-card">
+                  <div class="event-date">
+                    <span class="mon">May</span>
+                    <span class="day">22</span>
+                  </div>
+                  <div>
+                    <h3>Book Fair kickoff</h3>
+                    <p>School event · shift leads short</p>
+                    <div class="chip-row">
+                      <span class="chip warn">82%</span>
+                    </div>
+                  </div>
+                </button>
+                <button type="button" class="event-card">
+                  <div class="event-date">
+                    <span class="mon">Jun</span>
+                    <span class="day">5</span>
+                  </div>
+                  <div>
+                    <h3>End-of-year Carnival</h3>
+                    <p>School event · signup just opened</p>
+                    <div class="chip-row">
+                      <span class="chip warn">41%</span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- VOLUNTEERS -->
+              <div class="screen-panel" data-screen="volunteers" id="screen-volunteers">
+                <p class="greeting" style="font-size: 1.35rem">Volunteers</p>
+                <p class="sub">Who still needs people — fill % and open roles only. No names on phone. Connect SignUpGenius on desktop.</p>
+                <div class="pill-tabs">
+                  <button type="button" class="on">Needs people</button>
+                  <button type="button">Upcoming</button>
+                  <button type="button">Covered</button>
+                </div>
+
+                <div class="event-focus">
+                  <div class="eyebrow">Soonest shortfall</div>
+                  <h2>Spring Fun Run</h2>
+                  <p>Sat May 9 · 68% filled · 4 open spots</p>
+                  <div class="fill-track" style="background: rgba(255,252,247,0.2)">
+                    <i style="width: 68%; background: linear-gradient(90deg, #e8c07a, #c4922e)"></i>
+                  </div>
+                  <div class="fill-meta" style="color: rgba(255,252,247,0.9); margin-bottom: 12px">
+                    <span>Check-in · Water · Finish line</span>
+                    <span>4 open</span>
+                  </div>
+                  <div class="actions">
+                    <button type="button" class="solid" id="volOpenSignup">Open signup</button>
+                    <button type="button" data-jump="event-detail">Event detail</button>
+                  </div>
+                </div>
+
+                <div class="section-label">Open roles</div>
+                <div class="vol-card">
+                  <div class="role-row"><strong>Check-in table</strong><span>2 open</span></div>
+                  <div class="role-row"><strong>Water station</strong><span>1 open</span></div>
+                  <div class="role-row"><strong>Finish line cheer</strong><span>1 open</span></div>
+                </div>
+
+                <div class="section-label">Also short</div>
+                <button type="button" class="vol-card" data-jump="event-detail">
+                  <div style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px">
+                    <strong style="font-size: 14px">Book Fair kickoff</strong>
+                    <span class="chip warn">82%</span>
+                  </div>
+                  <p style="margin: 0; font-size: 12px; color: var(--ink-soft)">May 22 · Shift lead still open</p>
+                  <div class="fill-track"><i style="width: 82%"></i></div>
+                </button>
+                <button type="button" class="vol-card">
+                  <div style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px">
+                    <strong style="font-size: 14px">End-of-year Carnival</strong>
+                    <span class="chip warn">41%</span>
+                  </div>
+                  <p style="margin: 0; font-size: 12px; color: var(--ink-soft)">Jun 5 · Signup just opened</p>
+                  <div class="fill-track"><i style="width: 41%"></i></div>
+                </button>
+              </div>
+
+              <!-- EVENT DETAIL -->
+              <div class="screen-panel" data-screen="event-detail" id="screen-event-detail">
+                <button type="button" class="event-detail-back" data-jump="events">← Events</button>
+                <p class="greeting" style="font-size: 1.45rem; margin-bottom: 2px">Spring Fun Run</p>
+                <p class="sub">Sat May 9 · 8:30 AM · Field &amp; track</p>
+                <div class="stat-row">
+                  <div class="stat">
+                    <strong id="eventApprovalStat">2</strong><span>Approvals</span>
+                  </div>
+                  <div class="stat">
+                    <strong>1</strong><span>Open DM</span>
+                  </div>
+                  <div class="stat">
+                    <strong id="eventVolStat">68%</strong><span>Volunteers</span>
+                  </div>
+                </div>
+
+                <div class="section-label">Posts</div>
+                <div class="pill-tabs" id="postPills">
+                  <button type="button" class="on" data-post-filter="scheduled">Scheduled</button>
+                  <button type="button" data-post-filter="posted">Posted</button>
+                </div>
+                <div id="postsScheduled">
+                  <button type="button" class="post-row">
+                    <div class="post-thumb"></div>
+                    <div>
+                      <h3>Instagram square · Fun Run</h3>
+                      <p>Scheduled · Fri 4:00 PM · needs approval</p>
+                    </div>
+                    <span class="chip warn">Waiting</span>
+                  </button>
+                  <button type="button" class="post-row">
+                    <div class="post-thumb warm"></div>
+                    <div>
+                      <h3>Facebook feed · reminder</h3>
+                      <p>Scheduled · Sat 7:00 AM</p>
+                    </div>
+                    <span class="chip">Ready</span>
+                  </button>
+                </div>
+                <div id="postsPosted" class="hidden">
+                  <button type="button" class="post-row">
+                    <div class="post-thumb" style="background: linear-gradient(145deg, #6b8171, #2a7a86)"></div>
+                    <div>
+                      <h3>Instagram story · save the date</h3>
+                      <p>Posted · Apr 28 · 214 views</p>
+                    </div>
+                    <span class="chip">Live</span>
+                  </button>
+                  <button type="button" class="post-row">
+                    <div class="post-thumb warm"></div>
+                    <div>
+                      <h3>Facebook · volunteer call</h3>
+                      <p>Posted · May 1 · 18 comments</p>
+                    </div>
+                    <span class="chip">Live</span>
+                  </button>
+                </div>
+
+                <div class="section-label">Volunteers · SignUpGenius</div>
+                <div class="vol-card" id="sugCard">
+                  <div id="sugEmpty">
+                    <p style="margin: 0 0 4px; font-size: 13px; font-weight: 700">Add signup link to sync roles</p>
+                    <p style="margin: 0; font-size: 12px; color: var(--ink-soft); line-height: 1.4">
+                      Paste your public SignUpGenius URL. Refresh pulls fill % — full connect/review stays on desktop if needed.
+                    </p>
+                    <input id="sugUrl" type="url" placeholder="https://www.signupgenius.com/go/…" />
+                    <div class="btn-row">
+                      <button type="button" class="btn primary" id="sugSave">Save &amp; sync</button>
+                      <button type="button" class="btn ghost" data-jump="volunteers">Needs people</button>
+                    </div>
+                  </div>
+                  <div id="sugConnected" class="hidden">
+                    <div class="fill-meta">
+                      <span id="sugStatusLabel">Synced · just now</span>
+                      <span style="color: var(--warn)" id="sugOpenLabel">4 open spots</span>
+                    </div>
+                    <div class="fill-track"><i id="sugFillBar" style="width: 68%"></i></div>
+                    <div class="role-row"><strong>Check-in table</strong><span>2 open</span></div>
+                    <div class="role-row"><strong>Water station</strong><span>1 open</span></div>
+                    <div class="role-row"><strong>Finish line cheer</strong><span>1 open</span></div>
+                    <p id="sugLinkPreview" style="margin: 8px 0 0; font-size: 11px; color: var(--muted); word-break: break-all"></p>
+                    <div class="btn-row" style="margin-top: 10px">
+                      <button type="button" class="btn primary" id="sugOpen">Open signup</button>
+                      <button type="button" class="btn ghost" id="sugRefresh">Refresh</button>
+                    </div>
+                    <button type="button" class="btn ghost" id="sugEdit" style="width: 100%; margin-top: 6px">Change link</button>
+                  </div>
+                </div>
+
+                <div class="section-label">Files</div>
+                <button type="button" class="capture compact" id="eventFileCapture">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h3l2-2h6l2 2h3v12H4V7z" />
+                    <circle cx="12" cy="13" r="3.5" />
+                  </svg>
+                  <strong>Upload to this event</strong>
+                  <span>Camera or library · receipt, flyer, vendor form</span>
+                </button>
+                <div id="eventFileList">
+                  <div class="file-row">
+                    <div class="file-thumb"></div>
+                    <div>
+                      <h3>Field map.pdf</h3>
+                      <p>Added Mon · Fun Run</p>
+                    </div>
+                  </div>
+                  <div class="file-row" style="border-bottom: none">
+                    <div class="file-thumb" style="background: linear-gradient(135deg, #c4922e, #a65a3a)"></div>
+                    <div>
+                      <h3>Vendor quote.jpg</h3>
+                      <p>Added yesterday · Fun Run</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="section-label">Quick note</div>
+                <div class="note-compose">
+                  <textarea id="eventNote" placeholder="Jot something for the team… e.g. bounce house arrives 7:15"></textarea>
+                  <div class="note-actions">
+                    <button type="button" class="mic" id="noteVoice">Voice</button>
+                    <button type="button" class="save" id="noteSave">Save note</button>
+                  </div>
+                </div>
+                <div id="noteList">
+                  <div class="attn" style="animation: none; margin-top: 8px">
+                    <div class="attn-dot" style="background: var(--sage); animation: none"></div>
+                    <div>
+                      <h3>Yesterday · Marrina</h3>
+                      <p>Rain plan: move check-in to cafeteria if radar looks wet by 7am.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- APPROVALS -->
+              <div class="screen-panel" data-screen="approvals" id="screen-approvals">
+                <div id="approvalsList">
+                  <p class="greeting" style="font-size: 1.35rem">Approvals</p>
+                  <p class="sub">Approve, or ask for a fix — creator recreates and resubmits.</p>
+                  <div class="pill-tabs" id="approvalPills" role="tablist">
+                    <button type="button" class="on" data-approval-filter="waiting">Waiting</button>
+                    <button type="button" data-approval-filter="mine">Needs me</button>
+                    <button type="button" data-approval-filter="done">Done</button>
+                  </div>
+
+                  <div id="approvalsWaiting">
+                    <article class="approve-card" id="approvalCard1">
+                      <div class="approve-art"><span>Spring Fun Run<br />Saturday</span></div>
+                      <div class="approve-body">
+                        <h3>Instagram square · Fun Run</h3>
+                        <p id="approvalCard1Copy">Waiting on your review.</p>
+                        <div class="chip-row" id="approvalCard1Chips" style="margin-bottom: 8px">
+                          <span class="chip">Needs approval</span>
+                        </div>
+                        <div class="btn-row" id="approvalCard1Actions">
+                          <button type="button" class="btn ghost" data-change-request="1">Request changes</button>
+                          <button type="button" class="btn primary" data-approve="1">Approve</button>
+                        </div>
+                      </div>
+                    </article>
+                    <article class="approve-card" id="approvalCard2">
+                      <div class="approve-art" style="background: linear-gradient(135deg, rgba(196,146,46,0.9), rgba(47,74,60,0.75))">
+                        <span>Book Fair<br />volunteers</span>
+                      </div>
+                      <div class="approve-body">
+                        <h3>Facebook feed · Book Fair</h3>
+                        <p id="approvalCard2Copy">New artwork from Create with AI — not reviewed yet.</p>
+                        <div class="chip-row" id="approvalCard2Chips" style="margin-bottom: 8px">
+                          <span class="chip">Needs approval</span>
+                        </div>
+                        <div class="btn-row" id="approvalCard2Actions">
+                          <button type="button" class="btn ghost" data-change-request="2">Request changes</button>
+                          <button type="button" class="btn primary" data-approve="2">Approve</button>
+                        </div>
+                      </div>
+                    </article>
+                    <div id="approvalsEmpty" class="hidden success-panel">
+                      <div class="check">✓</div>
+                      <p class="greeting" style="font-size: 1.25rem">Nothing waiting</p>
+                      <p class="sub">Check <strong>Needs me</strong> if you have change requests to recreate.</p>
+                    </div>
+                  </div>
+
+                  <div id="approvalsMine" class="hidden">
+                    <div id="needsMeEmpty" class="attn" style="animation: none">
+                      <div class="attn-dot" style="background: var(--sage); animation: none"></div>
+                      <div>
+                        <h3>No change requests</h3>
+                        <p>When someone asks for a fix, it shows up here.</p>
+                      </div>
+                    </div>
+                    <article class="approve-card hidden" id="needsMeCard">
+                      <div class="approve-art" id="needsMeArt"><span>Spring Fun Run<br />Saturday</span></div>
+                      <div class="approve-body">
+                        <div class="chip-row" style="margin-bottom: 8px">
+                          <span class="chip warn">Changes requested</span>
+                        </div>
+                        <h3 id="needsMeTitle">Instagram square · Fun Run</h3>
+                        <p id="needsMeFeedback" style="margin-bottom: 10px">Feedback from approver will show here.</p>
+                        <div class="btn-row">
+                          <button type="button" class="btn ghost" data-jump="approvals">Later</button>
+                          <button type="button" class="btn primary" id="startRecreate">Fix &amp; resubmit</button>
+                        </div>
+                      </div>
+                    </article>
+                  </div>
+
+                  <div id="approvalsDone" class="hidden">
+                    <div id="doneList"></div>
+                    <div id="doneEmpty" class="attn" style="animation: none">
+                      <div class="attn-dot" style="background: var(--sage); animation: none"></div>
+                      <div>
+                        <h3>No approvals completed yet</h3>
+                        <p>Approved posts show up here in this demo.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- HUB LIST -->
+              <div class="screen-panel" data-screen="hub" id="screen-hub">
+                <p class="greeting" style="font-size: 1.35rem">Hub</p>
+                <p class="sub">Page Inbox &amp; Instagram — tap a thread to reply.</p>
+                <div class="pill-tabs">
+                  <button type="button" class="on">Unread</button>
+                  <button type="button">Follow up</button>
+                  <button type="button">Done</button>
+                </div>
+                <button type="button" class="thread" data-jump="hub-thread" style="width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--line); text-align: left; cursor: pointer">
+                  <div class="avatar">MP</div>
+                  <div>
+                    <h3>Maya P. <span class="chip ig" style="margin-left: 4px">IG</span></h3>
+                    <p>What time do volunteers check in for setup?</p>
+                  </div>
+                  <div class="thread-meta">
+                    <time>2m</time>
+                    <div class="unread-pip"></div>
+                  </div>
+                </button>
+                <button type="button" class="thread" data-jump="hub-thread-fb" style="width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--line); text-align: left; cursor: pointer">
+                  <div class="avatar" style="background: linear-gradient(145deg, #1877f2, #2f4a3c)">JL</div>
+                  <div>
+                    <h3>Jordan L. <span class="chip fb" style="margin-left: 4px">FB</span></h3>
+                    <p>Are tickets still $5 at the door for carnival?</p>
+                  </div>
+                  <div class="thread-meta">
+                    <time>18m</time>
+                    <div class="unread-pip"></div>
+                  </div>
+                </button>
+                <div class="thread">
+                  <div class="avatar" style="background: linear-gradient(145deg, #c4922e, #6b8171)">SK</div>
+                  <div>
+                    <h3>Sam K. · mention</h3>
+                    <p>Tagged the PTA in a story about Friday’s bake sale.</p>
+                  </div>
+                  <div class="thread-meta"><time>1h</time></div>
+                </div>
+                <div class="thread" style="border-bottom: none">
+                  <div class="avatar">RT</div>
+                  <div>
+                    <h3>Riley T.</h3>
+                    <p>Thanks for confirming the rain plan — see you Saturday!</p>
+                  </div>
+                  <div class="thread-meta"><time>Yesterday</time></div>
+                </div>
+              </div>
+
+              <!-- HUB THREAD REPLY -->
+              <div class="screen-panel" data-screen="hub-thread" id="screen-hub-thread">
+                <button type="button" class="event-detail-back" data-jump="hub">← Hub</button>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px">
+                  <div class="avatar">MP</div>
+                  <div>
+                    <p class="greeting" style="font-size: 1.15rem; margin: 0">Maya P.</p>
+                    <p class="sub" style="margin: 0">Instagram DM · Fun Run</p>
+                  </div>
+                </div>
+                <div class="bubble-row" id="threadBubbles">
+                  <div class="bubble in">What time do volunteers check in for setup?</div>
+                </div>
+                <div class="chip-row" style="margin-bottom: 8px">
+                  <button type="button" class="chip" data-reply-suggest="Check-in opens at 8:00 AM at the field table — thanks for volunteering!">Suggest reply</button>
+                  <button type="button" class="chip" data-jump="event-detail">Event</button>
+                </div>
+                <div class="reply-bar">
+                  <textarea id="replyText" placeholder="Write a reply…"></textarea>
+                  <button type="button" class="btn primary" id="replySend" style="height: 44px">Send</button>
+                </div>
+              </div>
+
+              <div class="screen-panel" data-screen="hub-thread-fb" id="screen-hub-thread-fb">
+                <button type="button" class="event-detail-back" data-jump="hub">← Hub</button>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px">
+                  <div class="avatar" style="background: linear-gradient(145deg, #1877f2, #2f4a3c)">JL</div>
+                  <div>
+                    <p class="greeting" style="font-size: 1.15rem; margin: 0">Jordan L.</p>
+                    <p class="sub" style="margin: 0">Facebook comment · Carnival</p>
+                  </div>
+                </div>
+                <div class="bubble-row" id="threadBubblesFb">
+                  <div class="bubble in">Are tickets still $5 at the door for carnival?</div>
+                </div>
+                <div class="chip-row" style="margin-bottom: 8px">
+                  <button type="button" class="chip" data-reply-suggest-fb="Yes — $5 at the door, or buy online ahead for $4. See you there!">Suggest reply</button>
+                </div>
+                <div class="reply-bar">
+                  <textarea id="replyTextFb" placeholder="Write a reply…"></textarea>
+                  <button type="button" class="btn primary" id="replySendFb" style="height: 44px">Send</button>
+                </div>
+              </div>
+
+              <!-- CREATE SOCIAL -->
+              <div class="screen-panel" data-screen="create" id="screen-create">
+                <div class="create-hero">
+                  <h2 id="createHeroTitle">Create social</h2>
+                  <p id="createHeroSub">Quick post for this event — not the full desktop campaign builder.</p>
+                  <div class="event-pick" id="createEventPick">Event · Spring Fun Run · Sat May 9</div>
+                </div>
+
+                <div id="recreateBanner" class="vol-card hidden" style="margin-bottom: 10px; border-color: rgba(166,90,58,0.35); background: rgba(166,90,58,0.08)">
+                  <div class="chip-row" style="margin-bottom: 6px">
+                    <span class="chip warn">Changes requested</span>
+                  </div>
+                  <p id="recreateBannerNote" style="margin: 0; font-size: 13px; line-height: 1.4; font-weight: 600"></p>
+                </div>
+
+                <div class="step-dots" aria-hidden="true">
+                  <i class="on" data-dot="1"></i>
+                  <i data-dot="2"></i>
+                </div>
+
+                <!-- Step 1: format + one inspiration -->
+                <div class="create-step on" data-create-step="1">
+                  <div class="section-label">Format</div>
+                  <div class="format-row">
+                    <button type="button" class="format-card on" data-format="square">
+                      <div class="ratio"></div>
+                      <strong>Square</strong>
+                      <span>IG / FB feed</span>
+                    </button>
+                    <button type="button" class="format-card story" data-format="story">
+                      <div class="ratio"></div>
+                      <strong>Story</strong>
+                      <span>Vertical</span>
+                    </button>
+                  </div>
+
+                  <div class="section-label">Look (optional)</div>
+                  <p class="insp-hint">One photo <em>or</em> one look — then generate.</p>
+                  <button type="button" class="insp-add" id="inspAddPhoto">Use a photo from camera or library</button>
+                  <div class="insp-pool" id="inspPool">
+                    <button type="button" class="insp-tile" data-insp="a" style="background:linear-gradient(145deg,#2f4a3c,#d4a84b)" aria-label="Forest gold"><span class="check">✓</span></button>
+                    <button type="button" class="insp-tile" data-insp="b" style="background:linear-gradient(145deg,#0b2f5b,#2f9fb3)" aria-label="Navy teal"><span class="check">✓</span></button>
+                    <button type="button" class="insp-tile" data-insp="c" style="background:linear-gradient(145deg,#c4922e,#f5e6c2)" aria-label="Warm mustard"><span class="check">✓</span></button>
+                    <button type="button" class="insp-tile" data-insp="d" style="background:linear-gradient(160deg,#6b8171,#b8c9bc)" aria-label="Sage"><span class="check">✓</span></button>
+                  </div>
+                  <button type="button" class="gen-btn" id="createGenerate">Generate with AI</button>
+                </div>
+
+                <!-- Step 2: preview + caption + submit -->
+                <div class="create-step" data-create-step="2">
+                  <div class="section-label">Preview</div>
+                  <div class="create-preview" id="createPreview">
+                    <div class="art" id="createPreviewArt">Spring Fun Run<br />Saturday</div>
+                  </div>
+                  <div class="chip-row" style="margin-bottom: 10px">
+                    <span class="chip ig">Instagram</span>
+                    <span class="chip fb">Facebook</span>
+                    <span class="chip" id="formatChip">Square · feed</span>
+                    <span class="chip warn" id="inspChip" hidden>Photo</span>
+                  </div>
+                  <div class="caption-box">
+                    <label for="captionField">Caption</label>
+                    <textarea id="captionField">Join us Saturday for the Spring Fun Run — register at the check-in table. Volunteers still needed!</textarea>
+                  </div>
+                  <button type="button" class="gen-btn" id="createSubmit">Submit for approval</button>
+                  <div class="btn-row" style="margin-top: 8px">
+                    <button type="button" class="btn ghost" id="createBack">Back</button>
+                    <button type="button" class="btn ghost" id="createRegen">Try again</button>
+                  </div>
+                </div>
+
+                <!-- Step 3: done -->
+                <div class="create-step" data-create-step="3">
+                  <div class="success-panel">
+                    <div class="check">✓</div>
+                    <p class="greeting" style="font-size: 1.35rem" id="createDoneTitle">Submitted</p>
+                    <p class="sub" id="createDoneSub">Waiting in Approvals.</p>
+                    <button type="button" class="gen-btn" data-jump="approvals">Open Approvals</button>
+                    <button type="button" class="btn ghost" id="createAgain" style="width: 100%; margin-top: 8px">Create another</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- FILES -->
+              <div class="screen-panel" data-screen="files" id="screen-files">
+                <p class="greeting" style="font-size: 1.35rem">Files</p>
+                <p class="sub">Snap a receipt, flyer, or vendor form straight from your phone.</p>
+                <button type="button" class="capture" id="orgFileCapture" style="width: 100%; color: inherit; font: inherit">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h3l2-2h6l2 2h3v12H4V7z" />
+                    <circle cx="12" cy="13" r="3.5" />
+                  </svg>
+                  <strong>Take photo or choose library</strong>
+                  <span>Saved to your org Files · Fun Run folder suggested</span>
+                </button>
+                <div class="section-label">Just added</div>
+                <div class="file-row">
+                  <div class="file-thumb"></div>
+                  <div>
+                    <h3>bounce-house-quote.jpg</h3>
+                    <p>Vendors · today · from camera</p>
+                  </div>
+                </div>
+                <div class="file-row">
+                  <div class="file-thumb" style="background: linear-gradient(135deg, #2a7a86, #2f4a3c)"></div>
+                  <div>
+                    <h3>parking-map.png</h3>
+                    <p>Fun Run · yesterday</p>
+                  </div>
+                </div>
+                <div class="file-row" style="border-bottom: none">
+                  <div class="file-thumb" style="background: linear-gradient(135deg, #a65a3a, #c4922e)"></div>
+                  <div>
+                    <h3>sponsor-logo.pdf</h3>
+                    <p>Files · this week</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="toast-banner" id="appToast" role="status"></div>
+
+            <div class="sheet" id="changeSheet" aria-hidden="true">
+              <div class="sheet-card">
+                <h2>Request changes</h2>
+                <p class="sub" style="margin-bottom: 10px">Tell the submitter what to fix. They’ll get a push and can resubmit.</p>
+                <div class="caption-box">
+                  <label for="changeNote">What needs to change?</label>
+                  <textarea id="changeNote">Can we make the time larger and add “Field entrance”?</textarea>
+                </div>
+                <div class="btn-row">
+                  <button type="button" class="btn ghost" id="changeCancel">Cancel</button>
+                  <button type="button" class="btn primary" id="changeSend">Send request</button>
+                </div>
+              </div>
+            </div>
+
+            <nav class="tabbar" aria-label="Mobile primary navigation">
+              <button type="button" class="active" data-tab="home" aria-label="Home">
+                <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z" /><path d="M9 20v-6h6v6" /></svg>
+                Home
+              </button>
+              <button type="button" data-tab="events" aria-label="Events">
+                <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></svg>
+                Events
+              </button>
+              <button type="button" class="create-tab" data-tab="create" aria-label="Create with AI Social">
+                <span class="create-fab">
+                  <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14" /></svg>
+                </span>
+                Create
+              </button>
+              <button type="button" data-tab="approvals" aria-label="Approvals">
+                <span class="tab-badge">2</span>
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="m8.5 12.5 2.2 2.2 4.8-5" /></svg>
+                Approvals
+              </button>
+              <button type="button" data-tab="hub" aria-label="Communications Hub">
+                <span class="tab-badge">3</span>
+                <svg viewBox="0 0 24 24"><path d="M4 6h16v10H7l-3 3V6z" /></svg>
+                Hub
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="gallery" id="gallery">
+          <button type="button" class="mini-phone active-card" data-jump="home">
+            <div class="mini-inner">
+              <p class="mini-title">Home</p>
+              <div class="mini-line"></div>
+              <div class="mini-line short"></div>
+              <div class="mini-block"></div>
+              <div class="mini-line"></div>
+              <div class="mini-line short"></div>
+            </div>
+            <div class="mini-label">Needs you · push lander</div>
+          </button>
+          <button type="button" class="mini-phone" data-jump="events">
+            <div class="mini-inner">
+              <p class="mini-title">Events</p>
+              <div class="mini-block"></div>
+              <div class="mini-line"></div>
+              <div class="mini-line short"></div>
+              <div class="mini-line"></div>
+            </div>
+            <div class="mini-label">Upcoming · fill % chips</div>
+          </button>
+          <button type="button" class="mini-phone" data-jump="create">
+            <div class="mini-inner">
+              <p class="mini-title">Create</p>
+              <div class="mini-block warm"></div>
+              <div class="mini-line"></div>
+              <div class="mini-line short"></div>
+            </div>
+            <div class="mini-label">Photo or look → submit</div>
+          </button>
+          <button type="button" class="mini-phone" data-jump="volunteers">
+            <div class="mini-inner">
+              <p class="mini-title">People</p>
+              <div class="mini-block"></div>
+              <div class="mini-line"></div>
+              <div class="mini-line short"></div>
+            </div>
+            <div class="mini-label">Needs people · open signup</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note">
+        <h3>Events + volunteers</h3>
+        <p>Event detail: posts, SignUpGenius, <strong>file upload</strong>, quick note. Tab bar for Approvals / Hub / Create — no quick-action grid. Volunteers list for open roles + Open signup.</p>
+      </div>
+      <div class="note">
+        <h3>Push first</h3>
+        <p>Approval needed, resubmit, new Instagram DM, Facebook comment — tap opens the right screen. Built with Capacitor + APNs/FCM on top of Hey Ralli web.</p>
+      </div>
+      <div class="note">
+        <h3>Light Create · light revise</h3>
+        <p><strong>+</strong> → format → one photo or one look → generate → caption → submit. Change request: short note → Needs me → recreate → resubmit. Multi-post campaigns stay desktop.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const panels = [...document.querySelectorAll(".screen-panel")];
+    const tabs = [...document.querySelectorAll(".tabbar button")];
+    const minis = [...document.querySelectorAll(".mini-phone")];
+    const pushToast = document.getElementById("pushToast");
+    const appToast = document.getElementById("appToast");
+    const changeSheet = document.getElementById("changeSheet");
+    const createSteps = [...document.querySelectorAll(".create-step")];
+    const createDots = [...document.querySelectorAll(".step-dots i")];
+    const createPreview = document.getElementById("createPreview");
+    const formatChip = document.getElementById("formatChip");
+    const approvalMeta = {
+      1: {
+        title: "Instagram square · Fun Run",
+        artHtml: "Spring Fun Run<br />Saturday",
+        artStyle: "",
+      },
+      2: {
+        title: "Facebook feed · Book Fair",
+        artHtml: "Book Fair<br />volunteers",
+        artStyle: "background: linear-gradient(135deg, rgba(196,146,46,0.9), rgba(47,74,60,0.75))",
+      },
+    };
+    let createFormat = "square";
+    let pendingChangeId = null;
+    let recreateMode = false;
+    let recreateFromId = null;
+    let lastFeedback = "";
+    let approvalFilter = "waiting";
+    let skipCreateReset = false;
+    let selectedInspiration = null;
+    let toastTimer;
+    let appToastTimer;
+
+    function showToast(message) {
+      appToast.textContent = message;
+      appToast.classList.add("show");
+      clearTimeout(appToastTimer);
+      appToastTimer = setTimeout(() => appToast.classList.remove("show"), 2200);
+    }
+
+    function setCreateStep(step) {
+      createSteps.forEach((panel) => {
+        panel.classList.toggle("on", panel.dataset.createStep === String(step));
+      });
+      createDots.forEach((dot) => {
+        const n = Number(dot.dataset.dot);
+        dot.classList.toggle("on", step >= n || (step === 3 && n <= 2));
+      });
+    }
+
+    function setApprovalFilter(filter) {
+      approvalFilter = filter;
+      document.querySelectorAll("#approvalPills button").forEach((btn) => {
+        btn.classList.toggle("on", btn.dataset.approvalFilter === filter);
+      });
+      document.getElementById("approvalsWaiting")?.classList.toggle("hidden", filter !== "waiting");
+      document.getElementById("approvalsMine")?.classList.toggle("hidden", filter !== "mine");
+      document.getElementById("approvalsDone")?.classList.toggle("hidden", filter !== "done");
+    }
+
+    function refreshApprovalsEmpty() {
+      const remaining = [...document.querySelectorAll("#approvalsWaiting .approve-card")].filter(
+        (card) => !card.classList.contains("hidden"),
+      );
+      document.getElementById("approvalsEmpty")?.classList.toggle("hidden", remaining.length > 0);
+    }
+
+    function refreshNeedsMe() {
+      const card = document.getElementById("needsMeCard");
+      const empty = document.getElementById("needsMeEmpty");
+      const has = card && !card.classList.contains("hidden");
+      empty?.classList.toggle("hidden", !!has);
+    }
+
+    function refreshDoneEmpty() {
+      const list = document.getElementById("doneList");
+      const empty = document.getElementById("doneEmpty");
+      const has = (list?.children.length || 0) > 0;
+      empty?.classList.toggle("hidden", has);
+    }
+
+    function clearRecreateMode() {
+      recreateMode = false;
+      recreateFromId = null;
+      document.getElementById("recreateBanner")?.classList.add("hidden");
+      document.getElementById("recreateBannerNote").textContent = "";
+      document.getElementById("createHeroTitle").textContent = "Create social";
+      document.getElementById("createHeroSub").textContent =
+        "Quick post for this event — not the full desktop campaign builder.";
+      resetInspiration();
+      const submitBtn = document.getElementById("createSubmit");
+      if (submitBtn) submitBtn.textContent = "Submit for approval";
+      document.getElementById("createDoneTitle").textContent = "Submitted";
+      document.getElementById("createDoneSub").textContent = "Waiting in Approvals.";
+      document.getElementById("createPreviewArt").innerHTML = "Spring Fun Run<br />Saturday";
+      document.getElementById("captionField").value =
+        "Join us Saturday for the Spring Fun Run — register at the check-in table. Volunteers still needed!";
+    }
+
+    function enterRecreateMode(id) {
+      const meta = approvalMeta[id] || approvalMeta[1];
+      recreateMode = true;
+      recreateFromId = id;
+      document.getElementById("recreateBanner")?.classList.remove("hidden");
+      document.getElementById("recreateBannerNote").textContent =
+        lastFeedback || "Apply the feedback, then resubmit.";
+      document.getElementById("createHeroTitle").textContent = "Fix & resubmit";
+      document.getElementById("createHeroSub").textContent =
+        "Feedback is pinned. Generate again, tweak caption, resubmit.";
+      document.getElementById("createSubmit").textContent = "Resubmit for approval";
+      document.getElementById("createDoneTitle").textContent = "Resubmitted";
+      document.getElementById("createDoneSub").textContent = "Back in Waiting for the approver.";
+      document.getElementById("createPreviewArt").innerHTML = meta.artHtml;
+      document.getElementById("captionField").value =
+        "Join us Saturday for the Spring Fun Run — check in at the Field entrance. Volunteers still needed!";
+      skipCreateReset = true;
+      showScreen("create");
+      setCreateStep(2);
+      applyRecreatedPreview();
+    }
+
+    function applyRecreatedPreview() {
+      const art = document.getElementById("createPreviewArt");
+      if (!art) return;
+      art.innerHTML = "Spring Fun Run<br /><span style='font-size:1.15em'>8:00 AM</span><br />Field entrance";
+      document.getElementById("captionField").value =
+        "Spring Fun Run — Saturday 8:00 AM. Check in at the Field entrance. Rain or shine. Volunteers still needed!";
+    }
+
+    function showScreen(id) {
+      panels.forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.screen === id);
+      });
+      tabs.forEach((tab) => {
+        const on =
+          tab.dataset.tab === id ||
+          ((id === "event-detail" || id === "volunteers") && tab.dataset.tab === "events") ||
+          ((id === "hub-thread" || id === "hub-thread-fb") && tab.dataset.tab === "hub") ||
+          (id === "files" && tab.dataset.tab === "home");
+        tab.classList.toggle("active", on);
+      });
+      minis.forEach((card) => {
+        card.classList.toggle(
+          "active-card",
+          card.dataset.jump === id ||
+            (id === "hub-thread" && card.dataset.jump === "hub") ||
+            (id === "event-detail" && card.dataset.jump === "events"),
+        );
+      });
+      if (id !== "home") pushToast.classList.add("hide");
+      if (id === "create") {
+        if (!skipCreateReset && !recreateMode) {
+          clearRecreateMode();
+          setCreateStep(1);
+        } else if (skipCreateReset) {
+          skipCreateReset = false;
+        } else {
+          setCreateStep(1);
+        }
+      }
+      if (id === "approvals") setApprovalFilter(approvalFilter);
+      changeSheet.classList.remove("show");
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        if (tab.dataset.tab === "create" && !recreateMode) clearRecreateMode();
+        showScreen(tab.dataset.tab);
+      });
+    });
+    document.querySelectorAll("[data-jump]").forEach((el) => {
+      el.addEventListener("click", () => {
+        if (el.dataset.jump === "create" && !el.id) clearRecreateMode();
+        showScreen(el.dataset.jump);
+      });
+    });
+    pushToast.addEventListener("click", () => {
+      showScreen("approvals");
+      setApprovalFilter("waiting");
+    });
+
+    document.getElementById("homeChangesAttn")?.addEventListener("click", () => {
+      showScreen("approvals");
+      setApprovalFilter("mine");
+    });
+
+    function refreshInspirationUI() {
+      const pool = document.getElementById("inspPool");
+      const photoBtn = document.getElementById("inspAddPhoto");
+      if (!pool) return;
+      pool.querySelectorAll(".insp-tile").forEach((tile) => {
+        tile.classList.toggle("on", selectedInspiration === tile.dataset.insp);
+      });
+      photoBtn?.classList.toggle("on", selectedInspiration === "photo");
+      if (photoBtn) {
+        photoBtn.textContent =
+          selectedInspiration === "photo"
+            ? "Photo selected · tap to clear"
+            : "Use a photo from camera or library";
+      }
+    }
+
+    function selectInspiration(id) {
+      selectedInspiration = selectedInspiration === id ? null : id;
+      refreshInspirationUI();
+    }
+
+    function resetInspiration() {
+      selectedInspiration = null;
+      refreshInspirationUI();
+    }
+
+    // Create social
+    document.querySelectorAll(".format-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".format-card").forEach((c) => c.classList.remove("on"));
+        card.classList.add("on");
+        createFormat = card.dataset.format || "square";
+        if (formatChip) {
+          formatChip.textContent = createFormat === "story" ? "Story · vertical" : "Square · feed";
+        }
+        if (createPreview) createPreview.classList.toggle("story", createFormat === "story");
+      });
+    });
+    document.querySelectorAll("#inspPool .insp-tile").forEach((tile) => {
+      tile.addEventListener("click", () => selectInspiration(tile.dataset.insp));
+    });
+    document.getElementById("inspAddPhoto")?.addEventListener("click", () => {
+      selectInspiration("photo");
+      if (selectedInspiration === "photo") showToast("Photo ready — generate when you are");
+    });
+    document.getElementById("createGenerate")?.addEventListener("click", () => {
+      setCreateStep(2);
+      if (recreateMode) applyRecreatedPreview();
+      const inspChip = document.getElementById("inspChip");
+      if (inspChip) {
+        inspChip.hidden = !selectedInspiration;
+        inspChip.textContent = selectedInspiration === "photo" ? "Your photo" : selectedInspiration ? "Look" : "";
+      }
+    });
+    document.getElementById("createBack")?.addEventListener("click", () => setCreateStep(1));
+    document.getElementById("createRegen")?.addEventListener("click", () => {
+      if (recreateMode) applyRecreatedPreview();
+      showToast(recreateMode ? "New version with feedback" : "New artwork");
+    });
+    document.getElementById("createSubmit")?.addEventListener("click", () => {
+      setCreateStep(3);
+      if (recreateMode) {
+        const id = recreateFromId || "1";
+        const meta = approvalMeta[id] || approvalMeta[1];
+        const card = document.getElementById(`approvalCard${id}`);
+        if (card) {
+          card.classList.remove("hidden");
+          const copy = document.getElementById(`approvalCard${id}Copy`);
+          const chips = document.getElementById(`approvalCard${id}Chips`);
+          if (copy) copy.textContent = "Resubmitted — waiting on your review.";
+          if (chips) chips.innerHTML = `<span class="chip warn">Resubmitted</span>`;
+          const art = card.querySelector(".approve-art");
+          if (art) {
+            art.innerHTML = "<span>Spring Fun Run<br /><strong>8:00 AM</strong><br />Field entrance</span>";
+            if (meta.artStyle) art.setAttribute("style", meta.artStyle);
+          }
+        }
+        document.getElementById("needsMeCard")?.classList.add("hidden");
+        document.getElementById("homeChangesAttn")?.classList.add("hidden");
+        document.getElementById("homeApproveAttn")?.classList.remove("hidden");
+        document.getElementById("homeApproveCopy").textContent = "Resubmitted — ready for your review.";
+        document.getElementById("homeApproveChips").innerHTML =
+          `<span class="chip warn">Resubmit</span><span class="chip">Approvals</span>`;
+        refreshNeedsMe();
+        refreshApprovalsEmpty();
+        showToast("Resubmitted");
+        recreateMode = false;
+        document.getElementById("recreateBanner")?.classList.add("hidden");
+      } else {
+        showToast("Submitted for approval");
+      }
+    });
+    document.getElementById("createAgain")?.addEventListener("click", () => {
+      clearRecreateMode();
+      setCreateStep(1);
+    });
+
+    // Approvals tabs + actions
+    document.querySelectorAll("#approvalPills button").forEach((btn) => {
+      btn.addEventListener("click", () => setApprovalFilter(btn.dataset.approvalFilter));
+    });
+
+    document.querySelectorAll("[data-approve]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-approve");
+        const card = document.getElementById(`approvalCard${id}`);
+        const meta = approvalMeta[id] || approvalMeta[1];
+        card?.classList.add("hidden");
+        const done = document.createElement("article");
+        done.className = "approve-card";
+        done.innerHTML = `
+          <div class="approve-art"${meta.artStyle ? ` style="${meta.artStyle}"` : ""}><span>${meta.artHtml}</span></div>
+          <div class="approve-body">
+            <div class="chip-row" style="margin-bottom: 8px"><span class="chip">Approved</span></div>
+            <h3>${meta.title}</h3>
+            <p>Ready to schedule / publish on desktop Social.</p>
+          </div>`;
+        document.getElementById("doneList")?.prepend(done);
+        refreshDoneEmpty();
+        refreshApprovalsEmpty();
+        if (id === "1") document.getElementById("homeApproveAttn")?.classList.add("hidden");
+        showToast("Approved — ready to schedule / publish");
+        setApprovalFilter("done");
+      });
+    });
+
+    document.querySelectorAll("[data-change-request]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        pendingChangeId = btn.getAttribute("data-change-request");
+        const note = document.getElementById("changeNote");
+        if (note && !note.value.trim()) {
+          note.value = 'Can we make the time larger and add “Field entrance”?';
+        }
+        changeSheet.classList.add("show");
+        changeSheet.setAttribute("aria-hidden", "false");
+      });
+    });
+    document.getElementById("changeCancel")?.addEventListener("click", () => {
+      changeSheet.classList.remove("show");
+      changeSheet.setAttribute("aria-hidden", "true");
+      pendingChangeId = null;
+    });
+    document.getElementById("changeSend")?.addEventListener("click", () => {
+      const note = (document.getElementById("changeNote")?.value || "").trim();
+      if (!note) {
+        showToast("Add a short note so the creator knows what to fix");
+        return;
+      }
+      if (!pendingChangeId) return;
+      const id = pendingChangeId;
+      const meta = approvalMeta[id] || approvalMeta[1];
+      lastFeedback = note;
+      recreateFromId = id;
+
+      document.getElementById(`approvalCard${id}`)?.classList.add("hidden");
+      document.getElementById("needsMeEmpty")?.classList.add("hidden");
+      const needsCard = document.getElementById("needsMeCard");
+      needsCard?.classList.remove("hidden");
+      document.getElementById("needsMeTitle").textContent = meta.title;
+      document.getElementById("needsMeFeedback").textContent = "“" + note + "”";
+      const needsArt = document.getElementById("needsMeArt");
+      if (needsArt) {
+        needsArt.innerHTML = `<span>${meta.artHtml}</span>`;
+        if (meta.artStyle) needsArt.setAttribute("style", meta.artStyle);
+        else needsArt.removeAttribute("style");
+      }
+
+      document.getElementById("homeChangesAttn")?.classList.remove("hidden");
+      document.getElementById("homeChangesCopy").textContent = "“" + note + "” — tap to fix & resubmit.";
+      if (id === "1") document.getElementById("homeApproveAttn")?.classList.add("hidden");
+
+      changeSheet.classList.remove("show");
+      changeSheet.setAttribute("aria-hidden", "true");
+      pendingChangeId = null;
+      refreshApprovalsEmpty();
+      refreshNeedsMe();
+      showToast("Change request sent");
+
+      /* Demo continues as the creator on Needs me */
+      setTimeout(() => {
+        showScreen("approvals");
+        setApprovalFilter("mine");
+        showToast("Needs you — fix & resubmit");
+      }, 650);
+    });
+    changeSheet.addEventListener("click", (event) => {
+      if (event.target === changeSheet) {
+        changeSheet.classList.remove("show");
+        changeSheet.setAttribute("aria-hidden", "true");
+        pendingChangeId = null;
+      }
+    });
+
+    document.getElementById("startRecreate")?.addEventListener("click", () => {
+      enterRecreateMode(recreateFromId || "1");
+    });
+
+    // Hub replies
+    function sendReply(inputId, bubblesId) {
+      const input = document.getElementById(inputId);
+      const bubbles = document.getElementById(bubblesId);
+      const text = input?.value.trim();
+      if (!text || !bubbles) return;
+      const bubble = document.createElement("div");
+      bubble.className = "bubble out";
+      bubble.textContent = text;
+      bubbles.appendChild(bubble);
+      input.value = "";
+      showToast("Reply sent to Instagram / Facebook");
+    }
+    document.getElementById("replySend")?.addEventListener("click", () =>
+      sendReply("replyText", "threadBubbles"),
+    );
+    document.getElementById("replySendFb")?.addEventListener("click", () =>
+      sendReply("replyTextFb", "threadBubblesFb"),
+    );
+    document.querySelectorAll("[data-reply-suggest]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const field = document.getElementById("replyText");
+        if (field) field.value = btn.getAttribute("data-reply-suggest") || "";
+      });
+    });
+    document.querySelectorAll("[data-reply-suggest-fb]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const field = document.getElementById("replyTextFb");
+        if (field) field.value = btn.getAttribute("data-reply-suggest-fb") || "";
+      });
+    });
+
+    // Event posts filter
+    document.querySelectorAll("#postPills button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#postPills button").forEach((b) => b.classList.remove("on"));
+        btn.classList.add("on");
+        const filter = btn.dataset.postFilter;
+        document.getElementById("postsScheduled")?.classList.toggle("hidden", filter !== "scheduled");
+        document.getElementById("postsPosted")?.classList.toggle("hidden", filter !== "posted");
+      });
+    });
+
+    // SignUpGenius on event
+    const sugEmpty = document.getElementById("sugEmpty");
+    const sugConnected = document.getElementById("sugConnected");
+    document.getElementById("sugSave")?.addEventListener("click", () => {
+      const url = document.getElementById("sugUrl")?.value.trim() || "https://www.signupgenius.com/go/fun-run";
+      document.getElementById("sugLinkPreview").textContent = url;
+      sugEmpty?.classList.add("hidden");
+      sugConnected?.classList.remove("hidden");
+      showToast("SignUpGenius linked — roles synced");
+    });
+    document.getElementById("sugRefresh")?.addEventListener("click", () => {
+      document.getElementById("sugStatusLabel").textContent = "Synced · just now";
+      showToast("Volunteer roles refreshed");
+    });
+    document.getElementById("sugEdit")?.addEventListener("click", () => {
+      sugConnected?.classList.add("hidden");
+      sugEmpty?.classList.remove("hidden");
+    });
+    document.getElementById("sugOpen")?.addEventListener("click", () => {
+      showToast("Opening signup in browser…");
+    });
+    document.getElementById("volOpenSignup")?.addEventListener("click", () => {
+      showToast("Opening signup in browser…");
+    });
+
+    // Event files
+    function addEventFile(name) {
+      const list = document.getElementById("eventFileList");
+      if (!list) return;
+      const row = document.createElement("div");
+      row.className = "file-row";
+      row.innerHTML = `<div class="file-thumb" style="background:linear-gradient(135deg,#2a7a86,#2f4a3c)"></div><div><h3></h3><p>Just now · Fun Run</p></div>`;
+      row.querySelector("h3").textContent = name;
+      list.prepend(row);
+      const extras = list.querySelectorAll(".file-row");
+      extras.forEach((el, i) => {
+        el.style.borderBottom = i === extras.length - 1 ? "none" : "";
+      });
+    }
+    document.getElementById("eventFileCapture")?.addEventListener("click", () => {
+      addEventFile("Photo " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + ".jpg");
+      showToast("Saved to Fun Run files");
+    });
+    document.getElementById("orgFileCapture")?.addEventListener("click", () => {
+      showToast("Saved to org Files");
+    });
+
+    // Notes
+    document.getElementById("noteVoice")?.addEventListener("click", () => {
+      const field = document.getElementById("eventNote");
+      if (field) field.value = "Bounce house delivery confirmed for 7:15 AM at the south gate.";
+      showToast("Voice captured (demo)");
+    });
+    document.getElementById("noteSave")?.addEventListener("click", () => {
+      const field = document.getElementById("eventNote");
+      const text = field?.value.trim();
+      if (!text) {
+        showToast("Add a note first");
+        return;
+      }
+      const list = document.getElementById("noteList");
+      const item = document.createElement("div");
+      item.className = "attn";
+      item.style.animation = "none";
+      item.style.marginTop = "8px";
+      item.innerHTML = `<div class="attn-dot" style="background: var(--sage); animation: none"></div><div><h3>Just now · You</h3><p></p></div>`;
+      item.querySelector("p").textContent = text;
+      list?.prepend(item);
+      field.value = "";
+      showToast("Note saved to event");
+    });
+
+    // Home push toast demo
+    tabs[0].addEventListener("click", () => {
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => pushToast.classList.remove("hide"), 1200);
+    });
+
+    refreshInspirationUI();
+  </script>
+</body>
+</html>
