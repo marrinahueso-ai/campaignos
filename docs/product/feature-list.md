@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 28, 2026 — Create with AI copy sweep (org/team language) + Social-first landing
+**Last updated:** July 29, 2026 — Communications Hub left-rail Unread-queue badge
 
 ---
 
@@ -189,7 +189,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - **Communications Connect Meta Ease** — **shipped** (exact empty from [`communications-hub-ease-mockup.html?view=connect`](../../public/communications-hub-ease-mockup.html): page head + four why cards — Why we connect / What AI does / What we don’t do / Privacy — Connect with Facebook + Meta settings OAuth/`returnTo=/communications`, “Why we ask for Page messaging permissions”; live on `/communications` when Meta is not connected; shared empty also used by Inbox hub chrome; `/inbox` redirects to `/communications`; customer copy uses organization / Page / team language — not school-only PTA)
 - **Communications Hub Ease mockup** — **in progress (Meta review)** (soft cream/Fraunces shell; view pills **Inbox · Compose focus · Connect Meta**; thread list + conversation + AI draft assist + DM stickers/GIF affordances; honest organic Page Inbox / Instagram DM purpose, approve-then-send, no spam/broadcast theater; fictional Riverside Elementary PTA only; HTML at [`public/communications-hub-ease-mockup.html`](../../public/communications-hub-ease-mockup.html) — Connect Meta empty shipped above; full hub chrome still mockup-only until GO)
 - Unified Meta inbox (DMs, comments, mentions) — **shipped**
-- Inbox SSR soft caps (50 threads, 40 messages/thread, head-count channel tallies, unread badge ≤500 threads) — **shipped** (perf; see [performance-budget.md](../qa/performance-budget.md))
+- Inbox SSR soft caps (50 threads, 40 messages/thread, head-count channel tallies) — **shipped** (perf; see [performance-budget.md](../qa/performance-budget.md))
+- Left-rail **Communications Hub** badge — **shipped** (red count of Unread-queue threads: not Deleted, not Done; capped at 500; matches hub Unread home, not message-level `unread_count` that clears on open)
 - Thread workspace, reply, mark read — **shipped**
 - Inbox AI drafts + approve-then-send — **shipped**
 - Comment/tag detail panel shows original parent post (caption + artwork); clutter placeholders (similar questions, take-action list, related campaign) removed — **shipped**

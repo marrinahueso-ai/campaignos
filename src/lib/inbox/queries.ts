@@ -202,27 +202,33 @@ async function listMessagesForThreads(
   return grouped;
 }
 
+/**
+ * Left-rail badge for Communications Hub.
+ * Matches the hub Unread queue: open threads that are not Deleted and not Done.
+ * Uses a head count (not a sum of message unread_count) so the badge stays
+ * visible for conversations that still need attention after a thread is opened.
+ */
 export const getInboxUnreadCountForCurrentOrg = cache(
   async function getInboxUnreadCountForCurrentOrg(): Promise<number> {
-  const organization = await getLatestOrganization();
-  if (!organization?.id) {
-    return 0;
-  }
+    const organization = await getLatestOrganization();
+    if (!organization?.id) {
+      return 0;
+    }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("inbox_threads")
-    .select("unread_count")
-    .eq("organization_id", organization.id)
-    .gt("unread_count", 0)
-    .order("last_message_at", { ascending: false, nullsFirst: false })
-    .limit(INBOX_UNREAD_BADGE_THREAD_CAP);
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("inbox_threads")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id)
+      .neq("status", "archived")
+      .eq("marked_done", false);
 
-  if (error || !data) {
-    return 0;
-  }
+    if (error || count == null) {
+      return 0;
+    }
 
-  return data.reduce((total, row) => total + (row.unread_count as number), 0);
+    // Soft cap matches prior badge scan budget (avoid absurd UI numbers).
+    return Math.min(count, INBOX_UNREAD_BADGE_THREAD_CAP);
   },
 );
 
