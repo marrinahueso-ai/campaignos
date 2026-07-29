@@ -7,10 +7,14 @@ import {
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/admin";
 
+/** Cap Graph/API work per cron tick — only due slots are loaded, never full republish. */
+export const MAX_DUE_BUNDLES_PER_CRON_RUN = 20;
+
 export interface PublishDueResult {
   processedBundles: number;
   publishedBundles: number;
   failedBundles: number;
+  skippedDueToCap: number;
   errors: string[];
 }
 
@@ -77,14 +81,16 @@ async function publishDueMilestone(
 
 export async function publishDueMetaMilestones(): Promise<PublishDueResult> {
   const due = await findDueApprovedMilestones();
+  const batch = due.slice(0, MAX_DUE_BUNDLES_PER_CRON_RUN);
   const result: PublishDueResult = {
     processedBundles: 0,
     publishedBundles: 0,
     failedBundles: 0,
+    skippedDueToCap: Math.max(0, due.length - batch.length),
     errors: [],
   };
 
-  for (const milestone of due) {
+  for (const milestone of batch) {
     result.processedBundles += 1;
     const publishResult = await publishDueMilestone(milestone);
 
@@ -114,6 +120,7 @@ export async function publishDueMetaMilestonesForEvent(
     processedBundles: 0,
     publishedBundles: 0,
     failedBundles: 0,
+    skippedDueToCap: 0,
     errors: [],
   };
 

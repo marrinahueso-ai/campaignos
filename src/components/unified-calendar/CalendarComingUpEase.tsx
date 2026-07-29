@@ -32,7 +32,7 @@ export function CalendarComingUpEase({
       </summary>
       {upcomingItems.length === 0 ? (
         <p className="mt-3 text-sm text-cos-muted">
-          No campaign events in the next 7 days.
+          No events in the next 7 days.
         </p>
       ) : (
         <ul className="mt-3 flex flex-col gap-1.5">

@@ -290,14 +290,14 @@ export function CampaignReviewPublishPage({
       try {
         const result = await scheduleMetaBundlesAtAction(eventId, scheduledFor, relativeDays);
         if (!result.success) {
-          setError(result.error ?? "Unable to schedule milestones.");
+          setError(result.error ?? "Unable to schedule posts.");
           return;
         }
 
         router.refresh();
         onViewPublished?.();
       } catch {
-        setError("Unable to schedule milestones. Refresh the page and try again.");
+        setError("Unable to schedule posts. Refresh the page and try again.");
       }
     });
   }
@@ -326,7 +326,7 @@ export function CampaignReviewPublishPage({
     return (
       <EmptyState
         icon={CalendarClock}
-        title="All milestones handled"
+        title="All posts handled"
         description="Published posts appear in the Published step. Need to adjust captions? Go back to Captions."
         action={{ label: "Go to Captions", href: "#schedule" }}
       />

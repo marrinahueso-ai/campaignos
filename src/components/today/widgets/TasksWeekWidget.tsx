@@ -48,7 +48,7 @@ export function TasksWeekWidget({ items }: TasksWeekWidgetProps) {
             })}
           </ul>
           <Link
-            href="/tasks?tab=my_tasks&view=this_week"
+            href="/tasks?scope=mine&pulse=week"
             className="mt-4 text-xs font-medium text-cos-muted transition-colors hover:text-cos-text"
           >
             View all ({items.length}) →

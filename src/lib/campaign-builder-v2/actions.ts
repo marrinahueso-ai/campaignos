@@ -342,7 +342,7 @@ export async function generateMilestoneArtworkAction(
     message:
       generation.message ??
       (generation.success
-        ? "Artwork generated for this milestone."
+        ? "Artwork generated for this post."
         : "Artwork generation failed."),
     updatedInspiration: resolved.inspiration,
   };
@@ -957,7 +957,7 @@ export async function suggestMilestonesAction(input: {
   return {
     success: true,
     ...result,
-    message: "Milestones suggested from playbook and campaign date (demo stub).",
+    message: "Posts suggested from your communication plan and campaign date.",
   };
 }
 
@@ -965,7 +965,7 @@ export async function suggestMilestonesAction(input: {
  * Loads the ordered steps for a real playbook (from
  * communication_playbook_steps) for use by the Save & Continue →
  * Milestones flow. Returns an empty list (not an error) for demo/legacy
- * playbook ids that don't exist in the DB, so callers can fall back to
+ * communication plan ids that don't exist in the DB, so callers can fall back to
  * keeping the existing milestone set rather than wiping it out.
  */
 export async function getPlaybookMilestoneStepsAction(
@@ -987,7 +987,7 @@ export async function getPlaybookMilestoneStepsAction(
       })),
     };
   } catch (error) {
-    console.error("Failed to load playbook steps:", error);
+    console.error("Failed to load communication plan posts:", error);
     return { success: false, steps: [] };
   }
 }

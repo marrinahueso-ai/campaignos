@@ -239,7 +239,7 @@ export function MetaPublishBundleCard({
             className="mt-1 shrink-0 rounded-lg p-1 text-cos-muted hover:bg-cos-bg hover:text-cos-text"
             onClick={onToggle}
             aria-expanded={expanded}
-            aria-label={expanded ? "Collapse milestone" : "Expand milestone"}
+            aria-label={expanded ? "Collapse post" : "Expand post"}
           >
             {expanded ? (
               <ChevronDown className="h-4 w-4" />
@@ -391,7 +391,7 @@ export function MetaPublishBundleCard({
             <div className="min-w-0 space-y-4">
               {isSkipped ? (
                 <p className="text-sm text-cos-muted">
-                  This milestone is skipped — nothing will go out for{" "}
+                  This post is skipped — nothing will go out for{" "}
                   {channelLabelForBundle(bundle)}. Use Restore post if plans change.
                 </p>
               ) : (
@@ -441,7 +441,7 @@ export function MetaPublishBundleCard({
                   {!isMetaPost && (
                     <p className="text-sm text-cos-muted">
                       Deliver via {channelLabelForBundle(bundle)}. Artwork still lives in
-                      the Artwork step if you want graphics for this milestone.
+                      the Artwork step if you want graphics for this post.
                     </p>
                   )}
 
@@ -660,7 +660,7 @@ export function MetaPublishBundlesPanel({
       const result = await scheduleMetaBundleAction(eventId, relativeDay);
       setSchedulePendingDay(null);
       if (!result.success) {
-        setError(result.error ?? "Unable to schedule this milestone.");
+        setError(result.error ?? "Unable to schedule this post.");
         return;
       }
       if (mode === "publishing") {
@@ -691,7 +691,7 @@ export function MetaPublishBundlesPanel({
       const result = await publishMetaBundleNowAction(eventId, relativeDay);
       if (!result.success) {
         setPublishPendingDay(null);
-        setError(result.error ?? "Unable to publish this milestone.");
+        setError(result.error ?? "Unable to publish this post.");
         return;
       }
       if (mode === "publishing") {
@@ -874,12 +874,12 @@ export function MetaPublishBundlesPanel({
               <div>
                 <CardTitle>Social captions</CardTitle>
                 <CardDescription>
-                  Draft feed captions for Facebook and Instagram milestones. Story auto-syncs
-                  from feed — expand any milestone below to review or edit.
+                  Draft feed captions for Facebook and Instagram posts. Story auto-syncs
+                  from feed — expand any post below to review or edit.
                 </CardDescription>
                 {approvedCaptionCount > 0 && (
                   <p className="mt-2 text-xs text-emerald-700">
-                    {approvedCaptionCount} of {captionMilestones.length} milestones approved
+                    {approvedCaptionCount} of {captionMilestones.length} posts approved
                   </p>
                 )}
               </div>
@@ -912,12 +912,12 @@ export function MetaPublishBundlesPanel({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <CardTitle>
-                  {mode === "publishing" ? "Milestones to review" : "Communication milestones"}
+                  {mode === "publishing" ? "Posts to review" : "Communication posts"}
                 </CardTitle>
                 <CardDescription>
                   {mode === "publishing"
                     ? "Confirm go-live dates, schedule posts, and publish when ready."
-                    : "Expand any milestone for artwork previews, channel details, and scheduling actions."}
+                    : "Expand any post for artwork previews, channel details, and scheduling actions."}
                   {approvalRoleLabel && mode === "publishing" && (
                     <span className="mt-1 block text-cos-muted">
                       Approver: {approvalRoleLabel}

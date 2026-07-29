@@ -1,5 +1,5 @@
 const CALENDAR_IMPORT_DESCRIPTION_PATTERN =
-  /^Imported from school calendar(?: \([^)]+\))?\.?$/;
+  /^Imported from (?:school )?calendar(?: \([^)]+\))?\.?$/;
 
 /** Hide auto-generated calendar import copy on campaign list cards. */
 export function getEventCardDescription(

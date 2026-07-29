@@ -1,3 +1,5 @@
+import type { GeneratedPostAsset } from "@/lib/campaign-files/generated-post-assets";
+import type { CampaignFileTypeGroup } from "@/lib/campaign-files/type-groups";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import type { Event } from "@/types";
 
@@ -10,6 +12,28 @@ export type CampaignFileCategory =
   | "caption_copy"
   | "approval_notes"
   | "other";
+
+/** Customer-facing document category (filename + upload context). */
+export type DocumentCategory =
+  | "contract_or_agreement"
+  | "meeting_agenda"
+  | "meeting_notes_or_minutes"
+  | "invoice_or_receipt"
+  | "quote_or_estimate"
+  | "volunteer_document"
+  | "vendor_document"
+  | "sponsor_document"
+  | "financial_document"
+  | "general_document";
+
+/** Where the user uploaded from — biases category when filename is ambiguous. */
+export type FileUploadContext =
+  | "volunteers"
+  | "tasks"
+  | "vendors"
+  | "event_files"
+  | "org_files"
+  | "general";
 
 export type CampaignFilePlatform =
   | "facebook"
@@ -53,6 +77,7 @@ export interface CampaignFileRow {
   uploaded_at: string;
   file_type: string | null;
   category: CampaignFileCategory;
+  document_category: DocumentCategory | null;
   platforms: CampaignFilePlatform[];
   status: CampaignFileStatus;
   size_bytes: number | null;
@@ -71,6 +96,7 @@ export interface CampaignFile {
   uploadedAt: string;
   fileType: CampaignFileType;
   category: CampaignFileCategory;
+  documentCategory: DocumentCategory | null;
   platforms: CampaignFilePlatform[];
   status: CampaignFileStatus;
   sizeBytes: number | null;
@@ -99,6 +125,8 @@ export interface FilesPageData {
   eventList: Event[];
   uploaderNames: string[];
   currentUserName: string | null;
+  /** Read-only AI/post graphics for event Files tab. */
+  generatedPostAssets?: GeneratedPostAsset[];
   /** True when org-wide fetch hit FILES_ORG_FETCH_CAP (newest files kept). */
   listCapped?: boolean;
   listCap?: number;
@@ -121,6 +149,7 @@ export interface FilesFilterState {
   search: string;
   folderId: FilesFolderFilter;
   eventId: string | "all";
+  typeGroup: CampaignFileTypeGroup;
   fileType: CampaignFileType | "all";
   category: CampaignFileCategory | "all";
   platform: CampaignFilePlatform | "all";

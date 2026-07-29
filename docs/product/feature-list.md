@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 27, 2026 — Settings session honesty (Option A) + Account change password
+**Last updated:** July 28, 2026 — Create with AI copy sweep (org/team language) + Social-first landing
 
 ---
 
@@ -66,24 +66,27 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Dashboard (Today)
 - **Ease redesign mockup** — calm first viewport (greeting + Create with AI / Calendar CTAs + weather chip), quieter View / Edit layout mode, Ease-styled widget cards with soft drag reorder; HTML mockup at `public/dashboard-ease-mockup.html` — **in progress** (do not ship product UI until GO)
 - **Your overview** board: greeting · Add/Edit controls (no section title) · 2-col main (**Up Next**, **Attention**, **Waiting on me** (open steps for events that have not happened yet), **Good news**) + right rail (**Weather**, **Calendar**, **This week**) · cream widget cards · per-user `organization_users.dashboard_layout` jsonb — **shipped**
+- Customer-facing Dashboard copy uses org/team language (weather city, event titles — not school-only, workspace, or “Open campaign” jargon); Attention / Tasks-this-week deep links use Tasks Ease `?scope=mine&pulse=week` — **shipped** (Jul 28)
 - **Add** / **Edit**: checkbox catalog + remove; Done/Apply saves optimistically — **shipped**
 - **Card colors** in Edit (palette + custom): per-user colors on Attention, Waiting on me, Good news, This week, Approvals, Tasks, Volunteers, Insights; text/surfaces auto-contrast; Weather / Up Next / Calendar excluded — **shipped**
 - **Drag-and-drop** tile rearrange anytime via card grip (saves on drop; Weather pinned; Edit still removes) — **shipped**
 - Optional richer widgets (off by default): **Approvals** (assigned to me), **Tasks this week**, **Volunteers** (underfilled events with fill-rate bar + % to the right), **Insights** (7d KPI pulse via lean `getInsightsPulseData`, not full Insights page query) — **shipped**
+- Optional library widgets (off by default, Add catalog phase 3): **Posts this week** (Mine/Everyone — scheduled, drafts, and needs-approval posts for the week; DB-only via unified scheduling rows), **Waiting on others** (Mine/Everyone — approvals you submitted that are blocked on teammates + org bottleneck counts), **Event coverage** (upcoming events missing an event lead or co-lead; deep links to event detail / Team & Access) — **shipped**
 - **Weather** pinned top-right with the greeting; left column stacks greeting → Add/Edit → **Up Next** (independent of weather height so no blank gap); rail stacks Weather → **Calendar**; weather tile includes next 4 hours + fun tip — **shipped**
-- **Attention** metric rows: to review → Approvals · need volunteers → Volunteers · tasks this week → Tasks My View — **shipped**
+- **Attention** metric rows: to review → Approvals · need volunteers → Volunteers · tasks this week → Tasks (`?scope=mine&pulse=week`) — **shipped**
 - Live weather from org Weather ZIP preferred, then city/state + `WEATHER_API_KEY`; hourly via Open-Meteo when coords available (else OWM 3h / seasonal mock); creative tip ties forecast to school events today/tomorrow (hot → water/sunscreen, cold → bundle up, rain → Plan B) — **shipped**
 - Mini calendar school events for the month; This Week school **events** only — **shipped**
 - Approvals/published pulse cards + waiting-on companion lists on home (pre-overview) — **removed**
 
 ## Events
+- Customer-facing calendar/events copy uses organization/team/year language (not school-only or sync/ICS jargon); review categories display as Team/Organization event — **shipped**
 - Events list, create, edit — **shipped** (list thumbnails fall back to promoted approved-square artwork when the row is outside the upcoming/first-page prefetch window)
-- Events Home action summary cards (clickable filters: Next 60 Days · Needs Setup · Ready to Run · Needs Follow-up · Done; default Next 60 Days; counts scoped to school-year filter; overlap allowed; **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.events_home_layout`) — **shipped**
+- Events Home ease filters (soft pills: **Upcoming** default · **Next month** · **All**; Upcoming shows next-60-days focus/queue; counts scoped to school-year filter + search; status badges on cards only — not filter tabs) — **shipped**
 - Events list filtered PDF export (All Events header download; current list filters only — not upcoming carousel) — **shipped**
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Insights, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
 - Event detail Insights tab — see **Insights** below (living: [event-insights.md](./event-insights.md))
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
-- Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from playbook tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**
+- Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from communication plan tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**
 - Event detail brand accents (sunburst palette tokens: navy / mustard / sage / terracotta on hero, stats, tabs, status badges) — **shipped**
 - Event Volunteers tab — see **Volunteers** below (living: [signupgenius.md](../integrations/signupgenius.md) · org overview: [volunteer-master.md](./volunteer-master.md))
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
@@ -102,13 +105,13 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - SignUpGenius **URL connect is the long-term path** (no Settings OAuth tease). OAuth deferred until most orgs have SignUpGenius Pro; then may add as a second pull option alongside URL
 
 ## Create with AI (Campaign Builder)
-- Nav `/create-with-ai` — chooser landing (Website pages · Social Media · Newsletter); Social opens `/create-with-ai/social` → Creative Setup for a default event; Website pages opens `/create-with-ai/website-pages` (Homepage · Volunteer · Sponsorship Calendar coming soon); Newsletter opens `/newsletter-composer` ([QA](../qa/newsletter-composer.md)); empty/access hub when no events or no permission — **shipped**
+- Nav `/create-with-ai` — Social-first landing (**Start here** Social hero → Creative Setup); quieter **Also available** row: Homepage · Volunteer page · Sponsorship (soon) · Newsletter · Flyer (soon); customer-facing copy uses calm org/team language ([QA](../qa/newsletter-composer.md)); empty/access hub when no events or no permission — **shipped**
 - **Website pages landing** (`/create-with-ai/website-pages`) — cream/forest page cards with preview art, serif titles, Live/Coming soon status, and short plain descriptions (no template pills or composer CTA jargon); Homepage → `/homepage-composer`; Volunteer → `/volunteer-composer`; Sponsorship disabled/coming soon — **Partial** (Homepage + Volunteer live)
 - **Volunteer Composer** (`/volunteer-composer`) — Volunteer With Us page (Header · Footer · Opportunities · Preview · Export); event picker with month/year + clear; Homepage-style opportunity sorter (drag reorder + Sort dropdown); compact card editor with upload + AI artwork icons (AI opens Create with AI preview for linked event, or creates a volunteer-drive event when missing); preview/export uses a denser 3-column grid with ~180px artwork (emoji fallback); centered how-it-works step cards (badge + title + detail); Always on / on/off dates (builder-only; preview/export hide schedule chrome); signup link URLs; Preview on / Full month preview slider; roles outside the on/off window roll off; durable local draft; full-page HTML export for your website — **Partial** (soft launch; share/PDF later)
 - **Flyer (Create with AI)** — **in progress (mockup only)** — 10 locked templates (school/church/sports/HOA · print/online/QR) **or upload your own** past flyer to update dates/copy only; inspiration image + optional brand kit; AI fills slots / refreshes text without redesigning; HTML at [`public/create-with-ai-flyer-ease-mockup.html`](../../public/create-with-ai-flyer-ease-mockup.html); do not ship into chooser until GO
-- Inspiration / creative setup, logos, milestones — **shipped**
+- Inspiration / creative setup, logos, posts — **shipped**
 - Artwork guidance from Creative Setup: Overall inspiration comment + per-image comments (not legacy Notes to AI); logo / brand colors / voice toggles are explicit opt-in only (org brand kit is not auto-surfaced or auto-applied) — see [create-with-ai-artwork-inputs.md](../qa/create-with-ai-artwork-inputs.md) — **shipped** (QA matrix + Playwright wiring)
-- Generate artwork + captions per milestone — **shipped**
+- Generate artwork + captions per post — **shipped**
 - Social artwork waiting motion: **Warm breath** (subtle scale + cream/amber/teal wash) while feed/story generate or regenerate in Create with AI Preview / Edit Artwork / Social composer and Approvals Revision; honors `prefers-reduced-motion` — **shipped** (mockup: [`public/approvals-celebration-motions-mockup.html`](../../public/approvals-celebration-motions-mockup.html))
 - Reject generated artwork: subtle thumbs-down icon on Preview (and Edit Artwork regenerated preview) discards that feed/story slot so you can regenerate — **shipped**
 - Artwork Apply hydrate: regenerated artwork sticks after Apply (local backup + hydrate merge so remount / Preview hydrate does not orphan richer in-memory art) — **shipped**
@@ -125,7 +128,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Evergreen custom cards + optional link URL · editable link name (`linkLabel`) · card face date (`date`, distinct from on/off visibility) · on date · off date · always-on · artwork upload — **shipped** (soft launch)
 
 ## Newsletter Composer
-- Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); scoop-style family email (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export; durable draft autosave (shared newest-wins localStorage + IndexedDB store, flush on navigate/hide) — **shipped** (soft launch; further polish deferred) — living docs: [QA](../qa/newsletter-composer.md) · [Engineering](../engineering/newsletter-composer.md)
+- Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); community email layout (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export; durable draft autosave (shared newest-wins localStorage + IndexedDB store, flush on navigate/hide) — **shipped** (soft launch; further polish deferred) — living docs: [QA](../qa/newsletter-composer.md) · [Engineering](../engineering/newsletter-composer.md)
 
 ## Artwork & creative
 - AI artwork generation (feed + story), approve/deny/adjust — **shipped**
@@ -137,11 +140,11 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Caption generation/editing — **shipped** (Create with AI: regenerate auto-saves; hydrate no longer strips legitimate captions that mention volunteers)
 - Caption Apply hydrate: saved captions stick after Edit caption / regenerate / refresh (exact known seed demos only are cleared) — **shipped**
 - Meta connect (Facebook Page + Instagram) — **shipped**
-- Create with AI Delivery method: **Publish Now** (default) posts to Meta on approve; Schedule / Email manual / Draft remain — **shipped** (legacy “Publish automatically” / `auto-publish` normalizes to Publish Now)
+- Create with AI Delivery method: **Publish Now** (default) posts to Meta on approve; Schedule / Email manual / Draft remain — **shipped** (legacy “Publish automatically” / `auto-publish` normalizes to Publish Now). **Schedule** posts go out within ~20 minutes of the chosen time via background cron (IG/stories; native FB feed uses Graph schedule on approve)
 - Schedule / publish now / publish ready bundles (Review & Publish + Meta bundles) — **shipped**
 - Meta-native Facebook Page feed schedule on Approve (`published=false` + `scheduled_publish_time`; Graph ids on `meta_publication_slots`) — **shipped** (Instagram / FB stories stay on CampignOS publish-when-due; Publish Now skips native Graph schedule and publishes immediately; QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
 - Meta publish bundle loads on page GET are read-only (no slot sync/write-on-read); mutations use `syncAndGetMetaPublishBundles` — **shipped** (perf)
-- Meta planner / Calendar show Publish Now + custom-date slots even when `relative_day` is outside the playbook (sync no longer deletes committed orphans; bundles merge orphan days) — **shipped**
+- Meta planner / Calendar show Publish Now + custom-date slots even when `relative_day` is outside the communication plan (sync no longer deletes committed orphans; bundles merge orphan days) — **shipped**
 - Calendar DnD reschedule syncs Meta Graph schedule time without re-approval — **shipped** (DB always updates; Graph failure → warning toast, no rollback; QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
 - Calendar DnD drag feel optimized (DOM drop highlights; optimistic chip move; Meta Graph sync after response; no pending dim / router wait before UI updates) — **shipped**
 - Posting schedule preferences — **shipped**
@@ -150,19 +153,20 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Approvals & scheduling
 - Unified Approvals hub (pending, changes, scheduled, published) — **shipped**
 - **Revision workspace (change request)** — **partial** — `/approvals/revision` shell matching [`public/approvals-change-request-mockup.html`](../../public/approvals-change-request-mockup.html) + in-shell AI regenerate per [`public/approvals-revision-ai-regenerate-mockup.html`](../../public/approvals-revision-ai-regenerate-mockup.html). Creator and approver see **feed (1:1) + story (9:16)** side by side; Approver note prefills **Instruct AI**; regenerate **feed / story / both** or **caption** (Create with AI credits) updates preview + sync `approval_scheduling_items` + CB2 session; inline schedule date/time; **Send for re-approval** merges latest artwork/caption/schedule into row, session (`awaiting_approval`), resubmit email, and Approvals thumbnails. Later: deeper multi-round history, adapters (newsletter · flyer · homepage · website pages)
-- Approvals Ease outcomes: **Posted** / **Failed** (with **Retry**) as first-class filters + pills; dedicated **Drafts** filter (saved drafts stay pre-publish, not Posted); Retry wires Meta republish — **shipped**
-- Status summary cards as clickable workflow filters (Assigned to Me / Changes Requested / In Queue / Scheduled / Published; click again to clear to All; Posted row status remains in the table under Scheduled coverage); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.approvals_layout`; approve / request changes, campaign & view-scope filters, search, badges — **shipped**
-- Approvals hub: unused Filters button removed; search matches campaign/milestone, status, assignee, next action, delivery/platforms, and schedule — **shipped**
+- Approvals Ease outcomes: **Posted** / **Failed** (with **Retry**) as first-class filters + pills; **Draft** chip on draft-only rows (no dedicated Drafts filter tab for soft launch); Retry wires Meta republish — **shipped**
+- Status summary cards as clickable workflow filters (Assigned to Me / Changes Requested / In Queue / Scheduled / Published; click again to clear to All; Posted row status remains in the table under Scheduled coverage); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.approvals_layout`; approve / request changes, assigned-to-me view scope, search, badges — **shipped**
+- Approvals hub: unused Filters button removed; broad search (events, people, dates, captions, status labels) replaces campaign dropdown filter — **shipped**
 - Approvals customer copy: hub + event Approvals tab + open review + approve/request/retry errors + change-request email use org/Page/team language — **shipped**
 - Approvals **open review** (replaces cramped drawer): side-by-side feed · 1:1 + story · 9:16, schedule hero, caption, timeline; **Approve & schedule** / **Request changes** (no note on open view — note + tags on `/approvals/revision?mode=approver`) — **shipped** (mockup: [`public/approvals-open-view-mockup.html`](../../public/approvals-open-view-mockup.html))
 - Final approve celebration: **Ready to Ralli** headline + brand confetti after successful **Approve & schedule** (Approvals hub + event Approvals tab); **Done** / backdrop dismiss + ~5.5s auto-dismiss with gentle fade; approve persists DB status first then returns (Meta schedule + Resend + Create with AI session sync run in `after()` so celebration is not blocked); follow-up warnings that still arrive with the response wait until after celebration and show as amber; reduced motion shows static headline + check, still dismissable — **shipped** (mockup: [`public/approvals-celebration-motions-mockup.html`](../../public/approvals-celebration-motions-mockup.html))
 - Approvals Ease focus cards: primary **Open full view** only (approve / request changes live in the open review dialog) — **shipped**
-- Event detail Approvals tab: Ease pulse filters (Needs you / Scheduled / Drafts / Posted / Failed / Changes) + open review Retry — **shipped**
+- Event detail Approvals tab: Ease pulse filters (Needs you / Scheduled / Posted / Failed / Changes) + open review Retry — **shipped**
 - Approvals table Actions column shows **View** only (approve / request changes stay in the open review) — **shipped**
 - Change-requested items show the approver comment + **Edit Artwork** / **Change Date** CTAs (Approvals drawer + email; Edit Artwork → Create with AI Preview + edit-artwork modal for that milestone; Change Date → Preview Campaign for that milestone); Preview/Review banners keep caption / Change Date / artwork paths plus **Send for re-approval**; resubmit emails the Team Access approver again (`Resubmitted for approval: …`, with fallback to the prior assignee if the current role has no email; UI confirms the recipient address) — **shipped**
 - Legacy Publishing Center → redirects to Approvals
 
 ## Calendar
+- Calendar chrome (shell, import, review, Google/subscribe feed) customer copy — org/team/year + refresh language; Settings **School year** feature name retained — **shipped**
 - School-year calendar (month / week / agenda) — **shipped**
 - Layer toggles, detail panel — **shipped**
 - Show-layer color pickers (Events / Scheduled posts / Published): click the color swatch on each Show chip (not the label — label toggles visibility); calendar cards for that layer update to match; per-user via `organization_users.calendar_layout` — **shipped**
@@ -174,7 +178,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Google Calendar on Import page + Calendar header CTAs — **shipped**
 - ICS / webcal subscribe feed — **shipped**
 - Calendar file upload + import review (incl. AI fix) — **shipped** (canonical UX: `/calendar/import` → `/calendar/review` — Google + ICS + file on one screen; onboarding checklist + Get started wizard calendar step use that same path; Settings → Google Calendar is connect/subscribe with deep-links to Import)
-- Calendar import review plan type from org playbooks (Settings → Playbooks; stores `playbookId` on import) — **shipped**
+- Calendar import review plan type from org communication plans (Settings → Communication Plans; stores `playbookId` on import) — **shipped**
 - Calendar import review search (name/category/date/year), type/date filters, and Archive past events (bulk remove prior dates from the import queue) — **shipped**
 - Calendar Import list search (name/category/date/year) with Select all / Delete selected on visible filtered rows — **shipped** (`/calendar` → Import list; hard-deletes events for the org’s school years — same membership as Events, not the rolling calendar date window)
 - Calendar import dedupe (ICS UID / Google id / AI fingerprint; Update on date change; review New/Duplicate/Update/Conflict) — **shipped** (canonical: `/calendar/import` + `/calendar/review`; QA: [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md); Playwright: `tests/hey-ralli/smoke/14-calendar-import-dedupe.spec.ts`)
@@ -204,6 +208,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Gmail inbox — **deferred**
 
 ## Tasks — Ease redesign **shipped**
+- Customer-facing Tasks copy uses organization/team/event language (not school-only, migration, or wiring jargon); calm empties on List/boards/event tab — **shipped**
 - `TasksEaseShell` replaces the dense Main Table / My Tasks / Board chrome at `/tasks` — soft cream shell, Fraunces heading, quiet pills throughout (`src/components/tasks-v2/TasksEaseShell.tsx`) — **shipped**
 - **Team | Mine** scope toggle (`?scope=`) — Team = all org-accessible event tasks; Mine = assigned to the signed-in user (`assignee_user_id`) — **shipped**
 - **List | Status | Focus | Custom** views (`?view=`) with short labels; List is the default — **shipped**
@@ -239,13 +244,16 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - “Files organized by event” carousel cards use Events home summary colors (idle `bg-cos-bg-alt` / selected `bg-cos-dark`); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.files_layout` — **shipped** (legacy `FilesDocumentsShell`; still used by the event detail Files tab embeds)
 - **Ease redesign — `/files` uses `FilesEaseShell`, not the dense carousel/table chrome:** soft cream shell, Fraunces heading, quiet pill search (file or campaign name), quiet text sort (Newest/Name/Size/Type via `?sort=`), campaign filter dropdown (Coming up = next 5 by date, then More), multi-file drop opens upload dialog for campaign + category (no header Upload CTA), each campaign in its own striped box with per-campaign folder bar, inline rename (Enter/blur saves) and Rename/Move/Open/Download row actions, deep link to the event Files tab via `eventFilesHref`; chrome uses local state + `history.replaceState` (`?q=`, `?event=`, `?sort=`) so filter/sort/search clicks stay instant — mockup at `/files-ease-mockup.html` — **shipped**
 - **Campaign folders (event-scoped):** `event_file_folders` + nullable `event_playbook_files.folder_id`; folder pills (All files / Unfiled / custom) on event Files tab and inside each campaign group on `/files`; create/rename/delete/reorder folders; Move file to folder on each row; RLS via `private.can_access_event` — **shipped**
-- Unit contracts: `src/lib/campaign-files/__tests__/files-ease-ui.test.ts` — **shipped**
+- **Smart filing MVP (Jul 28):** event is the container; auto type groups (All / Graphics / Photos / Documents / Other) on org `/files` and event Files tab; upload infers category from filename/MIME (no category picker on drop); read-only **Generated for posts** section on event Files tab queries `event_assets` directly (no `source_event_asset_id` column); org library uses type pills + event chips (not folder tree hero); optional folders collapsed on event tab; quiet **Add file** on Volunteers + Tasks tabs — mockup at `/files-smart-filing-mockup.html` — **shipped**
+- Unit contracts: `src/lib/campaign-files/__tests__/files-ease-ui.test.ts`, `type-groups.test.ts` — **shipped**
 
 ## Vendors
 - Directory (card grid), add/archive/delete, profile, link to events — **shipped**
+- Soft-launch nav: org **Vendors** removed from left rail; remains on event `?tab=vendors` and `/vendors` via direct URL / Browse directory — **shipped**
+- Customer copy (Jul 28): org/team language on directory, profile, event tab, add wizard, and action errors; calm empty states (no School Setup / migration strings) — **shipped**
 - **Ease redesign — contact-first Vendors (mockup at `/vendors-ease-mockup.html`):** soft cream/Fraunces shell like Tasks/Files; directory cards keep the loved forest/mustard/teal header bands plus a small squircle logo mark (uploaded image `object-cover` fill, or initials) on the band — not a circle — with icon-only X to clear when a logo exists; profile hero uses the same fillable squircle + clear control; one-tap Call / Email / Website (`tel` / `mailto` / website) plus **View profile**; quiet All / Favorites / Past / Blocked tabs + search (`history.replaceState`); event `?tab=vendors` rows show the same contact actions + **Profile**, plus in-tab **Add existing** / **Add new** (preselects event) / **Unlink** (confirm); Browse directory opens the full `/vendors` list (not linked-only); profile is a contact-first Ease hero (big Call / Email / Website) with quieter secondary tabs (Overview, Events, Notes, Documents, Activity). Directory KPI summary strip removed from the Ease shell so the page matches the mockup — **shipped**
 - Unit contracts: `src/lib/vendors/__tests__/vendors-ease-ui.test.ts` — **shipped**
-- Add Vendor wizard: Basics → Connect event → Review; Vendor Master loads events and supports multi-select link; Event tab pre-selects the current event; assignments default Confirmed — **shipped**
+- Add vendor wizard: Basics → Connect event → Review; directory loads events and supports multi-select link; Event tab pre-selects the current event; assignments default Confirmed — **shipped**
 - Favorite star on card upper-right; directory tabs: All / Favorites / Past / Blocked (Pending removed) — **shipped**
 - Card / row CTAs open `/vendors/{id}`; edit vendor from profile only — **shipped**
 - Profile tabs: Overview, Events, Notes, Documents, Activity — **shipped**
@@ -283,15 +291,15 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - LLM-generated narrative — **deferred**
 - Year-end / board operational analytics — **deferred** (see [blueprints/11_ANALYTICS.md](./blueprints/11_ANALYTICS.md))
 
-## Playbooks
-- Playbook library, assign by event type, milestone timelines — **shipped**
+## Communication Plans
+- Communication Plan library, assign by event type, post timelines — **shipped**
 - System template save forks an org-editable copy (RLS blocks editing globals) — **shipped**
-- Standalone Event Playbooks nav → redirects to Events
+- Standalone Event Communication Plans nav → redirects to Events
 
 ## AI Brain & assistant
 - Org voice / style / audience prefs — **shipped**
 - Inbox AI sources — **shipped**
-- Hey Ralli Assistant (Ask Ralli) — **shipped** (Phases 1–5 ops coach complete: Phase 1 event ops + Phase 2 org/role briefings + Phase 3 volunteers/communications depth + Phase 4 content draft helper + Phase 5 insights/health/risk recommendations via campaign-director health/risks/next-action and Meta Insights when metrics exist — otherwise honest “no performance data yet” + highest-impact ops fallback; PTO playbook tips (`source: pto`) for recruitment/timeline/checklist/getting-started/parent-perspective advice; “what should I work on today?” / “what would you do?” / “catch me up” map to live org briefing or numbered priority lists; experienced-PTO-president voice across coaches; deep links to Insights / event / Approvals / Create with AI; ops/org still win for “what’s next” / “today’s summary” / “what do I have this week” / milestone progress (“are all my milestones done for this week”); product-help FAQ retained for how-to (bare “milestones” no longer steals status asks); when an event isn’t named, ops/content offer upcoming campaign chips instead of only Campaigns links; ambiguous event matches return dated chips that re-ask with a forced eventId; answer body strips markdown links when chips are shown; pinned in the sidebar directly under Insights so it stays on screen; dialog chunk lazy-loads on open — **shipped** perf). Living eng/QA doc: [ask-ralli-assistant.md](../engineering/ask-ralli-assistant.md); Playwright: `tests/hey-ralli/smoke/12-ask-ralli-assistant.spec.ts`
+- Hey Ralli Assistant (Ask Ralli) — **shipped** (Phases 1–5 ops coach complete: Phase 1 event ops + Phase 2 org/role briefings + Phase 3 volunteers/communications depth + Phase 4 content draft helper + Phase 5 insights/health/risk recommendations via campaign-director health/risks/next-action and Meta Insights when metrics exist — otherwise honest “no performance data yet” + highest-impact ops fallback; PTO communication plan tips (`source: pto`) for recruitment/timeline/checklist/getting-started/parent-perspective advice; “what should I work on today?” / “what would you do?” / “catch me up” map to live org briefing or numbered priority lists; experienced-PTO-president voice across coaches; deep links to Insights / event / Approvals / Create with AI; ops/org still win for “what’s next” / “today’s summary” / “what do I have this week” / milestone progress (“are all my milestones done for this week”); product-help FAQ retained for how-to (bare “milestones” no longer steals status asks); when an event isn’t named, ops/content offer upcoming campaign chips instead of only Campaigns links; ambiguous event matches return dated chips that re-ask with a forced eventId; answer body strips markdown links when chips are shown; pinned in the sidebar directly under Insights so it stays on screen; dialog chunk lazy-loads on open — **shipped** perf). Living eng/QA doc: [ask-ralli-assistant.md](../engineering/ask-ralli-assistant.md); Playwright: `tests/hey-ralli/smoke/12-ask-ralli-assistant.spec.ts`
 - AI credits engine — **shipped** (Phases 1–6: metering, widget, Owner monitor/grants, billing catalog, Stripe Checkout/Portal/webhooks, 14-day trial + 600 credits, feature/capacity gates, hard-block AI when period + Reserve cannot cover the action — living: [billing-and-access.md](../ops/billing-and-access.md) · [stripe-integration.md](../engineering/stripe-integration.md) · [ai-and-apis.md](./ai-and-apis.md))
 - AI credits widget — **shipped** (sidebar balance + soft warn + exhausted hard-stop CTA to Billing)
 - Owner AI credits monitoring — **shipped** (Phase 3: Credits tab on `/ops/ai-apis` — per-org plan/used/reserve/OpenAI $/health + ledger)
@@ -299,14 +307,14 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Stripe billing + trial + plan gates — **shipped** (Phase 5: Checkout/Portal/webhooks live in Production + app trial + Stripe `trial_period_days` / `trialing` sync + 13 feature/capacity gates + canceled-subscription full lockout; Org Insights / `social_analytics` available on Starter–Premium; see [billing-and-access.md](../ops/billing-and-access.md#11-gates-enforced-today) · eng: [stripe-integration.md](../engineering/stripe-integration.md))
 
 ## Settings
-- **Ease redesign** — soft cream/Fraunces Settings hub with quiet left nav (Overview · Organization · Branding · Team & Access · Integrations · Billing & Plan · Account); HTML mockup at [`/settings-ease-mockup.html`](../../public/settings-ease-mockup.html) — **complete** (Phases 1–7 + Branding hub shipped; exact mockup fidelity across Settings Ease pages)
+- **Ease redesign** — soft cream/Fraunces Settings hub with quiet left nav grouped **Workspace** (Overview · Organization · Branding · Team & Access) · **Connections** (Integrations · Billing & Plan) · **You** (Account); HTML mockup at [`/settings-ease-mockup.html`](../../public/settings-ease-mockup.html) — **complete** (Phases 1–7 + Branding hub shipped; Jul 28 copy sweep + simplicity rated **High** on hub navigation)
   - Phase 2: Organization — **shipped**
   - Phase 3: School year — **shipped** (now nested under Branding; `/settings/school-year` still works)
   - Phase 4: Team & Access — **shipped**
   - Phase 5: Integrations (+ Meta / Calendar detail) — **shipped**
   - Phase 6: Billing & Plan — **shipped**
   - Phase 7: Account (profile · notifications · sign-out · erase account) — **shipped**
-- **Branding settings hub** — soft left nav School year → Branding; hub + section pills for AI Brain · AI Inbox · Playbook · Colors & Logos · School Year (nested); wired to `/settings/ai-brain`, `/settings/inbox-ai`, `/settings/playbooks-milestones`, `/onboarding/brand?standalone=1`, and nested Ease school-year panels; route `/settings/branding` (`?section=`); mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
+- **Branding settings hub** — soft left nav School year → Branding; hub + section pills for AI Brain · AI Inbox · Communication Plan · Colors & Logos · School Year (nested); wired to `/settings/ai-brain`, `/settings/inbox-ai`, `/settings/playbooks-milestones`, `/onboarding/brand?standalone=1`, and nested Ease school-year panels; route `/settings/branding` (`?section=`); mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
 - Header settings gear → `/settings` (Ease hub; section list is Settings left nav, not a header dropdown) — **shipped**
 - Overview (Ease hub summary cards + Connected + Branding snapshot) — **shipped** (Phase 1; Branding card replaces School year card)
 - Organization (profile with full mailing address · weather location · preferences · posting — Ease cream/Fraunces panels; Branding home → `/settings/branding`; Save changes + Edit schedule wired) — **shipped** (Phase 2)
@@ -335,9 +343,11 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ---
 
 ## Primary nav
-Dashboard · Calendar · Events · Volunteers · Create with AI · Approvals · Tasks · Communications Hub · Files · Vendors · Insights · Hey Ralli Assistant (pinned under Insights)
+Dashboard · Calendar · Events · Volunteers · Create with AI · Approvals · Tasks · Communications Hub · Files · Hey Ralli Assistant (pinned after primary nav)
 
-Settings: Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · Get started · Billing · Advanced
+**Soft-launch nav trim:** org **Vendors** (`/vendors`) and **Insights** (`/insights`) are **removed from the left rail** so the product reads as a calmer communications toolkit. Both remain on each event’s workspace tabs (`?tab=vendors` · `?tab=insights`) and via direct URL. Meta App Review / public Meta connect for other orgs stays a hard launch gate (founder temp account can still post).
+
+Settings: Overview · Organization · Branding · Team & Access · Integrations · Billing & Plan · Account (Ease left nav at `/settings`; Advanced · Get started · legacy routes deep-link via redirects)
 
 ---
 

@@ -93,7 +93,7 @@ const PAGES = [
     id: "volunteer" as const,
     title: "Volunteer page",
     status: "Live",
-    description: "Opportunities families can browse and sign up for.",
+    description: "Opportunities people can browse and sign up for.",
     href: "/volunteer-composer",
     Art: VolunteerArt,
     enabled: true as const,

@@ -48,7 +48,7 @@ export function isSettingsEaseNavActive(
       pathname.startsWith("/settings/school-year") ||
       pathname.startsWith("/settings/ai-brain") ||
       pathname.startsWith("/settings/inbox-ai") ||
-      pathname.startsWith("/settings/playbooks") ||
+      pathname.startsWith("/settings/playbooks-milestones") ||
       pathname.startsWith("/settings/playbooks-milestones") ||
       pathname.startsWith("/onboarding/brand")
     );

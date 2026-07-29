@@ -412,15 +412,15 @@ export function TasksEaseShell({
   const subtitle =
     scope === "mine"
       ? "Only tasks assigned to you — still grouped by the event they belong to."
-      : "Everything your team owes across events — same tasks that live on each event’s Tasks tab.";
+      : "Your team’s tasks across events — the same list each event’s Tasks tab uses.";
 
   if (!data.tablesAvailable) {
     return (
       <div className="rounded-[22px] border border-cos-border bg-cos-card p-8 text-center shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
         <h1 className="font-display text-2xl text-cos-text">Tasks unavailable</h1>
         <p className="mt-2 text-sm text-cos-muted">
-          Run migration 031_event_playbook_tables.sql to enable cross-event task
-          tracking.
+          Tasks aren’t ready for your organization yet. Try again later, or ask
+          whoever manages your account.
         </p>
       </div>
     );
@@ -501,7 +501,7 @@ export function TasksEaseShell({
                       handleAddTaskSubmit();
                     }
                   }}
-                  placeholder="e.g. Confirm gym setup with facilities"
+                  placeholder="e.g. Confirm venue setup with the venue contact"
                   autoFocus
                   className="mt-1.5 block w-full rounded-xl border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text shadow-sm placeholder:text-cos-muted"
                 />
@@ -551,13 +551,13 @@ export function TasksEaseShell({
                 type="button"
                 onClick={() => handleScopeChange(option)}
                 className={cn(
-                  "rounded-full px-3.5 py-[7px] text-[13px] font-bold capitalize transition",
+                  "rounded-full px-3.5 py-[7px] text-[13px] font-bold transition",
                   scope === option
                     ? "bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
                     : "text-cos-muted hover:text-cos-text",
                 )}
               >
-                {option}
+                {option === "team" ? "Team" : "Mine"}
               </button>
             ))}
           </div>
@@ -686,10 +686,10 @@ export function TasksEaseShell({
               }
               emptyBody={
                 scope === "mine"
-                  ? "When a teammate puts your name on an event task, it shows up here. Team scope still shows the full org list."
+                  ? "When a teammate puts your name on an event task, it shows up here. Switch to Team to see everyone’s list."
                   : eventFilter
-                    ? "Generate tasks with AI or add one manually for this event."
-                    : "Tasks from your accessible events will appear here."
+                    ? "Add a task or ask AI for suggestions for this event."
+                    : "When your team adds tasks to events, they show up here."
               }
             />
           ) : null}

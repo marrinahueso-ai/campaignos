@@ -113,7 +113,7 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
 
     const step = steps[index];
     const confirmed = window.confirm(
-      `Remove "${step.title}" from this playbook?\n\nSave the playbook to apply this change.`,
+      `Remove "${step.title}" from this communication plan?\n\nSave the communication plan to apply this change.`,
     );
 
     if (!confirmed) {
@@ -170,13 +170,13 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
       {playbook?.isSystem && (
         <div className="rounded-lg border border-cos-border bg-cos-bg/60 px-4 py-3 text-sm text-cos-muted">
           This is a system template. Saving creates an editable copy for your
-          organization with your milestone changes.
+          organization with your post changes.
         </div>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle>{isEditing ? "Edit Playbook" : "Create Playbook"}</CardTitle>
+          <CardTitle>{isEditing ? "Edit communication plan" : "Create communication plan"}</CardTitle>
           <CardDescription>
             Define the communication strategy for an event type.
           </CardDescription>
@@ -185,7 +185,7 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
         <div className="space-y-4">
           <Input
             name="name"
-            label="Playbook Name"
+            label="Communication plan name"
             defaultValue={playbook?.name ?? ""}
             placeholder="Book Fair"
             required
@@ -194,7 +194,7 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
             name="description"
             label="Description"
             defaultValue={playbook?.description ?? ""}
-            placeholder="When to use this playbook..."
+            placeholder="When to use this communication plan..."
           />
           <Select
             name="eventType"
@@ -221,7 +221,7 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
         <CardHeader>
           <CardTitle>Communication Steps</CardTitle>
           <CardDescription>
-            Reorder, edit, and configure each countdown milestone.
+            Reorder, edit, and configure each countdown post.
           </CardDescription>
         </CardHeader>
 
@@ -357,7 +357,7 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
                 ? playbook.isSystem
                   ? "Removing..."
                   : "Deleting..."
-                : "Delete Playbook"}
+                : "Delete communication plan"}
             </Button>
             {playbook.isSystem && (
               <p className="text-xs text-cos-muted">
@@ -382,10 +382,10 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
             {isPending
               ? "Saving..."
               : !isEditing
-                ? "Create Playbook"
+                ? "Create communication plan"
                 : playbook?.isSystem
-                  ? "Save as my playbook"
-                  : "Save Playbook"}
+                  ? "Save as my communication plan"
+                  : "Save communication plan"}
           </Button>
         </div>
       </div>

@@ -10,7 +10,7 @@ interface EditPlaybookPageProps {
 export async function generateMetadata({ params }: EditPlaybookPageProps) {
   const { id } = await params;
   const data = await getPlaybookWithSteps(id);
-  return { title: data ? `Edit ${data.playbook.name}` : "Edit Playbook" };
+  return { title: data ? `Edit ${data.playbook.name}` : "Edit communication plan" };
 }
 
 export default async function EditPlaybookPage({ params }: EditPlaybookPageProps) {
@@ -28,7 +28,7 @@ export default async function EditPlaybookPage({ params }: EditPlaybookPageProps
           href="/settings/playbooks-milestones"
           className="text-sm font-medium text-cos-accent hover:text-cos-muted"
         >
-          ← Back to Playbooks
+          ← Back to Communication Plans
         </Link>
         <h1 className="mt-2 text-2xl font-bold text-cos-text">
           {data.playbook.name}

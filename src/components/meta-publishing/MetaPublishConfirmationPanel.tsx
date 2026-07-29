@@ -183,7 +183,7 @@ export function MetaPublishConfirmationPanel({
             <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-white/80 px-4 py-3">
               <PartyPopper className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" aria-hidden />
               <p className="text-sm text-cos-text">
-                All milestones are scheduled or published. You&apos;re done with Review &amp;
+                All posts are scheduled or published. You&apos;re done with Review &amp;
                 publish for this event.
               </p>
             </div>
@@ -198,7 +198,7 @@ export function MetaPublishConfirmationPanel({
             type="button"
             onClick={() => onNextMilestone?.(nextMilestone.step, nextMilestone.relativeDay)}
           >
-            Next milestone: {nextMilestone.title}
+            Next post: {nextMilestone.title}
           </Button>
         ) : null}
 
@@ -208,7 +208,7 @@ export function MetaPublishConfirmationPanel({
             className="text-sm text-cos-muted underline-offset-2 hover:text-cos-text hover:underline"
             onClick={onContinueReviewing}
           >
-            Review other milestones
+            Review other posts
           </button>
         )}
 

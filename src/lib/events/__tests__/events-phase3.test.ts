@@ -315,7 +315,7 @@ describe("Phase 3 deep links and fallback flag", () => {
     );
   });
 
-  it("keeps approvals filtered by event query param", () => {
+  it("keeps approvals deep link query param for search prefill", () => {
     assert.equal(eventApprovalsHref("evt-123"), "/approvals?event=evt-123");
   });
 

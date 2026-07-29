@@ -76,7 +76,7 @@ export function WeatherWidget({
                 <h3 className="text-sm font-semibold text-cos-text">Weather</h3>
               </div>
               <p className="text-sm text-cos-muted">
-                Set your school city for local weather.
+                Set your weather city in Settings for a local forecast.
               </p>
             </div>
             <Link
@@ -123,7 +123,7 @@ export function WeatherWidget({
       ) : (
         <div className="space-y-2">
           <p className="text-sm text-cos-muted">
-            Add your school city in Settings for live local weather.
+            Add your weather city in Settings for live local weather.
           </p>
           <Link
             href="/settings/organization"

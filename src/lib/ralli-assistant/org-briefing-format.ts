@@ -254,7 +254,7 @@ export function formatDeterministicOrgBriefingAnswer(
     );
   } else {
     lines.push(
-      "• Behind schedule: no overdue playbook tasks in the loaded list.",
+      "• Behind schedule: no overdue communication plan tasks in the loaded list.",
     );
   }
 

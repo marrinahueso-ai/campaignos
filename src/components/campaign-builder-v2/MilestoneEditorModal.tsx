@@ -128,21 +128,21 @@ export function MilestoneEditorModal({
 
   return (
     <CampaignBuilderModal
-      title="Edit milestone"
+      title="Edit post"
       subtitle="Update name, purpose, platforms, and AI guidance"
       onClose={onClose}
       size="lg"
       footer={
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
           <Button variant="ghost" onClick={onDelete}>
-            Delete milestone
+            Delete post
           </Button>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit" form={formId}>
-              Save milestone
+              Save post
             </Button>
           </div>
         </div>
@@ -163,7 +163,7 @@ export function MilestoneEditorModal({
         }}
       >
         <Input
-          label="Milestone name"
+          label="Post name"
           name="name"
           defaultValue={milestone.name}
           required
@@ -220,7 +220,7 @@ export function MilestoneEditorModal({
 
         <fieldset className="space-y-2">
           <legend className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-            Creative overrides for this milestone
+            Creative overrides for this post
           </legend>
           <p className="text-xs text-cos-muted">
             By default this milestone inherits the campaign&apos;s logo and
@@ -238,7 +238,7 @@ export function MilestoneEditorModal({
               }
             >
               <option value="inherit">Inherit from campaign</option>
-              <option value="none">None for this milestone</option>
+              <option value="none">None for this post</option>
             </Select>
             <Select
               label="Colors"
@@ -250,7 +250,7 @@ export function MilestoneEditorModal({
               }
             >
               <option value="inherit">Inherit from campaign</option>
-              <option value="none">None for this milestone</option>
+              <option value="none">None for this post</option>
             </Select>
           </div>
         </fieldset>
@@ -275,7 +275,7 @@ export function MilestoneEditorModal({
             {MILESTONE_STATUS_LABELS[displayStatus]}
           </p>
           <p className="text-xs text-cos-muted">
-            Based on generated artwork and captions for this milestone — same
+            Based on generated artwork and captions for this post — same
             status as the timeline.
           </p>
         </div>

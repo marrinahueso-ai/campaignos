@@ -2,7 +2,7 @@ import type { ActivityLogEntry } from "@/types/event-workspace";
 import type { MemoryTimelineEntry } from "@/lib/memory/types";
 
 const ACTIVITY_TITLES: Partial<Record<ActivityLogEntry["activityType"], string>> = {
-  calendar_imported: "Added from the school calendar",
+  calendar_imported: "Added from the calendar",
   workspace_created: "Event workspace opened",
   communications_generated: "Messages drafted",
   board_approval: "Board approval recorded",

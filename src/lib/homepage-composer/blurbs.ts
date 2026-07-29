@@ -1,7 +1,7 @@
 import { formatEventTimeForInput } from "@/lib/events/time-input";
 
 /**
- * Short parent-facing blurb from event fields (deterministic seed).
+ * Short visitor-facing blurb from event fields (deterministic seed).
  * Card editor can rewrite via `generateHomepageComposerBlurbAction`.
  */
 export function buildEventBlurb(input: {
@@ -25,7 +25,7 @@ export function buildEventBlurb(input: {
   if (when) {
     return `Join us for ${input.title} — ${when}.`;
   }
-  return `Join us for ${input.title}. Details for Explorer families inside.`;
+  return `Join us for ${input.title}. Details inside.`;
 }
 
 /** Default announcement line when picking from the org event calendar. */

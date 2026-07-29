@@ -55,8 +55,8 @@ export const SETTINGS_V2_NAV_ITEMS: SettingsV2NavItem[] = [
   },
   {
     href: "/settings/playbooks-milestones",
-    label: "Playbooks",
-    description: "Communication playbooks",
+    label: "Communication Plans",
+    description: "Communication Plans",
   },
   {
     href: "/settings/school-setup",

@@ -28,7 +28,7 @@ export const CREATE_AI_TIMELINE = defineTimeline({
     { at: 4.6, id: "preparing", label: "Preparing campaign" },
     { at: 7.0, id: "artwork", label: "Artwork reveal" },
     { at: 11.0, id: "caption", label: "Caption typing" },
-    { at: 15.5, id: "milestones", label: "Milestones" },
+    { at: 15.5, id: "milestones", label: "Posts" },
     { at: 16.2, id: "milestone-2", label: "Final Reminder" },
     { at: 16.9, id: "milestone-3", label: "Event Day" },
     { at: 20.0, id: "ready", label: "Ready for Review" },

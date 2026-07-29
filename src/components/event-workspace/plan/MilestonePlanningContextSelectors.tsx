@@ -158,7 +158,7 @@ export function MilestonePlanningContextSelectors({
       const result = await assignPlaybookToEventAction(event.id, nextPlaybookId);
       if (!result.success) {
         setSelectedPlaybookId(playbookId);
-        setError(result.error ?? "Unable to update playbook.");
+        setError(result.error ?? "Unable to update communication plan.");
         return;
       }
       router.refresh();
@@ -236,7 +236,7 @@ export function MilestonePlanningContextSelectors({
   const playbookSelect = (
     <MilestonePlanningSelect
       id={`${idPrefix}-playbook`}
-      label="Playbook"
+      label="Communication Plan"
       value={selectedPlaybookId}
       onChange={handlePlaybookChange}
       disabled={isPending || availablePlaybooks.length === 0}
@@ -244,7 +244,7 @@ export function MilestonePlanningContextSelectors({
       variant={layout === "inline" ? "inline" : "default"}
     >
       {availablePlaybooks.length === 0 ? (
-        <option value={playbookId}>Default playbook</option>
+        <option value={playbookId}>Default communication plan</option>
       ) : (
         availablePlaybooks.map((playbook) => (
           <option key={playbook.id} value={playbook.id}>

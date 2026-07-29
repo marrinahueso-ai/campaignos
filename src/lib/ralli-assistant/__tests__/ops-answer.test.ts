@@ -220,7 +220,7 @@ describe("formatDeterministicOpsAnswer", () => {
         schedule: { today: [], tomorrow: [], thisWeek: [] },
       }),
     );
-    assert.match(answer, /no incomplete playbook tasks/i);
+    assert.match(answer, /no incomplete communication plan tasks/i);
     assert.match(answer, /nothing pending/i);
     assert.match(answer, /Publishing today: none/i);
     assert.doesNotMatch(answer, /Confirm volunteer leads/);

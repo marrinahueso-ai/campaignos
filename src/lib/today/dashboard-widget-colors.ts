@@ -10,6 +10,9 @@ export const DASHBOARD_COLORABLE_WIDGET_IDS = [
   "tasks_week",
   "volunteers",
   "insights",
+  "posts_week",
+  "waiting_others",
+  "event_coverage",
 ] as const;
 
 export type DashboardColorableWidgetId =

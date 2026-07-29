@@ -105,7 +105,7 @@ describe("validateInspirationForGeneration", () => {
       playbookId: "",
     });
     assert.equal(result.valid, false);
-    assert.match(result.message ?? "", /playbook/i);
+    assert.match(result.message ?? "", /communication plan/i);
   });
 });
 
@@ -928,7 +928,7 @@ describe("mergeCampaignBuilderSessions", () => {
     assert.equal(merged.previewContents?.[0]?.artwork.feedUrl, "https://x/feed.png");
   });
 
-  it("keeps local playbook milestones + artwork when server list has different ids", () => {
+  it("keeps local communication plan posts + artwork when server list has different ids", () => {
     const server = buildDefaultSession("evt-2", "Back to School Fair", "2026-08-17");
     const localMilestone = {
       ...server.milestones[0],

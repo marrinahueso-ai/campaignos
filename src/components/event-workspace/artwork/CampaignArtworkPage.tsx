@@ -48,7 +48,7 @@ export function CampaignArtworkPage({
       <CreativeStudioStepHeader
         eventId={eventId}
         title="Artwork"
-        description="Generate custom, on-brand artwork for each milestone in your campaign."
+        description="Generate custom, on-brand artwork for each post in your campaign."
         backHref={backHref}
       />
 

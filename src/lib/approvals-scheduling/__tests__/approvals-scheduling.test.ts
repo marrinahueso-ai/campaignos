@@ -104,6 +104,13 @@ describe("searchMatchesItem", () => {
       deliveryMethod: "manual-email",
       platforms: ["facebook", "instagram"],
       scheduleLabel: "Jun 12, 2026 9:00 AM",
+      scheduleAt: "2026-06-12T14:00:00.000Z",
+      preview: {
+        captionText: "Summer kickoff!",
+        storyCaptionSnippet: null,
+        feedArtworkUrl: null,
+        storyArtworkUrl: null,
+      },
     });
 
     assert.equal(searchMatchesItem(item, "scheduled"), true);
@@ -112,6 +119,8 @@ describe("searchMatchesItem", () => {
     assert.equal(searchMatchesItem(item, "manual email"), true);
     assert.equal(searchMatchesItem(item, "ig"), true);
     assert.equal(searchMatchesItem(item, "jun 12"), true);
+    assert.equal(searchMatchesItem(item, "summer kickoff"), true);
+    assert.equal(searchMatchesItem(item, "june"), true);
     assert.equal(searchMatchesItem(item, "not-a-match-xyz"), false);
   });
 });

@@ -9,15 +9,20 @@ import {
 } from "@/lib/campaign-files/storage";
 import { logActivity } from "@/lib/event-playbooks/mutations";
 import { createClient } from "@/lib/supabase/server";
+import {
+  mapDocumentCategoryToLegacyCategory,
+} from "@/lib/campaign-files/document-category";
 import type {
   CampaignFileCategory,
   CampaignFilePlatform,
+  DocumentCategory,
 } from "@/types/campaign-files";
 
 interface UploadCampaignFileInput {
   eventId: string;
   file: File;
   category: CampaignFileCategory;
+  documentCategory: DocumentCategory;
   platforms: CampaignFilePlatform[];
   uploaderName: string | null;
 }
@@ -61,6 +66,7 @@ export async function uploadCampaignFile(
       storage_path: storagePath,
       file_type: fileType,
       category: input.category,
+      document_category: input.documentCategory,
       platforms: input.platforms,
       status: "active",
       size_bytes: input.file.size,
@@ -85,6 +91,7 @@ export async function updateCampaignFile(
   input: {
     name?: string;
     category?: CampaignFileCategory;
+    documentCategory?: DocumentCategory;
     platforms?: CampaignFilePlatform[];
     status?: "active" | "pending" | "archived";
   },
@@ -95,7 +102,34 @@ export async function updateCampaignFile(
   };
 
   if (input.name !== undefined) updates.name = input.name;
-  if (input.category !== undefined) updates.category = input.category;
+
+  let filenameForCategory =
+    input.name ??
+    (typeof updates.name === "string" ? updates.name : undefined);
+  let mimeTypeForCategory: string | null | undefined;
+
+  if (input.documentCategory !== undefined) {
+    if (!filenameForCategory) {
+      const { data: existing } = await supabase
+        .from("event_playbook_files")
+        .select("name, mime_type")
+        .eq("id", fileId)
+        .maybeSingle();
+      filenameForCategory = (existing?.name as string | undefined) ?? "";
+      mimeTypeForCategory = (existing?.mime_type as string | null | undefined) ?? null;
+    }
+
+    updates.document_category = input.documentCategory;
+    updates.category =
+      input.category ??
+      mapDocumentCategoryToLegacyCategory(
+        input.documentCategory,
+        filenameForCategory,
+        mimeTypeForCategory,
+      );
+  } else if (input.category !== undefined) {
+    updates.category = input.category;
+  }
   if (input.platforms !== undefined) updates.platforms = input.platforms;
   if (input.status !== undefined) updates.status = input.status;
 

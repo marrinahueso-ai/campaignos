@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import { VendorAddModal } from "@/components/vendors/VendorAddModal";
 import { VendorCard } from "@/components/vendors/VendorCard";
 import {
-  VENDORS_MIGRATION,
   VENDOR_DIRECTORY_TABS,
   VENDOR_PAGE_SIZE,
 } from "@/lib/vendors/constants";
@@ -165,7 +164,7 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
               Vendors
             </h1>
             <p className="mt-1.5 max-w-[48ch] text-sm leading-relaxed text-cos-muted">
-              Your school’s vendor directory — tap a card for the profile, or
+              Your organization’s vendor list — tap a card for the profile, or
               call / email right from the card.
             </p>
             {eventScoped && scopedEventTitle ? (
@@ -192,13 +191,6 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
             </button>
           )}
         </header>
-
-        {migrationNeeded && (
-          <div className="rounded-[18px] border border-[rgba(196,146,46,0.35)] bg-[rgba(196,146,46,0.12)] px-4 py-3 text-sm text-cos-text">
-            Apply migration <code className="text-xs">{VENDORS_MIGRATION}</code>{" "}
-            to enable the vendor directory database tables.
-          </div>
-        )}
 
         <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2.5">
           <label className="flex min-w-[12.5rem] max-w-[26rem] flex-1 items-center gap-2.5 rounded-full border border-cos-border bg-[#fffcf7] px-4 py-2.5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
@@ -245,7 +237,13 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
 
         {pageRows.length === 0 ? (
           <div className="rounded-[22px] border border-cos-border bg-cos-card px-6 py-10 text-center text-sm text-cos-muted shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
-            No vendors match your filters yet.
+            {migrationNeeded
+              ? "Vendors aren’t available yet. Try again later, or contact support if this keeps happening."
+              : data.vendors.length === 0
+                ? data.canWrite
+                  ? "No vendors yet. Add someone your team works with — caterers, photographers, printers, and more."
+                  : "No vendors yet. Ask a teammate with edit access to add the first one."
+                : "No vendors match your search or filters."}
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3.5">

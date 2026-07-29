@@ -86,7 +86,7 @@ export function OrganizationDefaultsPanel({
         {defaults.playbookSlug && (
           <div className="rounded-lg bg-cos-bg px-4 py-3">
             <dt className="text-xs font-medium uppercase tracking-wide text-cos-muted">
-              Playbook
+              Communication Plan
             </dt>
             <dd className="mt-1 text-sm font-medium text-cos-text">
               {formatPlaybookSlug(defaults.playbookSlug)}

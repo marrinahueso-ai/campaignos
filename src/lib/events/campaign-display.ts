@@ -137,7 +137,7 @@ export function buildSchoolYearFilterOptions(
   schoolYears: Array<{ id: string; label: string }>,
 ): { value: string; label: string }[] {
   return [
-    { value: "all", label: "All school years" },
+    { value: "all", label: "All years" },
     ...schoolYears.map((year) => ({ value: year.id, label: year.label })),
   ];
 }

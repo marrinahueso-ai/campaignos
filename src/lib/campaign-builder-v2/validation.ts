@@ -33,7 +33,7 @@ export function validateInspirationForGeneration(
     errors.push("Set the event date.");
   }
   if (!inspiration.playbookId?.trim()) {
-    errors.push("Select a playbook.");
+    errors.push("Select a communication plan.");
   }
 
   return {
@@ -87,10 +87,10 @@ export function validateMilestonesForGeneration(
       errors.push(`Milestone ${milestone.sortOrder + 1} needs a name.`);
     }
     if (!milestone.purpose?.trim()) {
-      errors.push(`"${milestone.name || "Milestone"}" needs a purpose.`);
+      errors.push(`"${milestone.name || "Post"}" needs a purpose.`);
     }
     if (!milestone.suggestedDate?.trim()) {
-      errors.push(`"${milestone.name || "Milestone"}" needs a suggested date.`);
+      errors.push(`"${milestone.name || "Post"}" needs a suggested date.`);
     }
   }
 
@@ -141,7 +141,7 @@ export interface SingleGenerationTargetResult {
 /**
  * Strictly resolves exactly one milestone eligible for generation.
  *
- * Every "generate content for this milestone" entry point must go through
+ * Every "generate content for this post" entry point must go through
  * this so a single, server-validated milestone (one that actually belongs to
  * the campaign's own milestone list) is ever targeted — never the whole
  * campaign, never a caller-supplied milestone that isn't part of this event.

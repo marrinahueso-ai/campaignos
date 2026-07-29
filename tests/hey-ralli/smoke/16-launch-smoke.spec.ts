@@ -137,11 +137,15 @@ test.describe("Launch smoke (nav + Create with AI landing)", () => {
     await expect(page).not.toHaveURL(/\/login/);
     const main = mainContent(page);
     await expect(
-      main.getByRole("heading", { name: /^create with ai$/i }),
+      main.getByRole("heading", { name: /^make social posts$/i }),
     ).toBeVisible({ timeout: 30_000 });
-    await expect(main.getByRole("heading", { name: /^home page$/i })).toBeVisible();
     await expect(
       main.getByRole("heading", { name: /^social media$/i }),
+    ).toBeVisible();
+    await expect(main.getByText(/^also available$/i)).toBeVisible();
+    await expect(main.getByRole("heading", { name: /^homepage$/i })).toBeVisible();
+    await expect(
+      main.getByRole("heading", { name: /^volunteer page$/i }),
     ).toBeVisible();
     await expect(main.getByRole("heading", { name: /^newsletter$/i })).toBeVisible();
   });

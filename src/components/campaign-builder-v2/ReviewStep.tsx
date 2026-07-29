@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils/cn";
 import type { ApprovalWorkflowStepStatus } from "@/lib/campaign-builder-v2/types";
 
 const REVIEW_TABS: Array<{ id: ReviewApprovalFilter; label: string }> = [
-  { id: "all", label: "All Milestones" },
+  { id: "all", label: "All posts" },
   { id: "needs-review", label: "Needs review" },
   { id: "approved", label: "Approved" },
   { id: "changes-requested", label: "Changes requested" },
@@ -114,7 +114,7 @@ export function ReviewStep() {
   const sendDisabledReason =
     eligibleSubmitMilestones.length === 0
       ? changesRequestedCount > 0
-        ? "Use Send for re-approval on each changes-requested milestone after edits."
+        ? "Use Send for re-approval on each changes-requested post after edits."
         : describeApprovalSubmitBlockers(
             sortedMilestones,
             session.previewContents,
@@ -124,7 +124,7 @@ export function ReviewStep() {
   async function handleSendForApproval() {
     if (eligibleSubmitMilestones.length === 0) {
       setActionMessage(
-        sendDisabledReason ?? "No milestones are ready to send for approval.",
+        sendDisabledReason ?? "No posts are ready to send for approval.",
       );
       return;
     }
@@ -332,7 +332,7 @@ export function ReviewStep() {
             Content must be approved before publishing. Creator → Committee Chair →
             VP Communications → Scheduled/Delivered. Changes-requested milestones
             can be edited (caption, schedule, artwork) and resent without
-            regenerating other milestones.
+            regenerating other posts.
             {actionMessage && (
               <span className="mt-1 block font-medium text-cos-text">
                 {actionMessage}

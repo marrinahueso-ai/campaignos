@@ -1,5 +1,5 @@
 /**
- * Playbook convention: negative = days before event, 0 = event day, positive = after.
+ * Communication Plan convention: negative = days before event, 0 = event day, positive = after.
  */
 export function playbookRelativeDay(
   eventDate: string,
@@ -24,7 +24,7 @@ export type AudienceFacingTiming = {
 
 /**
  * Translate playbook relative-day offsets into audience-facing countdown language.
- * Milestone names like "Two-Week Push" stay internal — this is what families should see.
+ * Post names like "Two-Week Push" stay internal — this is what families should see.
  *
  * First campaign milestone (sortOrder 0) is a first-time flyer: no countdown copy.
  */

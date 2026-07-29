@@ -72,7 +72,7 @@ export const CREATE_AI_SPEC = defineDemoSpec({
     },
     {
       id: "milestones",
-      label: "Milestones",
+      label: "Posts",
       start: 15.5,
       end: 20.0,
       description: "Stagger Save the Date, Final Reminder, Event Day.",
@@ -113,7 +113,7 @@ export const CREATE_AI_SPEC = defineDemoSpec({
       "Create with AI action",
       "Artwork",
       "Caption",
-      "Milestones",
+      "Posts",
       "Ready for Review",
     ],
     mobileSimplifications: [

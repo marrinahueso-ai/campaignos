@@ -20,7 +20,7 @@ Org-wide **Volunteers** (`/volunteers`) is documented in [volunteer-master.md](.
 1. **Connect** a public SignUpGenius URL → pending review snapshot (full link contents).
 2. **Review** detected dates with multi-select checkboxes (default: all dates + **No date** when undated rows exist). Summary cards and the assignment table update live for the selected subset.
 3. **Confirm** → filters the pending snapshot to the selected dates, stores a sticky allowlist on the source, and creates the Volunteer Overview.
-4. **Refresh / auto-refresh** re-reads the public page and **reapplies** the sticky allowlist so shared multi-date links stay event-scoped.
+4. **Refresh / auto-refresh** re-reads the public page and **reapplies** the sticky allowlist so shared multi-date links stay event-scoped. Background cron (`/api/cron/volunteer-sync`, every ~30 min) refreshes connected sources stale for ≥30 minutes (capped per run); Dashboard and Volunteer Master stay DB-only on load.
 5. **Replace link** disconnects (or clears) the prior source and starts a new review — the previous allowlist is **not** carried to a new URL.
 
 Confirm is disabled when nothing is selected or the selection matches zero assignments. Overnight slots filter by **start date** only.

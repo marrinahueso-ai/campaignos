@@ -50,11 +50,11 @@ export function MilestonePlanningPageHeader({
             Social media
           </p>
           <h1 className="font-display mt-1.5 text-3xl text-cos-text sm:text-[2.25rem] sm:leading-tight">
-            Milestone planning
+            Posts
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-cos-muted">
-            Plan and customize each social media milestone for this campaign. Add, remove, or
-            reorder milestones to match your strategy.
+            Plan and customize each social media post for this event. Add, remove, or
+            reorder posts to match your strategy.
           </p>
           <MilestonePlanningContextSelectors
             event={event}

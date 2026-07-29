@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { DashboardFocusRefresh } from "@/components/today/DashboardFocusRefresh";
 import { OnboardingChecklistCards } from "@/components/onboarding/OnboardingChecklistCards";
 import {
   DashboardOverview,
@@ -9,12 +10,15 @@ import { UpNextWidgetSuspense } from "@/components/today/UpNextWidgetSuspense";
 import { ApprovalsWidget } from "@/components/today/widgets/ApprovalsWidget";
 import { AttentionWidget } from "@/components/today/widgets/AttentionWidget";
 import { CalendarWidget } from "@/components/today/widgets/CalendarWidget";
+import { EventCoverageWidget } from "@/components/today/widgets/EventCoverageWidget";
 import { GoodNewsWidget } from "@/components/today/widgets/GoodNewsWidget";
 import { InsightsPulseWidget } from "@/components/today/widgets/InsightsPulseWidget";
+import { PostsThisWeekWidget } from "@/components/today/widgets/PostsThisWeekWidget";
 import { TasksWeekWidget } from "@/components/today/widgets/TasksWeekWidget";
 import { ThisWeekWidget } from "@/components/today/widgets/ThisWeekWidget";
 import { VolunteersWidget } from "@/components/today/widgets/VolunteersWidget";
 import { WaitingOnMeWidget } from "@/components/today/widgets/WaitingOnMeWidget";
+import { WaitingOnOthersWidget } from "@/components/today/widgets/WaitingOnOthersWidget";
 import { WeatherWidget } from "@/components/today/widgets/WeatherWidget";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getOnboardingChecklistForCurrentOrg } from "@/lib/onboarding/actions";
@@ -22,6 +26,7 @@ import { checklistNeedsAttention } from "@/lib/onboarding/state";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getInsightsPulseData } from "@/lib/insights/queries";
 import { getDashboardLayoutForCurrentUser } from "@/lib/today/dashboard-layout";
+import { getDashboardLibraryWidgetData } from "@/lib/today/dashboard-library-widgets";
 import { getDashboardRichListData } from "@/lib/today/dashboard-rich-widgets";
 import {
   layoutContainsWidget,
@@ -51,7 +56,7 @@ import { GraduationCap } from "lucide-react";
 export const metadata = {
   title: "Dashboard",
   description:
-    "Your Hey Ralli today view — next campaign actions and the week ahead.",
+    "Your Hey Ralli home — what needs you next and the week ahead.",
   alternates: {
     canonical: "/dashboard",
   },
@@ -130,6 +135,21 @@ async function InsightsPulseWidgetBlock() {
   return <InsightsPulseWidget data={data} />;
 }
 
+async function PostsThisWeekWidgetBlock() {
+  const data = await getDashboardLibraryWidgetData();
+  return <PostsThisWeekWidget data={data.postsWeek} />;
+}
+
+async function WaitingOnOthersWidgetBlock() {
+  const data = await getDashboardLibraryWidgetData();
+  return <WaitingOnOthersWidget data={data.waitingOthers} />;
+}
+
+async function EventCoverageWidgetBlock() {
+  const data = await getDashboardLibraryWidgetData();
+  return <EventCoverageWidget items={data.eventCoverage} />;
+}
+
 function buildWidgetNodes(
   organization: Organization,
   todayData: TodayPageData,
@@ -196,6 +216,56 @@ function buildWidgetNodes(
     );
   }
 
+  if (layoutContainsWidget(layout, "posts_week")) {
+    widgets.posts_week = (
+      <Suspense
+        fallback={
+          <PostsThisWeekWidget
+            data={{
+              mine: [],
+              everyone: {
+                scheduledThisWeek: 0,
+                needsApprovalFirst: 0,
+                goingOutToday: 0,
+              },
+            }}
+          />
+        }
+      >
+        <PostsThisWeekWidgetBlock />
+      </Suspense>
+    );
+  }
+
+  if (layoutContainsWidget(layout, "waiting_others")) {
+    widgets.waiting_others = (
+      <Suspense
+        fallback={
+          <WaitingOnOthersWidget
+            data={{
+              mine: [],
+              everyone: {
+                blockedApprovals: 0,
+                blockedTasks: 0,
+                overThreeDays: 0,
+              },
+            }}
+          />
+        }
+      >
+        <WaitingOnOthersWidgetBlock />
+      </Suspense>
+    );
+  }
+
+  if (layoutContainsWidget(layout, "event_coverage")) {
+    widgets.event_coverage = (
+      <Suspense fallback={<EventCoverageWidget items={[]} />}>
+        <EventCoverageWidgetBlock />
+      </Suspense>
+    );
+  }
+
   return widgets;
 }
 
@@ -228,6 +298,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="studio-page pb-12">
+      <DashboardFocusRefresh />
       <DashboardOverview
         initialLayout={layout}
         widgets={widgets}

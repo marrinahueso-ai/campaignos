@@ -56,7 +56,7 @@ export function CalendarSubscribeFeedPanel({
         return;
       }
 
-      setMessage("Calendar subscribe feed saved.");
+      setMessage("Calendar feed saved.");
       setActiveSchoolYear((current) =>
         current
           ? { ...current, calendarSubscribeUrl: subscribeUrl.trim() || null }
@@ -78,14 +78,14 @@ export function CalendarSubscribeFeedPanel({
       const result = await syncCalendarSubscribeFeedAction(activeSchoolYear.id);
 
       if (!result.success) {
-        setError(result.error ?? "Unable to sync calendar feed.");
+        setError(result.error ?? "Couldn't refresh the calendar feed.");
         return;
       }
 
       if (result.importId) {
         if (result.added === 0 && result.skipped > 0) {
           setMessage(
-            `Feed synced — all ${result.skipped} events are already on your calendar (no duplicates added).`,
+            `You're up to date — all ${result.skipped} events are already on your calendar.`,
           );
           router.refresh();
           return;
@@ -93,7 +93,7 @@ export function CalendarSubscribeFeedPanel({
 
         if (result.skipped > 0) {
           setMessage(
-            `Feed synced — ${result.added} new events ready to review (${result.skipped} already on calendar).`,
+            `${result.added} new events ready to review (${result.skipped} already on calendar).`,
           );
         }
 
@@ -101,7 +101,7 @@ export function CalendarSubscribeFeedPanel({
         return;
       }
 
-      setMessage("Calendar feed synced.");
+      setMessage("Calendar feed updated.");
       router.refresh();
     });
   }
@@ -118,7 +118,7 @@ export function CalendarSubscribeFeedPanel({
                 : "text-xl",
             )}
           >
-            Calendar subscribe feed
+            Calendar feed
           </h2>
           <p
             className={cn(
@@ -126,32 +126,30 @@ export function CalendarSubscribeFeedPanel({
               ease ? "max-w-[46ch] text-[13px]" : "text-sm",
             )}
           >
-            Paste your Google Calendar ICS (or webcal) URL. Save it, then sync —
-            existing events are skipped so refreshes do not duplicate. New events
-            also pull in daily at 6:00 AM UTC.
+            Paste your Google Calendar subscribe link. Save it, then refresh —
+            existing events are skipped so updates do not duplicate. New events
+            also pull in daily.
           </p>
           {activeSchoolYear ? (
             <p className="mt-1.5 text-xs font-semibold text-cos-muted">
-              Active school year: {activeSchoolYear.label}
+              Organization year: {activeSchoolYear.label}
             </p>
           ) : (
             <p className="mt-2 text-sm text-amber-800">
-              Finish school setup so an active school year exists before linking a
-              feed.
+              Set an organization year in Settings before linking a feed.
             </p>
           )}
         </div>
       ) : !activeSchoolYear ? (
         <p className="text-sm text-amber-800">
-          Finish school setup so an active school year exists before linking a
-          feed.
+          Set an organization year in Settings before linking a feed.
         </p>
       ) : null}
 
       {ease ? (
         <label className="block space-y-2">
           <span className="block text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-            Calendar subscribe feed (ICS URL)
+            Calendar feed URL
           </span>
           <input
             type="url"
@@ -162,16 +160,16 @@ export function CalendarSubscribeFeedPanel({
             className="h-11 w-full rounded-full border border-cos-border bg-[rgba(255,252,247,0.85)] px-4 text-[13px] text-cos-text placeholder:text-cos-muted focus:border-cos-text focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           />
           <span className="block text-xs text-cos-muted">
-            Optional — Google Calendar secret ICS address or webcal:// URL.
+            Optional — your Google Calendar private subscribe address.
           </span>
         </label>
       ) : (
         <Input
-          label="Calendar subscribe feed (ICS URL)"
+          label="Calendar feed URL"
           value={subscribeUrl}
           onChange={(event) => setSubscribeUrl(event.target.value)}
           placeholder="https://calendar.google.com/calendar/ical/..."
-          hint="Optional — Google Calendar secret ICS address or webcal:// URL."
+          hint="Optional — your Google Calendar private subscribe address."
           disabled={isPending || !activeSchoolYear}
         />
       )}
@@ -185,7 +183,7 @@ export function CalendarSubscribeFeedPanel({
               disabled={isPending || !activeSchoolYear}
               className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px disabled:opacity-50"
             >
-              {isPending ? "Saving…" : "Save subscribe feed"}
+              {isPending ? "Saving…" : "Save feed"}
             </button>
             <button
               type="button"
@@ -193,7 +191,7 @@ export function CalendarSubscribeFeedPanel({
               disabled={isPending || !activeSchoolYear || !canSyncFeed}
               className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px disabled:opacity-50"
             >
-              {isPending ? "Syncing…" : "Sync calendar feed now"}
+              {isPending ? "Refreshing…" : "Refresh calendar feed"}
             </button>
           </>
         ) : (
@@ -205,7 +203,7 @@ export function CalendarSubscribeFeedPanel({
               onClick={handleSaveSubscribeUrl}
               disabled={isPending || !activeSchoolYear}
             >
-              {isPending ? "Saving…" : "Save subscribe feed"}
+              {isPending ? "Saving…" : "Save feed"}
             </Button>
             <Button
               type="button"
@@ -213,7 +211,7 @@ export function CalendarSubscribeFeedPanel({
               onClick={handleSyncSubscribeFeed}
               disabled={isPending || !activeSchoolYear || !canSyncFeed}
             >
-              {isPending ? "Syncing…" : "Sync calendar feed now"}
+              {isPending ? "Refreshing…" : "Refresh calendar feed"}
             </Button>
           </>
         )}
@@ -221,7 +219,7 @@ export function CalendarSubscribeFeedPanel({
 
       {!canSyncFeed && subscribeUrl.trim() && activeSchoolYear ? (
         <p className="text-xs text-cos-muted">
-          Save the feed URL before syncing.
+          Save the feed URL before refreshing.
         </p>
       ) : null}
 

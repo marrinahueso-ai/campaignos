@@ -317,8 +317,8 @@ export function InspirationStep() {
                 Creative Setup
               </h2>
               <p className="mt-1.5 max-w-xl text-sm text-cos-muted">
-                Brand logos from Setup, inspiration, and a playbook that maps
-                your milestones. You’re in control.
+                Brand logos from Setup, inspiration, and a communication plan that maps
+                your posts. You’re in control.
               </p>
             </div>
           </header>
@@ -343,7 +343,7 @@ export function InspirationStep() {
               onChange={(e) => updateInspiration({ eventDate: e.target.value })}
             />
             <Select
-              label="Playbook"
+              label="Communication Plan"
               value={inspiration.playbookId}
               disabled={isUpdatingPlaybook}
               onChange={(e) => {
@@ -356,7 +356,7 @@ export function InspirationStep() {
                     if (!result.success) {
                       setPlaybookError(
                         result.message ??
-                          "Could not update playbook milestones.",
+                          "Could not update communication plan posts.",
                       );
                     }
                   } finally {
@@ -376,7 +376,7 @@ export function InspirationStep() {
           {session.milestones.length > 0 ? (
             <div className="rounded-[14px] border border-[rgba(47,159,179,0.25)] bg-[#f3fbfc] p-3">
               <p className="mb-2 text-[11px] font-extrabold tracking-[0.05em] text-[#1a6574] uppercase">
-                Playbook maps to {session.milestones.length} milestones
+                Communication plan maps to {session.milestones.length} posts
               </p>
               <ul className="space-y-1.5">
                 {session.milestones.slice(0, 6).map((m) => (
@@ -754,8 +754,8 @@ export function InspirationStep() {
                         mode: "organization_palette" as const,
                         label: "Organization palette",
                         hint: hasSchoolColors
-                          ? "Use saved school colors"
-                          : "No school colors saved",
+                          ? "Use saved brand colors"
+                          : "No brand colors saved",
                         disabled: !hasSchoolColors,
                       },
                       {
@@ -909,7 +909,7 @@ export function InspirationStep() {
                       <div className="flex items-center justify-between bg-white px-3 py-2.5 text-xs font-bold text-[#111]">
                         <span className="inline-flex items-center gap-2">
                           <span className="h-[22px] w-[22px] rounded-full bg-[linear-gradient(145deg,#c4922e,#f5e6c2)]" />
-                          edmondsonpto
+                          yourteam
                         </span>
                         ···
                       </div>
@@ -952,13 +952,13 @@ export function InspirationStep() {
                         </div>
                       </div>
                       <div className="bg-white px-3 py-2.5 text-[11px] text-[#444]">
-                        <p className="mb-1 font-bold text-[#222]">♡ Liked by families</p>
+                        <p className="mb-1 font-bold text-[#222]">♡ Liked by your community</p>
                         <p>
-                          <strong>edmondsonpto</strong>{" "}
+                          <strong>yourteam</strong>{" "}
                           {summary.voiceTone !== "None"
                             ? `${summary.voiceTone} — `
                             : ""}
-                          Soft CTA, parent-friendly.
+                          Soft CTA, warm and clear.
                         </p>
                       </div>
                     </div>
@@ -1032,7 +1032,7 @@ export function InspirationStep() {
         onContinue={() => {
           void handleSaveAndContinue();
         }}
-        continueLabel="Save → Milestones"
+        continueLabel="Save → Posts"
         continueLoading={isContinuing || isSaving}
       />
 

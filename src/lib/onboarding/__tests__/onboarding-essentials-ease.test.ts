@@ -30,7 +30,7 @@ describe("Onboarding Ease page 2 — Calendar & brand", () => {
     assert.match(ease, /Calendar &amp; brand|Calendar & brand/);
     assert.match(ease, /Optional · about 2 minutes/);
     assert.match(ease, /Two helpful extras for/);
-    assert.match(ease, /Import school calendar/);
+    assert.match(ease, /Import calendar/);
     assert.match(ease, /Brand basics/);
     assert.match(ease, /Skip calendar/);
     assert.match(ease, /Skip brand/);

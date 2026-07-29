@@ -264,7 +264,7 @@ export function CampaignPublishedStep({
         <PublishedScheduledMilestones eventId={eventId} bundles={scheduledBundles} />
 
         <MilestoneSection
-          title="Published milestones"
+          title="Published posts"
           description="Meta feed and story posts that have gone live for this event."
           bundles={publishedBundles}
           section="published"

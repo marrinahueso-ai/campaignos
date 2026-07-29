@@ -129,7 +129,7 @@ export function TeamAccessCommitteeDetailDrawer({
           {committee.playbookSlug ? (
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-cos-muted">
-                Playbook
+                Communication Plan
               </p>
               <Link
                 href={`/settings/playbooks-milestones`}

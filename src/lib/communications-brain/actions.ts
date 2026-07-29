@@ -25,7 +25,7 @@ export async function generateStepDraftAction(
     return {
       error:
         result.error ??
-        "Unable to generate draft. Assign a playbook with saved timeline steps first.",
+        "Unable to generate draft. Assign a communication plan with saved posts first.",
       success: false,
     };
   }

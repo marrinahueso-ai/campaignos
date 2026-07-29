@@ -43,4 +43,11 @@ describe("calendar ease UI contracts", () => {
     assert.match(shell, /CalendarComingUpEase/);
     assert.doesNotMatch(panel, /Coming up/);
   });
+
+  it("exposes shared search on month, week, and best-times", () => {
+    assert.match(panel, /Search events, times, dates/);
+    assert.match(shell, /filterCalendarItemsBySearch/);
+    assert.match(shell, /searchQuery/);
+    assert.match(panel, /SHOW_CALENDAR_SEARCH/);
+  });
 });

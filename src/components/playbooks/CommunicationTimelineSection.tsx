@@ -157,7 +157,7 @@ export function CommunicationTimelineSection({
 
       {steps.length === 0 ? (
         <p className="px-6 pb-6 text-sm text-cos-muted">
-          Assign a communication playbook to see your campaign timeline steps.
+          Assign a communication plan to see your campaign timeline steps.
         </p>
       ) : (
       <div className="relative space-y-0 px-6 pb-6">
@@ -227,7 +227,7 @@ export function CommunicationTimelineSection({
                         ? (aiStatus.reason ?? undefined)
                         : canGenerate
                           ? undefined
-                          : "Assign a live playbook to generate storable drafts"
+                          : "Assign a live communication plan to generate storable drafts"
                     }
                   >
                     <Sparkles className="h-4 w-4" />

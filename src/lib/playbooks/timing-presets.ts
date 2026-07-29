@@ -1,5 +1,5 @@
 /**
- * Default countdown schedules for playbook assignment and Meta publishing.
+ * Default countdown schedules for communication plan assignment and Meta publishing.
  * Product reference: docs/product/blueprints/06_COMMUNICATION_PLAYBOOK.md → Implemented Timing Presets (Application v1)
  */
 import type { CommunicationStrategy } from "@/types/communication-strategy";

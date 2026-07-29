@@ -253,7 +253,7 @@ export function VendorAddModal({
   function handleLinkExisting() {
     if (!existingVendorId) {
       setError(
-        "Could not identify the existing vendor to link. Close and use Add Existing, or change the email.",
+        "Could not identify the existing vendor to link. Close and use Add existing, or change the email.",
       );
       return;
     }
@@ -266,7 +266,7 @@ export function VendorAddModal({
         resetAndClose();
       } catch (linkError) {
         console.error("Link existing vendor failed:", linkError);
-        setError("Unable to link existing vendor. Please try Add Existing instead.");
+        setError("Unable to link existing vendor. Try Add existing instead.");
       }
     });
   }
@@ -281,7 +281,7 @@ export function VendorAddModal({
       >
         <div className="border-b border-cos-border px-6 py-4">
           <h2 id="add-vendor-title" className="font-display text-2xl text-cos-text">
-            Add Vendor
+            Add vendor
           </h2>
           <StepIndicator step={step} />
         </div>
@@ -446,7 +446,7 @@ export function VendorAddModal({
                     })}
                   </div>
                   {selectedEventIds.length > 0 ? (
-                    <Field label="Assignment status">
+                    <Field label="Status on this event">
                       <VendorFieldSelect
                         value={form.assignmentStatus ?? "confirmed"}
                         onChange={(value) =>
@@ -608,7 +608,7 @@ export function VendorAddModal({
                       ? "Saving..."
                       : selectedEventIds.length > 0
                         ? `Create & link (${selectedEventIds.length})`
-                        : "Create Vendor"}
+                        : "Create vendor"}
                   </Button>
                 )}
               </>

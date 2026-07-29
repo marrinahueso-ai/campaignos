@@ -23,7 +23,7 @@ export function MilestoneStepProgressIcons({
   return (
     <span
       className={cn("inline-flex shrink-0 items-center gap-1", className)}
-      aria-label="Milestone step progress"
+      aria-label="Post step progress"
     >
       {STEP_ICONS.map((step) => {
         const complete = progress[step.key];

@@ -13,19 +13,19 @@ import type {
 import { cn } from "@/lib/utils/cn";
 
 const DELIVERY_OPTIONS = [
-  ["publish-now", "Publish Now"],
-  ["schedule", "Schedule to publish"],
+  ["publish-now", "Publish now"],
+  ["schedule", "Schedule for later"],
   ["manual-email", "Email me for manual upload"],
   ["draft-only", "Save as draft only"],
 ] as const;
 
 const FORMAT_BLURBS: Partial<Record<PlatformFormat, string>> = {
-  "facebook-feed": "Auto-post after approval",
-  "facebook-story": "Vertical · Meta story",
-  "instagram-feed": "Square artwork + caption",
-  "instagram-story": "Auto story via Meta",
+  "facebook-feed": "Square · Facebook",
+  "facebook-story": "Vertical · Facebook",
+  "instagram-feed": "Square · Instagram",
+  "instagram-story": "Vertical · Meta story",
   "instagram-story-manual":
-    "Email kit at schedule time — add music, stickers, link stickers yourself",
+    "Email kit at send time — add music, stickers, link stickers yourself",
 };
 
 function formatScheduleDate(dateStr: string, timeStr: string): string {
@@ -98,6 +98,9 @@ export function PreviewSettingsPanel({
       <div ref={dropRef} className="relative space-y-2">
         <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
           Platforms &amp; formats
+        </p>
+        <p className="text-xs text-cos-muted">
+          Facebook and Instagram posts go out automatically after approval.
         </p>
         <button
           type="button"
@@ -172,7 +175,7 @@ export function PreviewSettingsPanel({
 
       <fieldset className="space-y-2">
         <legend className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-          Delivery method
+          When to publish
         </legend>
         {DELIVERY_OPTIONS.map(([value, label]) => (
           <label key={value} className="flex items-center gap-2 text-sm">
@@ -196,8 +199,7 @@ export function PreviewSettingsPanel({
         {(preview.deliveryMethod === "publish-now" ||
           preview.deliveryMethod === "auto-publish") && (
           <p className="text-xs text-cos-muted">
-            Posts to Facebook/Instagram as soon as this milestone is approved —
-            not later via schedule or overnight cron.
+            Goes out right after approval.
           </p>
         )}
       </fieldset>
@@ -242,9 +244,9 @@ export function PreviewSettingsPanel({
           </p>
           <p className="text-xs text-cos-muted">
             After approval, Resend queues the story kit (image link, caption, and
-            Instagram link) to arrive at this send time. Keep Delivery as
-            &quot;Schedule to publish&quot; when feed should still auto-post to
-            Meta — Send-to alone does not cancel feed scheduling.
+            Instagram link) to arrive at this send time. Keep &quot;Schedule for
+            later&quot; when feed should still auto-post to Meta — Send-to alone
+            does not cancel feed scheduling.
           </p>
           <Input
             label="Email send date"
@@ -292,7 +294,7 @@ export function PreviewSettingsPanel({
             size="sm"
             onClick={onClearGeneratedContent}
           >
-            Clear this milestone
+            Clear this post
           </Button>
           {clearMessage ? (
             <p className="text-xs text-cos-muted">{clearMessage}</p>

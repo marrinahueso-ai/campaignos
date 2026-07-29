@@ -64,7 +64,7 @@ export const CHANNEL_COLORS: Record<
 };
 
 export const ITEM_TYPE_LABELS: Record<PlanningItemType, string> = {
-  event: "PTO Event",
+  event: "Event",
   timeline_task: "Timeline Task",
   draft: "Draft",
   artwork: "Artwork",

@@ -33,7 +33,7 @@ test.describe("Preview generation and captions", () => {
 
     const main = mainContent(page);
     const generateButtons = main.getByRole("button", {
-      name: /generate (this )?milestone|generate artwork|create artwork/i,
+      name: /generate (this )?post|generate artwork|create artwork/i,
     });
     test.skip(
       (await generateButtons.count()) === 0,

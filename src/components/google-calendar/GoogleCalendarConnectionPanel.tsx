@@ -62,7 +62,7 @@ export function GoogleCalendarConnectionPanel({
     startSyncTransition(async () => {
       const result = await syncGoogleCalendarAction();
       if (!result.success) {
-        setError(result.error ?? "Sync failed.");
+        setError(result.error ?? "Couldn't refresh the calendar.");
         return;
       }
       if ((result.added ?? 0) === 0) {
@@ -105,7 +105,7 @@ export function GoogleCalendarConnectionPanel({
             ease ? "max-w-[46ch] text-[13px]" : "text-sm",
           )}
         >
-          Sign in with Google and approve calendar access. We sync events into
+          Sign in with Google and allow calendar access. We bring events into
           review right away — confirm them and they appear on Calendar and your
           dashboard.
         </p>
@@ -150,8 +150,9 @@ export function GoogleCalendarConnectionPanel({
             ease ? "max-w-[46ch] text-[13px]" : "text-sm",
           )}
         >
-          Sync pulls upcoming events into review. Confirmed dates show on
-          Calendar and Today. We also refresh daily in the background.
+          Refresh brings upcoming events into review. Confirmed dates show on
+          Calendar and Today. We also check for new dates daily in the
+          background.
         </p>
       </div>
 
@@ -163,7 +164,7 @@ export function GoogleCalendarConnectionPanel({
             onClick={handleSync}
             className={primaryBtn}
           >
-            {isSyncing ? "Syncing…" : "Sync calendar"}
+            {isSyncing ? "Refreshing…" : "Refresh calendar"}
           </button>
         ) : (
           <Button
@@ -171,14 +172,14 @@ export function GoogleCalendarConnectionPanel({
             disabled={isSyncing || isPending || !hasActiveSchoolYear}
             onClick={handleSync}
           >
-            {isSyncing ? "Syncing…" : "Sync calendar"}
+            {isSyncing ? "Refreshing…" : "Refresh calendar"}
           </Button>
         )}
       </div>
 
       {!hasActiveSchoolYear ? (
         <p className="text-sm text-amber-800">
-          Set an active school year in School Setup before syncing.
+          Set an organization year in Settings before refreshing.
         </p>
       ) : null}
 

@@ -58,7 +58,7 @@ export function SettingsTab({
         <CardHeader>
           <CardTitle>Calendar & campaigns</CardTitle>
           <CardDescription>
-            This event appears on the school calendar
+            This event appears on the organization calendar
             {hasCampaign ? " with an active communication campaign." : "."}
           </CardDescription>
         </CardHeader>

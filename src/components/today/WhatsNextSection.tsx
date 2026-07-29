@@ -15,7 +15,7 @@ export function WhatsNextSection({ whatsNext, artwork }: WhatsNextSectionProps) 
   const eventTitle = display.event ?? whatsNext.title;
   const showArtwork = hasDisplayableArtwork(artwork);
   const imageUrl = showArtwork ? artwork!.imageUrl : null;
-  const ctaLabel = whatsNext.ctaLabel ?? "Open campaign";
+  const ctaLabel = whatsNext.ctaLabel ?? "Open event";
   const metaParts = [display.action, display.due].filter(Boolean) as string[];
 
   return (

@@ -19,7 +19,7 @@ export type HomepageBlurbContext = {
 
 export function buildHomepageBlurbSystemPrompt(): string {
   return [
-    "You write short parent-facing blurbs for school PTO homepage cards.",
+    "You write short visitor-facing blurbs for organization homepage cards.",
     "Write at most 2 sentences — never more.",
     "Warm, welcoming, and clear. No corporate marketing fluff, no hashtags, no emoji.",
     "Return only the blurb text — no headings, labels, markdown, or preamble.",
@@ -33,8 +33,8 @@ export function buildHomepageBlurbUserPrompt(
   const seed = input.seedNotes.trim();
   const lines = [
     seed
-      ? "Rewrite the notes below into a short homepage card blurb for families."
-      : "Write a short homepage card blurb for families from the card context below.",
+      ? "Rewrite the notes below into a short homepage card blurb for your community."
+      : "Write a short homepage card blurb for your community from the card context below.",
     "",
     "CARD CONTEXT",
     `- Title: ${input.title.trim() || "(untitled)"}`,
@@ -50,8 +50,8 @@ export function buildHomepageBlurbUserPrompt(
     "",
     "ORGANIZATION BRAND VOICE",
     input.organizationName
-      ? `- School / organization: ${input.organizationName}`
-      : "- School / organization: (not provided)",
+      ? `- Organization: ${input.organizationName}`
+      : "- Organization: (not provided)",
     `- Voice guidance: ${input.brandVoiceSummary}`,
     "",
     "NOTES / SEED",
@@ -59,7 +59,7 @@ export function buildHomepageBlurbUserPrompt(
     "",
     "BLURB REQUIREMENTS",
     "- HARD LIMIT: 1 or 2 sentences total. Stop after the second sentence.",
-    "- Parent-facing homepage copy — invite interest, not a full announcement.",
+    "- Visitor-facing homepage copy — invite interest, not a full announcement.",
     "- Do NOT invent dates, times, locations, or logistics not supported above.",
     "- Do NOT open with 'Save the date' or 'Friendly reminder'.",
     "- Keep it under ~160 characters when possible.",

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
 import type { CalendarLayerColorMap } from "@/components/unified-calendar/CalendarLayerColorsContext";
 import {
@@ -27,6 +27,11 @@ const VIEW_OPTIONS: { value: PlanningCalendarView; label: string; heat?: boolean
     { value: "review", label: "Review" },
   ];
 
+const SHOW_CALENDAR_SEARCH = new Set<PlanningCalendarView>([
+  "month",
+  "week",
+  "best-times",
+]);
 const HIDE_LAYERS = new Set<PlanningCalendarView>([
   "import-list",
   "import",
@@ -50,6 +55,8 @@ interface UnifiedCalendarControlPanelProps {
   activeLayers: Set<CalendarLayerId>;
   layerColors?: CalendarLayerColorMap;
   layerColorOverrides?: CalendarLayerColors;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
   showImportList?: boolean;
   postingHeatmap?: PostingHeatmapData | null;
   /** Kept for marketing previews; Best times is first-class now. */
@@ -70,6 +77,8 @@ export function UnifiedCalendarControlPanel({
   activeLayers,
   layerColors = DEFAULT_CALENDAR_LAYER_COLORS,
   layerColorOverrides = {},
+  searchQuery = "",
+  onSearchQueryChange,
   showImportList = true,
   postingHeatmap = null,
   onViewChange,
@@ -102,6 +111,8 @@ export function UnifiedCalendarControlPanel({
   const showLayers = !HIDE_LAYERS.has(view);
   const showPeriod = SHOW_PERIOD_NAV.has(view);
   const showPeriodLabel = !HIDE_PERIOD_LABEL.has(view);
+  const showSearch =
+    SHOW_CALENDAR_SEARCH.has(view) && onSearchQueryChange != null;
 
   return (
     <div className="space-y-4">
@@ -111,8 +122,8 @@ export function UnifiedCalendarControlPanel({
             Calendar
           </h1>
           <p className="mt-1.5 max-w-md text-sm leading-relaxed text-cos-muted">
-            One quiet place for school events, scheduled posts, and the best
-            times to reach families.
+            One quiet place for organization events, scheduled posts, and the
+            best times to reach your community.
           </p>
         </div>
         {!compact ? (
@@ -217,6 +228,20 @@ export function UnifiedCalendarControlPanel({
         </div>
       ) : null}
 
+      {showSearch ? (
+        <label className="relative block w-full max-w-md">
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => onSearchQueryChange(event.target.value)}
+            placeholder="Search events, times, dates…"
+            aria-label="Search events, times, and dates"
+            className="w-full rounded-full border border-cos-border bg-cos-card py-2 pr-3 pl-9 text-[13px] text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
+          />
+        </label>
+      ) : null}
+
       {showPeriod ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -268,7 +293,7 @@ export function UnifiedCalendarControlPanel({
           <strong className="font-display text-[15px] font-semibold text-cos-text">
             Best times to post
           </strong>
-          <span>Darker = families more likely to see posts</span>
+          <span>Darker = people more likely to see posts</span>
           <span
             className="inline-flex h-2.5 w-[88px] overflow-hidden rounded-full border border-cos-border"
             aria-hidden

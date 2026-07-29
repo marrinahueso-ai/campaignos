@@ -65,7 +65,7 @@ export function defaultHeader(
 export function defaultFooter(
   organizationName?: string | null,
 ): VolunteerFooterConfig {
-  const org = organizationName?.trim() || "our families";
+  const org = organizationName?.trim() || "our organization";
   return {
     ctaTitle: `Thank you for giving your time to ${org}.`,
     ctaBody: "Questions? Reach out to your volunteer chair — we’re glad you’re here.",
@@ -81,7 +81,7 @@ export function defaultOpportunitiesSectionTitle(): string {
 }
 
 export function defaultOpportunitiesSectionSub(): string {
-  return "New opportunities are added throughout the school year. Select an open role to sign up.";
+  return "New opportunities are added throughout the year. Select an open role to sign up.";
 }
 
 const DEFAULT_EMOJIS = ["🤝", "🍎", "📚", "🎉", "🚌", "☕", "🙌", "⭐"];
@@ -142,7 +142,7 @@ function capitalizeHowToLine(line: string): string {
   return `${strong} — ${capped}`;
 }
 
-/** Soften vendor names in default how-to detail for parent-facing pages. */
+/** Soften vendor names in default how-to detail for visitor-facing pages. */
 function softenHowToVendorCopy(line: string): string {
   return line.replace(
     /\bAdd your name on SignUpGenius\.?/i,

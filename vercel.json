@@ -10,7 +10,11 @@
     },
     {
       "path": "/api/cron/meta-publish",
-      "schedule": "0 14 * * *"
+      "schedule": "*/20 * * * *"
+    },
+    {
+      "path": "/api/cron/volunteer-sync",
+      "schedule": "*/30 * * * *"
     },
     {
       "path": "/api/cron/story-post-reminders",

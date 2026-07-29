@@ -162,7 +162,7 @@ export const PERMISSION_MATRIX: PermissionRow[] = [
   },
   {
     id: "edit_playbooks",
-    label: "Edit playbooks",
+    label: "Edit communication plans",
     levels: {
       owner: "allowed",
       president: "allowed",

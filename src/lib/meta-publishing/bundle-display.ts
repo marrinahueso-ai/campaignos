@@ -157,12 +157,12 @@ function resolveReviewPublishActionBlockedMessage(
   const primary = focusBundles[0];
   if (!primary) {
     return action === "schedule"
-      ? "No milestones are ready to schedule yet."
+      ? "No posts are ready to schedule yet."
       : "Nothing ready to publish yet.";
   }
 
   if (["published", "posting"].includes(primary.status)) {
-    return "This milestone has already been published.";
+    return "This post has already been published.";
   }
 
   if (!bundleHasPublishPath(primary)) {
@@ -176,7 +176,7 @@ function resolveReviewPublishActionBlockedMessage(
   }
 
   return action === "schedule"
-    ? "No milestones are ready to schedule yet."
+    ? "No posts are ready to schedule yet."
     : "Nothing ready to publish yet.";
 }
 

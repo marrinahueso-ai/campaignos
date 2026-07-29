@@ -150,7 +150,7 @@ function pickRicherPreview(
 /**
  * Prefer preview rows that carry generated artwork when server and local diverge.
  * When one side has richer generated content, also prefer that side's milestone
- * list — otherwise a stale server milestone list (different IDs after a playbook
+ * list — otherwise a stale server milestone list (different IDs after a communication plan
  * rebuild) silently orphans local artwork and the next hydrate writes it away.
  */
 function milestoneIdentityKey(
@@ -184,7 +184,7 @@ export function milestonesAreSubsetOf(
  * True when local and server disagree on which milestones exist (deletes,
  * adds, or playbook rebuild IDs). Intentional deletes (local is a subset of
  * server ids) win even when deleted rows held artwork — richness must not
- * resurrect removed milestones. Playbook rebuild / new ids still require
+ * resurrect removed milestones. Communication Plan rebuild / new ids still require
  * local to be at least as rich.
  */
 export function localHasAuthoritativeMilestoneStructure(

@@ -73,7 +73,7 @@ export function ArtworkV2ApprovedScreen({
         </button>
         <p className="studio-eyebrow">Approved</p>
         <h2 className="font-display mt-2 text-3xl text-cos-text sm:text-4xl">
-          {milestoneComplete ? "Milestone artwork complete" : "Artwork approved"}
+          {milestoneComplete ? "Post artwork complete" : "Artwork approved"}
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
           {milestoneComplete
@@ -90,7 +90,7 @@ export function ArtworkV2ApprovedScreen({
               <CardTitle>{itemLabel}</CardTitle>
               <CardDescription>
                 {milestoneComplete
-                  ? "Feed and story formats are approved for this milestone."
+                  ? "Feed and story formats are approved for this post."
                   : "This artwork is approved and ready to use."}
               </CardDescription>
             </div>

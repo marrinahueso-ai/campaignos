@@ -123,12 +123,15 @@ describe("vendors ease UI contracts", () => {
     assert.match(directory, /VENDOR_DIRECTORY_TABS/);
     assert.match(directory, /Vendor directory tabs/);
     assert.match(directory, /Add vendor/);
+    assert.match(directory, /Your organization.?s vendor list/);
     // Mockup btn-primary: ink pill, not secondary/outline Button chrome.
     assert.match(directory, /bg-\[#2a2622\].*text-\[#fffcf7\]|bg-\[#2a2622\][\s\S]*text-\[#fffcf7\]/);
     assert.doesNotMatch(directory, /from \"@\/components\/ui\/Button\"/);
     assert.doesNotMatch(directory, /Filter by category/);
     assert.doesNotMatch(directory, /All Statuses/);
     assert.doesNotMatch(directory, /VendorDirectorySummaryCards/);
+    assert.doesNotMatch(directory, /school.?s|School Setup|Apply migration|VENDORS_MIGRATION/);
+    assert.doesNotMatch(vendorActions, /School Setup|Only admins/);
   });
 
   it("puts Call / Email / Website one-tap actions on directory cards", () => {

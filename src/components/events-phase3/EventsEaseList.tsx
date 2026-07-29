@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { ArtworkHoverThumbnail, ArtworkPreviewActions } from "@/components/artwork/ArtworkHoverThumbnail";
 import {
   formatEventsHomeMonthLabel,
   matchesEventsHomeSummary,
@@ -27,21 +27,13 @@ export type EventsHomeResponsiblePerson = {
   organizationTitle: string | null;
 };
 
-export type EventsEaseLens =
-  | "upcoming"
-  | "needs_setup"
-  | "ready_to_run"
-  | "needs_follow_up"
-  | "done"
-  | "month"
-  | "all";
+export type EventsEaseLens = "upcoming" | "next_month" | "all";
 
 export function easeLensToSummary(
   lens: EventsEaseLens,
 ): EventsHomeSummaryKey | "all" {
   if (lens === "upcoming") return "next_60_days";
-  if (lens === "month" || lens === "all") return "all";
-  return lens;
+  return "all";
 }
 
 export function eventStatusTone(
@@ -103,10 +95,12 @@ function ArtThumb({
   event,
   artwork,
   className,
+  compact = false,
 }: {
   event: Event;
   artwork: HeroArtworkSelection | null;
   className?: string;
+  compact?: boolean;
 }) {
   const resolved = resolveEventsHomeListArtwork(event, artwork);
   const url =
@@ -115,24 +109,14 @@ function ArtThumb({
       : null;
 
   return (
-    <span
-      className={cn(
-        "relative block overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
-        className,
-      )}
-    >
-      {url ? (
-        <Image
-          key={url}
-          src={url}
-          alt=""
-          fill
-          className="object-cover"
-          sizes="120px"
-          unoptimized
-        />
-      ) : null}
-    </span>
+    <ArtworkHoverThumbnail
+      imageUrl={url}
+      alt={`${event.title} artwork`}
+      downloadName={event.title}
+      className={className}
+      compact={compact}
+      sizes={compact ? "56px" : "120px"}
+    />
   );
 }
 
@@ -140,12 +124,10 @@ export function EventsEaseFocusCard({
   event,
   today,
   artwork,
-  responsible,
 }: {
   event: Event;
   today: string;
   artwork: HeroArtworkSelection | null;
-  responsible: EventsHomeResponsiblePerson;
 }) {
   const tone = eventStatusTone(event, today);
   const resolved = resolveEventsHomeListArtwork(event, artwork);
@@ -153,16 +135,9 @@ export function EventsEaseFocusCard({
     hasDisplayableArtwork(resolved) && resolved?.imageUrl
       ? resolved.imageUrl
       : null;
-  const type = typeLabel(event);
-  const story =
-    event.status === "draft"
-      ? "Artwork and social may still be open. Jump into Create with AI or finish setup on the event."
-      : event.status === "scheduled"
-        ? "Scheduled and on the horizon. Open the event or make something with AI."
-        : "Open the event to review details, or create a piece in Create with AI.";
 
   return (
-    <article className="relative isolate flex min-h-[300px] flex-col justify-end overflow-hidden rounded-[22px] border border-cos-border text-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+    <article className="group relative isolate flex min-h-[260px] flex-col justify-end overflow-hidden rounded-[22px] border border-cos-border text-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
       <div
         className="absolute inset-0 -z-10 bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#c4922e]"
         aria-hidden
@@ -175,9 +150,19 @@ export function EventsEaseFocusCard({
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(20,28,24,0.92)] via-[rgba(20,28,24,0.55)] to-[rgba(20,28,24,0.18)]" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(20,28,24,0.92)] via-[rgba(20,28,24,0.55)] to-[rgba(20,28,24,0.18)]" />
       </div>
-      <div className="flex flex-col gap-3 p-7">
+      {url ? (
+        <div className="absolute top-4 right-4 z-20 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+          <ArtworkPreviewActions
+            imageUrl={url}
+            alt={`${event.title} artwork`}
+            downloadName={event.title}
+            floating
+          />
+        </div>
+      ) : null}
+      <div className="flex flex-col gap-2.5 p-7">
         <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-[rgba(255,252,247,0.78)]">
           <span
             className={cn(
@@ -190,12 +175,6 @@ export function EventsEaseFocusCard({
             {tone.label}
           </span>
           <span>{countdownFromToday(event.date, today)}</span>
-          {type ? (
-            <>
-              <span aria-hidden>·</span>
-              <span>{type}</span>
-            </>
-          ) : null}
         </div>
         <h2 className="max-w-[18ch] font-display text-[clamp(28px,3.5vw,36px)] tracking-[-0.02em] text-cos-card">
           {event.title}
@@ -207,11 +186,6 @@ export function EventsEaseFocusCard({
             day: "numeric",
             year: "numeric",
           })}
-          {" · "}
-          {responsible.displayName}
-        </p>
-        <p className="max-w-[36ch] text-sm leading-relaxed text-[rgba(255,252,247,0.78)]">
-          {story}
         </p>
         <div className="mt-1 flex flex-wrap gap-2">
           <Link
@@ -225,18 +199,6 @@ export function EventsEaseFocusCard({
             className="inline-flex items-center rounded-full border border-[rgba(255,252,247,0.28)] bg-[rgba(255,252,247,0.12)] px-3.5 py-2.5 text-xs font-bold text-cos-card backdrop-blur-sm transition hover:bg-[rgba(255,252,247,0.22)]"
           >
             Social
-          </Link>
-          <Link
-            href="/homepage-composer"
-            className="inline-flex items-center rounded-full border border-[rgba(255,252,247,0.28)] bg-[rgba(255,252,247,0.12)] px-3.5 py-2.5 text-xs font-bold text-cos-card backdrop-blur-sm transition hover:bg-[rgba(255,252,247,0.22)]"
-          >
-            Homepage
-          </Link>
-          <Link
-            href="/newsletter-composer"
-            className="inline-flex items-center rounded-full border border-[rgba(255,252,247,0.28)] bg-[rgba(255,252,247,0.12)] px-3.5 py-2.5 text-xs font-bold text-cos-card backdrop-blur-sm transition hover:bg-[rgba(255,252,247,0.22)]"
-          >
-            Newsletter
           </Link>
         </div>
       </div>
@@ -257,13 +219,13 @@ export function EventsEaseAheadCard({
 }) {
   const tone = eventStatusTone(event, today);
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="grid min-h-[100px] flex-1 grid-cols-[88px_1fr] overflow-hidden rounded-[18px] border border-cos-border bg-cos-card text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)]"
-    >
+    <div className="grid min-h-[100px] flex-1 grid-cols-[88px_1fr] overflow-hidden rounded-[18px] border border-cos-border bg-cos-card text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)]">
       <ArtThumb event={event} artwork={artwork} className="h-full min-h-[100px]" />
-      <span className="flex min-w-0 flex-col justify-center gap-1 px-3.5 py-3">
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex min-w-0 flex-col justify-center gap-1 px-3.5 py-3 text-left"
+      >
         <strong className="truncate text-sm font-bold text-cos-text">
           {event.title}
         </strong>
@@ -280,8 +242,8 @@ export function EventsEaseAheadCard({
         >
           {tone.label}
         </span>
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -307,6 +269,7 @@ export function EventsEaseQueueRow({
       <ArtThumb
         event={event}
         artwork={artwork}
+        compact
         className="h-12 w-12 rounded-[14px] sm:h-14 sm:w-14"
       />
       <span className="min-w-0">
@@ -383,7 +346,7 @@ export function EventsEaseSuiteStrip() {
             {
               href: "/create-with-ai/social",
               title: "Social",
-              body: "Milestones, artwork, captions, approval.",
+              body: "Posts, artwork, captions, approval.",
               art: "from-[#c4922e] via-[#e0b65a] to-[#f5e6c2]",
             },
             {
@@ -588,9 +551,10 @@ export function EventsEaseMonthGlance({
       </div>
       <div className="grid grid-cols-7 gap-1.5">{cells}</div>
       <div className="mt-3.5 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-cos-muted">
-        <span>Needs setup · Ready · Follow-up · Done</span>
+        <span>Upcoming · Next month · All</span>
         <span className="text-cos-muted">
-          Window tip: up to {addDaysToDateOnly(today, 60)} in Upcoming
+          Upcoming looks ahead about 60 days (through{" "}
+          {addDaysToDateOnly(today, 60)})
         </span>
       </div>
     </div>

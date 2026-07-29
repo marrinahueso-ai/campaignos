@@ -7,6 +7,7 @@ import {
   type FilesEaseEventGroup,
 } from "@/components/campaign-files/FilesEaseList";
 import { FileUploadDialog } from "@/components/campaign-files/FileUploadDialog";
+import { FilesTypeGroupPills } from "@/components/campaign-files/FilesTypeGroupPills";
 import {
   defaultFilesLayout,
   normalizeFilesLayout,
@@ -20,6 +21,7 @@ import {
 import { eventFilesHref } from "@/lib/events/event-responsibility";
 import { eventGroupAccentColor } from "@/lib/tasks-v2/event-colors";
 import { getTodayDateString } from "@/lib/utils/dates";
+import type { CampaignFileTypeGroup } from "@/lib/campaign-files/type-groups";
 import { cn } from "@/lib/utils/cn";
 import type {
   CampaignFile,
@@ -76,6 +78,18 @@ export function FilesEaseShell({
   const dragDepthRef = useRef(0);
 
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+  const [typeGroup, setTypeGroup] = useState<CampaignFileTypeGroup>(() => {
+    const raw = searchParams.get("type");
+    if (
+      raw === "graphics" ||
+      raw === "photos" ||
+      raw === "documents" ||
+      raw === "other"
+    ) {
+      return raw;
+    }
+    return "all";
+  });
   const [sortMode, setSortMode] = useState<FilesSortField>(() =>
     parseSort(searchParams.get("sort")),
   );
@@ -104,6 +118,7 @@ export function FilesEaseShell({
       event: string | null;
       sort: FilesSortField;
       q: string;
+      type: CampaignFileTypeGroup;
     }) => {
       if (typeof window === "undefined") return;
       const params = new URLSearchParams(window.location.search);
@@ -113,6 +128,8 @@ export function FilesEaseShell({
       else params.set("sort", next.sort);
       if (!next.q) params.delete("q");
       else params.set("q", next.q);
+      if (next.type === "all") params.delete("type");
+      else params.set("type", next.type);
       const queryString = params.toString();
       const href = queryString ? `/files?${queryString}` : "/files";
       window.history.replaceState(window.history.state, "", href);
@@ -126,17 +143,22 @@ export function FilesEaseShell({
 
   function handleEventFilterChange(next: string | null) {
     setEventFilter(next);
-    syncUrl({ event: next, sort: sortMode, q: query });
+    syncUrl({ event: next, sort: sortMode, q: query, type: typeGroup });
+  }
+
+  function handleTypeGroupChange(next: CampaignFileTypeGroup) {
+    setTypeGroup(next);
+    syncUrl({ event: eventFilter, sort: sortMode, q: query, type: next });
   }
 
   function handleSortChange(next: FilesSortField) {
     setSortMode(next);
-    syncUrl({ event: eventFilter, sort: next, q: query });
+    syncUrl({ event: eventFilter, sort: next, q: query, type: typeGroup });
   }
 
   function handleSearchChange(next: string) {
     setQuery(next);
-    syncUrl({ event: eventFilter, sort: sortMode, q: next });
+    syncUrl({ event: eventFilter, sort: sortMode, q: next, type: typeGroup });
   }
 
   function handleRenamed(fileId: string, name: string) {
@@ -221,11 +243,12 @@ export function FilesEaseShell({
     const filters = {
       ...createDefaultFilesFilterState(eventFilter ?? undefined),
       search: query,
+      typeGroup,
     };
     const filtered = filterCampaignFiles(filesWithOverrides, filters, eventTitles);
     const direction = sortMode === "uploaded" || sortMode === "size" ? "desc" : "asc";
     return sortCampaignFiles(filtered, sortMode, direction, eventTitles);
-  }, [filesWithOverrides, eventFilter, query, sortMode, eventTitles]);
+  }, [filesWithOverrides, eventFilter, query, typeGroup, sortMode, eventTitles]);
 
   const eventIndexById = useMemo(() => {
     const map = new Map<string, number>();
@@ -306,9 +329,7 @@ export function FilesEaseShell({
             Files
           </h1>
           <p className="mt-1.5 max-w-[52ch] text-sm leading-relaxed text-cos-muted">
-            Your organization&apos;s shared file library — browse by campaign,
-            organize files into folders on each event, and upload from here or
-            any campaign&apos;s Files tab.
+            Search across events — uploads sort by type automatically.
           </p>
           {data.listCapped ? (
             <p className="mt-1.5 text-sm text-cos-muted" role="status">
@@ -335,47 +356,13 @@ export function FilesEaseShell({
               type="search"
               value={query}
               onChange={(event) => handleSearchChange(event.target.value)}
-              placeholder="Search by file or campaign name…"
+              placeholder="Search files…"
               autoComplete="off"
               className="w-full border-none bg-transparent text-sm font-semibold text-cos-text outline-none placeholder:font-medium placeholder:text-cos-muted"
             />
           </label>
 
-          {data.events.length > 0 ? (
-            <label className="inline-flex min-w-[12rem] items-center gap-2">
-              <span className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-                Campaign
-              </span>
-              <select
-                value={eventFilter ?? ""}
-                onChange={(event) =>
-                  handleEventFilterChange(event.target.value || null)
-                }
-                aria-label="Filter by campaign"
-                className="appearance-none rounded-full border-0 bg-[rgba(47,74,60,0.12)] px-3.5 py-2 text-xs font-bold text-[#2f4a3c] outline-none"
-              >
-                <option value="">All campaigns ({data.files.length})</option>
-                {comingUpEvents.length > 0 ? (
-                  <optgroup label="Coming up">
-                    {comingUpEvents.map((event) => (
-                      <option key={event.eventId} value={event.eventId}>
-                        {event.title} ({event.fileCount})
-                      </option>
-                    ))}
-                  </optgroup>
-                ) : null}
-                {earlierEvents.length > 0 ? (
-                  <optgroup label="More campaigns">
-                    {earlierEvents.map((event) => (
-                      <option key={event.eventId} value={event.eventId}>
-                        {event.title} ({event.fileCount})
-                      </option>
-                    ))}
-                  </optgroup>
-                ) : null}
-              </select>
-            </label>
-          ) : null}
+          <FilesTypeGroupPills value={typeGroup} onChange={handleTypeGroupChange} />
 
           <div
             className="inline-flex items-center gap-0.5"
@@ -403,6 +390,46 @@ export function FilesEaseShell({
           </div>
         </div>
 
+        {data.events.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-0.5 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+              Event
+            </span>
+            <button
+              type="button"
+              onClick={() => handleEventFilterChange(null)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold transition",
+                !eventFilter
+                  ? "border border-cos-border bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                  : "text-cos-muted hover:text-cos-text",
+              )}
+            >
+              All
+            </button>
+            {[...comingUpEvents, ...earlierEvents].map((event) => (
+              <button
+                key={event.eventId}
+                type="button"
+                onClick={() => handleEventFilterChange(event.eventId)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold transition",
+                  eventFilter === event.eventId
+                    ? "border border-cos-border bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                    : "text-cos-muted hover:text-cos-text",
+                )}
+              >
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: accentColorFor(event.eventId) }}
+                  aria-hidden
+                />
+                {event.title}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         <div
           role="region"
           aria-label="Drop files to upload"
@@ -411,7 +438,7 @@ export function FilesEaseShell({
             isDraggingFiles && "border-[#6b8171] bg-[rgba(107,129,113,0.08)] text-cos-text",
           )}
         >
-          Drop files here — then choose the campaign and category.
+          Drop files here — choose the event, type is inferred automatically.
         </div>
 
         <div className="pt-1">
@@ -422,7 +449,7 @@ export function FilesEaseShell({
             onMoved={handleMoved}
             onFoldersChanged={handleFoldersChanged}
             emptyTitle="No files match"
-            emptyBody="Try another search, pick a different campaign, or drop files to upload."
+            emptyBody="Try another search, pick a different event, or drop files to upload."
           />
         </div>
       </div>

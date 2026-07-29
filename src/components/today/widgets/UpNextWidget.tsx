@@ -24,7 +24,7 @@ export function UpNextWidget({
   const eventTitle = display.event ?? whatsNext.title;
   const showArtwork = hasDisplayableArtwork(artwork);
   const imageUrl = showArtwork ? artwork!.imageUrl : null;
-  const ctaLabel = whatsNext.ctaLabel ?? "Open campaign";
+  const ctaLabel = whatsNext.ctaLabel ?? "Open event";
   const metaLine = [
     display.due,
     display.action,

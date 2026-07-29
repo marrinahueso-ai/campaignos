@@ -77,7 +77,7 @@ export function VendorEditModal({
         className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden border border-cos-border bg-cos-card shadow-2xl"
       >
         <div className="border-b border-cos-border px-6 py-4">
-          <h2 className="font-display text-2xl text-cos-text">Edit Vendor</h2>
+          <h2 className="font-display text-2xl text-cos-text">Edit vendor</h2>
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">

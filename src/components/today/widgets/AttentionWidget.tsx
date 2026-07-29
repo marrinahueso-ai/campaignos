@@ -22,7 +22,7 @@ export function AttentionWidget({ counts }: AttentionWidgetProps) {
       label: counts.volunteerCount === 1 ? "needs volunteers" : "need volunteers",
     },
     {
-      href: "/tasks?tab=my_tasks&view=this_week",
+      href: "/tasks?scope=mine&pulse=week",
       icon: CheckSquare,
       count: counts.tasksThisWeekCount,
       label: counts.tasksThisWeekCount === 1 ? "task this week" : "tasks this week",

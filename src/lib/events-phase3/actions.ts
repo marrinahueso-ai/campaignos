@@ -147,12 +147,15 @@ export async function loadEventVendorDirectoryAction(): Promise<
 > {
   const user = await getAuthUser();
   if (!user) {
-    return { success: false, error: "Not authenticated." };
+    return { success: false, error: "Sign in to continue." };
   }
 
   const membership = await getActiveMembership();
   if (!membership) {
-    return { success: false, error: "No active organization membership." };
+    return {
+      success: false,
+      error: "Join or select an organization to continue.",
+    };
   }
 
   try {

@@ -42,7 +42,7 @@ export async function saveCampaignBuilderSessionAction(
     });
     return {
       success: false,
-      message: "Could not save to database — using local backup.",
+      message: "Could not save online — keeping a backup on this device.",
     };
   }
 

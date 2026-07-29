@@ -292,7 +292,7 @@ export function DashboardOverview({
               </div>
               {editing ? (
                 <p className="text-sm text-cos-muted">
-                  Remove tiles, change card colors (palette), then tap Done.
+                  Remove widgets, change card colors (palette), then tap Done.
                   Drag the grip to rearrange — Weather, Up Next, and Calendar
                   stay fixed in look.
                 </p>

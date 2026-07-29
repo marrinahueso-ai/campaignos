@@ -166,7 +166,7 @@ export function PublishedScheduledMilestones({
       const result = await unscheduleMetaBundleAction(eventId, relativeDay);
 
       if (!result.success) {
-        setError(result.error ?? "Unable to unschedule this milestone.");
+        setError(result.error ?? "Unable to unschedule this post.");
         return;
       }
 
@@ -177,7 +177,7 @@ export function PublishedScheduledMilestones({
   return (
     <Card id="scheduled-milestones" padding="none" className="overflow-hidden scroll-mt-24">
       <CardHeader className="border-b border-cos-border px-6 py-5">
-        <CardTitle>Scheduled milestones</CardTitle>
+        <CardTitle>Scheduled posts</CardTitle>
         <CardDescription>
           Meta posts queued or waiting for their go-live time.
         </CardDescription>

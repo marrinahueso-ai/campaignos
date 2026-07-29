@@ -172,7 +172,7 @@ export function MondaySettingsShell({
       <StudioPageHeader
         backHref="/settings"
         title="Monday"
-        description={`Sync playbook tasks with Monday.com for ${organizationName ?? "your PTO"}. Connect, create or pick a board, map columns, then enable sync.`}
+        description={`Sync communication plan tasks with Monday.com for ${organizationName ?? "your PTO"}. Connect, create or pick a board, map columns, then enable sync.`}
         eyebrow="Configure"
       />
 

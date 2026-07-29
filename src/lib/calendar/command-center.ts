@@ -18,7 +18,7 @@ export const CALENDAR_COMMAND_TABS: {
   {
     id: "review",
     label: "Review imports",
-    description: "Clean up your uploaded school calendar before adding events.",
+    description: "Clean up your uploaded calendar before adding events.",
   },
   {
     id: "publishing",

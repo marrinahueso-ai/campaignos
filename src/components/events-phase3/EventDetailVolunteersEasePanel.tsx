@@ -15,6 +15,7 @@ import {
   EaseSplit,
 } from "@/components/events-phase3/EventDetailEaseUi";
 import { EventVolunteersTab } from "@/components/events-phase3/EventVolunteersTab";
+import { EventContextFileUpload } from "@/components/campaign-files/EventContextFileUpload";
 import {
   connectVolunteerSourceAction,
   getEventVolunteerOverviewAction,
@@ -168,9 +169,12 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
 
   return (
     <section>
-      <EaseSectionLabel hint="Counts only — no names or contact details">
-        Staffing health
-      </EaseSectionLabel>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <EaseSectionLabel hint="Counts only — no names or contact details">
+          Staffing health
+        </EaseSectionLabel>
+        <EventContextFileUpload eventId={event.id} uploadContext="volunteers" disabled={pending} />
+      </div>
 
       {error ? (
         <p className="mb-3 text-sm text-[#a65a3a]">{error}</p>

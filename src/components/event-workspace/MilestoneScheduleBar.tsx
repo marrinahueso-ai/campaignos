@@ -44,7 +44,7 @@ export function MilestoneScheduleBar({
       )}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <span className="text-sm font-medium text-cos-text">Milestone</span>
+        <span className="text-sm font-medium text-cos-text">Post</span>
         <div className="relative min-w-0 max-w-md flex-1">
           <CalendarDays
             className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted"
@@ -54,7 +54,7 @@ export function MilestoneScheduleBar({
             value={selectedRelativeDay}
             onChange={(event) => onSelectMilestone(Number(event.target.value))}
             className="h-10 w-full appearance-none rounded-sm border border-cos-border bg-cos-card pr-10 pl-10 text-sm text-cos-text focus:border-cos-dark focus:outline-none"
-            aria-label="Select milestone"
+            aria-label="Select post"
           >
             {milestones.map((milestone) => (
               <option key={milestone.relativeDay} value={milestone.relativeDay}>

@@ -17,14 +17,40 @@ describe("events ease UI contracts", () => {
   it("uses ease focus/queue instead of KPI summary cards", () => {
     assert.match(home, /Create with AI/);
     assert.match(home, /EventsEaseFocusCard/);
-    assert.match(home, /EventsEaseMonthGlance/);
     assert.doesNotMatch(home, /EventsHomeSummaryCards/);
     assert.doesNotMatch(home, /EventsUpcomingSection/);
+    assert.doesNotMatch(home, /EventsEaseMonthGlance/);
   });
 
-  it("keeps month glance and All month filter surfaces", () => {
-    assert.match(ease, /Month at a glance|formatEventsHomeMonthLabel/);
-    assert.match(home, /Filter by month and year/);
+  it("keeps simplified filter pills and full calendar link", () => {
+    assert.match(home, /PULSE_TABS/);
+    assert.match(home, /Upcoming/);
+    assert.match(home, /Next month/);
     assert.match(home, /Full calendar/);
+    assert.match(ease, /Upcoming · Next month · All/);
+    assert.doesNotMatch(home, /Needs setup|Ready to run|Follow-up|Month at a glance/i);
+  });
+
+  it("keeps the focus card calm with two CTAs", () => {
+    const focusCard = ease.match(
+      /export function EventsEaseFocusCard\([\s\S]*?(?=export function EventsEaseAheadCard)/,
+    )?.[0];
+    assert.ok(focusCard);
+    assert.match(focusCard, /Open event/);
+    assert.match(focusCard, />\s*Social\s*</);
+    assert.doesNotMatch(focusCard, /Artwork and social may still be open/);
+    assert.doesNotMatch(focusCard, /homepage-composer/);
+    assert.doesNotMatch(focusCard, /newsletter-composer/);
+  });
+
+  it("exposes artwork enlarge and download on list thumbnails", () => {
+    const artworkHover = readSrc(
+      "../../../components/artwork/ArtworkHoverThumbnail.tsx",
+    );
+    assert.match(ease, /ArtworkHoverThumbnail/);
+    assert.match(ease, /ArtworkPreviewActions/);
+    assert.match(artworkHover, /Enlarge artwork/);
+    assert.match(artworkHover, /Download artwork/);
+    assert.doesNotMatch(artworkHover, /Click to enlarge/);
   });
 });

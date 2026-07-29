@@ -188,7 +188,7 @@ export async function insertImportedEvents(
     await supabase.from("activity_log").insert({
       event_id: event.existingEventId,
       activity_type: "calendar_imported",
-      title: "Updated from school calendar",
+      title: "Updated from calendar",
       description: `Updated from import (${event.matchReason ?? "external id match"}).`,
       occurred_at: new Date().toISOString(),
     });
@@ -206,7 +206,7 @@ export async function insertImportedEvents(
   const rows = toInsert.map((event) => {
     const input: CreateEventInput = {
       title: event.name,
-      description: `Imported from school calendar (${event.category}).`,
+      description: `Imported from calendar (${event.category}).`,
       date: event.date,
       time: null,
       location: null,
@@ -263,8 +263,8 @@ export async function insertImportedEvents(
     await supabase.from("activity_log").insert({
       event_id: event.id,
       activity_type: "calendar_imported",
-      title: "Added from school calendar",
-      description: `Imported as ${event.category ?? "school event"}.`,
+      title: "Added from calendar",
+      description: `Imported as ${event.category ?? "organization event"}.`,
       occurred_at: new Date().toISOString(),
     });
   }

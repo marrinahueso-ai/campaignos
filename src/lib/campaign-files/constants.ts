@@ -1,4 +1,6 @@
+import { documentCategoryLabel } from "@/lib/campaign-files/document-category";
 import type {
+  CampaignFile,
   CampaignFileCategory,
   CampaignFilePlatform,
   CampaignFileStatus,
@@ -93,6 +95,14 @@ export function categoryLabel(category: CampaignFileCategory): string {
     CAMPAIGN_FILE_CATEGORIES.find((entry) => entry.value === category)?.label ??
     "Other"
   );
+}
+
+/** Prefer customer document category label when stored. */
+export function displayFileCategoryLabel(file: Pick<CampaignFile, "category" | "documentCategory">): string {
+  if (file.documentCategory) {
+    return documentCategoryLabel(file.documentCategory);
+  }
+  return categoryLabel(file.category);
 }
 
 export function platformLabel(platform: CampaignFilePlatform): string {

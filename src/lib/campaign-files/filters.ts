@@ -10,7 +10,9 @@ import type {
   FilesSortField,
 } from "@/types/campaign-files";
 import { detectFileType } from "@/lib/campaign-files/file-type";
-import { categoryLabel } from "@/lib/campaign-files/constants";
+import { displayFileCategoryLabel } from "@/lib/campaign-files/constants";
+import { isDocumentCategory } from "@/lib/campaign-files/document-category";
+import { fileMatchesTypeGroup } from "@/lib/campaign-files/type-groups";
 
 export const DEFAULT_FILES_SORT_FIELD: FilesSortField = "uploaded";
 export const DEFAULT_FILES_SORT_DIRECTION: FilesSortDirection = "desc";
@@ -45,6 +47,9 @@ const VALID_STATUSES = new Set<CampaignFileStatus>([
 export function mapCampaignFileRow(row: CampaignFileRow): CampaignFile {
   const fileType = (row.file_type as CampaignFileType | null) ?? detectFileType(row.name, row.mime_type);
   const category = VALID_CATEGORIES.has(row.category) ? row.category : "other";
+  const documentCategory = isDocumentCategory(row.document_category)
+    ? row.document_category
+    : null;
   const status = VALID_STATUSES.has(row.status) ? row.status : "active";
   const platforms = (row.platforms ?? []).filter((value): value is CampaignFilePlatform =>
     VALID_PLATFORMS.has(value as CampaignFilePlatform),
@@ -60,6 +65,7 @@ export function mapCampaignFileRow(row: CampaignFileRow): CampaignFile {
     uploadedAt: row.uploaded_at,
     fileType,
     category,
+    documentCategory,
     platforms,
     status,
     sizeBytes: row.size_bytes,
@@ -76,6 +82,7 @@ export function createDefaultFilesFilterState(
     search: "",
     folderId: "all",
     eventId: eventId ?? "all",
+    typeGroup: "all",
     fileType: "all",
     category: "all",
     platform: "all",
@@ -106,6 +113,13 @@ export function filterCampaignFiles(
     }
 
     if (filters.eventId !== "all" && file.eventId !== filters.eventId) {
+      return false;
+    }
+
+    if (
+      filters.typeGroup !== "all" &&
+      !fileMatchesTypeGroup(file, filters.typeGroup)
+    ) {
       return false;
     }
 
@@ -182,7 +196,7 @@ function sortValueForFile(
     case "type":
       return file.fileType;
     case "category":
-      return categoryLabel(file.category);
+      return displayFileCategoryLabel(file);
     case "platform":
       return [...file.platforms].sort().join(", ");
     case "uploaded":

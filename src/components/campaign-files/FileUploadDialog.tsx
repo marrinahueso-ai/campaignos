@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { uploadCampaignFileAction } from "@/lib/campaign-files/actions";
 import {
-  CAMPAIGN_FILE_CATEGORIES,
-  CAMPAIGN_FILE_PLATFORMS,
-} from "@/lib/campaign-files/constants";
-import type { CampaignFileCategory, CampaignFilePlatform } from "@/types/campaign-files";
+  FileDocumentCategoryQuickEdit,
+  type UploadCategoryPromptState,
+} from "@/components/campaign-files/FileDocumentCategoryQuickEdit";
+import { uploadCampaignFileAction } from "@/lib/campaign-files/actions";
+import { CAMPAIGN_FILE_PLATFORMS } from "@/lib/campaign-files/constants";
+import type { CampaignFilePlatform } from "@/types/campaign-files";
 import type { Event } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -48,12 +49,15 @@ export function FileUploadDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [eventId, setEventId] = useState(lockedEventId ?? preferredEventId ?? "");
-  const [category, setCategory] = useState<CampaignFileCategory>("other");
   const [platforms, setPlatforms] = useState<CampaignFilePlatform[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
+  const [categoryPrompt, setCategoryPrompt] = useState<UploadCategoryPromptState | null>(
+    null,
+  );
+  const [uploadedEventId, setUploadedEventId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -61,6 +65,8 @@ export function FileUploadDialog({
     setError(null);
     setProgress(null);
     setDragOver(false);
+    setCategoryPrompt(null);
+    setUploadedEventId(null);
     setEventId(lockedEventId ?? preferredEventId ?? "");
   }, [open, initialFile, initialFiles, lockedEventId, preferredEventId]);
 
@@ -117,11 +123,13 @@ export function FileUploadDialog({
 
     startTransition(async () => {
       let uploaded = 0;
+      let lastPrompt: UploadCategoryPromptState | null = null;
       for (const file of selectedFiles) {
         setProgress(`Uploading ${uploaded + 1} of ${selectedFiles.length}…`);
         const formData = new FormData();
         formData.set("eventId", resolvedEventId);
-        formData.set("category", category);
+        formData.set("category", "auto");
+        formData.set("uploadContext", "org_files");
         formData.set("platforms", platforms.join(","));
         formData.set("file", file);
         const result = await uploadCampaignFileAction(formData);
@@ -135,14 +143,26 @@ export function FileUploadDialog({
           return;
         }
         uploaded += 1;
+        if (result.fileId && result.fileName && result.documentCategory) {
+          lastPrompt = {
+            fileId: result.fileId,
+            fileName: result.fileName,
+            documentCategory: result.documentCategory,
+          };
+        }
       }
 
       setSelectedFiles([]);
       setPlatforms([]);
-      setCategory("other");
       setProgress(null);
       if (!lockedEventId) {
         setEventId(preferredEventId ?? "");
+      }
+      if (lastPrompt) {
+        setUploadedEventId(resolvedEventId);
+        setCategoryPrompt(lastPrompt);
+        router.refresh();
+        return;
       }
       onClose();
       router.refresh();
@@ -176,7 +196,7 @@ export function FileUploadDialog({
                   : "Add files"}
             </h2>
             <p className="mt-1 text-sm text-[#5c554c]">
-              Pick the event and category — then we&apos;ll add everything there.
+              Pick the event — we&apos;ll suggest a document category from the name.
             </p>
           </div>
           <button
@@ -209,25 +229,6 @@ export function FileUploadDialog({
               </select>
             </label>
           ) : null}
-
-          <label className="block space-y-1.5">
-            <span className="text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase">
-              Category
-            </span>
-            <select
-              value={category}
-              onChange={(event) =>
-                setCategory(event.target.value as CampaignFileCategory)
-              }
-              className="w-full appearance-none rounded-full border-0 bg-[rgba(196,146,46,0.16)] px-3 py-2.5 text-xs font-bold text-[#7a5a12] outline-none"
-            >
-              {CAMPAIGN_FILE_CATEGORIES.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
 
           <fieldset className="space-y-2">
             <legend className="text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase">
@@ -337,6 +338,16 @@ export function FileUploadDialog({
             <p className="text-sm font-semibold text-[#a65a3a]" role="alert">
               {error}
             </p>
+          ) : null}
+          {categoryPrompt && uploadedEventId ? (
+            <FileDocumentCategoryQuickEdit
+              eventId={uploadedEventId}
+              prompt={categoryPrompt}
+              onDismiss={() => {
+                setCategoryPrompt(null);
+                onClose();
+              }}
+            />
           ) : null}
         </div>
 

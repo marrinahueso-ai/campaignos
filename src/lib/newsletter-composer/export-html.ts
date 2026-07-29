@@ -39,7 +39,7 @@ function sectionBand(
     typeof tone,
     { bg: string; bar: string; sub?: string }
   > = {
-    news: { bg: "#f3f6f3", bar: colors.primary, sub: "Updates for families" },
+    news: { bg: "#f3f6f3", bar: colors.primary, sub: "Updates for your community" },
     calendar: { bg: "#eef8fa", bar: colors.accent, sub: "Key dates at a glance" },
     volunteer: {
       bg: "#f0faf7",
@@ -164,7 +164,7 @@ function renderBlock(
         });
       if (!chips.length) return "";
       return `
-${sectionBand("Explorer Calendar", colors, "calendar")}
+${sectionBand("Upcoming calendar", colors, "calendar")}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
   <tr><td style="text-align:center;background:#f8fcfd;border:1px solid #d5eef3;border-radius:12px;padding:14px 10px;">
     ${chips
@@ -354,7 +354,7 @@ function renderBody(state: NewsletterComposerState): string {
   return parts.join("\n");
 }
 
-/** Email-safe HTML for Scoop-style newsletters (table layout). */
+/** Email-safe HTML for community newsletters (table layout). */
 export function exportNewsletterHtml(state: NewsletterComposerState): string {
   const body = renderBody(state);
 

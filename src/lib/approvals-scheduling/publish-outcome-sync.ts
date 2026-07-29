@@ -8,7 +8,7 @@ export type SchedulingPublishOutcome = "published" | "failed";
 
 /**
  * Keep Approvals scheduling rows aligned with Meta slot publish outcomes.
- * Matches by communication item id first, then milestone title.
+ * Matches by communication item id first, then post title.
  */
 export async function syncSchedulingItemsForMetaPublishOutcome(input: {
   eventId: string;

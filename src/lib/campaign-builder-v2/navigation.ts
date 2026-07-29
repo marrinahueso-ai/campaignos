@@ -7,7 +7,7 @@ export const CAMPAIGN_BUILDER_STEPS: Array<{
   subtitle?: string;
 }> = [
   { id: "inspiration", label: "Your Creative Setup" },
-  { id: "milestones", label: "Campaign Milestones" },
+  { id: "milestones", label: "Posts" },
   { id: "preview", label: "Preview Campaign", subtitle: "Create content one milestone at a time" },
   { id: "review", label: "Review & Approve" },
 ];

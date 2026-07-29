@@ -171,7 +171,7 @@ export function SettingsEaseOverview({ data }: SettingsEaseOverviewProps) {
       <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
         <SoftCard
           title="Connected"
-          description="Tools ready for this school year."
+          description="Tools ready for your active year."
           actionHref="/settings/integrations"
           actionLabel="View all"
         >
@@ -182,7 +182,7 @@ export function SettingsEaseOverview({ data }: SettingsEaseOverviewProps) {
           </DetailRow>
           <DetailRow label="Google Calendar">
             <StatusPill tone={data.googleCalendarConnected ? "ok" : "off"}>
-              {data.googleCalendarConnected ? "Syncing" : "Not connected"}
+              {data.googleCalendarConnected ? "Connected" : "Not connected"}
             </StatusPill>
           </DetailRow>
           <DetailRow label="Canva">
@@ -194,7 +194,7 @@ export function SettingsEaseOverview({ data }: SettingsEaseOverviewProps) {
 
         <SoftCard
           title="Branding"
-          description="Voice, inbox sources, playbooks, brand kit, school year."
+          description="Voice, inbox sources, communication plans, brand kit, school year."
           actionHref="/settings/branding"
           actionLabel="Open"
         >

@@ -148,7 +148,7 @@ export function EventVendorsSection({
       {data.vendors.length === 0 ? (
         <Card className="p-5">
           <p className="text-sm text-cos-muted">
-            No vendors linked yet. Add an existing vendor or create a new one.
+            No vendors linked to this event yet. Add someone from your directory, or create a new vendor.
           </p>
         </Card>
       ) : (

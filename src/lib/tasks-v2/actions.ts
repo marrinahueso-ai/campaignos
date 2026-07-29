@@ -113,7 +113,7 @@ export async function addGeneratedTasksV2Action(input: {
     if (!created.success) {
       return {
         success: false,
-        error: created.error ?? "Unable to create task.",
+        error: created.error ?? "Could not create task.",
         addedCount,
         skippedDuplicates,
       };

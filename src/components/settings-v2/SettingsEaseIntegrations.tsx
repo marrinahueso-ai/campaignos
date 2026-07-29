@@ -174,7 +174,7 @@ export function SettingsEaseIntegrations({ data }: SettingsEaseIntegrationsProps
           <IntegrationRow
             kind="gcal"
             title="Google Calendar"
-            description="Sign in with Google to sync school events. File upload and import review stay on Calendar → Import."
+            description="Sign in with Google to bring organization events in. File upload and import review stay on Calendar → Import."
             actions={
               <>
                 <StatusPill tone={data.googleCalendar.connected ? "ok" : "off"}>
@@ -230,7 +230,7 @@ export function SettingsEaseIntegrations({ data }: SettingsEaseIntegrationsProps
           <IntegrationRow
             kind="monday"
             title="Monday.com"
-            description="Optional task sync for boards you already use."
+            description="Optional task connection for boards you already use."
             actions={
               <>
                 <StatusPill tone={data.monday.connected ? "ok" : "off"}>

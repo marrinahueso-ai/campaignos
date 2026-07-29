@@ -206,7 +206,7 @@ export function CampaignBuilderMilestoneRow({
               onClick={() => onEdit(milestone.id)}
             >
               <Pencil className="h-4 w-4" />
-              Edit milestone
+              Edit post
             </Button>
             <Button
               type="button"

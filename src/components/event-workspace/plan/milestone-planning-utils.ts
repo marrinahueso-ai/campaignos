@@ -445,7 +445,7 @@ export function createDefaultMilestone(
 
   return {
     relativeDay: nextRelativeDay,
-    title: "Custom milestone",
+    title: "Custom post",
     description: "",
     internalNotes: "",
     dueDate: toLocalDateString(shifted),

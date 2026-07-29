@@ -195,3 +195,33 @@ export const EVENTS_HOME_SUMMARY_CARDS: {
 
 /** Default selected card on Events Home (action horizon). */
 export const EVENTS_HOME_DEFAULT_SUMMARY: EventsHomeSummaryKey = "next_60_days";
+
+/** Pulse tab lenses on Events Home ease UI. */
+export type EventsHomeLens = "upcoming" | "next_month" | "all";
+
+/** Pulse tabs filter the list only when search is empty. */
+export function shouldApplyEventsHomeLensFilter(query: string): boolean {
+  return !query.trim();
+}
+
+export function filterEventsHomeByLens<T extends Event>(
+  events: T[],
+  lens: EventsHomeLens,
+  today: string,
+  options?: { applyLens?: boolean },
+): T[] {
+  const applyLens = options?.applyLens ?? true;
+  let next = events;
+  if (applyLens) {
+    if (lens === "upcoming") {
+      next = events.filter((event) =>
+        matchesEventsHomeSummary(event, "next_60_days", today),
+      );
+    } else if (lens === "next_month") {
+      next = events.filter((event) =>
+        matchesEventsHomeMonth(event, "next_month", today),
+      );
+    }
+  }
+  return [...next].sort((left, right) => left.date.localeCompare(right.date));
+}

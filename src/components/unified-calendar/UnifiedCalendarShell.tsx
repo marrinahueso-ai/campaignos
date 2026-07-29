@@ -39,6 +39,7 @@ import {
   isCampaignEventItem,
   type CalendarLayerId,
 } from "@/lib/communications-calendar/unified-calendar-layers";
+import { filterCalendarItemsBySearch } from "@/lib/communications-calendar/calendar-home-search";
 import {
   enrichItemFlags,
   getInitialCalendarFocus,
@@ -133,6 +134,7 @@ export function UnifiedCalendarShell({
     })();
   }
   const [selectedItem, setSelectedItem] = useState<PlanningCalendarItem | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [localItems, setLocalItems] = useState(data.items);
   const itemsSnapshotRef = useRef(data.items);
   const hasAutoFocused = useRef(false);
@@ -168,9 +170,14 @@ export function UnifiedCalendarShell({
     [localItems, today],
   );
 
-  const filteredItems = useMemo(
+  const layerFilteredItems = useMemo(
     () => filterItemsByLayers(enrichedItems, activeLayers),
     [enrichedItems, activeLayers],
+  );
+
+  const filteredItems = useMemo(
+    () => filterCalendarItemsBySearch(layerFilteredItems, searchQuery),
+    [layerFilteredItems, searchQuery],
   );
 
   const monthGridDates = useMemo(
@@ -197,9 +204,21 @@ export function UnifiedCalendarShell({
   }, [view, monthGridDates, weekAnchor, filteredItems]);
 
   const showEmptyPeriodHint =
+    !searchQuery.trim() &&
     (view === "month" || view === "week" || view === "best-times") &&
-    filteredItems.length > 0 &&
+    layerFilteredItems.length > 0 &&
     itemsInCurrentPeriod.length === 0;
+
+  const showSearchNoMatches =
+    searchQuery.trim() &&
+    (view === "month" || view === "week" || view === "best-times") &&
+    filteredItems.length === 0;
+
+  const showSearchNoMatchesInPeriod =
+    searchQuery.trim() &&
+    filteredItems.length > 0 &&
+    itemsInCurrentPeriod.length === 0 &&
+    (view === "month" || view === "week" || view === "best-times");
 
   const upcomingItems = useMemo(
     () =>
@@ -306,6 +325,8 @@ export function UnifiedCalendarShell({
           activeLayers={activeLayers}
           layerColors={layerColors}
           layerColorOverrides={layout.colors ?? {}}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
           onViewChange={handleViewChange}
           onPrevious={goPrevious}
           onNext={goNext}
@@ -315,6 +336,19 @@ export function UnifiedCalendarShell({
           postingHeatmap={data.postingHeatmap}
           showPostingHeatmap={showHeatmap && data.postingHeatmap != null}
         />
+
+        {showSearchNoMatches ? (
+          <p className="text-sm text-cos-muted">
+            No matches for &ldquo;{searchQuery.trim()}&rdquo;. Try event names,
+            posting times, or dates.
+          </p>
+        ) : null}
+
+        {showSearchNoMatchesInPeriod ? (
+          <p className="text-sm text-cos-muted">
+            No matches in {periodLabel}. Browse other weeks or clear search.
+          </p>
+        ) : null}
 
         {showEmptyPeriodHint && (
           <div className="rounded-[22px] border border-cos-border bg-[rgba(255,252,247,0.65)] px-5 py-4 text-sm text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]">

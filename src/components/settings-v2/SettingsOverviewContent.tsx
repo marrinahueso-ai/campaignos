@@ -190,7 +190,7 @@ export function SettingsOverviewContent({ data }: SettingsOverviewContentProps) 
               { label: "Invite team member", href: "/settings/team-access" },
               { label: "Manage permissions", href: "/settings/team-access" },
               { label: "Add AI source", href: "/settings/inbox-ai" },
-              { label: "Create new playbook", href: "/settings/playbooks-milestones" },
+              { label: "Create new communication plan", href: "/settings/playbooks-milestones" },
               { label: "Adjust posting schedule", href: "/settings/organization" },
               { label: "View system status", href: "/settings/advanced" },
             ].map((action) => (

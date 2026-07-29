@@ -57,7 +57,7 @@ export function TodaySnapshot({
           <>
             <p className="font-display text-2xl text-cos-brand-navy">Weather</p>
             <p className="text-xs leading-relaxed text-cos-muted">
-              Add your school city in Settings for live local weather.
+              Add your weather city in Settings for live local weather.
             </p>
             <Link
               href="/settings/organization"

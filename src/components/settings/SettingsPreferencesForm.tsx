@@ -143,13 +143,13 @@ export function SettingsPreferencesForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Communication Playbooks</CardTitle>
+          <CardTitle>Communication Plans</CardTitle>
           <CardDescription>
             Manage countdown communication plans for every event type.
           </CardDescription>
         </CardHeader>
-        <Button href="/settings/playbooks" variant="secondary">
-          Manage Playbooks
+        <Button href="/settings/playbooks-milestones" variant="secondary">
+          Manage communication plans
         </Button>
       </Card>
 

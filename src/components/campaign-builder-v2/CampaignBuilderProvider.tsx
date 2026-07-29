@@ -253,9 +253,9 @@ function buildNewMilestone(
   const id = createMilestoneId();
   const milestone: CampaignBuilderMilestone = {
     id,
-    name: "New Milestone",
+    name: "New post",
     category: "reminder",
-    purpose: "Describe the purpose of this milestone",
+    purpose: "Describe the purpose of this post",
     suggestedDate: inspiration.eventDate,
     platforms: ["facebook", "instagram"],
     platformFormats: defaultEnabledFormats(),
@@ -487,7 +487,7 @@ async function recoverSessionFromServerIfRicher(
     if (!server) {
       return null;
     }
-    // Never "recover" a longer server milestone list over intentional deletes
+    // Never "recover" a longer server post list over intentional deletes
     // just because deleted rows still have richer artwork on the server.
     if (localHasAuthoritativeMilestoneStructure(local, server)) {
       return null;
@@ -674,13 +674,13 @@ export function CampaignBuilderProvider({
         return {
           success: false,
           changed: false,
-          message: "Could not load playbook milestones.",
+          message: "Could not load communication plan posts.",
         };
       }
 
-      // Keep existing milestones when the playbook has no steps in the DB
-      // (e.g. a demo/legacy playbook id that was never a real row).
-      // Still mark the playbook as applied — otherwise inspiration.playbookId
+      // Keep existing milestones when the communication plan has no steps in the DB
+      // (e.g. a demo/legacy communication plan id that was never a real row).
+      // Still mark the communication plan as applied — otherwise inspiration.playbookId
       // drifts from milestonesPlaybookId and a later navigation rebuilds and
       // can wipe generated artwork.
       if (stepsResult.steps.length === 0) {
@@ -713,7 +713,7 @@ export function CampaignBuilderProvider({
           return {
             success: false,
             changed: false,
-            message: "Playbook change canceled — milestones unchanged.",
+            message: "Communication plan change canceled — posts unchanged.",
           };
         }
       }
@@ -1038,7 +1038,7 @@ export function CampaignBuilderProvider({
       void (async () => {
         const leavingInspiration = currentStepRef.current === "inspiration";
         // Only reconcile when leaving Creative Setup. Auto-syncing on every
-        // Preview/Milestones hop when playbook ids drift rebuilt milestones
+        // Preview/Milestones hop when communication plan ids drift rebuilt milestones
         // mid-generation and erased artwork the user just created.
         let syncChanged = false;
         if (leavingInspiration) {
@@ -1140,7 +1140,7 @@ export function CampaignBuilderProvider({
           success: false,
           message:
             syncResult.message ??
-            "Playbook change canceled — milestones unchanged.",
+            "Communication plan change canceled — posts unchanged.",
         };
       }
 
@@ -1459,7 +1459,7 @@ export function CampaignBuilderProvider({
           previewContents,
           selectedMilestoneId,
           // Mark the current playbook as applied so goToStep sync does not
-          // rebuild from playbook steps and resurrect this deletion.
+          // rebuild from communication plan posts and resurrect this deletion.
           milestonesPlaybookId:
             prev.inspiration.playbookId ?? prev.milestonesPlaybookId,
           expandedReviewMilestoneIds: prev.expandedReviewMilestoneIds.filter(
@@ -1538,7 +1538,7 @@ export function CampaignBuilderProvider({
       if (generationInFlightRef.current.has(milestoneId)) {
         return {
           success: false,
-          message: "Generation is already in progress for this milestone.",
+          message: "Generation is already in progress for this post.",
         };
       }
 
@@ -1617,7 +1617,7 @@ export function CampaignBuilderProvider({
         setGenerationProgress({
           current: 1,
           total: 1,
-          milestoneName: milestone?.name ?? "Milestone",
+          milestoneName: milestone?.name ?? "Post",
         });
 
         const result = await (async () => {
@@ -1679,7 +1679,7 @@ export function CampaignBuilderProvider({
             return {
               success: true,
               message:
-                "Restored saved artwork from the server. Generation had reported an error, but completed content was already stored.",
+                "Restored saved artwork. Generation looked like it failed, but completed content was already saved.",
             };
           }
 
@@ -1717,7 +1717,7 @@ export function CampaignBuilderProvider({
           null;
         const updatedBase: CampaignBuilderSession = {
           ...workingBase,
-          // Keep playbook ids aligned so a later step change cannot treat the
+          // Keep communication plan ids aligned so a later step change cannot treat the
           // session as "needs sync" and rebuild over this artwork.
           milestonesPlaybookId: alignedPlaybookId,
           inspiration: {
@@ -1786,7 +1786,7 @@ export function CampaignBuilderProvider({
 
         return {
           success: true,
-          message: `Artwork and captions generated for ${milestone?.name ?? "this milestone"}.`,
+          message: `Artwork and captions generated for ${milestone?.name ?? "this post"}.`,
         };
       } catch (error) {
         const message =
@@ -1823,8 +1823,8 @@ export function CampaignBuilderProvider({
           return {
             success: true,
             message: interrupted
-              ? "Generation was interrupted, but saved artwork was restored from the server."
-              : "Restored saved artwork from the server after a generation error.",
+              ? "Generation was interrupted, but saved artwork was restored."
+              : "Restored saved artwork after a generation error.",
           };
         }
 
@@ -1897,7 +1897,7 @@ export function CampaignBuilderProvider({
     if (!next) {
       return {
         success: false,
-        message: "All milestones already have generated content.",
+        message: "All posts already have generated content.",
       };
     }
     updateSession((prev) => ({ ...prev, selectedMilestoneId: next.id }));
@@ -1913,7 +1913,7 @@ export function CampaignBuilderProvider({
       if (!targetMilestoneId) {
         return {
           success: false,
-          message: "Select a milestone to generate content.",
+          message: "Select a post to generate content.",
         };
       }
       return generateMilestoneContent(targetMilestoneId, {

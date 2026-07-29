@@ -389,7 +389,7 @@ export async function bulkDeleteEventsAction(
 > {
   const organization = await getLatestOrganization();
   if (!organization) {
-    return { error: "Complete school setup first.", success: false };
+    return { error: "Finish organization setup first.", success: false };
   }
 
   const { ok, deletedCount, deletedIds } = await deleteEventsByIds(
@@ -417,7 +417,11 @@ export async function clearCalendarWindowEventsAction(): Promise<{
 }> {
   const organization = await getLatestOrganization();
   if (!organization) {
-    return { success: false, error: "Complete school setup first.", deletedCount: 0 };
+    return {
+      success: false,
+      error: "Finish organization setup first.",
+      deletedCount: 0,
+    };
   }
 
   const activeSchoolYear = await getActiveSchoolYear(organization.id);
@@ -471,7 +475,7 @@ export async function uploadCalendarFileAction(
 
   if (!organization) {
     return {
-      error: "Complete school setup before uploading a calendar.",
+      error: "Finish organization setup before uploading a calendar.",
       success: false,
     };
   }

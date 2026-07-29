@@ -15,7 +15,7 @@ interface ChangeRequestBannerProps {
   /** Optional link-style edit paths (Review step). */
   editArtworkHref?: string | null;
   editCaptionHref?: string | null;
-  /** Preview Campaign deep link for changing the milestone schedule. */
+  /** Preview Campaign deep link for changing the post schedule. */
   changeDateHref?: string | null;
   message?: string | null;
   messageIsError?: boolean;
@@ -70,7 +70,7 @@ export function ChangeRequestBanner({
       ) : (
         <p className="mt-2 text-sm leading-relaxed text-cos-muted">
           You can update caption, schedule, or artwork on this milestone and
-          resend without regenerating other milestones.
+          resend without regenerating other posts.
         </p>
       )}
 

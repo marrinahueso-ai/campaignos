@@ -76,7 +76,7 @@ export async function gotoCalendarImport(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/calendar\/import/, { timeout: 30_000 });
   await expect(
     mainContent(page).getByRole("heading", {
-      name: /import school calendar/i,
+      name: /import calendar/i,
     }),
   ).toBeVisible({ timeout: 45_000 });
 }
@@ -90,11 +90,11 @@ export async function uploadIcsAndAwaitReview(
 
   const main = mainContent(page);
   const setupBlocked = main.getByText(
-    /complete school setup before uploading/i,
+    /finish organization setup before uploading/i,
   );
   if (await setupBlocked.isVisible().catch(() => false)) {
     throw new Error(
-      "Staging org has not completed school setup — calendar import upload is blocked.",
+      "Staging org has not completed organization setup — calendar import upload is blocked.",
     );
   }
 

@@ -41,7 +41,7 @@ export function TodayUpcomingEventsSection({
                   href={event.href}
                   className="inline-flex items-center gap-1 text-sm font-medium text-cos-primary hover:text-cos-primary-hover"
                 >
-                  Open workspace
+                  Open event
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>

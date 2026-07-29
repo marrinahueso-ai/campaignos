@@ -110,7 +110,7 @@ describe("playbook milestone reconcile", () => {
     );
   });
 
-  it("replaces timeline when switching from playbook A to playbook B", () => {
+  it("replaces timeline when switching from communication plan A to playbook B", () => {
     const seeded = reconcileMilestonesWithPlaybookSteps(
       playbookA,
       "2026-08-17",
@@ -261,7 +261,7 @@ describe("playbook milestone reconcile", () => {
     );
     assert.equal(atRisk.length, 1);
     assert.equal(atRisk[0]?.id, "ms-art");
-    assert.match(playbookSwitchConfirmMessage(atRisk), /milestone timeline/i);
+    assert.match(playbookSwitchConfirmMessage(atRisk), /post timeline/i);
   });
 
   it("does not attach prior artwork to a different milestone name", () => {

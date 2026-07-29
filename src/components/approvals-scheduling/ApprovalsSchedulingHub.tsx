@@ -22,19 +22,23 @@ import {
   retryFailedUnifiedApprovalAction,
 } from "@/lib/approvals-scheduling/actions";
 import {
-  isDraftOutcome,
-  isFailedOutcome,
-  isPostedOutcome,
-} from "@/lib/approvals-scheduling/outcome-display";
+  APPROVALS_EASE_EMPTY_COPY,
+  APPROVALS_EASE_PULSE_OPTIONS,
+  DEFAULT_APPROVALS_EASE_PULSE,
+  approvalMatchesEasePulse,
+  approvalsEaseSectionLabel,
+  computeApprovalsEasePulseCounts,
+  type ApprovalsEasePulse,
+} from "@/lib/approvals-scheduling/approvals-ease-pulse";
+import {
+  filterApprovalsBySearch,
+  shouldApplyApprovalsEasePulseFilter,
+} from "@/lib/approvals-scheduling/approvals-home-search";
 import {
   canActOnUnifiedItem,
   filterItemsByViewScope,
 } from "@/lib/approvals-scheduling/permissions";
-import {
-  searchMatchesItem,
-  summarizeCounts,
-  unifiedItemNeedsPreviewEnrichment,
-} from "@/lib/approvals-scheduling/status";
+import { unifiedItemNeedsPreviewEnrichment } from "@/lib/approvals-scheduling/status";
 import type { ApprovalsLayout } from "@/lib/approvals-scheduling/approvals-layout";
 import type {
   UnifiedApprovalItem,
@@ -43,43 +47,27 @@ import type {
 } from "@/lib/approvals-scheduling/types";
 import { cn } from "@/lib/utils/cn";
 
-type EaseFilter =
-  | "needs"
-  | "scheduled"
-  | "drafts"
-  | "posted"
-  | "failed"
-  | "changes";
-
 interface ApprovalsSchedulingHubProps extends UnifiedApprovalsPageData {
+  /** Pre-fills search when deep-linking from `/approvals?event=`. */
   initialEventFilter?: string | null;
-  /** When set, locks the hub to one event and hides the campaign filter. */
+  /** When set, locks the hub to one event. */
   lockedEventId?: string | null;
   /** Compact chrome for embedding inside Event Detail. */
   embedded?: boolean;
   initialSummaryLayout?: ApprovalsLayout;
 }
 
-function matchesEaseFilter(filter: EaseFilter, item: UnifiedApprovalItem): boolean {
-  switch (filter) {
-    case "needs":
-      return (
-        item.workflowStatus === "assigned_to_me" ||
-        item.workflowStatus === "in_queue"
-      );
-    case "scheduled":
-      return item.workflowStatus === "scheduled" && !isDraftOutcome(item);
-    case "drafts":
-      return isDraftOutcome(item);
-    case "posted":
-      return isPostedOutcome(item);
-    case "failed":
-      return isFailedOutcome(item);
-    case "changes":
-      return item.workflowStatus === "changes_requested";
-    default:
-      return true;
+function initialSearchFromEventFilter(
+  eventId: string | null | undefined,
+  campaigns: UnifiedApprovalsPageData["campaigns"],
+  lockedId: string | null,
+): string {
+  if (lockedId || !eventId?.trim()) {
+    return "";
   }
+  return (
+    campaigns.find((campaign) => campaign.id === eventId.trim())?.title ?? ""
+  );
 }
 
 export function ApprovalsSchedulingHub({
@@ -96,13 +84,14 @@ export function ApprovalsSchedulingHub({
   const router = useRouter();
   const refreshApprovalsTab = useEventTabMutationRefresh("approvals");
   const lockedId = lockedEventId?.trim() || null;
-  const [activeFilter, setActiveFilter] = useState<EaseFilter>("needs");
+  const [activeFilter, setActiveFilter] = useState<ApprovalsEasePulse>(
+    DEFAULT_APPROVALS_EASE_PULSE,
+  );
   const [viewScope, setViewScope] = useState<UnifiedViewScope>(
     (lockedId || embedded) && canViewAll ? "all" : "assigned_to_me",
   );
-  const [searchQuery, setSearchQuery] = useState("");
-  const [eventFilter, setEventFilter] = useState(
-    lockedId ?? initialEventFilter ?? "all",
+  const [searchQuery, setSearchQuery] = useState(() =>
+    initialSearchFromEventFilter(initialEventFilter, campaigns, lockedId),
   );
   const [reviewItem, setReviewItem] = useState<UnifiedApprovalItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,41 +116,26 @@ export function ApprovalsSchedulingHub({
     [eventScopedItems, viewScope, canViewAll],
   );
 
-  const baseFiltered = useMemo(() => {
-    let next = viewScopedItems;
+  const applyPulseFilter = shouldApplyApprovalsEasePulseFilter(searchQuery);
 
-    if (!lockedId && eventFilter !== "all") {
-      next = next.filter((item) => item.eventId === eventFilter);
-    }
+  const searchedItems = useMemo(
+    () => filterApprovalsBySearch(viewScopedItems, searchQuery),
+    [viewScopedItems, searchQuery],
+  );
 
-    if (searchQuery.trim()) {
-      next = next.filter((item) => searchMatchesItem(item, searchQuery));
-    }
-
-    return next;
-  }, [viewScopedItems, eventFilter, searchQuery, lockedId]);
-
-  const pulseCounts = useMemo(() => {
-    const counts = summarizeCounts(baseFiltered);
-    const drafts = baseFiltered.filter(isDraftOutcome).length;
-    const posted = baseFiltered.filter(isPostedOutcome).length;
-    const failed = counts.failed;
-    const scheduled = baseFiltered.filter(
-      (item) => item.workflowStatus === "scheduled" && !isDraftOutcome(item),
-    ).length;
-    return {
-      needs: counts.assigned_to_me + counts.in_queue,
-      scheduled,
-      drafts,
-      posted,
-      failed,
-      changes: counts.changes_requested,
-    };
-  }, [baseFiltered]);
+  const pulseCounts = useMemo(
+    () => computeApprovalsEasePulseCounts(searchedItems),
+    [searchedItems],
+  );
 
   const scopedItems = useMemo(
-    () => baseFiltered.filter((item) => matchesEaseFilter(activeFilter, item)),
-    [baseFiltered, activeFilter],
+    () =>
+      applyPulseFilter
+        ? searchedItems.filter((item) =>
+            approvalMatchesEasePulse(item, activeFilter),
+          )
+        : searchedItems,
+    [searchedItems, activeFilter, applyPulseFilter],
   );
 
   const focusItem = scopedItems[0] ?? null;
@@ -272,41 +246,10 @@ export function ApprovalsSchedulingHub({
     }
   }
 
-  const pulseTabs: Array<{ id: EaseFilter; label: string; count: number }> = [
-    { id: "needs", label: "Needs you", count: pulseCounts.needs },
-    { id: "scheduled", label: "Scheduled", count: pulseCounts.scheduled },
-    { id: "drafts", label: "Drafts", count: pulseCounts.drafts },
-    { id: "posted", label: "Posted", count: pulseCounts.posted },
-    { id: "failed", label: "Failed", count: pulseCounts.failed },
-    { id: "changes", label: "Changes", count: pulseCounts.changes },
-  ];
-
-  const emptyCopy: Record<EaseFilter, { title: string; body: string }> = {
-    needs: {
-      title: "Nothing waiting on you",
-      body: "When a campaign needs your approval, it shows up here with the artwork ready to review.",
-    },
-    scheduled: {
-      title: "Nothing scheduled yet",
-      body: "Approved posts land here with their publish time until they go live on your Page.",
-    },
-    drafts: {
-      title: "No drafts saved",
-      body: "Posts you saved as drafts stay here so your team can copy or post them later — they won’t go live on their own.",
-    },
-    posted: {
-      title: "Nothing posted yet",
-      body: "Posts that went live on your Page show up here.",
-    },
-    failed: {
-      title: "Nothing failed to post",
-      body: "If a post doesn’t go through, it lands here so you can retry.",
-    },
-    changes: {
-      title: "Nothing to fix right now",
-      body: "When someone on your team sends something back, it lands here with their note.",
-    },
-  };
+  const pulseTabs = APPROVALS_EASE_PULSE_OPTIONS.map((option) => ({
+    ...option,
+    count: pulseCounts[option.id],
+  }));
 
   return (
     <div
@@ -339,7 +282,7 @@ export function ApprovalsSchedulingHub({
 
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div
-              className="flex flex-wrap items-center gap-2"
+              className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto"
               role="tablist"
               aria-label="Approval filters"
             >
@@ -353,7 +296,7 @@ export function ApprovalsSchedulingHub({
                     aria-selected={active}
                     onClick={() => setActiveFilter(tab.id)}
                     className={cn(
-                      "rounded-full px-3.5 py-2 text-[13px] font-bold transition",
+                      "shrink-0 rounded-full px-3.5 py-2 text-[13px] font-bold transition",
                       active
                         ? "bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)] ring-1 ring-cos-border"
                         : "text-cos-muted hover:bg-[rgba(255,252,247,0.7)] hover:text-cos-text",
@@ -377,27 +320,6 @@ export function ApprovalsSchedulingHub({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
-              {!lockedId ? (
-                <>
-                  <label className="sr-only" htmlFor="campaign-filter">
-                    Campaign filter
-                  </label>
-                  <select
-                    id="campaign-filter"
-                    value={eventFilter}
-                    onChange={(event) => setEventFilter(event.target.value)}
-                    className="min-w-[150px] rounded-full border border-cos-border bg-cos-card px-3.5 py-2 text-[13px] text-cos-text"
-                  >
-                    <option value="all">All campaigns</option>
-                    {campaigns.map((campaign) => (
-                      <option key={campaign.id} value={campaign.id}>
-                        {campaign.title}
-                      </option>
-                    ))}
-                  </select>
-                </>
-              ) : null}
-
               {canViewAll ? (
                 <select
                   value={viewScope}
@@ -412,14 +334,14 @@ export function ApprovalsSchedulingHub({
                 </select>
               ) : null}
 
-              <label className="relative block w-full max-w-xs shrink-0 sm:w-52">
+              <label className="relative block w-full max-w-md shrink-0 sm:w-72">
                 <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted" />
                 <input
                   type="search"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search…"
-                  aria-label="Search approvals"
+                  placeholder="Search events, people, dates…"
+                  aria-label="Search events, people, and dates"
                   className="w-full rounded-full border border-cos-border bg-cos-card py-2 pr-3 pl-9 text-[13px] text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
                 />
               </label>
@@ -428,7 +350,7 @@ export function ApprovalsSchedulingHub({
         </header>
       ) : (
         <div
-          className="flex flex-wrap items-center gap-2"
+          className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto"
           role="tablist"
           aria-label="Approval filters"
         >
@@ -442,7 +364,7 @@ export function ApprovalsSchedulingHub({
                 aria-selected={active}
                 onClick={() => setActiveFilter(tab.id)}
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-xs font-bold transition",
+                  "shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition",
                   active
                     ? "bg-cos-card text-cos-text shadow-sm ring-1 ring-cos-border"
                     : "text-cos-muted hover:bg-cos-bg-alt hover:text-cos-text",
@@ -458,24 +380,22 @@ export function ApprovalsSchedulingHub({
 
       <section className="relative space-y-3">
         <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-          {activeFilter === "needs"
-            ? "Waiting on your review"
-            : activeFilter === "scheduled"
-              ? "On the calendar"
-              : activeFilter === "drafts"
-                ? "Saved as drafts"
-                : activeFilter === "posted"
-                  ? "Already live"
-                  : activeFilter === "failed"
-                    ? "Needs a retry"
-                    : "Needs edits"}
+          {approvalsEaseSectionLabel(activeFilter)}
         </p>
 
         {scopedItems.length === 0 ? (
           <div className="rounded-[22px] border border-cos-border/70 bg-[rgba(255,252,247,0.55)]">
             <ApprovalsEmptyEase
-              title={emptyCopy[activeFilter].title}
-              body={emptyCopy[activeFilter].body}
+              title={
+                searchQuery.trim()
+                  ? "No matches"
+                  : APPROVALS_EASE_EMPTY_COPY[activeFilter].title
+              }
+              body={
+                searchQuery.trim()
+                  ? "Try a different search — event names, people, dates, captions, or status labels."
+                  : APPROVALS_EASE_EMPTY_COPY[activeFilter].body
+              }
             />
           </div>
         ) : (

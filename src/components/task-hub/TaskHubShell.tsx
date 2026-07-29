@@ -102,7 +102,7 @@ export function TaskHubShell({ data }: TaskHubShellProps) {
           description={
             data.scope === "chaired_committees"
               ? "Tasks from your committee events will appear here. Add events to your committees to start tracking tasks."
-              : "Playbook tasks from active campaigns will appear here, grouped by committee."
+              : "Communication plan tasks from active campaigns will appear here, grouped by committee."
           }
           className="cos-card py-16"
         />

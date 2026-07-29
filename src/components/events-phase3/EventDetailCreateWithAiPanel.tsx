@@ -13,7 +13,7 @@ const TILES = [
   {
     id: "social",
     title: "Social",
-    body: "Milestones, artwork, captions, approval for this event.",
+    body: "Posts, artwork, captions, approval for this event.",
     href: (eventId: string) => createWithAiHref(eventId),
     hardNavigate: true,
     art: "from-[#c4922e] via-[#e0b65a] to-[#f5e6c2]",
@@ -21,7 +21,7 @@ const TILES = [
   {
     id: "homepage",
     title: "Homepage",
-    body: "Add this event to the school Homepage composer.",
+    body: "Add this event to your Homepage.",
     href: () => "/homepage-composer",
     hardNavigate: false,
     art: "from-[#2f4a3c] via-[#6b8171] to-[#b8c9bc]",
@@ -29,7 +29,7 @@ const TILES = [
   {
     id: "newsletter",
     title: "Newsletter",
-    body: "Feature it in the Scoop-style family email.",
+    body: "Feature it in your community newsletter.",
     href: () => "/newsletter-composer",
     hardNavigate: false,
     art: "from-[#0b2f5b] via-[#2f9fb3] to-[#7fd0df]",

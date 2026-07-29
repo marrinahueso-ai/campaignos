@@ -28,7 +28,7 @@ export function TimelineTab({
         <CardHeader>
           <CardTitle>Communication timeline</CardTitle>
           <CardDescription>
-            No communication playbook assigned. Set this event to a full campaign or
+            No communication plan assigned. Set this event to a full campaign or
             reminders-only plan to generate a timeline.
           </CardDescription>
         </CardHeader>
@@ -39,7 +39,7 @@ export function TimelineTab({
   return (
     <div className="space-y-4">
       <p className="text-sm text-cos-muted">
-        This timeline mirrors your communication playbook — posts, reminders, and
+        This timeline mirrors your communication plan — posts, reminders, and
         channel deadlines for this event.
       </p>
       <CommunicationTimelineSection

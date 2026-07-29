@@ -138,12 +138,12 @@ export function formatCommunicationsSectionLines(
 
   if (!section.playbookStepsLoaded || section.stepCount === 0) {
     lines.push(
-      "Communications: no playbook steps found yet — assign a playbook or open the Communications Hub.",
+      "Communications: no communication plan posts found yet — assign a communication plan or open the Communications Hub.",
     );
   } else {
     if (section.email.completedCount > 0 && section.email.upcomingCount === 0) {
       lines.push(
-        `Families email: playbook email/newsletter steps look completed (${section.email.completedCount}).`,
+        `Families email: communication plan email/newsletter steps look completed (${section.email.completedCount}).`,
       );
     } else if (section.email.upcomingCount > 0) {
       lines.push(
@@ -156,7 +156,7 @@ export function formatCommunicationsSectionLines(
         }.`,
       );
     } else {
-      lines.push("Families email: no email/newsletter playbook steps on this event.");
+      lines.push("Families email: no email/newsletter communication plan posts on this event.");
     }
 
     if (
@@ -177,7 +177,7 @@ export function formatCommunicationsSectionLines(
         }.`,
       );
     } else {
-      lines.push("Facebook: no Facebook playbook steps on this event.");
+      lines.push("Facebook: no Facebook communication plan posts on this event.");
     }
 
     if (section.socialMissing.length > 0) {
@@ -188,7 +188,7 @@ export function formatCommunicationsSectionLines(
           .join("; ")}.`,
       );
     } else {
-      lines.push("Missing social posts: none upcoming in the playbook.");
+      lines.push("Missing social posts: none upcoming in the communication plan.");
     }
 
     if (section.dueToday.length > 0) {
@@ -202,7 +202,7 @@ export function formatCommunicationsSectionLines(
         `Next communication due: ${section.nextDue.title} (${section.nextDue.channel}, ${section.nextDue.dueDate}).`,
       );
     } else {
-      lines.push("Next communication due: nothing upcoming in the playbook.");
+      lines.push("Next communication due: nothing upcoming in the communication plan.");
     }
 
     if (section.dueTomorrow.length > 0) {
@@ -213,7 +213,7 @@ export function formatCommunicationsSectionLines(
 
     if (section.volunteerReminders.completedCount > 0) {
       lines.push(
-        `Volunteer reminders: ${section.volunteerReminders.completedCount} completed in the playbook.`,
+        `Volunteer reminders: ${section.volunteerReminders.completedCount} completed in the communication plan.`,
       );
     } else if (section.volunteerReminders.upcomingCount > 0) {
       lines.push(
@@ -221,7 +221,7 @@ export function formatCommunicationsSectionLines(
       );
     } else {
       lines.push(
-        "Volunteer reminders: no volunteer-reminder playbook steps found on this event.",
+        "Volunteer reminders: no volunteer-reminder communication plan posts found on this event.",
       );
     }
 
@@ -275,7 +275,7 @@ export function formatOrgCommunicationsSectionLines(
     lines.push(
       section.eventsWithPlaybooks > 0
         ? "Communications: no gaps flagged across the loaded campaigns (social/drafts/flyers)."
-        : "Communications: no playbook steps found on the loaded campaigns yet.",
+        : "Communications: no communication plan posts found on the loaded campaigns yet.",
     );
   } else {
     const samples = section.eventsWithGaps

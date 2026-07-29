@@ -52,7 +52,7 @@ export function PlanningHubAiInsights({
 
   function loadInsights() {
     if (!tablesAvailable) {
-      setError("Planning tables are not available yet. Run the event playbook migration.");
+      setError("Planning tables are not available yet. Run the event communication plan migration.");
       return;
     }
 

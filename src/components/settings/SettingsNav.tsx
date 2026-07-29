@@ -17,7 +17,7 @@ const SETTINGS_TABS = [
     : []),
   { href: "/settings/ai-brain", label: "AI Brain" },
   { href: "/settings/inbox-ai-sources", label: "Inbox AI" },
-  { href: "/settings/playbooks", label: "Playbooks" },
+  { href: "/settings/playbooks-milestones", label: "Communication Plans" },
 ] as const;
 
 function isTabActive(pathname: string, href: string, exact?: boolean): boolean {

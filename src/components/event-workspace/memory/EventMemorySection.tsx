@@ -177,7 +177,7 @@ function MemoryTimelineCard({ entries }: { entries: EventMemory["timeline"] }) {
       description="The story of this event — not a system log."
     >
       {entries.length === 0 ? (
-        <EmptyMemoryLine message="Milestones will appear as the event takes shape." />
+        <EmptyMemoryLine message="Updates will appear as the event takes shape." />
       ) : (
         <ol className="space-y-4">
           {entries.map((entry) => (

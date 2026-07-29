@@ -244,7 +244,7 @@ export function CampaignCaptionsPage({
     }
 
     if (!selectedMilestone) {
-      setError("Select a milestone before generating captions.");
+      setError("Select a post before generating captions.");
       return;
     }
 
@@ -297,7 +297,7 @@ export function CampaignCaptionsPage({
     }
 
     if (!selectedMilestone) {
-      setError("Select a milestone before generating captions.");
+      setError("Select a post before generating captions.");
       return;
     }
 
@@ -438,7 +438,7 @@ export function CampaignCaptionsPage({
     }
 
     if (!selectedMilestone) {
-      setError("Select a milestone before saving.");
+      setError("Select a post before saving.");
       return;
     }
 
@@ -472,8 +472,8 @@ export function CampaignCaptionsPage({
     return (
       <EmptyState
         icon={CalendarClock}
-        title="No milestones for captions"
-        description="Approve artwork first — your communication milestones will appear here."
+        title="No posts for captions"
+        description="Approve artwork first — your communication posts will appear here."
       />
     );
   }
@@ -483,7 +483,7 @@ export function CampaignCaptionsPage({
       <CreativeStudioStepHeader
         eventId={eventId}
         title="Captions"
-        description="Create custom captions for each milestone. Our AI suggests engaging copy based on your artwork, audience, and campaign goals."
+        description="Create custom captions for each post. Our AI suggests engaging copy based on your artwork, audience, and campaign goals."
         backHref={backHref}
       />
 
@@ -514,7 +514,7 @@ export function CampaignCaptionsPage({
             <CaptionsArtworkPreview
               feedArtworkUrl={selectedBundle?.feedArtworkUrl ?? null}
               storyArtworkUrl={selectedBundle?.storyArtworkUrl ?? null}
-              milestoneTitle={selectedMilestone?.title ?? "Milestone"}
+              milestoneTitle={selectedMilestone?.title ?? "Post"}
               onEditArtwork={() => {
                 onFocusedMilestoneChange?.(selectedDay);
                 onNavigateToArtwork?.();

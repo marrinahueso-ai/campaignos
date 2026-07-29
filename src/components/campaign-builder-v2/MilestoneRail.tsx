@@ -90,9 +90,7 @@ export function MilestoneRail({
 
   return (
     <aside className="hidden w-[200px] shrink-0 overflow-y-auto border-r border-cos-border bg-cos-bg-alt p-2.5 lg:block">
-      <p className="mb-2 px-2 text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
-        Milestones
-      </p>
+      <p className="mb-2 px-2 text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">Posts</p>
       <ul className="space-y-1">
         {sortedMilestones(milestones).map((milestone) => {
           const preview = previewById.get(milestone.id);

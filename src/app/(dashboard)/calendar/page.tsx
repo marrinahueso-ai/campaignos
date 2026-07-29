@@ -13,7 +13,7 @@ import type { PlanningCalendarView } from "@/types/communications-calendar";
 export const metadata = {
   title: "Calendar | Hey Ralli",
   description:
-    "Your school year in one place — events, posts, deadlines, and what needs attention.",
+    "Your year in one place — events, posts, deadlines, and what needs attention.",
 };
 
 interface CalendarPageProps {

@@ -72,7 +72,7 @@ export function buildCampaignBuilderCaptionFactsBlock(input: {
   const lines = [
     `Campaign / event: ${input.inspiration.campaignName}`,
     `Event date: ${input.inspiration.eventDate}`,
-    input.playbookName ? `Playbook: ${input.playbookName}` : null,
+    input.playbookName ? `Communication plan: ${input.playbookName}` : null,
     `Campaign moment: ${campaignMoment.label} — ${campaignMoment.description}`,
     `Timing for this post: ${timing.scheduleSummary}`,
     timing.onGraphicExamples.length > 0

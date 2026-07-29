@@ -1,12 +1,11 @@
 import type { ApprovalQueueItem } from "@/types/event-workspace";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
+import { approvalMatchesSearch } from "./approvals-home-search.ts";
 import type {
   ApprovalSchedulingItemRow,
   ApprovalSortDirection,
   ApprovalSortField,
   UnifiedApprovalItem,
-  UnifiedDeliveryMethod,
-  UnifiedPlatform,
   UnifiedTabId,
   UnifiedWorkflowStatus,
 } from "@/lib/approvals-scheduling/types";
@@ -20,47 +19,6 @@ const WORKFLOW_STATUS_SORT_ORDER: Record<UnifiedWorkflowStatus, number> = {
   posted: 5,
   published: 6,
 };
-
-const WORKFLOW_STATUS_SEARCH_LABELS: Record<UnifiedWorkflowStatus, string> = {
-  in_queue: "in queue",
-  assigned_to_me: "assigned to me",
-  changes_requested: "changes requested",
-  scheduled: "scheduled",
-  posted: "posted",
-  published: "published",
-  failed: "failed",
-};
-
-function deliverySearchLabel(method: UnifiedDeliveryMethod | null): string {
-  switch (method) {
-    case "publish-now":
-    case "auto-publish":
-      return "publish now";
-    case "schedule":
-      return "scheduled";
-    case "manual-email":
-      return "email post kit manual email";
-    case "draft-only":
-      return "draft drafts";
-    default:
-      return "";
-  }
-}
-
-function platformSearchLabels(platforms: UnifiedPlatform[]): string[] {
-  return platforms.flatMap((platform) => {
-    switch (platform) {
-      case "facebook":
-        return ["facebook", "fb"];
-      case "instagram":
-        return ["instagram", "ig"];
-      case "email":
-        return ["email"];
-      default:
-        return [];
-    }
-  });
-}
 
 export const DEFAULT_APPROVAL_SORT_FIELD: ApprovalSortField = "schedule";
 export const DEFAULT_APPROVAL_SORT_DIRECTION: ApprovalSortDirection = "asc";
@@ -411,35 +369,7 @@ export function searchMatchesItem(
   item: UnifiedApprovalItem,
   query: string,
 ): boolean {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) {
-    return true;
-  }
-
-  // Cover every sortable table column plus related display text.
-  const haystack = [
-    item.eventTitle,
-    item.campaignName,
-    item.milestoneName,
-    item.workflowStatus,
-    WORKFLOW_STATUS_SEARCH_LABELS[item.workflowStatus],
-    item.statusDetail,
-    item.assigneeName,
-    item.assigneeRole,
-    item.assigneeInitials,
-    item.nextAction,
-    item.nextActionTime,
-    item.deliveryMethod ?? "",
-    deliverySearchLabel(item.deliveryMethod),
-    ...platformSearchLabels(item.platforms),
-    item.scheduleLabel ?? "",
-    item.scheduleAt ?? "",
-    item.notes ?? "",
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  return haystack.includes(normalized);
+  return approvalMatchesSearch(item, query);
 }
 
 /** True when ReviewDrawer should fetch caption / rich preview fields. */

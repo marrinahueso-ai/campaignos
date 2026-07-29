@@ -196,7 +196,7 @@ test.describe("Ask Ralli Assistant", () => {
 });
 
 async function openAskRalliDialog(page: Page): Promise<Locator> {
-  // Expanded sidebar: "Ask Ralli →" on the pinned card under Insights.
+  // Expanded sidebar: "Ask Ralli →" on the pinned card after primary nav.
   const openLabeled = page.getByRole("button", { name: /^ask ralli/i });
   const openCompact = page.getByRole("button", {
     name: /^hey ralli assistant$/i,

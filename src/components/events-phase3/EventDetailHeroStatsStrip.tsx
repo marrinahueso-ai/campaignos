@@ -28,7 +28,7 @@ const STATS: Array<{
 }> = [
   {
     key: "milestones",
-    label: "Milestones",
+    label: "Posts",
     href: createWithAiHref,
     hardNavigate: true,
   },

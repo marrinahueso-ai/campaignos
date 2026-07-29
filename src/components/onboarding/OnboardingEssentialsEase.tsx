@@ -300,7 +300,7 @@ export function OnboardingEssentialsEase({
                   className="m-0 text-[22px] font-semibold tracking-[-0.02em] text-[#2a2622]"
                   style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
                 >
-                  Import school calendar
+                  Import calendar
                 </h2>
                 <p className="mt-1 max-w-[48ch] text-[13px] leading-snug text-[#5c554c]">
                   Pull in the year so dates don’t get missed. Same path as
@@ -333,14 +333,14 @@ export function OnboardingEssentialsEase({
                       {
                         id: "ics" as const,
                         ico: "⇢",
-                        title: "ICS / webcal link",
-                        span: "Paste a subscribe URL",
+                        title: "Subscribe link",
+                        span: "Paste a calendar feed URL",
                       },
                       {
                         id: "upload" as const,
                         ico: "↑",
                         title: "Upload a file",
-                        span: ".ics or spreadsheet",
+                        span: "Calendar export or spreadsheet",
                       },
                     ] as const
                   ).map((opt) => {

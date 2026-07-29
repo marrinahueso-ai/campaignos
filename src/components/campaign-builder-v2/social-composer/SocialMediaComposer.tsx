@@ -38,6 +38,7 @@ import {
   previewAfterResendForApproval,
   resolveMilestoneGenerationStatus,
 } from "@/lib/campaign-builder-v2/milestone-status";
+import { isPublishNowDelivery } from "@/lib/campaign-builder-v2/delivery-method";
 import {
   PLATFORM_FORMAT_OPTIONS,
   isPlaceholderArtworkUrl,
@@ -51,6 +52,7 @@ import type {
   PlatformFormat,
 } from "@/lib/campaign-builder-v2/types";
 import "./social-composer.css";
+import { SocialComposerEventPicker } from "./SocialComposerEventPicker";
 
 const EditArtworkModal = dynamic(
   () =>
@@ -162,6 +164,15 @@ function formatsSummaryFromPlatforms(formats: PlatformFormat[]): string {
   return Array.from(views).join(" · ");
 }
 
+const FORMAT_OPTION_DESC: Partial<Record<PlatformFormat, string>> = {
+  "facebook-feed": "Square · Facebook",
+  "facebook-story": "Vertical · Facebook",
+  "instagram-feed": "Square · Instagram",
+  "instagram-story": "Vertical · Meta story",
+  "instagram-story-manual":
+    "Email kit at send time — add music, stickers, link stickers yourself",
+};
+
 function fmtSummaryHeadline(formats: PlatformFormat[]): string {
   if (formats.length === 0) {
     return "No formats selected";
@@ -204,7 +215,7 @@ function statusPill(status: MilestoneGenerationStatus): { cls: string; label: st
 }
 
 export function SocialMediaComposer({
-  eventTitle,
+  eventTitle: _eventTitle,
 }: {
   eventId: string;
   eventTitle: string;
@@ -249,7 +260,7 @@ export function SocialMediaComposer({
             <h1 className="serif">Social Media Composer</h1>
             <p className="lede">
               Same studio feel as Homepage &amp; Newsletter — logos from Setup,
-              drag-and-drop inspiration, playbooks that map milestones, then
+              drag-and-drop inspiration, communication plans that map posts, then
               edit &amp; re-approve after generate.
             </p>
 
@@ -262,14 +273,14 @@ export function SocialMediaComposer({
                   onClick={() => goToStep("inspiration")}
                 >
                   <span className="label">1 · Setup</span>
-                  <span className="hint">Logos, inspiration &amp; playbook</span>
+                  <span className="hint">Logos, inspiration &amp; communication plan</span>
                 </button>
                 <button
                   type="button"
                   className={`step-btn${activeNav === "milestones" ? " active" : ""}`}
                   onClick={() => goToStep("milestones")}
                 >
-                  <span className="label">2 · Milestones</span>
+                  <span className="label">2 · Posts</span>
                   <span className="hint">Reorder, dates &amp; notes</span>
                 </button>
                 <button
@@ -300,7 +311,7 @@ export function SocialMediaComposer({
                 ) : currentStep === "published" ? (
                   <PublishedPanel />
                 ) : (
-                  <SetupPanel eventTitle={eventTitle} onToast={showToast} />
+                  <SetupPanel onToast={showToast} />
                 )}
               </div>
             </div>
@@ -314,20 +325,20 @@ export function SocialMediaComposer({
 }
 
 function SetupPanel({
-  eventTitle,
   onToast,
 }: {
-  eventTitle: string;
   onToast: (message: string) => void;
 }) {
   const {
     session,
     updateInspiration,
     setPlaybookId,
+    selectCampaign,
     addInspirationImage,
     removeInspirationImage,
     saveCreativeSetupAndContinue,
     playbookOptions,
+    campaignOptions,
     logoOptions,
     isSaving,
   } = useCampaignBuilder();
@@ -349,7 +360,10 @@ function SetupPanel({
   }
 
   const selectedLogo = logoOptions.find((logo) => logo.id === inspiration.selectedLogoId) ?? null;
-  const campaignTitle = inspiration.campaignName.trim() || eventTitle;
+  const campaignTitle =
+    inspiration.campaignName.trim() ||
+    campaignOptions.find((option) => option.id === session.eventId)?.title ||
+    "Your event";
   const sortedMilestones = useMemo(
     () => [...session.milestones].sort((a, b) => a.sortOrder - b.sortOrder),
     [session.milestones],
@@ -380,9 +394,9 @@ function SetupPanel({
     setPlaybookError(null);
     const result = await setPlaybookId(nextId);
     if (!result.success) {
-      setPlaybookError(result.message ?? "Could not update playbook milestones.");
+      setPlaybookError(result.message ?? "Could not update communication plan posts.");
     } else {
-      onToast("Playbook mapped");
+      onToast("Communication Plan mapped");
     }
   }
 
@@ -414,7 +428,7 @@ function SetupPanel({
           <h2>Creative Setup</h2>
           <p>
             Brand logos from Setup, drag inspiration into order, pick a
-            playbook that maps your milestone plan.
+            communication plan that maps your post plan.
           </p>
         </div>
         <div className="actions">
@@ -424,7 +438,7 @@ function SetupPanel({
             onClick={() => void handleSave()}
             disabled={isContinuing || isSaving}
           >
-            {isContinuing ? "Saving…" : "Save → Milestones"}
+            {isContinuing ? "Saving…" : "Save → Posts"}
           </button>
         </div>
       </div>
@@ -440,8 +454,14 @@ function SetupPanel({
             </p>
             <div className="grid-2">
               <div>
-                <label className="field-label">Event</label>
-                <input className="field" value={campaignTitle} readOnly />
+                <label className="field-label" htmlFor="social-composer-event-search">
+                  Event
+                </label>
+                <SocialComposerEventPicker
+                  selectedEventId={session.eventId}
+                  campaignOptions={campaignOptions}
+                  onSelect={selectCampaign}
+                />
               </div>
               <div>
                 <label className="field-label">Campaign date</label>
@@ -457,7 +477,7 @@ function SetupPanel({
           <div className="box">
             <h3>Brand logos</h3>
             <p className="desc">
-              Pulled from <strong>Setup → Brand</strong> (PTO + school). Same
+              Pulled from <strong>Setup → Brand</strong>. Same
               logos Homepage &amp; Social share.
             </p>
             <div className="logo-grid">
@@ -595,12 +615,12 @@ function SetupPanel({
           </div>
 
           <div className="box">
-            <h3>Playbook</h3>
+            <h3>Communication Plan</h3>
             <p className="desc">
-              Choosing a playbook <strong>maps real milestone steps</strong> into
+              Choosing a communication plan <strong>maps real posts</strong> into
               your campaign plan — not just a label.
             </p>
-            <label className="field-label">Playbook</label>
+            <label className="field-label">Communication Plan</label>
             <select
               className="field"
               value={inspiration.playbookId}
@@ -619,7 +639,7 @@ function SetupPanel({
             ) : null}
             {sortedMilestones.length > 0 ? (
               <div className="playbook-map">
-                <h4>Maps to {sortedMilestones.length} milestones</h4>
+                <h4>Maps to {sortedMilestones.length} posts</h4>
                 {sortedMilestones.map((milestone) => {
                   const { mo, dy } = monthDay(milestone.suggestedDate);
                   return (
@@ -641,7 +661,7 @@ function SetupPanel({
 
           <div className="box">
             <h3>Brand colors &amp; voice</h3>
-            <p className="desc">School kit + a short voice note for captions.</p>
+            <p className="desc">Brand colors + a short voice note for captions.</p>
             <div className="color-row" style={{ marginBottom: 14 }}>
               {colors.length > 0 ? (
                 colors.map((color, index) => (
@@ -663,7 +683,7 @@ function SetupPanel({
               rows={3}
               value={inspiration.voiceTone}
               onChange={(event) => updateInspiration({ voiceTone: event.target.value })}
-              placeholder="Warm, parent-friendly, short. Celebrate kids &amp; teachers…"
+              placeholder="Warm, clear, short. Celebrate people and the event…"
             />
           </div>
         </div>
@@ -755,14 +775,14 @@ function MilestonesPanel({ onToast }: { onToast: (message: string) => void }) {
       return;
     }
     reorderMilestones(fromIndex, toIndex);
-    onToast("Milestones reordered");
+    onToast("Posts reordered");
   }
 
   return (
     <section>
       <div className="panel-head">
         <div>
-          <h2>Campaign Milestones</h2>
+          <h2>Posts</h2>
           <p>Drag to reorder. Click a row to expand &amp; edit — collapse when you’re done.</p>
         </div>
         <div className="actions">
@@ -781,8 +801,6 @@ function MilestonesPanel({ onToast }: { onToast: (message: string) => void }) {
       </div>
 
       <div className="box">
-        <h3>Milestones</h3>
-        <p className="desc">Mapped from playbook · drag ⠿ to reorder · click to expand edit.</p>
         <div className="dnd-hint">⠿ Drag cards to reorder</div>
         <div className="ms-list">
           {milestones.map((milestone) => {
@@ -841,7 +859,7 @@ function MilestonesPanel({ onToast }: { onToast: (message: string) => void }) {
                     onSave={(patch) => {
                       updateMilestone(milestone.id, patch);
                       setExpandedId(null);
-                      onToast("Milestone saved");
+                      onToast("Post saved");
                     }}
                     onCollapse={() => setExpandedId(null)}
                   />
@@ -856,10 +874,10 @@ function MilestonesPanel({ onToast }: { onToast: (message: string) => void }) {
           style={{ marginTop: 10 }}
           onClick={() => {
             addMilestone();
-            onToast("Milestone added");
+            onToast("Post added");
           }}
         >
-          + Add milestone
+          + Add post
         </button>
       </div>
     </section>
@@ -923,7 +941,7 @@ function MilestoneEditBody({
             })
           }
         >
-          Save milestone
+          Save post
         </button>
         <button type="button" className="btn btn-sm btn-secondary" onClick={onCollapse}>
           Collapse
@@ -986,6 +1004,9 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
 
   const sharedCaption = selectedPreview ? getSharedCaptionText(selectedPreview.captions) : "";
   const enabledFormats = selectedPreview?.enabledFormats ?? [];
+  const publishNowSelected = selectedPreview
+    ? isPublishNowDelivery(selectedPreview.deliveryMethod)
+    : true;
   const hasManual = enabledFormats.includes("instagram-story-manual");
   const handle = handleize(session.inspiration.campaignName);
 
@@ -1004,7 +1025,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
 
   async function resend(artwork?: MilestoneArtwork) {
     if (!selectedPreview || !selectedMilestone) {
-      throw new Error("Select a milestone before resending for approval.");
+      throw new Error("Select a post before resending for approval.");
     }
     setIsResending(true);
     try {
@@ -1129,7 +1150,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
         </div>
         <div className="actions">
           <button type="button" className="btn btn-secondary" onClick={() => goToStep("milestones")}>
-            ← Milestones
+            ← Posts
           </button>
           <button
             type="button"
@@ -1149,7 +1170,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
 
       <div className="preview-layout">
         <aside className="rail-mini">
-          <h4>Milestones</h4>
+          <h4>Posts</h4>
           {milestones.map((milestone) => {
             const preview =
               session.previewContents.find((c) => c.milestoneId === milestone.id) ?? null;
@@ -1177,7 +1198,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
               <strong>Changes requested</strong>
               <span>
                 {selectedPreview?.changeRequestComment ||
-                  "Approver requested changes on this milestone."}
+                  "Approver requested changes on this post."}
               </span>
               <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 8 }}>
                 <button
@@ -1269,7 +1290,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                         }
                       >
                         <span className="badge">Feed</span>
-                        <div className="title">{selectedMilestone?.name ?? "Milestone"}</div>
+                        <div className="title">{selectedMilestone?.name ?? "Post"}</div>
                         <button
                           type="button"
                           className="art-dl"
@@ -1289,7 +1310,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                       </div>
                     </WarmBreathFrame>
                     <div className="ig-meta">
-                      <div className="likes">♡ Liked by families</div>
+                      <div className="likes">♡ Liked by your community</div>
                       <div className="cap">
                         <strong>{handle}</strong>{" "}
                         {sharedCaption.split("\n")[0] || "Add a caption below."}
@@ -1324,7 +1345,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             : { background: `linear-gradient(160deg, ${gradient})` }
                         }
                       >
-                        <div className="st">{selectedMilestone?.name ?? "Milestone"}</div>
+                        <div className="st">{selectedMilestone?.name ?? "Post"}</div>
                         <div className="sub">{formatLongDate(selectedMilestone?.suggestedDate)}</div>
                         <button
                           type="button"
@@ -1390,6 +1411,9 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
           </p>
 
           <label className="field-label">Platforms &amp; formats</label>
+          <p style={{ margin: "0 0 8px", fontSize: 11, color: "var(--muted)" }}>
+            Facebook and Instagram posts go out automatically after approval.
+          </p>
           <div className={`fmt-drop${fmtOpen ? " open" : ""}`}>
             <button
               type="button"
@@ -1421,9 +1445,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                     <div>
                       <div className="w-title">{option.label}</div>
                       <div className="w-desc">
-                        {isManual
-                          ? "Email kit at schedule time — add music, stickers, link stickers yourself"
-                          : "Auto-post after approval"}
+                        {FORMAT_OPTION_DESC[option.id] ?? option.aspect}
                       </div>
                     </div>
                   </button>
@@ -1473,7 +1495,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                 <input
                   className="field"
                   type="email"
-                  placeholder="you@schoolpto.org"
+                  placeholder="you@yourorg.org"
                   value={selectedPreview.manualEmailTo}
                   onChange={(event) =>
                     updatePreviewContent(selectedPreview.milestoneId, {
@@ -1513,16 +1535,81 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
             />
           </div>
           <div style={{ marginTop: 12 }}>
-            <label className="field-label">Publish schedule (auto formats)</label>
-            <input
-              className="field"
-              readOnly
-              value={
-                selectedPreview
-                  ? formatScheduleLabel(selectedPreview.scheduleDate, selectedPreview.scheduleTime)
-                  : "—"
-              }
-            />
+            <label className="field-label">When to publish</label>
+            <div
+              className="mode-toggle"
+              role="group"
+              aria-label="When to publish"
+            >
+              <button
+                type="button"
+                className={publishNowSelected ? "active" : ""}
+                disabled={!selectedPreview}
+                onClick={() =>
+                  selectedPreview &&
+                  updatePreviewContent(selectedPreview.milestoneId, {
+                    deliveryMethod: "publish-now",
+                  })
+                }
+              >
+                Publish now
+              </button>
+              <button
+                type="button"
+                className={!publishNowSelected ? "active" : ""}
+                disabled={!selectedPreview}
+                onClick={() =>
+                  selectedPreview &&
+                  updatePreviewContent(selectedPreview.milestoneId, {
+                    deliveryMethod: "schedule",
+                  })
+                }
+              >
+                Schedule for later
+              </button>
+            </div>
+            {publishNowSelected ? (
+              <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--muted)" }}>
+                Goes out right after approval.
+              </p>
+            ) : selectedPreview ? (
+              <div style={{ marginTop: 10 }}>
+                <div className="grid-2">
+                  <div>
+                    <label className="field-label">Publish date</label>
+                    <input
+                      className="field"
+                      type="date"
+                      value={selectedPreview.scheduleDate}
+                      onChange={(event) =>
+                        updatePreviewContent(selectedPreview.milestoneId, {
+                          scheduleDate: event.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="field-label">Publish time</label>
+                    <input
+                      className="field"
+                      type="time"
+                      value={selectedPreview.scheduleTime}
+                      onChange={(event) =>
+                        updatePreviewContent(selectedPreview.milestoneId, {
+                          scheduleTime: event.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--muted)" }}>
+                  {formatScheduleLabel(
+                    selectedPreview.scheduleDate,
+                    selectedPreview.scheduleTime,
+                  )}
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -1740,13 +1827,13 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
     },
     {
       done: milestones.length > 0,
-      title: "Playbook milestones mapped",
-      desc: `${milestones.length} milestone${milestones.length === 1 ? "" : "s"} in this campaign`,
+      title: "Communication Plan posts mapped",
+      desc: `${milestones.length} post${milestones.length === 1 ? "" : "s"} in this campaign`,
     },
     {
       done: contentComplete,
       title: "Content generated + editable",
-      desc: `${progress.complete} of ${progress.total} milestones ready`,
+      desc: `${progress.complete} of ${progress.total} posts ready`,
     },
     {
       done: !anyChangesRequested,
@@ -1866,7 +1953,7 @@ function PublishedPanel() {
       <div className="box">
         <h3>What happens next</h3>
         <p className="desc">
-          Your approver will review the submitted milestones. Any changes
+          Your approver will review the submitted posts. Any changes
           requested route back to Preview for edits, then a quick re-send.
         </p>
       </div>

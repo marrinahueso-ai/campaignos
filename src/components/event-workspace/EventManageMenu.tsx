@@ -1,9 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { Archive, ArchiveRestore, MoreHorizontal, Trash2 } from "lucide-react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
+import { createPortal } from "react-dom";
+import { Archive, ArchiveRestore, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { EventEditDetailsDialog } from "@/components/event-workspace/EditEventDetailsButton";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils/cn";
 import { Input } from "@/components/ui/Input";
 import {
   archiveEventAction,
@@ -16,21 +25,78 @@ import type { Event } from "@/types";
 type ConfirmAction = "archive" | "restore" | "delete" | null;
 
 const DELETE_CONFIRM_TEXT = "DELETE";
+const MENU_MIN_WIDTH = 224; // min-w-[14rem]
+const VIEWPORT_PAD = 8;
 
 interface EventManageMenuProps {
   event: Event;
   size?: "sm" | "md" | "lg";
+  includeEditDetails?: boolean;
+  iconOnly?: boolean;
+  triggerClassName?: string;
 }
 
-export function EventManageMenu({ event, size = "sm" }: EventManageMenuProps) {
+export function EventManageMenu({
+  event,
+  size = "sm",
+  includeEditDetails = false,
+  iconOnly = false,
+  triggerClassName,
+}: EventManageMenuProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [menuCoords, setMenuCoords] = useState<{ top: number; left: number } | null>(
+    null,
+  );
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const archived = isArchivedEvent(event);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!menuOpen) {
+      setMenuCoords(null);
+      return;
+    }
+
+    function updatePosition() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      let left = rect.left;
+      left = Math.max(
+        VIEWPORT_PAD,
+        Math.min(left, window.innerWidth - MENU_MIN_WIDTH - VIEWPORT_PAD),
+      );
+      setMenuCoords({ top: rect.bottom + 8, left });
+    }
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
 
   function openConfirm(action: ConfirmAction) {
     setMenuOpen(false);
@@ -121,70 +187,98 @@ export function EventManageMenu({ event, size = "sm" }: EventManageMenuProps) {
     <>
       <div className="relative">
         <Button
+          ref={triggerRef}
           type="button"
           variant="secondary"
           size={size}
           disabled={isPending}
           aria-expanded={menuOpen}
           aria-haspopup="menu"
+          aria-label={iconOnly ? "Actions" : undefined}
+          className={cn(triggerClassName)}
           onClick={() => setMenuOpen((open) => !open)}
         >
           <MoreHorizontal className="h-4 w-4" />
-          Actions
+          {iconOnly ? null : "Actions"}
         </Button>
 
-        {menuOpen && (
-          <>
-            <button
-              type="button"
-              className="fixed inset-0 z-40 cursor-default bg-transparent"
-              aria-label="Close menu"
-              onClick={() => setMenuOpen(false)}
-            />
-            <div
-              role="menu"
-              className="absolute left-0 top-full z-50 mt-2 min-w-[14rem] rounded-xl border border-cos-border bg-cos-card py-1 shadow-lg"
-            >
-              {archived ? (
+        {menuOpen && mounted && menuCoords
+          ? createPortal(
+              <>
                 <button
                   type="button"
-                  role="menuitem"
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg focus-visible:bg-cos-bg focus-visible:outline-none"
-                  onClick={() => openConfirm("restore")}
+                  className="fixed inset-0 z-[70] cursor-default bg-transparent"
+                  aria-label="Close menu"
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div
+                  role="menu"
+                  className="fixed z-[80] min-w-[14rem] rounded-xl border border-cos-border bg-cos-card py-1 shadow-lg"
+                  style={{ top: menuCoords.top, left: menuCoords.left }}
                 >
-                  <ArchiveRestore className="h-4 w-4 shrink-0" />
-                  Restore campaign
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg focus-visible:bg-cos-bg focus-visible:outline-none"
-                  onClick={() => openConfirm("archive")}
-                >
-                  <span className="flex items-center gap-2">
-                    <Archive className="h-4 w-4 shrink-0" />
-                    Archive campaign
-                  </span>
-                  <span className="rounded-full bg-cos-info px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-cos-info-text">
-                    Recommended
-                  </span>
-                </button>
-              )}
-              <div className="my-1 border-t border-cos-border" role="separator" />
-              <button
-                type="button"
-                role="menuitem"
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-error-text hover:bg-cos-bg focus-visible:bg-cos-bg focus-visible:outline-none"
-                onClick={() => openConfirm("delete")}
-              >
-                <Trash2 className="h-4 w-4 shrink-0" />
-                Delete campaign
-              </button>
-            </div>
-          </>
-        )}
+                  {includeEditDetails ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg focus-visible:bg-cos-bg focus-visible:outline-none"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setEditOpen(true);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4 shrink-0" />
+                      Edit details
+                    </button>
+                  ) : null}
+                  {includeEditDetails ? (
+                    <div className="my-1 border-t border-cos-border" role="separator" />
+                  ) : null}
+                  {archived ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg focus-visible:bg-cos-bg focus-visible:outline-none"
+                      onClick={() => openConfirm("restore")}
+                    >
+                      <ArchiveRestore className="h-4 w-4 shrink-0" />
+                      Restore campaign
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg focus-visible:bg-cos-bg focus-visible:outline-none"
+                      onClick={() => openConfirm("archive")}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Archive className="h-4 w-4 shrink-0" />
+                        Archive campaign
+                      </span>
+                      <span className="rounded-full bg-cos-info px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-cos-info-text">
+                        Recommended
+                      </span>
+                    </button>
+                  )}
+                  <div className="my-1 border-t border-cos-border" role="separator" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-error-text hover:bg-cos-bg focus-visible:bg-cos-bg focus-visible:outline-none"
+                    onClick={() => openConfirm("delete")}
+                  >
+                    <Trash2 className="h-4 w-4 shrink-0" />
+                    Delete campaign
+                  </button>
+                </div>
+              </>,
+              document.body,
+            )
+          : null}
       </div>
+
+      {editOpen ? (
+        <EventEditDetailsDialog event={event} onClose={() => setEditOpen(false)} />
+      ) : null}
 
       {confirmAction && confirmCopy && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-cos-text/20 p-4 backdrop-blur-sm">

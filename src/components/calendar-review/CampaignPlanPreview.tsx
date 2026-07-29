@@ -6,7 +6,7 @@ import type { EventType } from "@/types/playbooks";
 interface CampaignPlanPreviewProps {
   eventType: EventType | null;
   communicationStrategy: CommunicationStrategy;
-  /** When set (e.g. org playbook step count), prefer over timing-preset summary. */
+  /** When set (e.g. org communication plan step count), prefer over timing-preset summary. */
   planSummary?: string;
   compact?: boolean;
   className?: string;

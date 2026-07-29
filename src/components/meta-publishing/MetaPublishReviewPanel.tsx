@@ -55,7 +55,7 @@ export function MetaPublishReviewPanel({ eventId, bundles }: MetaPublishReviewPa
       const result = await publishMetaBundleNowAction(eventId, relativeDay);
       setPublishPendingDay(null);
       if (!result.success) {
-        setError(result.error ?? "Unable to publish this milestone.");
+        setError(result.error ?? "Unable to publish this post.");
         return;
       }
       router.refresh();
@@ -178,7 +178,7 @@ export function MetaPublishReviewPanel({ eventId, bundles }: MetaPublishReviewPa
         <LifecycleSectionCard
           id="publish-calendar"
           title="Calendar"
-          description="See this campaign on your school calendar."
+          description="See this campaign on your calendar."
         >
           <div className="flex flex-col items-start gap-3">
             <p className="text-sm text-cos-muted">

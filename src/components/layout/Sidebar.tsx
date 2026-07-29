@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BarChart3,
   CalendarRange,
   CheckCircle2,
   ChevronDown,
@@ -14,7 +13,6 @@ import {
   ListChecks,
   Megaphone,
   Shield,
-  Store,
   Users,
   WandSparkles,
 } from "lucide-react";
@@ -238,8 +236,8 @@ const navItems: {
     isActive: isCommunicationsHubActive,
   },
   { label: "Files", href: "/files", icon: FolderOpen },
-  { label: "Vendors", href: "/vendors", icon: Store },
-  { label: "Insights", href: "/insights", icon: BarChart3 },
+  // Vendors + Insights stay on event detail tabs (`?tab=vendors` / `?tab=insights`)
+  // and at /vendors · /insights via direct URL — not primary nav (calmer soft-launch surface).
 ];
 
 interface SidebarProps {
@@ -411,7 +409,7 @@ export function Sidebar({
         </div>
       )}
 
-      {/* Scrollable primary nav; Ask Ralli renders immediately after Insights. */}
+      {/* Scrollable primary nav; Ask Ralli sits after the last primary item. */}
       <nav
         className={cn(
           "min-h-0 flex-1 space-y-0.5 overflow-y-auto",
@@ -602,7 +600,7 @@ export function Sidebar({
           )
         ) : null}
 
-        {/* Immediately under Insights (last nav item) — scrolls with nav, not footer-pinned. */}
+        {/* After primary nav — scrolls with nav, not footer-pinned. */}
         <div className={cn(showLabels ? "pt-3" : "flex justify-center pt-2")}>
           {showLabels ? <RalliAiAssistantWidget /> : <RalliAiAssistantWidget compact />}
         </div>

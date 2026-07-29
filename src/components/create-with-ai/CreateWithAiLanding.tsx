@@ -3,145 +3,91 @@ import { Lock } from "lucide-react";
 import Link from "next/link";
 
 type CreateWithAiLandingProps = {
-  organizationName: string | null;
   canUseSocial: boolean;
   socialHref: string;
 };
 
-function WebsitePagesArt() {
+function SocialHeroArt() {
   return (
-    <div className="cwai-art cwai-art-home relative h-[11.5rem] overflow-hidden rounded-[20px]">
-      <div className="absolute inset-0 bg-[linear-gradient(145deg,#2f4a3c_0%,#6b8171_48%,#b8c9bc_100%)]" />
-      <div className="cwai-drift absolute -right-8 -top-10 h-36 w-36 rounded-full bg-[#f6f2eb]/20 blur-2xl" />
-      <div className="cwai-drift-slow absolute -bottom-10 left-6 h-28 w-28 rounded-full bg-[#d4a84b]/25 blur-2xl" />
-
-      {/* Mini page library */}
-      <div className="cwai-stage absolute inset-x-4 top-5 bottom-4 grid grid-cols-2 gap-1.5">
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="cwai-tile rounded-[10px] border border-white/30 bg-[#fffcf7]/92 p-1.5 shadow-[0_8px_18px_rgba(28,36,48,0.14)]"
-            style={{ animationDelay: `${i * 100}ms` }}
-          >
-            <div
-              className="mb-1 h-5 rounded-[6px]"
-              style={{
-                background:
-                  i === 0
-                    ? "linear-gradient(120deg,#0b2f5b,#2f9fb3)"
-                    : i === 1
-                      ? "linear-gradient(120deg,#1a4a6e,#2a7a86)"
-                      : i === 2
-                        ? "linear-gradient(120deg,#c4922e,#e0b65a)"
-                        : "linear-gradient(145deg,#ebe4d9,#f6f2eb)",
-              }}
-            />
-            <div className="h-1 w-[70%] rounded-full bg-[#ebe4d9]" />
-            <div className="mt-1 h-1 w-[45%] rounded-full bg-[#d9e8ec]" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SocialArt() {
-  return (
-    <div className="cwai-art cwai-art-social relative h-[11.5rem] overflow-hidden rounded-[20px]">
-      <div className="absolute inset-0 bg-[linear-gradient(155deg,#c4922e_0%,#e0b65a_42%,#f5e6c2_100%)]" />
+    <div className="cwai-art relative flex min-h-[11.5rem] items-center justify-center overflow-hidden bg-[linear-gradient(155deg,#c4922e_0%,#e0b65a_42%,#f5e6c2_100%)] sm:min-h-full">
       <div className="cwai-drift absolute -left-6 top-0 h-32 w-32 rounded-full bg-white/30 blur-2xl" />
       <div className="cwai-drift-slow absolute -bottom-8 right-0 h-28 w-28 rounded-full bg-[#2a2622]/10 blur-2xl" />
-
-      {/* Stacked posts */}
-      <div className="cwai-stage absolute inset-0 flex items-center justify-center">
-        <div className="relative h-[7.25rem] w-[7.25rem]">
-          <div className="absolute left-2 top-3 h-[6.1rem] w-[6.1rem] rotate-[-8deg] rounded-[16px] bg-white/55 shadow-md ring-1 ring-black/5" />
-          <div className="absolute left-4 top-2 h-[6.1rem] w-[6.1rem] rotate-[6deg] rounded-[16px] bg-white/70 shadow-md ring-1 ring-black/5" />
-          <div className="cwai-post absolute left-3 top-1 h-[6.4rem] w-[6.4rem] rounded-[18px] bg-[#fffcf7] p-2 shadow-[0_14px_30px_rgba(42,38,34,0.18)] ring-1 ring-black/5">
-            <div className="h-full rounded-[12px] bg-[linear-gradient(145deg,#2f4a3c,#6b8171_55%,#d4a84b)]" />
-          </div>
+      <div className="cwai-stage relative h-[7.25rem] w-[7.25rem]">
+        <div className="absolute left-2 top-3 h-[6.1rem] w-[6.1rem] rotate-[-8deg] rounded-[16px] bg-white/55 shadow-md ring-1 ring-black/5" />
+        <div className="absolute left-4 top-2 h-[6.1rem] w-[6.1rem] rotate-[6deg] rounded-[16px] bg-white/70 shadow-md ring-1 ring-black/5" />
+        <div className="cwai-post absolute left-3 top-1 h-[6.4rem] w-[6.4rem] rounded-[18px] bg-[#fffcf7] p-2 shadow-[0_14px_30px_rgba(42,38,34,0.18)] ring-1 ring-black/5">
+          <div className="h-full rounded-[12px] bg-[linear-gradient(145deg,#2f4a3c,#6b8171_55%,#d4a84b)]" />
         </div>
       </div>
     </div>
   );
 }
 
-function NewsletterArt() {
+function MiniArt({
+  className,
+}: {
+  className: string;
+}) {
   return (
-    <div className="cwai-art cwai-art-news relative h-[11.5rem] overflow-hidden rounded-[20px]">
-      <div className="absolute inset-0 bg-[linear-gradient(155deg,#0b2f5b_0%,#2f9fb3_48%,#7fd0df_100%)]" />
-      <div className="cwai-drift absolute -left-8 top-2 h-32 w-32 rounded-full bg-[#f7c948]/35 blur-2xl" />
-      <div className="cwai-drift-slow absolute -bottom-10 -right-4 h-28 w-28 rounded-full bg-white/25 blur-2xl" />
-
-      {/* Stacked Scoop email */}
-      <div className="cwai-stage absolute inset-0 flex items-center justify-center">
-        <div className="relative h-[7.5rem] w-[7.75rem]">
-          <div className="absolute left-1 top-3 h-[6.4rem] w-[6.6rem] rotate-[-7deg] rounded-[16px] bg-white/40 shadow-md ring-1 ring-white/30" />
-          <div className="absolute left-3 top-2 h-[6.4rem] w-[6.6rem] rotate-[5deg] rounded-[16px] bg-white/55 shadow-md ring-1 ring-white/40" />
-          <div className="cwai-post absolute left-2 top-1 h-[6.7rem] w-[6.9rem] rounded-[18px] bg-[#fffcf7] p-2 shadow-[0_14px_30px_rgba(11,47,91,0.28)] ring-1 ring-black/5">
-            <div className="h-4 overflow-hidden rounded-[8px] bg-[linear-gradient(120deg,#0b2f5b,#2f9fb3)] px-1.5 py-1">
-              <div className="h-1 w-10 rounded-full bg-white/80" />
-            </div>
-            <div className="mt-1.5 rounded-[6px] bg-[#fff9e8] px-1.5 py-1 ring-1 ring-[#f7c948]/50">
-              <div className="h-1 w-full rounded-full bg-[#e8c96a]/80" />
-              <div className="mt-1 h-1 w-[70%] rounded-full bg-[#e8c96a]/45" />
-            </div>
-            <div className="mt-1.5 flex items-start gap-1.5">
-              <div className="h-7 w-7 shrink-0 rounded-[7px] bg-[linear-gradient(145deg,#2f4a3c,#d4a84b)]" />
-              <div className="min-w-0 flex-1 space-y-1 pt-0.5">
-                <div className="h-1.5 w-[90%] rounded-full bg-[#d9e8ec]" />
-                <div className="h-1 w-[65%] rounded-full bg-[#ebe4d9]" />
-              </div>
-            </div>
-            <div className="mt-1.5 flex gap-1">
-              <div className="h-2.5 flex-1 rounded-full bg-[#eef8fa] ring-1 ring-[#c5e4ea]" />
-              <div className="h-2.5 flex-1 rounded-full bg-[#f0faf7] ring-1 ring-[#c5e4ea]" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div
+      className={cn("mb-2.5 h-14 w-full rounded-xl", className)}
+      aria-hidden
+    />
   );
 }
 
-const CHOICES = [
+type AlsoItem = {
+  id: string;
+  title: string;
+  href: string | null;
+  artClass: string;
+  status: "live" | "soon";
+};
+
+const ALSO_AVAILABLE: AlsoItem[] = [
   {
-    id: "website-pages" as const,
-    title: "Website pages",
-    description:
-      "Homepage, Volunteer, and more — edit, preview, and export full pages for your site.",
-    cta: "Open pages library →",
-    href: "/create-with-ai/website-pages",
-    Art: WebsitePagesArt,
-    enabled: true as const,
+    id: "homepage",
+    title: "Homepage",
+    href: "/homepage-composer",
+    artClass: "bg-[linear-gradient(145deg,#2f4a3c,#6b8171_50%,#b8c9bc)]",
+    status: "live",
   },
   {
-    id: "social" as const,
-    title: "Social Media",
-    description:
-      "Campaign posts from your events — inspiration, square artwork, captions, and approvals.",
-    cta: "Open Social →",
-    href: "/create-with-ai/social",
-    Art: SocialArt,
-    enabled: true as const,
+    id: "volunteer",
+    title: "Volunteer page",
+    href: "/volunteer-composer",
+    artClass: "bg-[linear-gradient(145deg,#1a4a6e,#2a7a86_55%,#a8d4dc)]",
+    status: "live",
   },
   {
-    id: "newsletter" as const,
+    id: "sponsorship",
+    title: "Sponsorship",
+    href: null,
+    artClass: "bg-[linear-gradient(145deg,#5c4030,#c4922e_60%,#f0e0c0)]",
+    status: "soon",
+  },
+  {
+    id: "newsletter",
     title: "Newsletter",
-    description:
-      "Scoop-style family email from your events — message, stories, calendar, sponsors, and socials.",
-    cta: "Start Newsletter Composer →",
     href: "/newsletter-composer",
-    Art: NewsletterArt,
-    enabled: true as const,
+    artClass: "bg-[linear-gradient(155deg,#0b2f5b,#2f9fb3_50%,#7fd0df)]",
+    status: "live",
+  },
+  {
+    id: "flyer",
+    title: "Flyer",
+    href: null,
+    artClass: "bg-[linear-gradient(145deg,#3d2a4a,#8b6b9e_50%,#e8d5f0)]",
+    status: "soon",
   },
 ];
 
 export function CreateWithAiLanding({
-  organizationName,
   canUseSocial,
   socialHref,
 }: CreateWithAiLandingProps) {
+  const socialLocked = !canUseSocial;
+
   return (
     <div className="studio-page relative space-y-8 pb-12">
       <style>{`
@@ -157,34 +103,29 @@ export function CreateWithAiLanding({
           0%, 100% { transform: translate3d(0, 0, 0); }
           50% { transform: translate3d(-6px, 8px, 0); }
         }
-        @keyframes cwai-tile {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-        }
         .cwai-card-enter {
           animation: cwai-fade-up 0.55s ease both;
         }
         .cwai-drift { animation: cwai-drift 7s ease-in-out infinite; }
         .cwai-drift-slow { animation: cwai-drift-slow 9s ease-in-out infinite; }
-        .cwai-tile { animation: cwai-tile 3.6s ease-in-out infinite; }
-        .cwai-choice:hover .cwai-stage {
+        .cwai-hero:hover .cwai-stage {
           transform: translateY(-3px) scale(1.03);
         }
         .cwai-stage {
           transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        .cwai-choice:hover .cwai-post {
+        .cwai-hero:hover .cwai-post {
           transform: rotate(-2deg) scale(1.04);
         }
         .cwai-post {
           transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
         }
         @media (prefers-reduced-motion: reduce) {
-          .cwai-card-enter, .cwai-drift, .cwai-drift-slow, .cwai-tile {
+          .cwai-card-enter, .cwai-drift, .cwai-drift-slow {
             animation: none !important;
           }
-          .cwai-choice:hover .cwai-stage,
-          .cwai-choice:hover .cwai-post {
+          .cwai-hero:hover .cwai-stage,
+          .cwai-hero:hover .cwai-post {
             transform: none;
           }
         }
@@ -199,94 +140,124 @@ export function CreateWithAiLanding({
         className="pointer-events-none absolute -right-8 top-16 h-48 w-48 rounded-full bg-cos-brand-mustard/15 blur-3xl"
       />
 
-      <header className="relative max-w-2xl space-y-3">
+      <header className="relative max-w-xl space-y-2">
         <p className="studio-eyebrow">Create with AI</p>
-        <h1 className="font-display text-4xl text-cos-text sm:text-5xl">
-          Create with AI
+        <h1 className="font-display text-4xl tracking-[-0.02em] text-cos-text sm:text-5xl">
+          Make social posts
         </h1>
-        <p className="text-sm leading-relaxed text-cos-muted sm:text-base">
-          Pick what you want to make
-          {organizationName ? ` for ${organizationName}` : ""} — website
-          pages, social, or newsletter.
-        </p>
       </header>
 
-      <div className="relative grid gap-5 md:grid-cols-3">
-        {CHOICES.map((choice, index) => {
-          const isSocial = choice.id === "social";
-          const lockedSocial = isSocial && !canUseSocial;
-          const href = isSocial ? socialHref : choice.href;
-          const enabled = choice.enabled && !lockedSocial;
+      <section className="relative space-y-3" aria-labelledby="cwai-start-here">
+        <p
+          id="cwai-start-here"
+          className="text-[11px] font-extrabold uppercase tracking-[0.07em] text-cos-brand-mustard"
+        >
+          Start here
+        </p>
 
-          const body = (
-            <>
-              <choice.Art />
-              <div className="mt-5 flex flex-1 flex-col px-1">
-                {!choice.enabled ? (
-                  <span className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cos-muted">
-                    Coming later
-                  </span>
-                ) : null}
-                {lockedSocial ? (
-                  <span className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cos-muted">
-                    <Lock className="h-3 w-3" strokeWidth={1.75} />
-                    Access needed
-                  </span>
-                ) : null}
-                <h2 className="font-display text-2xl text-cos-text sm:text-[1.7rem]">
-                  {choice.title}
-                </h2>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-cos-muted">
-                  {lockedSocial
-                    ? "Ask an admin for artwork / campaign create access to open Social."
-                    : choice.description}
-                </p>
-                <p
+        {socialLocked ? (
+          <div
+            className="cwai-card-enter cwai-hero grid overflow-hidden rounded-[24px] border border-cos-border/80 bg-cos-card/95 text-left shadow-[0_18px_40px_rgba(28,36,48,0.08)] opacity-90 md:grid-cols-[1.05fr_0.95fr]"
+            aria-disabled
+          >
+            <div className="flex flex-col justify-center px-7 py-7 sm:px-8">
+              <span className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cos-muted">
+                <Lock className="h-3 w-3" strokeWidth={1.75} />
+                Access needed
+              </span>
+              <h2 className="font-display text-2xl text-cos-text sm:text-[1.65rem]">
+                Social Media
+              </h2>
+              <span className="mt-5 inline-flex self-start rounded-full bg-cos-bg-alt px-4 py-2.5 text-sm font-bold text-cos-muted">
+                Need permission
+              </span>
+            </div>
+            <SocialHeroArt />
+          </div>
+        ) : (
+          <Link
+            href={socialHref}
+            className="cwai-card-enter cwai-hero group grid overflow-hidden rounded-[24px] border border-cos-border/80 bg-cos-card/95 text-left shadow-[0_18px_40px_rgba(28,36,48,0.08)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(28,36,48,0.12)] md:grid-cols-[1.05fr_0.95fr]"
+          >
+            <div className="flex flex-col justify-center px-7 py-7 sm:px-8">
+              <h2 className="font-display text-2xl text-cos-text sm:text-[1.65rem]">
+                Social Media
+              </h2>
+              <span className="mt-5 inline-flex self-start rounded-full bg-cos-brand-sage px-4 py-2.5 text-sm font-bold text-[#fffcf7]">
+                Create social posts →
+              </span>
+            </div>
+            <SocialHeroArt />
+          </Link>
+        )}
+      </section>
+
+      <section className="relative space-y-3" aria-labelledby="cwai-also">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2
+            id="cwai-also"
+            className="text-[11px] font-extrabold uppercase tracking-[0.07em] text-cos-muted"
+          >
+            Also available
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {ALSO_AVAILABLE.map((item, index) => {
+            const live = item.status === "live" && item.href;
+            const body = (
+              <>
+                <MiniArt className={item.artClass} />
+                <h3 className="text-[13px] font-bold leading-snug text-cos-text">
+                  {item.title}
+                </h3>
+                <span
                   className={cn(
-                    "mt-5 text-sm font-semibold transition-colors",
-                    enabled ? "text-cos-brand-sage" : "text-cos-muted",
+                    "mt-auto inline-flex self-start rounded-full px-2 py-0.5 text-[10px] font-bold",
+                    live
+                      ? "bg-cos-brand-sage/15 text-cos-brand-sage"
+                      : "bg-cos-bg-alt text-cos-muted",
                   )}
                 >
-                  {lockedSocial ? "Need permission" : choice.cta}
-                </p>
-              </div>
-            </>
-          );
+                  {live ? "Open" : "Coming soon"}
+                </span>
+              </>
+            );
 
-          const cardClass = cn(
-            "cwai-card-enter cwai-choice group flex h-full flex-col rounded-[26px] border border-cos-border/80 bg-cos-card/95 p-3.5 text-left shadow-[0_10px_32px_rgba(42,38,34,0.06)] backdrop-blur-sm transition-[transform,box-shadow,border-color] duration-300",
-            enabled &&
-              "hover:-translate-y-1 hover:border-cos-brand-sage/50 hover:shadow-[0_18px_40px_rgba(42,38,34,0.1)]",
-            !enabled && "cursor-not-allowed opacity-80",
-          );
+            const cardClass = cn(
+              "cwai-card-enter flex min-h-[108px] flex-col rounded-2xl border border-cos-border/80 bg-cos-card/90 p-3 text-left",
+              live &&
+                "transition-[border-color,transform] hover:-translate-y-0.5 hover:border-cos-brand-sage/40",
+              !live && "cursor-default opacity-75",
+            );
+            const style = { animationDelay: `${120 + index * 50}ms` };
 
-          const style = { animationDelay: `${index * 90}ms` };
+            if (live && item.href) {
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={cardClass}
+                  style={style}
+                >
+                  {body}
+                </Link>
+              );
+            }
 
-          if (enabled && href) {
             return (
-              <Link
-                key={choice.id}
-                href={href}
+              <div
+                key={item.id}
                 className={cardClass}
                 style={style}
+                aria-disabled
               >
                 {body}
-              </Link>
+              </div>
             );
-          }
-
-          return (
-            <div
-              key={choice.id}
-              className={cardClass}
-              style={style}
-              aria-disabled
-            >
-              {body}
-            </div>
-          );
-        })}
-      </div>
+          })}
+        </div>
+      </section>
     </div>
   );
 }

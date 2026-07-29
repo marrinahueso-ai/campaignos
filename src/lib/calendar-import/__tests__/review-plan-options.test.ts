@@ -103,7 +103,7 @@ describe("defaultPlaybookIdForReview", () => {
     );
   });
 
-  it("prefers system playbook for event type", () => {
+  it("prefers system communication plan for event type", () => {
     assert.equal(
       defaultPlaybookIdForReview("book_fair", "full_campaign", playbooks),
       SYSTEM_PLAYBOOK_IDS.book_fair,

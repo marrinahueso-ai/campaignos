@@ -9,7 +9,7 @@ import type {
   PlatformFormat,
 } from "./types.ts";
 
-/** Minimal shape needed from a communication playbook step (avoids importing
+/** Minimal shape needed from a communication plan step (avoids importing
  * the full @/types/playbooks module into every consumer). */
 export interface PlaybookMilestoneStep {
   title: string;
@@ -143,7 +143,7 @@ function hasMeaningfulMilestoneWork(
  * Milestones that would be dropped by switching to `newSteps` AND that carry
  * meaningful user-entered work (notes, overrides, generated artwork, or
  * captions) — used to decide whether to warn before replacing the milestone
- * set on a playbook change.
+ * set on a communication plan change.
  */
 export function milestonesLostOnPlaybookSwitch(
   newSteps: PlaybookMilestoneStep[],
@@ -169,7 +169,7 @@ export function milestonesLostOnPlaybookSwitch(
 }
 
 /**
- * Build a fresh milestone + preview-content list from a playbook's steps.
+ * Build a fresh milestone + preview-content list from a communication plan's steps.
  * Any existing milestone whose name matches a step (case-insensitive,
  * trimmed) keeps its id/notes/overrides/preview-content — so user-entered
  * work is preserved only for milestones that still belong to the selected
@@ -248,14 +248,14 @@ export function reconcileMilestonesWithPlaybookSteps(
   return { milestones, previewContents };
 }
 
-/** Shared confirm copy when a playbook switch would drop milestones with work. */
+/** Shared confirm copy when a communication plan switch would drop milestones with work. */
 export function playbookSwitchConfirmMessage(
   atRisk: CampaignBuilderMilestone[],
 ): string {
   const names = atRisk.map((milestone) => milestone.name).join(", ");
   return (
-    "Changing the playbook will update this campaign’s milestone timeline. " +
-    "Existing content tied to milestones that no longer match may need to be reviewed.\n\n" +
-    `Milestones with existing work that would be removed (${atRisk.length}): ${names}`
+    "Changing the communication plan will update this campaign's post timeline. " +
+    "Existing content tied to posts that no longer match may need to be reviewed.\n\n" +
+    `Posts with existing work that would be removed (${atRisk.length}): ${names}`
   );
 }

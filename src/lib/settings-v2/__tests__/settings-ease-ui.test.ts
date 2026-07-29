@@ -131,6 +131,15 @@ describe("settings ease UI contracts", () => {
     assert.match(nav, /pathname\.startsWith\("\/settings\/ai-brain"\)/);
   });
 
+  it("groups hub nav into Workspace, Connections, and You", () => {
+    assert.match(nav, /label: "Workspace"/);
+    assert.match(nav, /label: "Connections"/);
+    assert.match(nav, /label: "You"/);
+    assert.match(nav, /SETTINGS_EASE_NAV_GROUPS/);
+    const navItemCount = (nav.match(/id: "/g) ?? []).length;
+    assert.equal(navItemCount, 7);
+  });
+
   it("uses cream / Fraunces hub chrome on Overview (no dense summary icons)", () => {
     assert.match(shell, /settings-ease-nav/);
     assert.match(shell, /#fffcf7|#f6f2eb|#2f4a3c/);
@@ -144,7 +153,8 @@ describe("settings ease UI contracts", () => {
     assert.match(overview, /Active year ·/);
     assert.match(overview, /title="Branding"/);
     assert.match(overview, /actionHref="\/settings\/branding"/);
-    assert.match(overview, /Voice, inbox sources, playbooks, brand kit, school year/);
+    assert.match(overview, /Voice, inbox sources, communication plans, brand kit, school year/);
+    assert.match(overview, /Tools ready for your active year/);
     assert.match(overview, /font-fraunces/);
     assert.doesNotMatch(overview, /SettingsV2Card/);
     assert.doesNotMatch(overview, /AI Brain Snapshot/);
@@ -180,7 +190,7 @@ describe("settings ease UI contracts", () => {
     assert.match(brandingEase, /aria-label="Branding sections"/);
     assert.match(brandingEase, /AI Brain/);
     assert.match(brandingEase, /AI Inbox/);
-    assert.match(brandingEase, /Playbook/);
+    assert.match(brandingEase, /Communication Plan/);
     assert.match(brandingEase, /Branding Colors and Logos/);
     assert.match(brandingEase, /School Year/);
     assert.match(brandingEase, /href="\/settings\/ai-brain"/);
@@ -273,7 +283,7 @@ describe("settings ease UI contracts", () => {
     assert.match(schoolYearEase, /What the workspace is planning against right now/);
     assert.match(schoolYearEase, /Archive this year when you’re ready for the next one/);
     assert.match(schoolYearEase, /Close year & begin next/);
-    assert.match(schoolYearEase, /Sync subscribe feed/);
+    assert.match(schoolYearEase, /Refresh calendar feed/);
     assert.match(schoolYearEase, /Calendar subscribe URL/);
     assert.match(schoolYearEase, /Next year label/);
     assert.match(schoolYearEase, /Start date/);
@@ -300,7 +310,7 @@ describe("settings ease UI contracts", () => {
     assert.match(organizationEase, /data-settings-ease="organization"/);
     assert.match(
       organizationEase,
-      /School profile and workspace preferences\. Voice, logos, and year live/,
+      /Organization profile and workspace preferences\. Voice, logos, and year[\s\S]*live under Branding/,
     );
     assert.match(organizationEase, /Shown across Hey Ralli for this workspace/);
     assert.match(organizationEase, /Street address/);
@@ -314,7 +324,7 @@ describe("settings ease UI contracts", () => {
     assert.match(organizationEase, /Branding home/);
     assert.match(
       organizationEase,
-      /Colors, logos, AI voice, inbox sources, playbooks, and school year moved here/,
+      /Colors, logos, AI voice, inbox sources, communication plans, and school year moved here/,
     );
     assert.match(organizationEase, /Language and school details/);
     assert.match(organizationEase, /Default windows for Meta publishing/);
@@ -469,10 +479,10 @@ describe("settings ease UI contracts", () => {
     assert.doesNotMatch(calendarPage, /StudioPageHeader/);
     assert.doesNotMatch(calendarPage, /GoogleCalendarConnectionPanel/);
     assert.match(calendarEase, /data-settings-ease="calendar"/);
-    assert.match(calendarEase, /Sign in to sync events/);
+    assert.match(calendarEase, /Sign in to bring events in/);
     assert.match(calendarEase, /Signed in with Google/);
-    assert.match(calendarEase, /daily sync keeps the school year calendar fresh/);
-    assert.match(calendarEase, /Sync calendar/);
+    assert.match(calendarEase, /daily refresh keeps your year calendar up to date/);
+    assert.match(calendarEase, /Refresh calendar/);
     assert.match(calendarEase, /Open Import/);
     assert.match(calendarEase, /Subscribe feed/);
     assert.match(calendarEase, /Calendar subscribe URL/);

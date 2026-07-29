@@ -141,7 +141,7 @@ export function SettingsEaseCalendar({
     startSyncTransition(async () => {
       const result = await syncGoogleCalendarAction();
       if (!result.success) {
-        setError(result.error ?? "Sync failed.");
+        setError(result.error ?? "Refresh failed.");
         return;
       }
       if ((result.added ?? 0) === 0) {
@@ -160,7 +160,7 @@ export function SettingsEaseCalendar({
 
   function handleSaveFeed() {
     if (!activeSchoolYearId) {
-      setError("Set an active school year before saving a subscribe feed.");
+      setError("Set an active school year before saving a calendar feed.");
       return;
     }
 
@@ -208,8 +208,8 @@ export function SettingsEaseCalendar({
             Google Calendar
           </h1>
           <p className="mt-1.5 mb-0 max-w-[48ch] text-sm leading-snug text-[#5c554c]">
-            Sign in to sync events. Upload a file and review New / Duplicate /
-            Update / Conflict on Calendar → Import.
+            Sign in to bring events in. Upload a file and review New / Duplicate
+            / Update / Conflict on Calendar → Import.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -243,13 +243,13 @@ export function SettingsEaseCalendar({
             </h2>
             <p className="mt-2 mb-0 max-w-[48ch] text-sm leading-[1.5] text-[#5c554c]">
               {accountEmail ?? "Google account"}
-              {" · daily sync keeps the school year calendar fresh."}
+              {" · daily refresh keeps your year calendar up to date."}
             </p>
             <HonestList
               items={[
-                "One-click Google Sign-in → approve calendar access → sync into review",
-                "Subscribe URL and ICS/file upload remain available on Calendar → Import",
-                "Needs an active school year before sync can land events",
+                "One-click Google Sign-in → allow calendar access → review new dates",
+                "Subscribe link and file upload remain available on Calendar → Import",
+                "Needs an active school year before new events can land",
               ]}
             />
             <div className="mt-[18px] flex flex-wrap gap-2">
@@ -259,7 +259,7 @@ export function SettingsEaseCalendar({
                 disabled={isSyncing || isPending || !hasActiveSchoolYear}
                 onClick={handleSync}
               >
-                {isSyncing ? "Syncing…" : "Sync calendar"}
+                {isSyncing ? "Refreshing…" : "Refresh calendar"}
               </button>
               <Link
                 href="/calendar?tab=import"
@@ -279,7 +279,7 @@ export function SettingsEaseCalendar({
             {!hasActiveSchoolYear ? (
               <p className="mt-3 mb-0 text-sm text-amber-800">
                 Set an active school year in School year settings before
-                syncing.
+                refreshing.
               </p>
             ) : null}
           </>
@@ -292,14 +292,14 @@ export function SettingsEaseCalendar({
               Sign in with Google
             </h2>
             <p className="mt-2 mb-0 max-w-[48ch] text-sm leading-[1.5] text-[#5c554c]">
-              One click. Approve calendar access. Sync events into Hey Ralli
+              One click. Allow calendar access. Bring events into Hey Ralli
               review.
             </p>
             <HonestList
               items={[
-                "One-click Google Sign-in → approve calendar access → sync into review",
-                "Subscribe URL and ICS/file upload remain available on Calendar → Import",
-                "Needs an active school year before sync can land events",
+                "One-click Google Sign-in → allow calendar access → review new dates",
+                "Subscribe link and file upload remain available on Calendar → Import",
+                "Needs an active school year before new events can land",
               ]}
             />
             <div className="mt-[18px] flex flex-wrap gap-2">
@@ -345,7 +345,7 @@ export function SettingsEaseCalendar({
             Subscribe feed
           </h3>
           <p className="mt-1 mb-0 text-[13px] leading-snug text-[#5c554c]">
-            Optional ICS link saved on the active school year.
+            Optional calendar feed link saved on the active school year.
           </p>
         </div>
         <div className="mb-3.5 flex flex-col gap-1.5">

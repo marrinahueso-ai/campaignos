@@ -40,9 +40,9 @@ const REVIEW_PILL_STYLES: Record<ReviewApprovalPillTone, string> = {
 };
 
 const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
-  "publish-now": "Publish Now",
-  "auto-publish": "Publish Now",
-  schedule: "Schedule to publish",
+  "publish-now": "Publish now",
+  "auto-publish": "Publish now",
+  schedule: "Schedule for later",
   "manual-email": "Manual email",
   "draft-only": "Draft only",
 };
@@ -183,8 +183,8 @@ export function ExpandedMilestoneReview({
           }}
           className="hidden shrink-0 border border-cos-border bg-cos-card px-2 py-1 text-sm text-cos-text sm:block"
         >
-          <option value="publish-now">Publish Now</option>
-          <option value="schedule">Schedule to publish</option>
+          <option value="publish-now">Publish now</option>
+          <option value="schedule">Schedule for later</option>
           <option value="manual-email">Manual email</option>
           <option value="draft-only">Draft only</option>
         </select>

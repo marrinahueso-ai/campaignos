@@ -148,7 +148,7 @@ export function ArtworkV2PickerScreen({
         <h2 className="font-display mt-2 text-3xl text-cos-text sm:text-4xl">Artwork</h2>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
           {isPhaseWorkflow
-            ? "Create artwork once per milestone — we generate a 1:1 feed image and a 9:16 story version from the same design."
+            ? "Create artwork once per post — we generate a 1:1 feed image and a 9:16 story version from the same design."
             : "Choose what you\u2019d like to create. Approved artwork can be downloaded from here."}
         </p>
       </header>
@@ -156,9 +156,9 @@ export function ArtworkV2PickerScreen({
       {phaseGroups ? (
         <Card padding="none">
           <CardHeader className="px-5 pt-5">
-            <CardTitle>Campaign milestones</CardTitle>
+            <CardTitle>Campaign posts</CardTitle>
             <CardDescription>
-              One creation flow per milestone — feed (1:1) and story (9:16) from the same design.
+              One creation flow per post — feed (1:1) and story (9:16) from the same design.
             </CardDescription>
           </CardHeader>
           <ul className="space-y-4 px-5 pb-5">
@@ -194,7 +194,7 @@ export function ArtworkV2PickerScreen({
                       className="mt-1 shrink-0 rounded-lg p-1 text-cos-muted hover:bg-cos-bg hover:text-cos-text"
                       onClick={() => toggleExpanded(group.relativeDay)}
                       aria-expanded={expanded}
-                      aria-label={expanded ? "Collapse milestone" : "Expand milestone"}
+                      aria-label={expanded ? "Collapse post" : "Expand post"}
                     >
                       {expanded ? (
                         <ChevronDown className="h-4 w-4" />

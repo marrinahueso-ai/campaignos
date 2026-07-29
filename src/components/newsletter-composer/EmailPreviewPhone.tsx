@@ -77,7 +77,7 @@ export function EmailPreviewDesktop({ state }: EmailPreviewDesktopProps) {
           <i className="block h-2.5 w-2.5 rounded-full bg-[#7bbf8a]" />
         </div>
         <div className="flex-1 rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-cos-muted">
-          mail · Inbox · Scoop
+          mail · Inbox · Newsletter
         </div>
       </div>
       <div className="grid min-h-[420px] bg-white md:grid-cols-[160px_1fr]">
@@ -95,7 +95,7 @@ export function EmailPreviewDesktop({ state }: EmailPreviewDesktopProps) {
         <div className="min-w-0">
           <div className="sticky top-0 z-[1] border-b border-black/5 bg-white px-5 py-4">
             <p className="mb-1 text-xs text-cos-muted">
-              From {state.fromName} · to families
+              From {state.fromName} · to your list
             </p>
             <p className="font-display text-xl font-semibold leading-snug text-cos-text sm:text-2xl">
               {state.subject}

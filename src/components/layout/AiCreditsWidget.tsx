@@ -48,7 +48,7 @@ export function AiCreditsWidget({
         <p className="cos-section-title">AI credits</p>
         <p className="mt-2 text-sm font-medium text-cos-text">Unlimited</p>
         <p className="mt-2 text-xs text-cos-muted">
-          Founding / exempt — usage is logged, not capped.
+          Unlimited on your plan — usage is tracked, not capped.
         </p>
         <Link
           href="/settings/billing-plan"

@@ -38,7 +38,7 @@ export const AI_USAGE_CATEGORY_LABELS: Record<AiUsageCategoryKey, string> = {
   tasks_generate: "Task Assistant",
   inbox_ai: "Inbox AI",
   calendar_import_parse: "Calendar Import",
-  playbook_insights: "Playbook Insights",
+  playbook_insights: "Communication Plan insights",
   draft_communication: "Communication Draft",
   generate_event_brief: "Event Brief",
   generate_creative_brief: "Creative Brief",

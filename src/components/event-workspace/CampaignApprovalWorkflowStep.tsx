@@ -40,14 +40,14 @@ export function CampaignApprovalWorkflowStep({
         <CardHeader>
           <CardTitle>
             {hasPending
-              ? `${scheduledCount} milestone bundle${scheduledCount === 1 ? "" : "s"} waiting`
+              ? `${scheduledCount} post bundle${scheduledCount === 1 ? "" : "s"} waiting`
               : approvedCount > 0
                 ? "All scheduled bundles approved"
                 : "Nothing waiting on approval"}
           </CardTitle>
           <CardDescription>
             Each bundle includes feed + story artwork for Facebook and Instagram at one timing
-            milestone.
+            post.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -56,7 +56,7 @@ export function CampaignApprovalWorkflowStep({
         <EmptyState
           icon={ClipboardCheck}
           title="No Meta bundles yet"
-          description="Schedule milestones first, then approve them here."
+          description="Schedule posts first, then approve them here."
           action={{ label: "Go to Captions", href: "#schedule" }}
         />
       ) : (

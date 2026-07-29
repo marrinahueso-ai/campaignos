@@ -197,7 +197,7 @@ export function computeStepWarnings(
       const milestone = milestones.find((m) => m.id === preview.milestoneId);
       warnings.push({
         id: `preview-${preview.milestoneId}`,
-        message: `${milestone?.name ?? "Milestone"} needs review`,
+        message: `${milestone?.name ?? "Post"} needs review`,
         step: "preview",
         milestoneId: preview.milestoneId,
       });
@@ -212,7 +212,7 @@ export function computeStepWarnings(
       const milestone = milestones.find((m) => m.id === preview.milestoneId);
       warnings.push({
         id: `review-${preview.milestoneId}`,
-        message: `${milestone?.name ?? "Milestone"} awaiting approval`,
+        message: `${milestone?.name ?? "Post"} awaiting approval`,
         step: "review",
         milestoneId: preview.milestoneId,
       });

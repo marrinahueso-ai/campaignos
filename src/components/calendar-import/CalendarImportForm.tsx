@@ -32,8 +32,8 @@ export function CalendarImportForm({
     <form action={formAction} className={cn(ease ? "space-y-5" : "space-y-6")}>
       <FileUpload
         name="calendarFile"
-        label="School calendar file"
-        hint="PDF or Word (.docx) work best. CSV and ICS are also supported."
+        label="Calendar file"
+        hint="PDF or Word (.docx) work best. CSV and calendar exports (.ics) are also supported."
         accept=".pdf,.docx,.csv,.ics,.xlsx,.xls"
         variant={variant}
       />

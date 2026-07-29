@@ -23,7 +23,6 @@ export function TasksEaseAskAi({
   events,
   canEdit,
   aiAvailable,
-  aiUnavailableReason,
   preferredEventId = null,
   onClose,
   onTasksAdded,
@@ -146,7 +145,8 @@ export function TasksEaseAskAi({
                 Ask AI for tasks
               </h2>
               <p className="text-xs text-cos-muted">
-                Grounded in the event you pick — same tasks that land on its Tasks tab.
+                Suggestions for the event you pick — they land on that event’s Tasks
+                tab too.
               </p>
             </div>
           </div>
@@ -162,8 +162,8 @@ export function TasksEaseAskAi({
 
         {!aiAvailable ? (
           <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            {aiUnavailableReason ??
-              "AI isn’t configured yet — you’ll still get practical suggestions from event context."}
+            AI suggestions aren’t available right now — you’ll still get practical
+            ideas from the event.
           </p>
         ) : null}
 

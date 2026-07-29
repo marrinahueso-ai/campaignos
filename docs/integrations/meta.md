@@ -12,7 +12,9 @@ On **Approve**, CampignOS creates Meta-native unpublished Page feed posts (`publ
 
 **Calendar DnD** updates CampignOS `scheduled_for` without clearing approval, then calls Graph to move `scheduled_publish_time` when a schedule id exists. Graph failures warn the user but do **not** roll back the calendar.
 
-**Instagram** and **Facebook stories** do not get native Graph schedules (API limits); publish-when-due remains the delivery path.
+**Instagram** and **Facebook stories** do not get native Graph schedules (API limits); publish-when-due remains the delivery path. Hey Ralli’s `meta-publish` cron runs every **~20 minutes** and publishes only **due** approved slots (Instagram / stories; native Facebook feed slots are marked published in DB when due). **Publish Now** still publishes immediately on approve — no cron wait.
+
+**Schedule** (not Publish Now): posts go out within about **20 minutes** of the chosen time, not in a single daily batch. See [cron-jobs.md § Meta: Publish Now vs Schedule](../ops/cron-jobs.md#meta-publish-now-vs-schedule-ops).
 
 **QA / engineer reference (behavior, migration, unit tests, manual checklist):** [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md).
 

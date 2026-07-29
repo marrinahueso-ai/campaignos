@@ -46,10 +46,10 @@ async function gotoCreativeSetup(page: Page, eventId: string) {
   ).toBeVisible({ timeout: 30_000 });
 }
 
-async function saveAndContinueToMilestones(page: Page, eventId: string) {
+async function saveAndContinueToPosts(page: Page, eventId: string) {
   const main = mainContent(page);
   const continueButton = main.getByRole("button", {
-    name: /save & continue to milestones|continue to milestones/i,
+    name: /save → posts|save & continue to posts|continue to posts/i,
   });
   if (await continueButton.count()) {
     page.once("dialog", (dialog) => dialog.accept().catch(() => undefined));
@@ -57,18 +57,17 @@ async function saveAndContinueToMilestones(page: Page, eventId: string) {
   } else {
     await page.goto(`/events/${eventId}/campaign-builder#milestones`);
   }
-  // Prefer the Milestones step h1 — stepper also says "Campaign Milestones".
-  const milestonesHeading = main.getByRole("heading", {
-    name: /^milestones$/i,
+  const postsHeading = main.getByRole("heading", {
+    name: /^posts$/i,
   });
-  if (!(await milestonesHeading.isVisible().catch(() => false))) {
+  if (!(await postsHeading.isVisible().catch(() => false))) {
     await page.goto(`/events/${eventId}/campaign-builder#milestones`, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
     });
     await expectCreateWithAiLoaded(page);
   }
-  await expect(milestonesHeading).toBeVisible({ timeout: 45_000 });
+  await expect(postsHeading).toBeVisible({ timeout: 45_000 });
 }
 
 test.describe("Create with AI artwork inputs (Layer A wiring)", () => {
@@ -91,15 +90,15 @@ test.describe("Create with AI artwork inputs (Layer A wiring)", () => {
     await gotoCreativeSetup(page, eventId);
     const main = mainContent(page);
 
-    // Playbook — soft when fewer than 2 options.
-    const playbook = main.getByLabel(/^playbook$/i);
-    if (await playbook.count()) {
-      const options = playbook.locator("option");
+    // Communication plan — soft when fewer than 2 options.
+    const communicationPlan = main.getByLabel(/^communication plan$/i);
+    if (await communicationPlan.count()) {
+      const options = communicationPlan.locator("option");
       if ((await options.count()) >= 2) {
         const secondValue = await options.nth(1).getAttribute("value");
         if (secondValue) {
           page.once("dialog", (dialog) => dialog.accept().catch(() => undefined));
-          await playbook.selectOption(secondValue);
+          await communicationPlan.selectOption(secondValue);
           await page.waitForTimeout(800);
         }
       }
@@ -153,7 +152,7 @@ test.describe("Create with AI artwork inputs (Layer A wiring)", () => {
       selections.locator("dt", { hasText: /^logo$/i }).locator("..").locator("dd"),
     ).toHaveText(/^none$/i);
 
-    await saveAndContinueToMilestones(page, eventId);
+    await saveAndContinueToPosts(page, eventId);
 
     // Return — values survive.
     await gotoCreativeSetup(page, eventId);
@@ -182,29 +181,29 @@ test.describe("Create with AI artwork inputs (Layer A wiring)", () => {
     await expect(noneLabels).toHaveCount(4, { timeout: 10_000 });
   });
 
-  test("Milestone artwork notes and platform formats persist in editor", async ({
+  test("Post artwork notes and platform formats persist in editor", async ({
     page,
   }) => {
     const eventId = testEventId()!;
     await gotoCreativeSetup(page, eventId);
-    await saveAndContinueToMilestones(page, eventId);
+    await saveAndContinueToPosts(page, eventId);
 
     const main = mainContent(page);
     // Prefer aria-label Edit {name}; fall back to row actions.
     let editButton = main.getByRole("button", { name: /^edit /i }).first();
     if ((await main.getByRole("button", { name: /^edit /i }).count()) === 0) {
-      const milestonesStep = main.getByRole("button", {
-        name: /campaign milestones/i,
+      const postsStep = main.getByRole("button", {
+        name: /^posts$/i,
       });
-      if (await milestonesStep.count()) {
-        await milestonesStep.first().click();
+      if (await postsStep.count()) {
+        await postsStep.first().click();
         await page.waitForTimeout(1_000);
       }
       editButton = main.getByRole("button", { name: /^edit /i }).first();
     }
     test.skip(
       (await main.getByRole("button", { name: /^edit /i }).count()) === 0,
-      "No milestone Edit control found for this event.",
+      "No post Edit control found for this event.",
     );
 
     await editButton.click();
@@ -220,7 +219,7 @@ test.describe("Create with AI artwork inputs (Layer A wiring)", () => {
       }
     }
 
-    await page.getByRole("button", { name: /save milestone/i }).click();
+    await page.getByRole("button", { name: /save post/i }).click();
     await expect(artworkNotes)
       .toBeHidden({ timeout: 15_000 })
       .catch(() => undefined);

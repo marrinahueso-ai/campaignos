@@ -36,13 +36,13 @@ const statItems: {
   },
   {
     key: "ptoEvents" as const,
-    label: "PTO Events",
+    label: "Team events",
     icon: Users,
     accentClassName: "bg-cos-success-bg text-cos-success-text",
   },
   {
     key: "schoolEvents" as const,
-    label: "School Events",
+    label: "Organization events",
     icon: GraduationCap,
     accentClassName: "bg-cos-bg-alt text-cos-text",
   },

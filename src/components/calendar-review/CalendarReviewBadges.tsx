@@ -2,6 +2,7 @@ import type {
   CalendarEventCategory,
   CalendarEventReviewStatus,
 } from "@/types/calendar-review";
+import { CALENDAR_EVENT_CATEGORY_LABELS } from "@/types/calendar-review";
 import { Badge } from "@/components/ui/Badge";
 
 const statusConfig: Record<
@@ -59,7 +60,7 @@ export function CalendarReviewCategoryBadge({
 }: CalendarReviewCategoryBadgeProps) {
   return (
     <Badge className={`ring-1 ring-inset ${categoryStyles[category]}`}>
-      {category}
+      {CALENDAR_EVENT_CATEGORY_LABELS[category]}
     </Badge>
   );
 }

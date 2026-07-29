@@ -146,7 +146,7 @@ export function MilestonePlanningSection({
         item.relativeDay !== editingRelativeDay,
     );
     if (conflicting) {
-      setError("That date is already used by another milestone. Choose a different date.");
+      setError("That date is already used by another post. Choose a different date.");
       return;
     }
 
@@ -227,7 +227,7 @@ export function MilestonePlanningSection({
             <Megaphone className="h-4 w-4" strokeWidth={1.75} aria-hidden />
           </span>
           <div className="min-w-0">
-            <h2 className="font-display text-xl text-cos-text">Milestone planning</h2>
+            <h2 className="font-display text-xl text-cos-text">Posts</h2>
             <p className="mt-1 text-sm leading-relaxed text-cos-muted">
               Define your posting milestones for Facebook and Instagram. Drag to reorder,
               edit times, and choose platforms.
@@ -252,7 +252,7 @@ export function MilestonePlanningSection({
             className="inline-flex h-9 items-center justify-center gap-1.5 bg-cos-text px-4 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
-            Add milestone
+            Add post
           </button>
         </div>
       </div>
@@ -274,7 +274,7 @@ export function MilestonePlanningSection({
       <div>
         <div className="hidden border-b border-cos-border px-4 py-2.5 text-[0.6875rem] font-medium tracking-[0.12em] text-cos-muted uppercase sm:grid sm:grid-cols-[auto_minmax(0,2.25fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_auto_auto]">
           <span aria-hidden className="w-4" />
-          <span>Milestone</span>
+          <span>Post</span>
           <span>Platform</span>
           <span>Date &amp; Time</span>
           <span>Status</span>
@@ -283,7 +283,7 @@ export function MilestonePlanningSection({
 
         {items.length === 0 ? (
           <div className="px-4 py-10 text-center text-sm text-cos-muted">
-            No milestones yet. Add one or use Suggest timeline to get started.
+            No posts yet. Add one or use Suggest timeline to get started.
           </div>
         ) : (
           items.map((milestone, index) => {

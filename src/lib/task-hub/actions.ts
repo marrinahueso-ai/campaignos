@@ -103,7 +103,7 @@ export async function reorderTaskHubTasksAction(
 
   const ok = await persistTaskHubTaskSortOrders(updates);
   if (!ok) {
-    return { success: false, error: "Unable to save task order." };
+    return { success: false, error: "Could not save task order." };
   }
 
   revalidateTaskHubPaths([...byEvent.keys()]);
@@ -128,7 +128,7 @@ export async function updateTaskHubTaskStatusAction(
     taskTitle,
   );
   if (!ok) {
-    return { success: false, error: "Unable to update task." };
+    return { success: false, error: "Could not update task." };
   }
 
   queueMondayTaskSync(access.organizationId, taskId, eventId, "update");
@@ -191,7 +191,7 @@ export async function updateTaskHubTaskAction(
     taskTitleForActivity ?? input.title,
   );
   if (!ok) {
-    return { success: false, error: "Unable to update task." };
+    return { success: false, error: "Could not update task." };
   }
 
   queueMondayTaskSync(access.organizationId, taskId, eventId, "update");
@@ -234,7 +234,7 @@ export async function createTaskHubTaskAction(
   });
 
   if (!taskId) {
-    return { success: false, error: "Unable to create task.", taskId: null };
+    return { success: false, error: "Could not create task.", taskId: null };
   }
 
   queueMondayTaskSync(access.organizationId, taskId, eventId, "create");
@@ -254,7 +254,7 @@ export async function deleteTaskHubTaskAction(
 
   const ok = await deleteEventPlaybookTask(taskId, eventId, taskTitle);
   if (!ok) {
-    return { success: false, error: "Unable to delete task." };
+    return { success: false, error: "Could not delete task." };
   }
 
   revalidateTaskHubPaths([eventId]);

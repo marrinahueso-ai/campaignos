@@ -185,7 +185,7 @@ export function PlanningCalendarDetailPanel({
             />
             <DetailRow
               label="Assigned user"
-              value={item.assignedUser ?? "Unassigned — multi-user coming soon"}
+              value={item.assignedUser ?? "Unassigned"}
             />
             <DetailRow label="Draft status" value={item.draftStatus ?? "—"} />
             <DetailRow

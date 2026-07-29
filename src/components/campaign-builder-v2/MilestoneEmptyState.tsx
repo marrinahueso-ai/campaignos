@@ -35,7 +35,7 @@ export function MilestoneEmptyState({
         </p>
         <p className="mt-2 text-sm text-cos-muted">
           {isGenerating
-            ? "Creating feed and story artwork one after another, then captions. This often takes a few minutes — you can keep working on other milestones."
+            ? "Creating feed and story artwork one after another, then captions. This often takes a few minutes — you can keep working on other posts."
             : `Generate feed, story, and caption content for ${milestoneName}.`}
         </p>
       </div>
@@ -67,7 +67,7 @@ export function MilestoneEmptyState({
           ? "Generating…"
           : isFailed
             ? "Retry generation"
-            : "Generate This Milestone"}
+            : "Generate this post"}
       </Button>
     </div>
   );

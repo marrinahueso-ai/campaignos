@@ -25,19 +25,19 @@ const TILES: Array<{
   {
     id: "google",
     title: "Google Calendar",
-    copy: "Connect the school calendar your district already uses.",
+    copy: "Connect the calendar your organization already uses.",
     art: "bg-gradient-to-br from-[#0b2f5b] via-[#2f9fb3] to-[#7fd0df]",
   },
   {
     id: "subscribe",
     title: "Subscribe link",
-    copy: "Paste an ICS URL and keep it synced.",
+    copy: "Paste a calendar feed URL and keep it up to date.",
     art: "bg-gradient-to-br from-[#2f4a3c] via-[#6b8171] to-[#b8c9bc]",
   },
   {
     id: "upload",
     title: "Upload file",
-    copy: "Drop a .ics export when you only need a one-time pass.",
+    copy: "Drop a calendar export when you only need a one-time pass.",
     art: "bg-gradient-to-br from-[#c4922e] via-[#e0b65a] to-[#f5e6c2]",
   },
 ];
@@ -60,20 +60,17 @@ export function CalendarImportEasePanel({
             Calendar
           </p>
           <h1 className="mt-1 font-display text-[clamp(1.75rem,4vw,2.25rem)] tracking-[-0.02em] text-cos-text">
-            Import school calendar
+            Import calendar
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-cos-muted">
-            Pull events from Google, an ICS feed, or a file — then review before
-            they land on the year.
+            Pull events from Google Calendar, a subscribe link, or a file —
+            then review before they land on your year.
           </p>
         </div>
       ) : null}
 
       <p className="flex flex-wrap items-baseline justify-between gap-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-        <span>Bring the school year in</span>
-        <span className="text-[12px] font-semibold tracking-normal text-cos-muted normal-case">
-          Same doorway pattern as Create with AI
-        </span>
+        <span>Bring your year in</span>
       </p>
 
       <div
@@ -83,11 +80,11 @@ export function CalendarImportEasePanel({
           {embedded ? (
             <div>
               <h3 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-cos-text">
-                Import school calendar
+                Import calendar
               </h3>
               <p className="mt-1.5 max-w-[46ch] text-[13px] leading-snug text-cos-muted">
-                Pull events from Google, an ICS feed, or a file — then review
-                before they land on the year.
+                Pull events from Google Calendar, a subscribe link, or a file —
+                then review before they land on your year.
               </p>
             </div>
           ) : null}
@@ -169,8 +166,9 @@ export function CalendarImportEasePanel({
               Upload a file
             </h2>
             <p className="mt-1.5 mb-5 max-w-[46ch] text-[13px] leading-relaxed text-cos-muted">
-              Upload your district or school calendar (ICS or PDF). We extract
-              dates, let you clean up mistakes, then add view-only events.
+              Upload your organization calendar (PDF, Word, or calendar export).
+              We pull out dates, let you clean up mistakes, then add view-only
+              events.
             </p>
             {uploadSection}
           </div>

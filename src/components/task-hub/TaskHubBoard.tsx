@@ -193,7 +193,7 @@ export function TaskHubBoard({ data }: TaskHubBoardProps) {
       <EmptyState
         icon={LayoutGrid}
         title="No tasks on the board"
-        description="Playbook tasks from active campaigns will appear here."
+        description="Communication plan tasks from active campaigns will appear here."
         className="cos-card py-16"
       />
     );

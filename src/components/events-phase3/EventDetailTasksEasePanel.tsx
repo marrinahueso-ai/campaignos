@@ -16,6 +16,7 @@ import {
   EaseSplit,
 } from "@/components/events-phase3/EventDetailEaseUi";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
+import { EventContextFileUpload } from "@/components/campaign-files/EventContextFileUpload";
 import { updateTaskHubTaskStatusAction } from "@/lib/task-hub/actions";
 import type { TaskHubTaskItem } from "@/types/task-hub";
 import type { TasksV2PageData } from "@/types/tasks-v2";
@@ -96,6 +97,9 @@ export function EventDetailTasksEasePanel({
     [data],
   );
 
+  const eventId =
+    data.eventGroups[0]?.eventId ?? openTasks[0]?.eventId ?? null;
+
   const focus =
     openTasks.find((task) => task.id === selectedId) ?? openTasks[0] ?? null;
 
@@ -122,7 +126,7 @@ export function EventDetailTasksEasePanel({
         task.title,
       );
       if (!result.success) {
-        setError(result.error ?? "Unable to mark done.");
+        setError(result.error ?? "Could not mark done. Try again.");
         return;
       }
       await refresh();
@@ -132,9 +136,14 @@ export function EventDetailTasksEasePanel({
   if (openTasks.length === 0) {
     return (
       <section>
-        <EaseSectionLabel hint="Event tasks only — no org board chrome">
-          Needs you next
-        </EaseSectionLabel>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <EaseSectionLabel hint="For this event only — full board is under Tasks">
+            Needs you next
+          </EaseSectionLabel>
+          {eventId ? (
+            <EventContextFileUpload eventId={eventId} uploadContext="tasks" disabled={pending} />
+          ) : null}
+        </div>
         <p className="rounded-[18px] border border-cos-border bg-[rgba(255,252,247,0.55)] px-5 py-10 text-center text-sm text-cos-muted">
           No open tasks for this event. You’re clear for now.
         </p>
@@ -144,9 +153,21 @@ export function EventDetailTasksEasePanel({
 
   return (
     <section>
-      <EaseSectionLabel hint="Event tasks only — no org board chrome">
-        Needs you next
-      </EaseSectionLabel>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <EaseSectionLabel hint="For this event only — full board is under Tasks">
+          Needs you next
+        </EaseSectionLabel>
+        {eventId ? (
+          <EventContextFileUpload
+            eventId={eventId}
+            uploadContext="tasks"
+            disabled={pending}
+            onUploaded={() => {
+              void refresh();
+            }}
+          />
+        ) : null}
+      </div>
 
       {error ? (
         <p className="mb-3 text-sm text-[#a65a3a]">{error}</p>
@@ -188,7 +209,7 @@ export function EventDetailTasksEasePanel({
 
         <EaseBox>
           <EaseBoxTitle>This week</EaseBoxTitle>
-          <EaseBoxDesc>Quiet queue — same ease language as Approvals.</EaseBoxDesc>
+          <EaseBoxDesc>Other open tasks coming due soon.</EaseBoxDesc>
           <EaseQueue>
             {thisWeek.length === 0 ? (
               <p className="text-xs text-cos-muted">No other tasks this week.</p>

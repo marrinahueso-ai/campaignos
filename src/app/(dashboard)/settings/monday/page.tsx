@@ -70,7 +70,7 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
               <Link href="/tasks" className="text-cos-primary underline-offset-2 hover:underline">
                 /tasks
               </Link>{" "}
-              for playbook checklists grouped by committee. Monday sync will return when the
+              for communication plan checklists grouped by committee. Monday sync will return when the
               integration is re-enabled.
             </CardDescription>
           </CardHeader>

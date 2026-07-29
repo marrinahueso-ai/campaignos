@@ -14,16 +14,30 @@ describe("files ease UI contracts", () => {
     "../../../components/events-phase3/EventDetailFilesEasePanel.tsx",
   );
   const upload = readSrc("../../../components/campaign-files/FileUploadDialog.tsx");
+  const contextUpload = readSrc(
+    "../../../components/campaign-files/EventContextFileUpload.tsx",
+  );
+  const tasks = readSrc(
+    "../../../components/events-phase3/EventDetailTasksEasePanel.tsx",
+  );
+  const volunteers = readSrc(
+    "../../../components/events-phase3/EventDetailVolunteersEasePanel.tsx",
+  );
   const page = readSrc("../../../app/(dashboard)/files/page.tsx");
+  const filters = readSrc("../filters.ts");
+  const typeGroups = readSrc("../type-groups.ts");
 
   it("wires /files to the Ease shell, not the dense FilesDocumentsShell", () => {
     assert.match(page, /FilesEaseShell/);
     assert.doesNotMatch(page, /FilesDocumentsShell/);
   });
 
-  it("uses a quiet pill search for file or campaign name", () => {
-    assert.match(shell, /Search by file or campaign name/);
-    assert.match(shell, /type="search"/);
+  it("uses smart-filing search and type pills on org Files", () => {
+    assert.match(shell, /Search files…/);
+    assert.match(shell, /FilesTypeGroupPills/);
+    assert.match(shell, /typeGroup/);
+    assert.match(shell, /Event/);
+    assert.match(shell, /handleEventFilterChange/);
   });
 
   it("uses Newest / Name / Size / Type as quiet text sort controls", () => {
@@ -34,21 +48,14 @@ describe("files ease UI contracts", () => {
     assert.match(shell, /role="group"\s*\n?\s*aria-label="Sort files"/);
   });
 
-  it("filters campaigns with a dropdown (Coming up first, not a chip wall)", () => {
-    assert.match(shell, /Coming up/);
-    assert.match(shell, /Filter by campaign/);
-    assert.match(shell, /COMING_UP_EVENT_LIMIT/);
-    assert.doesNotMatch(shell, /All events\n/);
-    assert.doesNotMatch(shell, /chipEvents/);
-  });
-
-  it("drops multiple files into an upload dialog for campaign + category", () => {
-    assert.match(shell, /Drop files here — then choose the campaign and category/);
+  it("drops multiple files into an upload dialog with inferred type", () => {
+    assert.match(shell, /type is inferred automatically/);
     assert.match(shell, /openUploadWithFiles/);
     assert.match(shell, /initialFiles=\{pendingUploadFiles\}/);
     assert.match(upload, /multiple/);
-    assert.match(upload, /Pick the event and category/);
-    assert.match(upload, /Category/);
+    assert.match(upload, /suggest a document category from the name/);
+    assert.match(upload, /category", "auto"/);
+    assert.doesNotMatch(upload, /CAMPAIGN_FILE_CATEGORIES/);
     assert.doesNotMatch(shell, /Upload files/);
   });
 
@@ -58,12 +65,11 @@ describe("files ease UI contracts", () => {
     assert.doesNotMatch(shell, /params\.set\("folder"/);
   });
 
-  it("lists each campaign in its own box with per-campaign folder bar", () => {
+  it("lists each event in its own box without folder bar hero chrome", () => {
     assert.match(list, /borderLeft: `4px solid \$\{group\.accentColor\}`/);
     assert.match(list, /group\.eventHref/);
     assert.match(list, /Open campaign files →/);
-    assert.match(list, /<FilesFolderBar/);
-    assert.match(list, /eventId=\{group\.eventId\}/);
+    assert.match(list, /showFolderBar = false/);
   });
 
   it("deep links each campaign box to the event Files tab via eventFilesHref", () => {
@@ -88,6 +94,14 @@ describe("files ease UI contracts", () => {
     assert.match(list, /<X /);
   });
 
+  it("uses event Files smart filing with type pills and generated section", () => {
+    assert.match(eventFiles, /FilesTypeGroupPills/);
+    assert.match(eventFiles, /Filed automatically by type/);
+    assert.match(eventFiles, /GeneratedPostAssetsSection/);
+    assert.match(eventFiles, /category", "auto"/);
+    assert.match(eventFiles, /Folders \(optional\)/);
+  });
+
   it("exposes event-scoped folders for create, rename, delete, reorder, and move", () => {
     assert.match(folderBar, /New folder/);
     assert.match(folderBar, /All files/);
@@ -98,14 +112,20 @@ describe("files ease UI contracts", () => {
     assert.match(folderBar, /reorderFileFoldersAction/);
     assert.match(folderBar, /Move left/);
     assert.match(folderBar, /Move right/);
-    assert.match(eventFiles, /FilesFolderBar/);
-    assert.match(eventFiles, /Campaign files/);
   });
 
-  it("uses organization-facing copy on the Files page", () => {
-    assert.match(shell, /organization/);
-    assert.match(shell, /Your organization/);
-    assert.doesNotMatch(shell, /PTA/i);
+  it("adds quiet context upload on Volunteers and Tasks tabs", () => {
+    assert.match(contextUpload, /FileDocumentCategoryQuickEdit/);
+    assert.match(contextUpload, /uploadContext/);
+    assert.match(volunteers, /uploadContext="volunteers"/);
+    assert.match(tasks, /uploadContext="tasks"/);
+  });
+
+  it("shows post-upload document category quick edit", () => {
+    assert.match(eventFiles, /FileDocumentCategoryQuickEdit/);
+    assert.match(eventFiles, /uploadContext", "event_files"/);
+    assert.match(upload, /uploadContext", "org_files"/);
+    assert.match(upload, /FileDocumentCategoryQuickEdit/);
   });
 
   it("keeps chrome switches instant via local state + history.replaceState", () => {
@@ -120,10 +140,12 @@ describe("files ease UI contracts", () => {
     assert.match(list, /updateCampaignFileAction/);
   });
 
-  it("filters files by folder in filterCampaignFiles", () => {
-    const filters = readSrc("../filters.ts");
+  it("filters files by folder and type group in filterCampaignFiles", () => {
     assert.match(filters, /folderId === "unfiled"/);
     assert.match(filters, /filters\.folderId !== "all"/);
     assert.match(filters, /folderId: "all"/);
+    assert.match(filters, /typeGroup/);
+    assert.match(filters, /fileMatchesTypeGroup/);
+    assert.match(typeGroups, /inferUploadCategory/);
   });
 });

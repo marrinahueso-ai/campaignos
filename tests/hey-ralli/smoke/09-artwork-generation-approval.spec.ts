@@ -244,16 +244,21 @@ async function observeApprovalsAndBadges(
     observations.push('- Switched Approvals view scope to **All** (default is Assigned to Me).');
   }
 
-  const campaignFilter = main.locator("#campaign-filter");
-  if (await campaignFilter.count()) {
-    const option = campaignFilter.locator(`option[value="${eventId}"]`);
-    if (await option.count()) {
-      await campaignFilter.selectOption(eventId);
-      observations.push(`- Filtered hub to test event \`${eventId}\`.`);
+  const searchInput = main.getByRole("searchbox", {
+    name: /search events, people/i,
+  });
+  if (await searchInput.count()) {
+    const eventTitle = await page
+      .locator(`[data-event-id="${eventId}"]`)
+      .first()
+      .getAttribute("data-event-title")
+      .catch(() => null);
+    if (eventTitle?.trim()) {
+      await searchInput.fill(eventTitle.trim());
+      observations.push(`- Searched Approvals hub for test event title.`);
     } else {
-      await campaignFilter.selectOption("all");
       observations.push(
-        "- Test event not in campaign filter options — viewing **All campaigns** (scheduled events often omit pending rows).",
+        "- Approvals hub search available — no event title on page to prefill.",
       );
     }
   }

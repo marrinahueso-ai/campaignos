@@ -76,7 +76,7 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
         return;
       }
 
-      setMessage("Calendar subscribe feed saved.");
+      setMessage("Calendar feed saved.");
       setData((current) => ({
         ...current,
         activeSchoolYear: current.activeSchoolYear
@@ -98,14 +98,14 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
       const result = await syncCalendarSubscribeFeedAction(data.activeSchoolYear!.id);
 
       if (!result.success) {
-        setError(result.error ?? "Unable to sync calendar feed.");
+        setError(result.error ?? "Couldn't refresh the calendar feed.");
         return;
       }
 
       if (result.importId) {
         if (result.added === 0 && result.skipped > 0) {
           setMessage(
-            `Feed synced — all ${result.skipped} events are already on your calendar.`,
+            `You're up to date — all ${result.skipped} events are already on your calendar.`,
           );
           router.refresh();
           return;
@@ -113,7 +113,7 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
 
         if (result.skipped > 0) {
           setMessage(
-            `Feed synced — ${result.added} new events ready to review (${result.skipped} already on calendar).`,
+            `${result.added} new events ready to review (${result.skipped} already on calendar).`,
           );
         }
 
@@ -121,7 +121,7 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
         return;
       }
 
-      setMessage("Calendar feed synced.");
+      setMessage("Calendar feed updated.");
     });
   }
 
@@ -129,7 +129,7 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
     const eventLabel =
       data.activeSchoolYear?.label ?? data.organizationSchoolYearLabel ?? "your calendar";
     const confirmed = window.confirm(
-      `Remove all calendar and campaign events for ${eventLabel}? This cannot be undone. Sync your feed or upload a PDF afterward.`,
+      `Remove all calendar and campaign events for ${eventLabel}? This cannot be undone. Refresh your feed or upload a file afterward.`,
     );
     if (!confirmed) {
       return;
@@ -198,11 +198,11 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
 
         <div className="space-y-3">
           <Input
-            label="Calendar subscribe feed (ICS URL)"
+            label="Calendar feed URL"
             value={subscribeUrl}
             onChange={(event) => setSubscribeUrl(event.target.value)}
             placeholder="https://calendar.google.com/calendar/ical/..."
-            hint="Optional — Google Calendar ICS or webcal:// URLs. New events auto-import daily at 6:00 AM UTC. Use Sync now for an immediate pull to review."
+            hint="Optional — your Google Calendar private subscribe address. New events pull in daily. Use Refresh for an immediate update to review."
             disabled={isPending || !data.activeSchoolYear}
           />
           <div className="flex flex-wrap gap-2">
@@ -213,7 +213,7 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
               onClick={handleSaveSubscribeUrl}
               disabled={isPending || !data.activeSchoolYear}
             >
-              Save subscribe feed
+              Save feed
             </Button>
             <Button
               type="button"
@@ -221,7 +221,7 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
               onClick={handleSyncSubscribeFeed}
               disabled={isPending || !data.activeSchoolYear || !canSyncFeed}
             >
-              Sync calendar feed now
+              Refresh calendar feed
             </Button>
             <Button
               type="button"
@@ -239,8 +239,8 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
         <div className="space-y-3 border border-cos-border p-4">
           <p className="font-display text-xl text-cos-text">Start next school year</p>
           <p className="text-sm text-cos-muted">
-            Closes the active year and opens a new planning year. Your playbook
-            categorization memory carries forward to the next calendar upload.
+            Closes the active year and opens a new planning year. Your communication
+            plan categorization memory carries forward to the next calendar upload.
           </p>
           <Input
             label="New school year label"

@@ -67,7 +67,7 @@ export function MondayConnectionPanel({
     return (
       <div className="space-y-4 text-sm text-cos-muted">
         <p>
-          Add your Monday.com app credentials to sync playbook tasks with a Monday board.
+          Add your Monday.com app credentials to sync communication plan tasks with a Monday board.
         </p>
         <ul className="list-disc space-y-1 pl-5">
           <li>

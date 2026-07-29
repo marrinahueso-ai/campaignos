@@ -50,12 +50,12 @@ export function defaultAnnouncements(): HomepageAnnouncement[] {
     {
       id: "ann-1",
       emoji: "📅",
-      text: "Important Date: August 10: Return to School",
+      text: "Important Date: August 10: Season Kickoff",
     },
     {
       id: "ann-2",
       emoji: "🎉",
-      text: "Back to School Fair: August 5",
+      text: "Community Fair: August 5",
     },
   ];
 }
@@ -63,10 +63,10 @@ export function defaultAnnouncements(): HomepageAnnouncement[] {
 export function defaultHeader(
   organizationName?: string | null,
 ): HomepageHeaderConfig {
-  const school = organizationName?.trim() || "our school";
+  const org = organizationName?.trim() || "our organization";
   return {
-    title: "Welcome, Explorer Families!",
-    message: `We're so glad you're here! This page is your hub for school information, PTO updates, upcoming events, and opportunities to get involved at ${school}.`,
+    title: `Welcome to ${org}!`,
+    message: `We're so glad you're here! This page is your hub for updates, upcoming events, and ways to get involved at ${org}.`,
     button1Label: "Volunteer Sign Up",
     button1Url: "#",
     button2Label: "Become a Sponsor",
@@ -77,14 +77,14 @@ export function defaultHeader(
 }
 
 export function defaultCardsSectionTitle(): string {
-  return "Back-to-School Essentials";
+  return "What’s Happening";
 }
 
 export function defaultFooter(): HomepageFooterConfig {
   return {
-    ctaTitle: "Get Involved at EES",
+    ctaTitle: "Get Involved",
     ctaBody:
-      "Whether you have 30 minutes, a few hours, or want to lead a project, there is a place for everyone to help make this school year memorable.",
+      "Whether you have 30 minutes, a few hours, or want to lead a project, there is a place for everyone to help make this year memorable.",
     ctaButtonLabel: "Find a Way to Help",
     ctaButtonUrl: "#",
     colors: defaultFooterColors(),
@@ -93,15 +93,15 @@ export function defaultFooter(): HomepageFooterConfig {
 
 export function defaultResources(): HomepageResourceLink[] {
   return [
-    { id: "res-bus", emoji: "🚌", label: "Bus Routes", url: "" },
-    { id: "res-lunch", emoji: "🍎", label: "Lunch Payments", url: "" },
-    { id: "res-cash", emoji: "💳", label: "School Cash", url: "" },
-    { id: "res-skyward", emoji: "📚", label: "Skyward", url: "" },
-    { id: "res-wcs", emoji: "🏫", label: "WCS Website", url: "" },
-    { id: "res-cal", emoji: "📅", label: "School Calendar", url: "" },
+    { id: "res-bus", emoji: "🚌", label: "Directions", url: "" },
+    { id: "res-lunch", emoji: "🍎", label: "Payments", url: "" },
+    { id: "res-cash", emoji: "💳", label: "Store", url: "" },
+    { id: "res-skyward", emoji: "📚", label: "Forms", url: "" },
+    { id: "res-wcs", emoji: "🏫", label: "Website", url: "" },
+    { id: "res-cal", emoji: "📅", label: "Calendar", url: "" },
     { id: "res-vol", emoji: "🙌", label: "Volunteer Info", url: "" },
-    { id: "res-parent", emoji: "⭐", label: "Parent Resources", url: "" },
-    { id: "res-menu", emoji: "🥭", label: "Lunch Menu", url: "" },
+    { id: "res-parent", emoji: "⭐", label: "Helpful Resources", url: "" },
+    { id: "res-menu", emoji: "🥭", label: "Menus", url: "" },
   ];
 }
 
@@ -113,7 +113,7 @@ export function defaultEvergreenCards(): HomepageCard[] {
       eventId: null,
       title: "Invest in Our Why",
       blurb:
-        "Sponsorships help fund student programs, family events, teacher support, and enrichment all year.",
+        "Sponsorships help fund programs, community events, and volunteer support all year.",
       imageUrl: null,
       linkUrl: "",
       linkLabel: "Learn More →",
@@ -127,12 +127,12 @@ export function defaultEvergreenCards(): HomepageCard[] {
       id: "custom-supplies",
       source: "custom",
       eventId: null,
-      title: "Grade Level Supply List",
+      title: "Getting Started Guide",
       blurb:
-        "Find your student's teacher-approved list by grade level to make shopping quick and easy.",
+        "Find the approved checklist by group to make prep quick and easy.",
       imageUrl: null,
       linkUrl: "",
-      linkLabel: "View Supply List →",
+      linkLabel: "View Guide →",
       date: null,
       time: null,
       startsOn: null,

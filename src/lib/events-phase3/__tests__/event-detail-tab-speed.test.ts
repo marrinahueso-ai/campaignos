@@ -58,11 +58,15 @@ describe("targeted event tab speed contracts", () => {
   });
 
   it("embedded hubs hide org-wide chrome", () => {
+    const pulse = readSrc("../../approvals-scheduling/approvals-ease-pulse.ts");
     assert.match(tasksShell, /!embedded \? \(/);
     assert.match(tasksShell, /w-full lg:max-w-md/);
     assert.match(approvalsHub, /!embedded \? \(/);
     assert.match(approvalsHub, /ApprovalsFocusCard/);
-    assert.match(approvalsHub, /Needs you/);
+    assert.match(approvalsHub, /APPROVALS_EASE_PULSE_OPTIONS/);
+    assert.match(pulse, /Needs you/);
+    assert.doesNotMatch(pulse, /label: "Drafts"/);
+    assert.doesNotMatch(approvalsHub, /label: "Drafts"/);
     assert.doesNotMatch(approvalsHub, /ApprovalTabs/);
   });
 

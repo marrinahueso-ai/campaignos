@@ -9,6 +9,7 @@ import type {
   CalendarEventReviewStatus,
   CalendarReviewEvent,
 } from "@/types/calendar-review";
+import { CALENDAR_EVENT_CATEGORY_LABELS } from "@/types/calendar-review";
 import type { EventType } from "@/types/playbooks";
 import { CampaignPlanPreview } from "@/components/calendar-review/CampaignPlanPreview";
 import {
@@ -162,7 +163,7 @@ export function CalendarReviewEditDialog({
           >
             {categories.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {CALENDAR_EVENT_CATEGORY_LABELS[option]}
               </option>
             ))}
           </Select>
@@ -206,7 +207,7 @@ export function CalendarReviewEditDialog({
               />
             </div>
             <p className="mt-3 text-xs text-cos-muted">
-              Plan types come from Settings → Playbooks. You can change these again
+              Plan types come from Settings → Communication Plans. You can change these again
               after import from the event workspace.
             </p>
           </div>

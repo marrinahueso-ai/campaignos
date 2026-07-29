@@ -23,7 +23,7 @@ export function CampaignPublishingQueueStep({
     <div className="space-y-6">
       <CampaignWorkflowStepHeader
         question="What is approved and ready to go?"
-        description="Approved milestones auto-post to Facebook and Instagram at the scheduled time. Use Publish now to post immediately or retry failures."
+        description="Approved posts auto-post to Facebook and Instagram at the scheduled time. Use Publish now to post immediately or retry failures."
         nextStep="published"
         nextLabel="View Published"
       />
@@ -32,7 +32,7 @@ export function CampaignPublishingQueueStep({
         <EmptyState
           icon={Send}
           title="Nothing in the queue yet"
-          description="Approved milestones will appear here when they are ready to mark as published."
+          description="Approved posts will appear here when they are ready to mark as published."
           action={{ label: "Go to Approval", href: "#approval" }}
         />
       ) : (

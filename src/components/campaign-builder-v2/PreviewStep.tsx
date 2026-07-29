@@ -407,7 +407,7 @@ export function PreviewStep() {
 
   async function resendSelectedMilestone(artwork?: MilestoneArtwork) {
     if (!selectedPreview || !selectedMilestone) {
-      throw new Error("Select a milestone before resending for approval.");
+      throw new Error("Select a post before resending for approval.");
     }
 
     setResendMessage(null);
@@ -516,7 +516,7 @@ export function PreviewStep() {
           >
             {generatingName
               ? `Generating ${generatingName}…`
-              : "Generate next milestone"}
+              : "Generate next post"}
             <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
           </Button>
         )}
@@ -727,7 +727,7 @@ export function PreviewStep() {
 
       <CampaignBuilderFooter
         onBack={() => goToStep("milestones")}
-        backLabel="Back to Milestones"
+        backLabel="Back to Posts"
         showContinue={false}
         showBack
         leftActions={
@@ -748,7 +748,7 @@ export function PreviewStep() {
               onClick={() => selectedId && removeMilestone(selectedId)}
             >
               <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-              Delete milestone
+              Delete post
             </Button>
           </>
         }
@@ -762,7 +762,7 @@ export function PreviewStep() {
 
       {artworkModalOpen && selectedPreview && selectedMilestone && (
         <EditArtworkModal
-          // Remount per milestone — instructions/preview state is local to
+          // Remount per post — instructions/preview state is local to
           // the modal (useState from milestone-specific props), so it must
           // not persist across a different selectedMilestoneId.
           key={selectedPreview.milestoneId}
@@ -841,7 +841,7 @@ export function PreviewStep() {
 
       <ClearGeneratedContentModal
         open={clearModalOpen}
-        title="Clear This Milestone"
+        title="Clear this post"
         isSubmitting={clearSubmitting}
         errorMessage={clearError}
         onClose={() => setClearModalOpen(false)}

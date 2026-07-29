@@ -37,7 +37,9 @@ function toCampaignOption(event: {
   id: string;
   title: string;
   date: string;
-  description: string | null;
+  description?: string | null;
+  eventOwner?: string | null;
+  event_owner?: string | null;
 }): CampaignOption {
   return {
     id: event.id,
@@ -45,6 +47,7 @@ function toCampaignOption(event: {
     label: buildCampaignOptionLabel(event.title, event.date),
     date: event.date,
     description: event.description ?? "",
+    eventOwner: event.eventOwner ?? event.event_owner ?? null,
   };
 }
 
@@ -57,6 +60,7 @@ function toSwitcherEvent(row: {
   communication_strategy: string | null;
   school_year_id: string | null;
   status: string | null;
+  event_owner: string | null;
 }): Event {
   return {
     id: row.id,
@@ -72,7 +76,7 @@ function toSwitcherEvent(row: {
     eventType: null,
     communicationStrategy: parseCommunicationStrategy(row.communication_strategy),
     calendarImportId: null,
-    eventOwner: null,
+    eventOwner: row.event_owner ?? null,
     approvalOrganizationRoleId: null,
     budget: null,
     volunteerNeeds: null,
@@ -123,7 +127,7 @@ export async function getCampaignBuilderCampaignOptions(
   let query = supabase
     .from("events")
     .select(
-      "id, title, description, date, communication_strategy, school_year_id, status",
+      "id, title, description, date, communication_strategy, school_year_id, status, event_owner",
     )
     .neq("status", "archived")
     .order("date", { ascending: true });
@@ -157,6 +161,7 @@ export async function getCampaignBuilderCampaignOptions(
       communication_strategy: string | null;
       school_year_id: string | null;
       status: string | null;
+      event_owner: string | null;
     }>
   )
     .map(toSwitcherEvent)

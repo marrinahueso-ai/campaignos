@@ -198,8 +198,8 @@ export function SettingsEaseOrganization({
             Organization
           </h1>
           <p className="mt-1.5 mb-0 max-w-[48ch] text-sm leading-snug text-[#5c554c]">
-            School profile and workspace preferences. Voice, logos, and year live
-            under Branding.
+            Organization profile and workspace preferences. Voice, logos, and year
+            live under Branding.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -427,7 +427,7 @@ export function SettingsEaseOrganization({
 
         <SoftCard
           title="Branding home"
-          description="Colors, logos, AI voice, inbox sources, playbooks, and school year moved here."
+          description="Colors, logos, AI voice, inbox sources, communication plans, and school year moved here."
         >
           <DetailRow label="Brand kit">
             {brandAssets?.primaryColor || brandAssets?.ptoLogo || brandAssets?.schoolLogo

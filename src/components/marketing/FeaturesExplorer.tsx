@@ -44,7 +44,7 @@ const FEATURES: FeatureDefinition[] = [
       "Every event moves through a clear path: plan → artwork → captions → publish.",
     details: [
       "Campaign plan tailored to your event type",
-      "Artwork and captions stay tied to each milestone",
+      "Artwork and captions stay tied to each post",
       "Review & publish when your team is ready",
     ],
   },
@@ -63,11 +63,11 @@ const FEATURES: FeatureDefinition[] = [
   {
     id: "artwork",
     icon: ImageIcon,
-    title: "Artwork studio for every milestone",
+    title: "Artwork studio for every post",
     summary:
       "Create feed and story graphics in one flow — no Canva juggling unless you want it.",
     details: [
-      "One creation flow per milestone (1:1 feed + 9:16 story)",
+      "One creation flow per post (1:1 feed + 9:16 story)",
       "AI-assisted prompts using your school brand",
       "Import from Canva when you're already there",
     ],
@@ -91,7 +91,7 @@ const FEATURES: FeatureDefinition[] = [
     summary:
       "Schedule Meta posts from the same place you planned them — feed and story together.",
     details: [
-      "Draft and approve captions per milestone",
+      "Draft and approve captions per post",
       "Schedule all ready posts in one click",
       "See published history without leaving the workspace",
     ],
@@ -381,7 +381,7 @@ function ArtworkDemo() {
           </div>
         </div>
       </div>
-      <p className="text-sm text-cos-muted">Expand any milestone to create artwork in place.</p>
+      <p className="text-sm text-cos-muted">Expand any post to create artwork in place.</p>
     </div>
   );
 }

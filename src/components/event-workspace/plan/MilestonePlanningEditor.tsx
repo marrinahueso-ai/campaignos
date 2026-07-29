@@ -317,7 +317,7 @@ export function MilestonePlanningEditor({
           className="inline-flex items-center gap-1.5 text-sm font-medium text-cos-error"
         >
           <Trash2 className="h-4 w-4" aria-hidden />
-          Delete milestone
+          Delete post
         </button>
         <div className="flex items-center gap-2">
           <button

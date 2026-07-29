@@ -14,9 +14,9 @@ export function UnifiedCalendarHeader() {
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold text-cos-text">Calendar</h1>
             <p className="mt-1 max-w-xl text-sm text-cos-muted">
-              Your school year in one place — events, posts, deadlines, and what
-              still needs attention. Import from Google, a subscribe link, or a
-              file.
+              Your year in one place — events, posts, deadlines, and what still
+              needs attention. Import from Google Calendar, a subscribe link, or
+              a file.
             </p>
           </div>
         </div>

@@ -17,7 +17,7 @@ interface SettingsEaseSectionChromeProps {
 
 /**
  * Light cream/Fraunces chrome for Branding-linked settings pages
- * (AI Brain, Inbox AI, Playbooks) that still host denser editors inside.
+ * (AI Brain, Inbox AI, Communication Plans) that still host denser editors inside.
  */
 export function SettingsEaseSectionChrome({
   title,

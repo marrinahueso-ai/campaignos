@@ -168,14 +168,14 @@ export function SettingsEaseSchoolYear({
       );
 
       if (!result.success) {
-        setError(result.error ?? "Unable to sync calendar feed.");
+        setError(result.error ?? "Unable to refresh calendar feed.");
         return;
       }
 
       if (result.importId) {
         if (result.added === 0 && result.skipped > 0) {
           setMessage(
-            `Feed synced — all ${result.skipped} events are already on your calendar.`,
+            `Feed refreshed — all ${result.skipped} events are already on your calendar.`,
           );
           router.refresh();
           return;
@@ -183,7 +183,7 @@ export function SettingsEaseSchoolYear({
 
         if (result.skipped > 0) {
           setMessage(
-            `Feed synced — ${result.added} new events ready to review (${result.skipped} already on calendar).`,
+            `Feed refreshed — ${result.added} new events ready to review (${result.skipped} already on calendar).`,
           );
         }
 
@@ -191,7 +191,7 @@ export function SettingsEaseSchoolYear({
         return;
       }
 
-      setMessage("Calendar feed synced.");
+      setMessage("Calendar feed refreshed.");
     });
   }
 
@@ -329,7 +329,7 @@ export function SettingsEaseSchoolYear({
               onClick={handleSyncSubscribeFeed}
               disabled={isPending || !data.activeSchoolYear || !canSyncFeed}
             >
-              Sync subscribe feed
+              Refresh calendar feed
             </button>
           </div>
         </SoftCard>

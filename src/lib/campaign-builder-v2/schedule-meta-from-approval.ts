@@ -176,7 +176,7 @@ async function resolveRelativeDayForMilestone(input: {
   });
 }
 
-/** When CB2 publish day is not a playbook step day, create Meta slots so cron can post. */
+/** When CB2 publish day is not a communication plan step day, create Meta slots so cron can post. */
 async function ensureMetaSlotsForRelativeDay(input: {
   eventId: string;
   relativeDay: number;
@@ -319,7 +319,7 @@ export async function scheduleMetaFeedFromCampaignBuilderApproval(input: {
     return {
       scheduled: false,
       relativeDay: null,
-      error: "Unable to map milestone to a playbook day.",
+      error: "Unable to map post to a communication plan day.",
     };
   }
 
@@ -375,7 +375,7 @@ export async function scheduleMetaFeedFromCampaignBuilderApproval(input: {
     ? now
     : (input.feedScheduleAt ?? now);
 
-  // Playbook sync only creates slots for known communication steps. CB2
+  // Communication Plan sync only creates slots for known communication steps. CB2
   // milestones with a custom publish date (e.g. Announcement on -27) need slots.
   await ensureMetaSlotsForRelativeDay({
     eventId: input.eventId,

@@ -48,9 +48,9 @@ export function PlaybookList({ playbooks }: PlaybookListProps) {
     return (
       <EmptyState
         icon={Layers}
-        title="No playbooks yet"
-        description="Create your first communication playbook to define countdown schedules for events."
-        action={{ label: "Create playbook", href: "/settings/playbooks/new" }}
+        title="No communication plans yet"
+        description="Create your first communication plan to define countdown schedules for events."
+        action={{ label: "Create communication plan", href: "/settings/playbooks/new" }}
       />
     );
   }
@@ -156,7 +156,7 @@ export function PlaybookList({ playbooks }: PlaybookListProps) {
               <div className="flex flex-wrap gap-2 text-xs text-cos-muted">
                 <span>{EVENT_TYPE_LABELS[playbook.eventType]}</span>
                 <span>·</span>
-                <span>{playbook.stepCount ?? 0} steps</span>
+                <span>{playbook.stepCount ?? 0} posts</span>
               </div>
             </div>
 
@@ -219,7 +219,7 @@ export function PlaybookList({ playbooks }: PlaybookListProps) {
 
       <Button href="/settings/playbooks/new" className="w-full sm:w-auto">
         <Plus className="h-4 w-4" />
-        Create Playbook
+        Create communication plan
       </Button>
     </div>
   );

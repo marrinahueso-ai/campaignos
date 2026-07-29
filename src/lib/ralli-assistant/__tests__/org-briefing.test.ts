@@ -208,7 +208,7 @@ describe("formatDeterministicOrgBriefingAnswer", () => {
     );
     assert.match(answer, /nothing assigned to you/i);
     assert.match(answer, /none flagged/i);
-    assert.match(answer, /no overdue playbook tasks/i);
+    assert.match(answer, /no overdue communication plan tasks/i);
     assert.doesNotMatch(answer, /Save-the-date graphic/);
     assert.doesNotMatch(answer, /Confirm volunteer leads/);
   });

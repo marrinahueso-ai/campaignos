@@ -174,7 +174,7 @@ export async function sendStoryPostKitForMilestone(input: {
   }
 
   if (!step?.id) {
-    return { success: false, error: "Milestone not found." };
+    return { success: false, error: "Post not found." };
   }
 
   const surfaces = (step.meta_publish_surfaces as MetaPublishSurfaces | undefined) ?? "both";

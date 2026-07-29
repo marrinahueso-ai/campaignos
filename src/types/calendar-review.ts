@@ -7,6 +7,17 @@ export type CalendarEventCategory =
   | "Holiday"
   | "Early Release";
 
+/** Customer-facing labels (stored values stay PTA-era keys for compatibility). */
+export const CALENDAR_EVENT_CATEGORY_LABELS: Record<
+  CalendarEventCategory,
+  string
+> = {
+  "PTO Event": "Team event",
+  "School Event": "Organization event",
+  Holiday: "Holiday",
+  "Early Release": "Early release",
+};
+
 export type CalendarImportSource =
   | "ics"
   | "google"

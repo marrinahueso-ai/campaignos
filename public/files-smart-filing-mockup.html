@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Smart Filing Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, a { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 18px 0; gap: 6px;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .content { padding: 4px 32px 80px; max-width: 78rem; }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 14px; padding: 6px 12px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12; font-size: 12px; font-weight: 700;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .view-switch {
+      display: inline-flex; gap: 2px; padding: 3px;
+      border-radius: 999px;
+      background: rgba(255,252,247,0.85);
+      border: 1px solid var(--line);
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      animation: rise .35s ease both;
+    }
+    .view-switch button {
+      border: none; background: transparent; border-radius: 999px;
+      padding: 8px 16px; font-size: 13px; font-weight: 700;
+      color: var(--muted); cursor: pointer;
+      transition: background .12s, color .12s, box-shadow .12s;
+    }
+    .view-switch button.active {
+      background: var(--white); color: var(--ink);
+      box-shadow: 0 1px 4px rgba(42, 38, 34, 0.08);
+    }
+
+    .screen { display: none; animation: rise .35s ease both .03s; }
+    .screen.active { display: block; }
+
+    .crumb {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      text-decoration: none; margin-bottom: 10px;
+    }
+    .crumb:hover { color: var(--ink); }
+    .crumb span { color: var(--ink); }
+
+    .page-head {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      align-items: flex-end; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .page-head h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(28px, 4vw, 38px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+    }
+    .page-head .sub {
+      margin: 6px 0 0;
+      font-size: 13px; color: var(--muted);
+    }
+    .page-head .event-meta {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      margin-top: 8px;
+    }
+    .meta-chip {
+      display: inline-flex; align-items: center;
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: rgba(47,74,60,0.1); color: var(--forest);
+    }
+
+    .event-tabs {
+      display: flex; flex-wrap: wrap; gap: 4px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 0;
+    }
+    .event-tabs button {
+      border: none; background: transparent;
+      padding: 10px 14px 12px;
+      font-size: 13px; font-weight: 700; color: var(--muted);
+      cursor: pointer; position: relative;
+    }
+    .event-tabs button.active { color: var(--ink); }
+    .event-tabs button.active::after {
+      content: "";
+      position: absolute; left: 12px; right: 12px; bottom: -1px;
+      height: 2px; border-radius: 999px;
+      background: var(--forest);
+    }
+
+    .controls {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+      margin-bottom: 8px;
+    }
+    .search {
+      flex: 1; min-width: 200px; max-width: 26rem;
+      display: flex; align-items: center; gap: 10px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 16px;
+      box-shadow: var(--shadow);
+    }
+    .search svg {
+      width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 1.8;
+      flex-shrink: 0;
+    }
+    .search input {
+      border: none; outline: none; background: transparent;
+      width: 100%; font-size: 14px; font-weight: 600; color: var(--ink);
+    }
+    .search input::placeholder { color: var(--muted); font-weight: 500; }
+
+    .type-pills {
+      display: inline-flex; flex-wrap: wrap; gap: 4px;
+    }
+    .type-pills button {
+      border: 1px solid transparent; background: transparent;
+      border-radius: 999px; padding: 7px 14px;
+      font-size: 13px; font-weight: 700; color: var(--muted);
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
+    }
+    .type-pills button:hover { color: var(--ink); }
+    .type-pills button.active {
+      color: var(--ink);
+      background: var(--white);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .auto-note {
+      margin: 0 0 14px;
+      font-size: 12px; color: var(--muted); font-weight: 600;
+    }
+
+    .dropzone {
+      border: 1.5px dashed var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,252,247,0.45);
+      padding: 16px 20px;
+      margin-bottom: 18px;
+      text-align: center;
+      color: var(--ink-soft);
+      font-size: 13px; font-weight: 600;
+      transition: border-color .15s, background .15s;
+    }
+    .dropzone strong { color: var(--ink); font-weight: 800; }
+    .dropzone.over {
+      border-color: var(--sage);
+      background: rgba(107, 129, 113, 0.08);
+    }
+
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .file-grid.list-mode {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .file-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: box-shadow .15s, transform .12s;
+    }
+    .file-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-1px);
+    }
+    .file-card.list {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px; align-items: center;
+      padding: 10px 14px;
+      border-radius: 14px;
+    }
+    .thumb {
+      aspect-ratio: 4/3;
+      border-radius: 10px;
+      background: rgba(246,242,235,0.8);
+      display: grid; place-items: center;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .file-card.list .thumb {
+      width: 40px; height: 40px; aspect-ratio: auto;
+      margin: 0; border-radius: 10px;
+    }
+    .thumb.doc {
+      background: rgba(196,146,46,0.14);
+      color: #7a5a12;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+    }
+    .thumb.photo {
+      background: linear-gradient(145deg, #d4cfc4, #8a9a8e);
+    }
+    .thumb.graphic {
+      background: linear-gradient(145deg, #2f4a3c, #6b8171);
+    }
+    .thumb svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.6; opacity: 0.7; }
+    .file-card strong {
+      display: block; font-size: 13px; font-weight: 700;
+      line-height: 1.3; margin-bottom: 2px;
+      overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-card.list strong { white-space: normal; }
+    .file-card p {
+      margin: 0; font-size: 11px; color: var(--muted); font-weight: 600;
+    }
+    .file-card .size {
+      font-size: 11px; font-weight: 700; color: var(--ink-soft);
+      white-space: nowrap;
+    }
+
+    .section-head {
+      display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+      margin-bottom: 12px;
+    }
+    .section-head h2 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600;
+    }
+    .section-head p {
+      margin: 0; font-size: 12px; color: var(--muted); font-weight: 600;
+    }
+    .generated-box {
+      background: rgba(255,252,247,0.65);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 28px;
+    }
+    .generated-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    }
+    .gen-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .gen-art {
+      aspect-ratio: 1;
+      background: linear-gradient(160deg, #1e4a3a 0%, #4a6b58 50%, #c4922e 100%);
+      position: relative;
+    }
+    .gen-art.alt { background: linear-gradient(160deg, #2a7a86, #6b8171); }
+    .gen-art.alt2 { background: linear-gradient(160deg, #2f4a3c, #ebe4d9); }
+    .gen-body { padding: 10px 10px 12px; }
+    .gen-body strong {
+      display: block; font-size: 12px; font-weight: 700;
+      line-height: 1.35; margin-bottom: 6px;
+    }
+    .pill {
+      display: inline-flex; align-items: center;
+      font-size: 9px; font-weight: 800; letter-spacing: 0.05em;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+    }
+    .pill.posted { background: rgba(47,74,60,0.12); color: var(--forest); }
+    .pill.scheduled { background: rgba(42,122,134,0.12); color: var(--teal); }
+
+    .events-row {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+      margin-bottom: 14px;
+    }
+    .events-row > span {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted); margin-right: 2px;
+    }
+    .event-chip {
+      border: 1px solid transparent; background: transparent;
+      border-radius: 999px; padding: 4px 10px 4px 8px;
+      font-size: 12px; font-weight: 700; color: var(--ink-soft);
+      display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+    }
+    .event-chip.on {
+      color: var(--ink);
+      background: var(--white);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .event-chip i {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+
+    .event-stack { display: flex; flex-direction: column; gap: 14px; }
+    .event-box {
+      --stripe: var(--forest);
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      border-left: 4px solid var(--stripe);
+    }
+    .event-box h3 {
+      margin: 0 0 10px;
+      font-family: var(--serif);
+      font-size: 17px; font-weight: 600;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    }
+    .event-box h3 a { color: inherit; text-decoration: none; }
+    .event-box h3 a:hover { text-decoration: underline; }
+    .event-box .count {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 3px 9px; border-radius: 999px;
+      background: color-mix(in srgb, var(--stripe) 14%, transparent);
+      color: color-mix(in srgb, var(--stripe) 75%, var(--ink));
+    }
+
+    .empty {
+      border-radius: var(--radius);
+      border: 1px dashed var(--line);
+      background: rgba(255,252,247,0.55);
+      padding: 36px 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .empty p { margin: 0; font-size: 13px; color: var(--muted); }
+
+    .note {
+      margin-top: 32px;
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      max-width: 52rem;
+    }
+    .note h3 {
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600; margin: 0 0 8px;
+    }
+    .note p, .note li {
+      margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-soft);
+    }
+    .note ul { margin: 10px 0 0; padding-left: 1.1rem; }
+    .note li { margin-bottom: 4px; }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .content, .topbar { padding-left: 18px; padding-right: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="Nav">
+      <div class="rail-logo">H</div>
+      <button type="button" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg></button>
+      <button type="button" class="active" aria-label="Events"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+      <button type="button" id="rail-files" aria-label="Files"><svg viewBox="0 0 24 24"><path d="M4 6h7l2 2h7v12H4V6z"/></svg></button>
+      <button type="button" aria-label="Tasks"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg></button>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="school-pill"><span class="dot"></span> Edmondson Elementary</div>
+        <div style="font-size:13px;color:var(--muted)">Smart filing MVP · mock only</div>
+      </header>
+
+      <div class="content">
+        <div class="mock-tag">Mockup · Event-based smart filing · not live yet</div>
+
+        <div class="view-switch" role="tablist" aria-label="Mockup views">
+          <button type="button" class="active" data-view="event" role="tab" aria-selected="true">Event → Files tab</button>
+          <button type="button" data-view="org" role="tab" aria-selected="false">Org /files library</button>
+        </div>
+
+        <!-- VIEW 1: Event Files tab -->
+        <section class="screen active" id="screen-event" role="tabpanel">
+          <a class="crumb" href="#">Events → <span>School Supply Sorting</span></a>
+
+          <div class="page-head">
+            <div>
+              <h1>School Supply Sorting</h1>
+              <div class="event-meta">
+                <span class="meta-chip">Aug 4 · 9:00 AM</span>
+                <span class="meta-chip" style="background:rgba(42,122,134,0.1);color:var(--teal)">Planning</span>
+              </div>
+            </div>
+          </div>
+
+          <nav class="event-tabs" aria-label="Event sections">
+            <button type="button">Overview</button>
+            <button type="button">Posts</button>
+            <button type="button">Tasks</button>
+            <button type="button" class="active">Files</button>
+            <button type="button">Volunteers</button>
+          </nav>
+
+          <div class="controls">
+            <label class="search" aria-label="Search files">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input id="event-search" type="search" placeholder="Search files…" autocomplete="off" />
+            </label>
+            <div class="type-pills" id="event-type-pills" role="group" aria-label="File type">
+              <button type="button" class="active" data-type="all">All</button>
+              <button type="button" data-type="graphics">Graphics</button>
+              <button type="button" data-type="photos">Photos</button>
+              <button type="button" data-type="documents">Documents</button>
+            </div>
+          </div>
+          <p class="auto-note">Filed automatically by type</p>
+
+          <div class="dropzone" id="event-dropzone">
+            Drop files here — they’ll link to this event and sort by type. No folders to pick.
+          </div>
+
+          <div class="file-grid" id="event-files"></div>
+          <div class="empty" id="event-empty" hidden><p>No files in this type. Try another filter or upload.</p></div>
+
+          <div class="generated-box">
+            <div class="section-head">
+              <h2>Generated for posts</h2>
+              <p>Read-only · from campaign artwork</p>
+            </div>
+            <div class="generated-grid">
+              <article class="gen-card">
+                <div class="gen-art"></div>
+                <div class="gen-body">
+                  <strong>Volunteer signup reminder</strong>
+                  <span class="pill posted">Posted</span>
+                </div>
+              </article>
+              <article class="gen-card">
+                <div class="gen-art alt"></div>
+                <div class="gen-body">
+                  <strong>Supply drive countdown</strong>
+                  <span class="pill scheduled">Scheduled</span>
+                </div>
+              </article>
+              <article class="gen-card">
+                <div class="gen-art alt2"></div>
+                <div class="gen-body">
+                  <strong>Thank-you shout-out</strong>
+                  <span class="pill scheduled">Scheduled</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 2: Org library -->
+        <section class="screen" id="screen-org" role="tabpanel" hidden>
+          <div class="page-head">
+            <div>
+              <h1>Files</h1>
+              <p class="sub">Search across events — no folder tree</p>
+            </div>
+          </div>
+
+          <div class="controls">
+            <label class="search" aria-label="Search files">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input id="org-search" type="search" placeholder="Search files…" autocomplete="off" />
+            </label>
+            <div class="type-pills" id="org-type-pills" role="group" aria-label="File type">
+              <button type="button" class="active" data-type="all">All</button>
+              <button type="button" data-type="graphics">Graphics</button>
+              <button type="button" data-type="photos">Photos</button>
+              <button type="button" data-type="documents">Documents</button>
+            </div>
+          </div>
+
+          <div class="events-row" id="org-event-chips">
+            <span>Event</span>
+          </div>
+
+          <div class="event-stack" id="org-stack"></div>
+          <div class="empty" id="org-empty" hidden><p>No files match. Clear filters or try another search.</p></div>
+        </section>
+
+        <div class="note">
+          <h3>Smart filing MVP — what this shows</h3>
+          <ul>
+            <li><strong>Event is the container</strong> — uploads auto-link; type groups replace deep folders.</li>
+            <li><strong>Generated graphics stay separate</strong> — post artwork with status chips, not mixed with uploads.</li>
+            <li><strong>Org library</strong> — same type pills + event filter; grouped by event, not a folder tree hero.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const EVENT_FILES = [
+      { id: "e1", name: "Volunteer signup flyer.pdf", type: "documents", size: "1.2 MB", who: "Marrina", date: "Jul 22" },
+      { id: "e2", name: "Supply checklist.docx", type: "documents", size: "64 KB", who: "Alex", date: "Jul 18" },
+      { id: "e3", name: "Donation letter template.docx", type: "documents", size: "48 KB", who: "Jordan", date: "Jul 15" },
+      { id: "e4", name: "Gym layout sketch.png", type: "photos", size: "840 KB", who: "Jordan", date: "Jul 20" },
+      { id: "e5", name: "Sorting stations photo.jpg", type: "photos", size: "2.4 MB", who: "Sam", date: "Jul 24" },
+      { id: "e6", name: "Event banner draft.png", type: "graphics", size: "1.1 MB", who: "Marrina", date: "Jul 21" },
+      { id: "e7", name: "Social square template.psd", type: "graphics", size: "3.2 MB", who: "Marrina", date: "Jul 19" },
+    ];
+
+    const ORG_EVENTS = [
+      { id: "supply", title: "School Supply Sorting", color: "#2f4a3c", date: "Aug 4" },
+      { id: "fair", title: "Fall Book Fair", color: "#c4922e", date: "Aug 14" },
+      { id: "night", title: "Family Night", color: "#2a7a86", date: "Sep 12" },
+    ];
+
+    const ORG_FILES = [
+      { id: "o1", eventId: "supply", name: "Volunteer signup flyer.pdf", type: "documents", size: "1.2 MB", date: "Jul 22" },
+      { id: "o2", eventId: "supply", name: "Gym layout sketch.png", type: "photos", size: "840 KB", date: "Jul 20" },
+      { id: "o3", eventId: "supply", name: "Supply checklist.docx", type: "documents", size: "64 KB", date: "Jul 18" },
+      { id: "o4", eventId: "fair", name: "Vendor parking map.pdf", type: "documents", size: "2.1 MB", date: "Jul 24" },
+      { id: "o5", eventId: "fair", name: "Book fair banner.png", type: "graphics", size: "1.8 MB", date: "Jul 23" },
+      { id: "o6", eventId: "night", name: "Family Night poster.png", type: "graphics", size: "1.8 MB", date: "Jul 25" },
+      { id: "o7", eventId: "night", name: "Cafeteria reservation.pdf", type: "documents", size: "220 KB", date: "Jul 15" },
+    ];
+
+    let activeView = "event";
+    let eventType = "documents";
+    let eventQuery = "";
+    let orgType = "all";
+    let orgQuery = "";
+    let orgEvent = "all";
+
+    const typeLabel = { documents: "DOC", photos: "IMG", graphics: "GFX" };
+    const typeClass = { documents: "doc", photos: "photo", graphics: "graphic" };
+
+    function thumbHtml(type) {
+      if (type === "documents") return `<div class="thumb doc">DOC</div>`;
+      if (type === "photos") return `<div class="thumb photo"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="m21 17-5-5L8 19"/></svg></div>`;
+      return `<div class="thumb graphic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 17 12 8l5 9"/></svg></div>`;
+    }
+
+    function filterEventFiles() {
+      const q = eventQuery.trim().toLowerCase();
+      return EVENT_FILES.filter((f) => {
+        if (eventType !== "all" && f.type !== eventType) return false;
+        if (q && !f.name.toLowerCase().includes(q)) return false;
+        return true;
+      });
+    }
+
+    function renderEventFiles() {
+      const list = filterEventFiles();
+      const grid = document.getElementById("event-files");
+      const empty = document.getElementById("event-empty");
+      grid.innerHTML = "";
+      empty.hidden = list.length > 0;
+      const listMode = eventType === "documents";
+      grid.classList.toggle("list-mode", listMode);
+
+      for (const f of list) {
+        const card = document.createElement("article");
+        card.className = "file-card" + (listMode ? " list" : "");
+        card.innerHTML = listMode
+          ? `${thumbHtml(f.type)}
+             <div><strong>${f.name}</strong><p>${f.date} · ${f.who}</p></div>
+             <span class="size">${f.size}</span>`
+          : `${thumbHtml(f.type)}
+             <strong>${f.name}</strong>
+             <p>${f.size} · ${f.date}</p>`;
+        grid.appendChild(card);
+      }
+    }
+
+    function filterOrgFiles() {
+      const q = orgQuery.trim().toLowerCase();
+      return ORG_FILES.filter((f) => {
+        if (orgEvent !== "all" && f.eventId !== orgEvent) return false;
+        if (orgType !== "all" && f.type !== orgType) return false;
+        if (q) {
+          const ev = ORG_EVENTS.find((e) => e.id === f.eventId);
+          if (!f.name.toLowerCase().includes(q) && !(ev && ev.title.toLowerCase().includes(q))) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderOrgChips() {
+      const el = document.getElementById("org-event-chips");
+      el.innerHTML = `<span>Event</span>`;
+      const all = document.createElement("button");
+      all.type = "button";
+      all.className = "event-chip" + (orgEvent === "all" ? " on" : "");
+      all.innerHTML = `<i style="background:var(--forest)"></i>All events`;
+      all.addEventListener("click", () => { orgEvent = "all"; renderOrg(); });
+      el.appendChild(all);
+      for (const ev of ORG_EVENTS) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "event-chip" + (orgEvent === ev.id ? " on" : "");
+        btn.innerHTML = `<i style="background:${ev.color}"></i>${ev.title}`;
+        btn.addEventListener("click", () => { orgEvent = orgEvent === ev.id ? "all" : ev.id; renderOrg(); });
+        el.appendChild(btn);
+      }
+    }
+
+    function renderOrgStack() {
+      const files = filterOrgFiles();
+      const stack = document.getElementById("org-stack");
+      const empty = document.getElementById("org-empty");
+      stack.innerHTML = "";
+      empty.hidden = files.length > 0;
+
+      const byEvent = new Map();
+      for (const f of files) {
+        const list = byEvent.get(f.eventId) || [];
+        list.push(f);
+        byEvent.set(f.eventId, list);
+      }
+
+      const order = orgEvent === "all"
+        ? ORG_EVENTS.filter((e) => byEvent.has(e.id))
+        : ORG_EVENTS.filter((e) => e.id === orgEvent && byEvent.has(e.id));
+
+      for (const ev of order) {
+        const list = byEvent.get(ev.id) || [];
+        const box = document.createElement("article");
+        box.className = "event-box";
+        box.style.setProperty("--stripe", ev.color);
+        box.innerHTML = `<h3><a href="#">${ev.title}</a><span class="count">${ev.date} · ${list.length} file${list.length === 1 ? "" : "s"}</span></h3>`;
+        for (const f of list) {
+          const row = document.createElement("article");
+          row.className = "file-card list";
+          row.innerHTML = `${thumbHtml(f.type)}
+            <div><strong>${f.name}</strong><p>${f.date} · ${typeLabel[f.type] || f.type}</p></div>
+            <span class="size">${f.size}</span>`;
+          box.appendChild(row);
+        }
+        stack.appendChild(box);
+      }
+    }
+
+    function renderOrg() {
+      renderOrgChips();
+      renderOrgStack();
+    }
+
+    function setView(view) {
+      activeView = view;
+      document.querySelectorAll("[data-view]").forEach((btn) => {
+        const on = btn.dataset.view === view;
+        btn.classList.toggle("active", on);
+        btn.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      document.getElementById("screen-event").classList.toggle("active", view === "event");
+      document.getElementById("screen-event").hidden = view !== "event";
+      document.getElementById("screen-org").classList.toggle("active", view === "org");
+      document.getElementById("screen-org").hidden = view !== "org";
+      document.getElementById("rail-files").classList.toggle("active", view === "org");
+      document.querySelector(".rail button.active:not(#rail-files)")?.classList.remove("active");
+      if (view === "event") {
+        document.querySelector('.rail button[aria-label="Events"]').classList.add("active");
+      } else {
+        document.getElementById("rail-files").classList.add("active");
+      }
+    }
+
+    document.querySelectorAll("[data-view]").forEach((btn) => {
+      btn.addEventListener("click", () => setView(btn.dataset.view));
+    });
+
+    document.querySelectorAll("#event-type-pills [data-type]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        eventType = btn.dataset.type;
+        document.querySelectorAll("#event-type-pills [data-type]").forEach((b) =>
+          b.classList.toggle("active", b === btn),
+        );
+        renderEventFiles();
+      });
+    });
+
+    document.querySelectorAll("#org-type-pills [data-type]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        orgType = btn.dataset.type;
+        document.querySelectorAll("#org-type-pills [data-type]").forEach((b) =>
+          b.classList.toggle("active", b === btn),
+        );
+        renderOrgStack();
+        document.getElementById("org-empty").hidden = filterOrgFiles().length > 0;
+      });
+    });
+
+    document.getElementById("event-search").addEventListener("input", (e) => {
+      eventQuery = e.target.value;
+      renderEventFiles();
+    });
+    document.getElementById("org-search").addEventListener("input", (e) => {
+      orgQuery = e.target.value;
+      renderOrgStack();
+      document.getElementById("org-empty").hidden = filterOrgFiles().length > 0;
+    });
+
+    const dz = document.getElementById("event-dropzone");
+    ["dragenter", "dragover"].forEach((t) => {
+      dz.addEventListener(t, (e) => { e.preventDefault(); dz.classList.add("over"); });
+    });
+    ["dragleave", "drop"].forEach((t) => {
+      dz.addEventListener(t, (e) => { e.preventDefault(); dz.classList.remove("over"); });
+    });
+
+    renderEventFiles();
+    renderOrg();
+  </script>
+</body>
+</html>

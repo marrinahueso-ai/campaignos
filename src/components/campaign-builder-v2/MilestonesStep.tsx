@@ -111,7 +111,7 @@ export function MilestonesStep() {
           <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="font-display text-3xl text-cos-text sm:text-[1.75rem]">
-                Campaign Milestones
+                Posts
               </h2>
               <p className="mt-1.5 text-sm text-cos-muted">
                 Drag to reorder. Edit each milestone, then generate one at a
@@ -126,11 +126,11 @@ export function MilestonesStep() {
                 disabled={isSuggesting}
               >
                 <Sparkles className="h-4 w-4" strokeWidth={1.5} />
-                {isSuggesting ? "Suggesting…" : "Suggest milestones"}
+                {isSuggesting ? "Suggesting…" : "Suggest posts"}
               </Button>
               <Button variant="secondary" size="sm" onClick={addMilestone}>
                 <Plus className="h-4 w-4" strokeWidth={1.5} />
-                Add milestone
+                Add post
               </Button>
             </div>
           </header>
@@ -193,16 +193,16 @@ export function MilestonesStep() {
               onClick={addMilestone}
               className="mt-3 flex w-full items-center justify-center rounded-[14px] border border-dashed border-cos-brand-sage/40 bg-[rgba(107,129,113,0.06)] px-4 py-3 text-sm font-semibold text-cos-muted transition-colors hover:border-cos-brand-sage hover:text-cos-text"
             >
-              + Add milestone
+              + Add post
             </button>
           </div>
 
           <section className="space-y-2 rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
             <h3 className="font-display text-xl text-cos-text">
-              AI guidance per milestone
+              AI guidance per post
             </h3>
             <p className="text-sm text-cos-muted">
-              Add specific instructions for the AI for each milestone. Use the
+              Add specific instructions for the AI for each post. Use the
               pencil icon to edit artwork and caption notes, or the sparkle icon
               to generate content for one milestone at a time in Preview.
             </p>
@@ -217,7 +217,7 @@ export function MilestonesStep() {
 
       {editingMilestone && (
         <MilestoneEditorModal
-          // Force a full remount per milestone: the form fields below are
+          // Force a full remount per post: the form fields below are
           // uncontrolled (defaultValue), so without a key React would keep
           // showing the previous milestone's artwork/caption notes if the
           // edited milestone ever changed while the modal stayed mounted.

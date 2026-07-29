@@ -270,7 +270,7 @@ export function EventDetailVendorsEasePanel({
               Add existing
             </h4>
             <p className="mt-1 text-sm text-cos-muted">
-              Pick someone from your school directory who isn’t linked yet.
+              Pick someone from your vendor directory who isn’t linked yet.
             </p>
             {linkOptions.length === 0 ? (
               <p className="mt-4 text-sm text-cos-muted">

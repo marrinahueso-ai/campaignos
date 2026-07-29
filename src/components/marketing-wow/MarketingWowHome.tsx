@@ -123,7 +123,7 @@ export function MarketingWowHome({
               <li>
                 <strong>Ask Ralli</strong>
                 <p>
-                  An ops coach that knows your events, milestones, and what to do
+                  An ops coach that knows your events, posts, and what to do
                   next today.
                 </p>
               </li>

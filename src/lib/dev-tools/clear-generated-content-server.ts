@@ -162,7 +162,7 @@ export async function clearGeneratedContentForScope(input: {
   if (input.milestoneIds !== "all" && input.milestoneIds.length === 0) {
     return {
       success: false,
-      message: "Select a milestone to clear.",
+      message: "Select a post to clear.",
       artworkCleared: 0,
       captionsCleared: 0,
       clearedMilestoneIds: [],
@@ -220,7 +220,7 @@ export async function clearGeneratedContentForScope(input: {
       if (!exists) {
         return {
           success: false,
-          message: "Milestone not found on this campaign (ID mismatch).",
+          message: "Post not found on this campaign (ID mismatch).",
           artworkCleared: 0,
           captionsCleared: 0,
           clearedMilestoneIds: [],

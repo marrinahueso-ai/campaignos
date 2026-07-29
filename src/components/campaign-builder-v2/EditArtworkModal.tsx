@@ -21,7 +21,7 @@ import type {
 
 const QUICK_SUGGESTIONS = [
   "More green",
-  "Add kids",
+  "Add people",
   "Warmer tones",
   "Bigger headline",
   "More vintage",
@@ -209,7 +209,7 @@ export function EditArtworkModal({
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
             rows={4}
-            placeholder="e.g. More green accents, add playful school elements..."
+            placeholder="e.g. More green accents, add playful community elements..."
           />
 
           <div>

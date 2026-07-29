@@ -166,21 +166,21 @@ export function CalendarImportPlanList({
     return (
       <div>
         <p className="mb-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-          Imported from school calendar
+          Imported from calendar
         </p>
         <div className="rounded-[22px] border border-dashed border-cos-border bg-[rgba(255,252,247,0.55)] px-6 py-16 text-center">
           <p className="font-display text-lg font-semibold text-cos-text">
             No imported events yet
           </p>
           <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-cos-muted">
-            Bring the school year in, then review dates before they land here.
+            Bring your year in, then review dates before they land here.
           </p>
           <button
             type="button"
             onClick={goImport}
             className="mt-4 inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card"
           >
-            Import school calendar
+            Import calendar
           </button>
         </div>
       </div>
@@ -190,7 +190,7 @@ export function CalendarImportPlanList({
   return (
     <div>
       <p className="mb-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-        Imported from school calendar
+        Imported from calendar
       </p>
 
       <input

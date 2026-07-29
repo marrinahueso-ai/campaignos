@@ -79,7 +79,7 @@ export async function generateHomepageCardBlurb(
       organizationName: organization?.name ?? null,
       brandVoiceSummary:
         brandVoiceSummary ||
-        "Warm, welcoming, community-first PTO voice.",
+        "Warm, welcoming, community-first organization voice.",
     }),
     maxTokens: HOMEPAGE_BLURB_MAX_TOKENS,
     temperature: 0.7,

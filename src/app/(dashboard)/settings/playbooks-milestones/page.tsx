@@ -3,7 +3,7 @@ import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getPlaybooksForOrganization } from "@/lib/playbooks/queries";
 
 export const metadata = {
-  title: "Playbooks / Milestones",
+  title: "Communication Plans",
 };
 
 export default async function PlaybooksMilestonesSettingsPage() {

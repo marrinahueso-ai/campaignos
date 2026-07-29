@@ -39,8 +39,53 @@ describe("event detail ease UI contracts", () => {
     assert.doesNotMatch(shell, /EventVendorsSection/);
   });
 
+  it("event Approvals ease panel uses sort rail instead of pulse filters", () => {
+    const panel = readSrc(
+      "../../../components/events-phase3/EventDetailApprovalsEasePanel.tsx",
+    );
+    const pulse = readSrc(
+      "../../approvals-scheduling/approvals-ease-pulse.ts",
+    );
+    assert.doesNotMatch(panel, /EasePulseMini/);
+    assert.doesNotMatch(panel, /APPROVALS_EASE_PULSE_OPTIONS/);
+    assert.match(panel, /EVENT_APPROVALS_EASE_SORT_OPTIONS/);
+    assert.match(panel, /EaseListRail/);
+    assert.match(pulse, /Needs you/);
+    assert.match(pulse, /Scheduled/);
+    assert.match(pulse, /Posted/);
+    assert.doesNotMatch(pulse, /label: "Drafts"/);
+    assert.doesNotMatch(panel, /label: "Drafts"/);
+  });
+
   it("keeps Create with AI as an in-page doorway", () => {
     assert.match(shell, /EventDetailCreateWithAiPanel/);
     assert.doesNotMatch(shell, /window\.location\.replace\(createWithAiUrl\)/);
+  });
+
+  it("calms event detail hero for soft launch", () => {
+    const hero = readSrc(
+      "../../../components/events-phase3/EventDetailEaseHero.tsx",
+    );
+    const manageMenu = readSrc(
+      "../../../components/event-workspace/EventManageMenu.tsx",
+    );
+
+    assert.doesNotMatch(
+      hero,
+      /Tasks, approvals, volunteers, and Create with AI/,
+    );
+    assert.doesNotMatch(hero, /EditEventDetailsButton/);
+    assert.match(hero, /Create with AI/);
+    assert.match(hero, /includeEditDetails/);
+    assert.match(hero, /iconOnly/);
+    assert.match(manageMenu, /Edit details/);
+    assert.match(hero, /Needs approval/);
+    assert.match(hero, /Open tasks/);
+    assert.match(hero, /Volunteers/);
+    assert.doesNotMatch(hero, /label: "Posts"/);
+    assert.match(hero, /text-\[32px\]/);
+    assert.match(hero, /bg-\[rgba\(255,252,247,0\.94\)\]/);
+    assert.doesNotMatch(hero, /formatEventTime/);
+    assert.doesNotMatch(hero, /eventTypeLabel/);
   });
 });

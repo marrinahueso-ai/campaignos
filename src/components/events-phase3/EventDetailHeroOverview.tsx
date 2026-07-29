@@ -39,7 +39,7 @@ export function EventDetailHeroOverview({
           </OverviewRow>
         ) : null}
         {playbookName ? (
-          <OverviewRow label="Playbook">
+          <OverviewRow label="Communication Plan">
             <span className="text-right text-cos-text">{playbookName}</span>
           </OverviewRow>
         ) : null}

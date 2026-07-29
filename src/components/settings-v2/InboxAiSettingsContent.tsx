@@ -71,10 +71,10 @@ export function InboxAiSettingsContent({
           </div>
           <div className="mt-4">
             <p className="m-0 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#7a7166]">
-              Last sync
+              Last refresh
             </p>
             <p className="mt-1 mb-0 text-sm font-semibold text-[#2a2622]">
-              Background sync active
+              Background refresh active
             </p>
           </div>
         </div>

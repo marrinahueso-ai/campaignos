@@ -159,7 +159,7 @@ export function CreateEventForm({
         <CardDescription>
           {onboarding
             ? "Title and date are enough to get started. You can add the rest later."
-            : "Choose a playbook and communication strategy. Playbooks come from your Settings templates (including custom milestones)."}
+            : "Choose a communication plan and communication strategy. Communication Plans come from your Settings templates (including custom posts)."}
         </CardDescription>
       </CardHeader>
 
@@ -219,13 +219,13 @@ export function CreateEventForm({
               <div className="space-y-2">
                 <Select
                   name="playbookId"
-                  label="Playbook"
+                  label="Communication Plan"
                   value={fields.playbookId}
                   onChange={(changeEvent) => selectPlaybook(changeEvent.target.value)}
                   required
                 >
                   {playbookOptions.length === 0 ? (
-                    <option value="">No playbooks available</option>
+                    <option value="">No communication plans available</option>
                   ) : (
                     playbookOptions.map((option) => (
                       <option key={option.id} value={option.id}>
@@ -241,7 +241,7 @@ export function CreateEventForm({
                     href="/settings/playbooks-milestones"
                     className="font-medium text-cos-text underline underline-offset-2 hover:text-cos-primary"
                   >
-                    Settings → Playbooks / Milestones
+                    Settings → Communication Plans / Posts
                   </Link>
                   .
                 </p>
@@ -287,7 +287,7 @@ export function CreateEventForm({
             <Input
               name="location"
               label="Location"
-              placeholder="School gymnasium"
+              placeholder="Main hall, community room…"
               value={fields.location}
               onChange={(changeEvent) =>
                 updateField("location", changeEvent.target.value)
@@ -298,7 +298,7 @@ export function CreateEventForm({
               <Input
                 name="audience"
                 label="Audience"
-                placeholder="Families, teachers, community"
+                placeholder="Members, volunteers, community"
                 value={fields.audience}
                 onChange={(changeEvent) =>
                   updateField("audience", changeEvent.target.value)

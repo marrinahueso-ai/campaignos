@@ -54,8 +54,8 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
     ],
     answer: [
       "Open Campaigns in the left nav, then click Create Campaign.",
-      "Add the event name, date, and choose a playbook so milestones are ready.",
-      "After you create it, open Create with AI on that campaign to generate artwork and captions for each milestone.",
+      "Add the event name, date, and choose a communication plan so posts are ready.",
+      "After you create it, open Create with AI on that campaign to generate artwork and captions for each post.",
     ].join(" "),
     links: [
       { label: "Create Campaign", href: "/events/create" },
@@ -95,7 +95,7 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
     ],
     answer: [
       "After approval, the content is ready for publishing or scheduling.",
-      "Auto-publish milestones can move into the publish/schedule flow; manual-upload items get handoff instructions (and email when due).",
+      "Auto-publish posts can move into the publish/schedule flow; manual-upload items get handoff instructions (and email when due).",
       "Track status in Approvals (Approved) and in Calendar / Communications Hub for what’s going out.",
     ].join(" "),
     links: [
@@ -113,14 +113,14 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
       "generate artwork",
       "generate captions",
       // Avoid bare "milestones" — status asks (“are my milestones done?”) are ops/org.
-      "milestones step",
-      "create with ai milestones",
+      "posts step",
+      "create with ai posts",
       "inspiration step",
     ],
     answer: [
       "Create with AI is the guided campaign builder for one event.",
-      "Work through Inspiration → Milestones → Preview → Review → Published.",
-      "Generate artwork and captions per milestone, then send them through approvals.",
+      "Work through Creative Setup → Posts → Preview → Review → Published.",
+      "Generate artwork and captions per post, then send them through approvals.",
       "Open it from a campaign’s Create with AI entry (Campaigns → your event).",
     ].join(" "),
     links: [{ label: "Campaigns", href: "/events" }],

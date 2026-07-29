@@ -32,7 +32,7 @@ const SECTION_LABELS: Record<SettingsEaseBrandingSection, string> = {
   hub: "Hub",
   "ai-brain": "AI Brain",
   "ai-inbox": "AI Inbox",
-  playbook: "Playbook",
+  playbook: "Communication Plan",
   "colors-logos": "Colors & Logos",
   "school-year": "School Year",
 };
@@ -296,7 +296,7 @@ export function SettingsEaseBranding({
           </h1>
           <p className="mt-1.5 mb-0 max-w-[52ch] text-sm leading-snug text-[#5c554c]">
             How {orgName} sounds, looks, and plans the year — voice, inbox
-            sources, playbooks, brand kit, and school year in one calm home.
+            sources, communication plans, brand kit, and school year in one calm home.
           </p>
         </div>
       </div>
@@ -360,13 +360,13 @@ export function SettingsEaseBranding({
           />
           <HubTile
             kind="playbook"
-            title="Playbook"
-            description="Communication playbooks and countdown plans assigned by event type."
+            title="Communication Plan"
+            description="Communication Plans and countdown plans assigned by event type."
             meta={
               <StatusPill tone={data.playbookCount > 0 ? "ok" : "off"}>
                 {data.playbookCount === 1
-                  ? "1 playbook"
-                  : `${data.playbookCount} playbooks`}
+                  ? "1 communication plan"
+                  : `${data.playbookCount} communication plans`}
               </StatusPill>
             }
             linkLabel="Open library →"
@@ -499,7 +499,7 @@ export function SettingsEaseBranding({
                 {Math.min(data.inboxSourcesCount, 10)}/10
               </span>
             </DetailRow>
-            <DetailRow label="Last sync">Background sync active</DetailRow>
+            <DetailRow label="Last refresh">Background refresh active</DetailRow>
           </SoftCard>
           <SoftCard
             title="How Inbox AI works"
@@ -520,7 +520,7 @@ export function SettingsEaseBranding({
           data-branding-panel="playbook"
         >
           <SoftCard
-            title="Playbooks"
+            title="Communication Plans"
             description="Maps to shipped /settings/playbooks-milestones — countdown communication plans by event type."
             headerAside={
               <Link
@@ -531,7 +531,7 @@ export function SettingsEaseBranding({
               </Link>
             }
           >
-            <DetailRow label="Playbooks in library">
+            <DetailRow label="Communication Plans in library">
               {data.playbookCount}
             </DetailRow>
             <div className="mt-3.5 flex flex-wrap gap-2">
@@ -539,22 +539,9 @@ export function SettingsEaseBranding({
                 href="/settings/playbooks/new"
                 className={btnSecondaryClassName}
               >
-                Create playbook
+                Create communication plan
               </Link>
             </div>
-          </SoftCard>
-          <SoftCard
-            title="Milestones"
-            description="Honest: templates live on playbooks; schedules edit inside campaigns."
-          >
-            <p className="mb-3.5 text-[13px] leading-snug text-[#5c554c]">
-              Milestone templates are managed inside each campaign. Create or
-              duplicate a playbook to define default countdown steps — same as
-              today’s Playbooks / Milestones settings.
-            </p>
-            <Link href="/campaigns" className={btnSecondaryClassName}>
-              Browse campaigns
-            </Link>
           </SoftCard>
         </div>
       ) : null}

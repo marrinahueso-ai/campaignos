@@ -112,7 +112,7 @@ export function formatDeterministicOpsAnswer(pack: OpsContextPack): string {
       `• Open tasks: ${pack.tasks.incompleteCount} incomplete (none overdue in the loaded list).`,
     );
   } else {
-    lines.push("• Tasks: no incomplete playbook tasks found.");
+    lines.push("• Tasks: no incomplete communication plan tasks found.");
   }
 
   const approvalTotal =

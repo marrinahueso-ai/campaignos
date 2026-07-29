@@ -131,7 +131,7 @@ export function SocialMediaCenterSidebar({
 
   return (
     <aside className="flex w-full min-w-0 flex-col gap-3 lg:max-w-[17.5rem] lg:justify-self-end">
-      <SidebarCard title="Milestone Progress">
+      <SidebarCard title="Post progress">
         <div className="mt-4 flex items-center gap-4">
           <MilestoneProgressDonut percent={progressPercent} />
           <div>
@@ -147,12 +147,12 @@ export function SocialMediaCenterSidebar({
       </SidebarCard>
 
       <SidebarCard
-        title="Upcoming Milestones"
+        title="Upcoming posts"
         action={<SidebarLink href="/calendar">View calendar →</SidebarLink>}
       >
         <ul className="mt-4 space-y-3">
           {upcomingBundles.length === 0 ? (
-            <li className="text-sm text-cos-muted">No upcoming milestones scheduled yet.</li>
+            <li className="text-sm text-cos-muted">No upcoming posts scheduled yet.</li>
           ) : (
             upcomingBundles.map((bundle, index) => {
               const dateColumn = formatSocialPostDateColumn(bundle);

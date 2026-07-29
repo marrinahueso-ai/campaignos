@@ -38,6 +38,7 @@ interface FilesEaseListProps {
   onFoldersChanged: () => void;
   emptyTitle: string;
   emptyBody: string;
+  showFolderBar?: boolean;
 }
 
 function glyphLabel(fileType: CampaignFileType): string {
@@ -104,6 +105,7 @@ export function FilesEaseList({
   onFoldersChanged,
   emptyTitle,
   emptyBody,
+  showFolderBar = false,
 }: FilesEaseListProps) {
   const [, startTransition] = useTransition();
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -213,6 +215,7 @@ export function FilesEaseList({
             search: "",
             folderId: activeFolder,
             eventId: group.eventId,
+            typeGroup: "all",
             fileType: "all",
             category: "all",
             platform: "all",
@@ -255,21 +258,25 @@ export function FilesEaseList({
               </Link>
             </div>
 
-            <FilesFolderBar
-              eventId={group.eventId}
-              foldersAvailable={group.foldersAvailable}
-              folders={group.folders}
-              activeFolder={activeFolder}
-              unfiledCount={countUnfiled(group.files)}
-              totalFileCount={group.files.length}
-              onFolderChange={(folderId) => setFolderFilter(group.eventId, folderId)}
-              onFoldersChanged={onFoldersChanged}
-              compact
-            />
+            {showFolderBar ? (
+              <FilesFolderBar
+                eventId={group.eventId}
+                foldersAvailable={group.foldersAvailable}
+                folders={group.folders}
+                activeFolder={activeFolder}
+                unfiledCount={countUnfiled(group.files)}
+                totalFileCount={group.files.length}
+                onFolderChange={(folderId) => setFolderFilter(group.eventId, folderId)}
+                onFoldersChanged={onFoldersChanged}
+                compact
+              />
+            ) : null}
 
             {visibleFiles.length === 0 ? (
               <p className="px-1 py-2 text-sm text-cos-muted">
-                No files in this folder for this campaign.
+                {showFolderBar
+                  ? "No files in this folder for this campaign."
+                  : "No files for this campaign."}
               </p>
             ) : (
               <div className="flex flex-col gap-1.5">

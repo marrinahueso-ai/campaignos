@@ -483,8 +483,8 @@ function DocumentsPanel({
         </h3>
         <p className="m-0 text-sm leading-relaxed text-cos-muted">
           {canWrite
-            ? "Files for this vendor live on the events they’re linked to — open an event’s Files tab, or the org Files library filtered by that event."
-            : "No documents for this vendor’s events."}
+            ? "Files for this vendor live on the events they’re linked to — open an event’s Files tab, or your team’s Files library filtered by that event."
+            : "No documents on this vendor’s linked events yet."}
         </p>
       </ProfileBox>
     );

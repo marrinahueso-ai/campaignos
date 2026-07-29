@@ -184,7 +184,7 @@ export function MetaSocialCaptionField({
         </div>
         {hasApprovedFeedArtwork && (
           <p className="text-[11px] text-cos-muted">
-            Drafts use your approved feed artwork for this milestone.
+            Drafts use your approved feed artwork for this post.
           </p>
         )}
       </div>

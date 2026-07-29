@@ -56,11 +56,11 @@ async function requireWritableOrg(): Promise<
   const organization = await getCurrentOrganization();
 
   if (!organization) {
-    return { error: "Complete School Setup before managing vendors." };
+    return { error: "Finish setting up your organization before managing vendors." };
   }
 
   if (!(await hasPermission("draft_edit"))) {
-    return { error: "You do not have permission to modify vendors." };
+    return { error: "You don’t have permission to change vendors." };
   }
 
   return { organizationId: organization.id };
@@ -173,11 +173,17 @@ export async function archiveVendorAction(
   const organization = await getCurrentOrganization();
 
   if (!organization) {
-    return { success: false, error: "Complete School Setup before managing vendors." };
+    return {
+      success: false,
+      error: "Finish setting up your organization before managing vendors.",
+    };
   }
 
   if (!(await hasPermission("manage_people"))) {
-    return { success: false, error: "Only admins can archive vendors." };
+    return {
+      success: false,
+      error: "Ask a team admin if you need to archive vendors.",
+    };
   }
 
   const vendor = await getVendorRowById(vendorId);
@@ -199,11 +205,17 @@ export async function deleteVendorAction(
   const organization = await getCurrentOrganization();
 
   if (!organization) {
-    return { success: false, error: "Complete School Setup before managing vendors." };
+    return {
+      success: false,
+      error: "Finish setting up your organization before managing vendors.",
+    };
   }
 
   if (!(await hasPermission("manage_people"))) {
-    return { success: false, error: "Only admins can delete vendors." };
+    return {
+      success: false,
+      error: "Ask a team admin if you need to delete vendors.",
+    };
   }
 
   const vendor = await getVendorRowById(vendorId);

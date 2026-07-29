@@ -22,7 +22,7 @@ export async function generateDraftForStep(
   if (!isPersistableStepId(stepId)) {
     return {
       success: false,
-      error: "Assign a live playbook to generate storable drafts.",
+      error: "Assign a live communication plan to generate storable drafts.",
     };
   }
 

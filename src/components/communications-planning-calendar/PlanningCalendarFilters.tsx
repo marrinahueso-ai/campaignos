@@ -23,7 +23,7 @@ interface PlanningCalendarFiltersBarProps {
 
 const TYPE_OPTIONS: { value: PlanningItemType | "all"; label: string }[] = [
   { value: "all", label: "All types" },
-  { value: "event", label: "PTO Events" },
+  { value: "event", label: "Events" },
   { value: "timeline_task", label: "Timeline Tasks" },
   { value: "draft", label: "Drafts" },
   { value: "artwork", label: "Artwork" },

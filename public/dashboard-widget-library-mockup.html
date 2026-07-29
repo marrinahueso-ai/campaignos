@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Dashboard Widget Library Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, a { font: inherit; }
+    .wrap {
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 14px; padding: 6px 12px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12; font-size: 12px; font-weight: 700;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    .intro {
+      margin-bottom: 28px;
+      animation: rise .4s ease both;
+    }
+    .intro h1 {
+      margin: 0 0 8px;
+      font-family: var(--serif);
+      font-size: clamp(28px, 4vw, 38px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .intro p {
+      margin: 0;
+      font-size: 15px;
+      color: var(--ink-soft);
+      line-height: 1.55;
+      max-width: 52ch;
+    }
+    .intro .school {
+      margin: 0 0 6px;
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--sage);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      animation: rise .45s ease both .05s;
+    }
+
+    .widget {
+      --accent: var(--sage);
+      position: relative;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 18px 16px;
+      display: flex;
+      flex-direction: column;
+      min-height: 280px;
+    }
+    .widget[data-accent="forest"] { --accent: var(--forest); }
+    .widget[data-accent="mustard"] { --accent: var(--mustard); }
+    .widget[data-accent="teal"] { --accent: var(--teal); }
+    .widget[data-accent="warn"] { --accent: var(--warn); }
+    .widget::before {
+      content: "";
+      position: absolute; left: 0; top: 18px; bottom: 18px;
+      width: 3px; border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 70%, transparent);
+      opacity: 0.85;
+    }
+    .widget:hover { box-shadow: var(--shadow-lg); }
+
+    .widget-head {
+      display: flex; align-items: flex-start; gap: 8px;
+      margin-bottom: 4px; padding-left: 6px;
+    }
+    .widget-head .icon {
+      width: 16px; height: 16px; margin-top: 3px;
+      stroke: var(--muted); fill: none; stroke-width: 1.8;
+      flex-shrink: 0;
+    }
+    .widget-head .titles { flex: 1; min-width: 0; }
+    .widget-head h2 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .widget-head .purpose {
+      margin: 3px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .lens-toggle {
+      display: inline-flex; gap: 2px; padding: 2px;
+      border-radius: 999px;
+      background: rgba(246, 242, 235, 0.8);
+      border: 1px solid var(--line);
+      margin: 10px 0 12px 6px;
+      align-self: flex-start;
+    }
+    .lens-toggle button {
+      border: none; background: transparent; border-radius: 999px;
+      padding: 4px 10px; font-size: 11px; font-weight: 700;
+      color: var(--muted); cursor: pointer;
+      transition: background .12s, color .12s, box-shadow .12s;
+    }
+    .lens-toggle button.active {
+      background: var(--white); color: var(--ink);
+      box-shadow: 0 1px 4px rgba(42, 38, 34, 0.08);
+    }
+
+    .widget-body {
+      flex: 1;
+      padding-left: 6px;
+    }
+    .widget-body[hidden] { display: none !important; }
+
+    .row {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px;
+      padding: 10px 10px 10px 12px;
+      border-radius: 14px;
+      background: rgba(246, 242, 235, 0.55);
+      margin-bottom: 6px;
+    }
+    .row:last-child { margin-bottom: 0; }
+    .row strong {
+      display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px;
+    }
+    .row span, .row p {
+      margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4;
+    }
+    .row .meta {
+      font-size: 11px; font-weight: 800; color: var(--ink-soft);
+      white-space: nowrap; text-align: right;
+      flex-shrink: 0;
+    }
+    .pill {
+      display: inline-flex; align-items: center;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+      background: rgba(47, 74, 60, 0.1); color: var(--forest);
+    }
+    .pill.warn { background: rgba(166, 90, 58, 0.12); color: var(--warn); }
+    .pill.mustard { background: rgba(196, 146, 46, 0.16); color: #7a5a12; }
+    .pill.teal { background: rgba(42, 122, 134, 0.12); color: var(--teal); }
+
+    .metric {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 10px; padding: 8px 6px 8px 12px;
+      border-bottom: 1px solid rgba(42, 38, 34, 0.06);
+    }
+    .metric:last-child { border-bottom: none; }
+    .metric a {
+      font-size: 14px; font-weight: 600; color: var(--ink);
+      text-decoration: none;
+    }
+    .metric a:hover { color: var(--forest); }
+    .metric b {
+      font-family: var(--serif);
+      font-size: 22px; font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .bar {
+      height: 6px; border-radius: 999px;
+      background: rgba(42, 38, 34, 0.08);
+      overflow: hidden; margin-top: 6px;
+    }
+    .bar i {
+      display: block; height: 100%; border-radius: inherit;
+      background: var(--sage);
+    }
+    .bar i.warn { background: var(--warn); }
+
+    .link-quiet {
+      display: inline-block;
+      margin-top: 12px; padding-left: 6px;
+      font-size: 12px; font-weight: 700; color: var(--sage);
+      text-decoration: none;
+    }
+    .link-quiet:hover { color: var(--forest); }
+
+    .avatar-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 4px;
+    }
+    .avatar {
+      width: 22px; height: 22px; border-radius: 999px;
+      background: var(--cream-deep);
+      display: grid; place-items: center;
+      font-size: 9px; font-weight: 800; color: var(--ink-soft);
+      flex-shrink: 0;
+    }
+    .avatar.empty {
+      border: 1.5px dashed rgba(166, 90, 58, 0.45);
+      background: rgba(166, 90, 58, 0.06);
+      color: var(--warn);
+    }
+
+    .note {
+      margin-top: 36px;
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      animation: rise .5s ease both .1s;
+    }
+    .note h3 {
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600; margin: 0 0 8px;
+    }
+    .note p, .note li {
+      margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-soft);
+    }
+    .note ul { margin: 10px 0 0; padding-left: 1.1rem; }
+    .note li { margin-bottom: 4px; }
+
+    @media (max-width: 720px) {
+      .grid { grid-template-columns: 1fr; }
+      .wrap { padding-left: 18px; padding-right: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="mock-tag">Mockup · Widget library · not shipped</div>
+
+    <header class="intro">
+      <p class="school">Edmondson Elementary PTO</p>
+      <h1>Widget library — 4 new ideas</h1>
+      <p>
+        Proposed dashboard cards for committee members and presidents.
+        Each card works in a personal lens or an org-wide lens where it makes sense.
+      </p>
+    </header>
+
+    <div class="grid">
+
+      <!-- 1. Posts this week -->
+      <article class="widget" data-accent="teal" data-widget="posts">
+        <div class="widget-head">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          <div class="titles">
+            <h2>Posts this week</h2>
+            <p class="purpose">Scheduled social and email going out — yours or the whole board.</p>
+          </div>
+        </div>
+        <div class="lens-toggle" role="tablist" aria-label="Posts lens">
+          <button type="button" class="active" data-lens="mine" data-target="posts">Mine</button>
+          <button type="button" data-lens="everyone" data-target="posts">Everyone</button>
+        </div>
+        <div class="widget-body" data-panel="posts-mine">
+          <div class="row">
+            <div>
+              <strong>Fall Festival — reminder post</strong>
+              <span>Facebook · scheduled Wed 9:00 AM</span>
+            </div>
+            <span class="meta"><span class="pill teal">Ready</span></span>
+          </div>
+          <div class="row">
+            <div>
+              <strong>Book Fair — volunteer shout-out</strong>
+              <span>Instagram · Thu 7:30 AM</span>
+            </div>
+            <span class="meta"><span class="pill mustard">Draft</span></span>
+          </div>
+          <a class="link-quiet" href="#">View my queue (2) →</a>
+        </div>
+        <div class="widget-body" data-panel="posts-everyone" hidden>
+          <div class="metric">
+            <a href="#">Scheduled this week</a>
+            <b>7</b>
+          </div>
+          <div class="metric">
+            <a href="#">Need approval first</a>
+            <b>2</b>
+          </div>
+          <div class="metric">
+            <a href="#">Going out today</a>
+            <b>1</b>
+          </div>
+          <a class="link-quiet" href="#">Open publishing queue →</a>
+        </div>
+      </article>
+
+      <!-- 2. Waiting on others -->
+      <article class="widget" data-accent="warn" data-widget="waiting">
+        <div class="widget-head">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div class="titles">
+            <h2>Waiting on others</h2>
+            <p class="purpose">What’s blocked on teammates — spot bottlenecks before the week slips.</p>
+          </div>
+        </div>
+        <div class="lens-toggle" role="tablist" aria-label="Waiting lens">
+          <button type="button" class="active" data-lens="mine" data-target="waiting">Mine</button>
+          <button type="button" data-lens="everyone" data-target="waiting">Everyone</button>
+        </div>
+        <div class="widget-body" data-panel="waiting-mine">
+          <div class="row">
+            <div>
+              <strong>Fall Festival flyer approval</strong>
+              <span>Waiting on <b style="color:var(--ink);font-weight:700">Jess (Treasurer)</b></span>
+            </div>
+            <span class="meta">3 days</span>
+          </div>
+          <div class="row">
+            <div>
+              <strong>Book Fair caption review</strong>
+              <span>Waiting on <b style="color:var(--ink);font-weight:700">Amy (Comms)</b></span>
+            </div>
+            <span class="meta">1 day</span>
+          </div>
+          <a class="link-quiet" href="#">View all (2) →</a>
+        </div>
+        <div class="widget-body" data-panel="waiting-everyone" hidden>
+          <div class="metric">
+            <a href="#">Blocked on approvals</a>
+            <b>4</b>
+          </div>
+          <div class="metric">
+            <a href="#">Blocked on tasks</a>
+            <b>3</b>
+          </div>
+          <div class="metric">
+            <a href="#">Over 3 days old</a>
+            <b style="color:var(--warn)">2</b>
+          </div>
+          <a class="link-quiet" href="#">See who’s stuck →</a>
+        </div>
+      </article>
+
+      <!-- 3. Event coverage -->
+      <article class="widget" data-accent="forest" data-widget="coverage">
+        <div class="widget-head">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <div class="titles">
+            <h2>Event coverage</h2>
+            <p class="purpose">Upcoming events missing a lead or still without a point person.</p>
+          </div>
+        </div>
+        <div class="widget-body" style="margin-top:12px">
+          <div class="row">
+            <div>
+              <strong>Teacher Appreciation Week</strong>
+              <span>May 5–9 · no event lead assigned</span>
+              <div class="avatar-row">
+                <span class="avatar empty" title="Unassigned">?</span>
+                <span style="font-size:11px;color:var(--warn);font-weight:700">Needs a lead</span>
+              </div>
+            </div>
+            <span class="meta">12 days</span>
+          </div>
+          <div class="row">
+            <div>
+              <strong>Spring Book Fair</strong>
+              <span>Apr 14 · lead assigned, backup open</span>
+              <div class="avatar-row">
+                <span class="avatar" title="Amy">AM</span>
+                <span style="font-size:11px;color:var(--muted)">Amy · no co-lead yet</span>
+              </div>
+            </div>
+            <span class="meta">5 days</span>
+          </div>
+          <div class="row">
+            <div>
+              <strong>Fall Festival</strong>
+              <span>Oct 18 · fully covered</span>
+              <div class="avatar-row">
+                <span class="avatar" title="Marina">MR</span>
+                <span class="avatar" title="Jess">JS</span>
+                <span style="font-size:11px;color:var(--forest);font-weight:700">2 leads</span>
+              </div>
+            </div>
+            <span class="meta"><span class="pill">OK</span></span>
+          </div>
+          <a class="link-quiet" href="#">Assign leads →</a>
+        </div>
+      </article>
+
+      <!-- 4. Inbox pulse -->
+      <article class="widget" data-accent="mustard" data-widget="inbox">
+        <div class="widget-head">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <div class="titles">
+            <h2>Inbox pulse</h2>
+            <p class="purpose">Parent and vendor threads that still need a reply this week.</p>
+          </div>
+        </div>
+        <div class="widget-body" style="margin-top:12px">
+          <div class="metric">
+            <a href="#">Needing reply</a>
+            <b>5</b>
+          </div>
+          <div class="row">
+            <div>
+              <strong>Vendor quote — bounce house</strong>
+              <span>From Bright Bounce Co. · Fall Festival</span>
+            </div>
+            <span class="meta">2h</span>
+          </div>
+          <div class="row">
+            <div>
+              <strong>Parent question — volunteer hours</strong>
+              <span>From Sarah M. · general inbox</span>
+            </div>
+            <span class="meta">Yesterday</span>
+          </div>
+          <div class="row">
+            <div>
+              <strong>Room parent — supply list</strong>
+              <span>From Ms. Chen’s class · Book Fair</span>
+            </div>
+            <span class="meta">2 days</span>
+          </div>
+          <a class="link-quiet" href="#">Open inbox (5) →</a>
+        </div>
+      </article>
+
+    </div>
+
+    <aside class="note">
+      <h3>Already on the dashboard</h3>
+      <p>These four ideas fill gaps — they don’t replace widgets already in the catalog:</p>
+      <ul>
+        <li><strong>Up Next</strong> — your next campaign action with artwork</li>
+        <li><strong>Attention</strong> — approvals, volunteers, and tasks counts</li>
+        <li><strong>Waiting on me</strong> — items assigned to you</li>
+        <li><strong>Good news</strong> — recent wins and progress</li>
+        <li><strong>Approvals</strong>, <strong>Tasks this week</strong>, <strong>Volunteers</strong>, <strong>Insights</strong> — phase 3 add-ons</li>
+        <li><strong>Weather</strong>, <strong>Calendar</strong>, <strong>This week</strong> — right-rail widgets</li>
+      </ul>
+    </aside>
+  </div>
+
+  <script>
+    document.querySelectorAll('.lens-toggle').forEach((toggle) => {
+      toggle.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-lens]');
+        if (!btn) return;
+        const target = btn.dataset.target;
+        const lens = btn.dataset.lens;
+        toggle.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
+        document.querySelectorAll(`[data-panel^="${target}-"]`).forEach((panel) => {
+          panel.hidden = !panel.dataset.panel.endsWith(lens);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

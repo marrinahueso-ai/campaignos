@@ -257,7 +257,7 @@ export async function updatePlaybook(
 ): Promise<boolean> {
   const supabase = await createClient();
 
-  // Require a returned row — RLS can silently no-op updates on system playbooks.
+  // Require a returned row — RLS can silently no-op updates on system communication plans.
   const { data, error } = await supabase
     .from("communication_playbooks")
     .update({
@@ -313,13 +313,13 @@ export async function hideSystemPlaybookForOrg(
     .maybeSingle();
 
   if (fetchError || !playbook) {
-    return { success: false, error: "Playbook not found." };
+    return { success: false, error: "Communication plan not found." };
   }
 
   if (!playbook.is_system) {
     return {
       success: false,
-      error: "Only system playbooks can be removed from your list this way.",
+      error: "Only system communication plans can be removed from your list this way.",
     };
   }
 
@@ -334,7 +334,7 @@ export async function hideSystemPlaybookForOrg(
     );
 
   if (hideError) {
-    console.error("Failed to hide system playbook:", hideError.message);
+    console.error("Failed to hide system communication plan:", hideError.message);
     return { success: false, error: "Unable to remove playbook from your list." };
   }
 
@@ -354,11 +354,11 @@ export async function deletePlaybook(
     .maybeSingle();
 
   if (fetchError || !playbook) {
-    return { success: false, error: "Playbook not found." };
+    return { success: false, error: "Communication plan not found." };
   }
 
   if (playbook.is_system) {
-    return { success: false, error: "System playbooks cannot be deleted." };
+    return { success: false, error: "System communication plans cannot be deleted." };
   }
 
   if (!organizationId || playbook.organization_id !== organizationId) {
@@ -374,8 +374,8 @@ export async function deletePlaybook(
     .eq("playbook_id", playbookId);
 
   if (countError) {
-    console.error("Failed to check playbook assignments:", countError.message);
-    return { success: false, error: "Unable to delete playbook." };
+    console.error("Failed to check communication plan assignments:", countError.message);
+    return { success: false, error: "Unable to delete communication plan." };
   }
 
   if ((count ?? 0) > 0) {
@@ -395,7 +395,7 @@ export async function deletePlaybook(
 
   if (deleteError) {
     console.error("Failed to delete playbook:", deleteError.message);
-    return { success: false, error: "Unable to delete playbook." };
+    return { success: false, error: "Unable to delete communication plan." };
   }
 
   return { success: true };
@@ -414,7 +414,7 @@ export async function replacePlaybookSteps(
     .eq("playbook_id", playbookId);
 
   if (deleteError) {
-    console.error("Failed to clear playbook steps:", deleteError.message);
+    console.error("Failed to clear communication plan posts:", deleteError.message);
     return false;
   }
 
@@ -438,7 +438,7 @@ export async function replacePlaybookSteps(
     .insert(rows);
 
   if (insertError) {
-    console.error("Failed to insert playbook steps:", insertError.message);
+    console.error("Failed to insert communication plan posts:", insertError.message);
     return false;
   }
 

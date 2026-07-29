@@ -2,23 +2,30 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { X } from "lucide-react";
-import {
-  EaseSectionLabel,
-} from "@/components/events-phase3/EventDetailEaseUi";
+import { EaseSectionLabel } from "@/components/events-phase3/EventDetailEaseUi";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { FileMoveFolderMenu } from "@/components/campaign-files/FileMoveFolderMenu";
 import { FilesFolderBar } from "@/components/campaign-files/FilesFolderBar";
+import {
+  FileDocumentCategoryQuickEdit,
+  type UploadCategoryPromptState,
+} from "@/components/campaign-files/FileDocumentCategoryQuickEdit";
+import { FilesTypeGroupPills } from "@/components/campaign-files/FilesTypeGroupPills";
+import { GeneratedPostAssetsSection } from "@/components/campaign-files/GeneratedPostAssetsSection";
 import {
   deleteCampaignFileAction,
   updateCampaignFileAction,
   uploadCampaignFileAction,
 } from "@/lib/campaign-files/actions";
 import { filterCampaignFiles } from "@/lib/campaign-files/filters";
+import { displayFileCategoryLabel } from "@/lib/campaign-files/constants";
 import { formatFileSize } from "@/lib/campaign-files/format";
+import type { CampaignFileTypeGroup } from "@/lib/campaign-files/type-groups";
 import { cn } from "@/lib/utils/cn";
 import type {
   CampaignFile,
   CampaignFileType,
+  DocumentCategory,
   FilesFolderFilter,
   FilesPageData,
 } from "@/types/campaign-files";
@@ -89,9 +96,10 @@ export function EventDetailFilesEasePanel({
 }) {
   const refresh = useEventTabMutationRefresh("files");
   const inputRef = useRef<HTMLInputElement>(null);
-  const renameInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [search, setSearch] = useState("");
+  const [typeGroup, setTypeGroup] = useState<CampaignFileTypeGroup>("all");
   const [folderFilter, setFolderFilter] = useState<FilesFolderFilter>("all");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -100,8 +108,15 @@ export function EventDetailFilesEasePanel({
     Record<string, string | null>
   >({});
   const [nameOverrides, setNameOverrides] = useState<Record<string, string>>({});
+  const [categoryOverrides, setCategoryOverrides] = useState<
+    Record<string, DocumentCategory>
+  >({});
+  const [categoryPrompt, setCategoryPrompt] = useState<UploadCategoryPromptState | null>(
+    null,
+  );
 
   const folders = data.foldersByEventId[eventId] ?? [];
+  const generatedPostAssets = data.generatedPostAssets ?? [];
 
   const eventFiles = useMemo(() => {
     return data.files
@@ -114,18 +129,22 @@ export function EventDetailFilesEasePanel({
         if (folderOverrides[file.id] !== undefined) {
           next = { ...next, folderId: folderOverrides[file.id]! };
         }
+        if (categoryOverrides[file.id] !== undefined) {
+          next = { ...next, documentCategory: categoryOverrides[file.id]! };
+        }
         return next;
       });
-  }, [data.files, eventId, nameOverrides, folderOverrides]);
+  }, [data.files, eventId, nameOverrides, folderOverrides, categoryOverrides]);
 
   const visibleFiles = useMemo(
     () =>
       filterCampaignFiles(
         eventFiles,
         {
-          search: "",
+          search,
           folderId: folderFilter,
           eventId,
+          typeGroup,
           fileType: "all",
           category: "all",
           platform: "all",
@@ -136,7 +155,7 @@ export function EventDetailFilesEasePanel({
         },
         new Map(),
       ),
-    [eventFiles, folderFilter, eventId],
+    [eventFiles, folderFilter, eventId, search, typeGroup],
   );
 
   const unfiledCount = eventFiles.filter((file) => !file.folderId).length;
@@ -146,12 +165,20 @@ export function EventDetailFilesEasePanel({
       setError(null);
       const formData = new FormData();
       formData.set("eventId", eventId);
-      formData.set("category", "other");
+      formData.set("category", "auto");
+      formData.set("uploadContext", "event_files");
       formData.set("file", file);
       const result = await uploadCampaignFileAction(formData);
       if (!result.success) {
         setError(result.error ?? "Unable to upload.");
         return;
+      }
+      if (result.fileId && result.fileName && result.documentCategory) {
+        setCategoryPrompt({
+          fileId: result.fileId,
+          fileName: result.fileName,
+          documentCategory: result.documentCategory,
+        });
       }
       await refresh();
     });
@@ -195,7 +222,7 @@ export function EventDetailFilesEasePanel({
   }
 
   function handleDelete(file: CampaignFile) {
-    if (!window.confirm(`Remove “${file.name}” from this campaign?`)) {
+    if (!window.confirm(`Remove “${file.name}” from this event?`)) {
       return;
     }
     setRowPendingId(file.id);
@@ -217,56 +244,114 @@ export function EventDetailFilesEasePanel({
 
   return (
     <section>
-      <EaseSectionLabel hint="Folders and files for this campaign only">
-        Campaign files
+      <EaseSectionLabel hint="Uploads for this event — sorted by type automatically">
+        Files
       </EaseSectionLabel>
 
-      <FilesFolderBar
-        eventId={eventId}
-        foldersAvailable={data.foldersAvailable}
-        folders={folders}
-        activeFolder={folderFilter}
-        unfiledCount={unfiledCount}
-        totalFileCount={eventFiles.length}
-        onFolderChange={setFolderFilter}
-        onFoldersChanged={handleFoldersChanged}
-      />
+      <div className="mb-2 flex flex-wrap items-center gap-x-3.5 gap-y-2.5">
+        <label className="flex min-w-[200px] max-w-md flex-1 items-center gap-2.5 rounded-full border border-cos-border bg-cos-card px-4 py-2.5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+          <span className="sr-only">Search files</span>
+          <svg
+            viewBox="0 0 24 24"
+            className="h-[18px] w-[18px] shrink-0 stroke-cos-muted"
+            fill="none"
+            strokeWidth={1.8}
+            aria-hidden
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search files…"
+            autoComplete="off"
+            className="w-full border-none bg-transparent text-sm font-semibold text-cos-text outline-none placeholder:font-medium placeholder:text-cos-muted"
+          />
+        </label>
+        <FilesTypeGroupPills value={typeGroup} onChange={setTypeGroup} />
+      </div>
+      <p className="mb-3.5 text-xs font-semibold text-cos-muted">
+        Filed automatically by type
+      </p>
 
       <button
         type="button"
         disabled={pending || !data.tablesAvailable}
         onClick={() => inputRef.current?.click()}
-        onDragOver={(e) => {
-          e.preventDefault();
+        onDragOver={(event) => {
+          event.preventDefault();
         }}
-        onDrop={(e) => {
-          e.preventDefault();
-          const file = e.dataTransfer.files?.[0];
+        onDrop={(event) => {
+          event.preventDefault();
+          const file = event.dataTransfer.files?.[0];
           if (file) upload(file);
         }}
-        className="mb-3.5 mt-3 w-full rounded-[18px] border-[1.5px] border-dashed border-[rgba(42,38,34,0.2)] bg-[rgba(255,252,247,0.45)] px-7 py-7 text-center text-[13px] font-semibold text-cos-muted transition hover:bg-[rgba(255,252,247,0.75)] disabled:opacity-60"
+        className="mb-3.5 w-full rounded-[18px] border-[1.5px] border-dashed border-[rgba(42,38,34,0.2)] bg-[rgba(255,252,247,0.45)] px-5 py-4 text-center text-[13px] font-semibold text-cos-muted transition hover:bg-[rgba(255,252,247,0.75)] disabled:opacity-60"
       >
-        {pending ? "Uploading…" : "Drag files here or click to upload"}
+        {pending
+          ? "Uploading…"
+          : "Drop files here — they’ll link to this event and sort by type."}
       </button>
       <input
         ref={inputRef}
         type="file"
         className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
+        accept=".pdf,.docx,.doc,.xlsx,.xls,.png,.jpg,.jpeg"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
           if (file) upload(file);
-          e.target.value = "";
+          event.target.value = "";
         }}
       />
+
+      {categoryPrompt ? (
+        <div className="mb-3.5">
+          <FileDocumentCategoryQuickEdit
+            eventId={eventId}
+            prompt={categoryPrompt}
+            onDismiss={() => setCategoryPrompt(null)}
+            onUpdated={(documentCategory) => {
+              setCategoryOverrides((current) => ({
+                ...current,
+                [categoryPrompt.fileId]: documentCategory,
+              }));
+            }}
+          />
+        </div>
+      ) : null}
+
+      {data.foldersAvailable && folders.length > 0 ? (
+        <details className="mb-3.5 rounded-[18px] border border-cos-border bg-[rgba(255,252,247,0.45)] px-4 py-3">
+          <summary className="cursor-pointer text-xs font-bold text-cos-muted">
+            Folders (optional)
+          </summary>
+          <div className="mt-3">
+            <FilesFolderBar
+              eventId={eventId}
+              foldersAvailable={data.foldersAvailable}
+              folders={folders}
+              activeFolder={folderFilter}
+              unfiledCount={unfiledCount}
+              totalFileCount={eventFiles.length}
+              onFolderChange={setFolderFilter}
+              onFoldersChanged={handleFoldersChanged}
+            />
+          </div>
+        </details>
+      ) : null}
 
       {error ? (
         <p className="mb-3 text-sm text-[#a65a3a]">{error}</p>
       ) : null}
 
       {eventFiles.length === 0 ? (
-        <p className="text-sm text-cos-muted">No files for this campaign yet.</p>
+        <p className="text-sm text-cos-muted">No files for this event yet.</p>
       ) : visibleFiles.length === 0 ? (
-        <p className="text-sm text-cos-muted">No files in this folder.</p>
+        <p className="text-sm text-cos-muted">
+          No files in this type. Try another filter or upload.
+        </p>
       ) : (
         <div className="flex flex-col gap-1.5">
           {visibleFiles.map((file) => {
@@ -295,7 +380,6 @@ export function EventDetailFilesEasePanel({
                 <div className="min-w-0">
                   {isRenaming ? (
                     <input
-                      ref={renameInputRef}
                       value={renameValue}
                       onChange={(event) => setRenameValue(event.target.value)}
                       onKeyDown={(event) => {
@@ -319,6 +403,9 @@ export function EventDetailFilesEasePanel({
                   <p className="truncate text-xs text-cos-muted">
                     {formatWhen(file.uploadedAt)} ·{" "}
                     {file.uploaderName ?? "Unknown"} · {typeWord(file.fileType)}
+                    {file.documentCategory || file.category !== "other" ? (
+                      <> · {displayFileCategoryLabel(file)}</>
+                    ) : null}
                   </p>
                 </div>
                 <span className="hidden text-xs font-bold whitespace-nowrap text-cos-muted sm:inline">
@@ -355,12 +442,14 @@ export function EventDetailFilesEasePanel({
                       >
                         Rename
                       </button>
-                      <FileMoveFolderMenu
-                        file={file}
-                        folders={folders}
-                        foldersAvailable={data.foldersAvailable}
-                        onMoved={handleMoved}
-                      />
+                      {data.foldersAvailable ? (
+                        <FileMoveFolderMenu
+                          file={file}
+                          folders={folders}
+                          foldersAvailable={data.foldersAvailable}
+                          onMoved={handleMoved}
+                        />
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => openFile(file)}
@@ -393,6 +482,8 @@ export function EventDetailFilesEasePanel({
           })}
         </div>
       )}
+
+      <GeneratedPostAssetsSection assets={generatedPostAssets} />
     </section>
   );
 }

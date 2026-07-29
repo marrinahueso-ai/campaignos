@@ -245,7 +245,9 @@ export function VendorNotesPanel({
             {summary}
           </p>
         ) : (
-          <p className="mt-4 text-sm text-cos-muted">No notes yet.</p>
+          <p className="mt-4 text-sm text-cos-muted">
+            No notes yet. Capture a tip for the next person on your team.
+          </p>
         )}
       </Card>
     </div>

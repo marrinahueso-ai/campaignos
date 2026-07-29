@@ -30,7 +30,7 @@ test.describe("Create with AI creative workflow", () => {
     await expectCreateWithAiLoaded(page);
   });
 
-  test("Inspiration selections remain saved when moving to Milestones", async ({
+  test("Inspiration selections remain saved when moving to Posts", async ({
     page,
   }) => {
     const eventId = testEventId()!;
@@ -47,7 +47,7 @@ test.describe("Create with AI creative workflow", () => {
       const marker = `hey-ralli-smoke-${Date.now()}`;
       await overallComment.fill(marker);
       const continueButton = main.getByRole("button", {
-        name: /save & continue to milestones|continue to milestones/i,
+        name: /save → posts|save & continue to posts|continue to posts/i,
       });
       if (await continueButton.count()) {
         await continueButton.click();
@@ -67,32 +67,32 @@ test.describe("Create with AI creative workflow", () => {
     }
   });
 
-  test("Changing the selected playbook on Inspiration updates Milestones correctly", async ({
+  test("Changing the selected communication plan on Inspiration updates Posts correctly", async ({
     page,
   }) => {
     const eventId = testEventId()!;
     await page.goto(`/events/${eventId}/campaign-builder#inspiration`);
     await expectCreateWithAiLoaded(page);
     const main = mainContent(page);
-    const playbook = main
+    const communicationPlan = main
       .locator("select")
-      .filter({ hasText: /playbook|choose/i })
+      .filter({ hasText: /communication plan|choose/i })
       .first()
-      .or(main.getByLabel(/playbook/i));
+      .or(main.getByLabel(/communication plan/i));
 
-    if (!(await playbook.count())) {
-      test.skip(true, "Playbook selector not found on Creative Setup for this event.");
+    if (!(await communicationPlan.count())) {
+      test.skip(true, "Communication plan selector not found on Creative Setup for this event.");
     }
 
-    const options = playbook.locator("option");
+    const options = communicationPlan.locator("option");
     const optionCount = await options.count();
-    test.skip(optionCount < 2, "Need at least two playbooks to verify milestone updates.");
+    test.skip(optionCount < 2, "Need at least two communication plans to verify post updates.");
 
     const secondValue = await options.nth(1).getAttribute("value");
     if (!secondValue) {
-      test.skip(true, "Second playbook option has no value.");
+      test.skip(true, "Second communication plan option has no value.");
     }
-    await playbook.selectOption(secondValue!);
+    await communicationPlan.selectOption(secondValue!);
 
     const continueButton = main.getByRole("button", {
       name: /save & continue to milestones|continue to milestones/i,
@@ -104,6 +104,6 @@ test.describe("Create with AI creative workflow", () => {
       await page.goto(`/events/${eventId}/campaign-builder#milestones`);
     }
 
-    await expect(main).toContainText(/milestone|days out|week|announcement|event day/i);
+    await expect(main).toContainText(/post|days out|week|announcement|event day/i);
   });
 });

@@ -291,7 +291,7 @@ export function TasksEaseBoard({
           No tasks on the board
         </strong>
         <p className="mx-auto max-w-md text-sm leading-relaxed text-cos-muted">
-          Tasks from your accessible events will appear here as cards.
+          When your team adds tasks to events, they show up here as cards.
         </p>
       </div>
     );
@@ -367,8 +367,7 @@ export function TasksEaseBoard({
           })}
         </div>
         <p className="text-xs text-cos-muted">
-          Drag cards between columns · same tasks as the event Tasks tab. Dot = column
-          color; card stripe = event color.
+          Drag cards between columns — same tasks as each event’s Tasks tab.
         </p>
       </div>
     );
@@ -451,7 +450,7 @@ export function TasksEaseBoard({
       <p className="text-xs text-cos-muted" aria-live="polite">
         {pending
           ? "Saving…"
-          : "Focus board sorts by urgency, not raw status — still event-linked underneath."}
+          : "Sorted by what’s due soon — same tasks as each event’s Tasks tab."}
       </p>
     </div>
   );

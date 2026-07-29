@@ -6,6 +6,11 @@ import {
   MAX_CAMPAIGN_FILE_BYTES,
 } from "@/lib/campaign-files/constants";
 import {
+  mapDocumentCategoryToLegacyCategory,
+  parseFileUploadContext,
+  suggestDocumentCategory,
+} from "@/lib/campaign-files/document-category";
+import {
   deleteCampaignFile,
   updateCampaignFile,
   uploadCampaignFile,
@@ -16,7 +21,16 @@ import { getAuthUser } from "@/lib/auth/queries";
 import type {
   CampaignFileCategory,
   CampaignFilePlatform,
+  DocumentCategory,
 } from "@/types/campaign-files";
+
+export interface UploadCampaignFileResult {
+  success: boolean;
+  error: string | null;
+  fileId?: string;
+  fileName?: string;
+  documentCategory?: DocumentCategory;
+}
 
 function revalidateFilesPaths(eventId: string) {
   revalidatePath("/files");
@@ -38,9 +52,12 @@ function resolveUploaderName(
 
 export async function uploadCampaignFileAction(
   formData: FormData,
-): Promise<{ success: boolean; error: string | null }> {
+): Promise<UploadCampaignFileResult> {
   const eventId = String(formData.get("eventId") ?? "").trim();
-  const category = String(formData.get("category") ?? "other").trim() as CampaignFileCategory;
+  const rawCategory = String(formData.get("category") ?? "").trim();
+  const uploadContext = parseFileUploadContext(
+    String(formData.get("uploadContext") ?? "").trim(),
+  );
   const platformsRaw = String(formData.get("platforms") ?? "");
   const file = formData.get("file");
 
@@ -69,6 +86,17 @@ export async function uploadCampaignFileAction(
     };
   }
 
+  const documentCategory = suggestDocumentCategory(
+    file.name,
+    file.type,
+    uploadContext,
+  );
+  const category = (
+    rawCategory && rawCategory !== "auto"
+      ? rawCategory
+      : mapDocumentCategoryToLegacyCategory(documentCategory, file.name, file.type)
+  ) as CampaignFileCategory;
+
   const platforms = platformsRaw
     .split(",")
     .map((value) => value.trim())
@@ -79,6 +107,7 @@ export async function uploadCampaignFileAction(
     eventId,
     file,
     category,
+    documentCategory,
     platforms,
     uploaderName: resolveUploaderName(authUser),
   });
@@ -88,7 +117,13 @@ export async function uploadCampaignFileAction(
   }
 
   revalidateFilesPaths(eventId);
-  return { success: true, error: null };
+  return {
+    success: true,
+    error: null,
+    fileId: result.id,
+    fileName: file.name,
+    documentCategory,
+  };
 }
 
 export async function updateCampaignFileAction(
@@ -97,6 +132,7 @@ export async function updateCampaignFileAction(
   input: {
     name?: string;
     category?: CampaignFileCategory;
+    documentCategory?: DocumentCategory;
     platforms?: CampaignFilePlatform[];
     status?: "active" | "pending" | "archived";
   },

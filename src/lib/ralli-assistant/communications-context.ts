@@ -134,7 +134,7 @@ async function countFacebookPublishedOrPosted(eventId: string): Promise<number> 
 }
 
 /**
- * Event-scoped communications pack from playbook steps + drafts + Meta schedule status.
+ * Event-scoped communications pack from communication plan posts + drafts + Meta schedule status.
  * Fail soft — empty sections on errors.
  */
 export async function loadCommunicationsContextForEvent(
@@ -159,7 +159,7 @@ export async function loadCommunicationsContextForEvent(
       return {
         ...emptyCommunicationsSection([
           ...unavailable,
-          "No communication playbook steps found for this event",
+          "No communication plan steps found for this event",
         ]),
         playbookStepsLoaded: true,
         draftEmails: drafts.draftEmails,

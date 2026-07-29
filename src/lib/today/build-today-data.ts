@@ -150,10 +150,10 @@ function whatsNextFromIntelligence(
   if (!nextAction) {
     return {
       kind: "event",
-      title: `Open ${event.title} workspace`,
+      title: event.title,
       subtitle: event.date,
       href: stepHref(event.id),
-      ctaLabel: "Open",
+      ctaLabel: "Open event",
       eventId: event.id,
     };
   }
@@ -165,11 +165,11 @@ function whatsNextFromIntelligence(
   return {
     kind: isOpenWorkspaceAction ? "event" : "step",
     title: isOpenWorkspaceAction
-      ? `Open ${event.title} workspace`
+      ? event.title
       : `${nextAction.verb} ${nextAction.description} for ${event.title}`,
     subtitle: intelligence.summary,
     href: nextAction.href,
-    ctaLabel: nextAction.verb,
+    ctaLabel: isOpenWorkspaceAction ? "Open event" : nextAction.verb,
     eventId: event.id,
   };
 }
@@ -286,10 +286,10 @@ export function buildWhatsNext(input: BuildTodayDataInput): TodayWhatsNext {
   if (primaryEvent) {
     return enrichWhatsNext({
       kind: "event",
-      title: `Open ${primaryEvent.title} workspace`,
+      title: primaryEvent.title,
       subtitle: primaryEvent.date,
       href: stepHref(primaryEvent.id),
-      ctaLabel: "Open",
+      ctaLabel: "Open event",
       eventId: primaryEvent.id,
     });
   }
@@ -300,10 +300,10 @@ export function buildWhatsNext(input: BuildTodayDataInput): TodayWhatsNext {
   if (nextEvent) {
     return enrichWhatsNext({
       kind: "event",
-      title: `Open ${nextEvent.title} workspace`,
+      title: nextEvent.title,
       subtitle: nextEvent.date,
       href: stepHref(nextEvent.id),
-      ctaLabel: "Open",
+      ctaLabel: "Open event",
       eventId: nextEvent.id,
     });
   }

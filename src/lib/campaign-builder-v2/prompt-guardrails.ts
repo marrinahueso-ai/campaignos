@@ -14,7 +14,7 @@ export const CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES = [
 ].join(" ");
 
 export const CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES = [
-  "Milestone names and purpose lines are internal scheduling labels for the AI — not headline copy.",
+  "Post names and purpose lines are internal scheduling labels for the AI — not headline copy.",
   "Never paste milestone names (e.g. Two-Week Push, Two-Week Reminder, Save the Date, Day Before) as on-graphic text.",
   "Do use natural, family-facing timing when the prompt provides it — e.g. \"2 weeks away\", \"1 week away\", \"Tomorrow!\", \"Today!\".",
   "Never use internal jargon like reminder, milestone, push, or two-week reminder as a headline unless user notes explicitly request that wording.",

@@ -43,7 +43,7 @@ export function CalendarReviewHeader({
               Review imported events
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-cos-muted">
-              We scanned your school calendar and found events ready for review.
+              We scanned your calendar and found events ready for review.
               Confirm categories, resolve conflicts, and import when you are ready.
             </p>
           </div>

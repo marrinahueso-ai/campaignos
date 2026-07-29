@@ -78,7 +78,7 @@ export function CampaignCommunicationPlanStep({
               {assignedSteps.length > 0 && (
                 <span className="shrink-0 text-xs text-cos-muted">
                   {assignedSteps.length}{" "}
-                  {assignedSteps.length === 1 ? "milestone" : "milestones"}
+                  {assignedSteps.length === 1 ? "post" : "posts"}
                 </span>
               )}
             </div>

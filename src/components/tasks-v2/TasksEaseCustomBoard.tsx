@@ -196,8 +196,8 @@ export function TasksEaseCustomBoard({
             Custom board
           </h3>
           <p className="mt-1.5 max-w-[46ch] text-[13px] leading-relaxed text-cos-muted">
-            Name columns for how your PTO actually works — then drop the same event
-            tasks into them. Boards are per person; Team scope still shows everyone’s
+            Name columns for how your team actually works — then drop the same event
+            tasks into them. Boards are personal to you; Team still shows everyone’s
             cards.
           </p>
           <div className="mt-3.5 flex flex-col gap-2">

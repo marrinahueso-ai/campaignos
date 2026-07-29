@@ -48,7 +48,7 @@ function stepsToInput(steps: EventCommunicationStep[]): PlaybookStepInput[] {
 function createEmptyStep(): PlaybookStepInput {
   return {
     relativeDay: -7,
-    title: "Custom milestone",
+    title: "Custom post",
     channel: "facebook",
     isRequired: true,
     defaultStatus: "upcoming",
@@ -92,7 +92,7 @@ export function EventPlaybookTimelineEditor({
       {!embedded && (
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-cos-text">Customize playbook timing</p>
+            <p className="text-sm font-medium text-cos-text">Customize communication plan timing</p>
             <p className="mt-1 text-xs text-cos-muted">
               Override default days for this event — e.g. 77 days before instead of 30.
             </p>
@@ -105,7 +105,7 @@ export function EventPlaybookTimelineEditor({
             disabled={isPending}
           >
             <Plus className="h-4 w-4" />
-            Add milestone
+            Add post
           </Button>
         </div>
       )}
@@ -123,7 +123,7 @@ export function EventPlaybookTimelineEditor({
             disabled={isPending}
           >
             <Plus className="h-4 w-4" />
-            Add milestone
+            Add post
           </Button>
         </div>
       )}

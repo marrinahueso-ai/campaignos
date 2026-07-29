@@ -327,7 +327,7 @@ export function migrateLegacyCreativeFields(
  * (if any) on top of the campaign-level config.
  *
  * - No override / {mode:"inherit"} → campaign value used as-is.
- * - {mode:"none"} → explicit opt-out for this milestone only — never falls
+ * - {mode:"none"} → explicit opt-out for this post only — never falls
  *   back to the campaign value.
  * - {mode:"selected"} → milestone-specific value replaces the campaign value.
  *

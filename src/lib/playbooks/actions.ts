@@ -37,7 +37,7 @@ export interface PlaybookActionState {
 }
 
 function revalidatePlaybookPaths(playbookId?: string) {
-  revalidatePath("/settings/playbooks");
+  revalidatePath("/settings/playbooks-milestones");
   revalidatePath("/settings/playbooks-milestones");
   if (playbookId) {
     revalidatePath(`/settings/playbooks/${playbookId}`);
@@ -50,7 +50,7 @@ function parsePlaybookInput(formData: FormData): PlaybookEditorInput | { error: 
   const eventType = formData.get("eventType")?.toString() as EventType;
 
   if (!name) {
-    return { error: "Playbook name is required." };
+    return { error: "Communication plan name is required." };
   }
 
   if (!eventType) {
@@ -92,7 +92,7 @@ export async function createPlaybookAction(
   const playbookId = await createPlaybook(organization?.id ?? null, parsed);
 
   if (!playbookId) {
-    return { error: "Unable to create playbook.", success: false };
+    return { error: "Unable to create communication plan.", success: false };
   }
 
   const steps = parseStepsFromFormData(formData);
@@ -100,7 +100,7 @@ export async function createPlaybookAction(
     const stepsOk = await replacePlaybookSteps(playbookId, steps);
     if (!stepsOk) {
       return {
-        error: "Playbook created but milestones could not be saved.",
+        error: "Communication plan created but posts could not be saved.",
         success: false,
         playbookId,
       };
@@ -130,7 +130,7 @@ export async function updatePlaybookAction(
     .maybeSingle();
 
   if (existingError || !existing) {
-    return { error: "Playbook not found.", success: false };
+    return { error: "Communication plan not found.", success: false };
   }
 
   // System templates are global read-only (RLS). Saving forks an org copy.
@@ -138,7 +138,7 @@ export async function updatePlaybookAction(
     const organization = await getLatestOrganization();
     if (!organization?.id) {
       return {
-        error: "Complete School Setup before customizing playbooks.",
+        error: "Complete School Setup before customizing communication plans.",
         success: false,
       };
     }
@@ -146,7 +146,7 @@ export async function updatePlaybookAction(
     const forkedId = await createPlaybook(organization.id, parsed);
     if (!forkedId) {
       return {
-        error: "Unable to create an editable copy of this system playbook.",
+        error: "Unable to create an editable copy of this system communication plan.",
         success: false,
       };
     }
@@ -154,7 +154,7 @@ export async function updatePlaybookAction(
     const stepsOk = await replacePlaybookSteps(forkedId, steps);
     if (!stepsOk) {
       return {
-        error: "Unable to save milestones on the new playbook copy.",
+        error: "Unable to save milestones on the new communication plan copy.",
         success: false,
         playbookId: forkedId,
       };
@@ -174,7 +174,7 @@ export async function updatePlaybookAction(
   if (!success) {
     return {
       error:
-        "Unable to update playbook. You can only edit playbooks owned by your organization.",
+        "Unable to update communication plan. You can only edit communication plans owned by your organization.",
       success: false,
     };
   }
@@ -182,7 +182,7 @@ export async function updatePlaybookAction(
   const stepsOk = await replacePlaybookSteps(playbookId, steps);
   if (!stepsOk) {
     return {
-      error: "Playbook details saved, but milestones could not be updated.",
+      error: "Communication plan details saved, but posts could not be updated.",
       success: false,
       playbookId,
     };
@@ -199,7 +199,7 @@ export async function duplicatePlaybookAction(
   const newId = await duplicatePlaybook(playbookId, organization?.id ?? null);
 
   if (!newId) {
-    return { error: "Unable to duplicate playbook.", success: false };
+    return { error: "Unable to duplicate communication plan.", success: false };
   }
 
   revalidatePlaybookPaths(newId);
@@ -213,7 +213,7 @@ export async function archivePlaybookAction(
 
   if (!success) {
     return {
-      error: "Unable to archive playbook. System playbooks cannot be archived.",
+      error: "Unable to archive communication plan. System communication plans cannot be archived.",
       success: false,
     };
   }
@@ -267,7 +267,7 @@ export async function assignPlaybookToEventAction(
 
   if (!shouldAssignPlaybook(event.communicationStrategy)) {
     return {
-      error: "This event strategy does not use a communication playbook.",
+      error: "This event strategy does not use a communication plan.",
       success: false,
     };
   }
@@ -275,7 +275,7 @@ export async function assignPlaybookToEventAction(
   const success = await reassignEventPlaybook(event, playbookId);
 
   if (!success) {
-    return { error: "Unable to assign playbook.", success: false };
+    return { error: "Unable to assign communication plan.", success: false };
   }
 
   revalidatePath(`/events/${eventId}`);

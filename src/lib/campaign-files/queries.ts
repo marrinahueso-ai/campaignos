@@ -5,6 +5,7 @@ import {
   FILES_EVENT_FETCH_CAP,
   FILES_ORG_FETCH_CAP,
 } from "@/lib/campaign-files/constants";
+import { getGeneratedPostAssetsForEvent } from "@/lib/campaign-files/generated-post-assets";
 import { mapCampaignFileRow } from "@/lib/campaign-files/filters";
 import { resolveFilesOrgQueryScope } from "@/lib/campaign-files/org-scope";
 import {
@@ -336,9 +337,10 @@ export async function getFilesPageDataForEvent(
     }
   }
 
-  const [foldersAvailable, folders] = await Promise.all([
+  const [foldersAvailable, folders, generatedPostAssets] = await Promise.all([
     areFileFoldersAvailable(),
     getFileFoldersForEvent(event.id, folderCounts),
+    getGeneratedPostAssetsForEvent(event.id),
   ]);
 
   return {
@@ -358,6 +360,7 @@ export async function getFilesPageDataForEvent(
     eventList: [event],
     uploaderNames: collectUploaderNames(files),
     currentUserName: authUser?.displayName ?? null,
+    generatedPostAssets,
     listCapped: loaded.capped,
     listCap: loaded.cap,
   };

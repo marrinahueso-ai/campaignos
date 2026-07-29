@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product / QA  
-**Last updated:** July 27, 2026 — Ease onboarding note + master checklist pointer  
+**Last updated:** July 28, 2026 — Product Completion Master closeout aligned  
 **Related:** [Product completion master](./product-completion-master.md) · [QA hub](./README.md) · [Pre-handoff readiness](./pre-handoff-readiness.md) · [Architecture overview](./architecture-overview.md) · [Testing guide](./testing-guide.md) · [Feature list](../product/feature-list.md) · [Deploy checklist](../ops/deploy-and-rollback.md)
 
 ## Phase 1 master map
@@ -34,12 +34,22 @@ Mark each row: **Pass** / **Fail** / **Skip** (N/A for this release) / **Needs y
 
 | Field | Value |
 |-------|--------|
-| Date | July 26, 2026 (checklist refresh; prior Playwright batch July 22) |
-| Environment | **Production** — https://heyralli.com (+ local Playwright against same Supabase / test seat) |
-| Build / SHA | Prior Production Ready `dpl_8fPQMpm9hpbfq4H94RFPt22SP1Vv`. Re-deploy after docs push — update SHA here when Ready. |
-| Org | Edmondson Elementary (Playwright seat); Marrina Owner also on School B |
-| Tester | Playwright (`16` / `18` / `12`) + Owner (human-only rows below) |
-| Overall | **In progress** — launch-prep product work below is **Done**; automatable QA rows mostly Pass; remaining Needs you are OAuth / email / Safari / multi-org Owner / deep CwAI+Volunteers |
+| Date | July 28, 2026 |
+| Environment | **Production** — https://heyralli.com (+ local Playwright against staging test seat) |
+| Build / SHA | Production Ready — `dpl_4axDAATSAXGKAhjkAZzfwF3iNamW` (Jul 28 closeout copy deploy). Update if re-deployed. |
+| Org | Edmondson Elementary (Owner daily); Playwright seat; Marrina also on School B |
+| Tester | Playwright refresh July 28 + Owner human finish list below |
+| Overall | **In progress — Owner finish list** · Soft launch **blocked on Meta App Review green light** (founder temp Meta account works; other orgs wait). Engineering launch-prep **Done**. [Product completion master](./product-completion-master.md) Jul 28 closeout: ratings filled; greens + gates documented. |
+
+### Playwright refresh (July 28, 2026)
+
+| Suite | Result |
+|-------|--------|
+| `12-ask-ralli-assistant` | **5 passed** |
+| `16-launch-smoke` | **1 passed** (Create with AI Social-first chooser), **1 skipped**, **4 failed** — failures were `loginWithCredentials` waitForURL timeouts (test-seat auth/env flake), not chooser regressions |
+| `18-launch-checklist` | **0 passed / 7 failed / 1 skipped** — same login timeout pattern on this run |
+
+**Do not treat July 28 login flakes as Production Fail** until Owner re-runs `16`/`18` with healthy `HEY_RALLI_TEST_*` credentials or spot-checks the same rows on heyralli.com. Prior July 22 batch remains the last clean automatable Pass set for those suites.
 
 ### Launch-prep engineering (July 26) — Done
 
@@ -49,14 +59,15 @@ Product work shipped for soft launch (see [feature-list.md](../product/feature-l
 |------|--------|-------|
 | Marketing WOW homepage + auth/legal | **Done** | `/`, login, signup, forgot, invite, privacy, terms |
 | Signup plan-first (Starter / Pro / Premium) | **Done** | Catalog → founding code checkout path |
-| Settings Ease Phases 1–7 + Branding hub | **Done** | Overview → Account; Branding nests school year + AI Brain / Inbox / Playbooks / Colors |
+| Settings Ease Phases 1–7 + Branding hub | **Done** | Overview → Account; Branding nests school year + AI Brain / Inbox / Communication Plans / Colors |
 | Header settings gear → `/settings` | **Done** | Direct link (no section dropdown); Ease left nav is the section list |
 | Team Access person drawer | **Done** | Soft pills + Overview / Events / Access drawer (`?person=`) |
 | Billing Ease (Usage · Plans · Payment) | **Done** | AI meters, category breakdown, Stripe invoices / portal / payment summary |
 | Insights Ease + `social_analytics` on all plans | **Done** | Soft-launch / Meta App Review reachability |
 | Vendors Ease (contact-first) | **Done** | Directory shell shipped |
 | Calendar / Events / Tasks / Files / Approvals / Volunteers Ease shells | **Done** | Product UI shipped; depth rows still Needs you where noted |
-| Create with AI landing / chooser | **Done** | `/create-with-ai` — Home Page · Social Media · Newsletter |
+| Create with AI landing / chooser | **Done** | `/create-with-ai` — Social-first hero + Also available (Homepage · Volunteer · Sponsorship soon · Newsletter · Flyer soon) |
+| Soft-launch nav trim | **Done** | Vendors + Insights off left rail; remain on event `?tab=` |
 | Create with AI — Social / campaign | **Done** | `/create-with-ai/social` 4-step Campaign Builder (Creative Setup → Review) |
 | Create with AI — Homepage / webpage HTML composer | **Done** | `/homepage-composer`; draft persist + export; AI blurbs polish OK for launch |
 | Create with AI — Newsletter composer | **Done** | `/newsletter-composer`; preview + HTML export + draft autosave |
@@ -213,18 +224,29 @@ Legacy path (pre–Ease 4-beat). Current product: Event → Essentials → Conne
 
 ## Remaining Needs you (human) — short list
 
-Do these as Owner on **https://heyralli.com** (or Skip if out of scope for this handoff):
+Do these as Owner on **https://heyralli.com**. Mark each **Pass** / **Fail** / **Skip** in the tables above when done.
 
-1. **Org switcher** — Edmondson ↔ School B (1.2)  
-2. **Team Access** — open one person drawer/profile + Access templates (3.2–3.3)  
-3. **Meta OAuth** — Connect/reconnect if validating Inbox/publish (7.1+)  
-4. **Google Calendar OAuth** — if validating live import (4.1 deep)  
-5. **Resend** — approval or agreement emails in inbox (3.5 / 6.3 / agreements)  
-6. **Safari** — executed agreement HTML download renders (agreements)  
-7. **Optional depth** — CwAI generate (`13b` or manual), Homepage/Newsletter export, Volunteers, Calendar DnD  
-8. **Billing** — Checkout / Portal / webhook once if plan changes this release (11.4)  
+### Finish order (soft launch)
 
-Everything else above is **Pass (Playwright)**, **Done** (shipped), or **Skip**.
+**Hard gate (you already decided):** do **not** invite public orgs until Meta App Review + QA/eng green light. Temp Meta account for founder posting is OK for Edmondson validation only.
+
+| Step | Check | Rows | Done? |
+|------|--------|------|-------|
+| A | **Org switcher** Edmondson ↔ School B | 1.2 | [ ] |
+| B | **Ease onboarding** Create event → Essentials → Connect → You’re set; Restart once | 1.3, 1.4, 1.6 | [ ] |
+| C | **Team Access** open one person drawer + templates tab | 3.2, 3.3 | [ ] |
+| D | **Resend** trigger approval or agreement email → inbox | 3.5, 6.3 | [ ] |
+| E | **Approvals** open review → approve (temp Meta) or request changes → revision | 6.2, 6.4 | [ ] |
+| F | **Meta** Settings Connect (temp account) + Inbox load if in scope | 7.1, 7.2 | [ ] |
+| G | **Google Calendar OAuth** deep import once — or Skip | 4.1 deep | [ ] |
+| H | **Safari** agreement HTML download — or Skip | agreements | [ ] |
+| I | **Billing** Checkout/Portal once if this release touched plans — or Skip | 11.4 | [ ] |
+| J | **Meta App Review package** + eng/QA sign-off before public connect | launch gate | [ ] |
+| K | Sign-off table below (QA/Product + Engineering) | Sign-off | [ ] |
+
+Optional depth (do not block A–K): CwAI generate, Homepage/Newsletter export, Volunteers SignUpGenius, Calendar DnD.
+
+Everything else in the matrix is **Pass (Playwright)** (as of July 22 clean batch), **Done** (shipped), or **Skip**.
 
 ---
 

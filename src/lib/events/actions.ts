@@ -77,7 +77,7 @@ export async function createEvent(
     if (!selected) {
       return createEventErrorState(
         formData,
-        "Please select a playbook from your Settings templates.",
+        "Please select a communication plan from your Settings templates.",
       );
     }
 
@@ -311,7 +311,7 @@ export async function updateImportedEventPlanAction(
     if (wasCampaign) {
       const ok = await reassignEventPlaybook(updated, resolved.playbookId);
       if (!ok) {
-        return { error: "Unable to assign playbook.", success: false };
+        return { error: "Unable to assign communication plan.", success: false };
       }
     } else {
       await assignPlaybookToEvent(

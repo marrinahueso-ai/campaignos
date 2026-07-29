@@ -171,8 +171,7 @@ export async function generateTasksForEvent(
       ),
       usedAi: false,
       message:
-        aiStatus.reason ??
-        "AI is not configured — showing practical suggestions from event context.",
+        "AI suggestions aren’t available right now — showing practical ideas from the event.",
     };
   }
 
@@ -197,7 +196,7 @@ export async function generateTasksForEvent(
         (title) => !existing.has(title.toLowerCase()),
       ),
       usedAi: false,
-      message: result.error ?? "AI generation failed — using fallback suggestions.",
+      message: "Couldn’t generate with AI — showing practical suggestions instead.",
     };
   }
 
@@ -208,7 +207,7 @@ export async function generateTasksForEvent(
         (title) => !existing.has(title.toLowerCase()),
       ),
       usedAi: false,
-      message: "Could not parse AI response — using fallback suggestions.",
+      message: "Couldn’t read those suggestions — showing practical ideas instead.",
     };
   }
 

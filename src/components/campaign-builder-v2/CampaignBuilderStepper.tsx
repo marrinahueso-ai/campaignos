@@ -11,7 +11,7 @@ import type { StepperStepState } from "@/lib/campaign-builder-v2/health";
 import type { StepWarning } from "@/lib/campaign-builder-v2/types";
 
 const STEP_HINTS: Record<CampaignBuilderStepperStepId, string> = {
-  inspiration: "Logos · inspiration · playbook",
+  inspiration: "Logos · inspiration · communication plan",
   milestones: "Dates · drag · edit",
   preview: "Artwork · formats · reapprove",
   review: "Approve · send",
@@ -19,7 +19,7 @@ const STEP_HINTS: Record<CampaignBuilderStepperStepId, string> = {
 
 const STEP_SHORT_LABELS: Record<CampaignBuilderStepperStepId, string> = {
   inspiration: "Creative Setup",
-  milestones: "Milestones",
+  milestones: "Posts",
   preview: "Preview",
   review: "Review",
 };

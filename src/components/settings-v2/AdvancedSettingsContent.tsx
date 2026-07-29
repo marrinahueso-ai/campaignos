@@ -35,7 +35,7 @@ export function AdvancedSettingsContent({
 
       <SettingsV2Card
         title="Export data"
-        description="Download a copy of your organization data, playbooks, and settings."
+        description="Download a copy of your organization data, communication plans, and settings."
       >
         <Button variant="secondary">Export workspace data</Button>
       </SettingsV2Card>

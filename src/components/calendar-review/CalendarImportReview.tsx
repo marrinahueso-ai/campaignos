@@ -27,6 +27,7 @@ import type {
   CalendarReviewData,
   CalendarReviewEvent,
 } from "@/types/calendar-review";
+import { CALENDAR_EVENT_CATEGORY_LABELS } from "@/types/calendar-review";
 
 interface CalendarImportReviewProps {
   importId: string;
@@ -358,7 +359,8 @@ export function CalendarImportReview({
                         {statusLabel(focusEvent.status)}
                       </span>
                       <span>
-                        {focusEvent.category} · {formatEventDate(focusEvent.date)}
+                        {CALENDAR_EVENT_CATEGORY_LABELS[focusEvent.category]} ·{" "}
+                        {formatEventDate(focusEvent.date)}
                       </span>
                     </div>
                     <h3 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-cos-text">
@@ -375,7 +377,8 @@ export function CalendarImportReview({
                           disabled={isPending}
                           className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px disabled:opacity-50"
                         >
-                          Keep as {focusEvent.category}
+                          Keep as{" "}
+                          {CALENDAR_EVENT_CATEGORY_LABELS[focusEvent.category]}
                         </button>
                         <button
                           type="button"
@@ -580,12 +583,13 @@ function focusCopy(event: CalendarReviewEvent): string {
   if (event.status === "ready") {
     return "Ready to import with the current plan type.";
   }
-  return `Looks like a ${event.category.toLowerCase()}. Confirm the plan type, then keep or edit before importing.`;
+  const label = CALENDAR_EVENT_CATEGORY_LABELS[event.category].toLowerCase();
+  return `Looks like a ${label}. Confirm the plan type, then keep or edit before importing.`;
 }
 
 function queueMeta(event: CalendarReviewEvent): string {
   if (event.status === "duplicate") {
     return `Possible duplicate · ${formatEventDate(event.date)}`;
   }
-  return `${event.category} · ${formatEventDate(event.date)}`;
+  return `${CALENDAR_EVENT_CATEGORY_LABELS[event.category]} · ${formatEventDate(event.date)}`;
 }

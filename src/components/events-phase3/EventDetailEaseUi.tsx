@@ -271,6 +271,45 @@ export function EaseKpi({
   );
 }
 
+export function EaseListRail({
+  countLabel,
+  sort,
+  onSortChange,
+  sortOptions,
+  sortLabel = "Sort",
+}: {
+  countLabel?: string;
+  sort: string;
+  onSortChange: (value: string) => void;
+  sortOptions: Array<{ id: string; label: string }>;
+  sortLabel?: string;
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      {countLabel ? (
+        <span className="text-xs font-semibold text-cos-muted">{countLabel}</span>
+      ) : (
+        <span aria-hidden className="min-w-0 flex-1" />
+      )}
+      <label className="flex shrink-0 items-center gap-2 text-xs font-semibold text-cos-muted">
+        <span>{sortLabel}</span>
+        <select
+          value={sort}
+          onChange={(event) => onSortChange(event.target.value)}
+          aria-label={`${sortLabel} approvals`}
+          className="rounded-full border border-cos-border bg-[rgba(255,252,247,0.65)] px-3 py-1.5 text-xs font-bold text-cos-text"
+        >
+          {sortOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
 export function EasePulseMini({
   tabs,
   activeId,
@@ -281,16 +320,22 @@ export function EasePulseMini({
   onChange: (id: string) => void;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap gap-2">
+    <div
+      className="mb-4 flex min-w-0 flex-nowrap gap-2 overflow-x-auto"
+      role="tablist"
+      aria-label="Approval filters"
+    >
       {tabs.map((tab) => {
         const active = tab.id === activeId;
         return (
           <button
             key={tab.id}
             type="button"
+            role="tab"
+            aria-selected={active}
             onClick={() => onChange(tab.id)}
             className={cn(
-              "rounded-full border border-transparent px-3 py-1.5 text-xs font-bold transition",
+              "shrink-0 rounded-full border border-transparent px-3 py-1.5 text-xs font-bold transition",
               active
                 ? "border-cos-border bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
                 : "bg-transparent text-cos-muted hover:text-cos-text",

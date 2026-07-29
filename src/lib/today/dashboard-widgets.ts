@@ -14,7 +14,10 @@ export type DashboardWidgetId =
   | "approvals"
   | "tasks_week"
   | "volunteers"
-  | "insights";
+  | "insights"
+  | "posts_week"
+  | "waiting_others"
+  | "event_coverage";
 
 export type DashboardWidgetRegion = "main" | "rail";
 
@@ -76,14 +79,14 @@ export const DASHBOARD_WIDGET_CATALOG: DashboardWidgetDefinition[] = [
   {
     id: "weather",
     label: "Weather",
-    description: "Local weather for your school",
+    description: "Local weather for your organization",
     region: "rail",
     phase: 1,
   },
   {
     id: "calendar",
     label: "Calendar",
-    description: "Month view of school events",
+    description: "Month view of your events",
     region: "rail",
     phase: 1,
   },
@@ -119,6 +122,27 @@ export const DASHBOARD_WIDGET_CATALOG: DashboardWidgetDefinition[] = [
     id: "insights",
     label: "Insights",
     description: "Recent social performance",
+    region: "main",
+    phase: 3,
+  },
+  {
+    id: "posts_week",
+    label: "Posts this week",
+    description: "Scheduled social and email going out — yours or the whole board",
+    region: "main",
+    phase: 3,
+  },
+  {
+    id: "waiting_others",
+    label: "Waiting on others",
+    description: "What's blocked on teammates — spot bottlenecks early",
+    region: "main",
+    phase: 3,
+  },
+  {
+    id: "event_coverage",
+    label: "Event coverage",
+    description: "Upcoming events missing a lead or point person",
     region: "main",
     phase: 3,
   },

@@ -583,7 +583,7 @@ export function MondayBoardMappingPanel({
       {syncEnabled && selectedBoardId && columnMap.statusColumnId && (
         <div className="space-y-2">
           <p className="text-sm text-cos-muted">
-            Push all open playbook tasks that are not yet linked to Monday items. Existing links
+            Push all open communication plan tasks that are not yet linked to Monday items. Existing links
             are skipped.
           </p>
           <Button

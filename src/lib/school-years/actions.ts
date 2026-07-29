@@ -50,7 +50,7 @@ export async function closeSchoolYearAndBeginNextAction(input: {
 }): Promise<{ error: string | null; success: boolean }> {
   const organization = await getLatestOrganization();
   if (!organization) {
-    return { error: "Complete school setup first.", success: false };
+    return { error: "Finish organization setup first.", success: false };
   }
 
   const nextYear = await closeSchoolYearAndStartNext({
@@ -61,7 +61,7 @@ export async function closeSchoolYearAndBeginNextAction(input: {
 
   if (!nextYear) {
     return {
-      error: "Unable to start the next school year. Run migration 023 in Supabase.",
+      error: "Couldn't start the next school year. Please try again or contact support.",
       success: false,
     };
   }
@@ -89,7 +89,7 @@ export async function saveCalendarSubscribeUrlAction(
   );
 
   if (!saved) {
-    return { error: "Unable to save subscribe feed URL.", success: false };
+    return { error: "Couldn't save the calendar feed URL.", success: false };
   }
 
   revalidatePath("/settings");
@@ -123,7 +123,7 @@ export async function syncCalendarSubscribeFeedAction(
   if (!organization) {
     return {
       success: false,
-      error: "Complete school setup first.",
+      error: "Finish organization setup first.",
       importId: null,
       added: 0,
       skipped: 0,

@@ -11,9 +11,9 @@ import type {
 } from "./types.ts";
 
 export const DEFAULT_PLAYBOOK_OPTIONS: PlaybookOption[] = [
-  { id: "school-6-week", name: "School Event – 6 Week Playbook" },
-  { id: "fundraiser-4-week", name: "Fundraiser – 4 Week Playbook" },
-  { id: "community-2-week", name: "Community Event – 2 Week Playbook" },
+  { id: "school-6-week", name: "School Event – 6 Week Posting Plan" },
+  { id: "fundraiser-4-week", name: "Fundraiser – 4 Week Posting Plan" },
+  { id: "community-2-week", name: "Community Event – 2 Week Posting Plan" },
 ];
 
 export const DEFAULT_BRAND_KIT_OPTIONS: BrandKitOption[] = [

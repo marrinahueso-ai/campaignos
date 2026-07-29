@@ -15,7 +15,7 @@ function first(value: string | string[] | undefined): string | undefined {
 }
 
 /**
- * Settings Ease Branding hub — voice, inbox sources, playbooks, brand kit,
+ * Settings Ease Branding hub — voice, inbox sources, communication plans, brand kit,
  * and school year nested under one calm home.
  */
 export default async function BrandingSettingsPage({

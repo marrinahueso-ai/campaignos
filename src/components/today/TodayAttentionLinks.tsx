@@ -33,7 +33,7 @@ export function TodayAttentionLinks({ counts }: TodayAttentionLinksProps) {
 
   if (counts.tasksThisWeekCount > 0) {
     links.push({
-      href: "/tasks?tab=my_tasks&view=this_week",
+      href: "/tasks?scope=mine&pulse=week",
       label:
         counts.tasksThisWeekCount === 1
           ? "1 task this week"

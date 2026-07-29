@@ -41,9 +41,9 @@ export function CreateWithAiHub({
                 Your role can’t open Social Media yet
               </p>
               <p className="text-sm leading-relaxed text-cos-muted">
-                Ask an admin to grant artwork / campaign create access for
+                Ask an admin to grant Social create access for
                 {organizationName ? ` ${organizationName}` : " this organization"}
-                . Homepage Composer is still available from Create with AI.
+                . Homepage is still available from Create with AI.
               </p>
               <Button href="/create-with-ai" variant="secondary" size="sm" className="mt-3">
                 ← Create with AI
@@ -82,8 +82,8 @@ export function CreateWithAiHub({
               <div>
                 <p className="text-sm font-medium text-cos-text">No events yet</p>
                 <p className="mt-1 text-sm leading-relaxed text-cos-muted">
-                  Once you have an event, Social opens Creative Setup in the
-                  builder — not a choose-event list.
+                  Once you have an event, Social opens Creative Setup so you can
+                  build posts for that campaign.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">

@@ -58,7 +58,7 @@ const STEPS: {
   hint: string;
 }[] = [
   { id: "header", label: "Header", hint: "Issue · colors · image" },
-  { id: "message", label: "Message", hint: "Principal / PTO" },
+  { id: "message", label: "Message", hint: "Leadership note" },
   { id: "stories", label: "Stories", hint: "Events · manual · ★" },
   { id: "mustdos", label: "Must-dos", hint: "Cal · vol · sponsors" },
   { id: "footer", label: "Footer", hint: "Socials · CTA" },
@@ -397,7 +397,7 @@ export function NewsletterComposer({
               Newsletter Composer
             </h1>
             <p className="mt-2 max-w-xl text-sm text-cos-muted sm:text-base">
-              Scoop-style family email — message, stories, calendar, volunteers,
+              Community email — message, stories, calendar, volunteers,
               sponsors, and footer socials.
             </p>
           </div>
@@ -643,7 +643,7 @@ function HeaderStep({
         <div className="space-y-4">
           <SettingsBox
             title="Issue details"
-            description="What parents see in the inbox before they open."
+            description="What people see in the inbox before they open."
           >
             <div className="space-y-3">
               <Field label="Subject line">
@@ -798,7 +798,7 @@ function MessageStep({
     <section className="space-y-4">
       <PanelHead
         title="Opening message"
-        body="Principal / leadership welcome — short, scannable, human."
+        body="Leadership welcome — short, scannable, human."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="secondary" onClick={onBack}>
@@ -834,14 +834,14 @@ function MessageStep({
         </div>
       </SettingsBox>
       <SettingsBox
-        title="Optional PTO note"
-        description="Separate from school message — sponsorship, spirit store, etc."
+        title="Optional org note"
+        description="Separate from the leadership message — sponsorship, store, etc."
       >
         <textarea
           className={cn(inputClass(), "min-h-[96px]")}
           value={state.ptoNote}
           onChange={(e) => patch((p) => ({ ...p, ptoNote: e.target.value }))}
-          placeholder="Short PTO add-on…"
+          placeholder="Short org add-on…"
         />
       </SettingsBox>
     </section>
@@ -975,7 +975,7 @@ function StoriesStep({
       title: draftTitle.trim(),
       date: draftDate || null,
       meta: "Manual story",
-      messaging: draftMsg.trim() || "Update for families.",
+      messaging: draftMsg.trim() || "Update for your community.",
       ctaLabel: draftCta.trim() || "Learn more →",
       ctaUrl: draftLink.trim(),
       imageUrl: draftImageUrl,
@@ -991,7 +991,7 @@ function StoriesStep({
     <section className="space-y-4">
       <PanelHead
         title="Featured stories"
-        body="Each story gets short messaging + a CTA link — standard for school Scoop emails."
+        body="Each story gets short messaging + a CTA link — standard for community newsletters."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="secondary" onClick={onBack}>
@@ -1058,7 +1058,7 @@ function StoriesStep({
               </button>
               <div className="min-w-0 flex-1 space-y-2">
                 <p className="text-xs text-cos-muted">
-                  Optional photo — helps break up the Scoop so stories don’t
+                  Optional photo — helps break up the email so stories don’t
                   feel like one long list.
                 </p>
                 {draftImageUrl ? (
@@ -1094,7 +1094,7 @@ function StoriesStep({
                 className={cn(inputClass(), "min-h-[72px]")}
                 value={draftMsg}
                 onChange={(e) => setDraftMsg(e.target.value)}
-                placeholder="2–3 sentences parents need to know…"
+                placeholder="2–3 sentences people need to know…"
               />
             </Field>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -1166,7 +1166,7 @@ function StoriesStep({
           <div className="space-y-2">
             {otherStories.length === 0 ? (
               <p className="text-sm text-cos-muted">
-                Use + Add story for one-off Scoop items.
+                Use + Add story for one-off items.
               </p>
             ) : (
               otherStories.map((story) => (
@@ -1823,7 +1823,7 @@ function MustDosStep({
       </div>
 
       <SettingsBox
-        title="Explorer Calendar"
+        title="Upcoming calendar"
         description="Click events to include as chips — add manual dates anytime."
         actions={
           <Button
@@ -2204,7 +2204,7 @@ function FooterStep({
         <div className="space-y-4">
           <SettingsBox
             title="Social links"
-            description="Shown at the bottom of every Scoop."
+            description="Shown at the bottom of every email."
           >
             <div className="space-y-2">
               {state.socials.map((social) => (
@@ -2535,7 +2535,7 @@ function SendStep({
     <section className="space-y-4">
       <PanelHead
         title="Send or export"
-        body="Copy email-safe HTML for ParentLink, Smore paste, or your ESP."
+        body="Copy email-safe HTML for your email tool or newsletter platform."
         actions={
           <Button type="button" variant="secondary" onClick={onBack}>
             ← Preview
@@ -2543,7 +2543,7 @@ function SendStep({
         }
       />
       <SettingsBox
-        title="Ship this Scoop"
+        title="Ready to send"
         description={`${included} stories · subject: ${state.subject}`}
       >
         <div className="flex flex-wrap gap-2">
@@ -2555,8 +2555,8 @@ function SendStep({
           </Button>
         </div>
         <p className="mt-3 text-xs text-cos-muted">
-          Direct send via Resend can ship next — export first so volunteers keep
-          the same ritual as Homepage Composer.
+          Export the HTML first, then paste it into your email tool — same
+          flow as Homepage.
         </p>
       </SettingsBox>
     </section>

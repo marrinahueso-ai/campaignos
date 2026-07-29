@@ -452,7 +452,7 @@
       display: grid; place-items: center;
     }
 
-    /* Playbook mapped */
+    /* Communication Plan mapped */
     .playbook-map {
       margin-top: 12px;
       border-radius: 14px;
@@ -776,20 +776,20 @@
         <h1 class="serif">Social Media Composer</h1>
         <p class="lede">
           Same studio feel as Homepage &amp; Newsletter — logos from Setup, drag-and-drop
-          inspiration, playbooks that map milestones, then edit &amp; re-approve after generate.
+          inspiration, communication plans that map posts, then edit &amp; re-approve after generate.
         </p>
-        <div class="mock-banner">Interactive mock · drag tiles · expand milestones · try re-approval</div>
+        <div class="mock-banner">Interactive mock · drag tiles · expand posts · try re-approval</div>
 
         <div class="layout">
           <nav class="steps" aria-label="Composer steps">
             <button type="button" class="step-btn active" data-step="setup">
               <span class="n">1 · Setup</span>
               <span class="label">Creative Setup</span>
-              <span class="hint">Logos · DnD · playbook</span>
+              <span class="hint">Logos · DnD · communication plan</span>
             </button>
             <button type="button" class="step-btn" data-step="milestones">
               <span class="n">2 · Plan</span>
-              <span class="label">Milestones</span>
+              <span class="label">Posts</span>
               <span class="hint">DnD · expand edit</span>
             </button>
             <button type="button" class="step-btn" data-step="preview">
@@ -810,11 +810,11 @@
               <div class="panel-head">
                 <div>
                   <h2>Creative Setup</h2>
-                  <p>Brand logos from Setup, drag inspiration into order, pick a playbook that maps your milestone plan.</p>
+                  <p>Brand logos from Setup, drag inspiration into order, pick a communication plan that maps your post plan.</p>
                 </div>
                 <div class="actions">
                   <button type="button" class="btn btn-secondary" data-goto="milestones">← Back</button>
-                  <button type="button" class="btn btn-primary" data-goto="milestones">Save → Milestones</button>
+                  <button type="button" class="btn btn-primary" data-goto="milestones">Save → Posts</button>
                 </div>
               </div>
 
@@ -875,9 +875,9 @@
                   </div>
 
                   <div class="box">
-                    <h3>Playbook</h3>
-                    <p class="desc">Choosing a playbook <strong>maps real milestone steps</strong> into your campaign plan — not just a label.</p>
-                    <label class="field-label">Playbook</label>
+                    <h3>Communication Plan</h3>
+                    <p class="desc">Choosing a communication plan <strong>maps real posts</strong> into your campaign plan — not just a label.</p>
+                    <label class="field-label">Communication Plan</label>
                     <select class="field" id="playbookSelect">
                       <option value="elementary">Elementary Event Blast</option>
                       <option value="volunteer">Volunteer Drive</option>
@@ -933,7 +933,7 @@
             <section class="view" id="view-milestones">
               <div class="panel-head">
                 <div>
-                  <h2>Campaign Milestones</h2>
+                  <h2>Posts</h2>
                   <p>Drag to reorder. Click a row to expand &amp; edit — collapse when you’re done.</p>
                 </div>
                 <div class="actions">
@@ -943,11 +943,11 @@
               </div>
 
               <div class="box">
-                <h3>Milestones</h3>
-                <p class="desc">Mapped from playbook · drag ⠿ to reorder · click to expand edit.</p>
+                <h3>Posts</h3>
+                <p class="desc">Mapped from communication plan · drag ⠿ to reorder · click to expand edit.</p>
                 <div class="dnd-hint">⠿ Drag cards to reorder</div>
                 <div class="ms-list" id="msList"></div>
-                <button type="button" class="btn btn-secondary" style="margin-top:10px" id="addMs">+ Add milestone</button>
+                <button type="button" class="btn btn-secondary" style="margin-top:10px" id="addMs">+ Add post</button>
               </div>
             </section>
 
@@ -959,7 +959,7 @@
                   <p>Generate, then <strong>edit in place</strong> — change requests route here, then send for re-approval.</p>
                 </div>
                 <div class="actions">
-                  <button type="button" class="btn btn-secondary" data-goto="milestones">← Milestones</button>
+                  <button type="button" class="btn btn-secondary" data-goto="milestones">← Posts</button>
                   <button type="button" class="btn btn-gold" id="btnGenerate">Generate artwork</button>
                   <button type="button" class="btn btn-primary" data-goto="review">Save → Review</button>
                 </div>
@@ -1128,7 +1128,7 @@ Details on the PTO site →</textarea>
                   </div>
                   <div id="reapproveBox" class="alert alert-changes hidden" style="margin-top:14px">
                     <strong>Ready to resubmit</strong>
-                    Edits saved. Send this milestone back to your approver.
+                    Edits saved. Send this post back to your approver.
                     <div style="margin-top:10px">
                       <button type="button" class="btn btn-sm btn-gold" id="btnReapprove2">Send for re-approval</button>
                     </div>
@@ -1165,7 +1165,7 @@ Details on the PTO site →</textarea>
                     <div class="check-row">
                       <div class="check">✓</div>
                       <div>
-                        <strong style="font-size:14px">Playbook milestones mapped</strong>
+                        <strong style="font-size:14px">Communication Plan posts mapped</strong>
                         <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">Elementary Event Blast → 5 steps</p>
                       </div>
                     </div>
@@ -1412,13 +1412,13 @@ Details on the PTO site →</textarea>
       refreshInspOrders();
     }
 
-    /* Playbook map */
+    /* Communication Plan map */
     function renderPlaybookMap() {
       const key = document.getElementById("playbookSelect").value;
       const pb = PLAYBOOKS[key];
       const el = document.getElementById("playbookMap");
       el.innerHTML =
-        `<h4>Maps to ${pb.steps.length} milestones</h4>` +
+        `<h4>Maps to ${pb.steps.length} posts</h4>` +
         pb.steps
           .map(
             (s) =>
@@ -1430,7 +1430,7 @@ Details on the PTO site →</textarea>
       renderPlaybookMap();
       const key = document.getElementById("playbookSelect").value;
       const pb = PLAYBOOKS[key];
-      // Remap milestone titles from playbook (mock)
+      // Remap post titles from communication plan (mock)
       const months = ["Jul", "Aug", "Aug", "Aug", "Aug"];
       const days = ["28", "4", "7", "9", "10"];
       milestones = pb.steps.map((s, i) => ({
@@ -1438,7 +1438,7 @@ Details on the PTO site →</textarea>
         mo: months[i] || "Aug",
         dy: days[i] || String(i + 1),
         title: s.name,
-        meta: s.formats + " · from playbook",
+        meta: s.formats + " · from communication plan",
         status: i === 0 ? "ready" : "gen",
         pill: i === 0 ? "pill-ready" : "pill-gen",
         pillLabel: i === 0 ? "Ready" : "To generate",
@@ -1453,7 +1453,7 @@ Details on the PTO site →</textarea>
         edited: false,
       }));
       activeMs = 0;
-      toast("Playbook mapped → " + pb.steps.length + " milestones");
+      toast("Communication plan mapped → " + pb.steps.length + " posts");
     });
     renderPlaybookMap();
 
@@ -1494,10 +1494,10 @@ Details on the PTO site →</textarea>
             </div>
             <div style="margin-top:10px">
               <label class="field-label">Notes</label>
-              <textarea class="field" rows="2">Edit this milestone without leaving the list.</textarea>
+              <textarea class="field" rows="2">Edit this post without leaving the list.</textarea>
             </div>
             <div class="actions" style="margin-top:12px">
-              <button type="button" class="btn btn-sm btn-primary ms-save" data-id="${m.id}">Save milestone</button>
+              <button type="button" class="btn btn-sm btn-primary ms-save" data-id="${m.id}">Save post</button>
               <button type="button" class="btn btn-sm btn-secondary" data-toggle="${m.id}">Collapse</button>
             </div>
           </div>`;
@@ -1527,7 +1527,7 @@ Details on the PTO site →</textarea>
           const [item] = milestones.splice(from, 1);
           milestones.splice(to, 0, item);
           renderMilestones();
-          toast("Milestones reordered");
+          toast("Posts reordered");
         });
       });
 
@@ -1551,7 +1551,7 @@ Details on the PTO site →</textarea>
             m.id === id ? { ...m, title: title || m.title, meta: meta || m.meta, open: false } : m,
           );
           renderMilestones();
-          toast("Milestone saved");
+          toast("Post saved");
         });
       });
       // Prevent drag when interacting with inputs
@@ -1565,7 +1565,7 @@ Details on the PTO site →</textarea>
         id: "m" + Date.now(),
         mo: "Aug",
         dy: "12",
-        title: "New milestone",
+        title: "New post",
         meta: "Feed · custom",
         status: "draft",
         pill: "pill-draft",
@@ -1573,20 +1573,20 @@ Details on the PTO site →</textarea>
         open: true,
         caption: "New post for Edmondson families.",
         story: "New post",
-        sub: "Custom milestone",
+        sub: "Custom post",
         art: "linear-gradient(145deg, #6b8171, #d4a84b)",
         changes: false,
         edited: false,
       });
       renderMilestones();
-      toast("Milestone added");
+      toast("Post added");
     });
 
     /* Preview */
     function renderPreviewRail() {
       const rail = document.getElementById("previewRail");
       rail.innerHTML =
-        "<h4>Milestones</h4>" +
+        "<h4>Posts</h4>" +
         milestones
           .map((m, i) => {
             const st = m.changes

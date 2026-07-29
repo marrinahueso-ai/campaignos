@@ -54,10 +54,10 @@ export const defaultSocials: NewsletterSocialLink[] = [
 ];
 
 export const defaultHelpfulLinks: NewsletterLinkChip[] = [
-  { id: "skyward", emoji: "📚", label: "Skyward forms", url: "" },
-  { id: "lunch", emoji: "🍎", label: "MySchoolBucks", url: "" },
-  { id: "cal", emoji: "📅", label: "PTO calendar", url: "" },
-  { id: "site", emoji: "🏫", label: "School website", url: "" },
+  { id: "skyward", emoji: "📚", label: "Forms", url: "" },
+  { id: "lunch", emoji: "🍎", label: "Payments", url: "" },
+  { id: "cal", emoji: "📅", label: "Calendar", url: "" },
+  { id: "site", emoji: "🏫", label: "Website", url: "" },
   { id: "vol", emoji: "🙌", label: "Volunteer hub", url: "" },
 ];
 
@@ -72,7 +72,7 @@ export function storyFromEvent(event: NewsletterComposerEvent): NewsletterStory 
     meta: meta || "Event",
     messaging:
       event.description?.trim().slice(0, 280) ||
-      `${event.title} — details for families below.`,
+      `${event.title} — details below.`,
     ctaLabel: event.volunteerSignupUrl ? "Sign up →" : "Learn more →",
     ctaUrl: event.volunteerSignupUrl || "",
     imageUrl: event.imageUrl,
@@ -170,14 +170,14 @@ function buildLayoutBlocks(stories: NewsletterStory[]): NewsletterLayoutBlock[] 
       kind: "message",
       storyId: null,
       label: "Leadership message",
-      detail: "Principal / PTO welcome",
+      detail: "Leadership welcome",
     },
     ...storyBlocks,
     {
       id: "block-calendar",
       kind: "calendar",
       storyId: null,
-      label: "Explorer Calendar",
+      label: "Upcoming calendar",
       detail: "Date chips",
     },
     {
@@ -288,16 +288,16 @@ export function buildInitialState(
   });
   if (sorted[0]) sorted[0].featured = true;
 
-  const org = organizationName?.trim() || "Your school";
+  const org = organizationName?.trim() || "Your organization";
   const state: NewsletterComposerState = {
-    subject: `${org} Scoop — this month’s updates`,
-    issueName: `${org} Scoop`,
+    subject: `${org} Newsletter — this month’s updates`,
+    issueName: `${org} Newsletter`,
     fromName: org,
     colors: { ...defaultColors },
     headerImageUrl: null,
     leadershipNames: "",
     leadershipMessage:
-      "Happy families — here’s what’s happening this month. We’ve packed the must-knows below so you can skim and go.",
+      "Hello — here’s what’s happening this month. We’ve packed the must-knows below so you can skim and go.",
     ptoNote: "",
     stories,
     calendarChips: defaultCalendar(),
@@ -310,7 +310,7 @@ export function buildInitialState(
     footerCtaHeadline: "Get Involved — we need you",
     footerCtaLabel: "Volunteer hub →",
     footerCtaUrl: "",
-    footerFinePrint: `${org} · You’re receiving this as a school family.`,
+    footerFinePrint: `${org} · You’re receiving this as a community member.`,
     layoutBlocks: [],
   };
   state.layoutBlocks = buildLayoutBlocks(state.stories);

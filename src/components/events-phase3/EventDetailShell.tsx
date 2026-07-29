@@ -45,7 +45,6 @@ import type { UnifiedApprovalsPageData } from "@/lib/approvals-scheduling/types"
 import type { EventInsightsPageData } from "@/lib/insights/types";
 import type { EventVendorsData, VendorCategory } from "@/types/vendors";
 import type { TasksV2PageData } from "@/types/tasks-v2";
-import { EVENT_TYPE_LABELS } from "@/lib/playbooks/constants";
 import type { FilesPageData } from "@/types/campaign-files";
 import type {
   EventPlaybookActivity,
@@ -435,10 +434,6 @@ export function EventDetailShell({
   const tabCacheRef = useRef<Map<string, EventDetailTabData>>(new Map());
   const cacheEventIdRef = useRef(event.id);
 
-  const eventTypeLabel = event.eventType
-    ? (EVENT_TYPE_LABELS[event.eventType] ?? null)
-    : null;
-
   useEffect(() => {
     setLiveHeroStats(heroStats);
   }, [event.id, heroStats]);
@@ -726,7 +721,6 @@ export function EventDetailShell({
       <EventDetailEaseHero
         event={event}
         artwork={artwork}
-        eventTypeLabel={eventTypeLabel}
         stats={liveHeroStats}
         onSelectTab={selectHeroJumpTab}
       />

@@ -7,24 +7,20 @@ import {
   EventsEaseAheadCard,
   EventsEaseEmpty,
   EventsEaseFocusCard,
-  EventsEaseMonthGlance,
   EventsEaseQueueRow,
   EventsEaseSuiteStrip,
-  easeLensToSummary,
   type EventsEaseLens,
   type EventsHomeResponsiblePerson,
 } from "@/components/events-phase3/EventsEaseList";
+import { filterEventsHomeBySearch } from "@/lib/events/events-home-search";
 import {
-  EVENTS_HOME_DEFAULT_SUMMARY,
-  buildEventsHomeMonthFilterOptions,
   countEventsHomeSummary,
+  filterEventsHomeByLens,
   matchesEventsHomeMonth,
-  matchesEventsHomeSummary,
-  type EventsHomeMonthFilter,
+  shouldApplyEventsHomeLensFilter,
 } from "@/lib/events/events-home-summary";
 import type { EventsHomeLayout } from "@/lib/events/events-home-layout";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
-import { normalizeDateOnly } from "@/lib/utils/dates";
 import type { Event } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -44,18 +40,9 @@ interface EventsHomeContentProps {
 
 const PULSE_TABS: Array<{ id: EventsEaseLens; label: string }> = [
   { id: "upcoming", label: "Upcoming" },
-  { id: "needs_setup", label: "Needs setup" },
-  { id: "ready_to_run", label: "Ready" },
-  { id: "needs_follow_up", label: "Follow-up" },
-  { id: "done", label: "Done" },
-  { id: "month", label: "Month" },
+  { id: "next_month", label: "Next month" },
   { id: "all", label: "All" },
 ];
-
-function defaultLensFromSummary(): EventsEaseLens {
-  if (EVENTS_HOME_DEFAULT_SUMMARY === "next_60_days") return "upcoming";
-  return "upcoming";
-}
 
 export function EventsHomeContent({
   events,
@@ -66,16 +53,11 @@ export function EventsHomeContent({
   activeSchoolYearId = null,
 }: EventsHomeContentProps) {
   const [search, setSearch] = useState("");
-  const [lens, setLens] = useState<EventsEaseLens>(defaultLensFromSummary);
+  const [lens, setLens] = useState<EventsEaseLens>("upcoming");
   const [schoolYearFilter, setSchoolYearFilter] = useState<string>(
     activeSchoolYearId ?? "all",
   );
-  const [allMonthFilter, setAllMonthFilter] =
-    useState<EventsHomeMonthFilter>("all");
   const [focusId, setFocusId] = useState<string | null>(null);
-  const [monthViewKey, setMonthViewKey] = useState(() =>
-    normalizeDateOnly(today).slice(0, 7),
-  );
 
   const eventsForCounts = useMemo(() => {
     if (schoolYearFilter === "all") return events;
@@ -87,54 +69,57 @@ export function EventsHomeContent({
     [eventsForCounts, today],
   );
 
-  const monthOptions = useMemo(() => {
-    const options = buildEventsHomeMonthFilterOptions(eventsForCounts, today);
-    // Prefer concrete YYYY-MM options for All; keep this/next for convenience.
-    return options;
-  }, [eventsForCounts, today]);
+  const nextMonthCount = useMemo(
+    () =>
+      eventsForCounts.filter((event) =>
+        matchesEventsHomeMonth(event, "next_month", today),
+      ).length,
+    [eventsForCounts, today],
+  );
 
-  const searched = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    return eventsForCounts.filter((event) => {
-      if (!needle) return true;
-      const responsible = responsibleByEventId[event.id];
-      const haystack = [
-        event.title,
-        event.description,
-        event.location,
-        event.eventType,
-        responsible?.displayName,
-        responsible?.organizationTitle,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(needle);
-    });
-  }, [eventsForCounts, search, responsibleByEventId]);
-
-  const lensEvents = useMemo(() => {
-    if (lens === "month") return searched;
-    const summary = easeLensToSummary(lens);
-    let next = searched.filter((event) =>
-      matchesEventsHomeSummary(event, summary, today),
-    );
-    if (lens === "all" && allMonthFilter !== "all") {
-      next = next.filter((event) =>
-        matchesEventsHomeMonth(event, allMonthFilter, today),
-      );
+  const schoolYearLabelById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const year of schoolYears) {
+      map.set(year.id, year.label);
     }
-    return [...next].sort((a, b) => a.date.localeCompare(b.date));
-  }, [searched, lens, today, allMonthFilter]);
+    return map;
+  }, [schoolYears]);
+
+  const applyLensFilter = shouldApplyEventsHomeLensFilter(search);
+  const hasSearch = !applyLensFilter;
+
+  const searched = useMemo(
+    () =>
+      filterEventsHomeBySearch(eventsForCounts, search, (event) => ({
+        today,
+        responsible: responsibleByEventId[event.id],
+        schoolYearLabel: event.schoolYearId
+          ? (schoolYearLabelById.get(event.schoolYearId) ?? null)
+          : null,
+      })),
+    [
+      eventsForCounts,
+      search,
+      responsibleByEventId,
+      today,
+      schoolYearLabelById,
+    ],
+  );
+
+  const lensEvents = useMemo(
+    () =>
+      filterEventsHomeByLens(searched, lens, today, {
+        applyLens: applyLensFilter,
+      }),
+    [searched, lens, today, applyLensFilter],
+  );
 
   const upcomingSorted = useMemo(
     () =>
-      [...searched]
-        .filter((event) =>
-          matchesEventsHomeSummary(event, "next_60_days", today),
-        )
-        .sort((a, b) => a.date.localeCompare(b.date)),
-    [searched, today],
+      filterEventsHomeByLens(searched, "upcoming", today, {
+        applyLens: applyLensFilter,
+      }),
+    [searched, today, applyLensFilter],
   );
 
   useEffect(() => {
@@ -156,50 +141,34 @@ export function EventsHomeContent({
       ? upcomingSorted
           .filter((event) => event.id !== focusEvent.id)
           .slice(aheadEvents.length)
-      : lens === "month"
+      : lens === "upcoming"
         ? []
         : lensEvents;
 
-  const pulseCounts = {
+  const pulseCounts: Record<EventsEaseLens, number> = {
     upcoming: summaryCounts.next_60_days,
-    needs_setup: summaryCounts.needs_setup,
-    ready_to_run: summaryCounts.ready_to_run,
-    needs_follow_up: summaryCounts.needs_follow_up,
-    done: summaryCounts.done,
-    month: eventsForCounts.length,
+    next_month: nextMonthCount,
     all: eventsForCounts.length,
   };
 
   const emptyCopy: Record<
-    Exclude<EventsEaseLens, "month">,
+    EventsEaseLens,
     { title: string; body: string }
   > = {
     upcoming: {
       title: "Nothing in the next 60 days",
-      body: "When you add or schedule events ahead, they show up here so you can see the season coming.",
+      body: "When you add or schedule events ahead, they show up here so you can see what’s coming.",
     },
-    needs_setup: {
-      title: "No drafts need setup",
-      body: "Draft events that still need polish land here.",
-    },
-    ready_to_run: {
-      title: "Nothing ready to run",
-      body: "Scheduled events still ahead appear in Ready.",
-    },
-    needs_follow_up: {
-      title: "No follow-ups waiting",
-      body: "Past events that aren’t published yet show up here.",
-    },
-    done: {
-      title: "Nothing published yet",
-      body: "Published events collect here when you’re done.",
+    next_month: {
+      title: "Nothing next month",
+      body: "Events dated in the next calendar month show up here.",
     },
     all: {
       title: events.length === 0 ? "No events yet" : "No matches",
       body:
         events.length === 0
           ? "Create an event, or start from Create with AI."
-          : "Try a different search or month filter.",
+          : "Try a different search.",
     },
   };
 
@@ -220,8 +189,8 @@ export function EventsHomeContent({
             Events
           </h1>
           <p className="mt-3 max-w-xl text-base leading-relaxed text-cos-muted">
-            See what&apos;s coming — then open an event or make something with
-            AI. Same calm studio feel as Create with AI.
+            See what&apos;s coming for your organization — then open an event or
+            make something with AI.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -244,7 +213,7 @@ export function EventsHomeContent({
         <div
           className="flex flex-wrap items-center gap-2"
           role="tablist"
-          aria-label="Event lenses"
+          aria-label="Event filters"
         >
           {PULSE_TABS.map((tab) => {
             const active = lens === tab.id;
@@ -266,16 +235,14 @@ export function EventsHomeContent({
                 )}
               >
                 {tab.label}
-                {tab.id !== "month" ? (
-                  <span
-                    className={cn(
-                      "ml-1.5 inline-block min-w-[1.25em] tabular-nums",
-                      active ? "text-[#2f4a3c]" : "text-cos-muted",
-                    )}
-                  >
-                    {pulseCounts[tab.id]}
-                  </span>
-                ) : null}
+                <span
+                  className={cn(
+                    "ml-1.5 inline-block min-w-[1.25em] tabular-nums",
+                    active ? "text-[#2f4a3c]" : "text-cos-muted",
+                  )}
+                >
+                  {pulseCounts[tab.id]}
+                </span>
               </button>
             );
           })}
@@ -286,7 +253,7 @@ export function EventsHomeContent({
             <select
               value={schoolYearFilter}
               onChange={(event) => setSchoolYearFilter(event.target.value)}
-              aria-label="School year"
+              aria-label="Organization year"
               className="h-9 rounded-full border border-cos-border bg-cos-card px-3 text-[13px] font-bold text-cos-text outline-none"
             >
               <option value="all">All years</option>
@@ -303,9 +270,9 @@ export function EventsHomeContent({
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search events…"
+              placeholder="Search events, people, dates…"
               className="h-9 w-full min-w-[180px] rounded-full border border-cos-border bg-cos-card pr-3 pl-9 text-[13px] text-cos-text outline-none focus:border-cos-dark sm:w-[220px]"
-              aria-label="Search events"
+              aria-label="Search events, people, and dates"
             />
           </div>
           <Link
@@ -317,19 +284,7 @@ export function EventsHomeContent({
         </div>
       </div>
 
-      {lens === "month" ? (
-        <section className="space-y-3">
-          <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-            Month at a glance
-          </p>
-          <EventsEaseMonthGlance
-            events={searched}
-            today={today}
-            viewMonthKey={monthViewKey}
-            onViewMonthKeyChange={setMonthViewKey}
-          />
-        </section>
-      ) : lens === "upcoming" ? (
+      {lens === "upcoming" && !hasSearch ? (
         upcomingSorted.length === 0 ? (
           <EventsEaseEmpty
             title={emptyCopy.upcoming.title}
@@ -341,7 +296,7 @@ export function EventsHomeContent({
               <p className="flex flex-wrap items-baseline justify-between gap-2 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
                 <span>Coming up · next 60 days</span>
                 <span className="font-semibold tracking-normal normal-case">
-                  See the season ahead
+                  See what’s ahead
                 </span>
               </p>
               <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.35fr)_minmax(240px,0.85fr)]">
@@ -351,7 +306,6 @@ export function EventsHomeContent({
                     event={focusEvent}
                     today={today}
                     artwork={artworkByEventId[focusEvent.id] ?? null}
-                    responsible={personFor(focusEvent.id)}
                   />
                 ) : null}
                 {aheadEvents.length > 0 ? (
@@ -392,48 +346,25 @@ export function EventsHomeContent({
         )
       ) : (
         <section className="space-y-3">
-          {lens === "all" ? (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-                All events
-              </p>
-              <div className="flex flex-wrap items-center gap-2.5">
-                <select
-                  value={allMonthFilter}
-                  onChange={(event) =>
-                    setAllMonthFilter(event.target.value as EventsHomeMonthFilter)
-                  }
-                  aria-label="Filter by month and year"
-                  className="h-9 appearance-none rounded-full border border-cos-border bg-cos-card bg-[length:12px] bg-[position:right_14px_center] bg-no-repeat px-3.5 pr-9 text-[13px] font-bold text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)] outline-none"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%237a7166' stroke-width='1.8'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E")`,
-                  }}
-                >
-                  {monthOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.value === "all"
-                        ? "All months"
-                        : option.label}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-xs font-semibold text-cos-muted">
-                  {lensEvents.length === 1
-                    ? "Showing 1"
-                    : `Showing ${lensEvents.length}`}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-              {PULSE_TABS.find((tab) => tab.id === lens)?.label}
-            </p>
-          )}
+          <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+            {hasSearch
+              ? "Search results"
+              : lens === "next_month"
+                ? "Next month"
+                : "All events"}
+            <span className="ml-2 font-semibold tracking-normal normal-case text-cos-muted">
+              {lensEvents.length === 1
+                ? "· 1 event"
+                : `· ${lensEvents.length} events`}
+            </span>
+          </p>
 
           {lensEvents.length === 0 ? (
             <EventsEaseEmpty
-              title={emptyCopy[lens].title}
-              body={emptyCopy[lens].body}
+              title={hasSearch ? "No matches" : emptyCopy[lens].title}
+              body={
+                hasSearch ? "Try a different search." : emptyCopy[lens].body
+              }
             />
           ) : (
             <div className="flex flex-col gap-2">

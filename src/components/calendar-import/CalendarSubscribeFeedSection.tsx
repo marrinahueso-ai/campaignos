@@ -32,7 +32,7 @@ export async function CalendarSubscribeFeedSection({
           Calendar subscribe feed
         </h2>
         <p className="mt-2 max-w-[46ch] text-[13px] leading-relaxed text-cos-muted">
-          Complete school setup first, then you can link and refresh your ICS
+          Finish organization setup first, then you can link and refresh your
           calendar feed here.
         </p>
       </div>

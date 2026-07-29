@@ -23,20 +23,20 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = Object.fromEntries(
 export const DEFAULT_EVENT_TYPE: EventType = "general_event";
 
 export const SYSTEM_PLAYBOOK_REMOVE_TOOLTIP =
-  "Removes this system template from your organization's playbook list. Existing event assignments are unchanged.";
+  "Removes this system template from your organization's communication plan list. Existing event assignments are unchanged.";
 
 export function systemPlaybookRemoveConfirmMessage(playbookName: string): string {
   return (
-    `Remove "${playbookName}" from your playbook list?\n\n` +
+    `Remove "${playbookName}" from your communication plan list?\n\n` +
     "This is a system template — it will be hidden for your organization only, not deleted globally. " +
-    "Events already using this playbook are unchanged."
+    "Events already using this communication plan are unchanged."
   );
 }
 
 export function orgPlaybookDeleteConfirmMessage(playbookName: string): string {
   return (
     `Permanently delete "${playbookName}"?\n\n` +
-    "This removes the playbook and all of its steps. This cannot be undone."
+    "This removes the communication plan and all of its posts. This cannot be undone."
   );
 }
 

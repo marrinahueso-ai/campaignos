@@ -81,7 +81,7 @@ export function CommitteeDefaultsSection({
               <th className="pb-3 pr-4 font-medium">Committee</th>
               <th className="pb-3 pr-4 font-medium">Committee owner</th>
               <th className="pb-3 pr-4 font-medium">Communication strategy</th>
-              <th className="pb-3 font-medium">Playbook</th>
+              <th className="pb-3 font-medium">Communication Plan</th>
             </tr>
           </thead>
           <tbody>
@@ -133,7 +133,7 @@ export function CommitteeDefaultsSection({
                     onChange={(event) =>
                       handlePlaybookChange(entry.id, event.target.value)
                     }
-                    aria-label={`Playbook for ${COMMITTEE_LABELS[entry.committeeName]}`}
+                    aria-label={`Communication Plan for ${COMMITTEE_LABELS[entry.committeeName]}`}
                   >
                     <option value="">None</option>
                     {PLAYBOOK_SLUG_OPTIONS.map((option) => (

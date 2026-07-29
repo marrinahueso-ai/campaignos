@@ -535,7 +535,7 @@ export function HomepageComposer({
           source: "custom",
           eventId: null,
           title: "New card",
-          blurb: "Short blurb for parents — edit me.",
+          blurb: "Short blurb for your audience — edit me.",
           imageUrl: null,
           linkUrl: "",
           linkLabel: "",
@@ -979,7 +979,7 @@ export function HomepageComposer({
                   }}
                 >
                   <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.08em] opacity-80">
-                    {organizationName || "Your PTO"}
+                    {organizationName || "Your organization"}
                   </p>
                   <h2 className="font-display text-xl sm:text-2xl">
                     {state.header.title}
@@ -1292,7 +1292,7 @@ export function HomepageComposer({
                       cardsSectionTitle: v,
                     }))
                   }
-                  placeholder="Back-to-School Essentials"
+                  placeholder="What’s Happening"
                 />
               </SettingsBox>
 
@@ -2026,7 +2026,7 @@ export function HomepageComposer({
                                 }
                                 placeholder={
                                   card.source === "event"
-                                    ? "Volunteer page URL (syncs to event)"
+                                    ? "Volunteer page URL (updates the event)"
                                     : "Optional link URL"
                                 }
                               />
@@ -2137,7 +2137,7 @@ export function HomepageComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Preview"
-                body="Exact full page parents will see — header, cards, footer, and quick links. Drag the date slider to watch cards roll on and off. On full month, open the share page or save as PDF to send for review."
+                body="Exact full page visitors will see — header, cards, footer, and quick links. Drag the date slider to watch cards roll on and off. On full month, open the share page or save as PDF to send for review."
                 actions={
                   <>
                     <Button

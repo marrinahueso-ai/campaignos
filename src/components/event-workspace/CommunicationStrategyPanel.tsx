@@ -27,7 +27,7 @@ export function CommunicationStrategyPanel({
             This event is calendar-only. No campaign is needed.
           </CardTitle>
           <CardDescription className="mx-auto mt-2 max-w-lg text-base">
-            It appears on your calendar and events list for visibility. No playbook,
+            It appears on your calendar and events list for visibility. No communication plan,
             communication timeline, or drafts will be created.
           </CardDescription>
         </CardHeader>

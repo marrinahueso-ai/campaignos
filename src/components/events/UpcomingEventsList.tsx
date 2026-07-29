@@ -22,7 +22,7 @@ export function UpcomingEventsList({
       <EmptyState
         icon={CalendarDays}
         title="Nothing scheduled yet"
-        description="Add your next PTO event when you're ready — we'll help you plan the communications."
+        description="Add your next event when you're ready — we'll help you plan the communications."
         action={{ label: "Create your first event", href: "/events/create" }}
       />
     );

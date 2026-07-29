@@ -17,10 +17,10 @@ describe("delivery-method Publish Now", () => {
     assert.equal(normalizeDeliveryMethod(null), "publish-now");
   });
 
-  it("labels Publish Now clearly", () => {
-    assert.equal(deliveryMethodUiLabel("publish-now"), "Publish Now");
-    assert.equal(deliveryMethodUiLabel("auto-publish"), "Publish Now");
-    assert.equal(deliveryMethodUiLabel("schedule"), "Schedule to publish");
+  it("labels Publish now clearly", () => {
+    assert.equal(deliveryMethodUiLabel("publish-now"), "Publish now");
+    assert.equal(deliveryMethodUiLabel("auto-publish"), "Publish now");
+    assert.equal(deliveryMethodUiLabel("schedule"), "Schedule for later");
   });
 
   it("treats publish-now and legacy auto-publish as immediate Meta delivery", () => {

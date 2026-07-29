@@ -72,6 +72,8 @@ export interface CampaignOption {
   label: string;
   date: string;
   description: string;
+  /** Free-text owner on the event row — searchable in Social Composer picker. */
+  eventOwner?: string | null;
 }
 
 /** Mutually exclusive color modes for Creative Setup. */
@@ -130,7 +132,7 @@ export interface CampaignBuilderInspiration {
 /**
  * Explicit per-milestone override of a campaign-level creative setting.
  * "inherit" (the default / absent) means use the campaign Creative Setup
- * value as-is. "none" is a real, explicit opt-out for this milestone only —
+ * value as-is. "none" is a real, explicit opt-out for this post only —
  * it must never fall back to the campaign value. "selected" carries a
  * milestone-specific value that replaces the campaign value for this
  * milestone only.

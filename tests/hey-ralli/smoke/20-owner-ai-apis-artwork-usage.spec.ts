@@ -74,7 +74,7 @@ test.describe("Owner AI & APIs — artwork usage smoke", () => {
     });
     expect(
       trigger,
-      "Expected Generate This Milestone / Generate Next / Edit→Regenerate / milestone sparkle",
+      "Expected Generate this post / Generate Next / Edit→Regenerate / milestone sparkle",
     ).toBe("started");
 
     const outcome = await waitForGenerationOutcome(page);

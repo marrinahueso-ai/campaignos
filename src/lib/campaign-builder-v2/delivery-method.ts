@@ -37,14 +37,14 @@ export function deliveryMethodUiLabel(method: DeliveryMethod): string {
   switch (method) {
     case "publish-now":
     case "auto-publish":
-      return "Publish Now";
+      return "Publish now";
     case "schedule":
-      return "Schedule to publish";
+      return "Schedule for later";
     case "manual-email":
       return "Email me for manual upload";
     case "draft-only":
       return "Save as draft only";
     default:
-      return "Publish Now";
+      return "Publish now";
   }
 }
