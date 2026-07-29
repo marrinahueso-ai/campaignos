@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hey Ralli · Mobile App Ease Mockup</title>
-  <meta name="description" content="Ease mockup of the Hey Ralli mobile app — on-the-go Approvals, Communications Hub, Create with AI artwork, Files from camera, and push notifications. No settings or calendar integrations." />
+  <meta name="description" content="Ease mockup of the Hey Ralli mobile app — Events on the go, Approvals, Communications Hub, Create with AI artwork, Files from camera, and push notifications. No settings or calendar integrations." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
@@ -531,6 +531,130 @@
     .file-row h3 { margin: 0; font-size: 13px; }
     .file-row p { margin: 2px 0 0; font-size: 11px; color: var(--muted); }
 
+    .event-card {
+      display: flex;
+      gap: 12px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      text-align: left;
+      width: 100%;
+      color: inherit;
+      animation: rise 0.4s ease both;
+    }
+    .event-card:nth-child(2) { animation-delay: 0.04s; }
+    .event-card:nth-child(3) { animation-delay: 0.08s; }
+    .event-card:nth-child(4) { animation-delay: 0.12s; }
+    .event-date {
+      width: 48px;
+      flex-shrink: 0;
+      border-radius: 14px;
+      background: rgba(47, 74, 60, 0.1);
+      color: var(--forest);
+      text-align: center;
+      padding: 8px 4px;
+    }
+    .event-date .mon {
+      display: block;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .event-date .day {
+      display: block;
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      font-weight: 600;
+      line-height: 1.1;
+      margin-top: 2px;
+    }
+    .event-card.soon .event-date {
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .event-card h3 { margin: 0 0 3px; font-size: 14px; font-weight: 700; }
+    .event-card p { margin: 0; font-size: 12px; color: var(--ink-soft); line-height: 1.35; }
+    .event-focus {
+      border-radius: 22px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background:
+        radial-gradient(ellipse 80% 70% at 85% 0%, rgba(196, 146, 46, 0.28), transparent 50%),
+        linear-gradient(155deg, #2f4a3c, #24382e 72%);
+      color: var(--cream);
+    }
+    .event-focus .eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.8;
+      margin-bottom: 6px;
+    }
+    .event-focus h2 {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+    .event-focus p { margin: 0 0 12px; font-size: 13px; opacity: 0.9; line-height: 1.4; }
+    .event-focus .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .event-focus .actions button {
+      border: none;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(255, 252, 247, 0.16);
+      color: var(--cream);
+      border: 1px solid rgba(255, 252, 247, 0.2);
+    }
+    .event-focus .actions button.solid {
+      background: var(--cream);
+      color: var(--forest);
+      border-color: transparent;
+    }
+    .event-detail-back {
+      border: none;
+      background: transparent;
+      color: var(--forest);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 0;
+      margin-bottom: 8px;
+    }
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin: 12px 0;
+    }
+    .stat {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--forest);
+    }
+    .stat span { font-size: 10px; color: var(--muted); font-weight: 700; }
+
     /* Side story / gallery of other phones */
     .gallery {
       display: grid;
@@ -641,15 +765,15 @@
     <div class="hero-copy">
       <h1>Hey Ralli on your phone</h1>
       <p>
-        Stay on top of Approvals, DMs, and comments. Generate artwork. Add files from your camera.
-        Setup, settings, and calendar integrations stay on desktop.
+        See what’s coming up. Stay on top of Approvals, DMs, and comments. Generate artwork.
+        Add files from your camera. Setup, settings, and calendar integrations stay on desktop.
       </p>
       <div class="scope" aria-label="Mobile scope">
+        <span class="in">Events · upcoming</span>
         <span class="in">Approvals + push</span>
         <span class="in">Hub DMs / comments</span>
         <span class="in">Create artwork</span>
         <span class="in">Files from phone</span>
-        <span class="in">Vendors glance</span>
         <span class="out">Settings</span>
         <span class="out">Calendar integrations</span>
         <span class="out">Website builders</span>
@@ -728,11 +852,122 @@
                 </div>
 
                 <div class="section-label">This week</div>
+                <button type="button" class="event-card soon" data-jump="events" style="margin-bottom: 0">
+                  <div class="event-date">
+                    <span class="mon">May</span>
+                    <span class="day">9</span>
+                  </div>
+                  <div>
+                    <h3>Spring Fun Run</h3>
+                    <p>Sat · check-in still light on volunteers. Tap for event.</p>
+                    <div class="chip-row">
+                      <span class="chip">3 days</span>
+                      <span class="chip warn">Needs people</span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- EVENTS -->
+              <div class="screen-panel" data-screen="events" id="screen-events">
+                <p class="greeting" style="font-size: 1.35rem">Events</p>
+                <p class="sub">Your year at a glance — no Google/ICS setup here. Deep planning stays on desktop.</p>
+                <div class="pill-tabs">
+                  <button type="button" class="on">Upcoming</button>
+                  <button type="button">This month</button>
+                  <button type="button">All</button>
+                </div>
+
+                <div class="event-focus">
+                  <div class="eyebrow">Up next</div>
+                  <h2>Spring Fun Run</h2>
+                  <p>Saturday May 9 · 8:30 AM · Field &amp; track. One approval waiting · volunteer check-in short.</p>
+                  <div class="actions">
+                    <button type="button" class="solid" data-jump="event-detail">Open event</button>
+                    <button type="button" data-jump="create">Make artwork</button>
+                  </div>
+                </div>
+
+                <div class="section-label">Coming up</div>
+                <button type="button" class="event-card" data-jump="event-detail">
+                  <div class="event-date">
+                    <span class="mon">May</span>
+                    <span class="day">9</span>
+                  </div>
+                  <div>
+                    <h3>Spring Fun Run</h3>
+                    <p>School event · 2 approvals · Hub quiet</p>
+                  </div>
+                </button>
+                <button type="button" class="event-card">
+                  <div class="event-date">
+                    <span class="mon">May</span>
+                    <span class="day">16</span>
+                  </div>
+                  <div>
+                    <h3>Teacher Appreciation Breakfast</h3>
+                    <p>Team event · artwork draft ready</p>
+                  </div>
+                </button>
+                <button type="button" class="event-card">
+                  <div class="event-date">
+                    <span class="mon">May</span>
+                    <span class="day">22</span>
+                  </div>
+                  <div>
+                    <h3>Book Fair kickoff</h3>
+                    <p>School event · vendor quote photo in Files</p>
+                  </div>
+                </button>
+                <button type="button" class="event-card">
+                  <div class="event-date">
+                    <span class="mon">Jun</span>
+                    <span class="day">5</span>
+                  </div>
+                  <div>
+                    <h3>End-of-year Carnival</h3>
+                    <p>School event · ticket FAQ in Hub</p>
+                  </div>
+                </button>
+              </div>
+
+              <!-- EVENT DETAIL -->
+              <div class="screen-panel" data-screen="event-detail" id="screen-event-detail">
+                <button type="button" class="event-detail-back" data-jump="events">← Events</button>
+                <p class="greeting" style="font-size: 1.45rem; margin-bottom: 2px">Spring Fun Run</p>
+                <p class="sub">Sat May 9 · 8:30 AM · Field &amp; track</p>
+                <div class="stat-row">
+                  <div class="stat"><strong>2</strong><span>Approvals</span></div>
+                  <div class="stat"><strong>1</strong><span>Open DM</span></div>
+                  <div class="stat"><strong>68%</strong><span>Volunteers</span></div>
+                </div>
+                <div class="section-label">Quick actions</div>
+                <div class="cta-row">
+                  <button type="button" class="cta" data-jump="approvals">
+                    <strong>Approvals</strong>
+                    <span>1 resubmit waiting</span>
+                  </button>
+                  <button type="button" class="cta secondary" data-jump="hub">
+                    <strong>Hub</strong>
+                    <span>Maya asked about check-in</span>
+                  </button>
+                </div>
+                <div class="cta-row">
+                  <button type="button" class="cta secondary" data-jump="create">
+                    <strong>Artwork</strong>
+                    <span>Generate for this event</span>
+                  </button>
+                  <button type="button" class="cta secondary" data-jump="files">
+                    <strong>Files</strong>
+                    <span>Add photo from phone</span>
+                  </button>
+                </div>
+                <div class="section-label">Notes</div>
                 <div class="attn" style="animation: none">
                   <div class="attn-dot" style="background: var(--sage); animation: none"></div>
                   <div>
-                    <h3>Spring Fun Run · Sat</h3>
-                    <p>Volunteer coverage looks light on check-in — open Vendors / Volunteers on desktop for deep planning.</p>
+                    <h3>Check-in still short</h3>
+                    <p>Volunteer Master on desktop for role fill. On phone: reply in Hub + keep approvals moving.</p>
                   </div>
                 </div>
               </div>
@@ -887,6 +1122,10 @@
                 <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z" /><path d="M9 20v-6h6v6" /></svg>
                 Home
               </button>
+              <button type="button" data-tab="events" aria-label="Events">
+                <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></svg>
+                Events
+              </button>
               <button type="button" data-tab="approvals" aria-label="Approvals">
                 <span class="tab-badge">2</span>
                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="m8.5 12.5 2.2 2.2 4.8-5" /></svg>
@@ -900,10 +1139,6 @@
               <button type="button" data-tab="create" aria-label="Create with AI">
                 <svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4" /><path d="m7 7 2.5 2.5M14.5 14.5 17 17M17 7l-2.5 2.5M9.5 14.5 7 17" /></svg>
                 Create
-              </button>
-              <button type="button" data-tab="files" aria-label="Files">
-                <svg viewBox="0 0 24 24"><path d="M4 7h5l2 2h9v10H4V7z" /></svg>
-                Files
               </button>
             </nav>
           </div>
@@ -922,6 +1157,16 @@
               <div class="mini-line short"></div>
             </div>
             <div class="mini-label">Needs you · push lander</div>
+          </button>
+          <button type="button" class="mini-phone" data-jump="events">
+            <div class="mini-inner">
+              <p class="mini-title">Events</p>
+              <div class="mini-block"></div>
+              <div class="mini-line"></div>
+              <div class="mini-line short"></div>
+              <div class="mini-line"></div>
+            </div>
+            <div class="mini-label">Upcoming · open event</div>
           </button>
           <button type="button" class="mini-phone" data-jump="approvals">
             <div class="mini-inner">
@@ -943,30 +1188,22 @@
             </div>
             <div class="mini-label">DMs · comments · tags</div>
           </button>
-          <button type="button" class="mini-phone" data-jump="create">
-            <div class="mini-inner">
-              <p class="mini-title">Create</p>
-              <div class="mini-block"></div>
-              <div class="mini-block warm" style="height: 48px"></div>
-            </div>
-            <div class="mini-label">Artwork only · no web builders</div>
-          </button>
         </div>
       </div>
     </div>
 
     <div class="notes">
       <div class="note">
+        <h3>Events on the phone</h3>
+        <p>Upcoming list + light event detail with Approvals, Hub, artwork, and Files shortcuts. Superpower for busy chairs — not Google sync or calendar import.</p>
+      </div>
+      <div class="note">
         <h3>Push first</h3>
         <p>Approval needed, resubmit, new Instagram DM, Facebook comment — tap opens the right screen. Built with Capacitor + APNs/FCM on top of Hey Ralli web.</p>
       </div>
       <div class="note">
-        <h3>Phone-native capture</h3>
-        <p>Camera and photo library into Files; vendor quote photos without waiting for a laptop. Deep vendor/calendar setup stays desktop.</p>
-      </div>
-      <div class="note">
         <h3>Honest scope</h3>
-        <p>No Settings, no Google/ICS connect, no homepage/newsletter builders. Flyer pages join mobile later when that product ships.</p>
+        <p>Files still from Home / event shortcuts. No Settings, no ICS/Google connect, no website builders. Flyer pages later.</p>
       </div>
     </div>
   </div>
@@ -981,15 +1218,23 @@
       panels.forEach((panel) => {
         panel.classList.toggle("active", panel.dataset.screen === id);
       });
+      const tabId = id === "event-detail" || id === "files" ? (id === "files" ? null : "events") : id;
       tabs.forEach((tab) => {
-        tab.classList.toggle("active", tab.dataset.tab === id);
+        const on =
+          tab.dataset.tab === id ||
+          (id === "event-detail" && tab.dataset.tab === "events");
+        tab.classList.toggle("active", on);
       });
       minis.forEach((card) => {
-        card.classList.toggle("active-card", card.dataset.jump === id);
+        const on =
+          card.dataset.jump === id ||
+          (id === "event-detail" && card.dataset.jump === "events");
+        card.classList.toggle("active-card", on);
       });
-      if (id === "approvals") {
+      if (id === "approvals" || id === "events" || id === "event-detail") {
         pushToast.classList.add("hide");
       }
+      void tabId;
     }
 
     tabs.forEach((tab) => {

@@ -4,12 +4,12 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 28, 2026 — Create with AI copy sweep (org/team language) + Social-first landing
+**Last updated:** July 29, 2026 — Mobile app Ease mockup (on-the-go scope)
 
 ---
 
 ## Mobile app (phone)
-- **Hey Ralli mobile Ease mockup** — **in progress** (Capacitor-shaped phone shell: Home needs-you + push toast, Approvals, Communications Hub, Create with AI **artwork only**, Files from camera/library; explicit out-of-scope: Settings, calendar integrations, website builders; flyer pages later; HTML at [`public/mobile-app-ease-mockup.html`](../../public/mobile-app-ease-mockup.html) — do not ship product UI until GO)
+- **Hey Ralli mobile Ease mockup** — **in progress** (Capacitor-shaped phone shell: Home needs-you + push toast, **Events** upcoming + light event detail, Approvals, Communications Hub, Create with AI **artwork only**, Files from camera/library via Home/event shortcuts; explicit out-of-scope: Settings, calendar integrations, website builders; flyer pages later; HTML at [`public/mobile-app-ease-mockup.html`](../../public/mobile-app-ease-mockup.html) — do not ship product UI until GO)
 - Native iOS / Android wrap + push (approvals, resubmits, DMs, comments) — **deferred** (longer vision; mockup above)
 
 ## Marketing & public
