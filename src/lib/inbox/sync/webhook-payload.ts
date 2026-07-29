@@ -1,5 +1,18 @@
 import crypto from "crypto";
 
+/**
+ * Quote JSON integers with 16+ digits before JSON.parse so Meta Page/IG ids
+ * above Number.MAX_SAFE_INTEGER are not rounded (which breaks org lookup).
+ */
+export function sanitizeMetaWebhookJson(rawBody: string): string {
+  return rawBody.replace(/:\s*(-?\d{16,})\b/g, ':"$1"');
+}
+
+/** Parse a Meta webhook body, preserving large numeric ids as strings. */
+export function parseMetaWebhookJson(rawBody: string): Record<string, unknown> {
+  return JSON.parse(sanitizeMetaWebhookJson(rawBody)) as Record<string, unknown>;
+}
+
 /** Coerce Meta webhook IDs (string or number) to a trimmed string. */
 export function readMetaId(value: unknown): string | null {
   if (typeof value === "string") {

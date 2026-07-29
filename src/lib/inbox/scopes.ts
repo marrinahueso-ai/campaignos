@@ -8,12 +8,13 @@ export const INBOX_MESSAGING_SCOPES = [
   "instagram_manage_messages",
 ] as const;
 
-/** Required on the Page token for Instagram Messaging / Conversations API. */
-export const INSTAGRAM_DM_SCOPES = [
-  "instagram_basic",
-  "instagram_manage_messages",
-  "pages_manage_metadata",
-] as const;
+/**
+ * Hard-required on the Page token for Instagram Messaging / Conversations API.
+ * Do not require `instagram_basic` or `pages_manage_metadata` here — page-token
+ * `debug_token` often omits them even when IG DMs work, and blocking sync on
+ * those names drops conversations that Meta would otherwise return.
+ */
+export const INSTAGRAM_DM_SCOPES = ["instagram_manage_messages"] as const;
 
 /** Read Facebook post comments (sync). */
 export const FACEBOOK_COMMENT_READ_SCOPES = ["pages_read_user_content"] as const;

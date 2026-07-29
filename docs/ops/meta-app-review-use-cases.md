@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product / Engineering  
-**Last updated:** July 27, 2026 — consent-screen wording synced to live Login for Business access request  
+**Last updated:** July 29, 2026 — Instagram DM tester / Accounts Center note for inbox walkthrough  
 **Related:** [Meta connection](../integrations/meta.md) · [Feature list](../product/feature-list.md) · [Event Insights](../product/event-insights.md) · [Privacy & data](../security/privacy-and-data.md) · [Env & secrets](./env-and-secrets.md) · Insights mockup [`/insights-ease-mockup.html`](../../public/insights-ease-mockup.html) · Communications Hub mockup [`/communications-hub-ease-mockup.html`](../../public/communications-hub-ease-mockup.html)
 
 Living brief for **Meta App Review** (Facebook + Instagram) and internal prep. Honest to shipped product only — deferred items are marked **deferred**, not described as live.
@@ -115,7 +115,7 @@ Use a **test organization** and a **Facebook Page + linked Instagram Professiona
 1. **Sign in** — Open `/login` → sign in as the test user. (Optional: Continue with Facebook for account auth only.)
 2. **Connect Meta** — Go to `/settings/meta` or `/communications` (Connect Meta empty) → **Connect with Facebook** → on the access request, approve the permissions in the consent table above and select the **test Page + linked Instagram** (and Business if prompted) → confirm Page and IG chips show connected.
 3. **Publish** — Create or open a campaign with approved artwork (`/create-with-ai/social` or existing event) → `/approvals` → Approve with Publish Now or schedule → confirm post appears on the test Page / IG (or as scheduled unpublished feed post).
-4. **Inbox** — Open `/communications` (or `/inbox`, redirects here) → Sync if needed → open a Messenger or IG DM (from a tester) → reply with text; optionally send an org sticker or GIF on a DM thread; reply to a comment; try 👍 on a comment bubble.
+4. **Inbox** — Open `/communications` (or `/inbox`, redirects here) → Sync if needed → open a Messenger or IG DM (**from an Instagram account linked to a Meta app Admin/Developer/Tester via Accounts Center** — personal IGs without a role will not webhook under Development/Standard Access) → reply with text; optionally send an org sticker or GIF on a DM thread; reply to a comment; try 👍 on a comment bubble.
 5. **Insights** — Open `/insights` → Refresh → confirm organic KPIs / top content (may be empty on a brand-new Page — empty states are honest). Open an event with published slots → `?tab=insights`.
 6. **Webhooks (optional)** — Confirm Meta app subscriptions point at `/api/meta/webhook`; send a test DM and see the thread update without full manual sync.
 7. **Disconnect / reconnect** — On `/settings/meta`, Reconnect (rerequest) if demonstrating missing-scope recovery; Disconnect only if the review script requires it (re-connect before finishing).

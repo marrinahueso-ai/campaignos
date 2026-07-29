@@ -24,6 +24,22 @@ interface MetaWebhookConnection {
   instagramAccountId: string;
 }
 
+function isInstagramMessagingObject(
+  object: string,
+  connection: MetaWebhookConnection,
+  entryId: string,
+): boolean {
+  if (object === "instagram") {
+    return true;
+  }
+
+  // Defensive: some Meta payloads use object "page" while entry.id is the IG
+  // professional account. Treat those as Instagram DMs so they don't land as
+  // Messenger threads.
+  const igId = connection.instagramAccountId.trim();
+  return Boolean(igId) && igId === entryId;
+}
+
 export function verifyMetaWebhookSignature(input: {
   rawBody: string;
   signatureHeader: string | null;
@@ -452,7 +468,7 @@ export async function processMetaWebhookPayload(
       const saved = await handleMessagingEvent({
         connection,
         messagingEvent: event,
-        isInstagram: object === "instagram",
+        isInstagram: isInstagramMessagingObject(object, connection, entryId),
         eventSource,
       });
 
