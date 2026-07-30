@@ -15,7 +15,7 @@ describe("flyer composer direction payload", () => {
     const input = buildSampleDirectionInput();
     const prompt = buildFlyerComposerSlotsUserPrompt(
       input,
-      "Oak Park Elementary PTA",
+      "Sample Elementary PTA",
       "Warm, welcoming",
     );
 

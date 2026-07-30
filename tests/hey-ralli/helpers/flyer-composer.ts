@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 
 export const FLYER_COMPOSER_STORAGE_KEY = "hr-flyer-composer-draft";
 export const FLYER_GENERATE_API = "**/api/flyer-composer/generate";
+export const FLYER_BRAND_KIT_API = "**/api/flyer-composer/brand-kit";
 
 export const SLOT_FIELD_IDS = [
   "orgName",

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
+  FLYER_BRAND_KIT_API,
   FLYER_GENERATE_API,
   MOCK_GENERATED_SLOTS,
   SLOT_FIELD_IDS,
@@ -25,6 +26,7 @@ import {
 test.describe("Flyer composer AI direction smoke", () => {
   test.beforeEach(async ({ page }) => {
     await openFlyerComposer(page, "start");
+    await expect(page.locator("body")).not.toContainText(/Oak Park|Riverside|Panthers/i);
   });
 
   test("Start paths: update upload, proven layouts, new sizes, stepper", async ({
@@ -104,6 +106,9 @@ test.describe("Flyer composer AI direction smoke", () => {
       /\/settings\/branding/,
     );
     await brandToggle.click();
+
+    await expect(page.locator("#brandKitSummary")).not.toContainText(/Oak Park|Riverside/i);
+    await expect(page.locator("#brandChipName")).not.toContainText(/Oak Park|Riverside/i);
 
     await openOptionalDetails(page);
     const marker = `smoke-persist-${Date.now()}`;

@@ -33,11 +33,11 @@ const baseInput = {
   },
   brandEnabled: true,
   brandKit: {
-    organizationShortName: "Oak Park PTA",
+    organizationShortName: "Sample PTA",
     primaryColor: "#2F4A3C",
     accentColor: "#C4922E",
     fontStyle: "Modern",
-    mascotLabel: "Panthers",
+    mascotLabel: "Eagles",
     ptoLogoUploaded: true,
     schoolLogoUploaded: false,
     logoDisplay: "lettermark" as const,
@@ -60,7 +60,7 @@ describe("flyer composer slot prompts", () => {
   it("user prompt includes start path, assets, brand, and all slot sections", () => {
     const prompt = buildFlyerComposerSlotsUserPrompt(
       baseInput,
-      "Oak Park Elementary PTA",
+      "Sample Elementary PTA",
       "Warm, welcoming",
     );
 
@@ -70,7 +70,7 @@ describe("flyer composer slot prompts", () => {
     assert.match(prompt, /INSPIRATION ASSETS/);
     assert.match(prompt, /Festival lawn/);
     assert.match(prompt, /BRAND KIT/);
-    assert.match(prompt, /Panthers/);
+    assert.match(prompt, /Eagles/);
     assert.match(prompt, /Core identity/);
     assert.match(prompt, /When & where/);
     assert.match(prompt, /CTA & QR/);
@@ -81,7 +81,7 @@ describe("flyer composer slot prompts", () => {
   it("includes semester calendar rules for Semester at a Glance", () => {
     const prompt = buildFlyerComposerSlotsUserPrompt(
       baseInput,
-      "Oak Park Elementary PTA",
+      "Sample Elementary PTA",
       "Warm, welcoming",
     );
 
@@ -113,7 +113,7 @@ describe("flyer composer slot prompts", () => {
           customTemplateNote: "Layout locked from upload",
         },
       },
-      "Oak Park Elementary PTA",
+      "Sample Elementary PTA",
       "Warm, welcoming",
     );
 

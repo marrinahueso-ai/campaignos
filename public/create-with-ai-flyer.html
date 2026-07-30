@@ -1268,7 +1268,7 @@
           <h3>Basics</h3>
           <div class="field">
             <label for="orgName">Organization</label>
-            <input type="text" id="orgName" placeholder="e.g. Oak Park PTA" />
+            <input type="text" id="orgName" placeholder="e.g. Your organization" />
           </div>
           <div class="field">
             <label for="headline">Headline</label>
@@ -1492,7 +1492,7 @@
           orgName: "",
           headline: "Semester at a Glance",
           schoolYear: "2025–2026",
-          location: "Oak Park Elementary",
+          location: "",
           directions: "",
           datesEvents: "Aug 15 — Back to School Night\nSep 12 — Fall Festival\nOct 24 — Book Fair\nNov 14 — Family Movie Night\nDec 5 — Winter Concert",
           body: "",
@@ -1600,12 +1600,12 @@
     const SETTINGS_BRAND_KIT = {
       sourceLabel: "Settings → Branding",
       settingsHref: "/settings/branding?section=colors-logos",
-      organizationShortName: "Oak Park PTA",
+      organizationShortName: "Your organization",
       primaryColor: "#2F4A3C",
-      accentColor: "#C4922E",
+      accentColor: "#6b9080",
       fontStyle: "Modern",
-      mascotLabel: "Panthers",
-      ptoLogoUploaded: true,
+      mascotLabel: null,
+      ptoLogoUploaded: false,
       schoolLogoUploaded: false,
       ptoLogoUrl: null,
       schoolLogoUrl: null,
@@ -1617,6 +1617,22 @@
       onAccent: "#2a2010",
       muted: "#6a5f55",
     };
+
+    function syncBrandKitTokensFromSettings() {
+      const kit = SETTINGS_BRAND_KIT;
+      BRAND_KITS.on = {
+        primary: kit.primaryColor,
+        secondary: kit.accentColor,
+        accent: kit.accentColor,
+        ink: kit.ink,
+        paper: kit.paper,
+        surface: kit.surface,
+        highlight: kit.highlight,
+        onPrimary: kit.onPrimary,
+        onAccent: kit.onAccent,
+        muted: kit.muted,
+      };
+    }
 
     const BRAND_KITS = {
       on: {
@@ -1751,6 +1767,9 @@
       if (kit.ptoLogoUrl) {
         return `<img src="${escapeHtml(kit.ptoLogoUrl)}" alt="" />`;
       }
+      if (kit.schoolLogoUrl) {
+        return `<img src="${escapeHtml(kit.schoolLogoUrl)}" alt="" />`;
+      }
       return lettermarkFrom(kit.organizationShortName);
     }
 
@@ -1774,6 +1793,35 @@
       document.querySelectorAll("#brandLogoMark, #brandLogoMarkOptional").forEach((el) => {
         el.innerHTML = brandLogoMarkHTML();
       });
+    }
+
+    async function hydrateBrandKitFromApi() {
+      try {
+        const res = await fetch("/api/flyer-composer/brand-kit", { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || typeof data.organizationShortName !== "string") return;
+
+        Object.assign(SETTINGS_BRAND_KIT, {
+          organizationShortName: data.organizationShortName,
+          primaryColor: data.primaryColor || SETTINGS_BRAND_KIT.primaryColor,
+          accentColor: data.accentColor || SETTINGS_BRAND_KIT.accentColor,
+          fontStyle: data.fontStyle || SETTINGS_BRAND_KIT.fontStyle,
+          mascotLabel: data.mascotLabel || null,
+          ptoLogoUploaded: Boolean(data.ptoLogoUploaded),
+          schoolLogoUploaded: Boolean(data.schoolLogoUploaded),
+          ptoLogoUrl: data.ptoLogoUrl || null,
+          schoolLogoUrl: data.schoolLogoUrl || null,
+        });
+        syncBrandKitTokensFromSettings();
+
+        const orgInput = document.getElementById("orgName");
+        if (orgInput && !orgInput.value.trim()) {
+          orgInput.value = SETTINGS_BRAND_KIT.organizationShortName;
+        }
+      } catch {
+        /* file://, offline, or unauthenticated — keep neutral defaults */
+      }
     }
 
     function getBrandKit() {
@@ -1939,6 +1987,9 @@
       const label = escapeHtml(kit.organizationShortName);
       if (kit.ptoLogoUrl) {
         return `<img class="logo-img" src="${escapeHtml(kit.ptoLogoUrl)}" alt="${label} logo" title="${label}" />`;
+      }
+      if (kit.schoolLogoUrl) {
+        return `<img class="logo-img" src="${escapeHtml(kit.schoolLogoUrl)}" alt="${label} logo" title="${label}" />`;
       }
       return `<div class="logo-lettermark" title="${label}">${escapeHtml(lettermarkFrom(kit.organizationShortName))}</div>`;
     }
@@ -3241,6 +3292,14 @@
     if (initial === "templates" || initial === "chooser") initial = "start";
     const validViews = ["start", "inputs", "result"];
     setView(validViews.includes(initial) ? initial : "start");
+
+    hydrateBrandKitFromApi().then(() => {
+      syncBrandKit();
+      if (state.templateId) {
+        applyTemplateDefaults(getTpl(state.templateId));
+      }
+      renderStartStep();
+    });
   </script>
 </body>
 </html>
