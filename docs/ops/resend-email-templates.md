@@ -60,10 +60,31 @@ subject lines; key casing must match the sending code exactly.
 | `developer-agreement-countersign` | `src/lib/developer-agreements/packet.ts` | Wired |
 | `developer-agreement-executed` | `src/lib/developer-agreements/packet.ts` → template body plus executed-copy attachment | Wired |
 | `publish-failed` | `src/lib/approvals-scheduling/actions.ts` → immediate Meta publish failure | Wired |
-| `approval-reminder` | `sendApprovalReminderEmail` in `src/lib/email/transactional-notifications.ts` | Helper ready; hook when a non-spammy reminder policy is approved |
-| `trial-ending` | `sendTrialEndingEmail` in `src/lib/email/transactional-notifications.ts` | Helper ready; hook when trial notice policy is approved |
-| `payment-failed` | `sendPaymentFailedEmail` in `src/lib/email/transactional-notifications.ts` | Helper ready; hook in Stripe payment-failure webhook |
-| `meta-disconnected` | `sendMetaDisconnectedEmail` in `src/lib/email/transactional-notifications.ts` | Helper ready; hook on detected revoked/expired connection with deduplication |
+| `approval-reminder` | `src/app/api/cron/meta-token-health/route.ts` → pending assigned approval | Wired — after 24h, once per approval request |
+| `trial-ending` | `src/app/api/cron/meta-token-health/route.ts` → Stripe-backed `trial_ends_at` snapshot | Wired — within 3 days, once per org + trial end |
+| `payment-failed` | `src/app/api/stripe/webhook/route.ts` → `invoice.payment_failed` | Wired — once per Stripe invoice |
+| `meta-disconnected` | `src/lib/meta-publishing/connection-token-health.ts` → invalid Page token | Wired — once per connection row |
+
+## Soft-launch notification policy
+
+- Approval reminders are evaluated by the existing daily Meta token-health cron. An
+  assigned approval that has remained pending for 24 hours receives one reminder;
+  unassigned role-based requests are skipped because they do not have a reliable
+  mailbox.
+- Trial notices are evaluated by the same daily job only while the local billing
+  snapshot is `trialing` and the end is 1–3 days away. Active admin/president
+  recipients receive one notice for that exact trial end timestamp.
+- Failed invoice notices are sent to active admin/president recipients when Stripe
+  delivers `invoice.payment_failed`, once per invoice.
+- A Meta token reported invalid by the health check sends a reconnect notice to
+  active admin/president recipients once per connection row. The delivery ledger is
+  intentionally durable, so repeated failed health checks cannot create a reconnect
+  storm.
+
+All four policies use the durable
+`transactional_notification_deliveries` ledger in addition to Resend's 24-hour
+idempotency key retention. Failed sends release their pending delivery claim so a
+later eligible job/webhook retry can send.
 
 ## Deferred
 

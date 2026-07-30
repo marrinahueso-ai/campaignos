@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/billing/stripe";
+import { sendPaymentFailedNotice } from "@/lib/email/transactional-notification-jobs";
 import {
   handleStripeCheckoutCompleted,
   handleStripeSubscriptionDeleted,
@@ -50,6 +51,20 @@ export async function POST(request: Request) {
           event.data.object as Stripe.Subscription,
         );
         break;
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const subscription = (invoice as Stripe.Invoice & {
+          subscription?: string | { id: string } | null;
+        }).subscription;
+        await sendPaymentFailedNotice({
+          invoiceId: invoice.id,
+          customerId:
+            typeof invoice.customer === "string" ? invoice.customer : null,
+          subscriptionId:
+            typeof subscription === "string" ? subscription : subscription?.id ?? null,
+        });
+        break;
+      }
       default:
         break;
     }

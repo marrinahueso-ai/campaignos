@@ -126,6 +126,20 @@ export async function ensureMetaConnectionHealthy(input: {
     }
   }
 
+  if (health.reconnectRequired) {
+    try {
+      const { sendMetaDisconnectedNotice } = await import(
+        "@/lib/email/transactional-notification-jobs"
+      );
+      await sendMetaDisconnectedNotice(input.organizationId, input.connection.id);
+    } catch (error) {
+      console.error(
+        `[meta-token-health] failed to send disconnect notice for ${input.organizationId}:`,
+        error,
+      );
+    }
+  }
+
   return { ...health, connection };
 }
 

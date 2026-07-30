@@ -554,9 +554,9 @@ Connect Meta empty (four why cards) stays on `/communications` only — not shar
 | ---- | --------------------------- | ------- | ------------------------------------------------------------------------------------ |
 | [x]  | Customer-facing copy        | Partial | Email templates + Account notification prefs use plain language; no in-app feed copy |
 | [x]  | In-App Notifications        | N/A     | No dedicated feed — sidebar badges + Attention row (by design soft launch)           |
-| [x]  | Email Notifications         | Wired   | Published Resend templates are wired for welcome, invites, the approval loop, story kits, developer agreements, and immediate publish failures; see [template inventory](../ops/resend-email-templates.md). |
+| [x]  | Email Notifications         | Wired   | Published Resend templates are wired for welcome, invites, the approval loop and one 24h reminder, story kits, developer agreements, publish failures, 3-day trial ending, Stripe payment failures, and Meta disconnect recovery; see [template inventory](../ops/resend-email-templates.md). |
 | [x]  | Approval Notifications      | Wired   | Assigned / changes / resubmitted / approved — Account mute prefs                     |
-| [x]  | Billing Notifications       | Partial | Stripe handles dunning. Published `trial-ending` and `payment-failed` helpers are not yet connected to an approved notice policy / Stripe failure webhook. |
+| [x]  | Billing Notifications       | Wired   | One trial-ending notice is sent at 1–3 days remaining; `invoice.payment_failed` sends one owner/admin notice per invoice alongside Stripe dunning. |
 | [x]  | Invite Notifications        | Wired   | Invite + welcome magic links                                                         |
 | [x]  | AI Completion Notifications | N/A     | No push on AI complete — in-app toasts only                                          |
 | [x]  | Report a Problem (Sentry)   | Wired   | User feedback → Sentry; [report-a-problem.md](./report-a-problem.md)                 |
@@ -568,7 +568,7 @@ Connect Meta empty (four why cards) stays on `/communications` only — not shar
 | Done | Item                      | Status  | Notes                                                                          |
 | ---- | ------------------------- | ------- | ------------------------------------------------------------------------------ |
 | [x]  | Customer-facing copy      | Partial | The 15 published transactional templates use the reviewed mockup shell; full customer-language verification across every send remains an ops check. [Preview](https://heyralli.com/resend-email-templates-mockup.html) · [inventory](../ops/resend-email-templates.md). |
-| [x]  | Transactional templates   | Wired   | **15 Resend aliases are published.** Live app flows use welcome, invite, approval assigned/resubmitted/changes/approved/scheduled, story kit, developer agreement counter-sign/executed, and publish-failed. Default From is `Hey Ralli <notifications@heyralli.com>`; story kits use `Hey Ralli <socials@heyralli.com>`. |
+| [x]  | Transactional templates   | Wired   | **15 Resend aliases are published.** Live flows use welcome, invite, approval assigned/resubmitted/changes/approved/scheduled plus one 24h reminder, story kit, developer agreement counter-sign/executed, publish-failed, trial ending, Stripe payment failed, and Meta reconnect recovery. Default From is `Hey Ralli <notifications@heyralli.com>`; story kits use `Hey Ralli <socials@heyralli.com>`. |
 | [x]  | Welcome Email             | Wired   | Published `organization-welcome` magic-link CTA **Let's get started** → onboarding |
 | [x]  | Password Reset            | Wired   | Supabase recovery flow                                                         |
 | [x]  | Invitation                | Wired   | Published `team-invite` template + accept paths                                |
