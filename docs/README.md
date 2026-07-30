@@ -2,7 +2,7 @@
 
 **Status:** Living index  
 **Owner:** Engineering  
-**Last updated:** July 27, 2026  
+**Last updated:** July 30, 2026  
 **Production:** [heyralli.com](https://heyralli.com)
 
 This is the documentation hub. Start here.
@@ -59,6 +59,7 @@ This is the documentation hub. Start here.
 | Access & multi-tenant onboarding | [security/access-and-onboarding.md](./security/access-and-onboarding.md) |
 | Access control (templates / RLS) | [engineering/access-control.md](./engineering/access-control.md) |
 | Multi-tenant isolation | [security/multi-tenant-isolation.md](./security/multi-tenant-isolation.md) |
+| OWASP ZAP soft-launch pass | [security/owasp-zap.md](./security/owasp-zap.md) |
 | Storage RLS | [engineering/storage-rls.md](./engineering/storage-rls.md) |
 | Welcome email | [engineering/auth-welcome-email.md](./engineering/auth-welcome-email.md) |
 | Developer agreements | [engineering/developer-agreements.md](./engineering/developer-agreements.md) |

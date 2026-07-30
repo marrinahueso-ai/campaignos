@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product / Founder  
-**Last updated:** July 29, 2026 — soft-launch performance re-measure + transactional-email inventory
+**Last updated:** July 30, 2026 — OWASP ZAP soft-launch security pass
 **Production:** [heyralli.com](https://heyralli.com)
 
 ## Purpose
@@ -20,6 +20,7 @@ Single Phase 1 working checklist for product completion. Use this to track **wha
 | [billing-and-access.md](../ops/billing-and-access.md)               | Plans, gates, known gaps                  |
 | [meta-app-review-use-cases.md](../ops/meta-app-review-use-cases.md) | Meta App Review packet                    |
 | [audit-remediation.md](../security/audit-remediation.md)            | Security findings status                  |
+| [owasp-zap.md](../security/owasp-zap.md)                            | OWASP ZAP soft-launch pass (Jul 30 2026)  |
 
 
 ## Jul 28 closeout — soft launch
@@ -644,13 +645,14 @@ Connect Meta empty (four why cards) stays on `/communications` only — not shar
 | [x]  | Authorization / RLS          | Wired   | [access-control](../engineering/access-control.md) · [multi-tenant](../security/multi-tenant-isolation.md)                                                                                                                                                                    |
 | [ ]  | Input Validation             | Partial | No Zod dependency: major mutation paths use typed parsers, enum/format checks, and file limits (for example `[events/validation.ts](../../src/lib/events/validation.ts)`); validation is not yet standardized across every server-action module.                              |
 | [x]  | SQL Injection Protection     | Wired   | Supabase / parameterized                                                                                                                                                                                                                                                      |
-| [x]  | XSS Protection               | Wired   | React escaping; rich exports reject active URL schemes (`[urls.ts](../../src/lib/homepage-composer/urls.ts)`); agreement HTML is sanitized at write/read (`[sanitize-html.ts](../../src/lib/developer-agreements/sanitize-html.ts)`); CSP + safe upload MIME allow-list.      |
-| [x]  | CSRF Protection              | Wired   | Server Actions' same-origin protection; strict OAuth state-cookie matching; cookie-authenticated insights sync rejects cross-origin requests (`[verify-same-origin.ts](../../src/lib/security/verify-same-origin.ts)`).                                                       |
+| [x]  | XSS Protection               | Wired   | React escaping; rich exports reject active URL schemes (`[urls.ts](../../src/lib/homepage-composer/urls.ts)`); agreement HTML is sanitized at write/read (`[sanitize-html.ts](../../src/lib/developer-agreements/sanitize-html.ts)`); CSP + safe upload MIME allow-list. Jul 30 OWASP ZAP manual explore: no blocking XSS on heyralli.com first-party paths ([owasp-zap.md](../security/owasp-zap.md)).      |
+| [x]  | CSRF Protection              | Wired   | Server Actions' same-origin protection; strict OAuth state-cookie matching; cookie-authenticated insights sync rejects cross-origin requests (`[verify-same-origin.ts](../../src/lib/security/verify-same-origin.ts)`). Jul 30 ZAP "Absence of Anti-CSRF Tokens" = false positive for Server Actions ([owasp-zap.md](../security/owasp-zap.md)).                                                       |
 | [x]  | Rate Limiting                | Wired   | Postgres-backed checks cover auth, password/account erase, Ask Ralli, all `generateText` AI calls, and per-org Meta Graph publishing (`[rate-limit.ts](../../src/lib/security/rate-limit.ts)`, `[publish-milestone.ts](../../src/lib/meta-publishing/publish-milestone.ts)`). |
 | [x]  | Error Logging                | Wired   | Server logs + Sentry                                                                                                                                                                                                                                                          |
 | [x]  | Sentry                       | Wired   | Client + server                                                                                                                                                                                                                                                               |
 | [x]  | Secrets Management           | Wired   | Vercel env — [env-and-secrets.md](../ops/env-and-secrets.md)                                                                                                                                                                                                                  |
 | [x]  | Audit remediation open items | Wired   | [audit-remediation.md](../security/audit-remediation.md) — all 25 tracked findings are fixed; CSP nonce tightening and universal server-action validation remain follow-ups, not open audit findings.                                                                         |
+| [x]  | Security testing (OWASP ZAP) | Wired   | Jul 30 2026 production manual explore (ZAP 2.17, Safe/Protected mode): **no blocking High on heyralli.com**; third-party / `/_next/static` noise triaged; optional nonce CSP + `poweredByHeader` later ([owasp-zap.md](../security/owasp-zap.md)).                         |
 
 
 ### Analytics (product / marketing)
@@ -858,7 +860,7 @@ For each: Connect · Disconnect · Reconnect · Permission changes · Expired to
 | [ ]  | Customer Interviews |        |       |
 | [ ]  | Improve Onboarding  |        |       |
 | [ ]  | Performance Review  |        |       |
-| [ ]  | Security Audit      |        |       |
+| [ ]  | Security Audit      | Partial | Jul 30 2026 OWASP ZAP soft-launch pass on production ([owasp-zap.md](../security/owasp-zap.md)); full active scan + periodic re-audit still open |
 
 
 ---

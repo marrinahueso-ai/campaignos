@@ -2,8 +2,8 @@
 
 **Status:** Living
 **Owner:** Engineering
-**Last updated:** July 29, 2026 (all 25 findings, including Low/Info cleanup, fixed)
-**Related:** [Security](./README.md) · [Access & onboarding](./access-and-onboarding.md) · [Multi-tenant isolation](./multi-tenant-isolation.md) · [Access control](../engineering/access-control.md) · [Feature list](../product/feature-list.md)
+**Last updated:** July 29, 2026 (all 25 findings, including Low/Info cleanup, fixed); Jul 30 2026 OWASP ZAP soft-launch pass — [owasp-zap.md](./owasp-zap.md)
+**Related:** [Security](./README.md) · [OWASP ZAP soft-launch pass](./owasp-zap.md) · [Access & onboarding](./access-and-onboarding.md) · [Multi-tenant isolation](./multi-tenant-isolation.md) · [Access control](../engineering/access-control.md) · [Feature list](../product/feature-list.md)
 
 Tracks findings from the July 2026 full-app security audit (Authentication, Authorization/RBAC/RLS, injection/XSS/CSRF, API security & architecture) and their remediation status. Read this before re-auditing so prior findings aren't rediscovered as new.
 
