@@ -10,6 +10,9 @@ describe("event detail ease UI contracts", () => {
   const shell = readSrc(
     "../../../components/events-phase3/EventDetailShell.tsx",
   );
+  const planningHub = readSrc(
+    "../../../app/(dashboard)/events/[id]/render-planning-hub.tsx",
+  );
 
   it("uses ease hero and soft tab pills", () => {
     assert.match(shell, /EventDetailEaseHero/);
@@ -60,6 +63,14 @@ describe("event detail ease UI contracts", () => {
   it("keeps Create with AI as an in-page doorway", () => {
     assert.match(shell, /EventDetailCreateWithAiPanel/);
     assert.doesNotMatch(shell, /window\.location\.replace\(createWithAiUrl\)/);
+  });
+
+  it("normalizes legacy publishing artwork and approval payloads", () => {
+    assert.match(planningHub, /function normalizeMetaPublishBundles/);
+    assert.match(planningHub, /filter\(\(bundle\).*Boolean\(bundle\)/);
+    assert.match(planningHub, /feedArtworkUrl: bundle\.feedArtworkUrl \?\? null/);
+    assert.match(planningHub, /storyArtworkUrl: bundle\.storyArtworkUrl \?\? null/);
+    assert.match(planningHub, /const approvalRequests = resolvedWorkspace\.approvalRequests \?\? \[\]/);
   });
 
   it("calms event detail hero for soft launch", () => {

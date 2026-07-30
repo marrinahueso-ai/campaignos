@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { reschedulePlanningItem } from "@/lib/communications-calendar/planning-mutations";
 import { rescheduleNativeMetaSchedulesForMilestone } from "@/lib/meta-publishing/native-schedule";
+import { addActionBreadcrumb } from "@/lib/monitoring/report-error";
 import { createClient } from "@/lib/supabase/server";
 import type { PlanningItemType } from "@/types/communications-calendar";
 
@@ -48,23 +49,18 @@ async function syncMetaScheduleInBackground(input: {
     });
 
     if (graphResult.warnings.length > 0) {
+      const message = graphResult.warnings[0]!;
       console.warn(
         "[calendar-dnd] Meta schedule sync warning:",
-        graphResult.warnings[0],
+        message,
       );
-      try {
-        const { reportIntegrationError } = await import(
-          "@/lib/monitoring/report-error"
-        );
-        reportIntegrationError("meta", new Error(graphResult.warnings[0]!), {
-          action: "reschedulePlanningItemAction.metaSync",
-          eventId: input.eventId,
-          milestoneId: String(input.relativeDay),
-          message: graphResult.warnings[0]!,
-        });
-      } catch {
-        // Monitoring is best-effort.
-      }
+      // An out-of-window Meta update is an expected functional limitation:
+      // retain context for later troubleshooting without creating an error issue.
+      addActionBreadcrumb("meta", message, {
+        action: "reschedulePlanningItemAction.metaSync",
+        eventId: input.eventId,
+        milestoneId: String(input.relativeDay),
+      });
     }
   } catch (error) {
     console.error("[calendar-dnd] Meta schedule sync failed:", error);

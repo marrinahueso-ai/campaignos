@@ -22,6 +22,14 @@ describe("dashboard ease UI contracts", () => {
     assert.match(page, /studio-page/);
   });
 
+  it("passes dashboard widgets through explicit RSC slots", () => {
+    assert.match(page, /upNextWidget=\{widgets\.up_next\}/);
+    assert.match(page, /weatherWidget=\{widgets\.weather\}/);
+    assert.doesNotMatch(page, /widgets=\{widgets\}/);
+    assert.match(overview, /upNextWidget\?: React\.ReactNode/);
+    assert.match(overview, /const widgets: Partial<Record<DashboardWidgetId, React\.ReactNode>>/);
+  });
+
   it("uses calm greeting hero without attention-count chrome", () => {
     assert.match(hero, /getTimeOfDayGreeting/);
     assert.match(hero, /font-display text-4xl/);

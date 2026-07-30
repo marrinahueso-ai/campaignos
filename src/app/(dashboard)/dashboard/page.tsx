@@ -1,10 +1,7 @@
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { DashboardFocusRefresh } from "@/components/today/DashboardFocusRefresh";
 import { OnboardingChecklistCards } from "@/components/onboarding/OnboardingChecklistCards";
-import {
-  DashboardOverview,
-  type DashboardWidgetNodes,
-} from "@/components/today/DashboardOverview";
+import { DashboardOverview } from "@/components/today/DashboardOverview";
 import { TodayHero } from "@/components/today/TodayHero";
 import { UpNextWidgetSuspense } from "@/components/today/UpNextWidgetSuspense";
 import { ApprovalsWidget } from "@/components/today/widgets/ApprovalsWidget";
@@ -31,6 +28,7 @@ import { getDashboardRichListData } from "@/lib/today/dashboard-rich-widgets";
 import {
   layoutContainsWidget,
   type DashboardLayout,
+  type DashboardWidgetId,
 } from "@/lib/today/dashboard-widgets";
 import { getTodayAttentionCounts } from "@/lib/today/attention-counts";
 import { getTodayPageData } from "@/lib/today/queries";
@@ -155,9 +153,9 @@ function buildWidgetNodes(
   todayData: TodayPageData,
   today: string,
   layout: DashboardLayout,
-): DashboardWidgetNodes {
+): Partial<Record<DashboardWidgetId, ReactNode>> {
   const nearbyWeatherEvents = collectNearbyWeatherEvents(todayData, today);
-  const widgets: DashboardWidgetNodes = {
+  const widgets: Partial<Record<DashboardWidgetId, ReactNode>> = {
     up_next: (
       <UpNextWidgetSuspense
         whatsNext={todayData.whatsNext}
@@ -301,7 +299,6 @@ export default async function DashboardPage() {
       <DashboardFocusRefresh />
       <DashboardOverview
         initialLayout={layout}
-        widgets={widgets}
         header={
           <div className="space-y-6">
             <TodayHero
@@ -315,6 +312,20 @@ export default async function DashboardPage() {
             </Suspense>
           </div>
         }
+        upNextWidget={widgets.up_next}
+        attentionWidget={widgets.attention}
+        waitingMeWidget={widgets.waiting_me}
+        goodNewsWidget={widgets.good_news}
+        weatherWidget={widgets.weather}
+        calendarWidget={widgets.calendar}
+        thisWeekWidget={widgets.this_week}
+        approvalsWidget={widgets.approvals}
+        tasksWeekWidget={widgets.tasks_week}
+        volunteersWidget={widgets.volunteers}
+        insightsWidget={widgets.insights}
+        postsWeekWidget={widgets.posts_week}
+        waitingOthersWidget={widgets.waiting_others}
+        eventCoverageWidget={widgets.event_coverage}
       />
     </div>
   );

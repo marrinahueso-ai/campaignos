@@ -61,7 +61,20 @@ import { resolveTodayGreetingName } from "@/lib/today/greeting-name";
 
 import { OnboardingYoureSetToast } from "@/components/onboarding/OnboardingYoureSetToast";
 import type { Event } from "@/types";
+import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { ReactNode } from "react";
+
+function normalizeMetaPublishBundles(
+  bundles: MetaPublishBundle[] | null | undefined,
+): MetaPublishBundle[] {
+  return (bundles ?? [])
+    .filter((bundle): bundle is MetaPublishBundle => Boolean(bundle))
+    .map((bundle) => ({
+      ...bundle,
+      feedArtworkUrl: bundle.feedArtworkUrl ?? null,
+      storyArtworkUrl: bundle.storyArtworkUrl ?? null,
+    }));
+}
 
 export async function renderPlanningHubDetail(
   event: Event,
@@ -106,11 +119,12 @@ export async function renderPlanningHubDetail(
     resolvedWorkspace =
       (await getEventWorkspaceData(event.id)) ?? resolvedWorkspace;
   }
+  const approvalRequests = resolvedWorkspace.approvalRequests ?? [];
 
   const heroArtwork = selectHeroArtwork({
     assets: resolvedWorkspace.assets,
     communications: resolvedWorkspace.communications,
-    approvalRequests: resolvedWorkspace.approvalRequests,
+    approvalRequests,
     approvedSquareImageUrl:
       event.approvedSquareImageStatus === "filled"
         ? event.approvedSquareImageUrl
@@ -237,7 +251,7 @@ export async function renderPlanningHubDetail(
   const [
     playbookData,
     stepDrafts,
-    metaPublishBundles,
+    rawMetaPublishBundles,
     metaSocialCaptionMilestones,
     assetVersionsMap,
     availablePlaybooks,
@@ -253,6 +267,7 @@ export async function renderPlanningHubDetail(
     getOrgPostingHeatmap(),
     organization ? getSchoolProfile() : Promise.resolve(null),
   ]);
+  const metaPublishBundles = normalizeMetaPublishBundles(rawMetaPublishBundles);
 
   const resolvedPlaybook = playbookData ?? buildFallbackPlaybookData(event);
   const campaignIntelligence = getCampaignIntelligenceFromWorkspace(
@@ -271,7 +286,7 @@ export async function renderPlanningHubDetail(
   const campaignProgress = buildCampaignProgress({
     steps: resolvedPlaybook.steps,
     communications: resolvedWorkspace.communications,
-    approvalRequests: resolvedWorkspace.approvalRequests,
+    approvalRequests,
     publicationSchedule: resolvedWorkspace.publicationSchedule,
     assets: resolvedWorkspace.assets,
     intelligence: campaignIntelligence,

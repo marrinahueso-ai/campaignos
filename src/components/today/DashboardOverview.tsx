@@ -46,24 +46,68 @@ import {
 } from "@/lib/today/dashboard-widgets";
 import { cn } from "@/lib/utils/cn";
 
-export type DashboardWidgetNodes = Partial<
+type DashboardWidgetNodes = Partial<
   Record<DashboardWidgetId, React.ReactNode>
 >;
 
 interface DashboardOverviewProps {
   initialLayout: DashboardLayout;
-  widgets: DashboardWidgetNodes;
   /** Greeting / onboarding — left column, top-aligned with Weather. */
   header?: React.ReactNode;
+  upNextWidget?: React.ReactNode;
+  attentionWidget?: React.ReactNode;
+  waitingMeWidget?: React.ReactNode;
+  goodNewsWidget?: React.ReactNode;
+  weatherWidget?: React.ReactNode;
+  calendarWidget?: React.ReactNode;
+  thisWeekWidget?: React.ReactNode;
+  approvalsWidget?: React.ReactNode;
+  tasksWeekWidget?: React.ReactNode;
+  volunteersWidget?: React.ReactNode;
+  insightsWidget?: React.ReactNode;
+  postsWeekWidget?: React.ReactNode;
+  waitingOthersWidget?: React.ReactNode;
+  eventCoverageWidget?: React.ReactNode;
   className?: string;
 }
 
 export function DashboardOverview({
   initialLayout,
-  widgets,
   header,
+  upNextWidget,
+  attentionWidget,
+  waitingMeWidget,
+  goodNewsWidget,
+  weatherWidget,
+  calendarWidget,
+  thisWeekWidget,
+  approvalsWidget,
+  tasksWeekWidget,
+  volunteersWidget,
+  insightsWidget,
+  postsWeekWidget,
+  waitingOthersWidget,
+  eventCoverageWidget,
   className,
 }: DashboardOverviewProps) {
+  // Keep RSC widget slots at the component boundary. Passing their elements in
+  // a keyed object causes Next to treat component references as client props.
+  const widgets: Partial<Record<DashboardWidgetId, React.ReactNode>> = {
+    up_next: upNextWidget,
+    attention: attentionWidget,
+    waiting_me: waitingMeWidget,
+    good_news: goodNewsWidget,
+    weather: weatherWidget,
+    calendar: calendarWidget,
+    this_week: thisWeekWidget,
+    approvals: approvalsWidget,
+    tasks_week: tasksWeekWidget,
+    volunteers: volunteersWidget,
+    insights: insightsWidget,
+    posts_week: postsWeekWidget,
+    waiting_others: waitingOthersWidget,
+    event_coverage: eventCoverageWidget,
+  };
   const router = useRouter();
   const [layout, setLayout] = useState(() => pinWeatherInLayout(initialLayout));
   const layoutRef = useRef(pinWeatherInLayout(initialLayout));

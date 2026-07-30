@@ -40,4 +40,15 @@ describe("meta_milestone calendar DnD — no re-approval", () => {
     // DB write returns first; Meta Graph runs in after() so DnD stays snappy.
     assert.match(source, /Return as soon as CampignOS DB is updated/);
   });
+
+  it("records expected Meta schedule-window limits without reporting errors", () => {
+    const source = readSource("../planning-actions.ts");
+    const warningBlock = source.slice(
+      source.indexOf("if (graphResult.warnings.length > 0)"),
+      source.indexOf("} catch (error)", source.indexOf("if (graphResult.warnings.length > 0)")),
+    );
+
+    assert.match(warningBlock, /addActionBreadcrumb\("meta", message/);
+    assert.doesNotMatch(warningBlock, /reportIntegrationError|captureException/);
+  });
 });
