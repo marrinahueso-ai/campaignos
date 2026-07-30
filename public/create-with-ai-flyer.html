@@ -1315,12 +1315,14 @@
           </div>
         </div>
 
-        <div class="section-card">
-          <h3>Body</h3>
+        <div class="section-card" id="aiDirectionCard">
+          <h3>Direction for AI</h3>
+          <p class="section-desc">Like social — tell AI the look and feel. Event details above stay facts on the flyer.</p>
           <div class="field">
-            <label for="bodyCopy">Supporting copy</label>
-            <textarea id="bodyCopy" placeholder="Where funds go, rewards, event details…"></textarea>
+            <label for="aiDirection">Artwork direction</label>
+            <textarea id="aiDirection" rows="5" placeholder="e.g. Bright back-to-school flyer with month boxes for Aug–Dec. Friendly, easy to scan. Leave room for a QR at the bottom."></textarea>
           </div>
+          <input type="hidden" id="bodyCopy" value="" />
         </div>
 
         <div class="section-card" id="ctaQrCard">
@@ -2046,7 +2048,7 @@
 
     const SLOT_IDS = [
       "orgName", "headline", "schoolYear", "location", "directions",
-      "datesEvents", "bodyCopy", "donationTiers", "ctaLabel", "ctaUrl",
+      "datesEvents", "aiDirection", "bodyCopy", "donationTiers", "ctaLabel", "ctaUrl",
       "qrUrl", "qrCaption", "footerLine", "lastYearNotes",
     ];
 
@@ -2426,7 +2428,8 @@
       document.getElementById("location").value = d.location || "";
       document.getElementById("directions").value = d.directions || "";
       document.getElementById("datesEvents").value = d.datesEvents || "";
-      document.getElementById("bodyCopy").value = d.body || "";
+      document.getElementById("aiDirection").value = d.aiDirection || "";
+      document.getElementById("bodyCopy").value = "";
       document.getElementById("donationTiers").value = d.donationTiers || "";
       document.getElementById("ctaLabel").value = d.ctaLabel || d.cta || "Learn more";
       document.getElementById("ctaUrl").value = d.ctaUrl || d.qr || "";
@@ -2523,7 +2526,8 @@
         location: d.location || "",
         directions: d.directions || "",
         datesEvents: d.datesEvents || "",
-        bodyCopy: d.body || "",
+        aiDirection: d.aiDirection || "",
+        bodyCopy: "",
         donationTiers: d.donationTiers || "",
         ctaLabel: d.ctaLabel || d.cta || "",
         ctaUrl: d.ctaUrl || d.qr || "",
@@ -2573,11 +2577,21 @@
         }
         if (typeof d.brand === "boolean") state.brand = d.brand;
         SLOT_IDS.forEach((id) => {
-          if (d[id] != null) document.getElementById(id).value = d[id];
+          if (d[id] != null && document.getElementById(id)) {
+            document.getElementById(id).value = d[id];
+          }
         });
         /* backward compat with older draft keys */
         if (d.headline != null && !d.orgName) document.getElementById("headline").value = d.headline;
         if (d.bodyCopy != null) document.getElementById("bodyCopy").value = d.bodyCopy;
+        const aiEl = document.getElementById("aiDirection");
+        if (aiEl && !String(aiEl.value || "").trim()) {
+          const legacyDirection = [d.aiDirection, d.bodyCopy, d.lastYearNotes, d.body]
+            .map((v) => (typeof v === "string" ? v.trim() : ""))
+            .filter(Boolean)
+            .join("\n\n");
+          if (legacyDirection) aiEl.value = legacyDirection;
+        }
         if (d.ctaCopy != null && !d.ctaLabel) document.getElementById("ctaLabel").value = d.ctaCopy;
         if (d.qrLink != null && !d.qrUrl) document.getElementById("qrUrl").value = d.qrLink;
         document.getElementById("brandToggle").setAttribute("aria-checked", state.brand ? "true" : "false");

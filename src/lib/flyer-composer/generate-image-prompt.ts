@@ -1,20 +1,34 @@
 import type { FlyerComposerGenerateInput } from "@/lib/flyer-composer/types";
 
-const FIELD_LABELS: Record<string, string> = {
-  orgName: "Organization name",
-  headline: "Headline / title",
+/** Structured facts that belong on the flyer (not freeform creative direction). */
+const EVENT_DETAIL_KEYS = [
+  "orgName",
+  "headline",
+  "schoolYear",
+  "location",
+  "directions",
+  "datesEvents",
+  "donationTiers",
+  "ctaLabel",
+  "ctaUrl",
+  "qrUrl",
+  "qrCaption",
+  "footerLine",
+] as const;
+
+const EVENT_DETAIL_LABELS: Record<(typeof EVENT_DETAIL_KEYS)[number], string> = {
+  orgName: "Organization",
+  headline: "Headline",
   schoolYear: "School year",
   location: "Location",
   directions: "Directions",
-  datesEvents: "Dates and events (full list — render every line)",
-  bodyCopy: "Body copy",
+  datesEvents: "Dates and events",
   donationTiers: "Donation tiers",
-  ctaLabel: "Call-to-action label",
+  ctaLabel: "CTA label",
   ctaUrl: "CTA URL",
-  qrUrl: "QR code URL",
+  qrUrl: "QR URL",
   qrCaption: "QR caption",
   footerLine: "Footer",
-  lastYearNotes: "Last-year / change notes",
 };
 
 const PROVEN_LAYOUT_IDS = new Set(["semester", "investor", "festival"]);
@@ -24,97 +38,89 @@ function templateLayoutInstructions(input: FlyerComposerGenerateInput): string[]
 
   if (template.isCustom || start.path === "update") {
     return [
-      "Layout type: CUSTOM UPLOAD — match the volunteer's uploaded last-year flyer layout and visual structure.",
-      "Preserve the same section hierarchy, photo placement, and typography rhythm as a typical school/PTO flyer refresh.",
-      "Update all dates, headlines, and copy from the direction below — do not reuse placeholder org names.",
+      "Layout: refresh the volunteer's uploaded last-year flyer — keep structure, update copy from event details + direction.",
     ];
   }
 
-  if (start.path === "new") {
+  if (start.path === "new" || !PROVEN_LAYOUT_IDS.has(template.templateId)) {
     if (template.templateId === "simple-half") {
       return [
-        "Layout type: SIMPLE HALF-PAGE FLYER — landscape 8.5×5.5 announcement.",
-        "Compact headline, short body, CTA — optimized for bulletin boards.",
-        "Follow the volunteer's direction below — do not impose a calendar grid or donation tier layout.",
+        "Layout: compact half-page (8.5×5.5) announcement — headline, short body, CTA.",
       ];
     }
     return [
-      "Layout type: SIMPLE LETTER FLYER — clean 8.5×11 portrait announcement.",
-      "Headline, optional hero image band, scannable body, footer.",
-      "Follow the volunteer's direction below — do not impose a calendar grid or donation tier layout.",
+      "Layout: clean US Letter announcement flyer — strong headline, scannable body, optional hero band, footer.",
     ];
   }
 
   switch (template.templateId) {
     case "semester":
       return [
-        "Layout type: SEMESTER AT A GLANCE — portrait school calendar flyer.",
-        "Large colorful header (e.g. BACK TO SCHOOL or headline text).",
-        "Month grid or month boxes (AUG through JAN or full school year) with event days filled in from the dates list.",
-        "Each date/event line from inspiration MUST appear in the correct month box.",
-        "School-supplies or friendly footer band; leave a clear square QR placeholder in the bottom corner if QR URL is provided.",
+        "Layout: semester calendar flyer with month boxes; place every dates-and-events line in the correct month.",
       ];
     case "investor":
       return [
-        "Layout type: BECOME AN INVESTOR — donation / membership fundraiser flyer.",
-        "Bold headline, organization name, school year.",
-        "Tier cards or stacked donation levels from the tiers list ($25, $50, etc.).",
-        "Short motivational body paragraph; prominent donate CTA and QR placeholder if URL provided.",
+        "Layout: donation / membership flyer with clear tier levels from the tiers list.",
       ];
     case "festival":
       return [
-        "Layout type: EVENT FLYER — single community event poster.",
         assets.inspirationPhotoPresent
-          ? "Hero photo area (use attached inspiration photo), date chip or date banner, headline, location, body."
-          : "Optional hero band using brand colors, typography, or simple illustration — no stock crowd/festival/night-event photography.",
-        "Warm, inviting PTO/community event aesthetic — not a generic template mockup.",
-      ];
-    case "simple-letter":
-      return [
-        "Layout type: SIMPLE LETTER FLYER — clean 8.5×11 portrait announcement.",
-        "Headline, optional hero image band, scannable body, footer.",
-      ];
-    case "simple-half":
-      return [
-        "Layout type: SIMPLE HALF-PAGE FLYER — landscape 8.5×5.5 announcement.",
-        "Compact headline, short body, CTA — optimized for bulletin boards.",
+          ? "Layout: single-event poster with hero photo, date, headline, and CTA."
+          : "Layout: single-event poster — brand colors/typography for header (no stock crowd photography).",
       ];
     default:
-      return [
-        `Layout type: ${template.templateName} — follow the volunteer's direction below.`,
-      ];
+      return [`Layout: ${template.templateName}.`];
   }
 }
 
-function formatDirectionFields(input: FlyerComposerGenerateInput): string {
-  const lines: string[] = ["CONTENT TO RENDER ON THE FLYER (use all non-empty lines):"];
-  for (const [key, label] of Object.entries(FIELD_LABELS)) {
-    const value = (input.fields as Record<string, string | undefined>)[key]?.trim();
-    if (value) {
-      lines.push(`- ${label}: ${value}`);
+/** Freeform creative direction — same role as social artwork direction. */
+export function resolveFlyerComposerAiDirection(
+  fields: FlyerComposerGenerateInput["fields"],
+): string {
+  const primary = fields.aiDirection?.trim();
+  if (primary) return primary;
+  // Backward compat: older drafts used bodyCopy / lastYearNotes as direction.
+  return [fields.bodyCopy, fields.lastYearNotes]
+    .map((v) => v?.trim())
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function formatEventDetails(input: FlyerComposerGenerateInput): string {
+  const lines: string[] = ["EVENT DETAILS (facts for the flyer — use these):"];
+  for (const key of EVENT_DETAIL_KEYS) {
+    const value = input.fields[key]?.trim();
+    if (!value) continue;
+    if (key === "datesEvents" || key === "donationTiers") {
+      lines.push(`- ${EVENT_DETAIL_LABELS[key]}:`);
+      for (const row of value.split(/\n+/).map((l) => l.trim()).filter(Boolean)) {
+        lines.push(`  • ${row}`);
+      }
+      continue;
     }
+    lines.push(`- ${EVENT_DETAIL_LABELS[key]}: ${value}`);
   }
   if (lines.length === 1) {
-    lines.push("- (Use template defaults and brand — volunteer provided minimal text.)");
+    lines.push("- (Minimal details — rely on brand kit and artwork direction.)");
   }
   return lines.join("\n");
 }
 
 function formatBrandBlock(input: FlyerComposerGenerateInput): string {
   if (!input.brandEnabled) {
-    return "Brand: neutral community palette — no specific org logos.";
+    return "Brand: neutral community palette.";
   }
   const kit = input.brandKit;
   return [
-    "Brand kit (use these colors and org identity on the designed flyer):",
+    "Brand kit (colors and identity — not literal copy to paste):",
     `- Organization: ${kit?.organizationShortName ?? "Your organization"}`,
     kit?.primaryColor ? `- Primary color: ${kit.primaryColor}` : null,
     kit?.accentColor ? `- Accent color: ${kit.accentColor}` : null,
     kit?.fontStyle ? `- Font style: ${kit.fontStyle}` : null,
     kit?.mascotLabel ? `- Mascot: ${kit.mascotLabel}` : null,
     kit?.ptoLogoUploaded || kit?.schoolLogoUploaded
-      ? "- Include org logo mark or lettermark in header (no third-party logos)."
-      : "- Use org name as wordmark in header.",
+      ? "- Include org logo mark or lettermark in the header."
+      : "- Use organization name as a wordmark in the header.",
   ]
     .filter((line): line is string => Boolean(line))
     .join("\n");
@@ -122,52 +128,33 @@ function formatBrandBlock(input: FlyerComposerGenerateInput): string {
 
 function formatAssetsBlock(input: FlyerComposerGenerateInput): string {
   const { assets } = input;
-  const lines: string[] = ["INSPIRATION ASSETS:"];
+  const lines: string[] = [];
   if (assets.inspirationPhotoPresent) {
     lines.push(
-      "- Use the attached inspiration/reference photo in the flyer design (hero band or focal image).",
+      "Inspiration photo: use the attached reference image for hero mood/composition (do not invent a different stock photo).",
     );
-    if (assets.inspirationPhotoLabel) {
-      lines.push(`- Photo context: ${assets.inspirationPhotoLabel}`);
-    }
-    if (assets.inspirationPhotoNote) {
-      lines.push(`- Note: ${assets.inspirationPhotoNote}`);
-    }
   } else {
-    lines.push("- Hero / inspiration photo: none provided.");
     lines.push(
-      "- Do NOT invent stock crowd, festival lawn, fair lights, or night-event photography.",
-    );
-    lines.push(
-      "- Use brand colors, typography, and optional illustrated or graphic header bands instead.",
+      "Inspiration photo: none. Do NOT invent stock crowd, festival lawn, fair lights, or night-event photography — use brand colors, type, or simple illustration.",
     );
   }
   if (assets.customTemplatePresent) {
-    lines.push("- Custom template uploaded: match that layout type.");
-    if (assets.customTemplateFileName) {
-      lines.push(`- File: ${assets.customTemplateFileName}`);
-    }
-    if (assets.customTemplateImageUrl) {
-      lines.push("- Use the attached last-year template image as layout reference.");
-    }
-    if (assets.customTemplateNote) {
-      lines.push(`- Note: ${assets.customTemplateNote}`);
-    }
+    lines.push(
+      assets.customTemplateImageUrl
+        ? "Last-year template image is attached — match that layout structure."
+        : `Last-year template uploaded (${assets.customTemplateFileName ?? "file"}) — refresh layout, update copy.`,
+    );
   }
   return lines.join("\n");
 }
 
 function formatQrInstructions(input: FlyerComposerGenerateInput): string {
   const qrUrl = input.fields.qrUrl?.trim() || input.fields.ctaUrl?.trim();
-  if (!qrUrl || !input.template.hasQr) {
-    return "";
-  }
+  if (!qrUrl) return "";
   const caption = input.fields.qrCaption?.trim();
   return [
-    "QR CODE:",
-    `- Leave a clean white square placeholder (~10% of flyer width) in the bottom-right for a QR code overlay.`,
-    caption ? `- Place caption text near the QR: "${caption}"` : null,
-    "- Do NOT draw a fake QR pattern — empty white box with thin border only.",
+    "QR: leave a clean white square placeholder (~10% width) for overlay — do not draw a fake QR pattern.",
+    caption ? `QR caption near the box: "${caption}"` : null,
   ]
     .filter((line): line is string => Boolean(line))
     .join("\n");
@@ -184,63 +171,72 @@ function isHalfPageFlyer(input: FlyerComposerGenerateInput): boolean {
 
 function formatPrintFormatInstructions(input: FlyerComposerGenerateInput): string {
   if (isHalfPageFlyer(input)) {
-    return "PRINT FORMAT: US half-page 8.5×5.5 inch landscape flyer — wide bulletin layout, not square, not Instagram story.";
+    return "PRINT FORMAT: US half-page 8.5×5.5 inch landscape — not square, not Instagram.";
   }
-  return "PRINT FORMAT: US Letter 8.5×11 inch portrait flyer — full page, not square, not Instagram, not social media crop.";
+  return "PRINT FORMAT: US Letter 8.5×11 inch portrait — full page, not square, not Instagram.";
 }
 
 /**
- * Rich image-generation prompt from the full flyer direction payload.
- * Template lock: semester = month grids, investor = tiers, etc.
+ * Image prompt modeled on social artwork direction:
+ * event facts + brand + one freeform direction body (interpret, don't over-specify).
  */
 export function buildFlyerComposerImagePrompt(
   input: FlyerComposerGenerateInput,
 ): string {
-  const { start, template } = input;
+  const direction = resolveFlyerComposerAiDirection(input.fields);
   const printNote =
-    start.printSizeLabel ??
-    (template.ratio ? `Aspect ratio ${template.ratio}` : "Portrait print flyer");
+    input.start.printSizeLabel ??
+    (input.template.ratio ? `Aspect ${input.template.ratio}` : "Portrait letter");
 
-  return [
-    "Design a complete, print-ready school / PTO flyer as a single polished graphic.",
-    "Output one finished flyer image with all text rendered legibly — not a wireframe or HTML mockup.",
-    "Use real copy from the direction below; never use placeholder org names like Oak Park or Riverside.",
+  const lines = [
+    "Create a complete, print-ready school / PTO flyer as a single polished graphic.",
+    "Render real text from event details; never use placeholder org names like Oak Park or Riverside.",
     formatPrintFormatInstructions(input),
     "",
-    `Start path: ${start.pathLabel ?? start.path ?? "new flyer"}`,
-    PROVEN_LAYOUT_IDS.has(template.templateId)
-      ? `Template: ${template.templateName} (${template.templateId})`
-      : `Print format: ${template.templateName}`,
-    `Print: ${printNote}`,
+    `Start: ${input.start.pathLabel ?? input.start.path ?? "new flyer"}`,
+    PROVEN_LAYOUT_IDS.has(input.template.templateId)
+      ? `Optional layout guide: ${input.template.templateName}`
+      : `Print size: ${input.template.templateName} (${printNote})`,
     "",
     ...templateLayoutInstructions(input),
+    "",
+    formatEventDetails(input),
     "",
     formatBrandBlock(input),
     "",
     formatAssetsBlock(input),
+  ];
+
+  if (direction) {
+    lines.push(
+      "",
+      "Artwork direction from the user (interpret into polished visuals — do not paste these words literally on the graphic):",
+      direction,
+    );
+  }
+
+  const qr = formatQrInstructions(input);
+  if (qr) {
+    lines.push("", qr);
+  }
+
+  lines.push(
     "",
-    formatDirectionFields(input),
-    "",
-    formatQrInstructions(input),
-    "",
-    "QUALITY:",
-    "- Professional PTO/school flyer design with strong hierarchy and readable type at print size.",
-    "- Colorful but on-brand; parent-facing and welcoming.",
-    "- All dates and events from the list must be visible on the flyer.",
-  ]
-    .filter(Boolean)
-    .join("\n");
+    "Interpret the direction into a clear parent-facing design. Prefer hierarchy and readability over packing every instruction as on-graphic text.",
+    "If a dates-and-events list is provided, every line should appear on the flyer.",
+    "Only include logistics you were given in event details or direction.",
+  );
+
+  return lines.filter(Boolean).join("\n");
 }
 
 export function resolveFlyerComposerImageSize(input: FlyerComposerGenerateInput): string {
   if (isHalfPageFlyer(input)) {
-    // 8.5×5.5 landscape — closest supported GPT output (3:2)
     return "1536x1024";
   }
   const ratio = input.template.ratio?.trim();
   if (ratio === "1/1") {
     return "1024x1024";
   }
-  // US Letter 8.5×11 portrait — closest supported GPT output (2:3)
   return "1024x1536";
 }

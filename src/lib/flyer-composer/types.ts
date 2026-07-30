@@ -5,6 +5,9 @@ export type FlyerComposerSlotFields = {
   location: string;
   directions: string;
   datesEvents: string;
+  /** Freeform creative direction for AI (social-style) — interpret, don't paste literally. */
+  aiDirection: string;
+  /** Legacy supporting copy; still accepted, prefer aiDirection for prompts. */
   bodyCopy: string;
   donationTiers: string;
   ctaLabel: string;

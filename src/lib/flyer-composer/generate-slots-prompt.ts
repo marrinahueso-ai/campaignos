@@ -303,8 +303,12 @@ export function summarizeFlyerComposerDirection(
   if (filledSlots.length) {
     lines.push(`Slots filled: ${filledSlots.length}`);
   }
-  if (input.fields.lastYearNotes?.trim()) {
-    lines.push("Last-year notes included");
+  if (
+    input.fields.aiDirection?.trim() ||
+    input.fields.bodyCopy?.trim() ||
+    input.fields.lastYearNotes?.trim()
+  ) {
+    lines.push("AI direction included");
   }
   return lines;
 }
