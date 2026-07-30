@@ -100,7 +100,7 @@ export async function signOutViaUi(page: Page): Promise<void> {
   await page.waitForURL((url) => url.pathname.startsWith("/login"), {
     timeout: 30_000,
   });
-  await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible({
+  await expect(page.getByRole("heading", { name: /log in/i })).toBeVisible({
     timeout: 20_000,
   });
   // The post-sign-out redirect can still be settling client-side (e.g. a
