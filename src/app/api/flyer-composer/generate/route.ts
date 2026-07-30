@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireFlyerComposerGenerateAccess } from "@/lib/flyer-composer/api-auth";
-import { generateFlyerComposerSlots } from "@/lib/flyer-composer/generate-slots";
+import { generateFlyerComposer } from "@/lib/flyer-composer/generate";
 import type {
   FlyerComposerAssetContext,
   FlyerComposerBrandKit,
@@ -168,7 +168,14 @@ export async function POST(request: Request) {
   const access = await requireFlyerComposerGenerateAccess();
   if (!access.ok) {
     return NextResponse.json(
-      { success: false, error: access.error, slots: null, aiUsed: false },
+      {
+        success: false,
+        error: access.error,
+        imageUrl: null,
+        imageBase64: null,
+        slots: null,
+        aiUsed: false,
+      },
       { status: access.status },
     );
   }
@@ -181,6 +188,8 @@ export async function POST(request: Request) {
       {
         success: false,
         error: "Invalid request body.",
+        imageUrl: null,
+        imageBase64: null,
         slots: null,
         aiUsed: false,
       },
@@ -194,6 +203,8 @@ export async function POST(request: Request) {
       {
         success: false,
         error: "template.templateId and template.templateName are required.",
+        imageUrl: null,
+        imageBase64: null,
         slots: null,
         aiUsed: false,
       },
@@ -201,6 +212,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await generateFlyerComposerSlots(input);
+  const result = await generateFlyerComposer(input, access.organizationId);
   return NextResponse.json(result, { status: result.success ? 200 : 502 });
 }

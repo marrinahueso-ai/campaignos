@@ -908,6 +908,13 @@
       max-width: min(420px, 92%); margin: 0 auto;
       animation: soft-in 0.5s var(--ease) both; background: var(--brand-paper, #faf8f4);
     }
+    .big-flyer.is-generated-image {
+      background: #fff; display: flex; align-items: center; justify-content: center;
+    }
+    .generated-flyer-img {
+      display: block; width: 100%; height: 100%; object-fit: contain;
+      background: #fff;
+    }
     .big-flyer > .fly { min-height: 100%; }
     .big-flyer[data-ratio="1/1"] { aspect-ratio: 1 / 1; max-width: min(400px, 92%); }
     .big-flyer[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-width: min(320px, 72%); }
@@ -1042,6 +1049,9 @@
       height: 8px; border-radius: 999px; margin: 22px auto 0; max-width: 280px; width: 100%;
       background: linear-gradient(90deg, var(--sage), var(--mustard), var(--teal), var(--sage));
       background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
+    }
+    .gen-elapsed {
+      display: block; margin-top: 10px; font-size: 0.78rem; font-weight: 500; color: var(--muted);
     }
 
     .slots {
@@ -1421,9 +1431,10 @@
             <p class="preview-idle-hint" id="previewIdleHint">Tap <strong>Generate flyer</strong> when you’re set.</p>
           </div>
           <div class="gen-state" id="genState" hidden>
-            <span class="gen-title">Building your flyer…</span>
-            <span class="gen-detail" id="genDetail">Filling in your details…</span>
+            <span class="gen-title">Designing your flyer…</span>
+            <span class="gen-detail" id="genDetail">Sending full direction to OpenAI…</span>
             <div class="gen-bar" role="progressbar" aria-label="Generating flyer"></div>
+            <span class="gen-elapsed" id="genElapsed" hidden></span>
           </div>
           <div class="big-flyer" id="resultFlyer" hidden></div>
         </div>
@@ -1685,6 +1696,7 @@
       brand: true,
       generating: false,
       previewGenerated: false,
+      generatedImageUrl: null,
       autoGenerateOnEnter: false,
       generateTimer: null,
       generateStageTimer: null,
@@ -1741,6 +1753,7 @@
         applyTemplateDefaults(getTpl(state.templateId));
       }
       state.previewGenerated = false;
+      state.generatedImageUrl = null;
       syncCustomModeUI();
       syncStartPathUI();
       syncStartContinue();
@@ -1959,6 +1972,7 @@
         state.templateId = "custom";
         applyTemplateDefaults(getTpl("custom"));
         state.previewGenerated = false;
+      state.generatedImageUrl = null;
         updateCustomUploadUI();
         updateStartUploadUI();
         syncStartPathUI();
@@ -2628,6 +2642,7 @@
           state.templateId = id;
           applyTemplateDefaults(getTpl(id));
           state.previewGenerated = false;
+      state.generatedImageUrl = null;
           updateTemplateFieldHints();
           syncCustomModeUI();
           syncStartPathUI();
@@ -2740,6 +2755,15 @@
       if (!wrap || !state.templateId) return;
       const tpl = getTpl(state.templateId);
       wrap.dataset.ratio = tpl.ratio;
+      wrap.hidden = false;
+
+      if (state.generatedImageUrl) {
+        wrap.classList.add("is-generated-image");
+        wrap.innerHTML = `<img class="generated-flyer-img" id="generatedFlyerImg" src="${escapeHtml(state.generatedImageUrl)}" alt="${escapeHtml(tpl.name)} flyer" />`;
+        return;
+      }
+
+      wrap.classList.remove("is-generated-image");
       wrap.innerHTML = flyerHTML(tpl.id, {
         imageUrl: state.imageUrl,
         templateUrl: state.customTemplateUrl,
@@ -3041,30 +3065,46 @@
 
       state.generating = true;
       state.previewGenerated = false;
+      state.generatedImageUrl = null;
+      state.generatedImageUrl = null;
 
       const tpl = getTpl(state.templateId);
       const wrap = document.getElementById("resultFlyer");
       const list = document.getElementById("slotList");
       const genDetail = document.getElementById("genDetail");
+      const genElapsed = document.getElementById("genElapsed");
       let fields = readDraftFields();
       let slots = resolveSlots({ fields }, tpl);
 
       wrap.dataset.ratio = tpl.ratio;
       if (list) list.innerHTML = buildSlotSummary(tpl, slots);
 
-      const stages = tpl.isCustom
-        ? ["Reading template…", "Sending to OpenAI…", "Applying copy…"]
-        : ["Sending directions to OpenAI…", "Filling template slots…", "Almost done…"];
+      const stages = [
+        "Sending full direction to OpenAI…",
+        "Designing layout and typography…",
+        "Rendering dates, tiers, and copy…",
+        "Applying brand colors…",
+        "Finalizing artwork — this can take up to a minute…",
+      ];
 
       if (genDetail) genDetail.textContent = stages[0];
+      if (genElapsed) {
+        genElapsed.hidden = false;
+        genElapsed.textContent = "0s elapsed";
+      }
       renderPreviewState();
 
       clearInterval(state.generateStageTimer);
       let stage = 0;
+      const startedAt = Date.now();
       state.generateStageTimer = setInterval(() => {
         stage = Math.min(stage + 1, stages.length - 1);
         if (genDetail) genDetail.textContent = stages[stage];
-      }, 1200);
+        if (genElapsed) {
+          const secs = Math.floor((Date.now() - startedAt) / 1000);
+          genElapsed.textContent = `${secs}s elapsed — image generation in progress`;
+        }
+      }, 4500);
 
       clearTimeout(state.generateTimer);
 
@@ -3077,7 +3117,8 @@
         });
 
         const payload = await response.json().catch(() => null);
-        if (!response.ok || !payload?.success || !payload.slots) {
+        const imageSrc = payload?.imageUrl || payload?.imageBase64;
+        if (!response.ok || !payload?.success || !imageSrc) {
           const err =
             payload?.error ||
             (response.status === 401
@@ -3088,7 +3129,10 @@
           throw new Error(err);
         }
 
-        applyGeneratedSlots(payload.slots);
+        state.generatedImageUrl = imageSrc;
+        if (payload.slots) {
+          applyGeneratedSlots(payload.slots);
+        }
         fields = readDraftFields();
         slots = resolveSlots({ fields }, tpl);
 
@@ -3101,8 +3145,12 @@
         clearInterval(state.generateStageTimer);
         state.generating = false;
         state.previewGenerated = false;
+      state.generatedImageUrl = null;
+        state.generatedImageUrl = null;
         renderPreviewState();
         showGenerateError(error?.message || "Generate failed. Try again.");
+      } finally {
+        if (genElapsed) genElapsed.hidden = true;
       }
     }
 
@@ -3127,12 +3175,29 @@
     document.getElementById("generateBtn").addEventListener("click", startGenerate);
     document.getElementById("regen").addEventListener("click", startGenerate);
     document.getElementById("btnPrint").addEventListener("click", () => window.print());
-    document.getElementById("btnDownload").addEventListener("click", () => {
+    document.getElementById("btnDownload").addEventListener("click", async () => {
+      const title = (document.getElementById("headline").value.trim() || "flyer")
+        .replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").toLowerCase();
+      if (state.generatedImageUrl) {
+        try {
+          const response = await fetch(state.generatedImageUrl);
+          const blob = await response.blob();
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = title + "-flyer.png";
+          a.click();
+          URL.revokeObjectURL(a.href);
+        } catch {
+          const a = document.createElement("a");
+          a.href = state.generatedImageUrl;
+          a.download = title + "-flyer.png";
+          a.click();
+        }
+        return;
+      }
       const html = exportFlyerHtml();
       const blob = new Blob([html], { type: "text/html;charset=utf-8" });
       const a = document.createElement("a");
-      const title = (document.getElementById("headline").value.trim() || "flyer")
-        .replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").toLowerCase();
       a.href = URL.createObjectURL(blob);
       a.download = title + "-flyer.html";
       a.click();
@@ -3269,6 +3334,7 @@
         state.templateId = NEW_SIZE_IDS[state.printSize];
         applyTemplateDefaults(getTpl(state.templateId));
         state.previewGenerated = false;
+      state.generatedImageUrl = null;
         syncStartPathUI();
         syncStartContinue();
         renderStartStep();

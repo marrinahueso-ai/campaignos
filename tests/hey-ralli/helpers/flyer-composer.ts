@@ -74,6 +74,9 @@ export async function openOptionalDetails(page: Page) {
   });
 }
 
+export const MOCK_GENERATED_IMAGE =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
 export async function mockGenerateSuccess(page: Page, slots = MOCK_GENERATED_SLOTS) {
   await page.route(FLYER_GENERATE_API, async (route) => {
     await route.fulfill({
@@ -82,6 +85,8 @@ export async function mockGenerateSuccess(page: Page, slots = MOCK_GENERATED_SLO
       body: JSON.stringify({
         success: true,
         error: null,
+        imageUrl: null,
+        imageBase64: MOCK_GENERATED_IMAGE,
         slots,
         aiUsed: true,
       }),
@@ -97,6 +102,8 @@ export async function mockGenerateUnauthorized(page: Page) {
       body: JSON.stringify({
         success: false,
         error: "Sign in with an active organization to generate.",
+        imageUrl: null,
+        imageBase64: null,
         slots: null,
         aiUsed: false,
       }),

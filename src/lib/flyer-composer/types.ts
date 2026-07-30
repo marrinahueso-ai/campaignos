@@ -70,10 +70,23 @@ export type FlyerComposerGenerateInput = {
 
 export type FlyerComposerGeneratedSlots = Partial<FlyerComposerSlotFields>;
 
+export type FlyerComposerGenerateImageResult = {
+  success: boolean;
+  error: string | null;
+  /** Public URL when storage upload succeeds. */
+  imageUrl: string | null;
+  /** data:image/png;base64,... fallback when storage is unavailable. */
+  imageBase64: string | null;
+  aiUsed: boolean;
+};
+
 export type FlyerComposerGenerateResult = {
   success: boolean;
   error: string | null;
+  /** Primary deliverable — generated flyer artwork. */
+  imageUrl: string | null;
+  imageBase64: string | null;
+  /** Secondary metadata — inspiration slot copy (optional polish). */
   slots: FlyerComposerGeneratedSlots | null;
-  /** True when OpenAI returned slot copy (false only on validation short-circuit). */
   aiUsed: boolean;
 };

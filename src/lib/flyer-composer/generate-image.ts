@@ -1,0 +1,120 @@
+import "server-only";
+
+import { randomUUID } from "node:crypto";
+
+import { isAiConfigured } from "@/lib/ai/provider";
+import { uploadArtworkBytes } from "@/lib/ai-artwork/storage";
+import { generateArtworkV2ImageNative } from "@/lib/artwork-v2/orchestrator";
+import { getAuthUser } from "@/lib/auth/queries";
+import {
+  buildFlyerComposerImagePrompt,
+  resolveFlyerComposerImageSize,
+} from "@/lib/flyer-composer/generate-image-prompt";
+import { compositeFlyerQrCode } from "@/lib/flyer-composer/qr-composite";
+import type {
+  FlyerComposerGenerateInput,
+  FlyerComposerGenerateImageResult,
+} from "@/lib/flyer-composer/types";
+
+function resolveInspirationUrls(input: FlyerComposerGenerateInput): string[] {
+  // v1: sample stock URLs are not sent from client; custom/inspiration bytes are metadata-only.
+  // When inspiration is marked present, the prompt carries label/note context for the model.
+  void input;
+  return [];
+}
+
+function resolveQrUrl(input: FlyerComposerGenerateInput): string | null {
+  const qr = input.fields.qrUrl?.trim();
+  if (qr && /^https?:\/\//i.test(qr)) return qr;
+  const cta = input.fields.ctaUrl?.trim();
+  if (cta && /^https?:\/\//i.test(cta) && input.template.hasQr) return cta;
+  return null;
+}
+
+function buildFlyerStoragePath(organizationId: string): string {
+  return `flyer-composer/${organizationId}/${randomUUID()}.png`;
+}
+
+export async function generateFlyerComposerImage(
+  input: FlyerComposerGenerateInput,
+  organizationId: string,
+): Promise<FlyerComposerGenerateImageResult> {
+  if (!isAiConfigured()) {
+    return {
+      success: false,
+      error: "AI image generation isn't set up yet.",
+      imageUrl: null,
+      imageBase64: null,
+      aiUsed: false,
+    };
+  }
+
+  const authUser = await getAuthUser();
+  const userPrompt = buildFlyerComposerImagePrompt(input);
+  const size = resolveFlyerComposerImageSize(input);
+  const inspirationImageUrls = resolveInspirationUrls(input);
+
+  const result = await generateArtworkV2ImageNative(
+    {
+      kind: "create",
+      userPrompt,
+      inspirationImageUrls,
+    },
+    size,
+    null,
+    undefined,
+    {
+      userId: authUser?.id ?? null,
+      organizationId,
+      isRegeneration: false,
+      milestoneLabel: "flyer_composer",
+      relativeDay: null,
+    },
+  );
+
+  if (!result.success || !result.imageBase64) {
+    return {
+      success: false,
+      error: result.error ?? "Unable to generate flyer artwork.",
+      imageUrl: null,
+      imageBase64: null,
+      aiUsed: true,
+    };
+  }
+
+  let imageBase64 = result.imageBase64;
+  const qrUrl = resolveQrUrl(input);
+  if (qrUrl && input.template.hasQr) {
+    const composited = await compositeFlyerQrCode({ imageBase64, qrUrl });
+    if (composited) {
+      imageBase64 = composited;
+    }
+  }
+
+  const bytes = Buffer.from(imageBase64, "base64");
+  const storagePath = buildFlyerStoragePath(organizationId);
+  const uploaded = await uploadArtworkBytes({
+    storagePath,
+    bytes,
+    contentType: "image/png",
+  });
+
+  if (uploaded.success && uploaded.publicUrl) {
+    return {
+      success: true,
+      error: null,
+      imageUrl: uploaded.publicUrl,
+      imageBase64: null,
+      aiUsed: true,
+    };
+  }
+
+  // Storage unavailable — return data URL so preview still works
+  return {
+    success: true,
+    error: null,
+    imageUrl: null,
+    imageBase64: `data:image/png;base64,${imageBase64}`,
+    aiUsed: true,
+  };
+}

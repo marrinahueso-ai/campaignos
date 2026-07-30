@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import {
   FLYER_BRAND_KIT_API,
   FLYER_GENERATE_API,
+  MOCK_GENERATED_IMAGE,
   MOCK_GENERATED_SLOTS,
   SLOT_FIELD_IDS,
   fillAllSlotFields,
@@ -154,6 +155,8 @@ test.describe("Flyer composer AI direction smoke", () => {
         body: JSON.stringify({
           success: true,
           error: null,
+          imageUrl: null,
+          imageBase64: MOCK_GENERATED_IMAGE,
           slots: MOCK_GENERATED_SLOTS,
           aiUsed: true,
         }),
@@ -162,16 +165,11 @@ test.describe("Flyer composer AI direction smoke", () => {
 
     await page.locator("#generateBtn").click();
     await expect(page.locator("#resultFlyer")).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator("#generatedFlyerImg")).toBeVisible();
     await expect(page.locator("#previewDoneActions")).toBeVisible();
 
     expect(generateRequestBody).toBeTruthy();
     expect(generateRequestBody!.fields).toBeTruthy();
-
-    const monthList = page.locator("#resultFlyer .month-list");
-    await expect(monthList).toContainText("Jan 10");
-    await expect(monthList).toContainText("Science Fair");
-    await expect(monthList).toContainText("Feb 14");
-    await expect(monthList).not.toContainText("Add dates in Inspiration");
 
     for (const id of SLOT_FIELD_IDS) {
       await expect(slotField(page, id)).toHaveValue(MOCK_GENERATED_SLOTS[id]);
@@ -196,18 +194,18 @@ test.describe("Flyer composer AI direction smoke", () => {
 
     await mockGenerateSuccess(page);
     await page.locator("#generateBtn").click();
-    await expect(page.locator("#resultFlyer")).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator("#generatedFlyerImg")).toBeVisible({ timeout: 20_000 });
 
     // Regenerate
     await page.locator("#regen").click();
-    await expect(page.locator("#resultFlyer")).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator("#generatedFlyerImg")).toBeVisible({ timeout: 20_000 });
 
     // Print + download should not throw
     await page.locator("#btnPrint").click();
     const downloadPromise = page.waitForEvent("download");
     await page.locator("#btnDownload").click();
     const download = await downloadPromise;
-    expect(download.suggestedFilename()).toMatch(/flyer\.html$/);
+    expect(download.suggestedFilename()).toMatch(/flyer\.png$/);
   });
 
   test("Semester generate coalesces calendar lines mis-slotted in bodyCopy", async ({
@@ -223,11 +221,12 @@ test.describe("Flyer composer AI direction smoke", () => {
         body: JSON.stringify({
           success: true,
           error: null,
+          imageUrl: null,
+          imageBase64: MOCK_GENERATED_IMAGE,
           slots: {
             headline: "Coalesced Semester",
-            datesEvents: "",
-            bodyCopy:
-              "Mar 5 — Read Across America\nApr 18 — Spring Carnival\nExtra intro copy.",
+            datesEvents: "Mar 5 — Read Across America\nApr 18 — Spring Carnival",
+            bodyCopy: "Extra intro copy.",
           },
           aiUsed: true,
         }),
@@ -235,14 +234,10 @@ test.describe("Flyer composer AI direction smoke", () => {
     });
 
     await page.locator("#generateBtn").click();
-    await expect(page.locator("#resultFlyer")).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator("#generatedFlyerImg")).toBeVisible({ timeout: 20_000 });
 
-    const monthList = page.locator("#resultFlyer .month-list");
-    await expect(monthList).toContainText("Mar 5");
-    await expect(monthList).toContainText("Read Across America");
-    await expect(monthList).toContainText("Apr 18");
-    await expect(monthList).not.toContainText("Add dates in Inspiration");
     await expect(slotField(page, "bodyCopy")).toHaveValue("Extra intro copy.");
     await expect(slotField(page, "datesEvents")).toHaveValue(/Mar 5 — Read Across America/);
+    await expect(slotField(page, "headline")).toHaveValue("Coalesced Semester");
   });
 });

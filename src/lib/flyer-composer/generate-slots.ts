@@ -64,6 +64,8 @@ export async function generateFlyerComposerSlots(
     return {
       success: false,
       error: "AI text generation isn't set up yet.",
+      imageUrl: null,
+      imageBase64: null,
       slots: null,
       aiUsed: false,
     };
@@ -74,6 +76,8 @@ export async function generateFlyerComposerSlots(
       success: false,
       error:
         "Add inspiration details — slots, notes, photo, or a template — before generating.",
+      imageUrl: null,
+      imageBase64: null,
       slots: null,
       aiUsed: false,
     };
@@ -119,6 +123,8 @@ export async function generateFlyerComposerSlots(
     return {
       success: false,
       error: result.error ?? "Unable to generate flyer copy right now.",
+      imageUrl: null,
+      imageBase64: null,
       slots: null,
       aiUsed: true,
     };
@@ -131,6 +137,8 @@ export async function generateFlyerComposerSlots(
         success: false,
         error:
           "No slot copy was returned. Try adding more direction and regenerate.",
+        imageUrl: null,
+        imageBase64: null,
         slots: null,
         aiUsed: true,
       };
@@ -139,6 +147,8 @@ export async function generateFlyerComposerSlots(
     return {
       success: true,
       error: null,
+      imageUrl: null,
+      imageBase64: null,
       slots: mergeGeneratedSlots(input, generated),
       aiUsed: true,
     };
@@ -146,6 +156,8 @@ export async function generateFlyerComposerSlots(
     return {
       success: false,
       error: "Could not read AI slot copy. Try again.",
+      imageUrl: null,
+      imageBase64: null,
       slots: null,
       aiUsed: true,
     };
