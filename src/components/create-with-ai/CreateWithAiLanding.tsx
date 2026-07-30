@@ -9,7 +9,7 @@ type CreateWithAiLandingProps = {
 
 function SocialHeroArt() {
   return (
-    <div className="cwai-art relative flex min-h-[11.5rem] items-center justify-center overflow-hidden bg-[linear-gradient(155deg,#c4922e_0%,#e0b65a_42%,#f5e6c2_100%)] sm:min-h-full">
+    <div className="cwai-art relative flex min-h-[9rem] w-full items-center justify-center overflow-hidden bg-[linear-gradient(155deg,#c4922e_0%,#e0b65a_42%,#f5e6c2_100%)] sm:min-h-[9.5rem]">
       <div className="cwai-drift absolute -left-6 top-0 h-32 w-32 rounded-full bg-white/30 blur-2xl" />
       <div className="cwai-drift-slow absolute -bottom-8 right-0 h-28 w-28 rounded-full bg-[#2a2622]/10 blur-2xl" />
       <div className="cwai-stage relative h-[7.25rem] w-[7.25rem]">
@@ -89,7 +89,7 @@ export function CreateWithAiLanding({
   const socialLocked = !canUseSocial;
 
   return (
-    <div className="studio-page relative mx-auto max-w-2xl space-y-8 pb-12">
+    <div className="relative mx-auto w-full max-w-xl space-y-7 px-1 pb-12">
       <style>{`
         @keyframes cwai-fade-up {
           from { opacity: 0; transform: translateY(14px); }
@@ -142,7 +142,7 @@ export function CreateWithAiLanding({
 
       <header className="relative space-y-2">
         <p className="studio-eyebrow">Create with AI</p>
-        <h1 className="font-display text-4xl tracking-[-0.02em] text-cos-text sm:text-5xl">
+        <h1 className="font-display text-3xl tracking-[-0.02em] text-cos-text sm:text-4xl">
           Make social posts
         </h1>
       </header>
@@ -157,18 +157,18 @@ export function CreateWithAiLanding({
 
         {socialLocked ? (
           <div
-            className="cwai-card-enter cwai-hero grid overflow-hidden rounded-[24px] border border-cos-border/80 bg-cos-card/95 text-left shadow-[0_18px_40px_rgba(28,36,48,0.08)] opacity-90 sm:grid-cols-[1fr_11rem]"
+            className="cwai-card-enter cwai-hero flex flex-col overflow-hidden rounded-[22px] border border-cos-border/80 bg-cos-card/95 text-left shadow-[0_18px_40px_rgba(28,36,48,0.08)] opacity-90"
             aria-disabled
           >
-            <div className="flex flex-col justify-center px-6 py-6 sm:px-7 sm:py-7">
+            <div className="flex flex-col justify-center px-5 py-5 sm:px-6 sm:py-6">
               <span className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cos-muted">
                 <Lock className="h-3 w-3" strokeWidth={1.75} />
                 Access needed
               </span>
-              <h2 className="font-display text-2xl text-cos-text sm:text-[1.65rem]">
+              <h2 className="font-display text-xl text-cos-text sm:text-2xl">
                 Social Media
               </h2>
-              <span className="mt-5 inline-flex self-start rounded-full bg-cos-bg-alt px-4 py-2.5 text-sm font-bold text-cos-muted">
+              <span className="mt-4 inline-flex self-start rounded-full bg-cos-bg-alt px-4 py-2 text-sm font-bold text-cos-muted">
                 Need permission
               </span>
             </div>
@@ -177,13 +177,13 @@ export function CreateWithAiLanding({
         ) : (
           <Link
             href={socialHref}
-            className="cwai-card-enter cwai-hero group grid overflow-hidden rounded-[24px] border border-cos-border/80 bg-cos-card/95 text-left shadow-[0_18px_40px_rgba(28,36,48,0.08)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(28,36,48,0.12)] sm:grid-cols-[1fr_11rem]"
+            className="cwai-card-enter cwai-hero group flex flex-col overflow-hidden rounded-[22px] border border-cos-border/80 bg-cos-card/95 text-left shadow-[0_18px_40px_rgba(28,36,48,0.08)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(28,36,48,0.12)]"
           >
-            <div className="flex flex-col justify-center px-6 py-6 sm:px-7 sm:py-7">
-              <h2 className="font-display text-2xl text-cos-text sm:text-[1.65rem]">
+            <div className="flex flex-col justify-center px-5 py-5 sm:px-6 sm:py-6">
+              <h2 className="font-display text-xl text-cos-text sm:text-2xl">
                 Social Media
               </h2>
-              <span className="mt-5 inline-flex self-start rounded-full bg-cos-brand-sage px-4 py-2.5 text-sm font-bold text-[#fffcf7]">
+              <span className="mt-4 inline-flex self-start rounded-full bg-cos-brand-sage px-4 py-2 text-sm font-bold text-[#fffcf7]">
                 Create social posts →
               </span>
             </div>
