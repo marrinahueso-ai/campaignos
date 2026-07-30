@@ -13,8 +13,16 @@ import {
   formatVisibilityShortDate,
 } from "@/lib/homepage-composer/export-html";
 import type { HomepageCard, HomepageComposerState } from "@/lib/homepage-composer/types";
+import { normalizeHref } from "@/lib/homepage-composer/urls";
 
 describe("homepage composer card linkLabel + date", () => {
+  it("rejects active URL schemes before rich HTML export", () => {
+    assert.equal(normalizeHref("javascript:alert(1)"), "#");
+    assert.equal(normalizeHref("data:text/html,<script>alert(1)</script>"), "#");
+    assert.equal(normalizeHref("https://example.com"), "https://example.com");
+    assert.equal(normalizeHref("/event-details"), "/event-details");
+  });
+
   it("migrates missing linkLabel and date on old drafts", () => {
     const raw = {
       header: defaultHeader("Test"),

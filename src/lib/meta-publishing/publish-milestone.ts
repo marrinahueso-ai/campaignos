@@ -34,6 +34,7 @@ import type {
 } from "@/lib/meta-publishing/types";
 import { markCommunicationPublished } from "@/lib/event-workspace/mutations";
 import type { MetaPublishSurfaces } from "@/types/playbooks";
+import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { createJobClient } from "@/lib/supabase/job-client";
 
 export interface PublishMilestoneResult {
@@ -274,6 +275,22 @@ export async function publishMetaMilestoneBundle(input: {
       publishedCount: 0,
       failedCount: 0,
     };
+  }
+
+  if (connection.organizationId) {
+    const rateLimit = await checkRateLimit({
+      key: `meta-publish:org:${connection.organizationId}`,
+      windowSeconds: 5 * 60,
+      max: 30,
+    });
+    if (!rateLimit.allowed) {
+      return {
+        success: false,
+        error: rateLimitMessage(rateLimit.retryAfterSeconds, "Meta publishing requests"),
+        publishedCount: 0,
+        failedCount: 0,
+      };
+    }
   }
 
   if (connection.organizationId && connection.id !== "env") {
