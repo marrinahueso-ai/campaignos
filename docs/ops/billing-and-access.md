@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product  
-**Last updated:** July 26, 2026  
+**Last updated:** July 29, 2026  
 **Related:** [Ops](./README.md) · [Stripe integration (eng)](../engineering/stripe-integration.md) · [AI and APIs](../product/ai-and-apis.md) · [Feature list](../product/feature-list.md) · [Env & secrets](./env-and-secrets.md) · [Documentation home](../README.md)
 
 ## Purpose
@@ -228,8 +228,9 @@ Category mapping lives in [`usage-breakdown-pure.ts`](../../src/lib/ai/usage-bre
 ### Webhook
 
 - URL: `https://heyralli.com/api/stripe/webhook`
-- Events: `checkout.session.completed`, `customer.subscription.created|updated|deleted`
+- Events: `checkout.session.completed`, `customer.subscription.created|updated|deleted`, `invoice.payment_failed`
 - Signing secret stored as `STRIPE_WEBHOOK_SECRET` (local + Vercel Production)
+- `invoice.payment_failed` sends one Hey Ralli `payment-failed` email per invoice to active admin/president (ledger dedupe; Stripe still sends its own dunning). Trial-ending notices are cron-driven — see [resend-email-templates.md § Soft-launch notification policy](./resend-email-templates.md#soft-launch-notification-policy).
 
 ---
 

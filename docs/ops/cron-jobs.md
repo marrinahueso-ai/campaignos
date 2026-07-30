@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 28, 2026  
+**Last updated:** July 29, 2026  
 **Related:** [Ops](./README.md) · [`vercel.json`](../../vercel.json) · [Env & secrets](./env-and-secrets.md) · [Architecture](../engineering/architecture.md) · [Documentation home](../README.md)
 
 ## Auth
@@ -32,7 +32,7 @@ Schedules are **UTC** (Vercel Cron).
 |------|----------------|-------------------|---------|
 | `/api/cron/calendar-subscribe-sync` | `0 6 * * *` | ~1:00 AM CDT | Refresh ICS / subscribe imports |
 | `/api/cron/google-calendar-sync` | `30 6 * * *` | ~1:30 AM CDT | Sync org Google Calendar connections → review |
-| `/api/cron/meta-token-health` | `0 8 * * *` | ~3:00 AM CDT | Check Meta token health |
+| `/api/cron/meta-token-health` | `0 8 * * *` | ~3:00 AM CDT | Meta token health + approval backfill + soft-launch transactional emails (see below) |
 | `/api/cron/inbox-sync` | `0 9 * * *` | ~4:00 AM CDT | Sync Meta inbox |
 | `/api/cron/story-post-reminders` | `0 13 * * *` | ~8:00 AM CDT | Email story post kit reminders (Resend) |
 | `/api/cron/manual-upload-emails` | `30 13 * * *` | ~8:30 AM CDT | Manual IG upload reminder emails |
@@ -42,6 +42,21 @@ Schedules are **UTC** (Vercel Cron).
 \*Central offset changes with DST; treat UTC as source of truth.
 
 **Also in code (not necessarily in `vercel.json`):** `/api/cron/insights-sync` uses the same `CRON_SECRET` pattern — invoke manually or add to `vercel.json` if you want it scheduled.
+
+## `meta-token-health` — token check + operational emails
+
+Daily job (`src/app/api/cron/meta-token-health/route.ts`) runs four parallel tasks:
+
+| Task | Code | Email (if any) |
+|------|------|----------------|
+| Meta connection health | `refreshAllMetaConnectionHealth()` | Invalid Page token → `meta-disconnected` once per connection row |
+| Approval request backfill | `backfillMetaApprovalRequests()` | — |
+| Pending approval reminders | `sendPendingApprovalReminders()` | Assigned pending approval after **24h** → `approval-reminder` once per request |
+| Trial ending notices | `sendTrialEndingNotices()` | `trialing` org with **1–3 days** left → `trial-ending` once per org + `trial_ends_at` |
+
+All four email paths use the durable `transactional_notification_deliveries` ledger plus Resend idempotency keys. Policy details: [resend-email-templates.md § Soft-launch notification policy](./resend-email-templates.md#soft-launch-notification-policy).
+
+**Stripe `payment-failed`** is **not** cron-driven — it fires from `POST /api/stripe/webhook` on `invoice.payment_failed` ([stripe-integration.md](../engineering/stripe-integration.md)).
 
 ## Meta: Publish Now vs Schedule (ops)
 
@@ -64,6 +79,7 @@ Page loads (Dashboard, Approvals, etc.) stay **DB reads only** — no Meta polli
 |------|--------|
 | Google Calendar sync | `GOOGLE_*` + rows in `organization_google_calendar_connections` |
 | Meta publish / token / inbox | Org Meta connection (or legacy env tokens) + Graph API |
+| `meta-token-health` emails | `RESEND_API_KEY` + published templates + `transactional_notification_deliveries` table |
 | Volunteer sync | Connected `event_volunteer_sources` with public SignUpGenius URLs |
 | Story / manual-upload emails | `RESEND_API_KEY` (+ optional template IDs) |
 | All | `SUPABASE_SERVICE_ROLE_KEY` (admin client) + `CRON_SECRET` |

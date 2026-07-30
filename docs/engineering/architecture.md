@@ -341,6 +341,8 @@ Historical Release 0.5 notes remain in [archive/RELEASE_0_5.md](../archive/RELEA
 | [access-control.md](./access-control.md) | Membership + permissions |
 | [ops/billing-and-access.md](../ops/billing-and-access.md) | Plans, credits, gates, ops Stripe setup |
 | [stripe-integration.md](./stripe-integration.md) | Checkout / Portal / webhooks / Ease Billing wiring |
+| [ops/resend-email-templates.md](../ops/resend-email-templates.md) | Resend transactional templates, cron/webhook triggers, delivery ledger |
+| [ops/cron-jobs.md](../ops/cron-jobs.md) | Vercel Cron schedule + `meta-token-health` operational emails |
 | [developer-agreements.md](./developer-agreements.md) | NDA / IP e-sign gate |
 | [product/vision.md](../product/vision.md) · [blueprints](../product/blueprints/) | Product intent |
 

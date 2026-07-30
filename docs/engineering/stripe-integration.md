@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering (Hey Ralli)  
-**Last updated:** July 26, 2026  
+**Last updated:** July 29, 2026  
 **Related:** [Billing, access & AI credits](../ops/billing-and-access.md) · [Env & secrets](../ops/env-and-secrets.md) · [Feature list](../product/feature-list.md) · [Architecture](./architecture.md) · [Access & onboarding](../security/access-and-onboarding.md)
 
 How Stripe is wired in the app: Customer → Checkout → Subscription sync → Customer Portal → webhooks. Commercial plans, credit economics, and which feature/capacity gates are enforced live in [billing-and-access.md](../ops/billing-and-access.md) — do not duplicate that matrix here.
@@ -141,6 +141,7 @@ Paid Stripe Checkout happens later from Settings (or `/billing/canceled`) for no
 | `customer.subscription.created` | `handleStripeSubscriptionUpdated` | Same as updated — sync plan / status / trial / Stripe ids |
 | `customer.subscription.updated` | `handleStripeSubscriptionUpdated` | Sync plan / status / trial / Stripe ids |
 | `customer.subscription.deleted` | `handleStripeSubscriptionDeleted` | `subscription_status=canceled`, clear sub/price ids, `plan_tier=starter`, clear trial → org-wide lockout to `/billing/canceled` |
+| `invoice.payment_failed` | `sendPaymentFailedNotice` (`transactional-notification-jobs.ts`) | Resend `payment-failed` to active admin/president once per invoice (delivery ledger + Resend idempotency); complements Stripe dunning emails |
 
 Any other event type is ignored (`default: break`) and still returns `{ received: true }`.
 
@@ -148,7 +149,7 @@ Org resolution: session/subscription `metadata.organizationId`, else lookup by `
 
 Status mapping (Stripe → app): `active`, `trialing`, `past_due`, `canceled`, `incomplete` (and aliases like `unpaid` → `past_due`, `incomplete_expired` / `paused` → `canceled`). See `mapStripeSubscriptionStatus` in `stripe-sync.ts`.
 
-There is **no** invoice.*, payment_intent.*, or customer.* handler beyond the events above.
+There is **no** `payment_intent.*` or `customer.*` handler beyond the events above. The only invoice handler is `invoice.payment_failed` (operational email — not subscription sync).
 
 ---
 
@@ -198,6 +199,7 @@ Placeholders ending in `...` are treated as unset (`isStripeBillingConfigured`).
 - [ ] Reserve Checkout → Reserve balance increases (`grantAiReserve`)
 - [ ] Portal opens and returns to `/settings/billing-plan`
 - [ ] `subscription.deleted` → members redirected to `/billing/canceled`; resubscribe restores access
+- [ ] `invoice.payment_failed` → one `payment-failed` email to admin/president; ledger prevents duplicate on webhook retry
 - [ ] Founding-exempt org: unlimited credits copy; Checkout actions refuse; CTAs still visible
 - [ ] Webhook rejects unsigned / wrong-signature POSTs; GET is not a success path (security smoke)
 

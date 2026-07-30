@@ -86,6 +86,31 @@ All four policies use the durable
 idempotency key retention. Failed sends release their pending delivery claim so a
 later eligible job/webhook retry can send.
 
+Ledger implementation: `src/lib/email/transactional-notification-jobs.ts`
+(`claimDelivery` / `markDeliverySent` / `releaseDelivery`).
+
+### Dedupe keys
+
+| Alias | Trigger | Ledger `entity_key` | Resend idempotency key |
+|---|---|---|---|
+| `approval-reminder` | Daily `GET /api/cron/meta-token-health` | approval request id | `approval-reminder/{requestId}` |
+| `trial-ending` | Same cron | `{organizationId}:{trial_ends_at}` | `trial-ending/{organizationId}/{trialEndsAt}` |
+| `payment-failed` | `POST /api/stripe/webhook` → `invoice.payment_failed` | Stripe invoice id | `payment-failed/{invoiceId}` |
+| `meta-disconnected` | `connection-token-health.ts` on invalid token | Meta connection row id | `meta-disconnected/{connectionId}` |
+
+Recipients: approval reminder → assigned approver email only; trial / payment / Meta disconnect → active org members with `campaign_role` in `admin` or `president`.
+
+## Webhooks & cron hooks (operational)
+
+There is no separate webhooks living doc. Operational notification triggers:
+
+| Source | Path | Templates |
+|---|---|---|
+| Vercel Cron | `/api/cron/meta-token-health` | `approval-reminder`, `trial-ending`; also drives `meta-disconnected` via token health |
+| Stripe webhook | `/api/stripe/webhook` | `payment-failed` on `invoice.payment_failed` |
+
+Cron schedule and auth: [cron-jobs.md](./cron-jobs.md). Stripe event matrix: [stripe-integration.md § Webhook events handled](../engineering/stripe-integration.md#webhook-events-handled).
+
 ## Deferred
 
 The mockup’s collapsed **Deferred** list records the prepared but unbuilt

@@ -37,7 +37,7 @@ Single Phase 1 working checklist for product completion. Use this to track **wha
 | **Billing Checkout / Portal** | Wired in Production; Owner spot-check row 11.4 still **Needs you**.                                                                                                        |
 
 
-**Honest Partial areas (usable, not perfect):** Create with AI step count borderline for first-time chairs; event workspace tab density; revision workspace (newsletter/homepage adapters later); Files legacy event embed copy; marketing “Watch demo” link waits for GO; storage capacity gate deferred. Product-wide performance is still Partial (Social Media Composer scored 88; the ≤2s wall-clock budget is not re-verified), and composer accessibility remains open (Social Media 83; Homepage 87). Four published transactional templates have helpers but await approved trigger policies/webhooks.
+**Honest Partial areas (usable, not perfect):** Create with AI step count borderline for first-time chairs; event workspace tab density; revision workspace (newsletter/homepage adapters later); Files legacy event embed copy; marketing “Watch demo” link waits for GO; storage capacity gate deferred. Product-wide performance is still Partial (Social Media Composer scored 88; the ≤2s wall-clock budget is not re-verified), and composer accessibility remains open (Social Media 83; Homepage 87).
 
 **Next owner actions:** (1) Run launch-checklist finish order A–K on [https://heyralli.com](https://heyralli.com). (2) Finish Meta App Review screencast + submit. (3) Invite first pilot org only after Meta green light.
 
@@ -574,10 +574,10 @@ Connect Meta empty (four why cards) stays on `/communications` only — not shar
 | [x]  | Invitation                | Wired   | Published `team-invite` template + accept paths                                |
 | [x]  | Approval                  | Wired   | Published assigned / resubmitted / changes / approved / scheduled / post-kit templates |
 | [x]  | Billing Receipt           | Wired   | Stripe invoice emails + in-app history                                         |
-| [x]  | Approval reminder         | Partial | Published helper ready; no approved non-spammy reminder-policy hook yet        |
-| [x]  | Trial Ending              | Partial | Published helper ready; hook when trial-notice policy is approved               |
-| [x]  | Failed payment            | Partial | Published helper ready; hook in Stripe payment-failure webhook                  |
-| [x]  | Meta disconnected         | Partial | Published helper ready; hook on revoked/expired connection with deduplication   |
+| [x]  | Approval reminder         | Wired   | `meta-token-health` cron → assigned pending approval after 24h; once per request via `transactional_notification_deliveries` |
+| [x]  | Trial Ending              | Wired   | Same cron → `trialing` org with 1–3 days left; once per org + `trial_ends_at` via delivery ledger |
+| [x]  | Failed payment            | Wired   | `POST /api/stripe/webhook` → `invoice.payment_failed`; once per invoice to active admin/president |
+| [x]  | Meta disconnected         | Wired   | `connection-token-health.ts` on invalid Page token; once per connection row via delivery ledger |
 | [x]  | Subscription Confirmation | Wired   | Stripe Checkout webhook                                                        |
 | [x]  | Cancellation              | Wired   | Portal + `/billing/canceled`                                                   |
 | [x]  | Contact Form              | Wired   | Marketing contact → Resend                                                     |
