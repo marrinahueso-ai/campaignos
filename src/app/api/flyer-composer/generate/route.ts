@@ -95,11 +95,14 @@ function parseAssets(raw: Record<string, unknown> | null): FlyerComposerAssetCon
     inspirationPhotoLabel:
       readString(raw?.inspirationPhotoLabel).trim() || null,
     inspirationPhotoNote: readString(raw?.inspirationPhotoNote).trim() || null,
+    inspirationPhotoUrl: readString(raw?.inspirationPhotoUrl).trim() || null,
     customTemplatePresent: raw?.customTemplatePresent === true,
     customTemplateFileName:
       readString(raw?.customTemplateFileName).trim() || null,
     customTemplateFileType: fileType,
     customTemplateNote: readString(raw?.customTemplateNote).trim() || null,
+    customTemplateImageUrl:
+      readString(raw?.customTemplateImageUrl).trim() || null,
   };
 }
 

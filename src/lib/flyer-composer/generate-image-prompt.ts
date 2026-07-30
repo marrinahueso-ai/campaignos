@@ -122,7 +122,9 @@ function formatAssetsBlock(input: FlyerComposerGenerateInput): string {
   const { assets } = input;
   const lines: string[] = ["INSPIRATION ASSETS:"];
   if (assets.inspirationPhotoPresent) {
-    lines.push("- Hero / inspiration photo: match mood and subject from attached reference if provided.");
+    lines.push(
+      "- Use the attached inspiration/reference photo in the flyer design (hero band or focal image).",
+    );
     if (assets.inspirationPhotoLabel) {
       lines.push(`- Photo context: ${assets.inspirationPhotoLabel}`);
     }
@@ -134,6 +136,9 @@ function formatAssetsBlock(input: FlyerComposerGenerateInput): string {
     lines.push("- Custom template uploaded: match that layout type.");
     if (assets.customTemplateFileName) {
       lines.push(`- File: ${assets.customTemplateFileName}`);
+    }
+    if (assets.customTemplateImageUrl) {
+      lines.push("- Use the attached last-year template image as layout reference.");
     }
     if (assets.customTemplateNote) {
       lines.push(`- Note: ${assets.customTemplateNote}`);
@@ -158,6 +163,22 @@ function formatQrInstructions(input: FlyerComposerGenerateInput): string {
     .join("\n");
 }
 
+function isHalfPageFlyer(input: FlyerComposerGenerateInput): boolean {
+  const ratio = input.template.ratio?.trim();
+  return (
+    input.start.printSize === "half" ||
+    input.template.templateId === "simple-half" ||
+    ratio === "3/2"
+  );
+}
+
+function formatPrintFormatInstructions(input: FlyerComposerGenerateInput): string {
+  if (isHalfPageFlyer(input)) {
+    return "PRINT FORMAT: US half-page 8.5×5.5 inch landscape flyer — wide bulletin layout, not square, not Instagram story.";
+  }
+  return "PRINT FORMAT: US Letter 8.5×11 inch portrait flyer — full page, not square, not Instagram, not social media crop.";
+}
+
 /**
  * Rich image-generation prompt from the full flyer direction payload.
  * Template lock: semester = month grids, investor = tiers, etc.
@@ -174,6 +195,7 @@ export function buildFlyerComposerImagePrompt(
     "Design a complete, print-ready school / PTO flyer as a single polished graphic.",
     "Output one finished flyer image with all text rendered legibly — not a wireframe or HTML mockup.",
     "Use real copy from the direction below; never use placeholder org names like Oak Park or Riverside.",
+    formatPrintFormatInstructions(input),
     "",
     `Start path: ${start.pathLabel ?? start.path ?? "new flyer"}`,
     PROVEN_LAYOUT_IDS.has(template.templateId)
@@ -201,13 +223,14 @@ export function buildFlyerComposerImagePrompt(
 }
 
 export function resolveFlyerComposerImageSize(input: FlyerComposerGenerateInput): string {
-  const ratio = input.template.ratio?.trim();
-  if (ratio === "3/2" || input.start.printSize === "half") {
-    return "1792x1024";
+  if (isHalfPageFlyer(input)) {
+    // 8.5×5.5 landscape — closest supported GPT output (3:2)
+    return "1536x1024";
   }
+  const ratio = input.template.ratio?.trim();
   if (ratio === "1/1") {
     return "1024x1024";
   }
-  // 3/4 letter portrait and 9/16 — vertical
-  return "1024x1792";
+  // US Letter 8.5×11 portrait — closest supported GPT output (2:3)
+  return "1024x1536";
 }

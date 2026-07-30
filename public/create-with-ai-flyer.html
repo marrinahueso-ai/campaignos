@@ -833,7 +833,7 @@
       animation: soft-in 0.45s var(--ease) 0.04s both;
     }
     @media (min-width: 860px) {
-      .preview-workspace { grid-template-columns: minmax(0, 1fr) minmax(240px, 280px); align-items: stretch; }
+      .preview-workspace { grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; }
     }
     /* Composer is two-column from 900px — stack summary below stage until main column is wide enough */
     @media (min-width: 900px) and (max-width: 979px) {
@@ -860,6 +860,9 @@
       border-top: 1px solid var(--line);
       background: var(--white);
       border-radius: 0 0 22px 22px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
     }
     @media (min-width: 860px) {
       .preview-sidebar { border-top: none; border-left: 1px solid var(--line); border-radius: 0 22px 22px 0; }
@@ -867,24 +870,8 @@
     @media (min-width: 900px) and (max-width: 979px) {
       .preview-sidebar { border-top: 1px solid var(--line); border-left: none; border-radius: 0 0 22px 22px; }
     }
-    .preview-sidebar h3 {
-      margin: 0 0 10px; font-family: var(--serif); font-size: 1.05rem; font-weight: 600;
-    }
-    .ai-directions {
-      margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line);
-    }
-    .ai-directions ul {
-      margin: 0; padding: 0; list-style: none; display: grid; gap: 6px;
-    }
-    .ai-directions li {
-      font-size: 12px; line-height: 1.4; color: var(--ink-soft);
-    }
-    .ai-directions li .k {
-      display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 1px;
-    }
     .preview-sidebar .sidebar-actions {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0;
     }
     .preview-idle {
       width: 100%; max-width: 440px; text-align: center;
@@ -1456,15 +1443,8 @@
           <div class="big-flyer" id="resultFlyer" hidden></div>
         </div>
         <aside class="preview-sidebar no-print">
-          <div class="ai-directions" id="aiDirections">
-            <h3>Directions to AI</h3>
-            <ul id="aiDirectionList"></ul>
-          </div>
-          <h3>Slot summary</h3>
-          <ul class="slots" id="slotList"></ul>
           <div class="sidebar-actions">
-            <button type="button" class="btn btn-secondary" data-goto="inputs">Edit inspiration</button>
-            <button type="button" class="btn btn-secondary" data-goto="start">Change start</button>
+            <button type="button" class="btn btn-secondary" data-goto="inputs">Edit</button>
           </div>
         </aside>
       </div>
@@ -2660,7 +2640,6 @@
       }
       if (view === "result") {
         renderPreviewIdleFlyer();
-        renderAiDirectionSummary();
         renderPreviewState();
         if (state.autoGenerateOnEnter) {
           state.autoGenerateOnEnter = false;
@@ -2771,36 +2750,6 @@
       syncCustomModeUI();
     }
 
-    function buildSlotSummary(tpl, s) {
-      const rows = [];
-      const push = (k, v) => { if (v) rows.push(`<li><span class="k">${k}</span><span>${escapeHtml(v)}</span></li>`); };
-      if (tpl.isCustom) {
-        rows.push(`<li><span class="k">Template</span><span>Your upload</span></li>`);
-        if (s.lastYearNotes) push("Notes", s.lastYearNotes);
-      } else {
-        rows.push(`<li><span class="k">Template</span><span>${escapeHtml(tpl.name)}</span></li>`);
-      }
-      push("Org", s.orgName);
-      push("Title", s.headline);
-      push("Year", s.schoolYear);
-      push("Location", [s.location, s.directions].filter(Boolean).join(" · "));
-      if (s.datesEvents) {
-        rows.push(`<li><span class="k">Dates</span><span>${formatSummaryDates(s.datesEvents)}</span></li>`);
-      }
-      push("Body", s.body);
-      push("Tiers", s.donationTiers);
-      push("CTA", `${s.ctaLabel}${s.ctaUrl ? " → " + s.ctaUrl : ""}`);
-      if (s.qrUrl) {
-        rows.push(`<li><span class="k">QR</span><span>${escapeHtml(s.qrCaption || "Scan link")} → ${escapeHtml(s.qrUrl)}</span></li>`);
-      }
-      push("Footer", s.footer);
-      if (!tpl.isCustom) {
-        rows.push(`<li><span class="k">Photo</span><span>${state.imageUrl ? "Added" : "None"}</span></li>`);
-        rows.push(`<li><span class="k">Brand</span><span>${state.brand ? escapeHtml(SETTINGS_BRAND_KIT.organizationShortName) + " kit" : "Off"}</span></li>`);
-      }
-      return rows.join("");
-    }
-
     function renderPreviewIdleFlyer() {
       const idleFlyer = document.getElementById("previewIdleFlyer");
       if (!idleFlyer || !state.templateId) return;
@@ -2869,14 +2818,10 @@
       const idle = document.getElementById("previewIdle");
       const genState = document.getElementById("genState");
       const wrap = document.getElementById("resultFlyer");
-      const list = document.getElementById("slotList");
       const stage = document.getElementById("previewStage");
       if (!idle || !genState || !wrap) return;
 
       renderPreviewIdleFlyer();
-      renderAiDirectionSummary();
-      const tpl = getTpl(state.templateId);
-      const slots = resolveSlots({}, tpl);
 
       if (stage) {
         stage.classList.toggle("is-building", state.generating);
@@ -2893,14 +2838,12 @@
         genState.hidden = true;
         wrap.hidden = false;
         renderResultFlyer(true);
-        if (list) list.innerHTML = buildSlotSummary(tpl, slots);
         setPreviewActions("done");
       } else {
         idle.hidden = false;
         genState.hidden = true;
         wrap.hidden = true;
         wrap.innerHTML = "";
-        if (list) list.innerHTML = buildSlotSummary(tpl, slots);
         setPreviewActions("idle");
       }
 
@@ -2934,6 +2877,19 @@
       }
     }
 
+    function resolveReferenceImageUrl(url) {
+      if (!url || typeof url !== "string") return null;
+      const trimmed = url.trim();
+      if (
+        trimmed.startsWith("data:image/") ||
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://")
+      ) {
+        return trimmed;
+      }
+      return null;
+    }
+
     function resolveInspirationMeta() {
       if (!state.imageUrl) {
         return {
@@ -2941,22 +2897,21 @@
           inspirationPhotoSource: null,
           inspirationPhotoLabel: null,
           inspirationPhotoNote: null,
+          inspirationPhotoUrl: null,
         };
       }
       const sample = SAMPLES.find((s) => s.url === state.imageUrl);
       const source = state.inspirationPhotoSource || (sample ? "sample" : "upload");
       const label = state.inspirationPhotoLabel || sample?.label || null;
-      const note =
-        source === "upload"
-          ? "User uploaded inspiration photo — image bytes not sent in v1; use slot direction only."
-          : sample
-            ? "Sample stock photo selected for hero slot — image bytes not sent in v1."
-            : "Inspiration photo present — image bytes not sent in v1.";
+      const photoUrl = resolveReferenceImageUrl(state.imageUrl);
       return {
         inspirationPhotoPresent: true,
         inspirationPhotoSource: source,
         inspirationPhotoLabel: label,
-        inspirationPhotoNote: note,
+        inspirationPhotoNote: photoUrl
+          ? null
+          : "Inspiration photo selected — attach a data or https URL to send as reference.",
+        inspirationPhotoUrl: photoUrl,
       };
     }
 
@@ -2968,14 +2923,24 @@
           customTemplateFileName: null,
           customTemplateFileType: null,
           customTemplateNote: null,
+          customTemplateImageUrl: null,
         };
       }
+      const isPdf = state.customTemplateFileType === "pdf";
+      const templateImageUrl =
+        !isPdf && state.customTemplateFileType === "image"
+          ? resolveReferenceImageUrl(state.customTemplateUrl)
+          : null;
       return {
         customTemplatePresent: true,
         customTemplateFileName: state.customTemplateFileName,
         customTemplateFileType: state.customTemplateFileType,
-        customTemplateNote:
-          "Layout locked from uploaded last-year template — file bytes not sent in v1; update slot text only.",
+        customTemplateNote: isPdf
+          ? "PDF template uploaded — layout described in slot text; raster reference not sent."
+          : templateImageUrl
+            ? null
+            : "Custom template image present — attach a data or https URL to send as reference.",
+        customTemplateImageUrl: templateImageUrl,
       };
     }
 
@@ -3032,75 +2997,6 @@
       };
     }
 
-    function buildAiDirectionSummary(tpl) {
-      const payload = buildGeneratePayload(tpl);
-      const rows = [];
-      const push = (k, v) => {
-        if (v) rows.push({ k, v });
-      };
-
-      push("Start", payload.start.pathLabel);
-      push("Template", payload.template.templateName);
-      if (payload.start.printSizeLabel) push("Print size", payload.start.printSizeLabel);
-      if (payload.assets.customTemplatePresent) {
-        push(
-          "Last-year file",
-          payload.assets.customTemplateFileName || "Uploaded (layout locked)",
-        );
-      }
-      if (payload.assets.inspirationPhotoPresent) {
-        push(
-          "Hero photo",
-          payload.assets.inspirationPhotoLabel ||
-            (payload.assets.inspirationPhotoSource === "upload"
-              ? "User upload"
-              : "Sample photo"),
-        );
-      }
-      push("Brand kit", payload.brandEnabled ? SETTINGS_BRAND_KIT.organizationShortName : "Off");
-
-      const fieldLabels = {
-        orgName: "Organization",
-        headline: "Headline",
-        schoolYear: "School year",
-        location: "Location",
-        directions: "Directions",
-        datesEvents: "Dates & events",
-        bodyCopy: "Body",
-        donationTiers: "Tiers",
-        ctaLabel: "CTA",
-        ctaUrl: "CTA URL",
-        qrUrl: "QR URL",
-        qrCaption: "QR caption",
-        footerLine: "Footer",
-        lastYearNotes: "Last-year notes",
-      };
-      Object.entries(fieldLabels).forEach(([key, label]) => {
-        const value = (payload.fields[key] || "").trim();
-        if (value) push(label, value.length > 48 ? value.slice(0, 45) + "…" : value);
-      });
-
-      return rows;
-    }
-
-    function renderAiDirectionSummary() {
-      const list = document.getElementById("aiDirectionList");
-      if (!list || !state.templateId) {
-        if (list) list.innerHTML = "";
-        return;
-      }
-      const tpl = getTpl(state.templateId);
-      const rows = buildAiDirectionSummary(tpl);
-      list.innerHTML = rows.length
-        ? rows
-            .map(
-              (row) =>
-                `<li><span class="k">${escapeHtml(row.k)}</span><span>${escapeHtml(row.v)}</span></li>`,
-            )
-            .join("")
-        : `<li><span class="k">Direction</span><span>Add inspiration details on step 2</span></li>`;
-    }
-
     function canCallGenerateApi() {
       return window.location.protocol !== "file:";
     }
@@ -3133,14 +3029,11 @@
 
       const tpl = getTpl(state.templateId);
       const wrap = document.getElementById("resultFlyer");
-      const list = document.getElementById("slotList");
       const genDetail = document.getElementById("genDetail");
       const genElapsed = document.getElementById("genElapsed");
       let fields = readDraftFields();
-      let slots = resolveSlots({ fields }, tpl);
 
       wrap.dataset.ratio = tpl.ratio;
-      if (list) list.innerHTML = buildSlotSummary(tpl, slots);
 
       const stages = [
         "Sending full direction to OpenAI…",
@@ -3279,7 +3172,6 @@
       renderStartStep();
       renderMini();
       if (state.view === "result") {
-        renderAiDirectionSummary();
         if (state.previewGenerated) runGenerate();
         else renderPreviewIdleFlyer();
       }
@@ -3292,7 +3184,6 @@
         renderMini();
         if (state.view === "result" && !state.previewGenerated && !state.generating) {
           renderPreviewIdleFlyer();
-          renderAiDirectionSummary();
         }
         scheduleSave();
       });

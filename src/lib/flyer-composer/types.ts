@@ -39,13 +39,17 @@ export type FlyerComposerAssetContext = {
   inspirationPhotoPresent: boolean;
   inspirationPhotoSource: "sample" | "upload" | null;
   inspirationPhotoLabel: string | null;
-  /** Metadata note when bytes are not sent (v1). */
+  /** Context note for the model when no image URL is attached. */
   inspirationPhotoNote: string | null;
+  /** data: or https URL sent to image generation as reference input. */
+  inspirationPhotoUrl: string | null;
   customTemplatePresent: boolean;
   customTemplateFileName: string | null;
   customTemplateFileType: "pdf" | "image" | null;
-  /** Metadata note when file bytes are not sent (v1). */
+  /** Context note when template bytes are not sent (e.g. PDF). */
   customTemplateNote: string | null;
+  /** data: or https URL for uploaded last-year template image reference. */
+  customTemplateImageUrl: string | null;
 };
 
 export type FlyerComposerBrandKit = {

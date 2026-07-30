@@ -10,6 +10,7 @@ import {
   buildFlyerComposerImagePrompt,
   resolveFlyerComposerImageSize,
 } from "@/lib/flyer-composer/generate-image-prompt";
+import { resolveFlyerComposerReferenceImageUrls } from "@/lib/flyer-composer/reference-images";
 import { compositeFlyerQrCode } from "@/lib/flyer-composer/qr-composite";
 import type {
   FlyerComposerGenerateInput,
@@ -17,10 +18,7 @@ import type {
 } from "@/lib/flyer-composer/types";
 
 function resolveInspirationUrls(input: FlyerComposerGenerateInput): string[] {
-  // v1: sample stock URLs are not sent from client; custom/inspiration bytes are metadata-only.
-  // When inspiration is marked present, the prompt carries label/note context for the model.
-  void input;
-  return [];
+  return resolveFlyerComposerReferenceImageUrls(input.assets);
 }
 
 function resolveQrUrl(input: FlyerComposerGenerateInput): string | null {

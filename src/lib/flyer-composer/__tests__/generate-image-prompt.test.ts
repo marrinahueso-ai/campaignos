@@ -69,7 +69,7 @@ describe("flyer composer image prompt", () => {
 
   it("uses portrait size for letter ratio and landscape for half page", () => {
     const letter = buildSampleDirectionInput();
-    assert.equal(resolveFlyerComposerImageSize(letter), "1024x1792");
+    assert.equal(resolveFlyerComposerImageSize(letter), "1024x1536");
 
     const half = buildSampleDirectionInput({
       start: {
@@ -86,7 +86,17 @@ describe("flyer composer image prompt", () => {
         hasQr: false,
       },
     });
-    assert.equal(resolveFlyerComposerImageSize(half), "1792x1024");
+    assert.equal(resolveFlyerComposerImageSize(half), "1536x1024");
+  });
+
+  it("requires US Letter portrait format in the prompt", () => {
+    const input = buildSampleDirectionInput();
+    const prompt = buildFlyerComposerImagePrompt(input);
+
+    assert.match(prompt, /US Letter 8\.5×11 inch portrait/i);
+    assert.match(prompt, /not square/i);
+    assert.match(prompt, /not Instagram/i);
+    assert.match(prompt, /attached inspiration\/reference photo/i);
   });
 
   it("includes QR placeholder instructions when template has QR", () => {

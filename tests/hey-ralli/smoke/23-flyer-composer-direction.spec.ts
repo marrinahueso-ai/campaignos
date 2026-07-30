@@ -146,12 +146,10 @@ test.describe("Flyer composer AI direction smoke", () => {
     });
     await goToPreview(page);
 
-    // Directions to AI summary reflects filled fields (not a proven layout name)
-    const directionList = page.locator("#aiDirectionList");
-    await expect(directionList).toContainText("New flyer");
-    await expect(directionList).toContainText("Preview Smoke PTA");
-    await expect(directionList).toContainText("Aug 1 — Orientation");
-    await expect(directionList).not.toContainText("Semester at a Glance");
+    await expect(page.locator(".preview-sidebar")).toBeVisible();
+    await expect(page.locator('.preview-sidebar [data-goto="inputs"]')).toHaveText("Edit");
+    await expect(page.locator(".preview-sidebar")).not.toContainText("Directions to AI");
+    await expect(page.locator(".preview-sidebar")).not.toContainText("Slot summary");
 
     let generateRequestBody: Record<string, unknown> | null = null;
     await page.route(FLYER_GENERATE_API, async (route) => {
@@ -179,12 +177,14 @@ test.describe("Flyer composer AI direction smoke", () => {
     expect(generateRequestBody!.fields).toBeTruthy();
     expect(generateRequestBody!.start).toMatchObject({ path: "new" });
     expect(generateRequestBody!.template).toMatchObject({ templateId: "simple-letter" });
+    expect(generateRequestBody!.assets).toMatchObject({
+      inspirationPhotoPresent: true,
+      inspirationPhotoUrl: expect.stringMatching(/^https:\/\//),
+    });
 
     for (const id of SLOT_FIELD_IDS) {
       await expect(slotField(page, id)).toHaveValue(MOCK_GENERATED_SLOTS[id]);
     }
-
-    await expect(page.locator("#slotList")).toContainText("Generated Semester Headline");
   });
 
   test("Generate error path, regenerate, print, and download", async ({
