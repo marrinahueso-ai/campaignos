@@ -21,6 +21,7 @@ const SLOT_KEYS: (keyof FlyerComposerSlotFields)[] = [
   "location",
   "directions",
   "datesEvents",
+  "aiDirection",
   "bodyCopy",
   "donationTiers",
   "ctaLabel",
