@@ -45,6 +45,7 @@ import type {
   UnifiedApprovalItem,
   UnifiedWorkflowStatus,
 } from "@/lib/approvals-scheduling/types";
+import { getUnifiedApprovalPreview } from "@/lib/approvals-scheduling/types";
 import { milestoneNameMatchKey } from "@/lib/campaign-builder-v2/milestone-names";
 
 export type UnifiedApprovalActionResult = {
@@ -959,6 +960,8 @@ export async function retryFailedUnifiedApprovalAction(input: {
 export async function enrichUnifiedApprovalItemPreviewAction(
   item: UnifiedApprovalItem,
 ): Promise<UnifiedApprovalItem> {
+  item = { ...item, preview: getUnifiedApprovalPreview(item) };
+
   if (item.schedulingItemId) {
     const { fetchSchedulingItemPreviewFields } = await import(
       "@/lib/approvals-scheduling/queries"

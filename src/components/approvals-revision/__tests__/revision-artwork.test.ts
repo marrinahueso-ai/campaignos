@@ -98,6 +98,17 @@ describe("resolveRevisionArtworkUrls", () => {
     assert.equal(urls.feedArtworkUrl, null);
     assert.equal(urls.storyArtworkUrl, "https://cdn.example/story.png");
   });
+
+  it("defaults a missing runtime preview without throwing", () => {
+    const item = buildItem({ thumbnailUrl: "https://cdn.example/thumb.png" });
+    (item as { preview?: UnifiedApprovalItem["preview"] }).preview = undefined;
+
+    assert.deepEqual(resolveRevisionArtworkUrls(item), {
+      feedArtworkUrl: "https://cdn.example/thumb.png",
+      storyArtworkUrl: null,
+      previewImageUrl: "https://cdn.example/thumb.png",
+    });
+  });
 });
 
 describe("Revision dual-format UI wiring", () => {

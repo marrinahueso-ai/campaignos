@@ -6,14 +6,18 @@ import {
   approvalOutcomeChip,
   canRetryFailedApproval,
 } from "@/lib/approvals-scheduling/outcome-display";
-import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
+import {
+  getUnifiedApprovalPreview,
+  type UnifiedApprovalItem,
+} from "@/lib/approvals-scheduling/types";
 import { toSupabaseThumbnailUrl } from "@/lib/images/supabase-thumbnail";
 import { cn } from "@/lib/utils/cn";
 
 function artBackground(item: UnifiedApprovalItem): string {
+  const preview = getUnifiedApprovalPreview(item);
   const url =
-    item.preview.feedArtworkUrl ||
-    item.preview.storyArtworkUrl ||
+    preview.feedArtworkUrl ||
+    preview.storyArtworkUrl ||
     item.thumbnailUrl;
   return url?.trim() || "";
 }
@@ -98,9 +102,10 @@ export function ApprovalsFocusCard({
 }) {
   const chip = approvalOutcomeChip(item);
   const showRetry = canRetryFailedApproval(item) && Boolean(onRetry);
+  const preview = getUnifiedApprovalPreview(item);
   const caption =
-    item.preview.captionText?.trim() ||
-    item.preview.storyCaptionSnippet?.trim() ||
+    preview.captionText?.trim() ||
+    preview.storyCaptionSnippet?.trim() ||
     null;
 
   return (
@@ -111,9 +116,9 @@ export function ApprovalsFocusCard({
         width={800}
         priority
         label={
-          item.preview.feedArtworkUrl
+          preview.feedArtworkUrl
             ? "Feed"
-            : item.preview.storyArtworkUrl
+            : preview.storyArtworkUrl
               ? "Story"
               : undefined
         }

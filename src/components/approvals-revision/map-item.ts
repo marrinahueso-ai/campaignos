@@ -9,7 +9,10 @@ import {
   checklistFromTags,
   parseRevisionNotes,
 } from "@/lib/approvals-revision/revision-notes";
-import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
+import {
+  getUnifiedApprovalPreview,
+  type UnifiedApprovalItem,
+} from "@/lib/approvals-scheduling/types";
 
 /**
  * Resolve feed + story URLs for Revision dual preview.
@@ -22,8 +25,9 @@ export function resolveRevisionArtworkUrls(item: UnifiedApprovalItem): {
   storyArtworkUrl: string | null;
   previewImageUrl: string | null;
 } {
-  const feed = item.preview.feedArtworkUrl?.trim() || null;
-  const story = item.preview.storyArtworkUrl?.trim() || null;
+  const preview = getUnifiedApprovalPreview(item);
+  const feed = preview.feedArtworkUrl?.trim() || null;
+  const story = preview.storyArtworkUrl?.trim() || null;
   const thumb = item.thumbnailUrl?.trim() || null;
   const feedArtworkUrl = feed || (!story ? thumb : null);
   const storyArtworkUrl = story;
@@ -70,6 +74,7 @@ export function mapApprovalItemToRevision(
   mode: RevisionMode,
 ): RevisionWorkspaceModel {
   const artwork = resolveRevisionArtworkUrls(item);
+  const preview = getUnifiedApprovalPreview(item);
   const parsedNotes = parseRevisionNotes(item.notes);
   const noteBody =
     parsedNotes.comment ||
@@ -132,7 +137,7 @@ export function mapApprovalItemToRevision(
     previewSubtitle: item.scheduleLabel || item.milestoneName,
     previewImageUrl: artwork.previewImageUrl,
     previewFootnote: "",
-    captionText: item.preview.captionText,
+    captionText: preview.captionText,
     feedArtworkUrl: artwork.feedArtworkUrl,
     storyArtworkUrl: artwork.storyArtworkUrl,
     scheduleAt: item.scheduleAt,

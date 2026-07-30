@@ -47,6 +47,13 @@ export interface UnifiedApprovalPreview {
   storyArtworkUrl: string | null;
 }
 
+export const EMPTY_UNIFIED_APPROVAL_PREVIEW: UnifiedApprovalPreview = {
+  captionText: null,
+  storyCaptionSnippet: null,
+  feedArtworkUrl: null,
+  storyArtworkUrl: null,
+};
+
 export interface UnifiedApprovalHistoryEntry {
   label: string;
   timestamp: string;
@@ -89,6 +96,16 @@ export interface UnifiedApprovalItem {
   preview: UnifiedApprovalPreview;
   requestedAt: string;
   approvalHistory: UnifiedApprovalHistoryEntry[];
+}
+
+/**
+ * Legacy or partially enriched approval items can omit preview at runtime.
+ * Keep downstream event-detail rendering safe until the item is reloaded.
+ */
+export function getUnifiedApprovalPreview(
+  item: Pick<UnifiedApprovalItem, "preview">,
+): UnifiedApprovalPreview {
+  return item.preview ?? EMPTY_UNIFIED_APPROVAL_PREVIEW;
 }
 
 export interface UnifiedApprovalSummaryCounts {
