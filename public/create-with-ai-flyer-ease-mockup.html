@@ -78,19 +78,44 @@
       background: rgba(255, 252, 247, 0.7); font-size: 12px; font-weight: 600; color: var(--muted);
     }
 
-    .pills {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px;
+    .back-link {
+      display: inline-block; margin-bottom: 10px; font-size: 14px; font-weight: 600;
+      color: var(--muted); text-decoration: none;
+    }
+    .back-link:hover { color: var(--ink); }
+
+    .composer-layout {
+      display: grid; grid-template-columns: 1fr; gap: 16px;
       animation: rise 0.55s var(--ease) 0.05s both;
     }
-    .pill {
-      padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line);
-      background: rgba(255, 252, 247, 0.75); font-size: 13px; font-weight: 600; color: var(--ink-soft);
-      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    @media (min-width: 900px) {
+      .composer-layout { grid-template-columns: 220px minmax(0, 1fr); align-items: start; }
     }
-    .pill:hover { border-color: rgba(47, 74, 60, 0.35); }
-    .pill[aria-current="true"] {
-      background: var(--forest); color: #fff; border-color: var(--forest);
+    .steps-rail {
+      position: sticky; top: 20px;
+      background: var(--cream-deep); border: 1px solid var(--line);
+      border-radius: 22px; padding: 14px;
     }
+    .steps-label {
+      margin: 0 0 8px; padding: 0 10px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted);
+    }
+    .step-btn {
+      width: 100%; text-align: left; border: none; background: transparent;
+      border-radius: 14px; padding: 10px 12px; cursor: pointer;
+      color: var(--ink-soft); font-size: 14px; font-weight: 600;
+      transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+      margin-bottom: 4px;
+    }
+    .step-btn:hover { background: rgba(255, 252, 247, 0.6); color: var(--ink); }
+    .step-btn.active {
+      background: var(--white); color: var(--ink); box-shadow: var(--shadow);
+    }
+    .step-btn .hint {
+      display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--muted);
+    }
+    .composer-main { min-width: 0; }
 
     .panel {
       background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
@@ -108,29 +133,6 @@
       font-size: 0.88rem; line-height: 1.45; color: var(--ink-soft);
     }
     .rule strong { color: var(--forest); }
-
-    /* Chooser */
-    .choices {
-      display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
-    }
-    @media (min-width: 900px) {
-      .choices { grid-template-columns: repeat(4, 1fr); }
-    }
-    .choice {
-      text-align: left; border-radius: 18px; border: 1px solid var(--line);
-      background: var(--cream); overflow: hidden; transition: transform 0.25s var(--ease), box-shadow 0.25s;
-    }
-    .choice:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
-    .choice.featured { border-color: rgba(196, 146, 46, 0.45); box-shadow: 0 0 0 2px rgba(196, 146, 46, 0.15); }
-    .choice-art { height: 110px; position: relative; overflow: hidden; }
-    .choice-body { padding: 12px 14px 14px; }
-    .choice-body h3 { margin: 0 0 4px; font-size: 1rem; font-family: var(--serif); font-weight: 600; }
-    .choice-body p { margin: 0; font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
-    .new-tag {
-      position: absolute; top: 10px; left: 10px; z-index: 2;
-      padding: 4px 9px; border-radius: 999px; background: var(--mustard); color: #fff;
-      font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
-    }
 
     /* Filter chips */
     .filters {
@@ -667,57 +669,36 @@
   <div class="shell">
     <header class="top no-print">
       <div>
-        <h1>Create with AI</h1>
+        <a href="/create-with-ai" class="back-link">← Create with AI</a>
+        <h1>Flyer</h1>
         <p class="lede" id="pageLede">
-          Pick what you want to make for Riverside Community Association — homepage, social, newsletter, or a flyer that stays inside a template.
+          Start with a template. AI fills slots — it does not redesign the flyer.
         </p>
         <p class="save-hint" id="saveHint" hidden>Draft saved in this browser</p>
       </div>
       <span class="badge">Preview mockup · not shipped</span>
     </header>
 
-    <nav class="pills no-print" aria-label="Mockup views">
-      <button type="button" class="pill" data-view="chooser" aria-current="true">Chooser</button>
-      <button type="button" class="pill" data-view="templates">1 · Templates</button>
-      <button type="button" class="pill" data-view="inputs">2 · Inspiration</button>
-      <button type="button" class="pill" data-view="result">3 · Generate</button>
-    </nav>
+    <div class="composer-layout">
+      <nav class="steps-rail no-print" aria-label="Flyer builder steps">
+        <p class="steps-label">Steps</p>
+        <button type="button" class="step-btn active" data-view="templates" aria-current="step">
+          1 · Templates
+          <span class="hint">Layouts · custom upload</span>
+        </button>
+        <button type="button" class="step-btn" data-view="inputs">
+          2 · Inspiration
+          <span class="hint">Photo · brand · copy</span>
+        </button>
+        <button type="button" class="step-btn" data-view="result">
+          3 · Generate
+          <span class="hint">Preview · print · export</span>
+        </button>
+      </nav>
 
-    <!-- CHOOSER -->
-    <section class="panel" data-panel="chooser">
-      <h2>What do you want to make?</h2>
-      <p class="sub">Flyer joins Home Page, Social Media, and Newsletter. Same Create with AI home — new module.</p>
-      <div class="choices">
-        <button type="button" class="choice" disabled style="opacity:0.7;cursor:default">
-          <div class="choice-art" style="background:linear-gradient(145deg,#2f4a3c,#6b8171,#b8c9bc)"></div>
-          <div class="choice-body"><h3>Home Page</h3><p>Membership toolkit HTML</p></div>
-        </button>
-        <button type="button" class="choice" disabled style="opacity:0.7;cursor:default">
-          <div class="choice-art" style="background:linear-gradient(155deg,#c4922e,#e0b65a,#f5e6c2)"></div>
-          <div class="choice-body"><h3>Social Media</h3><p>Campaign posts & captions</p></div>
-        </button>
-        <button type="button" class="choice" disabled style="opacity:0.7;cursor:default">
-          <div class="choice-art" style="background:linear-gradient(155deg,#0b2f5b,#2f9fb3,#7fd0df)"></div>
-          <div class="choice-body"><h3>Newsletter</h3><p>Family email scoop</p></div>
-        </button>
-        <button type="button" class="choice featured" id="openFlyer">
-          <span class="new-tag">New</span>
-          <div class="choice-art" style="background:linear-gradient(160deg,#1e3a32 0%,#2a7a86 45%,#e8d5a8 100%)">
-            <div style="position:absolute;inset:18px 28px;border-radius:10px;background:rgba(255,252,247,0.95);box-shadow:0 10px 24px rgba(0,0,0,0.15);display:flex;flex-direction:column;overflow:hidden">
-              <div style="flex:1;background:linear-gradient(145deg,#6b8171,#d4a84b)"></div>
-              <div style="padding:6px 8px;background:#2f4a3c;height:28px"></div>
-            </div>
-          </div>
-          <div class="choice-body">
-            <h3>Flyer</h3>
-            <p>Print &amp; online layouts — AI fills your template</p>
-          </div>
-        </button>
-      </div>
-    </section>
-
+      <div class="composer-main">
     <!-- TEMPLATES -->
-    <section class="panel" data-panel="templates" hidden>
+    <section class="panel" data-panel="templates">
       <h2>Choose a flyer template</h2>
       <p class="sub">AI will place your image, brand colors, and copy into this layout — it won’t invent a new design.</p>
       <div class="rule">
@@ -727,7 +708,6 @@
       <div class="filters" id="tplFilters" aria-label="Filter templates"></div>
       <div class="tpl-grid" id="tplGrid"></div>
       <div class="actions">
-        <button type="button" class="btn btn-secondary" data-goto="chooser">Back</button>
         <button type="button" class="btn btn-primary" id="toInputs" disabled>Continue with template</button>
       </div>
     </section>
@@ -835,10 +815,12 @@
         </div>
       </div>
     </section>
+      </div>
+    </div>
 
     <p class="foot-note no-print">
       Mockup only · <a href="/create-with-ai">Live Create with AI</a> (Flyer not shipped) ·
-      Views: <code>?view=chooser|templates|inputs|result</code> · Draft auto-saves locally
+      Views: <code>?view=templates|inputs|result</code> · Draft auto-saves locally
     </p>
   </div>
 
@@ -1043,7 +1025,7 @@
     ];
 
     const state = {
-      view: "chooser",
+      view: "templates",
       templateId: null,
       filter: "all",
       imageUrl: SAMPLES[0].url,
@@ -1053,7 +1035,7 @@
     };
 
     const panels = [...document.querySelectorAll("[data-panel]")];
-    const pills = [...document.querySelectorAll(".pill[data-view]")];
+    const stepBtns = [...document.querySelectorAll(".step-btn[data-view]")];
 
     function getTpl(id) {
       return TEMPLATES.find((t) => t.id === id) || TEMPLATES[1];
@@ -1430,7 +1412,12 @@
     function setView(view) {
       state.view = view;
       panels.forEach((p) => { p.hidden = p.dataset.panel !== view; });
-      pills.forEach((p) => { p.setAttribute("aria-current", p.dataset.view === view ? "true" : "false"); });
+      stepBtns.forEach((btn) => {
+        const active = btn.dataset.view === view;
+        btn.classList.toggle("active", active);
+        if (active) btn.setAttribute("aria-current", "step");
+        else btn.removeAttribute("aria-current");
+      });
       const url = new URL(location.href);
       url.searchParams.set("view", view);
       history.replaceState(null, "", url);
@@ -1442,12 +1429,11 @@
       }
       if (view === "result") runGenerate();
       const ledes = {
-        chooser: "Pick what you want to make for Riverside Community Association — homepage, social, newsletter, or a flyer that stays inside a template.",
         templates: "Start with a template. AI fills slots — it does not redesign the flyer.",
         inputs: "Inspiration image, optional brand kit, and copy feed the template slots.",
         result: "Generated inside your chosen template. Swap templates anytime; AI never leaves the layout.",
       };
-      document.getElementById("pageLede").textContent = ledes[view] || ledes.chooser;
+      document.getElementById("pageLede").textContent = ledes[view] || ledes.templates;
     }
 
     function renderFilters() {
@@ -1609,19 +1595,19 @@
     }
 
     // Wire
-    pills.forEach((p) => p.addEventListener("click", () => {
-      if ((p.dataset.view === "inputs" || p.dataset.view === "result") && !state.templateId) {
+    stepBtns.forEach((btn) => btn.addEventListener("click", () => {
+      const view = btn.dataset.view;
+      if ((view === "inputs" || view === "result") && !state.templateId) {
         state.templateId = "festival";
         applyTemplateDefaults(getTpl("festival"));
         document.getElementById("toInputs").disabled = false;
         renderTemplates();
       }
-      setView(p.dataset.view);
+      setView(view);
     }));
     document.querySelectorAll("[data-goto]").forEach((btn) => {
       btn.addEventListener("click", () => setView(btn.dataset.goto));
     });
-    document.getElementById("openFlyer").addEventListener("click", () => setView("templates"));
     document.getElementById("toInputs").addEventListener("click", () => setView("inputs"));
     document.getElementById("toGenerate").addEventListener("click", () => setView("result"));
     document.getElementById("regen").addEventListener("click", () => runGenerate());
@@ -1693,14 +1679,15 @@
     syncCustomModeUI();
 
     const params = new URLSearchParams(location.search);
-    const initial = params.get("view") || "chooser";
+    let initial = params.get("view") || "templates";
+    if (initial === "chooser") initial = "templates";
     if (["templates", "inputs", "result"].includes(initial) && !state.templateId) {
       state.templateId = "festival";
       applyTemplateDefaults(getTpl("festival"));
       document.getElementById("toInputs").disabled = false;
       renderTemplates();
     }
-    setView(["chooser", "templates", "inputs", "result"].includes(initial) ? initial : "chooser");
+    setView(["templates", "inputs", "result"].includes(initial) ? initial : "templates");
   </script>
 </body>
 </html>
