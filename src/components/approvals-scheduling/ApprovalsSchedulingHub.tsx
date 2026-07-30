@@ -1,13 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { revisionPath } from "@/components/approvals-revision/map-item";
-import {
-  ApprovalFlowGuide,
-  ReviewDrawer,
-} from "@/components/approvals-scheduling/ReviewDrawer";
+import { ApprovalFlowGuide } from "@/components/approvals-scheduling/ApprovalFlowGuide";
 import {
   ApprovalsEmptyEase,
   ApprovalsFocusCard,
@@ -15,7 +13,6 @@ import {
 } from "@/components/approvals-scheduling/ApprovalsEaseList";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
-import { ApprovalClearedCelebration } from "@/components/motion/ApprovalClearedCelebration";
 import {
   approveUnifiedItemAction,
   enrichUnifiedApprovalItemPreviewAction,
@@ -46,6 +43,22 @@ import type {
   UnifiedViewScope,
 } from "@/lib/approvals-scheduling/types";
 import { cn } from "@/lib/utils/cn";
+
+const ReviewDrawer = dynamic(
+  () =>
+    import("@/components/approvals-scheduling/ReviewDrawer").then(
+      (module) => module.ReviewDrawer,
+    ),
+  { ssr: false },
+);
+
+const ApprovalClearedCelebration = dynamic(
+  () =>
+    import("@/components/motion/ApprovalClearedCelebration").then(
+      (module) => module.ApprovalClearedCelebration,
+    ),
+  { ssr: false },
+);
 
 interface ApprovalsSchedulingHubProps extends UnifiedApprovalsPageData {
   /** Pre-fills search when deep-linking from `/approvals?event=`. */

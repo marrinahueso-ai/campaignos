@@ -93,7 +93,7 @@ test.describe("Page load & save budget (≤ 2s)", () => {
         url: "/approvals",
         ready: async (p) => {
           await expect(
-            mainContent(p).getByRole("heading", { name: /approvals/i }),
+            mainContent(p).getByRole("heading", { name: /^approvals$/i }),
           ).toBeVisible({ timeout: 30_000 });
         },
       },
@@ -253,7 +253,7 @@ test.describe("Page load & save budget (≤ 2s)", () => {
           ready: async () => {
             await expect(page).toHaveURL(/\/approvals/);
             await expect(
-              mainContent(page).getByRole("heading", { name: /approvals/i }),
+              mainContent(page).getByRole("heading", { name: /^approvals$/i }),
             ).toBeVisible({ timeout: 30_000 });
           },
         },

@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA  
-**Last updated:** July 24, 2026  
+**Last updated:** July 29, 2026 (post-deploy Lighthouse re-measure)  
 **Related:** [Testing guide](./testing-guide.md) · [Launch checklist](./launch-checklist.md)
 
 ## Target
@@ -30,6 +30,56 @@ Requires `HEY_RALLI_TEST_EMAIL` / `HEY_RALLI_TEST_PASSWORD` in `.env.local`.
 
 Spec: `tests/hey-ralli/perf/19-page-budget.spec.ts`  
 Helpers: `tests/hey-ralli/helpers/perf.ts`
+
+## Lighthouse route matrix (July 29, 2026 — Production desktop)
+
+Founder-run desktop Chrome Lighthouse against logged-in Edmondson Elementary production pages:
+
+| Route / surface | Performance | Accessibility | Best Practices | SEO | Result |
+|---|---:|---:|---:|---:|---|
+| `/dashboard` (Your overview) | **90** | **100** | **100** | **69** | Performance pass; **SEO 69 expected** (see below) |
+| `/calendar` (Calendar Ease) | **99** | **100** | 96 | 92 | Performance pass |
+| `/events` | **90** | **100** | **100** | 92 | Performance pass at threshold |
+| `/volunteers` | **99** (was 81 / 76 pre-transform) | 97 | 96 | 92 | Performance pass |
+| `/events/<event>/campaign-builder#inspiration` (Social Media Composer) | **88** | **83** | **100** | 92 | **Performance fail; accessibility follow-up** |
+| `/homepage-composer` | **98** | **87** | **100** | **61** | Performance pass; accessibility and SEO follow-up |
+| `/approvals` | **100** (was 82 pre-transform) | **100** | **100** | 92 | Performance pass |
+| `/communications` | **97** | **100** | 92 | **100** | Performance pass |
+
+**Soft-launch operational hubs and `/dashboard` now meet Lighthouse Performance ≥90** after the Supabase image-transform deploy (Jul 29 post-deploy re-measure, incognito production): Dashboard **90**, Calendar 99, Events 90, Volunteers **99**, Approvals **100**, Communications 97, Homepage Composer 98. Volunteers and Approvals jumped from **81/82** when list artwork still pulled multi-MB Supabase originals (~10,352 KiB / ~3,358 KiB payloads).
+
+**Dashboard SEO 69 is expected, not a soft-launch defect.** Authenticated app routes emit `<meta name="robots" content="noindex, nofollow" />` so the signed-in product is not indexed — Lighthouse penalizes that by design. Do **not** remove `noindex` from dashboard or other app shells unless product intentionally wants authenticated routes in search (they should not). Marketing and public surfaces (`/`, share previews, etc.) are measured separately.
+
+Product-wide Performance remains **Partial** — Social Media Composer **88** is the only remaining miss (prior Jul 29 run; not re-measured post-deploy).
+
+Accessibility is also Partial product-wide: Calendar, Events, Approvals, and Communications scored 100, Volunteers 97, but Social Media Composer (83) and Homepage Composer (87) need focused remediation (prior Jul 29 run for composers; not re-measured post-deploy). These lab scores remain narrower than a keyboard, screen-reader, contrast, or WCAG audit.
+
+Every run warned that IndexedDB may affect loading. Re-run in an incognito Chrome profile with extensions disabled before using the results to prioritize first-party bundle work. The Calendar audit’s ~192 KiB unused-JS diagnostic included ~82 KiB from Chrome extension `ofaokdiedipichpaobibbnahnkdoiiah` (including jQuery), not application code; about ~109 KiB was first-party `heyralli.com` chunks. Lighthouse’s lab score does **not** measure this document’s authenticated wall-clock-to-usable ≤2s budget or concurrent-dashboard requirement.
+
+### Post-deploy win — Supabase image transform (July 29, 2026)
+
+Deployed fix: public Supabase object URLs become `/storage/v1/render/image/public/...` transformed derivatives before they reach `next/image`. Hero cards are capped at 800px and queue thumbnails at 128px; queue images retain Next Image's default lazy loading. This bounds the upstream source instead of relying on the Vercel image optimizer to retrieve a multi-megabyte original. Signed/non-Supabase URLs intentionally retain their existing source URL and still use Next Image optimization.
+
+Founder post-deploy re-measure (incognito production desktop Lighthouse):
+
+| Route | Performance (before → after) | Accessibility | Best Practices | SEO |
+|---|---:|---:|---:|---:|
+| `/volunteers` | **81 → 99** | 97 | 96 | 92 |
+| `/approvals` | **82 → 100** | 100 | 100 | 92 |
+
+Pre-deploy diagnostics (for context — superseded on these routes):
+
+| Route | Image-delivery estimated savings | Cache-lifetime estimated savings | Total payload | Unused JS | Performance (pre-deploy) |
+|---|---:|---:|---:|---:|---|
+| `/volunteers` | **~9,769 KiB** | **~7,882 KiB** | **~10,352 KiB** | ~158 KiB | 81 |
+| `/approvals` | **~2,790 KiB** | **~2,276 KiB** | **~3,358 KiB** | ~172 KiB | 82 |
+
+Root cause confirmed: pre-deploy, list artwork pulled full-size Supabase originals; the earlier local-only `unoptimized` removal did not cap the upstream source. Post-deploy transform URLs fixed Volunteers/Approvals payloads and cleared the soft-launch ops-hub Performance bar.
+
+**Still open:** Social Media Composer Performance **88** and Accessibility **83**; Homepage Composer Accessibility **87** (prior Jul 29 measurements — not re-run post-deploy). Recommended founder re-runs in incognito desktop Chrome:
+
+1. `/events/<event>/campaign-builder#inspiration` and `/homepage-composer` — record failing audits, not just scores.
+2. `/calendar`, `/events`, and `/communications` as control samples; verify the IndexedDB warning is gone or clearly isolated.
 
 ## Baseline (July 22, 2026 — Production heyralli.com)
 
@@ -74,8 +124,23 @@ Prefer Production: `HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ral
 - **Membership / hot helpers (Priority 5)** — layout `listActiveMemberships` + `getActiveMembership` share one cached `organization_users` load; `getOrganizationById`, `getOrganizationUsers`, playbook-with-steps, and team-access workload are request-`cache()`’d so metadata + page do not double-fetch.
 - **Client code-split (Priority 6)** — Ask Ralli dialog loads on open (sidebar pin stays eager); Event Detail Volunteers tab is `next/dynamic` like other heavy tabs; Create with AI Artwork stack loads via dynamic `CampaignCreativeTab` + lazy ArtworkV2 step screens (campaign workspace stays on the default path).
 
+## Caching contract
+
+- **Scope:** performance caches use React `cache()` for request-local deduplication only; they do not persist or share authenticated organization data across requests. Examples: [membership queries](../../src/lib/auth/membership-queries.ts), [Meta publish bundles](../../src/lib/meta-publishing/bundles.ts), and [planning raw data](../../src/lib/communications-calendar/planning-raw.ts).
+- **Coverage:** dashboard/layout reads share memberships and organization helpers; approvals, scheduling, Event detail, and campaign-builder option reads cache repeated server lookups within their render request.
+- **Freshness:** mutations explicitly invalidate affected routes with `revalidatePath`; the app intentionally does not apply a shared response cache to session-scoped dashboard data.
+- **Verification:** exercise a page that renders both metadata/layout and main content, then use the Supabase request log or temporary local query instrumentation to confirm a duplicated helper is issued once per request. Regression coverage should keep the cache wrapper around a hot helper rather than asserting cross-request reuse.
+
+## Latest local verification (July 29, 2026)
+
+`npm run test:hey-ralli:perf` ran against the local web server with the configured QA account. The Tasks **New Task** interaction passed at **33ms** (heap ~159MB). The five concurrent dashboard loads were **6.0–6.1s**, over the 2s target; this is a real local miss but is not comparable to the July 22 Production baseline because `next dev` compilation and the local machine are in the path. Two stale test locators (Approvals' non-unique heading and login's renamed "Log in" heading) prevented the other route samples from completing; they were corrected in the smoke harness. Re-run against Production before accepting a new baseline:
+
+```bash
+HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ralli:perf
+```
+
 ## Not covered here
 
-- Lighthouse CI / Core Web Vitals on Production (optional follow-up)
+- Lighthouse CI / Core Web Vitals route and device matrix (optional follow-up)
 - Artwork generation latency
 - Full k6/Artillery soak against Production (avoid hammering prod)

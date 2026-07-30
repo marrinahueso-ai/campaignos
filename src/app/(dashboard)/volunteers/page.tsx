@@ -6,9 +6,13 @@ export const metadata = {
   title: "Volunteers",
 };
 
-export default async function VolunteersPage() {
+async function VolunteersPageContent() {
   const data = await getVolunteersMasterPageData();
 
+  return <VolunteersMasterShell data={data} />;
+}
+
+export default function VolunteersPage() {
   return (
     <Suspense
       fallback={
@@ -17,7 +21,7 @@ export default async function VolunteersPage() {
         </div>
       }
     >
-      <VolunteersMasterShell data={data} />
+      <VolunteersPageContent />
     </Suspense>
   );
 }
