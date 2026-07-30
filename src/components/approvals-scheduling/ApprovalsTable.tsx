@@ -21,7 +21,6 @@ import type {
   UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
 import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
-import { toSupabaseThumbnailUrl } from "@/lib/images/supabase-thumbnail";
 import { cn } from "@/lib/utils/cn";
 
 const SORTABLE_COLUMNS: {
@@ -68,16 +67,17 @@ function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
     item.preview.storyArtworkUrl ||
     item.thumbnailUrl ||
     "";
-  const url = toSupabaseThumbnailUrl(source, { width: 128 });
-  const [imageSrc, setImageSrc] = useState(url);
+  const [imageSrc, setImageSrc] = useState(source);
 
   useEffect(() => {
-    setImageSrc(url);
-  }, [url]);
+    setImageSrc(source);
+  }, [source]);
 
   return (
     <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-cos-border bg-cos-bg">
       {imageSrc ? (
+        // Table posters bypass Next's optimizer to preserve poster composition.
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={imageSrc}
           alt=""
@@ -85,6 +85,8 @@ function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
           onError={() => {
             if (imageSrc !== source) {
               setImageSrc(source);
+            } else {
+              setImageSrc("");
             }
           }}
         />

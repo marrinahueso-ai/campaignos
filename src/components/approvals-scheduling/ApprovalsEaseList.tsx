@@ -51,10 +51,13 @@ function ArtTile({
 }) {
   const source = artBackground(item);
   const url = toSupabaseThumbnailUrl(source, { width });
-  const [imageSrc, setImageSrc] = useState(url);
+  // Queue posters intentionally bypass transforms/next-image to preserve their
+  // visual composition after the Lighthouse optimization regression.
+  const displayUrl = fit === "contain" ? source : url;
+  const [imageSrc, setImageSrc] = useState(displayUrl);
   useEffect(() => {
-    setImageSrc(url);
-  }, [url]);
+    setImageSrc(displayUrl);
+  }, [displayUrl]);
   return (
     <div
       className={cn(
@@ -64,6 +67,8 @@ function ArtTile({
     >
       {imageSrc ? (
         fit === "contain" ? (
+          // Queue posters bypass Next's optimizer to preserve poster composition.
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageSrc}
             alt=""
@@ -71,6 +76,8 @@ function ArtTile({
             onError={() => {
               if (imageSrc !== source) {
                 setImageSrc(source);
+              } else {
+                setImageSrc("");
               }
             }}
           />
