@@ -29,9 +29,9 @@ function shortenOrganizationName(name: string | null): string {
 
 export async function getFlyerComposerBrandKit(): Promise<FlyerComposerBrandKitResponse | null> {
   const profile = await getSchoolProfile();
-  const organization = profile?.organization;
-  if (!organization?.id) return null;
+  if (!profile?.organization?.id) return null;
 
+  const organization = profile.organization;
   const brandAssets = profile.brandAssets;
   const primaryColor = brandAssets?.primaryColor?.trim() || "#2F4A3C";
   const accentColor = brandAssets?.secondaryColor?.trim() || "#6b9080";
