@@ -105,7 +105,7 @@ function ArtTile({
               ? "object-cover object-center"
               : "object-contain object-center"
           }
-          sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 240px"}
+          sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 280px"}
           priority={priority}
           loading={priority ? "eager" : "lazy"}
           onError={() => setImageSrc("")}
