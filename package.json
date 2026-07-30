@@ -36,7 +36,8 @@
     "test:hey-ralli:firefox": "bash scripts/hey-ralli-test.sh run --project=firefox",
     "test:hey-ralli:webkit": "bash scripts/hey-ralli-test.sh run --project=webkit",
     "test:hey-ralli:cross-browser": "bash scripts/hey-ralli-test.sh run --project=chromium --project=firefox --project=webkit",
-    "test:hey-ralli:perf": "bash scripts/hey-ralli-test.sh run --project=chromium tests/hey-ralli/perf/19-page-budget.spec.ts"
+    "test:hey-ralli:perf": "bash scripts/hey-ralli-test.sh run --project=chromium tests/hey-ralli/perf/19-page-budget.spec.ts",
+    "test:flyer-composer": "npx tsx --test 'src/lib/flyer-composer/__tests__/*.test.ts'"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

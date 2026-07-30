@@ -13,6 +13,7 @@ import type {
   FlyerComposerGeneratedSlots,
   FlyerComposerSlotFields,
 } from "@/lib/flyer-composer/types";
+import { coalesceSemesterCalendarSlots } from "@/lib/flyer-composer/semester-calendar";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getAiProfileByOrganizationId } from "@/lib/organization-intelligence/queries";
 import { getAuthUser } from "@/lib/auth/queries";
@@ -54,47 +55,6 @@ function mergeGeneratedSlots(
     }
   }
   return coalesceSemesterCalendarSlots(input.template.templateId, merged);
-}
-
-function looksLikeCalendarLine(line: string): boolean {
-  const t = line.trim();
-  if (!t) return false;
-  return (
-    /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\b/i.test(t) ||
-    /^\d{1,2}[/-]\d{1,2}/.test(t) ||
-    /[—–\-:|]/.test(t) ||
-    /\b(break|orientation|concert|fair|night|festival|holiday|early release|no school)\b/i.test(
-      t,
-    )
-  );
-}
-
-/** Semester preview reads month rows from datesEvents — recover when AI mis-slots calendar lines. */
-function coalesceSemesterCalendarSlots(
-  templateId: string,
-  slots: FlyerComposerGeneratedSlots,
-): FlyerComposerGeneratedSlots {
-  if (templateId !== "semester") return slots;
-
-  const dates = slots.datesEvents?.trim();
-  if (dates) return slots;
-
-  const body = slots.bodyCopy?.trim();
-  if (!body) return slots;
-
-  const bodyLines = body
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const calendarLines = bodyLines.filter(looksLikeCalendarLine);
-  if (!calendarLines.length) return slots;
-
-  const remainder = bodyLines.filter((line) => !calendarLines.includes(line));
-  return {
-    ...slots,
-    datesEvents: calendarLines.join("\n"),
-    bodyCopy: remainder.join("\n"),
-  };
 }
 
 export async function generateFlyerComposerSlots(
