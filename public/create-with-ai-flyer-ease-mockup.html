@@ -1620,6 +1620,21 @@
       }
     }
 
+    function updateCustomUploadUI() {
+      const el = document.getElementById("customUpload");
+      const empty = document.getElementById("customUploadEmpty");
+      if (!el) return;
+      if (state.customTemplateUrl && isCustomTpl()) {
+        el.classList.add("has");
+        el.style.backgroundImage = `url('${state.customTemplateUrl}')`;
+        if (empty) empty.hidden = true;
+      } else {
+        el.classList.remove("has");
+        el.style.backgroundImage = "";
+        if (empty) empty.hidden = false;
+      }
+    }
+
     function handleCustomTemplateFile(file) {
       if (!file) return;
       const applyUpload = () => {
