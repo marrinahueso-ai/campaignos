@@ -3,7 +3,7 @@ import "server-only";
 import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
-export async function requireFlyerMockupGenerateAccess(): Promise<
+export async function requireFlyerComposerGenerateAccess(): Promise<
   { ok: true; organizationId: string } | { ok: false; status: number; error: string }
 > {
   if (!(await hasPermission("upload_artwork"))) {

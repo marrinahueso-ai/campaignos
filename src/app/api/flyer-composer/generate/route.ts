@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireFlyerMockupGenerateAccess } from "@/lib/flyer-composer/api-auth";
+import { requireFlyerComposerGenerateAccess } from "@/lib/flyer-composer/api-auth";
 import { generateFlyerComposerSlots } from "@/lib/flyer-composer/generate-slots";
 import type {
   FlyerComposerAssetContext,
@@ -165,7 +165,7 @@ function parseGenerateBody(body: unknown): FlyerComposerGenerateInput | null {
 }
 
 export async function POST(request: Request) {
-  const access = await requireFlyerMockupGenerateAccess();
+  const access = await requireFlyerComposerGenerateAccess();
   if (!access.ok) {
     return NextResponse.json(
       { success: false, error: access.error, slots: null, aiUsed: false },
