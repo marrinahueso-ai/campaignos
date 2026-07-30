@@ -4,7 +4,6 @@ import {
   isSentryEnabled,
   scrubSentryEvent,
 } from "@/lib/monitoring/sentry-privacy";
-import { createReportProblemFeedbackIntegration } from "@/lib/monitoring/feedback";
 
 if (isSentryEnabled()) {
   Sentry.init({
@@ -16,7 +15,9 @@ if (isSentryEnabled()) {
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
     // Privacy-first: no session replay, no default PII
     sendDefaultPii: false,
-    integrations: [createReportProblemFeedbackIntegration()],
+    // Report a Problem uses our React dialog and `Sentry.captureFeedback`
+    // directly. Loading Sentry's Preact feedback widget is unnecessary and
+    // can perform DOM cleanup after navigation.
     beforeSend(event) {
       return scrubSentryEvent(event) as typeof event;
     },
