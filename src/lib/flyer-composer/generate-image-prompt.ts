@@ -17,6 +17,8 @@ const FIELD_LABELS: Record<string, string> = {
   lastYearNotes: "Last-year / change notes",
 };
 
+const PROVEN_LAYOUT_IDS = new Set(["semester", "investor", "festival"]);
+
 function templateLayoutInstructions(input: FlyerComposerGenerateInput): string[] {
   const { template, start } = input;
 
@@ -25,6 +27,21 @@ function templateLayoutInstructions(input: FlyerComposerGenerateInput): string[]
       "Layout type: CUSTOM UPLOAD — match the volunteer's uploaded last-year flyer layout and visual structure.",
       "Preserve the same section hierarchy, photo placement, and typography rhythm as a typical school/PTO flyer refresh.",
       "Update all dates, headlines, and copy from the direction below — do not reuse placeholder org names.",
+    ];
+  }
+
+  if (start.path === "new") {
+    if (template.templateId === "simple-half") {
+      return [
+        "Layout type: SIMPLE HALF-PAGE FLYER — landscape 8.5×5.5 announcement.",
+        "Compact headline, short body, CTA — optimized for bulletin boards.",
+        "Follow the volunteer's direction below — do not impose a calendar grid or donation tier layout.",
+      ];
+    }
+    return [
+      "Layout type: SIMPLE LETTER FLYER — clean 8.5×11 portrait announcement.",
+      "Headline, optional hero image band, scannable body, footer.",
+      "Follow the volunteer's direction below — do not impose a calendar grid or donation tier layout.",
     ];
   }
 
@@ -62,7 +79,7 @@ function templateLayoutInstructions(input: FlyerComposerGenerateInput): string[]
       ];
     default:
       return [
-        `Layout type: ${template.templateName} — follow this proven PTO/school flyer format.`,
+        `Layout type: ${template.templateName} — follow the volunteer's direction below.`,
       ];
   }
 }
@@ -158,8 +175,10 @@ export function buildFlyerComposerImagePrompt(
     "Output one finished flyer image with all text rendered legibly — not a wireframe or HTML mockup.",
     "Use real copy from the direction below; never use placeholder org names like Oak Park or Riverside.",
     "",
-    `Start path: ${start.pathLabel ?? start.path ?? "proven layout"}`,
-    `Template: ${template.templateName} (${template.templateId})`,
+    `Start path: ${start.pathLabel ?? start.path ?? "new flyer"}`,
+    PROVEN_LAYOUT_IDS.has(template.templateId)
+      ? `Template: ${template.templateName} (${template.templateId})`
+      : `Print format: ${template.templateName}`,
     `Print: ${printNote}`,
     "",
     ...templateLayoutInstructions(input),

@@ -43,18 +43,18 @@ export function buildSampleDirectionInput(
 ): FlyerComposerGenerateInput {
   return {
     start: {
-      path: "proven",
-      pathLabel: "Use a proven layout",
-      printSize: null,
-      printSizeLabel: null,
+      path: "new",
+      pathLabel: "New flyer",
+      printSize: "letter",
+      printSizeLabel: "Letter (8.5 × 11 in)",
       ...overrides.start,
     },
     template: {
-      templateId: "semester",
-      templateName: "Semester at a Glance",
+      templateId: "simple-letter",
+      templateName: "Simple flyer · Letter",
       isCustom: false,
       ratio: "3/4",
-      hasQr: true,
+      hasQr: false,
       ...overrides.template,
     },
     assets: {
@@ -82,7 +82,7 @@ export function buildSampleDirectionInput(
     },
     fields: {
       orgName: "Sample PTA",
-      headline: "Semester at a Glance",
+      headline: "School announcement",
       schoolYear: "2025–2026",
       location: "Sample Elementary",
       directions: "South lot · main doors",

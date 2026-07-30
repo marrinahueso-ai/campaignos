@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hey Ralli · Flyer</title>
-  <meta name="description" content="Update last year's flyer or pick a proven layout, add your details, and generate print-ready artwork." />
+  <meta name="description" content="Update last year's flyer or start a new one, add your details, and generate print-ready artwork." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
@@ -240,10 +240,24 @@
       display: block; font-size: 0.72rem; font-weight: 700; line-height: 1.25;
       color: var(--ink); overflow-wrap: anywhere;
     }
-    .start-path-tertiary {
-      padding: 14px 18px; background: rgba(255, 252, 247, 0.55);
+    .proven-optional {
+      margin-top: 16px; border: 1px solid var(--line); border-radius: 16px;
+      background: rgba(255, 252, 247, 0.55); overflow: hidden;
     }
-    .start-path-tertiary h3 { font-size: 1rem; }
+    .proven-optional summary {
+      padding: 12px 16px; font-size: 0.88rem; font-weight: 600; color: var(--muted);
+      cursor: pointer; list-style: none;
+    }
+    .proven-optional summary::-webkit-details-marker { display: none; }
+    .proven-optional summary::before {
+      content: "▸"; display: inline-block; margin-right: 8px;
+      transition: transform 0.2s var(--ease);
+    }
+    .proven-optional[open] summary::before { transform: rotate(90deg); }
+    .proven-optional[open] summary { color: var(--ink-soft); border-bottom: 1px solid var(--line); }
+    .proven-optional .start-path {
+      border: none; border-radius: 0; background: transparent; padding: 14px 16px 16px;
+    }
     .size-row {
       display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
     }
@@ -1115,7 +1129,7 @@
       <div>
         <a href="/create-with-ai" class="back-link">← Create with AI</a>
         <h1>Flyer</h1>
-        <p class="lede" id="pageLede">Update last year or pick a layout, then generate.</p>
+        <p class="lede" id="pageLede">Update last year’s flyer or start a new one, then generate.</p>
       </div>
     </header>
 
@@ -1170,13 +1184,7 @@
           <input type="file" id="startFile" accept="image/*,.pdf" hidden />
         </div>
 
-        <div class="start-path" data-path="proven">
-          <h3>Use a proven layout</h3>
-          <p class="path-hint">Three trusted layouts in your brand colors.</p>
-          <div class="proven-row" id="provenGrid"></div>
-        </div>
-
-        <div class="start-path start-path-tertiary" data-path="new">
+        <div class="start-path start-path-primary" data-path="new">
           <h3>New flyer</h3>
           <p class="path-hint">Pick a print size — we use one simple locked layout.</p>
           <div class="size-row">
@@ -1191,6 +1199,15 @@
           </div>
         </div>
       </div>
+      <!-- Proven layouts de-emphasized — optional later; not part of primary Start flow -->
+      <details class="proven-optional" id="provenOptional">
+        <summary>Or start from a layout (optional)</summary>
+        <div class="start-path" data-path="proven">
+          <h3>Use a proven layout</h3>
+          <p class="path-hint">Semester calendar, investor tiers, or event poster — in your brand colors.</p>
+          <div class="proven-row" id="provenGrid"></div>
+        </div>
+      </details>
       <div class="actions">
         <button type="button" class="btn btn-primary" id="toInputs" disabled>Continue</button>
       </div>
@@ -1700,13 +1717,31 @@
       autoGenerateOnEnter: false,
       generateTimer: null,
       generateStageTimer: null,
+      provenLayoutChosen: false,
     };
 
     const panels = [...document.querySelectorAll("[data-panel]")];
     const stepBtns = [...document.querySelectorAll(".step-btn[data-view]")];
 
     function getTpl(id) {
-      return TEMPLATES.find((t) => t.id === id) || TEMPLATES.find((t) => t.id === "semester");
+      return TEMPLATES.find((t) => t.id === id) || TEMPLATES.find((t) => t.id === "simple-letter");
+    }
+
+    function isProvenTemplateId(templateId) {
+      return PROVEN_IDS.includes(templateId);
+    }
+
+    /** Neutral default when Inspiration/Preview is reached without an explicit Start choice. */
+    function ensureDefaultStartPath() {
+      if (state.templateId && state.startPath) return;
+      state.startPath = "new";
+      state.printSize = state.printSize || "letter";
+      state.templateId = NEW_SIZE_IDS[state.printSize];
+      applyTemplateDefaults(getTpl(state.templateId));
+      syncCustomModeUI();
+      syncStartPathUI();
+      syncStartContinue();
+      scheduleSave();
     }
 
     function inferStartPath(templateId) {
@@ -1752,6 +1787,7 @@
         state.templateId = NEW_SIZE_IDS[state.printSize];
         applyTemplateDefaults(getTpl(state.templateId));
       }
+      state.provenLayoutChosen = path === "proven";
       state.previewGenerated = false;
       state.generatedImageUrl = null;
       syncCustomModeUI();
@@ -2462,6 +2498,7 @@
           templateId: state.templateId,
           startPath: state.startPath,
           printSize: state.printSize,
+          provenLayoutChosen: state.provenLayoutChosen,
           imageUrl: state.imageUrl,
           inspirationPhotoSource: state.inspirationPhotoSource,
           inspirationPhotoLabel: state.inspirationPhotoLabel,
@@ -2506,9 +2543,30 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return;
         const d = JSON.parse(raw);
-        if (d.templateId) state.templateId = d.templateId;
-        if (d.startPath) state.startPath = d.startPath;
-        else if (d.templateId) state.startPath = inferStartPath(d.templateId);
+        const savedProven =
+          isProvenTemplateId(d.templateId) &&
+          d.startPath === "proven" &&
+          d.provenLayoutChosen === true;
+        if (savedProven) {
+          state.templateId = d.templateId;
+          state.startPath = "proven";
+          state.provenLayoutChosen = true;
+        } else if (d.startPath === "update" || d.startPath === "new") {
+          state.startPath = d.startPath;
+          state.provenLayoutChosen = false;
+          if (d.templateId && !isProvenTemplateId(d.templateId)) {
+            state.templateId = d.templateId;
+          }
+        } else if (d.templateId && !isProvenTemplateId(d.templateId)) {
+          state.templateId = d.templateId;
+          state.startPath = inferStartPath(d.templateId);
+          state.provenLayoutChosen = false;
+        } else if (isProvenTemplateId(d.templateId)) {
+          /* Migrate old drafts that auto-selected Semester / Investor / Event */
+          state.templateId = null;
+          state.startPath = null;
+          state.provenLayoutChosen = false;
+        }
         if (d.printSize === "letter" || d.printSize === "half") state.printSize = d.printSize;
         else if (state.templateId === NEW_SIZE_IDS.half) state.printSize = "half";
         if (d.imageUrl) state.imageUrl = d.imageUrl;
@@ -2610,7 +2668,7 @@
         }
       }
       const ledes = {
-        start: "Update last year or pick a layout, then generate.",
+        start: "Update last year’s flyer or start a new one, then generate.",
         inputs: "Photo, org details, dates, QR, and brand.",
         result: "Generate, review, print, or download.",
       };
@@ -2640,6 +2698,7 @@
           const id = btn.dataset.proven;
           state.startPath = "proven";
           state.templateId = id;
+          state.provenLayoutChosen = true;
           applyTemplateDefaults(getTpl(id));
           state.previewGenerated = false;
       state.generatedImageUrl = null;
@@ -2655,6 +2714,10 @@
       updateStartUploadUI();
       syncStartPathUI();
       syncStartContinue();
+      const provenOptional = document.getElementById("provenOptional");
+      if (provenOptional) {
+        provenOptional.open = state.startPath === "proven";
+      }
     }
 
     function renderThumbs() {
@@ -3161,14 +3224,18 @@
     // Wire
     stepBtns.forEach((btn) => btn.addEventListener("click", () => {
       const view = btn.dataset.view;
-      if ((view === "inputs" || view === "result") && !state.templateId) return;
+      if (view === "inputs" || view === "result") ensureDefaultStartPath();
       setView(view);
     }));
     document.querySelectorAll("[data-goto]").forEach((btn) => {
       btn.addEventListener("click", () => setView(btn.dataset.goto));
     });
-    document.getElementById("toInputs").addEventListener("click", () => setView("inputs"));
+    document.getElementById("toInputs").addEventListener("click", () => {
+      ensureDefaultStartPath();
+      setView("inputs");
+    });
     document.getElementById("toGenerate").addEventListener("click", () => {
+      ensureDefaultStartPath();
       state.autoGenerateOnEnter = true;
       setView("result");
     });
@@ -3331,6 +3398,7 @@
         e.stopPropagation();
         state.printSize = btn.dataset.printSize;
         state.startPath = "new";
+        state.provenLayoutChosen = false;
         state.templateId = NEW_SIZE_IDS[state.printSize];
         applyTemplateDefaults(getTpl(state.templateId));
         state.previewGenerated = false;

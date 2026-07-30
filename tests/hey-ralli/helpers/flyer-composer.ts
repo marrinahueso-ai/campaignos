@@ -47,7 +47,26 @@ export async function openFlyerComposer(page: Page, view: "start" | "inputs" | "
   await page.waitForSelector('[data-panel="start"]');
 }
 
+export async function selectNewFlyerLetter(page: Page) {
+  await page.locator('.size-btn[data-print-size="letter"]').click();
+  await page.locator("#toInputs").click();
+  await page.waitForSelector('[data-panel="inputs"]:not([hidden])');
+}
+
+export async function selectNewFlyerHalf(page: Page) {
+  await page.locator('.size-btn[data-print-size="half"]').click();
+  await page.locator("#toInputs").click();
+  await page.waitForSelector('[data-panel="inputs"]:not([hidden])');
+}
+
+export async function openProvenLayoutsOptional(page: Page) {
+  await page.locator("#provenOptional").evaluate((el) => {
+    (el as HTMLDetailsElement).open = true;
+  });
+}
+
 export async function selectProvenTemplate(page: Page, templateId: "semester" | "investor" | "festival") {
+  await openProvenLayoutsOptional(page);
   await page.locator(`.proven-tpl[data-proven="${templateId}"]`).click();
   await page.locator("#toInputs").click();
   await page.waitForSelector('[data-panel="inputs"]:not([hidden])');

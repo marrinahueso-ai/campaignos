@@ -9,6 +9,19 @@ import {
 describe("flyer composer image prompt", () => {
   it("locks semester template to month-grid layout with full dates list", () => {
     const input = buildSampleDirectionInput({
+      start: {
+        path: "proven",
+        pathLabel: "Use a proven layout",
+        printSize: null,
+        printSizeLabel: null,
+      },
+      template: {
+        templateId: "semester",
+        templateName: "Semester at a Glance",
+        isCustom: false,
+        ratio: "3/4",
+        hasQr: true,
+      },
       fields: {
         headline: "Back to School",
         datesEvents:
@@ -24,6 +37,15 @@ describe("flyer composer image prompt", () => {
     assert.match(prompt, /Sample PTA/);
     assert.match(prompt, /#2F4A3C/i);
     assert.match(prompt, /never use placeholder org names/i);
+  });
+
+  it("uses simple letter layout for default new-flyer direction", () => {
+    const input = buildSampleDirectionInput();
+    const prompt = buildFlyerComposerImagePrompt(input);
+
+    assert.match(prompt, /SIMPLE LETTER FLYER/i);
+    assert.match(prompt, /New flyer/i);
+    assert.doesNotMatch(prompt, /SEMESTER AT A GLANCE/i);
   });
 
   it("locks investor template to donation tiers", () => {

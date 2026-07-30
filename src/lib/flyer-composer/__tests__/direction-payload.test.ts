@@ -32,8 +32,8 @@ describe("flyer composer direction payload", () => {
     const input = buildSampleDirectionInput();
     const lines = summarizeFlyerComposerDirection(input);
 
-    assert.ok(lines.some((line) => line.includes("Use a proven layout")));
-    assert.ok(lines.some((line) => line.includes("Semester at a Glance")));
+    assert.ok(lines.some((line) => line.includes("New flyer")));
+    assert.ok(lines.some((line) => line.includes("Simple flyer")));
     assert.ok(lines.some((line) => line.includes("Brand kit: on")));
     assert.ok(lines.some((line) => line.includes("Slots filled:")));
     assert.ok(lines.some((line) => line.includes("Last-year notes included")));

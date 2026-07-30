@@ -11,6 +11,8 @@ import {
   mockGenerateUnauthorized,
   openFlyerComposer,
   openOptionalDetails,
+  openProvenLayoutsOptional,
+  selectNewFlyerLetter,
   selectProvenTemplate,
   slotField,
   uploadInspirationPhoto,
@@ -30,9 +32,14 @@ test.describe("Flyer composer AI direction smoke", () => {
     await expect(page.locator("body")).not.toContainText(/Oak Park|Riverside|Panthers/i);
   });
 
-  test("Start paths: update upload, proven layouts, new sizes, stepper", async ({
+  test("Start paths: update upload, new sizes, optional proven layouts, stepper", async ({
     page,
   }) => {
+    // Primary paths visible; proven layouts collapsed by default
+    await expect(page.locator('.start-path[data-path="update"]')).toBeVisible();
+    await expect(page.locator('.start-path[data-path="new"]')).toBeVisible();
+    await expect(page.locator("#provenOptional")).not.toHaveAttribute("open", "");
+
     // Update last year: upload, replace, remove, continue
     await uploadStartTemplate(page);
     await expect(page.locator("#startUpload")).toHaveClass(/has/);
@@ -49,20 +56,7 @@ test.describe("Flyer composer AI direction smoke", () => {
     await page.locator("#startUploadRemove").click();
     await expect(page.locator("#startUploadActions")).toBeHidden();
 
-    // Proven layouts: Semester, Investor, Event
-    for (const id of ["semester", "investor", "festival"] as const) {
-      await page.locator(`.proven-tpl[data-proven="${id}"]`).click();
-      await expect(
-        page.locator(`.proven-tpl[data-proven="${id}"]`),
-      ).toHaveAttribute("aria-pressed", "true");
-    }
-    await page.locator("#toInputs").click();
-    await expect(page.locator('[data-panel="inputs"]')).toBeVisible();
-
-    // Stepper back to Start, then new flyer sizes
-    await page.locator('.step-btn[data-view="start"]').click();
-    await expect(page.locator('[data-panel="start"]')).toBeVisible();
-
+    // New flyer sizes (primary path)
     await page.locator('.size-btn[data-print-size="letter"]').click();
     await expect(page.locator("#toInputs")).toBeEnabled();
     await page.locator("#toInputs").click();
@@ -73,9 +67,21 @@ test.describe("Flyer composer AI direction smoke", () => {
     await page.locator("#toInputs").click();
     await expect(page.locator("#selectedTplName")).toContainText(/half/i);
 
+    // Optional proven layouts behind collapsed control
+    await page.locator('.step-btn[data-view="start"]').click();
+    await openProvenLayoutsOptional(page);
+    for (const id of ["semester", "investor", "festival"] as const) {
+      await page.locator(`.proven-tpl[data-proven="${id}"]`).click();
+      await expect(
+        page.locator(`.proven-tpl[data-proven="${id}"]`),
+      ).toHaveAttribute("aria-pressed", "true");
+    }
+    await page.locator("#toInputs").click();
+    await expect(page.locator('[data-panel="inputs"]')).toBeVisible();
+
     // Stepper Inspiration ↔ Preview (with template selected)
     await page.locator('.step-btn[data-view="start"]').click();
-    await selectProvenTemplate(page, "semester");
+    await selectNewFlyerLetter(page);
     await page.locator('.step-btn[data-view="result"]').click();
     await expect(page.locator('[data-panel="result"]')).toBeVisible();
     await page.locator('.step-btn[data-view="inputs"]').click();
@@ -83,7 +89,7 @@ test.describe("Flyer composer AI direction smoke", () => {
   });
 
   test("Inspiration: photo, brand kit, all slot fields persist", async ({ page }) => {
-    await selectProvenTemplate(page, "semester");
+    await selectNewFlyerLetter(page);
 
     // Hero photo starts from the default sample — exercise replace/remove/upload
     await expect(page.locator("#inspDrop").first()).toHaveClass(/has/);
@@ -129,10 +135,10 @@ test.describe("Flyer composer AI direction smoke", () => {
     await expect(page.locator('[data-panel="result"]')).toBeVisible();
   });
 
-  test("Preview generate applies mocked slots including semester dates", async ({
+  test("Preview generate applies mocked slots for new letter flyer", async ({
     page,
   }) => {
-    await selectProvenTemplate(page, "semester");
+    await selectNewFlyerLetter(page);
     await fillAllSlotFields(page, {
       orgName: "Preview Smoke PTA",
       headline: "Before Generate",
@@ -140,11 +146,12 @@ test.describe("Flyer composer AI direction smoke", () => {
     });
     await goToPreview(page);
 
-    // Directions to AI summary reflects filled fields
+    // Directions to AI summary reflects filled fields (not a proven layout name)
     const directionList = page.locator("#aiDirectionList");
-    await expect(directionList).toContainText("Semester at a Glance");
+    await expect(directionList).toContainText("New flyer");
     await expect(directionList).toContainText("Preview Smoke PTA");
     await expect(directionList).toContainText("Aug 1 — Orientation");
+    await expect(directionList).not.toContainText("Semester at a Glance");
 
     let generateRequestBody: Record<string, unknown> | null = null;
     await page.route(FLYER_GENERATE_API, async (route) => {
@@ -170,6 +177,8 @@ test.describe("Flyer composer AI direction smoke", () => {
 
     expect(generateRequestBody).toBeTruthy();
     expect(generateRequestBody!.fields).toBeTruthy();
+    expect(generateRequestBody!.start).toMatchObject({ path: "new" });
+    expect(generateRequestBody!.template).toMatchObject({ templateId: "simple-letter" });
 
     for (const id of SLOT_FIELD_IDS) {
       await expect(slotField(page, id)).toHaveValue(MOCK_GENERATED_SLOTS[id]);
@@ -181,7 +190,7 @@ test.describe("Flyer composer AI direction smoke", () => {
   test("Generate error path, regenerate, print, and download", async ({
     page,
   }) => {
-    await selectProvenTemplate(page, "semester");
+    await selectNewFlyerLetter(page);
     await fillAllSlotFields(page);
     await goToPreview(page);
 
