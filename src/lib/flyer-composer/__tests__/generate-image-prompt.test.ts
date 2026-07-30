@@ -8,7 +8,7 @@ import {
 } from "@/lib/flyer-composer/generate-image-prompt";
 
 describe("flyer composer image prompt", () => {
-  it("keeps event facts and a single freeform AI direction body", () => {
+  it("leads with volunteer direction, then short event facts", () => {
     const input = buildSampleDirectionInput({
       fields: {
         headline: "Back to School",
@@ -22,16 +22,22 @@ describe("flyer composer image prompt", () => {
     });
     const prompt = buildFlyerComposerImagePrompt(input);
 
-    assert.match(prompt, /EVENT DETAILS/i);
-    assert.match(prompt, /PRIMARY CREATIVE BRIEF/i);
-    assert.match(prompt, /Artwork direction from the user/i);
+    assert.match(prompt, /Volunteer direction/i);
+    assert.match(prompt, /main brief/i);
     assert.match(prompt, /Bright back-to-school look/);
-    assert.match(prompt, /prefer the artwork direction/i);
+    assert.match(prompt, /Facts to include/i);
     assert.match(prompt, /Aug 15 — Back to School Night/);
     assert.match(prompt, /Sample PTA/);
     assert.match(prompt, /#2F4A3C/i);
+    assert.doesNotMatch(prompt, /EVENT DETAILS/i);
+    assert.doesNotMatch(prompt, /PRIMARY CREATIVE BRIEF/i);
     assert.doesNotMatch(prompt, /CONTENT TO RENDER ON THE FLYER/i);
     assert.doesNotMatch(prompt, /Body copy:/i);
+    assert.doesNotMatch(prompt, /template.?lock|layout is LOCKED/i);
+
+    const directionIdx = prompt.indexOf("Volunteer direction");
+    const factsIdx = prompt.indexOf("Facts to include");
+    assert.ok(directionIdx >= 0 && factsIdx > directionIdx);
   });
 
   it("resolves aiDirection with legacy bodyCopy fallback", () => {
@@ -52,16 +58,16 @@ describe("flyer composer image prompt", () => {
     );
   });
 
-  it("uses simple letter layout for default new-flyer direction", () => {
+  it("uses letter format for default new-flyer direction", () => {
     const input = buildSampleDirectionInput();
     const prompt = buildFlyerComposerImagePrompt(input);
 
-    assert.match(prompt, /US Letter|clean US Letter/i);
-    assert.match(prompt, /New flyer/i);
+    assert.match(prompt, /US Letter 8\.5×11 inch portrait/i);
+    assert.match(prompt, /Bright back-to-school look/);
     assert.doesNotMatch(prompt, /Optional layout guide: Semester/i);
   });
 
-  it("mentions semester layout guide when proven semester is chosen", () => {
+  it("keeps direction and dates for proven semester without layout-lock essay", () => {
     const input = buildSampleDirectionInput({
       start: {
         path: "proven",
@@ -83,8 +89,10 @@ describe("flyer composer image prompt", () => {
     });
     const prompt = buildFlyerComposerImagePrompt(input);
 
-    assert.match(prompt, /semester calendar/i);
+    assert.match(prompt, /Month boxes for the semester/);
     assert.match(prompt, /Aug 15 — Back to School Night/);
+    assert.doesNotMatch(prompt, /layout is LOCKED/i);
+    assert.doesNotMatch(prompt, /Optional layout guide/i);
   });
 
   it("uses portrait size for letter ratio and landscape for half page", () => {
@@ -114,11 +122,28 @@ describe("flyer composer image prompt", () => {
     const prompt = buildFlyerComposerImagePrompt(input);
 
     assert.match(prompt, /US Letter 8\.5×11 inch portrait/i);
-    assert.match(prompt, /not square/i);
-    assert.match(prompt, /not Instagram/i);
+    assert.match(prompt, /not a square social crop/i);
+    assert.match(prompt, /full-bleed|edge-to-edge/i);
+    assert.match(prompt, /no white borders/i);
   });
 
-  it("instructs no stock hero photography when no inspiration photo", () => {
+  it("treats attached photo as hero/mood and asks for a full designed flyer", () => {
+    const input = buildSampleDirectionInput({
+      fields: {
+        aiDirection:
+          "Friday night lights for our elementary school — food trucks, bounce houses, dunk tanks. Bring blankets and chairs.",
+      },
+    });
+    const prompt = buildFlyerComposerImagePrompt(input);
+
+    assert.match(prompt, /Attached image/i);
+    assert.match(prompt, /hero|background|mood/i);
+    assert.match(prompt, /not a bare photograph/i);
+    assert.match(prompt, /activity callouts|activities/i);
+    assert.match(prompt, /Friday night lights/i);
+  });
+
+  it("instructs brand/typography when no inspiration photo", () => {
     const input = buildSampleDirectionInput({
       assets: {
         inspirationPhotoPresent: false,
@@ -132,14 +157,20 @@ describe("flyer composer image prompt", () => {
         customTemplateNote: null,
         customTemplateImageUrl: null,
       },
+      fields: {
+        aiDirection: "",
+        bodyCopy: "",
+        lastYearNotes: "",
+      },
     });
     const prompt = buildFlyerComposerImagePrompt(input);
 
-    assert.match(prompt, /Inspiration photo: none/i);
-    assert.match(prompt, /Do NOT invent stock crowd/i);
+    assert.match(prompt, /No reference photo/i);
+    assert.match(prompt, /avoid generic stock crowd/i);
+    assert.doesNotMatch(prompt, /Inspiration photo: none/i);
   });
 
-  it("includes QR placeholder instructions when QR URL is set", () => {
+  it("includes QR overlay instructions when QR URL is set", () => {
     const input = buildSampleDirectionInput({
       fields: {
         qrUrl: "https://example.org/calendar",
@@ -149,7 +180,7 @@ describe("flyer composer image prompt", () => {
     const prompt = buildFlyerComposerImagePrompt(input);
 
     assert.match(prompt, /QR/i);
-    assert.match(prompt, /placeholder/i);
+    assert.match(prompt, /white square|overlay/i);
     assert.match(prompt, /Scan to add dates/);
   });
 });

@@ -935,9 +935,16 @@
     .big-flyer.is-generated-image {
       background: #fff; display: flex; align-items: center; justify-content: center;
     }
+    /* AI portrait size is 1024×1536 (2:3). Letter UI ratio is 3:4 — match the
+       image so object-fit:contain does not letterbox white side gutters. */
+    .big-flyer.is-generated-image[data-ratio="3/4"],
+    .big-flyer.is-generated-image[data-ratio="9/16"] {
+      aspect-ratio: 2 / 3;
+      max-width: min(380px, 88%);
+    }
     .generated-flyer-img {
-      display: block; width: 100%; height: 100%; object-fit: contain;
-      background: #fff;
+      display: block; width: 100%; height: 100%; object-fit: cover;
+      background: transparent;
     }
     .big-flyer > .fly { min-height: 100%; }
     .big-flyer[data-ratio="1/1"] { aspect-ratio: 1 / 1; max-width: min(400px, 92%); }
@@ -1126,6 +1133,11 @@
       .big-flyer[data-ratio="3/2"] { width: 8.5in; aspect-ratio: auto; height: 5.5in; }
       .big-flyer[data-ratio="1/1"] { width: 8in; aspect-ratio: auto; height: 8in; }
       .big-flyer[data-ratio="9/16"] { width: 4.5in; aspect-ratio: auto; height: 8in; }
+      /* Generated PNGs are 2:3 — size the print frame to the image, not wider letter. */
+      .big-flyer.is-generated-image[data-ratio="3/4"],
+      .big-flyer.is-generated-image[data-ratio="9/16"] {
+        width: 7.33in; height: 11in; aspect-ratio: auto; max-width: none !important;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1173,12 +1185,12 @@
     <!-- START -->
     <section class="panel" data-panel="start">
       <h2>How do you want to start?</h2>
-      <p class="sub">Your layout stays fixed — AI fills in dates, copy, and QR.</p>
+      <p class="sub">Add a photo and your direction — AI designs a polished print flyer.</p>
       <div class="start-paths">
         <div class="start-path start-path-primary" data-path="update">
           <span class="path-badge">Recommended</span>
           <h3>Update last year’s flyer</h3>
-          <p class="path-hint">Keep the layout. Refresh dates, copy, and QR.</p>
+          <p class="path-hint">Upload last year’s file as a guide — refresh dates, copy, and QR.</p>
           <div class="start-upload-wrap">
             <div class="start-upload" id="startUpload" role="button" tabindex="0">
               <div id="startUploadEmpty">
@@ -1196,7 +1208,7 @@
 
         <div class="start-path start-path-primary" data-path="new">
           <h3>New flyer</h3>
-          <p class="path-hint">Pick a print size — we use one simple locked layout.</p>
+          <p class="path-hint">Pick a print size — Letter or half page.</p>
           <div class="size-row">
             <button type="button" class="size-btn" data-print-size="letter" aria-pressed="false">
               Letter
@@ -1230,7 +1242,7 @@
         <p class="sub" id="inputsSub" hidden></p>
       </div>
       <div class="custom-mode-note">
-        Update dates and copy — your layout stays the same.
+        Last year’s file is a guide — refresh dates and copy. A photo becomes the hero scene.
       </div>
 
       <p class="insp-tpl-line">Layout: <strong id="selectedTplName">Choose on Start</strong></p>
@@ -1450,7 +1462,7 @@
       </div>
       <div class="actions">
         <button type="button" class="btn btn-secondary" data-goto="start">Back</button>
-        <button type="button" class="btn btn-primary" id="toGenerate">Generate inside template</button>
+        <button type="button" class="btn btn-primary" id="toGenerate">Continue to Preview</button>
       </div>
     </section>
 
@@ -3085,7 +3097,7 @@
         customTemplateFileName: state.customTemplateFileName,
         customTemplateFileType: state.customTemplateFileType,
         customTemplateNote: isPdf
-          ? "PDF template uploaded — layout described in slot text; raster reference not sent."
+          ? "PDF uploaded as a prior-flyer guide — raster reference not sent; direction and photo still drive the design."
           : templateImageUrl
             ? null
             : "Custom template image present — attach a data or https URL to send as reference.",

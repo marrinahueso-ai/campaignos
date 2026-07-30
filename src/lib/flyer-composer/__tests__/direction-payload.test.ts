@@ -11,15 +11,18 @@ import {
 import { summarizeFlyerComposerDirection } from "@/lib/flyer-composer/generate-slots-prompt";
 
 describe("flyer composer direction payload", () => {
-  it("image prompt includes event details and freeform AI direction", () => {
+  it("image prompt includes freeform AI direction first, then event facts", () => {
     const input = buildSampleDirectionInput();
     const prompt = buildFlyerComposerImagePrompt(input);
     const direction = resolveFlyerComposerAiDirection(input.fields);
 
     assert.ok(direction.length > 0);
-    assert.match(prompt, /EVENT DETAILS/i);
-    assert.match(prompt, /Artwork direction from the user/i);
+    assert.match(prompt, /Volunteer direction/i);
+    assert.match(prompt, /Facts to include/i);
     assert.ok(prompt.includes(direction));
+    assert.ok(
+      prompt.indexOf("Volunteer direction") < prompt.indexOf("Facts to include"),
+    );
 
     for (const key of ["orgName", "headline", "schoolYear", "location"] as const) {
       const value = input.fields[key]?.trim();
