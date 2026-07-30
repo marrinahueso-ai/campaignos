@@ -89,7 +89,7 @@ export function CreateWithAiLanding({
   const socialLocked = !canUseSocial;
 
   return (
-    <div className="studio-page relative space-y-8 pb-12">
+    <div className="studio-page relative mx-auto max-w-2xl space-y-8 pb-12">
       <style>{`
         @keyframes cwai-fade-up {
           from { opacity: 0; transform: translateY(14px); }
@@ -140,7 +140,7 @@ export function CreateWithAiLanding({
         className="pointer-events-none absolute -right-8 top-16 h-48 w-48 rounded-full bg-cos-brand-mustard/15 blur-3xl"
       />
 
-      <header className="relative max-w-xl space-y-2">
+      <header className="relative space-y-2">
         <p className="studio-eyebrow">Create with AI</p>
         <h1 className="font-display text-4xl tracking-[-0.02em] text-cos-text sm:text-5xl">
           Make social posts
@@ -157,10 +157,10 @@ export function CreateWithAiLanding({
 
         {socialLocked ? (
           <div
-            className="cwai-card-enter cwai-hero grid overflow-hidden rounded-[24px] border border-cos-border/80 bg-cos-card/95 text-left shadow-[0_18px_40px_rgba(28,36,48,0.08)] opacity-90 md:grid-cols-[1.05fr_0.95fr]"
+            className="cwai-card-enter cwai-hero grid overflow-hidden rounded-[24px] border border-cos-border/80 bg-cos-card/95 text-left shadow-[0_18px_40px_rgba(28,36,48,0.08)] opacity-90 sm:grid-cols-[1fr_11rem]"
             aria-disabled
           >
-            <div className="flex flex-col justify-center px-7 py-7 sm:px-8">
+            <div className="flex flex-col justify-center px-6 py-6 sm:px-7 sm:py-7">
               <span className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cos-muted">
                 <Lock className="h-3 w-3" strokeWidth={1.75} />
                 Access needed
@@ -177,9 +177,9 @@ export function CreateWithAiLanding({
         ) : (
           <Link
             href={socialHref}
-            className="cwai-card-enter cwai-hero group grid overflow-hidden rounded-[24px] border border-cos-border/80 bg-cos-card/95 text-left shadow-[0_18px_40px_rgba(28,36,48,0.08)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(28,36,48,0.12)] md:grid-cols-[1.05fr_0.95fr]"
+            className="cwai-card-enter cwai-hero group grid overflow-hidden rounded-[24px] border border-cos-border/80 bg-cos-card/95 text-left shadow-[0_18px_40px_rgba(28,36,48,0.08)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(28,36,48,0.12)] sm:grid-cols-[1fr_11rem]"
           >
-            <div className="flex flex-col justify-center px-7 py-7 sm:px-8">
+            <div className="flex flex-col justify-center px-6 py-6 sm:px-7 sm:py-7">
               <h2 className="font-display text-2xl text-cos-text sm:text-[1.65rem]">
                 Social Media
               </h2>
@@ -202,7 +202,7 @@ export function CreateWithAiLanding({
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {ALSO_AVAILABLE.map((item, index) => {
             const live = item.status === "live" && item.href;
             const body = (
