@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Event Handoff Checklist Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --navy: #0b2f5b;
+      --teal: #2f9fb3;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, select, a { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 0;
+      gap: 6px;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; display: flex; flex-direction: column; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .user-chip {
+      font-size: 13px; font-weight: 600; color: var(--ink-soft);
+      background: var(--white); border: 1px solid var(--line);
+      border-radius: 999px; padding: 8px 14px;
+    }
+
+    /* Mockup chrome */
+    .mockup-bar {
+      padding: 12px 32px 0;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,252,247,0.6);
+    }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 10px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12;
+      font-size: 12px; font-weight: 700;
+    }
+    .scene-tabs {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding-bottom: 12px;
+    }
+    .scene-tab {
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px; font-weight: 700;
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+    }
+    .scene-tab:hover { background: rgba(255,252,247,0.7); color: var(--ink); }
+    .scene-tab.active {
+      background: var(--white);
+      color: var(--ink);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .scene-tab .num {
+      display: inline-grid; place-items: center;
+      width: 20px; height: 20px; border-radius: 999px;
+      background: var(--cream-deep); font-size: 11px;
+      margin-right: 6px;
+    }
+    .scene-tab.active .num { background: rgba(47,74,60,0.12); color: var(--forest); }
+
+    .content { padding: 20px 32px 80px; max-width: 74rem; flex: 1; }
+    .scene { display: none; animation: rise .35s ease both; }
+    .scene.active { display: block; }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .crumb {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      text-decoration: none; margin-bottom: 14px;
+    }
+    .crumb span { color: var(--ink); }
+
+    .hero-compact {
+      display: flex; flex-wrap: wrap; gap: 16px;
+      align-items: flex-end; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .hero-compact h1 {
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: clamp(28px, 3.5vw, 38px);
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+      margin: 0 0 6px;
+    }
+    .hero-compact .meta {
+      font-size: 13px; color: var(--ink-soft); margin: 0;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .btn {
+      border: none; border-radius: 999px;
+      padding: 11px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .12s, background .15s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-secondary {
+      background: var(--white); color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-ghost {
+      background: transparent; color: var(--ink-soft);
+      border: 1.5px solid var(--line);
+    }
+    .btn-warn {
+      background: rgba(166,90,58,0.12); color: var(--warn);
+      border: 1.5px solid rgba(166,90,58,0.25);
+    }
+
+    .tabs {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px; font-weight: 700;
+      color: var(--ink-soft);
+      cursor: pointer;
+    }
+    .tab.active {
+      background: var(--white);
+      color: var(--ink);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .owner-line {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 16px;
+      background: rgba(47,74,60,0.08);
+      border: 1px solid rgba(47,74,60,0.14);
+      font-size: 13px; color: var(--ink-soft);
+      margin-bottom: 18px;
+    }
+    .owner-line strong { color: var(--forest); font-weight: 700; }
+    .owner-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      background: var(--white); border: 1px solid var(--line);
+      font-size: 12px; font-weight: 700; color: var(--ink);
+    }
+
+    .handoff-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .handoff-head {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+      display: flex; flex-wrap: wrap; gap: 14px;
+      align-items: center; justify-content: space-between;
+    }
+    .handoff-head h2 {
+      font-family: var(--serif);
+      font-size: 22px; font-weight: 600;
+      margin: 0 0 4px;
+      letter-spacing: -0.02em;
+    }
+    .handoff-head p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+    .progress-wrap { min-width: 180px; text-align: right; }
+    .progress-label {
+      font-size: 13px; font-weight: 700; color: var(--forest);
+      margin-bottom: 6px;
+    }
+    .bar {
+      height: 6px; border-radius: 999px;
+      background: rgba(42,38,34,0.08); overflow: hidden;
+    }
+    .bar > i {
+      display: block; height: 100%; border-radius: inherit;
+      background: linear-gradient(90deg, var(--forest), var(--sage));
+    }
+
+    .checklist { list-style: none; margin: 0; padding: 0; }
+    .check-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .check-row:last-child { border-bottom: none; }
+    .check-row .label strong {
+      display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px;
+    }
+    .check-row .label span { font-size: 12px; color: var(--muted); }
+    .chip {
+      display: inline-flex; align-items: center;
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .chip-retain { background: rgba(47,74,60,0.12); color: var(--forest); }
+    .chip-opt { background: rgba(42,38,34,0.06); color: var(--muted); }
+    .link-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 12px; border-radius: 999px;
+      background: var(--cream); border: 1px solid var(--line);
+      font-size: 12px; font-weight: 600; color: var(--ink);
+      text-decoration: none; max-width: 220px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .link-pill.add {
+      color: var(--forest); border-style: dashed;
+      background: rgba(47,74,60,0.04);
+    }
+    .link-pill svg { width: 14px; height: 14px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* Archive scene */
+    .archive-bg {
+      position: relative;
+      min-height: 420px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: linear-gradient(145deg, #1e4a3a, #4a6b58 45%, #c4922e);
+      overflow: hidden;
+      opacity: 0.55;
+      filter: blur(0.5px);
+    }
+    .archive-bg-inner {
+      padding: 28px; color: var(--white);
+    }
+    .archive-bg-inner h2 {
+      font-family: var(--serif); font-size: 28px; margin: 0;
+    }
+    .modal-overlay {
+      position: absolute; inset: 0;
+      display: grid; place-items: center;
+      padding: 24px;
+      background: rgba(42,38,34,0.35);
+    }
+    .modal {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--line);
+      max-width: 440px; width: 100%;
+      padding: 24px 26px 22px;
+    }
+    .modal h3 {
+      font-family: var(--serif);
+      font-size: 24px; font-weight: 600;
+      margin: 0 0 8px;
+      letter-spacing: -0.02em;
+    }
+    .modal .lede {
+      margin: 0 0 16px;
+      font-size: 14px; color: var(--ink-soft); line-height: 1.45;
+    }
+    .summary-mini {
+      background: var(--cream);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+    }
+    .summary-mini .stat {
+      font-size: 22px; font-weight: 700;
+      font-family: var(--serif);
+      color: var(--forest);
+    }
+    .summary-mini p { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); }
+    .summary-list {
+      margin: 10px 0 0; padding: 0; list-style: none;
+      font-size: 12px; color: var(--muted);
+    }
+    .summary-list li { padding: 3px 0; }
+    .modal-actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .modal-note {
+      margin-top: 14px;
+      font-size: 12px; color: var(--muted); font-weight: 600;
+    }
+
+    /* Calendar import scene */
+    .import-panel {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .import-head {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .import-head h2 {
+      font-family: var(--serif);
+      font-size: 24px; font-weight: 600;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+    .import-head p { margin: 0; font-size: 14px; color: var(--ink-soft); max-width: 52ch; line-height: 1.45; }
+    .import-row {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .import-row:last-child { border-bottom: none; }
+    .event-import {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    .ev-date {
+      width: 52px; text-align: center;
+      background: var(--cream); border-radius: 12px;
+      padding: 8px 6px; border: 1px solid var(--line);
+    }
+    .ev-date strong {
+      display: block; font-family: var(--serif);
+      font-size: 20px; line-height: 1;
+    }
+    .ev-date span { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .ev-info h3 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+    .ev-info .type {
+      font-size: 12px; font-weight: 700; color: var(--sage);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .match-box {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(47,74,60,0.06);
+      border: 1px solid rgba(47,74,60,0.14);
+    }
+    .match-box .match-label {
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--forest); margin-bottom: 8px;
+    }
+    .match-arrow {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      align-items: center;
+      font-size: 14px; font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .match-arrow .from {
+      padding: 6px 12px; border-radius: 999px;
+      background: var(--white); border: 1px solid var(--line);
+      color: var(--muted); text-decoration: line-through;
+      text-decoration-color: rgba(122,113,102,0.5);
+    }
+    .match-arrow svg { width: 18px; height: 18px; stroke: var(--sage); fill: none; stroke-width: 2; }
+    .match-arrow .to { color: var(--forest); }
+    .match-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .explain {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--cream);
+      font-size: 12px; color: var(--ink-soft); line-height: 1.45;
+    }
+    .explain strong { color: var(--ink); }
+
+    .fallback-box {
+      margin-top: 20px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px dashed var(--line);
+      background: rgba(255,252,247,0.6);
+    }
+    .fallback-box h4 {
+      margin: 0 0 6px; font-size: 13px; font-weight: 700;
+    }
+    .fallback-box p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+    /* After clone scene */
+    .handoff-banner {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      border-radius: 16px;
+      background: rgba(47,74,60,0.1);
+      border: 1px solid rgba(47,74,60,0.18);
+      margin-bottom: 18px;
+    }
+    .handoff-banner strong {
+      font-size: 14px; color: var(--forest);
+    }
+    .handoff-banner span { font-size: 13px; color: var(--ink-soft); }
+    .fresh-note {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      background: rgba(196,146,46,0.14);
+      font-size: 11px; font-weight: 700; color: #7a5a12;
+    }
+    .split-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .info-tile {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+    }
+    .info-tile h4 {
+      margin: 0 0 4px; font-size: 13px; font-weight: 700;
+    }
+    .info-tile p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+    .info-tile.copied { border-color: rgba(47,74,60,0.2); }
+    .info-tile.fresh { border-color: rgba(196,146,46,0.25); }
+
+    @media (max-width: 720px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .check-row { grid-template-columns: 1fr; }
+      .split-info { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-hidden="true">
+      <div class="rail-logo">R</div>
+      <button type="button" class="active" title="Events"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+      <button type="button" title="Calendar"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button>
+      <button type="button" title="Files"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 6V4h8v2"/></svg></button>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="school-pill"><span class="dot"></span> Riverside Elementary PTA</div>
+        <div class="user-chip">Sam Rivera · VP Programs</div>
+      </header>
+
+      <div class="mockup-bar">
+        <span class="mock-tag">Product mockup · Event handoff &amp; next-year clone</span>
+        <nav class="scene-tabs" aria-label="Mockup scenes">
+          <button type="button" class="scene-tab active" data-scene="handoff"><span class="num">A</span>Handoff tab</button>
+          <button type="button" class="scene-tab" data-scene="archive"><span class="num">B</span>Archive nudge</button>
+          <button type="button" class="scene-tab" data-scene="import"><span class="num">C</span>Calendar import</button>
+          <button type="button" class="scene-tab" data-scene="cloned"><span class="num">D</span>After clone</button>
+        </nav>
+      </div>
+
+      <div class="content">
+
+        <!-- A: Event Handoff tab -->
+        <section class="scene active" id="scene-handoff" data-scene="handoff">
+          <a class="crumb" href="#">Events <span aria-hidden="true">›</span> <span>Fall Book Fair 2026</span></a>
+          <div class="hero-compact">
+            <div>
+              <h1>Fall Book Fair 2026</h1>
+              <p class="meta">Oct 12–16 · Fundraiser · Sam Rivera, event lead</p>
+            </div>
+            <div class="hero-actions">
+              <button type="button" class="btn btn-secondary">Archive event</button>
+            </div>
+          </div>
+
+          <div class="tabs" aria-label="Event tabs">
+            <button type="button" class="tab">Approvals</button>
+            <button type="button" class="tab">Tasks</button>
+            <button type="button" class="tab">Posts</button>
+            <button type="button" class="tab active">Handoff</button>
+            <button type="button" class="tab">Files</button>
+            <button type="button" class="tab">Vendors</button>
+          </div>
+
+          <div class="owner-line">
+            <span class="owner-badge">VP or event lead</span>
+            <span>Owned by <strong>Sam Rivera</strong> (event lead) or <strong>Jordan Lee</strong> (VP) — close this checklist when the event is done. Only they can archive or clone handoff to next year.</span>
+          </div>
+
+          <div class="handoff-card">
+            <div class="handoff-head">
+              <div>
+                <h2>Handoff checklist</h2>
+                <p>Link what the next chair should keep — contracts, budgets, vendor contacts, lessons.</p>
+              </div>
+              <div class="progress-wrap">
+                <div class="progress-label">4 of 6 retain items linked</div>
+                <div class="bar" aria-hidden="true"><i style="width: 66.6%"></i></div>
+              </div>
+            </div>
+            <ul class="checklist">
+              <li class="check-row">
+                <div class="label">
+                  <strong>Vendor contract</strong>
+                  <span>Scholastic agreement</span>
+                </div>
+                <span class="chip chip-retain">Retain</span>
+                <a class="link-pill" href="#"><svg viewBox="0 0 24 24"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M5 5h5M5 10v9h9v-5"/></svg> scholastic-contract.pdf</a>
+              </li>
+              <li class="check-row">
+                <div class="label">
+                  <strong>Budget worksheet</strong>
+                  <span>Revenue &amp; expenses</span>
+                </div>
+                <span class="chip chip-retain">Retain</span>
+                <a class="link-pill" href="#"><svg viewBox="0 0 24 24"><path d="M14 3h7v7"/><path d="M10 14 21 3"/></svg> book-fair-budget.xlsx</a>
+              </li>
+              <li class="check-row">
+                <div class="label">
+                  <strong>Board minutes</strong>
+                  <span>Approval record</span>
+                </div>
+                <span class="chip chip-retain">Retain</span>
+                <a class="link-pill" href="#"><svg viewBox="0 0 24 24"><path d="M14 3h7v7"/><path d="M10 14 21 3"/></svg> sept-board-minutes.pdf</a>
+              </li>
+              <li class="check-row">
+                <div class="label">
+                  <strong>Volunteer waiver</strong>
+                  <span>Signed template</span>
+                </div>
+                <span class="chip chip-retain">Retain</span>
+                <a class="link-pill add" href="#">+ Add file or link</a>
+              </li>
+              <li class="check-row">
+                <div class="label">
+                  <strong>Vendor contact</strong>
+                  <span>Scholastic rep</span>
+                </div>
+                <span class="chip chip-retain">Retain</span>
+                <a class="link-pill" href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg> Maria Chen · Scholastic</a>
+              </li>
+              <li class="check-row">
+                <div class="label">
+                  <strong>Lessons learned</strong>
+                  <span>Notes for next chair</span>
+                </div>
+                <span class="chip chip-opt">Optional</span>
+                <a class="link-pill add" href="#">+ Add note</a>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- B: Archive with handoff nudge -->
+        <section class="scene" id="scene-archive" data-scene="archive">
+          <a class="crumb" href="#">Events <span aria-hidden="true">›</span> <span>Fall Book Fair 2026</span></a>
+          <div class="hero-compact">
+            <div>
+              <h1>Archive Fall Book Fair 2026</h1>
+              <p class="meta">Only the VP or event lead can archive — Sam Rivera or Jordan Lee</p>
+            </div>
+          </div>
+          <div style="position: relative;">
+            <div class="archive-bg">
+              <div class="archive-bg-inner">
+                <h2>Fall Book Fair 2026</h2>
+                <p>Event workspace behind modal</p>
+              </div>
+            </div>
+            <div class="modal-overlay">
+              <div class="modal" role="dialog" aria-labelledby="archiveTitle">
+                <h3 id="archiveTitle">Finish handoff before archive?</h3>
+                <p class="lede">Your checklist helps next year's chair. This is a nudge, not a gate — you can archive anyway.</p>
+                <div class="summary-mini">
+                  <div class="stat">4 of 6 linked</div>
+                  <p>2 retain items still open</p>
+                  <ul class="summary-list">
+                    <li>· Volunteer waiver — not linked</li>
+                    <li>· Lessons learned — optional, empty</li>
+                  </ul>
+                </div>
+                <div class="modal-actions">
+                  <button type="button" class="btn btn-primary">Finish &amp; archive</button>
+                  <button type="button" class="btn btn-ghost">Archive anyway</button>
+                  <button type="button" class="btn btn-secondary">Back to checklist</button>
+                </div>
+                <p class="modal-note">Handoff stays with this archived event. Next year, the VP or new event lead confirms a match before cloning — never automatic.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- C: Calendar import / Review -->
+        <section class="scene" id="scene-import" data-scene="import">
+          <div class="hero-compact">
+            <div>
+              <h1>Review imported events</h1>
+              <p class="meta">2027–2028 school year · 12 new dates from district calendar</p>
+            </div>
+          </div>
+
+          <div class="import-panel">
+            <div class="import-head">
+              <h2>What to clone?</h2>
+              <p>When new dates land, we suggest a prior-year match by <strong>event type</strong> and similar title (including archived events). You always confirm — we never clone silently.</p>
+            </div>
+
+            <div class="import-row">
+              <div class="event-import">
+                <div class="ev-date"><strong>12</strong><span>Oct</span></div>
+                <div class="ev-info">
+                  <span class="type">Fundraiser · Imported</span>
+                  <h3>Book Fair 2027</h3>
+                  <p style="margin: 4px 0 0; font-size: 13px; color: var(--ink-soft);">Oct 12–16, 2027 · No handoff yet</p>
+
+                  <div class="match-box">
+                    <div class="match-label">Suggested handoff</div>
+                    <div class="match-arrow">
+                      <span class="from">Book Fair 2026</span>
+                      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                      <span class="to">Book Fair 2027</span>
+                    </div>
+                    <p style="margin: 0 0 12px; font-size: 13px; color: var(--ink-soft);">Use handoff from <strong>Fall Book Fair 2026</strong> — checklist links, vendor contacts, plan structure. Posts start fresh.</p>
+                    <div class="match-actions">
+                      <button type="button" class="btn btn-primary">Confirm match</button>
+                      <button type="button" class="btn btn-secondary">Choose different event</button>
+                      <button type="button" class="btn btn-ghost">Not this year</button>
+                    </div>
+                  </div>
+
+                  <div class="explain">
+                    <strong>How we match:</strong> Same event type (Fundraiser) + fuzzy title match (“Book Fair”) across school years. Also checks Communication Plan type when titles differ slightly (e.g. “Fall Book Fair” ↔ “Book Fair”).
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="import-row">
+              <div class="event-import">
+                <div class="ev-date"><strong>24</strong><span>Oct</span></div>
+                <div class="ev-info">
+                  <span class="type">Community · Imported</span>
+                  <h3>Fall Festival 2027</h3>
+                  <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted);">No strong match · Skip or pick manually later</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="fallback-box">
+            <h4>Manual fallback</h4>
+            <p>Create event → <strong>Clone handoff from past event</strong> — search any archived or active event. VP or event lead only. Same confirm step, no silent clone.</p>
+          </div>
+        </section>
+
+        <!-- D: After clone -->
+        <section class="scene" id="scene-cloned" data-scene="cloned">
+          <a class="crumb" href="#">Events <span aria-hidden="true">›</span> <span>Book Fair 2027</span></a>
+
+          <div class="handoff-banner">
+            <div>
+              <strong>Handed off from Fall Book Fair 2026</strong>
+              <span> · Confirmed by Sam Rivera (VP) · Oct 2027</span>
+            </div>
+            <span class="fresh-note">Posts start fresh</span>
+          </div>
+
+          <div class="hero-compact">
+            <div>
+              <h1>Book Fair 2027</h1>
+              <p class="meta">Oct 12–16 · 2027–2028 · Fundraiser · Assign event lead</p>
+            </div>
+          </div>
+
+          <div class="split-info">
+            <div class="info-tile copied">
+              <h4>Copied from handoff</h4>
+              <p>Checklist links, vendor contacts, communication plan structure, budget template, lessons note.</p>
+            </div>
+            <div class="info-tile fresh">
+              <h4>Starts fresh</h4>
+              <p>Posts, approvals, and published content — regenerate for 2027. No verbatim copy of last year's comms.</p>
+            </div>
+          </div>
+
+          <div class="owner-line">
+            <span class="owner-badge">VP or event lead</span>
+            <span>New event lead inherits the checklist — only they or the VP can edit handoff items or re-clone from another year.</span>
+          </div>
+
+          <div class="handoff-card">
+            <div class="handoff-head">
+              <div>
+                <h2>Handoff checklist</h2>
+                <p>Pre-filled from Fall Book Fair 2026 — review and update links.</p>
+              </div>
+              <div class="progress-wrap">
+                <div class="progress-label">5 of 6 retain items linked</div>
+                <div class="bar" aria-hidden="true"><i style="width: 83.3%"></i></div>
+              </div>
+            </div>
+            <ul class="checklist">
+              <li class="check-row">
+                <div class="label"><strong>Vendor contract</strong><span>From 2026 handoff</span></div>
+                <span class="chip chip-retain">Retain</span>
+                <a class="link-pill" href="#">scholastic-contract.pdf</a>
+              </li>
+              <li class="check-row">
+                <div class="label"><strong>Budget worksheet</strong><span>From 2026 handoff</span></div>
+                <span class="chip chip-retain">Retain</span>
+                <a class="link-pill" href="#">book-fair-budget.xlsx</a>
+              </li>
+              <li class="check-row">
+                <div class="label"><strong>Board minutes</strong><span>Update after 2027 approval</span></div>
+                <span class="chip chip-retain">Retain</span>
+                <a class="link-pill add" href="#">+ Add file or link</a>
+              </li>
+              <li class="check-row">
+                <div class="label"><strong>Volunteer waiver</strong><span>From 2026 handoff</span></div>
+                <span class="chip chip-retain">Retain</span>
+                <a class="link-pill" href="#">volunteer-waiver-template.pdf</a>
+              </li>
+              <li class="check-row">
+                <div class="label"><strong>Vendor contact</strong><span>From 2026 handoff</span></div>
+                <span class="chip chip-retain">Retain</span>
+                <a class="link-pill" href="#">Maria Chen · Scholastic</a>
+              </li>
+              <li class="check-row">
+                <div class="label"><strong>Lessons learned</strong><span>From 2026 handoff</span></div>
+                <span class="chip chip-opt">Optional</span>
+                <a class="link-pill" href="#">Start signup 2 weeks earlier</a>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.scene-tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var scene = tab.getAttribute('data-scene');
+        document.querySelectorAll('.scene-tab').forEach(function (t) { t.classList.remove('active'); });
+        document.querySelectorAll('.scene').forEach(function (s) { s.classList.remove('active'); });
+        tab.classList.add('active');
+        var el = document.getElementById('scene-' + scene);
+        if (el) el.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
