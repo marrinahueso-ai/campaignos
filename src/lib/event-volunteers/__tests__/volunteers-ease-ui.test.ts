@@ -29,12 +29,15 @@ describe("volunteers ease UI contracts", () => {
     assert.match(ease, /Event volunteers/);
   });
 
-  it("shows bounded full poster art without tight crops", () => {
+  it("uses square cover art for focus cards and contain art for queue thumbs", () => {
     assert.match(
       ease,
       /relative h-14 w-14 shrink-0 rounded-xl/,
     );
-    assert.match(ease, /height: width,[\s\S]*resize: "contain"/);
+    assert.match(ease, /aspect-square w-full md:self-start/);
+    assert.match(ease, /variant="focus"/);
+    assert.match(ease, /resize: variant === "focus" \? "cover" : "contain"/);
+    assert.match(ease, /"object-cover object-center"/);
     assert.match(ease, /object-contain object-center p-1/);
     assert.match(ease, /sizes=\{isCompact \? "56px"/);
     assert.match(ease, /loading=\{priority \? "eager" : "lazy"\}/);
