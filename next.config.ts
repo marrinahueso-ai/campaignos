@@ -15,11 +15,25 @@ const nextConfig: NextConfig = {
   // pdf-parse/pdfjs must not be webpack-bundled (breaks in server actions).
   serverExternalPackages: ["pdf-parse", "pdfjs-dist", "mammoth"],
   images: {
+    // Generated and uploaded artwork uses versioned storage paths. Keep the
+    // optimized derivative at the CDN for a day instead of revalidating every
+    // minute on list-heavy operational hubs.
+    minimumCacheTTL: 86_400,
     remotePatterns: [
       {
         protocol: "https",
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/public/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/sign/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/render/image/public/**",
       },
     ],
   },

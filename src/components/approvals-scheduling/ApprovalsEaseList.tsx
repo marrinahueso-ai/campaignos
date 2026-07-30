@@ -6,6 +6,7 @@ import {
   canRetryFailedApproval,
 } from "@/lib/approvals-scheduling/outcome-display";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
+import { toSupabaseThumbnailUrl } from "@/lib/images/supabase-thumbnail";
 import { cn } from "@/lib/utils/cn";
 
 function artBackground(item: UnifiedApprovalItem): string {
@@ -35,12 +36,19 @@ function ArtTile({
   item,
   className,
   label,
+  width,
+  priority,
+  fit = "cover",
 }: {
   item: UnifiedApprovalItem;
   className?: string;
   label?: string;
+  width: number;
+  priority?: boolean;
+  /** Queue thumbs show the entire poster within their fixed square. */
+  fit?: "cover" | "contain";
 }) {
-  const url = artBackground(item);
+  const url = toSupabaseThumbnailUrl(artBackground(item), { width });
   return (
     <div
       className={cn(
@@ -53,9 +61,13 @@ function ArtTile({
           src={url}
           alt=""
           fill
-          className="object-cover"
-          sizes="(max-width: 820px) 100vw, 280px"
-          unoptimized
+          className={
+            fit === "contain"
+              ? "object-contain object-center p-0.5"
+              : "object-cover"
+          }
+          sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
+          priority={priority}
         />
       ) : null}
       {label ? (
@@ -90,6 +102,8 @@ export function ApprovalsFocusCard({
       <ArtTile
         item={item}
         className="min-h-[200px] md:min-h-[260px]"
+        width={800}
+        priority
         label={
           item.preview.feedArtworkUrl
             ? "Feed"
@@ -186,16 +200,21 @@ export function ApprovalsQueueRow({
       className={cn(
         "grid w-full items-center gap-3.5 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.55)] px-3.5 py-3 transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)]",
         showRetry
-          ? "grid-cols-[48px_1fr_auto] sm:grid-cols-[56px_1fr_auto_auto_auto]"
-          : "grid-cols-[48px_1fr_auto] sm:grid-cols-[56px_1fr_auto_auto]",
+          ? "grid-cols-[56px_1fr_auto] sm:grid-cols-[56px_1fr_auto_auto_auto]"
+          : "grid-cols-[56px_1fr_auto] sm:grid-cols-[56px_1fr_auto_auto]",
       )}
     >
       <button
         type="button"
         onClick={() => onReview(item)}
-        className="col-span-2 grid grid-cols-[48px_1fr] items-center gap-3.5 text-left sm:col-span-3 sm:grid-cols-[56px_1fr_auto_auto] sm:gap-3.5"
+        className="col-span-2 grid min-w-0 grid-cols-[56px_1fr] items-center gap-3.5 text-left sm:col-span-3 sm:grid-cols-[56px_1fr_auto_auto] sm:gap-3.5"
       >
-        <ArtTile item={item} className="h-12 w-12 rounded-xl sm:h-14 sm:w-14" />
+        <ArtTile
+          item={item}
+          className="relative h-14 w-14 shrink-0 rounded-xl"
+          width={128}
+          fit="contain"
+        />
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-cos-text">
             {item.campaignName}

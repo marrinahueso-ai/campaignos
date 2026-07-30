@@ -155,7 +155,6 @@ export function ApprovalsTable({
                           fill
                           className="object-cover"
                           sizes="48px"
-                          unoptimized
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-[10px] text-cos-muted">

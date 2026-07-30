@@ -152,4 +152,15 @@ describe("approvals ease pulse contracts", () => {
     assert.match(hub, /Search events, people, dates/);
     assert.match(hub, /shouldApplyApprovalsEasePulseFilter/);
   });
+
+  it("uses a fixed, non-shrinking fill image container for queue artwork", () => {
+    const ease = readSrc(
+      "../../../components/approvals-scheduling/ApprovalsEaseList.tsx",
+    );
+
+    assert.match(ease, /relative h-14 w-14 shrink-0 rounded-xl/);
+    assert.match(ease, /fill[\s\S]*object-contain object-center p-0\.5/);
+    assert.match(ease, /sizes=\{width > 200 \?[\s\S]*: "56px"\}/);
+    assert.match(ease, /ApprovalsQueueRow[\s\S]*ArtTile/);
+  });
 });

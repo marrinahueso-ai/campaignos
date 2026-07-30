@@ -10,6 +10,7 @@ import {
   type VolunteerFillRateBand,
   type VolunteersMasterEventRow,
 } from "@/lib/event-volunteers/org-master-shared";
+import { toSupabaseThumbnailUrl } from "@/lib/images/supabase-thumbnail";
 import { formatLocalDate, getEventCountdown } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
@@ -67,11 +68,19 @@ function formatEventDateLabel(date: string): string {
 function ArtTile({
   event,
   className,
+  width,
+  priority,
+  fit = "cover",
 }: {
   event: VolunteersMasterEventRow;
   className?: string;
+  width: number;
+  priority?: boolean;
+  /** Queue thumbs use contain so poster copy stays legible in small squares. */
+  fit?: "cover" | "contain";
 }) {
-  const url = event.artworkUrl?.trim() || "";
+  const url = toSupabaseThumbnailUrl(event.artworkUrl?.trim() || "", { width });
+  const isCompact = width <= 200;
   return (
     <div
       className={cn(
@@ -85,9 +94,13 @@ function ArtTile({
           src={url}
           alt=""
           fill
-          className="object-cover"
-          sizes="(max-width: 820px) 100vw, 240px"
-          unoptimized
+          className={cn(
+            fit === "contain"
+              ? "object-contain object-center p-0.5"
+              : "object-cover",
+          )}
+          sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 240px"}
+          priority={priority}
         />
       ) : null}
     </div>
@@ -143,7 +156,12 @@ export function VolunteersFocusCard({
       key={event.id}
       className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(180px,240px)_1fr]"
     >
-      <ArtTile event={event} className="min-h-[180px] md:min-h-[280px]" />
+      <ArtTile
+        event={event}
+        className="min-h-[180px] md:min-h-[280px]"
+        width={800}
+        priority
+      />
       <div className="flex flex-col gap-3 p-6 sm:p-7">
         <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-cos-muted">
           <span
@@ -263,20 +281,14 @@ export function VolunteersQueueRow({
   return (
     <Link
       href={eventVolunteersHref(event.id)}
-      className="grid w-full grid-cols-[48px_1fr] items-center gap-3.5 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.55)] px-3.5 py-3 text-left transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)] sm:grid-cols-[56px_1fr_minmax(100px,140px)_auto]"
+      className="grid w-full grid-cols-[56px_1fr] items-center gap-3.5 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.55)] px-3.5 py-3 text-left transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)] sm:grid-cols-[56px_1fr_minmax(100px,140px)_auto]"
     >
-      <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[14px] bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a] sm:h-14 sm:w-14">
-        {event.artworkUrl ? (
-          <Image
-            src={event.artworkUrl}
-            alt=""
-            fill
-            className="object-cover"
-            sizes="56px"
-            unoptimized
-          />
-        ) : null}
-      </span>
+      <ArtTile
+        event={event}
+        className="relative h-14 w-14 shrink-0 rounded-xl"
+        width={128}
+        fit="contain"
+      />
       <span className="min-w-0">
         <p className="truncate text-sm font-bold text-cos-text">{event.title}</p>
         <p className="mt-0.5 truncate text-xs text-cos-muted">
