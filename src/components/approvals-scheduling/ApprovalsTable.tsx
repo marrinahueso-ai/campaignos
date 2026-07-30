@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -21,6 +22,7 @@ import type {
   UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
 import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
+import { toSupabaseThumbnailUrl } from "@/lib/images/supabase-thumbnail";
 import { cn } from "@/lib/utils/cn";
 
 const SORTABLE_COLUMNS: {
@@ -67,28 +69,28 @@ function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
     item.preview.storyArtworkUrl ||
     item.thumbnailUrl ||
     "";
-  const [imageSrc, setImageSrc] = useState(source);
+  const imageUrl = toSupabaseThumbnailUrl(source, {
+    width: 128,
+    height: 128,
+    resize: "contain",
+  });
+  const [imageSrc, setImageSrc] = useState(imageUrl);
 
   useEffect(() => {
-    setImageSrc(source);
-  }, [source]);
+    setImageSrc(imageUrl);
+  }, [imageUrl]);
 
   return (
     <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-cos-border bg-cos-bg">
       {imageSrc ? (
-        // Table posters bypass Next's optimizer to preserve poster composition.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={imageSrc}
           alt=""
-          className="absolute inset-0 h-full w-full object-contain object-center"
-          onError={() => {
-            if (imageSrc !== source) {
-              setImageSrc(source);
-            } else {
-              setImageSrc("");
-            }
-          }}
+          fill
+          className="object-contain object-center p-1"
+          sizes="48px"
+          loading="lazy"
+          onError={() => setImageSrc("")}
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-[10px] text-cos-muted">

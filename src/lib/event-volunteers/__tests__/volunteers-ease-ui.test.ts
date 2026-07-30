@@ -29,14 +29,15 @@ describe("volunteers ease UI contracts", () => {
     assert.match(ease, /Event volunteers/);
   });
 
-  it("shows full poster art in queue thumbnails without tight cover crop", () => {
-    assert.match(ease, /fit="contain"/);
+  it("shows bounded full poster art without tight crops", () => {
     assert.match(
       ease,
       /relative h-14 w-14 shrink-0 rounded-xl/,
     );
-    assert.match(ease, /fill[\s\S]*object-contain object-center p-0\.5/);
+    assert.match(ease, /height: width,[\s\S]*resize: "contain"/);
+    assert.match(ease, /object-contain object-center p-1/);
     assert.match(ease, /sizes=\{isCompact \? "56px"/);
+    assert.match(ease, /loading=\{priority \? "eager" : "lazy"\}/);
     assert.match(ease, /VolunteersQueueRow[\s\S]*ArtTile/);
   });
 });

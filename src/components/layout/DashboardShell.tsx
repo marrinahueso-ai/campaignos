@@ -23,6 +23,8 @@ interface DashboardShellProps {
   activeOrganizationId?: string | null;
   showOwnerOps?: boolean;
   aiCredits?: AiCreditsWidgetData | null;
+  /** Streams the sidebar-only balance instead of blocking every dashboard page. */
+  aiCreditsPromise?: Promise<AiCreditsWidgetData | null>;
 }
 
 function SidebarWithBadgePromise({
@@ -30,6 +32,7 @@ function SidebarWithBadgePromise({
   activeOrganizationId,
   showOwnerOps,
   aiCredits,
+  aiCreditsPromise,
   forceExpanded,
   onNavigate,
 }: {
@@ -37,10 +40,12 @@ function SidebarWithBadgePromise({
   activeOrganizationId: string | null;
   showOwnerOps: boolean;
   aiCredits?: AiCreditsWidgetData | null;
+  aiCreditsPromise?: Promise<AiCreditsWidgetData | null>;
   forceExpanded?: boolean;
   onNavigate?: () => void;
 }) {
   const counts = use(badgeCountsPromise);
+  const resolvedAiCredits = aiCreditsPromise ? use(aiCreditsPromise) : aiCredits;
   return (
     <Sidebar
       assignedApprovalsCount={counts.assignedApprovalsCount}
@@ -48,7 +53,7 @@ function SidebarWithBadgePromise({
       inboxUnreadCount={counts.inboxUnreadCount}
       activeOrganizationId={activeOrganizationId}
       showOwnerOps={showOwnerOps}
-      aiCredits={aiCredits}
+      aiCredits={resolvedAiCredits}
       forceExpanded={forceExpanded}
       onNavigate={onNavigate}
     />
@@ -63,6 +68,7 @@ function ShellSidebar({
   activeOrganizationId,
   showOwnerOps,
   aiCredits,
+  aiCreditsPromise,
   forceExpanded,
   onNavigate,
 }: {
@@ -73,6 +79,7 @@ function ShellSidebar({
   activeOrganizationId: string | null;
   showOwnerOps: boolean;
   aiCredits?: AiCreditsWidgetData | null;
+  aiCreditsPromise?: Promise<AiCreditsWidgetData | null>;
   forceExpanded?: boolean;
   onNavigate?: () => void;
 }) {
@@ -100,6 +107,7 @@ function ShellSidebar({
         activeOrganizationId={activeOrganizationId}
         showOwnerOps={showOwnerOps}
         aiCredits={aiCredits}
+        aiCreditsPromise={aiCreditsPromise}
         forceExpanded={forceExpanded}
         onNavigate={onNavigate}
       />
@@ -118,6 +126,7 @@ export function DashboardShell({
   activeOrganizationId = null,
   showOwnerOps = false,
   aiCredits = null,
+  aiCreditsPromise,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -133,6 +142,7 @@ export function DashboardShell({
           activeOrganizationId={activeOrganizationId}
           showOwnerOps={showOwnerOps}
           aiCredits={aiCredits}
+          aiCreditsPromise={aiCreditsPromise}
         />
       </div>
 
@@ -153,6 +163,7 @@ export function DashboardShell({
               activeOrganizationId={activeOrganizationId}
               showOwnerOps={showOwnerOps}
               aiCredits={aiCredits}
+              aiCreditsPromise={aiCreditsPromise}
               forceExpanded
               onNavigate={() => setMobileOpen(false)}
             />

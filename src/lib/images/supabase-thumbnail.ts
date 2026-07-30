@@ -3,7 +3,9 @@ const SUPABASE_PUBLIC_OBJECT_PATH =
 
 type SupabaseThumbnailOptions = {
   width: number;
+  height?: number;
   quality?: number;
+  resize?: "contain" | "cover" | "fill";
 };
 
 /**
@@ -15,7 +17,7 @@ type SupabaseThumbnailOptions = {
  */
 export function toSupabaseThumbnailUrl(
   source: string,
-  { width, quality = 72 }: SupabaseThumbnailOptions,
+  { width, height, quality = 72, resize }: SupabaseThumbnailOptions,
 ): string {
   const trimmed = source.trim();
   if (!trimmed) return "";
@@ -29,6 +31,15 @@ export function toSupabaseThumbnailUrl(
 
     url.pathname = `/storage/v1/render/image/public/${objectPath[1]}`;
     url.searchParams.set("width", String(Math.min(800, Math.max(1, Math.round(width)))));
+    if (height) {
+      url.searchParams.set(
+        "height",
+        String(Math.min(800, Math.max(1, Math.round(height)))),
+      );
+    }
+    if (resize) {
+      url.searchParams.set("resize", resize);
+    }
     url.searchParams.set(
       "quality",
       String(Math.min(100, Math.max(20, Math.round(quality)))),

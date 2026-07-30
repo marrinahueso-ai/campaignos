@@ -39,25 +39,23 @@ function ArtTile({
   label,
   width,
   priority,
-  fit = "cover",
 }: {
   item: UnifiedApprovalItem;
   className?: string;
   label?: string;
   width: number;
   priority?: boolean;
-  /** Queue thumbs show the entire poster within their fixed square. */
-  fit?: "cover" | "contain";
 }) {
   const source = artBackground(item);
-  const url = toSupabaseThumbnailUrl(source, { width });
-  // Queue posters intentionally bypass transforms/next-image to preserve their
-  // visual composition after the Lighthouse optimization regression.
-  const displayUrl = fit === "contain" ? source : url;
-  const [imageSrc, setImageSrc] = useState(displayUrl);
+  const imageUrl = toSupabaseThumbnailUrl(source, {
+    width,
+    height: width,
+    resize: "contain",
+  });
+  const [imageSrc, setImageSrc] = useState(imageUrl);
   useEffect(() => {
-    setImageSrc(displayUrl);
-  }, [displayUrl]);
+    setImageSrc(imageUrl);
+  }, [imageUrl]);
   return (
     <div
       className={cn(
@@ -66,31 +64,16 @@ function ArtTile({
       )}
     >
       {imageSrc ? (
-        fit === "contain" ? (
-          // Queue posters bypass Next's optimizer to preserve poster composition.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={imageSrc}
-            alt=""
-            className="absolute inset-0 h-full w-full object-contain object-center"
-            onError={() => {
-              if (imageSrc !== source) {
-                setImageSrc(source);
-              } else {
-                setImageSrc("");
-              }
-            }}
-          />
-        ) : (
-          <Image
-            src={imageSrc}
-            alt=""
-            fill
-            className="object-cover"
-            sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
-            priority={priority}
-          />
-        )
+        <Image
+          src={imageSrc}
+          alt=""
+          fill
+          className="object-contain object-center p-1"
+          sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
+          priority={priority}
+          loading={priority ? "eager" : "lazy"}
+          onError={() => setImageSrc("")}
+        />
       ) : null}
       {label ? (
         <span className="absolute top-3 left-3 rounded-full bg-[rgba(255,252,247,0.92)] px-2.5 py-1 text-[11px] font-extrabold text-cos-text">
@@ -235,7 +218,6 @@ export function ApprovalsQueueRow({
           item={item}
           className="relative h-14 w-14 shrink-0 rounded-xl"
           width={128}
-          fit="contain"
         />
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-cos-text">

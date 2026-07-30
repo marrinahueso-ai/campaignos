@@ -23,6 +23,17 @@ describe("toSupabaseThumbnailUrl", () => {
     assert.match(result, /quality=80/);
   });
 
+  it("bounds poster art with Supabase contain mode", () => {
+    const result = toSupabaseThumbnailUrl(
+      "https://project.supabase.co/storage/v1/object/public/event-assets/event-1/feed/v1-art.png",
+      { width: 256, height: 256, resize: "contain" },
+    );
+
+    assert.match(result, /width=256/);
+    assert.match(result, /height=256/);
+    assert.match(result, /resize=contain/);
+  });
+
   it("leaves signed, non-Supabase, and invalid URLs unchanged", () => {
     const signed =
       "https://project.supabase.co/storage/v1/object/sign/event-assets/event-1/art.png?token=abc";

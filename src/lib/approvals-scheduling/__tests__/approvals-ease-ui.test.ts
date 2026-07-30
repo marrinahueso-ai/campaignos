@@ -153,14 +153,21 @@ describe("approvals ease pulse contracts", () => {
     assert.match(hub, /shouldApplyApprovalsEasePulseFilter/);
   });
 
-  it("uses a fixed, non-shrinking fill image container for queue artwork", () => {
+  it("uses bounded contain transforms for all approval artwork", () => {
     const ease = readSrc(
       "../../../components/approvals-scheduling/ApprovalsEaseList.tsx",
     );
+    const table = readSrc(
+      "../../../components/approvals-scheduling/ApprovalsTable.tsx",
+    );
 
     assert.match(ease, /relative h-14 w-14 shrink-0 rounded-xl/);
-    assert.match(ease, /fill[\s\S]*object-contain object-center p-0\.5/);
+    assert.match(ease, /height: width,[\s\S]*resize: "contain"/);
+    assert.match(ease, /object-contain object-center p-1/);
     assert.match(ease, /sizes=\{width > 200 \?[\s\S]*: "56px"\}/);
+    assert.match(ease, /loading=\{priority \? "eager" : "lazy"\}/);
     assert.match(ease, /ApprovalsQueueRow[\s\S]*ArtTile/);
+    assert.match(table, /height: 128,[\s\S]*resize: "contain"/);
+    assert.match(table, /sizes="48px"/);
   });
 });

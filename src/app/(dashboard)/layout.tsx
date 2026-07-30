@@ -29,7 +29,9 @@ export default async function DashboardLayout({
   const activeOrganizationId =
     normalizeOrganizationId(activeMembership?.organizationId) ?? null;
 
-  const aiCredits = await getOrgAiCreditsWidgetData(activeOrganizationId);
+  // This may perform billing and balance writes. Keep it off the page body’s
+  // critical path; the sidebar already has a loading state.
+  const aiCreditsPromise = getOrgAiCreditsWidgetData(activeOrganizationId);
   const badgeCountsPromise = loadDashboardBadgeCounts();
 
   return (
@@ -39,7 +41,7 @@ export default async function DashboardLayout({
       organizations={organizations}
       activeOrganizationId={activeOrganizationId}
       showOwnerOps={showOwnerOps}
-      aiCredits={aiCredits}
+      aiCreditsPromise={aiCreditsPromise}
     >
       {children}
       <Suspense fallback={null}>

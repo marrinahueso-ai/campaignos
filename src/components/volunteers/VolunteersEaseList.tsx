@@ -71,25 +71,23 @@ function ArtTile({
   className,
   width,
   priority,
-  fit = "cover",
 }: {
   event: VolunteersMasterEventRow;
   className?: string;
   width: number;
   priority?: boolean;
-  /** Queue thumbs use contain so poster copy stays legible in small squares. */
-  fit?: "cover" | "contain";
 }) {
   const source = event.artworkUrl?.trim() || "";
-  const url = toSupabaseThumbnailUrl(source, { width });
-  // Queue posters intentionally bypass transforms/next-image to preserve their
-  // visual composition after the Lighthouse optimization regression.
-  const displayUrl = fit === "contain" ? source : url;
-  const [imageSrc, setImageSrc] = useState(displayUrl);
+  const imageUrl = toSupabaseThumbnailUrl(source, {
+    width,
+    height: width,
+    resize: "contain",
+  });
+  const [imageSrc, setImageSrc] = useState(imageUrl);
   const isCompact = width <= 200;
   useEffect(() => {
-    setImageSrc(displayUrl);
-  }, [displayUrl]);
+    setImageSrc(imageUrl);
+  }, [imageUrl]);
   return (
     <div
       className={cn(
@@ -98,32 +96,16 @@ function ArtTile({
       )}
     >
       {imageSrc ? (
-        fit === "contain" ? (
-          // Queue posters bypass Next's optimizer to preserve poster composition.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={imageSrc}
-            alt=""
-            className="absolute inset-0 h-full w-full object-contain object-center"
-            onError={() => {
-              if (imageSrc !== source) {
-                setImageSrc(source);
-              } else {
-                setImageSrc("");
-              }
-            }}
-          />
-        ) : (
-          <Image
-            key={imageSrc}
-            src={imageSrc}
-            alt=""
-            fill
-            className="object-cover"
-            sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 240px"}
-            priority={priority}
-          />
-        )
+        <Image
+          src={imageSrc}
+          alt=""
+          fill
+          className="object-contain object-center p-1"
+          sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 240px"}
+          priority={priority}
+          loading={priority ? "eager" : "lazy"}
+          onError={() => setImageSrc("")}
+        />
       ) : null}
     </div>
   );
@@ -309,7 +291,6 @@ export function VolunteersQueueRow({
         event={event}
         className="relative h-14 w-14 shrink-0 rounded-xl"
         width={128}
-        fit="contain"
       />
       <span className="min-w-0">
         <p className="truncate text-sm font-bold text-cos-text">{event.title}</p>
