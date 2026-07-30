@@ -153,7 +153,7 @@ describe("approvals ease pulse contracts", () => {
     assert.match(hub, /shouldApplyApprovalsEasePulseFilter/);
   });
 
-  it("uses square cover art for focus cards and contain art for queue thumbs", () => {
+  it("fills square focus cards and queue thumbs with cover art", () => {
     const ease = readSrc(
       "../../../components/approvals-scheduling/ApprovalsEaseList.tsx",
     );
@@ -163,14 +163,14 @@ describe("approvals ease pulse contracts", () => {
 
     assert.match(ease, /relative h-14 w-14 shrink-0 rounded-xl/);
     assert.match(ease, /aspect-square w-full md:self-start/);
-    assert.match(ease, /variant="focus"/);
-    assert.match(ease, /resize: variant === "focus" \? "cover" : "contain"/);
+    assert.match(ease, /resize: "cover"/);
     assert.match(ease, /"object-cover object-center"/);
-    assert.match(ease, /object-contain object-center p-1/);
+    assert.doesNotMatch(ease, /object-contain object-center p-1/);
     assert.match(ease, /sizes=\{width > 200 \?[\s\S]*: "56px"\}/);
     assert.match(ease, /loading=\{priority \? "eager" : "lazy"\}/);
     assert.match(ease, /ApprovalsQueueRow[\s\S]*ArtTile/);
-    assert.match(table, /height: 128,[\s\S]*resize: "contain"/);
+    assert.match(table, /height: 128,[\s\S]*resize: "cover"/);
+    assert.match(table, /className="object-cover object-center"/);
     assert.match(table, /sizes="48px"/);
   });
 });

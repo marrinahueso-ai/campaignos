@@ -72,7 +72,7 @@ function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
   const imageUrl = toSupabaseThumbnailUrl(source, {
     width: 128,
     height: 128,
-    resize: "contain",
+    resize: "cover",
   });
   const [imageSrc, setImageSrc] = useState(imageUrl);
 
@@ -87,7 +87,7 @@ function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
           src={imageSrc}
           alt=""
           fill
-          className="object-contain object-center p-1"
+          className="object-cover object-center"
           sizes="48px"
           loading="lazy"
           onError={() => setImageSrc("")}

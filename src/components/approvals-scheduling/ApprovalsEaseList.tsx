@@ -39,20 +39,18 @@ function ArtTile({
   label,
   width,
   priority,
-  variant = "queue",
 }: {
   item: UnifiedApprovalItem;
   className?: string;
   label?: string;
   width: number;
   priority?: boolean;
-  variant?: "focus" | "queue";
 }) {
   const source = artBackground(item);
   const imageUrl = toSupabaseThumbnailUrl(source, {
     width,
     height: width,
-    resize: variant === "focus" ? "cover" : "contain",
+    resize: "cover",
   });
   const [imageSrc, setImageSrc] = useState(imageUrl);
   useEffect(() => {
@@ -70,11 +68,7 @@ function ArtTile({
           src={imageSrc}
           alt=""
           fill
-          className={
-            variant === "focus"
-              ? "object-cover object-center"
-              : "object-contain object-center p-1"
-          }
+          className="object-cover object-center"
           sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
           priority={priority}
           loading={priority ? "eager" : "lazy"}
@@ -115,7 +109,6 @@ export function ApprovalsFocusCard({
         className="aspect-square w-full md:self-start"
         width={800}
         priority
-        variant="focus"
         label={
           item.preview.feedArtworkUrl
             ? "Feed"

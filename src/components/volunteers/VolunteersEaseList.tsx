@@ -71,19 +71,17 @@ function ArtTile({
   className,
   width,
   priority,
-  variant = "queue",
 }: {
   event: VolunteersMasterEventRow;
   className?: string;
   width: number;
   priority?: boolean;
-  variant?: "focus" | "queue";
 }) {
   const source = event.artworkUrl?.trim() || "";
   const imageUrl = toSupabaseThumbnailUrl(source, {
     width,
     height: width,
-    resize: variant === "focus" ? "cover" : "contain",
+    resize: "cover",
   });
   const [imageSrc, setImageSrc] = useState(imageUrl);
   const isCompact = width <= 200;
@@ -102,11 +100,7 @@ function ArtTile({
           src={imageSrc}
           alt=""
           fill
-          className={
-            variant === "focus"
-              ? "object-cover object-center"
-              : "object-contain object-center p-1"
-          }
+          className="object-cover object-center"
           sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 240px"}
           priority={priority}
           loading={priority ? "eager" : "lazy"}
@@ -171,7 +165,6 @@ export function VolunteersFocusCard({
         className="aspect-square w-full md:self-start"
         width={800}
         priority
-        variant="focus"
       />
       <div className="flex flex-col gap-3 p-6 sm:p-7">
         <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-cos-muted">
