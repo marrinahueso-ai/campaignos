@@ -11,6 +11,7 @@ interface CalendarImportEasePanelProps {
   subscribeSection: ReactNode;
   uploadSection: ReactNode;
   onContinueToReview?: () => void;
+  onViewImportedItems?: () => void;
   /** When true, hide the page-level title (calendar shell already has Calendar H1). */
   embedded?: boolean;
   settingsHref?: string;
@@ -47,6 +48,7 @@ export function CalendarImportEasePanel({
   subscribeSection,
   uploadSection,
   onContinueToReview,
+  onViewImportedItems,
   embedded = false,
   settingsHref = "/settings/integrations/calendar",
 }: CalendarImportEasePanelProps) {
@@ -60,7 +62,7 @@ export function CalendarImportEasePanel({
             Calendar
           </p>
           <h1 className="mt-1 font-display text-[clamp(1.75rem,4vw,2.25rem)] tracking-[-0.02em] text-cos-text">
-            Import calendar
+            Bring in your calendar
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-cos-muted">
             Pull events from Google Calendar, a subscribe link, or a file —
@@ -69,9 +71,25 @@ export function CalendarImportEasePanel({
         </div>
       ) : null}
 
-      <p className="flex flex-wrap items-baseline justify-between gap-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-        <span>Bring your year in</span>
-      </p>
+      <div className="space-y-3">
+        <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+          Bring your year in
+        </p>
+        {embedded ? (
+          <ol className="flex flex-wrap items-center gap-2 text-xs font-bold text-cos-muted">
+            <li className="inline-flex items-center gap-2">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-cos-text text-[11px] text-cos-card">
+                1
+              </span>
+              Choose source
+            </li>
+            <span aria-hidden="true">—</span>
+            <li>2. Review</li>
+            <span aria-hidden="true">—</span>
+            <li>3. Calendar</li>
+          </ol>
+        ) : null}
+      </div>
 
       <div
         className="relative overflow-hidden rounded-[22px] border border-cos-border bg-cos-card p-[22px] shadow-[0_8px_28px_rgba(28,36,48,0.06)] before:pointer-events-none before:absolute before:top-0 before:left-0 before:h-full before:w-1/2 before:bg-[radial-gradient(ellipse_at_left,rgba(47,74,60,0.1),transparent_60%)] before:content-[''] after:pointer-events-none after:absolute after:top-0 after:right-0 after:h-full after:w-1/2 after:bg-[radial-gradient(ellipse_at_right,rgba(196,146,46,0.12),transparent_55%)] after:content-['']"
@@ -80,7 +98,7 @@ export function CalendarImportEasePanel({
           {embedded ? (
             <div>
               <h3 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-cos-text">
-                Import calendar
+                Bring in your calendar
               </h3>
               <p className="mt-1.5 max-w-[46ch] text-[13px] leading-snug text-cos-muted">
                 Pull events from Google Calendar, a subscribe link, or a file —
@@ -120,7 +138,7 @@ export function CalendarImportEasePanel({
             })}
           </div>
 
-          <div className="flex flex-wrap gap-2 pt-1">
+          <div className="flex flex-wrap items-center gap-2 pt-1">
             {onContinueToReview ? (
               <button
                 type="button"
@@ -137,6 +155,15 @@ export function CalendarImportEasePanel({
                 Continue to Review →
               </Link>
             )}
+            {onViewImportedItems ? (
+              <button
+                type="button"
+                onClick={onViewImportedItems}
+                className="rounded-full px-3 py-2 text-[13px] font-bold text-cos-muted transition hover:text-cos-text"
+              >
+                View imported items
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

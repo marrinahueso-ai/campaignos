@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Clearer Calendar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f6f2eb; --card: #fffcf7; --ink: #2a2622; --soft: #665f56;
+      --muted: #847b70; --line: rgba(42, 38, 34, .12); --green: #2f4a3c;
+      --sage: #6b8171; --gold: #c4922e; --blue: #2f9fb3; --rose: #a65a3a;
+      --serif: "Fraunces", Georgia, serif; --sans: "DM Sans", system-ui, sans-serif;
+      --shadow: 0 10px 28px rgba(42, 38, 34, .07);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .shell { max-width: 1230px; margin: auto; padding: 28px 28px 64px; }
+    .eyebrow { display: inline-flex; gap: 8px; align-items: center; padding: 6px 10px; border: 1px solid rgba(196,146,46,.3); border-radius: 999px; background: rgba(196,146,46,.1); color: #775710; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+    .eyebrow i { width: 7px; height: 7px; background: var(--gold); border-radius: 50%; }
+    .page-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 20px 0 18px; }
+    h1, h2, h3 { font-family: var(--serif); letter-spacing: -.025em; }
+    h1 { font-size: clamp(38px, 5vw, 54px); line-height: 1; margin: 0; font-weight: 600; }
+    h1 + p { max-width: 600px; margin: 10px 0 0; color: var(--soft); line-height: 1.5; }
+    .state-switcher { display: flex; flex-wrap: wrap; gap: 7px; }
+    .state-switcher button, .view-tabs button { border: 1px solid transparent; background: transparent; color: var(--soft); border-radius: 999px; padding: 9px 13px; font-size: 13px; font-weight: 700; }
+    .state-switcher button.active { border-color: var(--line); background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+    .founder-note { display: grid; grid-template-columns: auto 1fr; gap: 10px; margin: 0 0 18px; padding: 12px 15px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,252,247,.6); color: var(--soft); font-size: 13px; line-height: 1.45; }
+    .founder-note strong { color: var(--green); }
+    .founder-note span { color: var(--gold); font-size: 18px; }
+    .screen { display: none; }
+    .screen.active { display: block; animation: arrive .25s ease-out; }
+    @keyframes arrive { from { opacity: .25; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+    .app { background: rgba(255,252,247,.4); border: 1px solid var(--line); border-radius: 26px; padding: 24px; box-shadow: var(--shadow); }
+    .calendar-header { display: flex; justify-content: space-between; align-items: start; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+    .calendar-header h2 { font-size: 34px; margin: 0; font-weight: 600; }
+    .calendar-header p { max-width: 500px; margin: 5px 0 0; font-size: 14px; color: var(--soft); line-height: 1.45; }
+    .button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 999px; padding: 10px 15px; border: 1px solid var(--line); color: var(--ink); background: var(--card); font-size: 13px; font-weight: 700; white-space: nowrap; }
+    .button:hover { transform: translateY(-1px); }
+    .button.primary { background: var(--green); border-color: var(--green); color: white; }
+    .button.quiet { background: transparent; border-color: transparent; color: var(--soft); }
+    .calendar-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 18px 0 14px; }
+    .view-tabs { display: flex; flex-wrap: wrap; gap: 3px; }
+    .view-tabs button.active { background: var(--card); border-color: var(--line); color: var(--ink); box-shadow: 0 3px 10px rgba(42,38,34,.05); }
+    .calendar-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .search { width: 210px; border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 9px 13px; color: var(--ink); font-size: 13px; }
+    .show-row { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 0 0 16px; }
+    .show-label { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-right: 2px; }
+    .filter { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--soft); padding: 7px 10px; font-size: 12px; font-weight: 700; }
+    .filter i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); } .filter.gold i { background: var(--gold); } .filter.blue i { background: var(--blue); }
+    .month-nav { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+    .nav { width: 34px; height: 34px; padding: 0; border: 1px solid var(--line); background: var(--card); border-radius: 50%; font-size: 19px; color: var(--ink); }
+    .today { padding: 8px 12px; font-size: 12px; }
+    .month-nav strong { margin-left: 4px; font-family: var(--serif); font-size: 19px; font-weight: 600; }
+    .month { display: grid; grid-template-columns: repeat(7, 1fr); overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+    .dow { padding: 9px; color: var(--muted); background: rgba(246,242,235,.55); border-bottom: 1px solid var(--line); text-align: center; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .day { min-height: 108px; padding: 8px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: rgba(255,252,247,.55); }
+    .day:nth-child(7n) { border-right: 0; } .day.faded { opacity: .4; } .day.today-cell { background: linear-gradient(135deg, rgba(47,74,60,.09), transparent 55%); }
+    .day-number { display: inline-grid; place-items: center; width: 23px; height: 23px; margin-bottom: 6px; color: var(--soft); border-radius: 50%; font-size: 12px; font-weight: 800; }
+    .today-cell .day-number { background: var(--green); color: white; }
+    .event { display: block; width: 100%; overflow: hidden; border: 0; border-left: 3px solid var(--green); border-radius: 7px; padding: 5px 6px; margin: 0 0 4px; background: #fffefa; color: var(--ink); text-align: left; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 700; }
+    .event small { color: var(--muted); font-weight: 600; } .event.post { border-color: var(--gold); } .event.live { border-color: var(--blue); }
+    .more { color: var(--muted); font-size: 10px; font-weight: 700; }
+    .summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 16px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,252,247,.55); font-size: 13px; }
+    .summary strong { font-family: var(--serif); font-size: 16px; } .summary p { margin: 3px 0 0; color: var(--soft); font-size: 12px; }
+    .summary a { color: var(--green); font-size: 12px; font-weight: 800; }
+    .hub-header { max-width: 690px; margin-bottom: 22px; }
+    .hub-header h2 { margin: 0; font-size: 35px; font-weight: 600; } .hub-header p { margin: 8px 0 0; color: var(--soft); line-height: 1.5; }
+    .flow { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .flow .step { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 23px; border-radius: 50%; background: var(--green); color: white; font-size: 11px; }
+    .flow .step.muted { color: var(--soft); background: #e9e2d7; } .flow hr { width: 30px; border: 0; border-top: 1px solid var(--line); margin: 0; }
+    .source-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .source { min-height: 195px; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--card); text-align: left; }
+    .source-art { height: 72px; } .google { background: linear-gradient(110deg, #28567a, #4ea4b4); } .subscribe { background: linear-gradient(110deg, #2f4a3c, #91a591); } .file { background: linear-gradient(110deg, #bd8c2a, #e4be65); }
+    .source div:last-child { padding: 14px; } .source strong { display: block; font-size: 15px; } .source p { margin: 5px 0 0; color: var(--soft); font-size: 12px; line-height: 1.45; }
+    .lower-action { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .inset-note { margin-top: 18px; padding: 12px 14px; border-left: 3px solid var(--sage); background: rgba(107,129,113,.1); border-radius: 0 12px 12px 0; color: var(--soft); font-size: 13px; line-height: 1.45; }
+    .review-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(250px, .8fr); gap: 14px; }
+    .review-focus, .review-list { border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+    .review-focus { padding: 21px; } .label { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .review-focus h3 { margin: 10px 0 5px; font-size: 26px; font-weight: 600; } .review-focus p { max-width: 550px; color: var(--soft); line-height: 1.5; font-size: 14px; }
+    .queue-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px; border-bottom: 1px solid var(--line); } .queue-item:last-child { border-bottom: 0; }
+    .queue-item strong { display: block; font-size: 13px; } .queue-item small { color: var(--muted); }
+    .tag { display: inline-block; padding: 4px 7px; border-radius: 999px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    .tag.need { background: rgba(166,90,58,.12); color: var(--rose); } .tag.ready { background: rgba(47,74,60,.12); color: var(--green); } .tag.duplicate { background: rgba(196,146,46,.15); color: #74560f; }
+    .callouts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; margin-top: 18px; }
+    .callout { padding: 13px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,252,247,.55); color: var(--soft); font-size: 12px; line-height: 1.45; }
+    .callout strong { display: block; margin-bottom: 3px; color: var(--green); font-size: 13px; }
+    @media (max-width: 760px) {
+      .shell { padding: 20px 14px 44px; } .page-head, .calendar-header { align-items: start; flex-direction: column; } .app { padding: 16px; border-radius: 20px; }
+      .calendar-toolbar { align-items: stretch; } .calendar-tools { justify-content: space-between; } .search { flex: 1; min-width: 160px; }
+      .month-nav { order: 4; width: 100%; margin-left: 0; } .day { min-height: 74px; padding: 5px; } .event { padding: 3px 4px; font-size: 9px; } .event small { display: none; } .dow { padding: 7px 2px; font-size: 9px; }
+      .source-grid, .review-layout, .callouts { grid-template-columns: 1fr; } .source { min-height: 0; } .source-art { height: 48px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="eyebrow"><i></i> Founder mockup · not product code</div>
+    <header class="page-head">
+      <div><h1>A calendar with one job</h1><p>Month is the home. Bringing dates in and reviewing them are a short, separate flow — no longer competing with the calendar itself.</p></div>
+      <div class="state-switcher" aria-label="Mockup state">
+        <button class="active" data-screen="calendar">1 · Calendar</button>
+        <button data-screen="import">2 · Bring in calendar</button>
+        <button data-screen="review">3 · Review import</button>
+      </div>
+    </header>
+    <aside class="founder-note"><span>✦</span><div><strong>What changed:</strong> calendar views stay together. One quiet <em>Bring in calendar</em> entry owns import, imported items, and review — instead of three peer tabs plus duplicate buttons.</div></aside>
+
+    <section class="screen active" id="calendar">
+      <div class="app">
+        <header class="calendar-header">
+          <div><h2>Calendar</h2><p>One quiet place for organization events, scheduled posts, and the best times to reach your community.</p></div>
+          <button class="button" data-go="import">Bring in calendar <span aria-hidden="true">→</span></button>
+        </header>
+        <div class="calendar-toolbar">
+          <nav class="view-tabs" aria-label="Calendar views">
+            <button class="active">Month</button><button>Week</button><button>Best times</button><button>Agenda</button>
+          </nav>
+          <div class="calendar-tools"><input class="search" aria-label="Search calendar" placeholder="Search events, times, dates…" /></div>
+        </div>
+        <div class="show-row">
+          <span class="show-label">Show</span>
+          <button class="filter"><i></i> Events</button><button class="filter gold"><i></i> Scheduled posts</button><button class="filter blue"><i></i> Published</button>
+          <div class="month-nav"><button class="nav" aria-label="Previous month">‹</button><button class="button today">Today</button><button class="nav" aria-label="Next month">›</button><strong>August 2026</strong></div>
+        </div>
+        <div class="month" aria-label="August 2026 calendar">
+          <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
+          <div class="day faded"><span class="day-number">26</span></div><div class="day faded"><span class="day-number">27</span></div><div class="day faded"><span class="day-number">28</span></div><div class="day faded"><span class="day-number">29</span></div><div class="day faded"><span class="day-number">30</span></div><div class="day faded"><span class="day-number">31</span></div><div class="day"><span class="day-number">1</span></div>
+          <div class="day"><span class="day-number">2</span><button class="event post"><small>6pm · Scheduled</small>Supply sorting reminder</button></div><div class="day"><span class="day-number">3</span></div><div class="day today-cell"><span class="day-number">4</span><button class="event"><small>Event · 1pm</small>School Supply Sorting</button><button class="event post"><small>8am · Scheduled</small>Day-of story</button></div><div class="day"><span class="day-number">5</span></div><div class="day"><span class="day-number">6</span></div><div class="day"><span class="day-number">7</span></div><div class="day"><span class="day-number">8</span></div>
+          <div class="day"><span class="day-number">9</span></div><div class="day"><span class="day-number">10</span></div><div class="day"><span class="day-number">11</span><button class="event live"><small>Published</small>Thank-you post</button></div><div class="day"><span class="day-number">12</span></div><div class="day"><span class="day-number">13</span></div><div class="day"><span class="day-number">14</span><button class="event"><small>Event</small>Fall Book Fair</button><span class="more">+2 more</span></div><div class="day"><span class="day-number">15</span></div>
+          <div class="day"><span class="day-number">16</span></div><div class="day"><span class="day-number">17</span></div><div class="day"><span class="day-number">18</span></div><div class="day"><span class="day-number">19</span></div><div class="day"><span class="day-number">20</span></div><div class="day"><span class="day-number">21</span></div><div class="day"><span class="day-number">22</span></div>
+          <div class="day"><span class="day-number">23</span></div><div class="day"><span class="day-number">24</span></div><div class="day"><span class="day-number">25</span></div><div class="day"><span class="day-number">26</span></div><div class="day"><span class="day-number">27</span></div><div class="day"><span class="day-number">28</span></div><div class="day"><span class="day-number">29</span></div>
+          <div class="day"><span class="day-number">30</span></div><div class="day"><span class="day-number">31</span></div><div class="day faded"><span class="day-number">1</span></div><div class="day faded"><span class="day-number">2</span></div><div class="day faded"><span class="day-number">3</span></div><div class="day faded"><span class="day-number">4</span></div><div class="day faded"><span class="day-number">5</span></div>
+        </div>
+        <div class="summary"><div><strong>Coming up</strong><p>2 events in the next 7 days</p></div><a>Open event list →</a></div>
+      </div>
+      <div class="callouts"><div class="callout"><strong>Calendar stays primary</strong>Month opens by default. Week, Best times, and Agenda describe ways to see the same calendar.</div><div class="callout"><strong>One operations entry</strong>Import, Review, and Import list leave the view strip and become one deliberate flow.</div><div class="callout"><strong>Tools are quieter</strong>Search, Show filters, and date navigation are present, but visually below the views.</div></div>
+    </section>
+
+    <section class="screen" id="import">
+      <div class="app">
+        <div class="hub-header"><h2>Bring in your calendar</h2><p>Choose a source. We’ll collect the dates, let you review what matters, then add the approved events to your year.</p></div>
+        <div class="flow"><span class="step">1</span> Choose source <hr><span class="step muted">2</span> Review <hr><span class="step muted">3</span> Calendar</div>
+        <div class="source-grid">
+          <button class="source"><div class="source-art google"></div><div><strong>Google Calendar</strong><p>Connect the school calendar your district already uses.</p></div></button>
+          <button class="source"><div class="source-art subscribe"></div><div><strong>Subscribe link</strong><p>Paste an ICS URL and keep it synced.</p></div></button>
+          <button class="source"><div class="source-art file"></div><div><strong>Upload a file</strong><p>Drop an .ics export for a one-time import.</p></div></button>
+        </div>
+        <div class="lower-action"><button class="button primary" data-go="review">Continue to review →</button><button class="button quiet" data-go="calendar">Back to calendar</button></div>
+        <div class="inset-note"><strong>Imported items live here, too.</strong> After an import, “View imported items” is a supporting link in this hub — not another peer calendar tab.</div>
+      </div>
+    </section>
+
+    <section class="screen" id="review">
+      <div class="app">
+        <div class="hub-header"><h2>Review your import</h2><p>Resolve only the exceptions, then put the ready dates on the calendar.</p></div>
+        <div class="flow"><span class="step">✓</span> Source connected <hr><span class="step">2</span> Review 3 items <hr><span class="step muted">3</span> Calendar</div>
+        <div class="review-layout">
+          <article class="review-focus"><span class="label">Needs your decision · Aug 4</span><h3>School Supply Sorting</h3><p>This looks like a PTO event. Confirm the plan type, then keep or edit it before it lands on the calendar.</p><div class="lower-action"><button class="button primary">Keep as PTO event</button><button class="button">Edit details</button></div></article>
+          <div class="review-list"><div class="queue-item"><div><strong>Fall Book Fair</strong><small>School event · Aug 14</small></div><span class="tag need">Needs you</span></div><div class="queue-item"><div><strong>Early Release</strong><small>Oct 22 · matches existing event</small></div><span class="tag duplicate">Duplicate</span></div><div class="queue-item"><div><strong>Labor Day</strong><small>Holiday · Sep 7</small></div><span class="tag ready">Ready</span></div></div>
+        </div>
+        <div class="lower-action"><button class="button primary">Add 18 ready dates to calendar</button><button class="button quiet" data-go="import">Change source</button></div>
+        <div class="inset-note"><strong>Review is a queue, not a destination competing with Month.</strong> It appears only after someone chooses to bring a calendar in.</div>
+      </div>
+    </section>
+  </main>
+  <script>
+    const buttons = document.querySelectorAll("[data-screen], [data-go]");
+    function show(id) {
+      document.querySelectorAll(".screen").forEach((screen) => screen.classList.toggle("active", screen.id === id));
+      document.querySelectorAll("[data-screen]").forEach((button) => button.classList.toggle("active", button.dataset.screen === id));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    buttons.forEach((button) => button.addEventListener("click", () => show(button.dataset.screen || button.dataset.go)));
+  </script>
+</body>
+</html>

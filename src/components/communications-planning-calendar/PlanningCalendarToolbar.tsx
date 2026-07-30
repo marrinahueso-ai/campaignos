@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, LayoutGrid, List, Rows3, TableProperties } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, List, Rows3 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils/cn";
 import type { PlanningCalendarView } from "@/types/communications-calendar";
@@ -12,7 +12,6 @@ interface PlanningCalendarToolbarProps {
   onPrevious: () => void;
   onNext: () => void;
   onToday: () => void;
-  showImportList?: boolean;
 }
 
 const VIEW_OPTIONS: {
@@ -24,7 +23,6 @@ const VIEW_OPTIONS: {
   { value: "week", label: "Week", icon: Rows3 },
   { value: "best-times", label: "Best times", icon: Rows3 },
   { value: "agenda", label: "Agenda", icon: List },
-  { value: "import-list", label: "Import list", icon: TableProperties },
 ];
 
 export function PlanningCalendarToolbar({
@@ -34,12 +32,7 @@ export function PlanningCalendarToolbar({
   onPrevious,
   onNext,
   onToday,
-  showImportList = true,
 }: PlanningCalendarToolbarProps) {
-  const visibleViews = showImportList
-    ? VIEW_OPTIONS
-    : VIEW_OPTIONS.filter((option) => option.value !== "import-list");
-
   return (
     <div className="flex flex-col gap-4 border border-cos-border bg-cos-card p-4 lg:flex-row lg:items-center lg:justify-between">
       <div>
@@ -49,7 +42,7 @@ export function PlanningCalendarToolbar({
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center border border-cos-border bg-cos-bg p-1">
-          {visibleViews.map(({ value, label, icon: Icon }) => (
+          {VIEW_OPTIONS.map(({ value, label, icon: Icon }) => (
             <button
               key={value}
               type="button"

@@ -15,7 +15,6 @@ import { useRouter } from "next/navigation";
 import { CalendarImportEasePanel } from "@/components/calendar-import/CalendarImportEasePanel";
 import { CalendarImportPlanList } from "@/components/unified-calendar/CalendarImportPlanList";
 import { CalendarLayerColorsProvider } from "@/components/unified-calendar/CalendarLayerColorsContext";
-import { CalendarComingUpEase } from "@/components/unified-calendar/CalendarComingUpEase";
 import { UnifiedCalendarControlPanel } from "@/components/unified-calendar/UnifiedCalendarControlPanel";
 import { PlanningCalendarAgendaView } from "@/components/communications-planning-calendar/PlanningCalendarAgendaView";
 import { PlanningCalendarDetailPanel } from "@/components/communications-planning-calendar/PlanningCalendarDetailPanel";
@@ -36,14 +35,12 @@ import {
 import {
   filterItemsByLayers,
   getDefaultActiveLayers,
-  isCampaignEventItem,
   type CalendarLayerId,
 } from "@/lib/communications-calendar/unified-calendar-layers";
 import { filterCalendarItemsBySearch } from "@/lib/communications-calendar/calendar-home-search";
 import {
   enrichItemFlags,
   getInitialCalendarFocus,
-  getUpcomingItems,
 } from "@/lib/communications-calendar/planning-utils";
 import {
   addMonths,
@@ -220,16 +217,6 @@ export function UnifiedCalendarShell({
     itemsInCurrentPeriod.length === 0 &&
     (view === "month" || view === "week" || view === "best-times");
 
-  const upcomingItems = useMemo(
-    () =>
-      getUpcomingItems(
-        enrichedItems.filter(isCampaignEventItem),
-        today,
-        7,
-      ),
-    [enrichedItems, today],
-  );
-
   function goToFirstEvent() {
     const focus = getInitialCalendarFocus(filteredItems, today);
     setYear(focus.year);
@@ -313,7 +300,8 @@ export function UnifiedCalendarShell({
 
   return (
     <CalendarLayerColorsProvider colors={layerColors}>
-      <div className="studio-page relative mx-auto max-w-[1600px] space-y-5 pb-12 before:pointer-events-none before:absolute before:top-0 before:left-[-2rem] before:h-60 before:w-60 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:top-10 after:right-0 after:h-52 after:w-52 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']">
+      <div className="studio-page relative mx-auto max-w-[1230px] pb-12 before:pointer-events-none before:absolute before:top-0 before:left-[-2rem] before:h-60 before:w-60 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:top-10 after:right-0 after:h-52 after:w-52 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']">
+        <div className="space-y-5 rounded-[26px] border border-cos-border bg-[rgba(255,252,247,0.4)] p-4 shadow-[0_10px_28px_rgba(42,38,34,0.07)] sm:p-6">
         {layoutError ? (
           <p className="text-sm text-cos-error" role="alert">
             {layoutError}
@@ -371,21 +359,15 @@ export function UnifiedCalendarShell({
         )}
 
         {view === "month" ? (
-          <>
-            <PlanningCalendarMonthView
-              items={filteredItems}
-              year={year}
-              month={month}
-              onSelectItem={setSelectedItem}
-              onOptimisticReschedule={handleOptimisticReschedule}
-              onRescheduleFailed={handleRescheduleFailed}
-              onRescheduled={handleRescheduled}
-            />
-            <CalendarComingUpEase
-              upcomingItems={upcomingItems}
-              onSelectUpcomingItem={setSelectedItem}
-            />
-          </>
+          <PlanningCalendarMonthView
+            items={filteredItems}
+            year={year}
+            month={month}
+            onSelectItem={setSelectedItem}
+            onOptimisticReschedule={handleOptimisticReschedule}
+            onRescheduleFailed={handleRescheduleFailed}
+            onRescheduled={handleRescheduled}
+          />
         ) : null}
         {view === "week" || view === "best-times" ? (
           <PlanningCalendarWeekView
@@ -422,6 +404,7 @@ export function UnifiedCalendarShell({
             subscribeSection={importSections.subscribe}
             uploadSection={importSections.upload}
             onContinueToReview={() => handleViewChange("review")}
+            onViewImportedItems={() => handleViewChange("import-list")}
           />
         ) : null}
 
@@ -448,6 +431,7 @@ export function UnifiedCalendarShell({
             />
           </>
         ) : null}
+        </div>
       </div>
     </CalendarLayerColorsProvider>
   );

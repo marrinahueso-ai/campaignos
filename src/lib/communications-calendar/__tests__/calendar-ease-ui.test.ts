@@ -22,14 +22,16 @@ describe("calendar ease UI contracts", () => {
     assert.match(shell, /showHeatmap/);
   });
 
-  it("keeps Import and Review as in-calendar tabs", () => {
+  it("keeps import work in one supporting flow", () => {
     assert.match(types, /"import"/);
     assert.match(types, /"review"/);
-    assert.match(panel, /label: "Import"/);
-    assert.match(panel, /label: "Review"/);
+    assert.match(panel, /Bring in calendar/);
+    assert.doesNotMatch(panel, /label: "Import"/);
+    assert.doesNotMatch(panel, /label: "Review"/);
+    assert.doesNotMatch(panel, /label: "Import list"/);
     assert.match(shell, /view === "import"/);
     assert.match(shell, /view === "review"/);
-    assert.doesNotMatch(panel, /href="\/calendar\/import"/);
+    assert.match(shell, /onViewImportedItems/);
   });
 
   it("uses soft view pills instead of dense segmented control", () => {
@@ -39,8 +41,8 @@ describe("calendar ease UI contracts", () => {
     assert.doesNotMatch(panel, /border border-cos-border bg-cos-bg p-0\.5/);
   });
 
-  it("places Coming up under the month grid", () => {
-    assert.match(shell, /CalendarComingUpEase/);
+  it("does not show Coming up in calendar shell or control panel", () => {
+    assert.doesNotMatch(shell, /CalendarComingUpEase/);
     assert.doesNotMatch(panel, /Coming up/);
   });
 

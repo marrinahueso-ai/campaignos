@@ -22,9 +22,6 @@ const VIEW_OPTIONS: { value: PlanningCalendarView; label: string; heat?: boolean
     { value: "week", label: "Week" },
     { value: "best-times", label: "Best times", heat: true },
     { value: "agenda", label: "Agenda" },
-    { value: "import-list", label: "Import list" },
-    { value: "import", label: "Import" },
-    { value: "review", label: "Review" },
   ];
 
 const SHOW_CALENDAR_SEARCH = new Set<PlanningCalendarView>([
@@ -57,6 +54,7 @@ interface UnifiedCalendarControlPanelProps {
   layerColorOverrides?: CalendarLayerColors;
   searchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
+  /** @deprecated Calendar's primary view row is always limited to four views. */
   showImportList?: boolean;
   postingHeatmap?: PostingHeatmapData | null;
   /** Kept for marketing previews; Best times is first-class now. */
@@ -79,7 +77,6 @@ export function UnifiedCalendarControlPanel({
   layerColorOverrides = {},
   searchQuery = "",
   onSearchQueryChange,
-  showImportList = true,
   postingHeatmap = null,
   onViewChange,
   onPrevious,
@@ -89,15 +86,6 @@ export function UnifiedCalendarControlPanel({
   onLayerColorChange,
   compact = false,
 }: UnifiedCalendarControlPanelProps) {
-  const tabs = showImportList
-    ? VIEW_OPTIONS
-    : VIEW_OPTIONS.filter(
-        (option) =>
-          option.value !== "import-list" &&
-          option.value !== "import" &&
-          option.value !== "review",
-      );
-
   function toggleLayer(layerId: CalendarLayerId) {
     const next = new Set(activeLayers);
     if (next.has(layerId)) {
@@ -116,134 +104,129 @@ export function UnifiedCalendarControlPanel({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-cos-border pb-[18px]">
         <div>
-          <h1 className="font-display text-[clamp(2rem,4vw,2.75rem)] tracking-[-0.02em] text-cos-text">
+          <h1 className="font-display text-[34px] leading-none font-semibold tracking-[-0.025em] text-cos-text">
             Calendar
           </h1>
-          <p className="mt-1.5 max-w-md text-sm leading-relaxed text-cos-muted">
+          <p className="mt-1.5 max-w-[500px] text-sm leading-relaxed text-cos-muted">
             One quiet place for organization events, scheduled posts, and the
             best times to reach your community.
           </p>
         </div>
         {!compact ? (
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => onViewChange("import")}
-              className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
-            >
-              Import
-            </button>
-            <button
-              type="button"
-              onClick={() => onViewChange("review")}
-              className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
-            >
-              Review
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => onViewChange("import")}
+            className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
+          >
+            Bring in calendar <span aria-hidden="true">→</span>
+          </button>
         ) : null}
       </div>
 
-      <nav
-        className="flex flex-wrap items-center gap-2"
-        role="tablist"
-        aria-label="Calendar views"
-      >
-        {tabs.map((option) => {
-          const active = view === option.value;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => onViewChange(option.value)}
-              className={cn(
-                "rounded-full px-3.5 py-2 text-[13px] font-bold transition",
-                active
-                  ? "bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)] ring-1 ring-cos-border"
-                  : "text-cos-muted hover:bg-[rgba(255,252,247,0.7)] hover:text-cos-text",
-                active && option.heat
-                  ? "shadow-[0_0_0_3px_rgba(196,146,46,0.18)]"
-                  : null,
-              )}
-            >
-              {option.label}
-            </button>
-          );
-        })}
-      </nav>
-
-      {showLayers ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-0.5 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-            Show
-          </span>
-          {UNIFIED_CALENDAR_LAYERS.map((layer) => {
-            const active = activeLayers.has(layer.id);
-            const resolved = layerColors[layer.id];
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
+        <nav
+          className="flex flex-wrap items-center gap-1"
+          role="tablist"
+          aria-label="Calendar views"
+        >
+          {VIEW_OPTIONS.map((option) => {
+            const active = view === option.value;
             return (
-              <div
-                key={layer.id}
+              <button
+                key={option.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => onViewChange(option.value)}
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-full border py-0.5 pr-1 pl-1 text-xs font-bold transition",
+                  "rounded-full px-3.5 py-2 text-[13px] font-bold transition",
                   active
-                    ? "border-cos-border bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
-                    : "border-transparent bg-transparent text-cos-muted",
+                    ? "bg-cos-card text-cos-text shadow-[0_3px_10px_rgba(42,38,34,0.05)] ring-1 ring-cos-border"
+                    : "text-cos-muted hover:bg-[rgba(255,252,247,0.7)] hover:text-cos-text",
+                  active && option.heat
+                    ? "shadow-[0_0_0_3px_rgba(196,146,46,0.18)]"
+                    : null,
                 )}
               >
-                {onLayerColorChange ? (
-                  <DashboardWidgetColorPicker
-                    label={layer.label}
-                    value={layerColorOverrides[layer.id] ?? null}
-                    swatchColor={resolved}
-                    variant="dot"
-                    onChange={(color) => onLayerColorChange(layer.id, color)}
-                  />
-                ) : (
-                  <span
-                    className="m-0.5 h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: resolved }}
-                    aria-hidden
-                  />
-                )}
-                <button
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => toggleLayer(layer.id)}
-                  className={cn(
-                    "rounded-full px-2 py-1 transition",
-                    active
-                      ? "text-cos-text"
-                      : "text-cos-muted hover:text-cos-text",
-                  )}
-                >
-                  {layer.label}
-                </button>
-              </div>
+                {option.label}
+              </button>
             );
           })}
-        </div>
-      ) : null}
+        </nav>
 
-      {showSearch ? (
-        <label className="relative block w-full max-w-md">
-          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted" />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => onSearchQueryChange(event.target.value)}
-            placeholder="Search events, times, dates…"
-            aria-label="Search events, times, and dates"
-            className="w-full rounded-full border border-cos-border bg-cos-card py-2 pr-3 pl-9 text-[13px] text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
-          />
-        </label>
-      ) : null}
+        {showSearch ? (
+          <label className="relative block w-full max-w-[210px]">
+            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => onSearchQueryChange(event.target.value)}
+              placeholder="Search events, times, dates…"
+              aria-label="Search events, times, and dates"
+              className="w-full rounded-full border border-cos-border bg-cos-card py-2 pr-3 pl-9 text-[13px] text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
+            />
+          </label>
+        ) : null}
+      </div>
 
-      {showPeriod ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {showLayers ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-0.5 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+              Show
+            </span>
+            {UNIFIED_CALENDAR_LAYERS.map((layer) => {
+              const active = activeLayers.has(layer.id);
+              const resolved = layerColors[layer.id];
+              return (
+                <div
+                  key={layer.id}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border py-0.5 pr-1 pl-1 text-xs font-bold transition",
+                    active
+                      ? "border-cos-border bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                      : "border-transparent bg-transparent text-cos-muted",
+                  )}
+                >
+                  {onLayerColorChange ? (
+                    <DashboardWidgetColorPicker
+                      label={layer.label}
+                      value={layerColorOverrides[layer.id] ?? null}
+                      swatchColor={resolved}
+                      variant="dot"
+                      onChange={(color) => onLayerColorChange(layer.id, color)}
+                    />
+                  ) : (
+                    <span
+                      className="m-0.5 h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: resolved }}
+                      aria-hidden
+                    />
+                  )}
+                  <button
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => toggleLayer(layer.id)}
+                    className={cn(
+                      "rounded-full px-2 py-1 transition",
+                      active
+                        ? "text-cos-text"
+                        : "text-cos-muted hover:text-cos-text",
+                    )}
+                  >
+                    {layer.label}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <span />
+        )}
+
+        {showPeriod ? (
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -272,20 +255,21 @@ export function UnifiedCalendarControlPanel({
               {periodLabel}
             </h2>
           </div>
-          {view === "week" && postingHeatmap != null ? (
-            <button
-              type="button"
-              onClick={() => onViewChange("best-times")}
-              className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
-            >
-              Show best times →
-            </button>
-          ) : null}
-        </div>
-      ) : showPeriodLabel ? (
-        <h2 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-cos-text">
-          {periodLabel}
-        </h2>
+        ) : showPeriodLabel ? (
+          <h2 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-cos-text">
+            {periodLabel}
+          </h2>
+        ) : null}
+      </div>
+
+      {view === "week" && postingHeatmap != null ? (
+        <button
+          type="button"
+          onClick={() => onViewChange("best-times")}
+          className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
+        >
+          Show best times →
+        </button>
       ) : null}
 
       {view === "best-times" && postingHeatmap != null ? (
