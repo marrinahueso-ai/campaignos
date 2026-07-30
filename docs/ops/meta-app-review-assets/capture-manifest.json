@@ -1,0 +1,58 @@
+{
+  "capturedAt": "2026-07-29T16:35:24.851Z",
+  "results": {
+    "00-login-page.png": {
+      "captured": true
+    },
+    "01-login.png": {
+      "captured": true
+    },
+    "02-settings-integrations.png": {
+      "captured": true
+    },
+    "03-meta-consent.png": {
+      "captured": false,
+      "reason": "Meta already connected; consent screen only appears on fresh Connect OAuth.",
+      "skipped": true,
+      "path": "/Users/marrina/Documents/CampignOS/docs/ops/meta-app-review-assets/03-meta-consent.SKIPPED.txt"
+    },
+    "04-meta-connected.png": {
+      "captured": true
+    },
+    "05-approvals-publish.png": {
+      "captured": true
+    },
+    "06-page-post-live.png": {
+      "skipped": true,
+      "reason": "Requires Facebook Page in browser as Meta tester — founder must capture published post on test Page.",
+      "path": "/Users/marrina/Documents/CampignOS/docs/ops/meta-app-review-assets/06-page-post-live.SKIPPED.txt"
+    },
+    "07-communications-hub.png": {
+      "captured": true
+    },
+    "08-inbox-reply.png": {
+      "captured": false,
+      "skipped": true,
+      "reason": "No inbox threads visible — Connect Meta and seed tester DMs for founder capture.",
+      "path": "/Users/marrina/Documents/CampignOS/docs/ops/meta-app-review-assets/08-inbox-reply.SKIPPED.txt"
+    },
+    "09-comment-engagement.png": {
+      "captured": false,
+      "skipped": true,
+      "reason": "No comment threads visible — seed Page/IG comments on test assets for founder capture.",
+      "path": "/Users/marrina/Documents/CampignOS/docs/ops/meta-app-review-assets/09-comment-engagement.SKIPPED.txt"
+    },
+    "10-insights-org.png": {
+      "captured": true
+    },
+    "11-insights-event.png": {
+      "captured": true,
+      "path": "/Users/marrina/Documents/CampignOS/docs/ops/meta-app-review-assets/11-insights-event.png"
+    },
+    "12-webhook-config.png": {
+      "skipped": true,
+      "reason": "Meta Developer App → Webhooks dashboard — founder must screenshot /api/meta/webhook subscription in developers.facebook.com.",
+      "path": "/Users/marrina/Documents/CampignOS/docs/ops/meta-app-review-assets/12-webhook-config.SKIPPED.txt"
+    }
+  }
+}

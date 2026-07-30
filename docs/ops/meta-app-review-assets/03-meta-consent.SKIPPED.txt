@@ -1,0 +1,4 @@
+03-meta-consent.png
+
+Skipped: Meta already connected; consent screen only appears on fresh Connect OAuth.
+Captured: 2026-07-29T16:35:12.081Z

@@ -1,0 +1,4 @@
+12-webhook-config.png
+
+Skipped: Meta Developer App → Webhooks dashboard — founder must screenshot /api/meta/webhook subscription in developers.facebook.com.
+Captured: 2026-07-29T16:35:24.826Z

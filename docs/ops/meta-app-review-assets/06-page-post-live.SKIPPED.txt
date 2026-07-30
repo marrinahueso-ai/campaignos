@@ -1,0 +1,4 @@
+06-page-post-live.png
+
+Skipped: Requires Facebook Page in browser as Meta tester — founder must capture published post on test Page.
+Captured: 2026-07-29T16:35:15.953Z
