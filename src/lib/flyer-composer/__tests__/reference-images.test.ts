@@ -35,4 +35,23 @@ describe("flyer composer reference images", () => {
       "data:image/png;base64,abc",
     ]);
   });
+
+  it("skips inspiration URL when photo was not explicitly chosen", () => {
+    const input = buildSampleDirectionInput({
+      assets: {
+        inspirationPhotoPresent: false,
+        inspirationPhotoSource: null,
+        inspirationPhotoLabel: null,
+        inspirationPhotoNote: null,
+        inspirationPhotoUrl: "https://images.unsplash.com/photo-1517457373958",
+        customTemplatePresent: false,
+        customTemplateFileName: null,
+        customTemplateFileType: null,
+        customTemplateNote: null,
+        customTemplateImageUrl: null,
+      },
+    });
+
+    assert.deepEqual(resolveFlyerComposerReferenceImageUrls(input.assets), []);
+  });
 });

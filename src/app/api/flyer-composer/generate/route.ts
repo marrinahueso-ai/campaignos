@@ -88,14 +88,19 @@ function parseAssets(raw: Record<string, unknown> | null): FlyerComposerAssetCon
     photoSourceRaw === "sample" || photoSourceRaw === "upload"
       ? photoSourceRaw
       : null;
+  const inspirationPhotoPresent =
+    raw?.inspirationPhotoPresent === true && photoSource !== null;
 
   return {
-    inspirationPhotoPresent: raw?.inspirationPhotoPresent === true,
+    inspirationPhotoPresent,
     inspirationPhotoSource: photoSource,
     inspirationPhotoLabel:
       readString(raw?.inspirationPhotoLabel).trim() || null,
     inspirationPhotoNote: readString(raw?.inspirationPhotoNote).trim() || null,
-    inspirationPhotoUrl: readString(raw?.inspirationPhotoUrl).trim() || null,
+    inspirationPhotoUrl:
+      inspirationPhotoPresent
+        ? readString(raw?.inspirationPhotoUrl).trim() || null
+        : null,
     customTemplatePresent: raw?.customTemplatePresent === true,
     customTemplateFileName:
       readString(raw?.customTemplateFileName).trim() || null,

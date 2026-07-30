@@ -91,9 +91,9 @@ test.describe("Flyer composer AI direction smoke", () => {
   test("Inspiration: photo, brand kit, all slot fields persist", async ({ page }) => {
     await selectNewFlyerLetter(page);
 
-    // Hero photo starts from the default sample — exercise replace/remove/upload
-    await expect(page.locator("#inspDrop").first()).toHaveClass(/has/);
-    await expect(page.locator("#inspActions").first()).toBeVisible();
+    // Hero photo starts empty — exercise upload, replace, remove, and optional sample pick
+    await expect(page.locator("#inspDrop").first()).not.toHaveClass(/has/);
+    await expect(page.locator("#inspActions").first()).toBeHidden();
 
     await uploadInspirationPhoto(page);
     await page.locator("#inspReplace").first().click();
@@ -178,8 +178,8 @@ test.describe("Flyer composer AI direction smoke", () => {
     expect(generateRequestBody!.start).toMatchObject({ path: "new" });
     expect(generateRequestBody!.template).toMatchObject({ templateId: "simple-letter" });
     expect(generateRequestBody!.assets).toMatchObject({
-      inspirationPhotoPresent: true,
-      inspirationPhotoUrl: expect.stringMatching(/^https:\/\//),
+      inspirationPhotoPresent: false,
+      inspirationPhotoUrl: null,
     });
 
     for (const id of SLOT_FIELD_IDS) {

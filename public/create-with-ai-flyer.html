@@ -675,6 +675,10 @@
     }
     .insp .hint { font-size: 0.85rem; color: var(--muted); margin: 8px 0 0; }
     .insp-thumbs { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+    .insp-thumbs .samples-label {
+      width: 100%; margin: 0 0 2px; font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); text-align: center;
+    }
     .insp-thumbs button {
       width: 52px; height: 40px; border-radius: 8px; border: 2px solid transparent;
       background-size: cover; background-position: center;
@@ -1223,7 +1227,8 @@
                   <div class="insp" id="inspDrop" role="button" tabindex="0" aria-label="Add inspiration photo">
                     <div id="inspEmpty">
                       <strong>Add photo</strong>
-                      <p class="hint">Drop an image or pick a sample below</p>
+                      <p class="hint">Drop an image or pick a sample below (optional)</p>
+                      <p class="hint samples-label" id="inspSamplesLabel" hidden>Samples</p>
                       <div class="insp-thumbs" id="inspThumbs"></div>
                     </div>
                   </div>
@@ -1374,8 +1379,9 @@
               <div class="insp" id="inspDrop" role="button" tabindex="0">
                 <div id="inspEmpty">
                   <strong>Add a photo</strong>
-                  <p class="hint">Upload or pick a sample for the template photo slot.</p>
-                  <div class="insp-thumbs" id="inspThumbs"></div>
+                  <p class="hint">Upload or pick a sample for the template photo slot (optional).</p>
+                  <p class="hint samples-label" hidden>Samples</p>
+                  <div class="insp-thumbs" id="inspThumbsOptional"></div>
                 </div>
               </div>
             </div>
@@ -1684,9 +1690,10 @@
       startPath: null,
       printSize: "letter",
       templateId: null,
-      imageUrl: SAMPLES[0].url,
-      inspirationPhotoSource: "sample",
-      inspirationPhotoLabel: SAMPLES[0].label,
+      imageUrl: null,
+      inspirationPhotoSource: null,
+      inspirationPhotoLabel: null,
+      inspirationPhotoExplicit: false,
       customTemplateUrl: null,
       customTemplateFileName: null,
       customTemplateFileType: null,
@@ -1950,10 +1957,17 @@
       scheduleSave();
     }
 
+    function hasExplicitInspirationPhoto() {
+      if (!state.imageUrl) return false;
+      if (state.inspirationPhotoSource === "upload") return true;
+      return state.inspirationPhotoSource === "sample" && state.inspirationPhotoExplicit === true;
+    }
+
     function removeInspirationPhoto() {
       state.imageUrl = null;
       state.inspirationPhotoSource = null;
       state.inspirationPhotoLabel = null;
+      state.inspirationPhotoExplicit = false;
       updateInspUI();
       renderThumbs();
       if (state.view === "result" && !state.generating) {
@@ -1967,6 +1981,7 @@
       if (!file || !file.type.startsWith("image/")) return;
       state.inspirationPhotoSource = "upload";
       state.inspirationPhotoLabel = file.name || "Uploaded photo";
+      state.inspirationPhotoExplicit = true;
       const reader = new FileReader();
       reader.onload = () => {
         state.imageUrl = String(reader.result || "");
@@ -2482,6 +2497,7 @@
           imageUrl: state.imageUrl,
           inspirationPhotoSource: state.inspirationPhotoSource,
           inspirationPhotoLabel: state.inspirationPhotoLabel,
+          inspirationPhotoExplicit: state.inspirationPhotoExplicit,
           customTemplateUrl: state.customTemplateUrl,
           customTemplateFileName: state.customTemplateFileName,
           customTemplateFileType: state.customTemplateFileType,
@@ -2549,11 +2565,7 @@
         }
         if (d.printSize === "letter" || d.printSize === "half") state.printSize = d.printSize;
         else if (state.templateId === NEW_SIZE_IDS.half) state.printSize = "half";
-        if (d.imageUrl) state.imageUrl = d.imageUrl;
-        if (d.inspirationPhotoSource === "sample" || d.inspirationPhotoSource === "upload") {
-          state.inspirationPhotoSource = d.inspirationPhotoSource;
-        }
-        if (d.inspirationPhotoLabel) state.inspirationPhotoLabel = d.inspirationPhotoLabel;
+        migrateInspirationFromDraft(d);
         if (d.customTemplateUrl) state.customTemplateUrl = d.customTemplateUrl;
         if (d.customTemplateFileName) state.customTemplateFileName = d.customTemplateFileName;
         if (d.customTemplateFileType === "pdf" || d.customTemplateFileType === "image") {
@@ -2575,11 +2587,35 @@
       } catch (_) { /* ignore corrupt draft */ }
     }
 
+    function migrateInspirationFromDraft(d) {
+      if (!d.imageUrl) {
+        state.imageUrl = null;
+        state.inspirationPhotoSource = null;
+        state.inspirationPhotoLabel = null;
+        state.inspirationPhotoExplicit = false;
+        return;
+      }
+      const source = d.inspirationPhotoSource;
+      const explicit = d.inspirationPhotoExplicit === true;
+      if (source === "upload" || (source === "sample" && explicit)) {
+        state.imageUrl = d.imageUrl;
+        state.inspirationPhotoSource = source;
+        state.inspirationPhotoLabel = d.inspirationPhotoLabel || null;
+        state.inspirationPhotoExplicit = true;
+        return;
+      }
+      /* Drop legacy auto-default sample heroes (Festival lawn, crowd, fair lights). */
+      state.imageUrl = null;
+      state.inspirationPhotoSource = null;
+      state.inspirationPhotoLabel = null;
+      state.inspirationPhotoExplicit = false;
+    }
+
     function exportFlyerHtml() {
       const tpl = getTpl(state.templateId);
       const slots = resolveSlots({}, tpl);
       const flyerInner = flyerHTML(tpl.id, {
-        imageUrl: state.imageUrl,
+        imageUrl: hasExplicitInspirationPhoto() ? state.imageUrl : null,
         templateUrl: state.customTemplateUrl,
         fields: readDraftFields(),
         filled: true,
@@ -2700,23 +2736,30 @@
     }
 
     function renderThumbs() {
-      const el = document.getElementById("inspThumbs");
-      el.innerHTML = SAMPLES.map((s) => `
+      const thumbHtml = `
+        <p class="samples-label">Samples</p>
+        ${SAMPLES.map((s) => `
         <button type="button" data-img="${s.id}" aria-pressed="${state.imageUrl === s.url}" aria-label="${s.label}"
           style="background-image:url('${s.url}')"></button>
-      `).join("");
-      el.querySelectorAll("button").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const sample = SAMPLES.find((s) => s.id === btn.dataset.img);
-          state.imageUrl = sample.url;
-          state.inspirationPhotoSource = "sample";
-          state.inspirationPhotoLabel = sample.label;
-          updateInspUI();
-          renderThumbs();
-          scheduleSave();
+      `).join("")}`;
+      document.querySelectorAll(".insp-thumbs").forEach((el) => {
+        el.innerHTML = thumbHtml;
+        el.querySelectorAll("button").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const sample = SAMPLES.find((s) => s.id === btn.dataset.img);
+            state.imageUrl = sample.url;
+            state.inspirationPhotoSource = "sample";
+            state.inspirationPhotoLabel = sample.label;
+            state.inspirationPhotoExplicit = true;
+            updateInspUI();
+            renderThumbs();
+            scheduleSave();
+          });
         });
       });
+      const samplesLabel = document.getElementById("inspSamplesLabel");
+      if (samplesLabel) samplesLabel.hidden = true;
     }
 
     function updateInspUI() {
@@ -2756,7 +2799,7 @@
       const tpl = getTpl(state.templateId);
       idleFlyer.dataset.ratio = tpl.ratio;
       idleFlyer.innerHTML = flyerHTML(tpl.id, {
-        imageUrl: state.imageUrl,
+        imageUrl: hasExplicitInspirationPhoto() ? state.imageUrl : null,
         templateUrl: state.customTemplateUrl,
         fields: readDraftFields(),
       });
@@ -2777,7 +2820,7 @@
 
       wrap.classList.remove("is-generated-image");
       wrap.innerHTML = flyerHTML(tpl.id, {
-        imageUrl: state.imageUrl,
+        imageUrl: hasExplicitInspirationPhoto() ? state.imageUrl : null,
         templateUrl: state.customTemplateUrl,
         fields: readDraftFields(),
         filled,
@@ -2891,7 +2934,7 @@
     }
 
     function resolveInspirationMeta() {
-      if (!state.imageUrl) {
+      if (!hasExplicitInspirationPhoto()) {
         return {
           inspirationPhotoPresent: false,
           inspirationPhotoSource: null,

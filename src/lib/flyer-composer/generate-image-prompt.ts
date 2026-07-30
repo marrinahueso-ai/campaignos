@@ -20,7 +20,7 @@ const FIELD_LABELS: Record<string, string> = {
 const PROVEN_LAYOUT_IDS = new Set(["semester", "investor", "festival"]);
 
 function templateLayoutInstructions(input: FlyerComposerGenerateInput): string[] {
-  const { template, start } = input;
+  const { template, start, assets } = input;
 
   if (template.isCustom || start.path === "update") {
     return [
@@ -64,7 +64,9 @@ function templateLayoutInstructions(input: FlyerComposerGenerateInput): string[]
     case "festival":
       return [
         "Layout type: EVENT FLYER — single community event poster.",
-        "Hero photo area (use inspiration photo mood if noted), date chip or date banner, headline, location, body.",
+        assets.inspirationPhotoPresent
+          ? "Hero photo area (use attached inspiration photo), date chip or date banner, headline, location, body."
+          : "Optional hero band using brand colors, typography, or simple illustration — no stock crowd/festival/night-event photography.",
         "Warm, inviting PTO/community event aesthetic — not a generic template mockup.",
       ];
     case "simple-letter":
@@ -131,6 +133,14 @@ function formatAssetsBlock(input: FlyerComposerGenerateInput): string {
     if (assets.inspirationPhotoNote) {
       lines.push(`- Note: ${assets.inspirationPhotoNote}`);
     }
+  } else {
+    lines.push("- Hero / inspiration photo: none provided.");
+    lines.push(
+      "- Do NOT invent stock crowd, festival lawn, fair lights, or night-event photography.",
+    );
+    lines.push(
+      "- Use brand colors, typography, and optional illustrated or graphic header bands instead.",
+    );
   }
   if (assets.customTemplatePresent) {
     lines.push("- Custom template uploaded: match that layout type.");

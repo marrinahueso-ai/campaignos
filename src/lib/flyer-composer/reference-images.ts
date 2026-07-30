@@ -16,7 +16,11 @@ export function resolveFlyerComposerReferenceImageUrls(
   assets: FlyerComposerAssetContext,
 ): string[] {
   const urls: string[] = [];
-  if (isFlyerComposerReferenceImageUrl(assets.inspirationPhotoUrl)) {
+  if (
+    assets.inspirationPhotoPresent &&
+    assets.inspirationPhotoSource &&
+    isFlyerComposerReferenceImageUrl(assets.inspirationPhotoUrl)
+  ) {
     urls.push(assets.inspirationPhotoUrl!.trim());
   }
   if (isFlyerComposerReferenceImageUrl(assets.customTemplateImageUrl)) {

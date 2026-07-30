@@ -99,6 +99,28 @@ describe("flyer composer image prompt", () => {
     assert.match(prompt, /attached inspiration\/reference photo/i);
   });
 
+  it("instructs no stock hero photography when no inspiration photo", () => {
+    const input = buildSampleDirectionInput({
+      assets: {
+        inspirationPhotoPresent: false,
+        inspirationPhotoSource: null,
+        inspirationPhotoLabel: null,
+        inspirationPhotoNote: null,
+        inspirationPhotoUrl: null,
+        customTemplatePresent: false,
+        customTemplateFileName: null,
+        customTemplateFileType: null,
+        customTemplateNote: null,
+        customTemplateImageUrl: null,
+      },
+    });
+    const prompt = buildFlyerComposerImagePrompt(input);
+
+    assert.match(prompt, /none provided/i);
+    assert.match(prompt, /Do NOT invent stock crowd/i);
+    assert.doesNotMatch(prompt, /attached inspiration\/reference photo/i);
+  });
+
   it("includes QR placeholder instructions when template has QR", () => {
     const input = buildSampleDirectionInput({
       fields: {
