@@ -76,9 +76,9 @@ const ALSO_AVAILABLE: AlsoItem[] = [
   {
     id: "flyer",
     title: "Flyer",
-    href: null,
-    artClass: "bg-[linear-gradient(145deg,#3d2a4a,#8b6b9e_50%,#e8d5f0)]",
-    status: "soon",
+    href: "/create-with-ai-flyer-ease-mockup.html?view=templates",
+    artClass: "bg-[linear-gradient(145deg,#2f4a3c,#6b8171_50%,#d4a84b)]",
+    status: "live",
   },
 ];
 
