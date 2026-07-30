@@ -28,6 +28,7 @@ import {
   approveCommunicationAction,
   requestCommunicationChangesAction,
 } from "@/lib/event-workspace/actions";
+import { logEventActivity } from "@/lib/event-workspace/activity-log";
 import { publishMetaMilestoneBundle } from "@/lib/meta-publishing/publish-milestone";
 import { retryFailedMetaBundleAction } from "@/lib/meta-publishing/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -38,6 +39,7 @@ import {
   resolveRowMetaScheduleIntent,
 } from "@/lib/approvals-scheduling/approval-visibility";
 import { syncSchedulingItemsForMetaPublishOutcome } from "@/lib/approvals-scheduling/publish-outcome-sync";
+import { sendPublishFailedEmail } from "@/lib/email/transactional-notifications";
 import type {
   ApprovalSchedulingItemRow,
   UnifiedApprovalItem,
@@ -305,6 +307,14 @@ async function runApproveSchedulingSideEffects(input: {
           outcome: "failed",
           errorMessage: metaWarning,
         });
+        if (creatorEmail) {
+          await sendPublishFailedEmail({
+            toEmail: creatorEmail,
+            contentName: `${row.milestone_name} in ${input.campaignName ?? "your campaign"}`,
+            actionUrl: `${process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000"}/approvals?event=${eventId}`,
+            idempotencyKey: `publish-failed/${schedulingItemId}`,
+          });
+        }
       } else {
         const published = await updateSchedulingItemStatus(
           schedulingItemId,
@@ -483,6 +493,12 @@ export async function approveUnifiedItemAction(input: {
         error: "Couldn’t save that approval. Try again.",
       };
     }
+    await logEventActivity({
+      eventId: input.eventId,
+      activityType: "board_approval",
+      title: "Post approved",
+      description: `${row.milestone_name} is approved and scheduled.`,
+    });
 
     // Return as soon as approval_scheduling_items is saved. Meta Graph, Resend,
     // and Create with AI session sync can take seconds and must not block
@@ -583,6 +599,12 @@ export async function requestUnifiedChangesAction(input: {
         milestoneName: schedulingRow.milestone_name,
         outcome: "changes_requested",
         changeRequestComment: comment,
+      });
+      await logEventActivity({
+        eventId: input.eventId,
+        activityType: "board_approval",
+        title: "Changes requested",
+        description: `Changes requested for ${schedulingRow.milestone_name}.`,
       });
     }
   }
@@ -759,6 +781,12 @@ export async function resubmitUnifiedApprovalAction(input: {
       storyCaption: mergedSnapshot.storyCaption,
     });
   }
+  await logEventActivity({
+    eventId: input.eventId,
+    activityType: "board_approval",
+    title: "Post sent for re-approval",
+    description: `${input.milestoneName} is back in the approval queue.`,
+  });
 
   revalidatePath("/approvals");
   revalidatePath("/approvals/revision");

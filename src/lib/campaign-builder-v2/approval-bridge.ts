@@ -25,6 +25,7 @@ import { combineLocalDateAndTimeToIso } from "@/lib/utils/dates";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 import { getEventById } from "@/lib/events/queries";
+import { logEventActivity } from "@/lib/event-workspace/activity-log";
 import { createClient } from "@/lib/supabase/server";
 
 export interface SendCampaignBuilderForApprovalInput {
@@ -350,6 +351,12 @@ export async function sendCampaignBuilderForApproval(
       createdCount: 0,
     };
   }
+  await logEventActivity({
+    eventId: input.eventId,
+    activityType: "board_approval",
+    title: "Posts sent for approval",
+    description: `${createdCount} milestone${createdCount === 1 ? "" : "s"} ${createdCount === 1 ? "is" : "are"} waiting for review.`,
+  });
 
   void role;
 
