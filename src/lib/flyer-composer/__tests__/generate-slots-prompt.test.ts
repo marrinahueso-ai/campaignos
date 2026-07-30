@@ -78,6 +78,17 @@ describe("flyer composer slot prompts", () => {
     assert.match(prompt, /LOCKED/);
   });
 
+  it("includes semester calendar rules for Semester at a Glance", () => {
+    const prompt = buildFlyerComposerSlotsUserPrompt(
+      baseInput,
+      "Oak Park Elementary PTA",
+      "Warm, welcoming",
+    );
+
+    assert.match(prompt, /datesEvents as newline-separated rows/);
+    assert.match(prompt, /Never drop or summarize away multi-line date lists/);
+  });
+
   it("includes custom template metadata when present", () => {
     const prompt = buildFlyerComposerSlotsUserPrompt(
       {

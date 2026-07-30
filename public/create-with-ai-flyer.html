@@ -906,8 +906,9 @@
       border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
       box-shadow: var(--shadow-lg); aspect-ratio: 3/4; width: 100%;
       max-width: min(420px, 92%); margin: 0 auto;
-      animation: soft-in 0.5s var(--ease) both; background: #eee;
+      animation: soft-in 0.5s var(--ease) both; background: var(--brand-paper, #faf8f4);
     }
+    .big-flyer > .fly { min-height: 100%; }
     .big-flyer[data-ratio="1/1"] { aspect-ratio: 1 / 1; max-width: min(400px, 92%); }
     .big-flyer[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-width: min(320px, 72%); }
     .big-flyer[data-ratio="3/2"] { aspect-ratio: 3 / 2; max-width: min(480px, 92%); }
@@ -1059,6 +1060,11 @@
       flex: 1; min-width: 0;
       overflow-wrap: anywhere; word-break: break-word;
     }
+    .slot-date-list {
+      margin: 0; padding: 0 0 0 1em; list-style: disc;
+      display: grid; gap: 2px;
+    }
+    .slot-date-list li { line-height: 1.35; }
 
     .foot-note {
       margin-top: 28px; text-align: center; font-size: 0.78rem; color: var(--muted);
@@ -1957,10 +1963,55 @@
       return fields;
     }
 
+    function isSemesterTpl(tpl) {
+      return tpl?.id === "semester" || tpl?.cls === "semester";
+    }
+
+    function looksLikeCalendarLine(line) {
+      const t = String(line || "").trim();
+      if (!t) return false;
+      return (
+        /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\b/i.test(t) ||
+        /^\d{1,2}[\/\-]\d{1,2}/.test(t) ||
+        /[—–\-:|]/.test(t) ||
+        /\b(break|orientation|concert|fair|night|festival|holiday|early release|no school)\b/i.test(t)
+      );
+    }
+
+    function splitCalendarLines(text) {
+      return String(text || "")
+        .split(/\n+/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+    }
+
+    /** Semester layout reads month rows from datesEvents — recover calendar lines from body when AI mis-slots. */
+    function coalesceCalendarLines(tpl, datesEvents, body) {
+      const dates = String(datesEvents || "").trim();
+      if (dates) return { datesEvents: dates, body: String(body || "").trim() };
+      if (!isSemesterTpl(tpl)) {
+        return { datesEvents: dates, body: String(body || "").trim() };
+      }
+      const bodyLines = splitCalendarLines(body);
+      const calendarLines = bodyLines.filter(looksLikeCalendarLine);
+      if (calendarLines.length >= 1) {
+        const remainder = bodyLines.filter((line) => !calendarLines.includes(line));
+        return {
+          datesEvents: calendarLines.join("\n"),
+          body: remainder.join("\n"),
+        };
+      }
+      return { datesEvents: dates, body: String(body || "").trim() };
+    }
+
     function resolveSlots(opts = {}, tpl) {
       const d = tpl?.defaults || {};
       const f = opts.fields || readDraftFields();
-      const body = opts.body ?? f.bodyCopy ?? d.body ?? "";
+      let body = opts.body ?? f.bodyCopy ?? d.body ?? "";
+      let datesEvents = f.datesEvents || d.datesEvents || "";
+      const coalesced = coalesceCalendarLines(tpl, datesEvents, body);
+      datesEvents = coalesced.datesEvents;
+      body = coalesced.body;
       const ctaLabel = opts.cta ?? opts.ctaLabel ?? f.ctaLabel ?? d.ctaLabel ?? d.cta ?? "Learn more";
       const ctaUrl = f.ctaUrl || d.ctaUrl || "";
       const qrUrl = (f.qrUrl || d.qrUrl || ctaUrl || "").trim();
@@ -1970,7 +2021,7 @@
         schoolYear: f.schoolYear || d.schoolYear || "",
         location: f.location || d.location || "",
         directions: f.directions || d.directions || "",
-        datesEvents: f.datesEvents || d.datesEvents || "",
+        datesEvents,
         body,
         donationTiers: f.donationTiers || d.donationTiers || "",
         ctaLabel,
@@ -1989,17 +2040,24 @@
     }
 
     function formatDateLines(text) {
-      const lines = String(text || "").split(/\n+/).map((l) => l.trim()).filter(Boolean);
-      if (!lines.length) return `<div><span class="m">—</span><span>Add dates</span></div>`;
+      const lines = splitCalendarLines(text);
+      if (!lines.length) return `<div><span class="m">—</span><span>Add dates in Inspiration</span></div>`;
       return lines.map((line) => {
-        const dash = line.indexOf("—") >= 0 ? line.indexOf("—") : line.indexOf(" - ");
-        if (dash > 0) {
-          const month = line.slice(0, dash).trim();
-          const rest = line.slice(dash + (line[dash] === "—" ? 1 : 3)).trim();
+        const sep = line.match(/\s*(—|–|-|:|\|)\s+/);
+        if (sep && sep.index > 0) {
+          const month = line.slice(0, sep.index).trim();
+          const rest = line.slice(sep.index + sep[0].length).trim();
           return `<div><span class="m">${escapeHtml(month)}</span><span>${escapeHtml(rest)}</span></div>`;
         }
         return `<div><span class="m">•</span><span>${escapeHtml(line)}</span></div>`;
       }).join("");
+    }
+
+    function formatSummaryDates(text) {
+      const lines = splitCalendarLines(text);
+      if (!lines.length) return "";
+      if (lines.length === 1) return escapeHtml(lines[0]);
+      return `<ul class="slot-date-list">${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`;
     }
 
     function formatTierLines(text) {
@@ -2048,9 +2106,11 @@
       }
 
       switch (tpl.cls) {
-        case "semester":
+        case "semester": {
+          const calendarText = slots.datesEvents || b;
+          const monthRows = formatDateLines(calendarText);
           return `
-            <div class="fly semester${filled}">
+            <div class="fly semester${filled}" data-template="semester">
               <div class="head-bar">
                 <div>
                   ${logo}
@@ -2061,8 +2121,8 @@
               <div class="main">
                 <div class="h">${escapeHtml(h)}</div>
                 ${locationBlock(slots) ? `<div class="b">${locationBlock(slots)}</div>` : ""}
-                <div class="month-list">${formatDateLines(slots.datesEvents)}</div>
-                ${b ? `<div class="b" style="margin-top:4px">${escapeHtml(b)}</div>` : ""}
+                <div class="month-list">${monthRows}</div>
+                ${b && b !== calendarText ? `<div class="b" style="margin-top:4px">${escapeHtml(b)}</div>` : ""}
               </div>
               <div class="foot-bar">
                 <div class="txt">
@@ -2073,6 +2133,7 @@
                 ${qrSmall}
               </div>
             </div>`;
+        }
         case "investor":
           return `
             <div class="fly investor${filled}">
@@ -2091,9 +2152,10 @@
                 ${slots.footer ? `<div class="footer">${escapeHtml(slots.footer)}</div>` : ""}
               </div>
             </div>`;
-        case "festival":
+        case "festival": {
+          const eventBody = b || slots.datesEvents || "";
           return `
-            <div class="fly festival${filled}">
+            <div class="fly festival${filled}" data-template="festival">
               <div class="hero">
                 <div class="hero-img" style="${bg}"></div>
                 <div class="date-chip">OCT<br>12</div>
@@ -2102,10 +2164,11 @@
                 ${logo}
                 ${state.brand && slots.orgName ? `<div class="eyebrow">${escapeHtml(slots.orgName)}</div>` : ""}
                 <div class="h">${escapeHtml(h)}</div>
-                <div class="b">${escapeHtml(b)}</div>
+                <div class="b">${escapeHtml(eventBody)}</div>
                 <div class="cta">${escapeHtml(cta)}</div>
               </div>
             </div>`;
+        }
         case "church":
           return `
             <div class="fly church${filled}">
@@ -2592,7 +2655,9 @@
       push("Title", s.headline);
       push("Year", s.schoolYear);
       push("Location", [s.location, s.directions].filter(Boolean).join(" · "));
-      push("Dates", s.datesEvents);
+      if (s.datesEvents) {
+        rows.push(`<li><span class="k">Dates</span><span>${formatSummaryDates(s.datesEvents)}</span></li>`);
+      }
       push("Body", s.body);
       push("Tiers", s.donationTiers);
       push("CTA", `${s.ctaLabel}${s.ctaUrl ? " → " + s.ctaUrl : ""}`);
@@ -2616,6 +2681,19 @@
         imageUrl: state.imageUrl,
         templateUrl: state.customTemplateUrl,
         fields: readDraftFields(),
+      });
+    }
+
+    function renderResultFlyer(filled = true) {
+      const wrap = document.getElementById("resultFlyer");
+      if (!wrap || !state.templateId) return;
+      const tpl = getTpl(state.templateId);
+      wrap.dataset.ratio = tpl.ratio;
+      wrap.innerHTML = flyerHTML(tpl.id, {
+        imageUrl: state.imageUrl,
+        templateUrl: state.customTemplateUrl,
+        fields: readDraftFields(),
+        filled,
       });
     }
 
@@ -2676,6 +2754,7 @@
         idle.hidden = true;
         genState.hidden = true;
         wrap.hidden = false;
+        renderResultFlyer(true);
         if (list) list.innerHTML = buildSlotSummary(tpl, slots);
         setPreviewActions("done");
       } else {
@@ -2699,6 +2778,22 @@
         const el = document.getElementById(id);
         if (el) el.value = slots[id];
       });
+      const tpl = state.templateId ? getTpl(state.templateId) : null;
+      if (!tpl || !isSemesterTpl(tpl)) return;
+      const datesEl = document.getElementById("datesEvents");
+      const bodyEl = document.getElementById("bodyCopy");
+      if (!datesEl || !bodyEl) return;
+      const coalesced = coalesceCalendarLines(
+        tpl,
+        datesEl.value,
+        bodyEl.value,
+      );
+      if (coalesced.datesEvents && coalesced.datesEvents !== datesEl.value) {
+        datesEl.value = coalesced.datesEvents;
+      }
+      if (coalesced.body !== bodyEl.value) {
+        bodyEl.value = coalesced.body;
+      }
     }
 
     function resolveInspirationMeta() {
@@ -2947,13 +3042,6 @@
         slots = resolveSlots({ fields }, tpl);
 
         clearInterval(state.generateStageTimer);
-        wrap.innerHTML = flyerHTML(tpl.id, {
-          imageUrl: state.imageUrl,
-          templateUrl: state.customTemplateUrl,
-          fields,
-          filled: true,
-        });
-        if (list) list.innerHTML = buildSlotSummary(tpl, slots);
         state.generating = false;
         state.previewGenerated = true;
         renderPreviewState();

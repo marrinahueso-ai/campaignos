@@ -1,6 +1,6 @@
 import type { FlyerComposerGenerateInput } from "@/lib/flyer-composer/types";
 
-export const FLYER_COMPOSER_SLOTS_MAX_TOKENS = 1100;
+export const FLYER_COMPOSER_SLOTS_MAX_TOKENS = 2200;
 
 const SLOT_KEYS = [
   "orgName",
@@ -82,6 +82,7 @@ export function buildFlyerComposerSlotsSystemPrompt(): string {
     "Preserve existing URLs and QR targets unless the directions explicitly ask to change them.",
     "Keep headlines concise and parent-facing; body copy should be scannable.",
     "For datesEvents and donationTiers, use newline-separated lines when multiple items apply.",
+    "For the Semester at a Glance template, datesEvents is the primary calendar list — preserve every date/event line from inspiration (Aug–Dec rows). Never move calendar lines into bodyCopy.",
   ].join(" ");
 }
 
@@ -198,6 +199,33 @@ function formatBrandBlock(
     .join("\n");
 }
 
+function formatTemplateRules(input: FlyerComposerGenerateInput): string[] {
+  const rules = [
+    "- Template/layout is LOCKED — update text, dates, tiers, CTA/QR strings only.",
+    "- Interpret last year notes, custom template context, and every filled slot as direction.",
+    "- Do not paste raw notes verbatim unless they are already polished parent-facing copy.",
+    "- If a slot is already strong, return it unchanged or lightly edited.",
+    "- qrUrl should match ctaUrl when the template uses a donate/calendar QR unless directions say otherwise.",
+    "- Do not add markdown, emoji, or hashtags.",
+  ];
+
+  if (input.template.templateId === "semester") {
+    rules.push(
+      "- Semester at a Glance: put ALL calendar dates and events in datesEvents as newline-separated rows (e.g. \"Aug 15 — Back to School Night\").",
+      "- Keep bodyCopy empty or a single short intro unless inspiration includes separate prose.",
+      "- Never drop or summarize away multi-line date lists from inspiration — return the full calendar.",
+    );
+  }
+
+  if (input.template.templateId === "investor") {
+    rules.push(
+      "- Become an Investor: donation tiers belong in donationTiers (newline-separated). Body copy is the pitch paragraph only.",
+    );
+  }
+
+  return rules;
+}
+
 export function buildFlyerComposerSlotsUserPrompt(
   input: FlyerComposerGenerateInput,
   organizationName: string | null,
@@ -224,12 +252,7 @@ export function buildFlyerComposerSlotsUserPrompt(
     JSON.stringify(SLOT_KEYS),
     "",
     "RULES",
-    "- Template/layout is LOCKED — update text, dates, tiers, CTA/QR strings only.",
-    "- Interpret last year notes, custom template context, and every filled slot as direction.",
-    "- Do not paste raw notes verbatim unless they are already polished parent-facing copy.",
-    "- If a slot is already strong, return it unchanged or lightly edited.",
-    "- qrUrl should match ctaUrl when the template uses a donate/calendar QR unless directions say otherwise.",
-    "- Do not add markdown, emoji, or hashtags.",
+    ...formatTemplateRules(input),
   ].join("\n");
 }
 
