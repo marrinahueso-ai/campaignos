@@ -23,9 +23,10 @@ describe("flyer composer image prompt", () => {
     const prompt = buildFlyerComposerImagePrompt(input);
 
     assert.match(prompt, /EVENT DETAILS/i);
+    assert.match(prompt, /PRIMARY CREATIVE BRIEF/i);
     assert.match(prompt, /Artwork direction from the user/i);
     assert.match(prompt, /Bright back-to-school look/);
-    assert.match(prompt, /interpret into polished visuals/i);
+    assert.match(prompt, /prefer the artwork direction/i);
     assert.match(prompt, /Aug 15 — Back to School Night/);
     assert.match(prompt, /Sample PTA/);
     assert.match(prompt, /#2F4A3C/i);

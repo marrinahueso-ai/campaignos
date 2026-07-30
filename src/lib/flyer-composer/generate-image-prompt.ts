@@ -190,7 +190,7 @@ export function buildFlyerComposerImagePrompt(
 
   const lines = [
     "Create a complete, print-ready school / PTO flyer as a single polished graphic.",
-    "Render real text from event details; never use placeholder org names like Oak Park or Riverside.",
+    "Never use placeholder org names like Oak Park or Riverside.",
     formatPrintFormatInstructions(input),
     "",
     `Start: ${input.start.pathLabel ?? input.start.path ?? "new flyer"}`,
@@ -199,21 +199,29 @@ export function buildFlyerComposerImagePrompt(
       : `Print size: ${input.template.templateName} (${printNote})`,
     "",
     ...templateLayoutInstructions(input),
+  ];
+
+  if (direction) {
+    lines.push(
+      "",
+      "PRIMARY CREATIVE BRIEF — Artwork direction from the user:",
+      direction,
+      "",
+      "Follow this brief for theme, vibe, activities, and what the flyer is about.",
+      "Show the activities and setting they describe (e.g. food trucks, dunk tanks) visually and/or in short on-flyer copy.",
+      "If Basics headline/body conflict with this brief, prefer the artwork direction for theme and featured content.",
+      "Do not invent a different event (e.g. Fall Festival) when the brief names another theme.",
+    );
+  }
+
+  lines.push(
     "",
     formatEventDetails(input),
     "",
     formatBrandBlock(input),
     "",
     formatAssetsBlock(input),
-  ];
-
-  if (direction) {
-    lines.push(
-      "",
-      "Artwork direction from the user (interpret into polished visuals — do not paste these words literally on the graphic):",
-      direction,
-    );
-  }
+  );
 
   const qr = formatQrInstructions(input);
   if (qr) {
@@ -222,7 +230,7 @@ export function buildFlyerComposerImagePrompt(
 
   lines.push(
     "",
-    "Interpret the direction into a clear parent-facing design. Prefer hierarchy and readability over packing every instruction as on-graphic text.",
+    "Event details are facts (org name, date, CTA/QR). The artwork direction is the creative brief — honor it.",
     "If a dates-and-events list is provided, every line should appear on the flyer.",
     "Only include logistics you were given in event details or direction.",
   );

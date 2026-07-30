@@ -638,6 +638,25 @@
       display: block; font-size: 0.72rem; font-weight: 700; color: var(--muted);
       margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;
     }
+    .field-label-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      margin-bottom: 6px;
+    }
+    .field-label-row label { margin-bottom: 0; }
+    .voice-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px; border-radius: 999px;
+      border: 1px solid var(--line); background: var(--cream);
+      color: var(--ink); cursor: pointer; flex-shrink: 0;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .voice-btn:hover { border-color: var(--forest); color: var(--forest); }
+    .voice-btn.listening {
+      background: var(--forest); border-color: var(--forest); color: #fff;
+      box-shadow: 0 0 0 3px rgba(47, 74, 60, 0.18);
+    }
+    .voice-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .voice-btn svg { width: 16px; height: 16px; }
     .field textarea, .field input[type="text"], .field input[type="url"] {
       width: 100%; border: 1px solid var(--line); border-radius: 12px;
       background: var(--cream); padding: 10px 12px; resize: vertical; min-height: 0;
@@ -1319,8 +1338,24 @@
           <h3>Direction for AI</h3>
           <p class="section-desc">Like social — tell AI the look and feel. Event details above stay facts on the flyer.</p>
           <div class="field">
-            <label for="aiDirection">Artwork direction</label>
-            <textarea id="aiDirection" rows="5" placeholder="e.g. Bright back-to-school flyer with month boxes for Aug–Dec. Friendly, easy to scan. Leave room for a QR at the bottom."></textarea>
+            <div class="field-label-row">
+              <label for="aiDirection">Artwork direction</label>
+              <button
+                type="button"
+                class="voice-btn"
+                id="aiDirectionVoice"
+                aria-label="Speak artwork direction"
+                title="Speak artwork direction"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M5 11a7 7 0 0 0 14 0" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 18v3" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <textarea id="aiDirection" rows="5" placeholder="e.g. Friday night lights for our elementary school — food trucks, bounce houses, dunk tanks. Bring blankets and chairs. Fun, bold, easy to scan."></textarea>
+            <p class="hint-inline" id="aiDirectionVoiceHint" hidden>Listening… tap the mic to stop.</p>
           </div>
           <input type="hidden" id="bodyCopy" value="" />
         </div>
@@ -1478,20 +1513,48 @@
       isCustom: true,
       defaults: {
         orgName: "",
-        headline: "Fall Festival · Sat Oct 12",
-        schoolYear: "2025–2026",
+        headline: "",
+        schoolYear: "",
         location: "",
         directions: "",
-        datesEvents: "Update dates here",
-        body: "Update the date, time, and short description — keep everything else.",
+        datesEvents: "",
+        body: "",
         donationTiers: "",
-        ctaLabel: "See details →",
-        ctaUrl: "https://example.org/details",
-        qrUrl: "https://example.org/details",
+        ctaLabel: "",
+        ctaUrl: "",
+        qrUrl: "",
         qrCaption: "",
         footer: "",
       },
     };
+
+    /** Old demo strings — clear on load so they don’t fight user direction. */
+    const PLACEHOLDER_FIELD_VALUES = new Set([
+      "Fall Festival · Sat Oct 12",
+      "Your headline here",
+      "Semester at a Glance",
+      "Become an Investor",
+      "Update dates here",
+      "Update the date, time, and short description — keep everything else.",
+      "https://example.org/details",
+      "https://example.org/calendar",
+      "https://example.org/give",
+      "https://example.org/fall-festival",
+      "https://example.org",
+      "See details →",
+      "Learn more →",
+      "Learn more",
+      "Join us →",
+      "Subscribe to calendar",
+      "Donate now",
+      "Scan to add all dates",
+      "Scan to give",
+      "Games, food trucks, and community fun on the lawn. Free for members · $5 guests.",
+      "Add a short description for your event or announcement.",
+      "Sat Oct 12 · 11 AM – 3 PM",
+      "Aug 15 — Back to School Night\nSep 12 — Fall Festival\nOct 24 — Book Fair\nNov 14 — Family Movie Night\nDec 5 — Winter Concert",
+      "2025–2026",
+    ]);
 
     const PROVEN_IDS = ["semester", "investor", "festival"];
     const NEW_SIZE_IDS = { letter: "simple-letter", half: "simple-half" };
@@ -1506,18 +1569,18 @@
         hasQr: true,
         defaults: {
           orgName: "",
-          headline: "Semester at a Glance",
-          schoolYear: "2025–2026",
+          headline: "",
+          schoolYear: "",
           location: "",
           directions: "",
-          datesEvents: "Aug 15 — Back to School Night\nSep 12 — Fall Festival\nOct 24 — Book Fair\nNov 14 — Family Movie Night\nDec 5 — Winter Concert",
+          datesEvents: "",
           body: "",
           donationTiers: "",
-          ctaLabel: "Subscribe to calendar",
-          ctaUrl: "https://example.org/calendar",
-          qrUrl: "https://example.org/calendar",
-          qrCaption: "Scan to add all dates",
-          footer: "yourorg.org · @YourOrg",
+          ctaLabel: "",
+          ctaUrl: "",
+          qrUrl: "",
+          qrCaption: "",
+          footer: "",
         },
       },
       {
@@ -1528,18 +1591,18 @@
         hasQr: true,
         defaults: {
           orgName: "",
-          headline: "Become an Investor",
-          schoolYear: "2025–2026",
+          headline: "",
+          schoolYear: "",
           location: "",
           directions: "",
           datesEvents: "",
-          body: "Your gift funds classroom supplies, field trips, and teacher grants. Top participating class wins a pizza party!",
-          donationTiers: "$25 — Supporter\n$50 — Friend of the PTA\n$100 — Champion + class reward\n$250 — Investor + name on banner",
-          ctaLabel: "Donate now",
-          ctaUrl: "https://example.org/give",
-          qrUrl: "https://example.org/give",
-          qrCaption: "Scan to give",
-          footer: "Questions? hello@yourorg.org",
+          body: "",
+          donationTiers: "",
+          ctaLabel: "",
+          ctaUrl: "",
+          qrUrl: "",
+          qrCaption: "",
+          footer: "",
         },
       },
       {
@@ -1550,17 +1613,17 @@
         hasQr: false,
         defaults: {
           orgName: "",
-          headline: "Fall Festival · Sat Oct 12",
-          schoolYear: "2025–2026",
-          location: "Community lawn · 1200 Main St",
+          headline: "",
+          schoolYear: "",
+          location: "",
           directions: "",
-          datesEvents: "Sat Oct 12 · 11 AM – 3 PM",
-          body: "Games, food trucks, and community fun on the lawn. Free for members · $5 guests.",
-          ctaLabel: "Join us →",
-          ctaUrl: "https://example.org/fall-festival",
+          datesEvents: "",
+          body: "",
+          ctaLabel: "",
+          ctaUrl: "",
           qrUrl: "",
           qrCaption: "",
-          footer: "yourorg.org",
+          footer: "",
         },
       },
       {
@@ -1571,14 +1634,14 @@
         hasQr: false,
         defaults: {
           orgName: "",
-          headline: "Your headline here",
-          schoolYear: "2025–2026",
+          headline: "",
+          schoolYear: "",
           location: "",
           directions: "",
           datesEvents: "",
-          body: "Add a short description for your event or announcement.",
-          ctaLabel: "Learn more →",
-          ctaUrl: "https://example.org",
+          body: "",
+          ctaLabel: "",
+          ctaUrl: "",
           qrUrl: "",
           qrCaption: "",
           footer: "",
@@ -1592,14 +1655,14 @@
         hasQr: false,
         defaults: {
           orgName: "",
-          headline: "Your headline here",
-          schoolYear: "2025–2026",
+          headline: "",
+          schoolYear: "",
           location: "",
           directions: "",
           datesEvents: "",
-          body: "Add a short description for your event or announcement.",
-          ctaLabel: "Learn more →",
-          ctaUrl: "https://example.org",
+          body: "",
+          ctaLabel: "",
+          ctaUrl: "",
           qrUrl: "",
           qrCaption: "",
           footer: "",
@@ -2003,9 +2066,11 @@
       const applyUpload = () => {
         state.startPath = "update";
         state.templateId = "custom";
-        applyTemplateDefaults(getTpl("custom"));
+        // Keep Basics + Direction — uploading a file must not inject Fall Festival demos.
+        applyTemplateDefaults(getTpl("custom"), { force: false });
+        setFieldIfEmpty("orgName", brandOrgName());
         state.previewGenerated = false;
-      state.generatedImageUrl = null;
+        state.generatedImageUrl = null;
         updateCustomUploadUI();
         updateStartUploadUI();
         syncStartPathUI();
@@ -2419,24 +2484,51 @@
         .replace(/"/g, "&quot;");
     }
 
-    function applyTemplateDefaults(tpl) {
+    function setFieldIfEmpty(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (String(el.value || "").trim()) return;
+      el.value = value || "";
+    }
+
+    function clearPlaceholderFields() {
+      const ids = [
+        "headline", "schoolYear", "location", "directions", "datesEvents",
+        "aiDirection", "bodyCopy", "donationTiers", "ctaLabel", "ctaUrl",
+        "qrUrl", "qrCaption", "footerLine", "lastYearNotes",
+      ];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const v = String(el.value || "").trim();
+        if (PLACEHOLDER_FIELD_VALUES.has(v)) el.value = "";
+      }
+    }
+
+    /** Fill empty fields only — never wipe user direction or basics. */
+    function applyTemplateDefaults(tpl, opts = {}) {
       if (!tpl) return;
+      const force = Boolean(opts.force);
       const d = tpl.defaults || {};
-      document.getElementById("orgName").value = d.orgName || brandOrgName();
-      document.getElementById("headline").value = d.headline || "";
-      document.getElementById("schoolYear").value = d.schoolYear || "";
-      document.getElementById("location").value = d.location || "";
-      document.getElementById("directions").value = d.directions || "";
-      document.getElementById("datesEvents").value = d.datesEvents || "";
-      document.getElementById("aiDirection").value = d.aiDirection || "";
-      document.getElementById("bodyCopy").value = "";
-      document.getElementById("donationTiers").value = d.donationTiers || "";
-      document.getElementById("ctaLabel").value = d.ctaLabel || d.cta || "Learn more";
-      document.getElementById("ctaUrl").value = d.ctaUrl || d.qr || "";
-      document.getElementById("qrUrl").value = d.qrUrl || d.qr || d.ctaUrl || "";
-      document.getElementById("qrCaption").value = d.qrCaption || "";
-      document.getElementById("footerLine").value = d.footer || "";
-      document.getElementById("lastYearNotes").value = "";
+      const fill = (id, value) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (!force && String(el.value || "").trim()) return;
+        el.value = value || "";
+      };
+      fill("orgName", d.orgName || brandOrgName());
+      fill("headline", d.headline || "");
+      fill("schoolYear", d.schoolYear || "");
+      fill("location", d.location || "");
+      fill("directions", d.directions || "");
+      fill("datesEvents", d.datesEvents || "");
+      fill("aiDirection", d.aiDirection || "");
+      fill("donationTiers", d.donationTiers || "");
+      fill("ctaLabel", d.ctaLabel || d.cta || "");
+      fill("ctaUrl", d.ctaUrl || d.qr || "");
+      fill("qrUrl", d.qrUrl || d.qr || d.ctaUrl || "");
+      fill("qrCaption", d.qrCaption || "");
+      fill("footerLine", d.footer || "");
       updateQrPreview();
       updateTemplateFieldHints();
     }
@@ -3358,16 +3450,99 @@
       });
     });
 
+    function getSpeechRecognitionConstructor() {
+      const win = window;
+      return win.SpeechRecognition || win.webkitSpeechRecognition || null;
+    }
+
+    function setupAiDirectionVoice() {
+      const btn = document.getElementById("aiDirectionVoice");
+      const textarea = document.getElementById("aiDirection");
+      const hint = document.getElementById("aiDirectionVoiceHint");
+      if (!btn || !textarea) return;
+
+      const SpeechRecognitionCtor = getSpeechRecognitionConstructor();
+      if (!SpeechRecognitionCtor) {
+        btn.disabled = true;
+        btn.title = "Voice input isn’t supported in this browser";
+        return;
+      }
+
+      let recognition = null;
+      let listening = false;
+      let baseText = "";
+      let finalTranscript = "";
+
+      const stop = () => {
+        listening = false;
+        try {
+          recognition?.stop();
+        } catch {
+          /* already stopped */
+        }
+        recognition = null;
+        btn.classList.remove("listening");
+        btn.setAttribute("aria-pressed", "false");
+        if (hint) hint.hidden = true;
+      };
+
+      btn.addEventListener("click", () => {
+        if (listening) {
+          stop();
+          return;
+        }
+        recognition = new SpeechRecognitionCtor();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = "en-US";
+        baseText = textarea.value.trim();
+        finalTranscript = "";
+        listening = true;
+        btn.classList.add("listening");
+        btn.setAttribute("aria-pressed", "true");
+        if (hint) hint.hidden = false;
+
+        recognition.onresult = (event) => {
+          let interim = "";
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            const piece = event.results[i][0]?.transcript || "";
+            if (event.results[i].isFinal) finalTranscript += `${piece} `;
+            else interim += piece;
+          }
+          const spoken = `${finalTranscript}${interim}`.trim();
+          textarea.value = [baseText, spoken].filter(Boolean).join(baseText ? " " : "");
+          scheduleSave();
+        };
+        recognition.onerror = () => stop();
+        recognition.onend = () => {
+          if (listening) {
+            try {
+              recognition.start();
+            } catch {
+              stop();
+            }
+          }
+        };
+        try {
+          recognition.start();
+        } catch {
+          stop();
+        }
+      });
+    }
+
     loadDraft();
+    clearPlaceholderFields();
     syncBrandKit();
-    if (state.templateId && !document.getElementById("headline").value.trim()) {
-      applyTemplateDefaults(getTpl(state.templateId));
+    if (state.templateId) {
+      applyTemplateDefaults(getTpl(state.templateId), { force: false });
     }
     renderStartStep();
     renderThumbs();
     updateInspUI();
     syncCustomModeUI();
     syncStartPathUI();
+    setupAiDirectionVoice();
 
     const params = new URLSearchParams(location.search);
     let initial = params.get("view") || "start";
@@ -3377,9 +3552,8 @@
 
     hydrateBrandKitFromApi().then(() => {
       syncBrandKit();
-      if (state.templateId) {
-        applyTemplateDefaults(getTpl(state.templateId));
-      }
+      // Only fill empty org name from Settings — never reset Basics/Direction.
+      setFieldIfEmpty("orgName", brandOrgName());
       renderStartStep();
     });
   </script>
