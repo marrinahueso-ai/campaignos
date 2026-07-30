@@ -98,3 +98,35 @@ describe("filterEventsHomeByLens with search", () => {
     }
   });
 });
+
+describe("filterEventsHomeByLens archived", () => {
+  const archivedEvents = [
+    eventStub({
+      id: "old-fair",
+      title: "Spring Fair",
+      date: "2025-04-10",
+      status: "archived",
+    }),
+    eventStub({
+      id: "active-fair",
+      title: "Fall Fair",
+      date: "2026-08-15",
+    }),
+  ];
+
+  it("shows only archived events on the Archived lens", () => {
+    const filtered = filterEventsHomeByLens(archivedEvents, "archived", today);
+    assert.deepEqual(
+      filtered.map((event) => event.id),
+      ["old-fair"],
+    );
+  });
+
+  it("excludes archived events from Upcoming", () => {
+    const filtered = filterEventsHomeByLens(archivedEvents, "upcoming", today);
+    assert.deepEqual(
+      filtered.map((event) => event.id),
+      ["active-fair"],
+    );
+  });
+});

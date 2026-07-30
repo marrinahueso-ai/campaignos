@@ -197,7 +197,7 @@ export const EVENTS_HOME_SUMMARY_CARDS: {
 export const EVENTS_HOME_DEFAULT_SUMMARY: EventsHomeSummaryKey = "next_60_days";
 
 /** Pulse tab lenses on Events Home ease UI. */
-export type EventsHomeLens = "upcoming" | "next_month" | "all";
+export type EventsHomeLens = "upcoming" | "next_month" | "all" | "archived";
 
 /** Pulse tabs filter the list only when search is empty. */
 export function shouldApplyEventsHomeLensFilter(query: string): boolean {
@@ -221,6 +221,8 @@ export function filterEventsHomeByLens<T extends Event>(
       next = events.filter((event) =>
         matchesEventsHomeMonth(event, "next_month", today),
       );
+    } else if (lens === "archived") {
+      next = events.filter((event) => event.status === "archived");
     }
   }
   return [...next].sort((left, right) => left.date.localeCompare(right.date));

@@ -18,6 +18,7 @@ import type { Event, EventRow } from "@/types";
 async function fetchScopedCampaignEvents(input: {
   organizationId?: string | null;
   dateWindow?: { startDate: string; endDate: string };
+  archiveStatus?: "active" | "archived";
 }): Promise<Event[]> {
   const { getOrganizationSchoolYearIds, resolveScopedOrganizationId } =
     await import("@/lib/events/org-scope");
@@ -36,12 +37,17 @@ async function fetchScopedCampaignEvents(input: {
   let query = supabase
     .from("events")
     .select(EVENT_CAMPAIGN_LIST_SELECT)
-    .neq("status", "archived")
     // Keep null strategy (maps to full_campaign) and exclude calendar-only in SQL.
     .or(
       "communication_strategy.in.(full_campaign,reminder_only,custom),communication_strategy.is.null",
     )
     .order("date", { ascending: true });
+
+  if (input.archiveStatus === "archived") {
+    query = query.eq("status", "archived");
+  } else {
+    query = query.neq("status", "archived");
+  }
 
   if (schoolYearIds.length === 1) {
     query = query.eq("school_year_id", schoolYearIds[0]!);
@@ -97,6 +103,13 @@ export async function getCampaignPageEvents(
   organizationId?: string | null,
 ): Promise<Event[]> {
   return fetchScopedCampaignEvents({ organizationId });
+}
+
+/** Archived campaigns for Events Home — same scope as getCampaignPageEvents. */
+export async function getArchivedCampaignPageEvents(
+  organizationId?: string | null,
+): Promise<Event[]> {
+  return fetchScopedCampaignEvents({ organizationId, archiveStatus: "archived" });
 }
 
 /** Planning Hub switcher — active school year plus July–June date window. */

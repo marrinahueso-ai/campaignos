@@ -26,8 +26,9 @@ describe("events ease UI contracts", () => {
     assert.match(home, /PULSE_TABS/);
     assert.match(home, /Upcoming/);
     assert.match(home, /Next month/);
+    assert.match(home, /Archived/);
     assert.match(home, /Full calendar/);
-    assert.match(ease, /Upcoming · Next month · All/);
+    assert.match(ease, /Upcoming · Next month · All · Archived/);
     assert.doesNotMatch(home, /Needs setup|Ready to run|Follow-up|Month at a glance/i);
   });
 

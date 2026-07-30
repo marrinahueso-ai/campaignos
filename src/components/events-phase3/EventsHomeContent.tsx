@@ -28,6 +28,7 @@ export type { EventsHomeResponsiblePerson };
 
 interface EventsHomeContentProps {
   events: Event[];
+  archivedEvents?: Event[];
   today: string;
   artworkByEventId: Record<string, HeroArtworkSelection | null>;
   responsibleByEventId: Record<string, EventsHomeResponsiblePerson>;
@@ -42,10 +43,12 @@ const PULSE_TABS: Array<{ id: EventsEaseLens; label: string }> = [
   { id: "upcoming", label: "Upcoming" },
   { id: "next_month", label: "Next month" },
   { id: "all", label: "All" },
+  { id: "archived", label: "Archived" },
 ];
 
 export function EventsHomeContent({
   events,
+  archivedEvents = [],
   today,
   artworkByEventId,
   responsibleByEventId,
@@ -63,6 +66,15 @@ export function EventsHomeContent({
     if (schoolYearFilter === "all") return events;
     return events.filter((event) => event.schoolYearId === schoolYearFilter);
   }, [events, schoolYearFilter]);
+
+  const archivedForCounts = useMemo(() => {
+    if (schoolYearFilter === "all") return archivedEvents;
+    return archivedEvents.filter(
+      (event) => event.schoolYearId === schoolYearFilter,
+    );
+  }, [archivedEvents, schoolYearFilter]);
+
+  const sourceEvents = lens === "archived" ? archivedForCounts : eventsForCounts;
 
   const summaryCounts = useMemo(
     () => countEventsHomeSummary(eventsForCounts, today),
@@ -90,7 +102,7 @@ export function EventsHomeContent({
 
   const searched = useMemo(
     () =>
-      filterEventsHomeBySearch(eventsForCounts, search, (event) => ({
+      filterEventsHomeBySearch(sourceEvents, search, (event) => ({
         today,
         responsible: responsibleByEventId[event.id],
         schoolYearLabel: event.schoolYearId
@@ -98,7 +110,7 @@ export function EventsHomeContent({
           : null,
       })),
     [
-      eventsForCounts,
+      sourceEvents,
       search,
       responsibleByEventId,
       today,
@@ -149,6 +161,7 @@ export function EventsHomeContent({
     upcoming: summaryCounts.next_60_days,
     next_month: nextMonthCount,
     all: eventsForCounts.length,
+    archived: archivedForCounts.length,
   };
 
   const emptyCopy: Record<
@@ -168,6 +181,14 @@ export function EventsHomeContent({
       body:
         events.length === 0
           ? "Create an event, or start from Create with AI."
+          : "Try a different search.",
+    },
+    archived: {
+      title:
+        archivedEvents.length === 0 ? "No archived events" : "No matches",
+      body:
+        archivedEvents.length === 0
+          ? "When you archive a past event, it appears here for reference."
           : "Try a different search.",
     },
   };
@@ -351,7 +372,9 @@ export function EventsHomeContent({
               ? "Search results"
               : lens === "next_month"
                 ? "Next month"
-                : "All events"}
+                : lens === "archived"
+                  ? "Archived events"
+                  : "All events"}
             <span className="ml-2 font-semibold tracking-normal normal-case text-cos-muted">
               {lensEvents.length === 1
                 ? "· 1 event"

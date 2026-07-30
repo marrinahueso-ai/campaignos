@@ -27,7 +27,7 @@ export type EventsHomeResponsiblePerson = {
   organizationTitle: string | null;
 };
 
-export type EventsEaseLens = "upcoming" | "next_month" | "all";
+export type EventsEaseLens = "upcoming" | "next_month" | "all" | "archived";
 
 export function easeLensToSummary(
   lens: EventsEaseLens,
@@ -63,6 +63,13 @@ export function eventStatusTone(
       label: "Needs setup",
       className: "bg-[rgba(166,90,58,0.12)] text-[#a65a3a]",
       pillClass: "bg-[rgba(166,90,58,0.14)] text-[#a65a3a]",
+    };
+  }
+  if (event.status === "archived") {
+    return {
+      label: "Archived",
+      className: "bg-[rgba(28,36,48,0.08)] text-cos-muted",
+      pillClass: "bg-[rgba(28,36,48,0.08)] text-cos-muted",
     };
   }
   return {
@@ -551,7 +558,7 @@ export function EventsEaseMonthGlance({
       </div>
       <div className="grid grid-cols-7 gap-1.5">{cells}</div>
       <div className="mt-3.5 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-cos-muted">
-        <span>Upcoming · Next month · All</span>
+        <span>Upcoming · Next month · All · Archived</span>
         <span className="text-cos-muted">
           Upcoming looks ahead about 60 days (through{" "}
           {addDaysToDateOnly(today, 60)})

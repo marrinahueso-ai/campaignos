@@ -1,6 +1,6 @@
 import { CampaignsPageContent } from "@/components/campaigns/CampaignsPageContent";
 import { EventsHomeContent } from "@/components/events-phase3/EventsHomeContent";
-import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
+import { getCampaignPageEvents, getArchivedCampaignPageEvents } from "@/lib/events/campaign-page-queries";
 import { collectEventsHomeArtworkEventIds } from "@/lib/events/events-home-artwork-ids";
 import { getEventsHomeLayoutForCurrentUser } from "@/lib/events/events-home-layout-queries";
 import { isEventsPhase3UiEnabled } from "@/lib/events/events-phase3-flag";
@@ -41,6 +41,7 @@ export default async function EventsPage() {
 
   const [
     events,
+    archivedEvents,
     workspace,
     schoolYears,
     activeSchoolYear,
@@ -48,6 +49,7 @@ export default async function EventsPage() {
     summaryLayout,
   ] = await Promise.all([
     getCampaignPageEvents(organization?.id ?? null),
+    getArchivedCampaignPageEvents(organization?.id ?? null),
     organization
       ? getOrganizationWorkspaceData(organization.id)
       : Promise.resolve(null),
@@ -135,7 +137,7 @@ export default async function EventsPage() {
       .map((committee) => [committee.assignedEventId as string, committee]),
   );
 
-  for (const event of events) {
+  for (const event of [...events, ...archivedEvents]) {
     const resolved = resolveResponsiblePersonForEvent({
       eventId: event.id,
       event,
@@ -152,6 +154,7 @@ export default async function EventsPage() {
   }
 
   const leanEvents = events.map(toEventsHomeEvent);
+  const leanArchivedEvents = archivedEvents.map(toEventsHomeEvent);
   const artworkRecord: Record<string, HeroArtworkSelection | null> = {};
   for (const [eventId, artwork] of artworkByEventId) {
     artworkRecord[eventId] = artwork;
@@ -160,6 +163,7 @@ export default async function EventsPage() {
   return (
     <EventsHomeContent
       events={leanEvents}
+      archivedEvents={leanArchivedEvents}
       today={today}
       artworkByEventId={artworkRecord}
       responsibleByEventId={responsibleByEventId}

@@ -172,6 +172,19 @@ describe("eventMatchesSearch", () => {
       ),
       true,
     );
+    assert.equal(
+      eventMatchesSearch(
+        eventStub({
+          id: "5",
+          title: "Old fair",
+          status: "archived",
+          date: "2025-04-01",
+        }),
+        "archived",
+        { today },
+      ),
+      true,
+    );
   });
 
   it("matches school year label when provided", () => {

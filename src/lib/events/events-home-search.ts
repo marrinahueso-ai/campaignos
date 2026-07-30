@@ -30,6 +30,7 @@ function getEventStatusSearchLabel(event: Event, today: string): string {
   if (event.status === "published") return "Published";
   if (event.status === "draft") return "Needs setup";
   if (event.status === "scheduled") return "Ready";
+  if (event.status === "archived") return "Archived";
   return event.status;
 }
 
