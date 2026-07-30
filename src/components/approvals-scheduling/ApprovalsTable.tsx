@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AssigneeAvatar,
   DeliveryIcons,
@@ -22,6 +21,7 @@ import type {
   UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
 import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
+import { toSupabaseThumbnailUrl } from "@/lib/images/supabase-thumbnail";
 import { cn } from "@/lib/utils/cn";
 
 const SORTABLE_COLUMNS: {
@@ -59,6 +59,41 @@ function SortIcon({
     <ArrowUp className="h-3 w-3" strokeWidth={1.5} />
   ) : (
     <ArrowDown className="h-3 w-3" strokeWidth={1.5} />
+  );
+}
+
+function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
+  const source =
+    item.preview.feedArtworkUrl ||
+    item.preview.storyArtworkUrl ||
+    item.thumbnailUrl ||
+    "";
+  const url = toSupabaseThumbnailUrl(source, { width: 128 });
+  const [imageSrc, setImageSrc] = useState(url);
+
+  useEffect(() => {
+    setImageSrc(url);
+  }, [url]);
+
+  return (
+    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-cos-border bg-cos-bg">
+      {imageSrc ? (
+        <img
+          src={imageSrc}
+          alt=""
+          className="absolute inset-0 h-full w-full object-contain object-center"
+          onError={() => {
+            if (imageSrc !== source) {
+              setImageSrc(source);
+            }
+          }}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-[10px] text-cos-muted">
+          Art
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -147,21 +182,7 @@ export function ApprovalsTable({
               <tr key={item.id} className="border-b border-cos-border last:border-b-0">
                 <td className="px-4 py-4 align-top">
                   <div className="flex items-start gap-3">
-                    <div className="relative h-12 w-12 shrink-0 overflow-hidden border border-cos-border bg-cos-bg">
-                      {item.thumbnailUrl ? (
-                        <Image
-                          src={item.thumbnailUrl}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="48px"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[10px] text-cos-muted">
-                          Art
-                        </div>
-                      )}
-                    </div>
+                    <ApprovalArtworkThumbnail item={item} />
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-cos-text">
                         {item.campaignName}

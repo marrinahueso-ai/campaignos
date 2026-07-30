@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
 import { eventVolunteersHref } from "@/lib/events/event-responsibility";
 import {
   getVolunteerFillRateBand,
@@ -79,8 +80,13 @@ function ArtTile({
   /** Queue thumbs use contain so poster copy stays legible in small squares. */
   fit?: "cover" | "contain";
 }) {
-  const url = toSupabaseThumbnailUrl(event.artworkUrl?.trim() || "", { width });
+  const source = event.artworkUrl?.trim() || "";
+  const url = toSupabaseThumbnailUrl(source, { width });
+  const [imageSrc, setImageSrc] = useState(url);
   const isCompact = width <= 200;
+  useEffect(() => {
+    setImageSrc(url);
+  }, [url]);
   return (
     <div
       className={cn(
@@ -88,20 +94,29 @@ function ArtTile({
         className,
       )}
     >
-      {url ? (
-        <Image
-          key={url}
-          src={url}
-          alt=""
-          fill
-          className={cn(
-            fit === "contain"
-              ? "object-contain object-center p-0.5"
-              : "object-cover",
-          )}
-          sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 240px"}
-          priority={priority}
-        />
+      {imageSrc ? (
+        fit === "contain" ? (
+          <img
+            src={imageSrc}
+            alt=""
+            className="absolute inset-0 h-full w-full object-contain object-center"
+            onError={() => {
+              if (imageSrc !== source) {
+                setImageSrc(source);
+              }
+            }}
+          />
+        ) : (
+          <Image
+            key={imageSrc}
+            src={imageSrc}
+            alt=""
+            fill
+            className="object-cover"
+            sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 240px"}
+            priority={priority}
+          />
+        )
       ) : null}
     </div>
   );

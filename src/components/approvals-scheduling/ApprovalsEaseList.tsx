@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import {
   approvalOutcomeChip,
   canRetryFailedApproval,
@@ -48,7 +49,12 @@ function ArtTile({
   /** Queue thumbs show the entire poster within their fixed square. */
   fit?: "cover" | "contain";
 }) {
-  const url = toSupabaseThumbnailUrl(artBackground(item), { width });
+  const source = artBackground(item);
+  const url = toSupabaseThumbnailUrl(source, { width });
+  const [imageSrc, setImageSrc] = useState(url);
+  useEffect(() => {
+    setImageSrc(url);
+  }, [url]);
   return (
     <div
       className={cn(
@@ -56,19 +62,28 @@ function ArtTile({
         className,
       )}
     >
-      {url ? (
-        <Image
-          src={url}
-          alt=""
-          fill
-          className={
-            fit === "contain"
-              ? "object-contain object-center p-0.5"
-              : "object-cover"
-          }
-          sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
-          priority={priority}
-        />
+      {imageSrc ? (
+        fit === "contain" ? (
+          <img
+            src={imageSrc}
+            alt=""
+            className="absolute inset-0 h-full w-full object-contain object-center"
+            onError={() => {
+              if (imageSrc !== source) {
+                setImageSrc(source);
+              }
+            }}
+          />
+        ) : (
+          <Image
+            src={imageSrc}
+            alt=""
+            fill
+            className="object-cover"
+            sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
+            priority={priority}
+          />
+        )
       ) : null}
       {label ? (
         <span className="absolute top-3 left-3 rounded-full bg-[rgba(255,252,247,0.92)] px-2.5 py-1 text-[11px] font-extrabold text-cos-text">
