@@ -165,60 +165,97 @@
       margin: -8px 0 16px; font-size: 0.82rem; font-weight: 600; color: var(--forest);
     }
 
-    /* Templates */
-    .tpl-grid {
-      display: grid; gap: 12px;
-      width: 100%; max-width: 100%; min-width: 0;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* Start step — path chooser */
+    .start-paths {
+      display: grid; gap: 14px; margin-bottom: 4px;
     }
-    @media (min-width: 640px) {
-      .tpl-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    @media (min-width: 760px) {
+      .start-paths { grid-template-columns: 1fr 1fr; }
+      .start-path-tertiary { grid-column: 1 / -1; }
     }
-    @media (min-width: 960px) {
-      .tpl-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .start-path {
+      border: 1.5px solid var(--line); border-radius: 18px;
+      background: var(--cream); padding: 18px 18px 16px;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
     }
-    .tpl {
-      position: relative; text-align: left; border-radius: 16px; border: 2px solid transparent;
-      background: var(--cream); padding: 10px; transition: border-color 0.2s, transform 0.2s;
-      min-width: 0; max-width: 100%;
+    .start-path.is-active {
+      border-color: color-mix(in srgb, var(--brand-primary) 45%, transparent);
+      background: var(--white); box-shadow: var(--shadow);
     }
-    .tpl:hover { transform: translateY(-2px); }
-    .tpl[aria-pressed="true"] { border-color: var(--brand-primary); background: #fff; box-shadow: var(--shadow); }
-    .tpl-preview {
-      aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden; position: relative;
-      border: 1px solid var(--line); background: #ddd;
-      width: 100%; min-width: 0;
+    .start-path-primary {
+      border-color: color-mix(in srgb, var(--brand-primary) 28%, transparent);
+      background: linear-gradient(180deg, rgba(47, 74, 60, 0.05), rgba(255, 252, 247, 0.98));
     }
-    .tpl-preview[data-ratio="1/1"] { aspect-ratio: 1 / 1; }
-    .tpl-preview[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-height: 200px; margin: 0 auto; width: auto; }
-    .tpl-label {
-      margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: var(--ink); line-height: 1.25;
-      overflow-wrap: anywhere;
+    .start-path-primary.is-active {
+      border-color: var(--brand-primary);
     }
-    .tpl-audience {
-      margin-top: 3px; font-size: 0.68rem; font-weight: 700; color: var(--forest);
+    .path-badge {
+      display: inline-block; margin-bottom: 8px; padding: 3px 8px; border-radius: 999px;
+      background: rgba(47, 74, 60, 0.1); color: var(--forest);
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
     }
-    .tpl-channels {
-      display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px;
+    .start-path h3 {
+      margin: 0 0 4px; font-family: var(--serif); font-size: 1.15rem; font-weight: 600;
     }
-    .tpl.custom-tpl {
-      border-style: dashed; border-color: rgba(42, 38, 34, 0.22);
-      background: rgba(255, 252, 247, 0.95);
+    .path-hint {
+      margin: 0 0 14px; font-size: 0.86rem; line-height: 1.4; color: var(--muted);
     }
-    .tpl.custom-tpl[aria-pressed="true"] {
-      border-style: solid; border-color: var(--brand-primary);
+    .start-upload {
+      border: 1.5px dashed rgba(42, 38, 34, 0.22); border-radius: 14px;
+      background: rgba(255, 252, 247, 0.85); padding: 22px 16px; text-align: center;
+      cursor: pointer; transition: border-color 0.2s, background 0.2s;
     }
-    .tpl-preview.custom-preview {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 8px; background:
-        linear-gradient(145deg, rgba(47, 74, 60, 0.08), rgba(196, 146, 46, 0.1)),
-        var(--cream);
-      color: var(--ink-soft); font-size: 0.72rem; font-weight: 600; text-align: center;
-      padding: 12px;
+    .start-upload:hover { border-color: rgba(47, 74, 60, 0.4); background: var(--white); }
+    .start-upload.has {
+      padding: 0; border-style: solid; overflow: hidden;
+      aspect-ratio: 3/4; max-height: 200px;
+      background-size: cover; background-position: center;
     }
-    .tpl-preview.custom-preview .up-icon {
-      width: 36px; height: 36px; border-radius: 12px; background: var(--white);
-      border: 1px solid var(--line); display: grid; place-items: center; font-size: 1.1rem;
+    .start-upload strong { display: block; font-size: 0.92rem; color: var(--ink); }
+    .start-upload .hint { font-size: 0.8rem; color: var(--muted); margin: 6px 0 0; }
+    .proven-row {
+      display: grid; gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .proven-tpl {
+      text-align: center; border-radius: 14px; border: 2px solid transparent;
+      background: rgba(255, 252, 247, 0.7); padding: 8px 6px 10px;
+      transition: border-color 0.2s, transform 0.2s, background 0.2s;
+    }
+    .proven-tpl:hover { transform: translateY(-1px); }
+    .proven-tpl[aria-pressed="true"] {
+      border-color: var(--brand-primary); background: var(--white); box-shadow: var(--shadow);
+    }
+    .proven-preview {
+      aspect-ratio: 3/4; border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--line); background: #ddd; margin-bottom: 6px;
+    }
+    .proven-preview[data-ratio="3/2"] { aspect-ratio: 3/2; }
+    .proven-preview .fly { font-size: 5px; }
+    .proven-preview .fly .h { font-size: 9px; }
+    .proven-preview .fly .b { font-size: 5px; }
+    .proven-name {
+      display: block; font-size: 0.72rem; font-weight: 700; line-height: 1.25;
+      color: var(--ink); overflow-wrap: anywhere;
+    }
+    .start-path-tertiary {
+      padding: 14px 18px; background: rgba(255, 252, 247, 0.55);
+    }
+    .start-path-tertiary h3 { font-size: 1rem; }
+    .size-row {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+    }
+    .size-btn {
+      flex: 1; min-width: 120px; padding: 10px 12px; border-radius: 12px;
+      border: 1.5px solid var(--line); background: var(--white);
+      font-size: 0.86rem; font-weight: 600; text-align: center;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .size-btn[aria-pressed="true"] {
+      border-color: var(--brand-primary); box-shadow: var(--shadow);
+    }
+    .size-btn span {
+      display: block; font-size: 0.72rem; font-weight: 500; color: var(--muted); margin-top: 2px;
     }
     .custom-upload {
       border: 1.5px dashed rgba(42, 38, 34, 0.22); border-radius: 16px;
