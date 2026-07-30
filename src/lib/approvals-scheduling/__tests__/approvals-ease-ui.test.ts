@@ -153,7 +153,7 @@ describe("approvals ease pulse contracts", () => {
     assert.match(hub, /shouldApplyApprovalsEasePulseFilter/);
   });
 
-  it("fills square focus cards and queue thumbs with cover art", () => {
+  it("contains focus posters while queue thumbs remain edge-filled", () => {
     const ease = readSrc(
       "../../../components/approvals-scheduling/ApprovalsEaseList.tsx",
     );
@@ -162,10 +162,12 @@ describe("approvals ease pulse contracts", () => {
     );
 
     assert.match(ease, /relative h-14 w-14 shrink-0 rounded-xl/);
-    assert.match(ease, /aspect-square w-full md:self-start/);
-    assert.match(ease, /resize: "cover"/);
+    assert.match(ease, /grid items-center[\s\S]*minmax\(220px,280px\)_1fr/);
+    assert.match(ease, /aspect-square w-full/);
+    assert.match(ease, /resize: isCompact \? "cover" : "contain"/);
+    assert.match(ease, /"object-contain object-center"/);
     assert.match(ease, /"object-cover object-center"/);
-    assert.doesNotMatch(ease, /object-contain object-center p-1/);
+    assert.match(ease, /bg-cos-bg/);
     assert.match(ease, /sizes=\{width > 200 \?[\s\S]*: "56px"\}/);
     assert.match(ease, /loading=\{priority \? "eager" : "lazy"\}/);
     assert.match(ease, /ApprovalsQueueRow[\s\S]*ArtTile/);

@@ -78,20 +78,20 @@ function ArtTile({
   priority?: boolean;
 }) {
   const source = event.artworkUrl?.trim() || "";
+  const isCompact = width <= 200;
   const imageUrl = toSupabaseThumbnailUrl(source, {
     width,
     height: width,
-    resize: "cover",
+    resize: isCompact ? "cover" : "contain",
   });
   const [imageSrc, setImageSrc] = useState(imageUrl);
-  const isCompact = width <= 200;
   useEffect(() => {
     setImageSrc(imageUrl);
   }, [imageUrl]);
   return (
     <div
       className={cn(
-        "relative overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
+        "relative overflow-hidden bg-cos-bg",
         className,
       )}
     >
@@ -100,7 +100,11 @@ function ArtTile({
           src={imageSrc}
           alt=""
           fill
-          className="object-cover object-center"
+          className={
+            isCompact
+              ? "object-cover object-center"
+              : "object-contain object-center"
+          }
           sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 240px"}
           priority={priority}
           loading={priority ? "eager" : "lazy"}
@@ -158,11 +162,11 @@ export function VolunteersFocusCard({
   return (
     <article
       key={event.id}
-      className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(180px,240px)_1fr]"
+      className="grid items-center overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(220px,280px)_1fr]"
     >
       <ArtTile
         event={event}
-        className="aspect-square w-full md:self-start"
+        className="aspect-square w-full"
         width={800}
         priority
       />

@@ -47,10 +47,11 @@ function ArtTile({
   priority?: boolean;
 }) {
   const source = artBackground(item);
+  const isCompact = width <= 200;
   const imageUrl = toSupabaseThumbnailUrl(source, {
     width,
     height: width,
-    resize: "cover",
+    resize: isCompact ? "cover" : "contain",
   });
   const [imageSrc, setImageSrc] = useState(imageUrl);
   useEffect(() => {
@@ -59,7 +60,7 @@ function ArtTile({
   return (
     <div
       className={cn(
-        "relative overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#6b8171] to-[#c4922e]",
+        "relative overflow-hidden bg-cos-bg",
         className,
       )}
     >
@@ -68,7 +69,11 @@ function ArtTile({
           src={imageSrc}
           alt=""
           fill
-          className="object-cover object-center"
+          className={
+            isCompact
+              ? "object-cover object-center"
+              : "object-contain object-center"
+          }
           sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
           priority={priority}
           loading={priority ? "eager" : "lazy"}
@@ -103,10 +108,10 @@ export function ApprovalsFocusCard({
     null;
 
   return (
-    <article className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(200px,280px)_1fr]">
+    <article className="grid items-center overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(220px,280px)_1fr]">
       <ArtTile
         item={item}
-        className="aspect-square w-full md:self-start"
+        className="aspect-square w-full"
         width={800}
         priority
         label={
