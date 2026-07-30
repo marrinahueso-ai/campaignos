@@ -50,8 +50,8 @@ function ArtTile({
   const isCompact = width <= 200;
   const imageUrl = toSupabaseThumbnailUrl(source, {
     width,
-    height: width,
-    resize: isCompact ? "cover" : "contain",
+    height: isCompact ? width : Math.round(width * 1.25),
+    resize: "cover",
   });
   const [imageSrc, setImageSrc] = useState(imageUrl);
   useEffect(() => {
@@ -69,11 +69,7 @@ function ArtTile({
           src={imageSrc}
           alt=""
           fill
-          className={
-            isCompact
-              ? "object-cover object-center"
-              : "object-contain object-center"
-          }
+          className="object-cover object-center"
           sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
           priority={priority}
           loading={priority ? "eager" : "lazy"}
@@ -111,7 +107,7 @@ export function ApprovalsFocusCard({
     <article className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(220px,280px)_1fr]">
       <ArtTile
         item={item}
-        className="min-h-[220px] w-full md:h-full md:min-h-0"
+        className="min-h-[240px] w-full self-stretch"
         width={800}
         priority
         label={

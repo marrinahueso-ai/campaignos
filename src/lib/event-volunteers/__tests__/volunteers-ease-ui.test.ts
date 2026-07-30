@@ -29,16 +29,15 @@ describe("volunteers ease UI contracts", () => {
     assert.match(ease, /Event volunteers/);
   });
 
-  it("contains focus posters while queue thumbs remain edge-filled", () => {
+  it("fills focus art wells edge-to-edge while queue thumbs stay compact", () => {
     assert.match(
       ease,
       /relative h-14 w-14 shrink-0 rounded-xl/,
     );
     assert.match(ease, /grid overflow-hidden[\s\S]*minmax\(220px,280px\)_1fr/);
-    assert.match(ease, /min-h-\[220px\] w-full md:h-full/);
-    assert.match(ease, /resize: isCompact \? "cover" : "contain"/);
-    assert.match(ease, /"object-contain object-center"/);
-    assert.match(ease, /"object-cover object-center"/);
+    assert.match(ease, /min-h-\[240px\] w-full self-stretch/);
+    assert.match(ease, /resize: "cover"/);
+    assert.match(ease, /className="object-cover object-center"/);
     assert.match(ease, /bg-cos-bg/);
     assert.match(ease, /sizes=\{isCompact \? "56px"/);
     assert.match(ease, /loading=\{priority \? "eager" : "lazy"\}/);
