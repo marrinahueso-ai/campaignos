@@ -7,7 +7,7 @@ import {
   resolveDeveloperAgreementCountersignTemplateId,
   resolveDeveloperAgreementExecutedTemplateId,
 } from "@/lib/email/developer-agreement-emails";
-import { sendEmail, sendTemplateEmail } from "@/lib/email/send";
+import { sendTemplateEmail } from "@/lib/email/send";
 import { renderExecutedAgreementHtml } from "@/lib/developer-agreements/render-executed";
 import {
   getAgreementsSiteOrigin,
@@ -158,7 +158,7 @@ export async function notifyOwnersDeveloperSigned(input: {
     countersignUrl,
   });
 
-  let result = await sendTemplateEmail({
+  const result = await sendTemplateEmail({
     to: owners,
     templateId: resolveDeveloperAgreementCountersignTemplateId(),
     subject: content.subject,
@@ -169,20 +169,8 @@ export async function notifyOwnersDeveloperSigned(input: {
       VERSION_LABEL: input.versionLabel,
       COUNTERSIGN_URL: countersignUrl,
     },
+    idempotencyKey: `developer-agreement-countersign/${input.signatureId}`,
   });
-
-  if (!result.success) {
-    console.warn(
-      "Resend countersign template failed; falling back to HTML:",
-      result.error,
-    );
-    result = await sendEmail({
-      to: owners,
-      subject: content.subject,
-      html: content.html,
-      text: content.text,
-    });
-  }
 
   if (result.success) {
     const admin = createAdminClient();
@@ -228,9 +216,9 @@ export async function emailExecutedAgreementCopy(input: {
   });
   const filename = `${slugify(input.documentTitle)}-${input.versionLabel}-executed.html`;
 
-  // Primary: published Resend template (editable in the Resend dashboard).
-  // CTA uses the app download API (tokenized). Templates cannot attach files.
-  let result = await sendTemplateEmail({
+  // Published template plus the completed agreement attachment. The download CTA
+  // remains useful for recipients whose mail client strips attachments.
+  const result = await sendTemplateEmail({
     to: recipients,
     templateId: resolveDeveloperAgreementExecutedTemplateId(),
     subject: content.subject,
@@ -241,27 +229,15 @@ export async function emailExecutedAgreementCopy(input: {
       VERSION_LABEL: input.versionLabel,
       DOWNLOAD_URL: downloadUrl,
     },
+    attachments: [
+      {
+        filename,
+        content: Buffer.from(input.html, "utf8"),
+        contentType: "text/html; charset=utf-8",
+      },
+    ],
+    idempotencyKey: `developer-agreement-executed/${input.signatureId}`,
   });
-
-  if (!result.success) {
-    console.warn(
-      "Resend executed template failed; falling back to HTML+attachment:",
-      result.error,
-    );
-    result = await sendEmail({
-      to: recipients,
-      subject: content.subject,
-      html: content.html,
-      text: content.text,
-      attachments: [
-        {
-          filename,
-          content: Buffer.from(input.html, "utf8"),
-          contentType: "text/html; charset=utf-8",
-        },
-      ],
-    });
-  }
 
   if (result.success) {
     const admin = createAdminClient();

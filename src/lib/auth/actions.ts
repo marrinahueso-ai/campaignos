@@ -36,7 +36,6 @@ import {
   resolvePublicEmailAuthOrigin,
   toPublicInviteUrl,
 } from "@/lib/auth/invite-url";
-import { TEAM_INVITE_TTL_DAYS } from "@/lib/auth/invite-constants";
 import {
   clearMustChangePassword,
   createInvitedMemberAccount,
@@ -44,12 +43,10 @@ import {
 } from "@/lib/auth/invite-credentials";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
 import { revokeUserSessionsIfNoActiveMembership } from "@/lib/auth/revoke-sessions";
-import { buildTeamInviteEmail } from "@/lib/email/team-invite-email";
 import { sendOrganizationWelcomeEmail } from "@/lib/email/send-organization-welcome";
 import {
   isEmailConfigured,
   resolveTeamInviteTemplateId,
-  sendEmail,
   sendTemplateEmail,
 } from "@/lib/email/send";
 import { getOrganizationById } from "@/lib/organizations/queries";
@@ -163,33 +160,9 @@ async function maybeSendTeamInviteEmail(input: {
   const publicInviteUrl = toPublicInviteUrl(input.inviteUrl);
   const roleLabel =
     input.accessLevelLabel?.trim() || campaignRoleLabel(input.accessLevel);
-  const content = buildTeamInviteEmail({
-    organizationName: input.organizationName,
-    inviteeName: input.inviteeName,
-    inviteeEmail: input.toEmail,
-    accessLevelLabel: roleLabel,
-    inviteUrl: publicInviteUrl,
-    personalMessage: input.personalMessage,
-    inviterEmail: input.inviterEmail,
-    ttlDays: TEAM_INVITE_TTL_DAYS,
-  });
-
-  // Prefer branded HTML (secure setup link). Template is best-effort fallback.
-  const htmlResult = await sendEmail({
-    to: [input.toEmail],
-    subject: content.subject,
-    html: content.html,
-    text: content.text,
-  });
-
-  if (htmlResult.success) {
-    return null;
-  }
-
   const templateResult = await sendTemplateEmail({
     to: [input.toEmail],
     templateId: resolveTeamInviteTemplateId(),
-    subject: content.subject,
     variables: {
       ORGANIZATION_NAME: input.organizationName.trim() || "your organization",
       INVITEE_NAME: input.inviteeName?.trim() || "there",
@@ -197,14 +170,12 @@ async function maybeSendTeamInviteEmail(input: {
       INVITE_URL: publicInviteUrl,
       INVITEE_EMAIL: input.toEmail,
       INVITER_EMAIL: input.inviterEmail?.trim() || "your team",
-      PERSONAL_MESSAGE:
-        input.personalMessage?.trim() || "Welcome to the team.",
-      TEMPORARY_PASSWORD: "Create your own password on the invite page.",
     },
+    idempotencyKey: `team-invite/${input.toEmail}/${publicInviteUrl}`,
   });
 
   if (!templateResult.success) {
-    return `Invite created, but email failed to send: ${htmlResult.error ?? templateResult.error ?? "unknown error"}. Copy the invite link below.`;
+    return `Invite created, but email failed to send: ${templateResult.error ?? "unknown error"}. Copy the invite link below.`;
   }
 
   return null;

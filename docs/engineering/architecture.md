@@ -144,7 +144,7 @@ Multi-tenant rule: almost all rows are **organization-scoped**. Membership + RLS
 ```mermaid
 flowchart LR
   Intake["Calendar intake<br/>Google · ICS · upload"]
-  Review["calendar_imports<br/>/calendar/review"]
+  Review["calendar_imports<br/>/calendar?tab=review"]
   Events["events"]
   Chooser["Create with AI<br/>chooser"]
   Social["Social<br/>campaign-builder-v2 · artwork-v2"]
@@ -222,7 +222,7 @@ Playbooks still seed milestone timelines and health; campaign creative generatio
 | Provider | Connect surface | Storage | Docs |
 |----------|-----------------|---------|------|
 | Meta | `/settings/meta` (+ Inbox / Insights CTAs) | `organization_meta_connections` | [meta.md](../integrations/meta.md) |
-| Google Calendar | Connect: `/settings/integrations/calendar`; import/review: `/calendar/import` → `/calendar/review` | `organization_google_calendar_connections` | [google-calendar.md](../integrations/google-calendar.md) |
+| Google Calendar | Connect: `/settings/integrations/calendar`; import/review: `/calendar?tab=import` → `/calendar?tab=review` | `organization_google_calendar_connections` | [google-calendar.md](../integrations/google-calendar.md) |
 | Canva | `/settings/canva` | `organization_canva_connections` | — |
 | Monday | `/settings/monday` | `organization_monday_connections` | — |
 | SignUpGenius | Event Volunteers tab (public URL) | Volunteer sources / snapshots | [signupgenius.md](../integrations/signupgenius.md) |

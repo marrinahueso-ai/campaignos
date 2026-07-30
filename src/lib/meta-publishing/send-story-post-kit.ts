@@ -5,7 +5,11 @@ import {
   isApprovedArtworkAsset,
 } from "@/lib/artwork-v2/campaign-phases";
 import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
-import { isEmailConfigured, resolveSocialsFromAddress, sendEmail } from "@/lib/email/send";
+import {
+  isEmailConfigured,
+  resolveSocialsFromAddress,
+  sendTemplateEmail,
+} from "@/lib/email/send";
 import { buildSocialsManualUploadEmail } from "@/lib/email/socials-manual-upload-email";
 import { mapEventAssetRows } from "@/lib/event-workspace/mappers";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
@@ -290,13 +294,16 @@ export async function sendStoryPostKitForMilestone(input: {
     organizationName: (organization.name as string) ?? "Your organization",
   });
 
-  const sendResult = await sendEmail({
+  const sendResult = await sendTemplateEmail({
     to: recipients,
-    subject: emailContent.subject,
-    html: emailContent.html,
-    text: emailContent.text,
+    templateId: "story-post-kit",
+    variables: {
+      CONTENT_NAME: `${eventRow.title as string} — ${step.title as string}`,
+      ACTION_URL: postKitUrl,
+    },
     attachments: emailContent.attachments,
     from: resolveSocialsFromAddress(),
+    idempotencyKey: `story-post-kit/${step.id as string}`,
   });
 
   if (!sendResult.success) {

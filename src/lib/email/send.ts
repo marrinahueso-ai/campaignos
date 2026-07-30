@@ -30,6 +30,12 @@ export interface SendTemplateEmailInput {
   subject?: string;
   /** Override From (defaults to RESEND_FROM_EMAIL). */
   from?: string;
+  /** Attachments are supported for immediate template sends. */
+  attachments?: EmailAttachment[];
+  /** Resend schedules delivery; scheduled template emails cannot attach files. */
+  scheduledAt?: string;
+  /** Logical delivery key, retained for 24 hours by Resend. */
+  idempotencyKey?: string;
 }
 
 export interface SendEmailResult {
@@ -78,7 +84,7 @@ export function resolveFromAddress(): string {
 export function resolveSocialsFromAddress(): string {
   return (
     process.env.RESEND_SOCIALS_FROM_EMAIL?.trim() ||
-    "Hey Ralli <Socials@heyralli.com>"
+    "Hey Ralli <socials@heyralli.com>"
   );
 }
 
@@ -184,15 +190,29 @@ export async function sendTemplateEmail(
   }
 
   const resend = new Resend(apiKey);
-  const { data, error } = await resend.emails.send({
-    from: input.from?.trim() || resolveFromAddress(),
-    to: input.to,
-    ...(input.subject?.trim() ? { subject: input.subject.trim() } : {}),
-    template: {
-      id: input.templateId,
-      variables: input.variables,
+  const isScheduled = Boolean(input.scheduledAt?.trim());
+  const { data, error } = await resend.emails.send(
+    {
+      from: input.from?.trim() || resolveFromAddress(),
+      to: input.to,
+      ...(input.subject?.trim() ? { subject: input.subject.trim() } : {}),
+      template: {
+        id: input.templateId,
+        variables: input.variables,
+      },
+      ...(isScheduled ? { scheduledAt: input.scheduledAt!.trim() } : {}),
+      ...(!isScheduled && input.attachments?.length
+        ? {
+            attachments: input.attachments.map((attachment) => ({
+              filename: attachment.filename,
+              content: attachment.content,
+              contentType: attachment.contentType,
+            })),
+          }
+        : {}),
     },
-  });
+    input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined,
+  );
 
   if (error) {
     const { reportIntegrationError, reportFailedAction } = await import(
@@ -209,7 +229,7 @@ export async function sendTemplateEmail(
       startedAt,
       success: false,
       errorMessage: error.message,
-      metadata: { recipientCount: input.to.length },
+      metadata: { recipientCount: input.to.length, scheduled: isScheduled },
     });
     return {
       success: false,
@@ -223,7 +243,7 @@ export async function sendTemplateEmail(
     startedAt,
     success: true,
     costUnits: 1,
-    metadata: { recipientCount: input.to.length },
+    metadata: { recipientCount: input.to.length, scheduled: isScheduled },
   });
 
   return {

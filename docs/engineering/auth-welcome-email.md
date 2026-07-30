@@ -3,7 +3,7 @@
 **Status:** Living  
 **Owner:** Engineering  
 **Last updated:** July 22, 2026  
-**Related:** [Feature list](../product/feature-list.md) · [Architecture](./architecture.md) · [Documentation home](../README.md)
+**Related:** [Feature list](../product/feature-list.md) · [Architecture](./architecture.md) · [Transactional email mockup](../../public/resend-email-templates-mockup.html) · [Documentation home](../README.md)
 
 **Purpose:** Industry-neutral welcome for **new organization** founding signup.  
 **Does not say:** school, PTO (verticals come later).
@@ -48,6 +48,9 @@ Code: [`src/lib/email/send-organization-welcome.ts`](../../src/lib/email/send-or
 | [`src/lib/auth/actions.ts`](../../src/lib/auth/actions.ts) | Founding signup wiring |
 | [`src/lib/auth/post-auth-path.ts`](../../src/lib/auth/post-auth-path.ts) | Post-auth → `/onboarding` when founding / no org |
 | [`supabase/templates/magic_link.html`](../../supabase/templates/magic_link.html) | Local / Auth fallback body |
+
+The broader soft-launch template direction is previewed in
+[`public/resend-email-templates-mockup.html`](../../public/resend-email-templates-mockup.html).
 
 ## Related in-app copy
 
