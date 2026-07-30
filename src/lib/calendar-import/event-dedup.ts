@@ -89,6 +89,17 @@ export function fieldsMatchExisting(
   );
 }
 
+/**
+ * An external ID identifies the source event, so preserve its exact source title.
+ * Title+date fallback matching remains normalized to safely handle UID-less feeds.
+ */
+function externalIdentityFieldsMatch(
+  incoming: { name: string; date: string },
+  existing: { title: string; date: string },
+): boolean {
+  return incoming.name === existing.title && incoming.date === existing.date;
+}
+
 function buildExternalIndex(
   existing: ExistingCalendarEventForDedup[],
 ): Map<string, ExistingCalendarEventForDedup> {
@@ -120,7 +131,7 @@ function buildTitleDateIndex(
 /**
  * Classify parsed review events against existing calendar rows.
  * - Same external id + unchanged → duplicate (skip)
- * - Same external id + title/date changed → update
+ * - Same external id + source title/date changed → update
  * - No external id + title+date match → duplicate
  * - No external id + same title different date → ready (new; no auto-merge)
  */
@@ -146,7 +157,7 @@ export function classifyReviewEventsAgainstExisting<
     if (source && externalId) {
       const matched = byExternal.get(externalImportKey(source, externalId));
       if (matched) {
-        if (fieldsMatchExisting(event, matched)) {
+        if (externalIdentityFieldsMatch(event, matched)) {
           return {
             ...event,
             status: "duplicate" as const,

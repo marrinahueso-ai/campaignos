@@ -9,8 +9,7 @@ import {
   classifyReviewEventsAgainstExisting,
   partitionClassifiedReviewEvents,
 } from "@/lib/calendar-import/event-dedup";
-import { resolveCalendarSchoolYearLabel } from "@/lib/calendar-import/calendar-window";
-import { getCalendarWindowEventsForDedup } from "@/lib/calendar-import/queries";
+import { getSchoolYearCalendarEventsForDedup } from "@/lib/calendar-import/queries";
 import {
   fetchSubscribeFeedIcs,
 } from "@/lib/calendar-import/fetch-subscribe-feed";
@@ -43,7 +42,7 @@ export async function syncSchoolYearSubscribeFeed(input: {
   schoolYear: SchoolYear;
   autoImport?: boolean;
 }): Promise<SyncSubscribeFeedResult> {
-  const { organizationId, organizationSchoolYear, schoolYear } = input;
+  const { organizationId, schoolYear } = input;
   const autoImport = input.autoImport ?? false;
   const base = {
     organizationId,
@@ -116,14 +115,9 @@ export async function syncSchoolYearSubscribeFeed(input: {
   const preferences = await getImportEventPreferencesMap(organizationId);
   const normalizedEvents = applyImportPreferencesToEvents(events, preferences);
 
-  const schoolYearLabel = resolveCalendarSchoolYearLabel({
-    activeSchoolYearLabel: schoolYear.label,
-    organizationSchoolYear,
-  });
-  const existing = await getCalendarWindowEventsForDedup(
-    schoolYearLabel,
-    organizationId,
-  );
+  // External IDs must be checked across the whole school year. A rolling
+  // calendar window can exclude an event after its source date is moved.
+  const existing = await getSchoolYearCalendarEventsForDedup(schoolYear.id);
   const classified = classifyReviewEventsAgainstExisting(
     normalizedEvents,
     existing,

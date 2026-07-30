@@ -10,9 +10,8 @@ import {
   classifyReviewEventsAgainstExisting,
   partitionClassifiedReviewEvents,
 } from "@/lib/calendar-import/event-dedup";
-import { resolveCalendarSchoolYearLabel } from "@/lib/calendar-import/calendar-window";
 import {
-  getCalendarWindowEventsForDedup,
+  getSchoolYearCalendarEventsForDedup,
   getSchoolYearEventsForDedupViaClient,
 } from "@/lib/calendar-import/queries";
 import {
@@ -57,7 +56,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
   /** Use service-role client (cron / background jobs). */
   useServiceRole?: boolean;
 }): Promise<SyncGoogleCalendarResult> {
-  const { organizationId, organizationSchoolYear, schoolYear, connection } =
+  const { organizationId, schoolYear, connection } =
     input;
   const autoImport = input.autoImport ?? false;
   const useServiceRole = input.useServiceRole ?? false;
@@ -169,13 +168,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
 
   const existing = useServiceRole
     ? await getSchoolYearEventsForDedupViaClient(schoolYear.id, db!)
-    : await getCalendarWindowEventsForDedup(
-        resolveCalendarSchoolYearLabel({
-          activeSchoolYearLabel: schoolYear.label,
-          organizationSchoolYear,
-        }),
-        organizationId,
-      );
+    : await getSchoolYearCalendarEventsForDedup(schoolYear.id);
 
   const classified = classifyReviewEventsAgainstExisting(
     normalizedEvents,

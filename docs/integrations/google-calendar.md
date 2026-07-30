@@ -2,7 +2,7 @@
 
 **Status:** Phase 1 **live in production** — Sign in with Google + ICS subscribe + file upload.  
 **Gmail inbox:** deferred (separate Connect later; same Google Cloud project, extra scopes).  
-**Last updated:** July 22, 2026
+**Last updated:** July 29, 2026
 
 ---
 
@@ -14,11 +14,11 @@ Calendar is critical, so Hey Ralli keeps **three import streams**:
 2. **Subscribe link** — ICS / webcal URL (no Google OAuth)
 3. **Upload a file** — ICS / PDF / spreadsheet → review
 
-**Canonical import + Phase 2 review:** `/calendar/import` → `/calendar/review` (file upload, Google sync into review, subscribe; New/Duplicate/Update/Conflict).
+**Canonical import + Phase 2 review:** `/calendar?tab=import` → `/calendar?tab=review` (file upload, Google sync into review, subscribe; New/Duplicate/Update/Conflict). Legacy paths `/calendar/import` and `/calendar/review` redirect to the same tabs.
 
 **Connect / manage only:** Settings → Integrations → Google Calendar (`/settings/integrations/calendar`) — primary Connect card; subscribe + deep-links under “Other ways to import” (not the full review UI).
 
-Also surfaced on Calendar header (Import → `/calendar/import`, Google Calendar → settings), review empty state, value-first onboarding (event overlay + Get started checklist → `/calendar/import`), and the legacy Get started wizard calendar step (same Import path when an org already exists; founding-without-org still accepts file/ICS inline then routes to Import).
+Also surfaced via Calendar **Bring in calendar** (single header entry — not separate Import/Review buttons), review empty state, value-first onboarding (Essentials → `/calendar?tab=import`), and the legacy Get started wizard calendar step (same tab path when an org already exists; founding-without-org still accepts file/ICS inline then routes to review).
 
 **Not** one forced “Google for Calendar + Gmail” button. Gmail scopes are restricted and would block shipping Calendar.
 
@@ -31,7 +31,7 @@ Sign in with Google
   → save organization_google_calendar_connections
   → auto-sync (if active school year)
   → calendar_imports (parsed)
-  → /calendar/review?import=<id>
+  → /calendar?tab=review&import=<id>
   → user confirms
   → events table
   → /calendar + Dashboard (Today / week ahead) + Events list
@@ -58,7 +58,7 @@ Sign in with Google
 | Sync | `src/lib/google-calendar/sync.ts` → existing `calendar_imports` + review / auto-import |
 | Cron | `src/lib/google-calendar/sync-cron.ts` → `/api/cron/google-calendar-sync` |
 | Settings UI | `/settings/integrations/calendar` |
-| Import UI | `/calendar/import` (Google section) |
+| Import UI | `/calendar?tab=import` (Google section; `/calendar/import` redirects) |
 | Shared CTA helper | `buildOAuthStartPath("google", …)` in `src/lib/integrations/oauth.ts` |
 
 Scopes: `openid`, `email`, `profile`, `https://www.googleapis.com/auth/calendar.readonly`.

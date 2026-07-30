@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 21, 2026  
+**Last updated:** July 29, 2026  
 **Related:** [feature-list.md](../product/feature-list.md) · [testing-guide.md](./testing-guide.md) · [google-calendar.md](../integrations/google-calendar.md) · [architecture.md](../engineering/architecture.md)
 
 > **Not the same as Meta Calendar DnD.** This doc covers **school-year event intake** (ICS / Google / PDF → `events` rows). Rescheduling **approved Meta posts** on the calendar is a separate feature — see [meta-calendar-dnd.md](./meta-calendar-dnd.md).
@@ -15,20 +15,20 @@ Stable import identity on `events` so re-imports do not create duplicate school 
 
 - Columns `import_source` + `import_external_id` with a partial unique index per school year
 - Review statuses: **New / Duplicate / Update / Conflict** (interactive Apply/Skip for Updates)
-- Subscribe cron + Google auto-import auto-apply field changes for known external ids
+- Subscribe cron + Google auto-import auto-apply exact source title/date changes for known external ids, checking the entire school year
 - Unit suite + Playwright smoke `14-calendar-import-dedupe`
 
-**Canonical import UX:** [`/calendar/import`](https://heyralli.com/calendar/import) (upload / Google sync into review / subscribe). Phase 2 review (New / Duplicate / Update / Conflict, Apply update) is [`/calendar/review`](https://heyralli.com/calendar/review).
+**Canonical import UX:** [`/calendar?tab=import`](https://heyralli.com/calendar?tab=import) (upload / Google sync into review / subscribe). Phase 2 review (New / Duplicate / Update / Conflict, Apply update) is [`/calendar?tab=review`](https://heyralli.com/calendar?tab=review). Legacy URLs `/calendar/import` and `/calendar/review` redirect to those tabs.
 
-**Connect-only (not the review page):** [`/settings/integrations/calendar`](https://heyralli.com/settings/integrations/calendar) — Google OAuth + subscribe management; file upload and review CTAs deep-link to `/calendar/import` and `/calendar/review`.
+**Connect-only (not the review page):** [`/settings/integrations/calendar`](https://heyralli.com/settings/integrations/calendar) — Google OAuth + subscribe management; file upload and review CTAs deep-link to the import/review tabs.
 
-**Flow:** `/calendar/import` → `/calendar/review` → confirm → `/calendar` (and Google/ICS cron auto-import paths).
+**Flow:** **Bring in calendar** → import tab → review tab → confirm → `/calendar` (and Google/ICS cron auto-import paths). **View imported items** is a supporting link inside the import hub — not a peer calendar view tab.
 
 **Plan type on review:** The **Plan type** column lists org playbooks from Settings → Playbooks (plus **On the calendar only**). Selection stores `playbookId` on the review row and assigns that playbook on import; `communicationStrategy` remains `full_campaign` / `calendar_only` for pipeline gates. Defaults follow import preferences (strategy) + event-type / system playbook when no playbook is stored yet. Duplicate / Update / Conflict status logic is unchanged.
 
 **Review filters + past cleanup:** Summary cards filter by category / Conflicts / Duplicates / Updates. A toolbar above the table supports **search** (name, category, match reason, and date/year/month — e.g. `2025`, `Jul`, `July 30`, `07/30`) and **All dates / Upcoming / Past** (local calendar date; today counts as upcoming). **Archive past events** bulk-removes every review row with a date before today from the import queue (same persistence as Delete selected — not a separate DB archive). Confirm dialog says archive / remove from import queue. Search, type filter, and date filter combine; Select all / Delete all apply to the visible filtered rows.
 
-**Import list search + mass delete (post-import):** On `/calendar` → **Import list**, search matches event title, category, and the same date/year/month tokens. Select all / Delete selected apply to the visible filtered rows (already-imported events — **hard delete** from `events`, which also removes them from Events / Campaigns / Publishing / Approvals). The list includes every non-archived event for the org’s school years (aligned with Events), not only the rolling calendar planning date window — so misdated imports (e.g. July 30 of the prior year) stay visible and deletable.
+**Import list search + mass delete (post-import):** **Bring in calendar** → **View imported items** (`/calendar?tab=import-list`). Search matches event title, category, and the same date/year/month tokens. Select all / Delete selected apply to the visible filtered rows (already-imported events — **hard delete** from `events`, which also removes them from Events / Campaigns / Publishing / Approvals). The list includes every non-archived event for the org’s school years (aligned with Events), not only the rolling calendar planning date window — so misdated imports (e.g. July 30 of the prior year) stay visible and deletable.
 
 **Code:** `src/lib/calendar-import/event-dedup.ts` (classify + fingerprints), `parse-ics.ts` / Google sync / subscribe sync, `mutations.ts` (persist), `review-plan-options.ts` (plan type ↔ playbook), `date-search.ts` (shared date tokens), `review-filters.ts` / `import-list-filters.ts` (type / date / search).
 
@@ -38,7 +38,7 @@ Stable import identity on `events` so re-imports do not create duplicate school 
 
 | Situation | Result |
 |-----------|--------|
-| Same `import_source` + `import_external_id`, title/date unchanged | **Duplicate** — skip (no second row) |
+| Same `import_source` + `import_external_id`, exact source title/date unchanged | **Duplicate** — skip (no second row) |
 | Same external id, title and/or date changed | **Update** — patch existing event (not a new event) |
 | No external id, same title + date | **Duplicate** — skip |
 | No external id, same title, different date | **New** — create (no auto-merge) |
@@ -53,7 +53,15 @@ Stable import identity on `events` so re-imports do not create duplicate school 
 | Google Calendar sync | `google` | Google event id (UID `…@heyralli.google` stripped) |
 | PDF / AI parse | `ai_parse` | Content fingerprint of normalized title+date (not a fake ICS UID) |
 
-Org scoping: events are unique per **school year** (`school_year_id` + source + external id). Existing rows with null external ids keep title+date fallback. Allowed `import_source` values also include `manual` (constraint); dedupe keys still require a non-null external id for the unique index.
+Org scoping: events are unique per **school year** (`school_year_id` + source + external id). Existing rows with null external ids keep normalized title+date fallback. Allowed `import_source` values also include `manual` (constraint); dedupe keys still require a non-null external id for the unique index.
+
+**External-id matching:** Duplicate skip requires the **exact source title and date** on the same external id (case/spacing on the stored row may differ until an **Update** applies). Title-only or date-only changes on a known id classify as **Update**, not a second create.
+
+**Missing UID:** ICS rows without a `UID` get `import_external_id = null` and dedupe via normalized title+date only.
+
+**Legacy near-dups:** Pre-identity pairs (same school year + date + normalized title, no external id) are not auto-merged. Clean up via **View imported items** — founder policy: **keep the most recent import**, delete the older copy. Forward re-imports with stable UIDs/Google ids patch the matched row in place.
+
+**Cron scope:** Subscribe + Google auto-import classify against the **entire active school year**, not the rolling calendar planning window — so date moves still match the same external id.
 
 ### Interactive review vs cron / auto-sync
 
@@ -66,9 +74,9 @@ Org scoping: events are unique per **school year** (`school_year_id` + source + 
 
 Apply in Supabase SQL editor (or CLI):
 
-`supabase/migrations/20260721195203_events_import_external_ids.sql`
+`supabase/migrations/20260721195203_events_import_external_ids.sql` and `supabase/migrations/20260730002733_enforce_calendar_import_external_identity.sql`
 
-Adds `events.import_source`, `events.import_external_id`, check constraint, and unique index `events_school_year_import_external_uidx` (where school year + source + external id are all non-null).
+Add `events.import_source`, `events.import_external_id`, check constraint, and unique index `events_school_year_import_external_uidx` (where school year + source + external id are all non-null). The enforcement migration is safe for legacy rows because null identities are excluded.
 
 ---
 
@@ -78,7 +86,7 @@ Adds `events.import_source`, `events.import_external_id`, check constraint, and 
 npm run test:calendar-import
 ```
 
-Suite: `src/lib/calendar-import/__tests__/event-dedup.test.ts` — UID skip, UID date-change → update, title+date fallback, near-miss not skipped, within-file conflict key parity, Google id path, AI fingerprint stability.
+Suite: `src/lib/calendar-import/__tests__/event-dedup.test.ts` — UID skip, UID title-case/date changes → update, missing-UID normalized title+date fallback, near-miss not skipped, within-file conflict key parity, Google id path, AI fingerprint stability.
 
 Also: `src/lib/calendar-import/__tests__/review-plan-options.test.ts` — plan type options from playbooks, selection → `playbookId` / strategy, defaults, status preserved.
 

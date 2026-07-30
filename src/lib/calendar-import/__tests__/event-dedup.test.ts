@@ -102,12 +102,54 @@ describe("classifyReviewEventsAgainstExisting", () => {
     assert.match(classified[0]?.matchReason ?? "", /2025-10-01 → 2025-10-08/);
   });
 
+  it("updates, rather than inserts, when an external event changes title casing", () => {
+    const classified = classifyReviewEventsAgainstExisting(
+      [
+        reviewEvent({
+          name: "2nd Grade Music Program",
+          date: "2026-11-11",
+          importSource: "subscribe",
+          importExternalId: "music-program-uid",
+        }),
+      ],
+      [
+        {
+          id: "evt-music",
+          title: "2nd grade music program",
+          date: "2026-11-11",
+          importSource: "subscribe",
+          importExternalId: "music-program-uid",
+        },
+      ],
+    );
+    const partitioned = partitionClassifiedReviewEvents(classified);
+
+    assert.equal(classified[0]?.status, "update");
+    assert.equal(classified[0]?.existingEventId, "evt-music");
+    assert.equal(partitioned.toUpdate.length, 1);
+    assert.equal(partitioned.toInsert.length, 0);
+  });
+
   it("skips title+date match when there is no external id", () => {
     const classified = classifyReviewEventsAgainstExisting(
       [reviewEvent({ name: "Spirit Night", date: "2025-11-05" })],
       [{ id: "evt-2", title: "Spirit Night", date: "2025-11-05" }],
     );
     assert.equal(classified[0]?.status, "duplicate");
+  });
+
+  it("uses normalized title+date fallback when an ICS UID is missing", () => {
+    const classified = classifyReviewEventsAgainstExisting(
+      [reviewEvent({ name: "2ND GRADE MUSIC PROGRAM", date: "2026-11-11" })],
+      [{
+        id: "evt-music",
+        title: "2nd grade music program",
+        date: "2026-11-11",
+      }],
+    );
+
+    assert.equal(classified[0]?.status, "duplicate");
+    assert.equal(classified[0]?.existingEventId, "evt-music");
   });
 
   it("creates a new event for same title on a different date without external id", () => {
