@@ -21,6 +21,7 @@ export type AiUsageCategoryKey =
   | "generate_event_brief"
   | "generate_creative_brief"
   | "homepage_composer_blurb"
+  | "flyer_composer_slots"
   | "other";
 
 /**
@@ -43,6 +44,7 @@ export const AI_USAGE_CATEGORY_LABELS: Record<AiUsageCategoryKey, string> = {
   generate_event_brief: "Event Brief",
   generate_creative_brief: "Creative Brief",
   homepage_composer_blurb: "Homepage Blurb",
+  flyer_composer_slots: "Flyer Composer",
   other: "Etc",
 };
 
@@ -60,6 +62,7 @@ export const AI_USAGE_CATEGORY_ORDER: AiUsageCategoryKey[] = [
   "generate_event_brief",
   "generate_creative_brief",
   "homepage_composer_blurb",
+  "flyer_composer_slots",
   "other",
 ];
 
@@ -76,6 +79,7 @@ const DIRECT_CATEGORY_MAP: Partial<Record<string, AiUsageCategoryKey>> = {
   generate_event_brief: "generate_event_brief",
   generate_creative_brief: "generate_creative_brief",
   homepage_composer_blurb: "homepage_composer_blurb",
+  flyer_composer_slots: "flyer_composer_slots",
 };
 
 export function isRegenerationMetadata(metadata: unknown): boolean {

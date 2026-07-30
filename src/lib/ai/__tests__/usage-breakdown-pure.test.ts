@@ -90,6 +90,7 @@ describe("categoryKeyForRow / categoryLabelForActionType", () => {
       ["generate_event_brief", "Event Brief"],
       ["generate_creative_brief", "Creative Brief"],
       ["homepage_composer_blurb", "Homepage Blurb"],
+      ["flyer_composer_slots", "Flyer Composer"],
     ];
     for (const [actionType, label] of directMappings) {
       assert.equal(categoryLabelForActionType(actionType), label, actionType);

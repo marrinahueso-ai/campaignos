@@ -1,0 +1,79 @@
+export type FlyerComposerSlotFields = {
+  orgName: string;
+  headline: string;
+  schoolYear: string;
+  location: string;
+  directions: string;
+  datesEvents: string;
+  bodyCopy: string;
+  donationTiers: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  qrUrl: string;
+  qrCaption: string;
+  footerLine: string;
+  lastYearNotes: string;
+};
+
+export type FlyerComposerStartPath = "update" | "proven" | "new";
+
+export type FlyerComposerPrintSize = "letter" | "half";
+
+export type FlyerComposerStartContext = {
+  /** update last year | proven layout | new flyer */
+  path: FlyerComposerStartPath | null;
+  pathLabel: string | null;
+  printSize: FlyerComposerPrintSize | null;
+  printSizeLabel: string | null;
+};
+
+export type FlyerComposerTemplateContext = {
+  templateId: string;
+  templateName: string;
+  isCustom: boolean;
+  ratio: string | null;
+  hasQr: boolean;
+};
+
+export type FlyerComposerAssetContext = {
+  inspirationPhotoPresent: boolean;
+  inspirationPhotoSource: "sample" | "upload" | null;
+  inspirationPhotoLabel: string | null;
+  /** Metadata note when bytes are not sent (v1). */
+  inspirationPhotoNote: string | null;
+  customTemplatePresent: boolean;
+  customTemplateFileName: string | null;
+  customTemplateFileType: "pdf" | "image" | null;
+  /** Metadata note when file bytes are not sent (v1). */
+  customTemplateNote: string | null;
+};
+
+export type FlyerComposerBrandKit = {
+  organizationShortName: string | null;
+  primaryColor: string | null;
+  accentColor: string | null;
+  fontStyle: string | null;
+  mascotLabel: string | null;
+  ptoLogoUploaded: boolean;
+  schoolLogoUploaded: boolean;
+  logoDisplay: "pto" | "school" | "lettermark" | "none";
+};
+
+export type FlyerComposerGenerateInput = {
+  start: FlyerComposerStartContext;
+  template: FlyerComposerTemplateContext;
+  assets: FlyerComposerAssetContext;
+  brandEnabled: boolean;
+  brandKit: FlyerComposerBrandKit | null;
+  fields: Partial<FlyerComposerSlotFields>;
+};
+
+export type FlyerComposerGeneratedSlots = Partial<FlyerComposerSlotFields>;
+
+export type FlyerComposerGenerateResult = {
+  success: boolean;
+  error: string | null;
+  slots: FlyerComposerGeneratedSlots | null;
+  /** True when OpenAI returned slot copy (false only on validation short-circuit). */
+  aiUsed: boolean;
+};

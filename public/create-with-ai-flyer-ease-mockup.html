@@ -27,7 +27,7 @@
       --serif: "Fraunces", Georgia, serif;
       --sans: "DM Sans", system-ui, sans-serif;
       --ease: cubic-bezier(0.22, 1, 0.36, 1);
-      /* Riverside Community Association brand kit (mock) — synced by JS when toggle changes */
+      /* Brand kit tokens — synced from SETTINGS_BRAND_KIT when toggle is on */
       --brand-primary: #2f4a3c;
       --brand-secondary: #6b8171;
       --brand-accent: #c4922e;
@@ -211,6 +211,8 @@
       aspect-ratio: 3/4; max-height: 200px;
       background-size: cover; background-position: center;
     }
+    .start-upload-wrap { margin-top: 4px; }
+    .start-upload-wrap .asset-actions { margin-top: 8px; }
     .start-upload strong { display: block; font-size: 0.92rem; color: var(--ink); }
     .start-upload .hint { font-size: 0.8rem; color: var(--muted); margin: 6px 0 0; }
     .proven-row {
@@ -348,9 +350,19 @@
     .fly .band {
       padding: 7px 9px; display: flex; flex-direction: column; gap: 2px;
     }
-    .fly .logo-dot {
+    .fly .logo-dot,
+    .fly .logo-lettermark {
       width: 14px; height: 14px; border-radius: 5px; background: rgba(255,255,255,0.9);
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .fly .logo-lettermark {
+      display: grid; place-items: center; font-size: 5.5px; font-weight: 800;
+      letter-spacing: -0.02em; color: var(--brand-on-primary);
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
+    }
+    .fly .logo-img {
+      width: 14px; height: 14px; border-radius: 5px; object-fit: contain;
+      background: rgba(255,255,255,0.92); box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
     .fly .h { font-family: var(--serif); font-weight: 700; font-size: 11px; letter-spacing: -0.02em; }
     .fly .b { opacity: 0.92; font-size: 7px; }
@@ -655,6 +667,29 @@
     }
     .insp-thumbs button[aria-pressed="true"] { border-color: var(--forest); }
 
+    .asset-preview {
+      flex: 1; display: flex; flex-direction: column; min-height: 0; min-width: 0;
+    }
+    .asset-preview .insp,
+    .asset-preview .custom-upload,
+    .asset-preview .start-upload-inner {
+      flex: 1; min-height: 0;
+    }
+    .asset-actions {
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+      margin-top: 8px; padding-top: 2px;
+    }
+    .asset-action-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 7px 14px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+      border: 1.5px solid rgba(42, 38, 34, 0.16); background: var(--white); color: var(--ink);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .asset-action-btn:hover { background: var(--cream); border-color: rgba(47, 74, 60, 0.28); }
+    .asset-action-remove { color: #7a3030; border-color: rgba(122, 48, 48, 0.22); }
+    .asset-action-remove:hover { background: rgba(122, 48, 48, 0.06); border-color: rgba(122, 48, 48, 0.35); }
+    .top-assets-row .asset-preview .asset-actions { margin-top: 6px; }
+
     /* Inspiration step — balanced top assets row (photo, template, brand kit) */
     .top-assets-row {
       display: grid; gap: 12px; grid-template-columns: 1fr; min-width: 0;
@@ -723,6 +758,18 @@
       padding: 6px 10px; border-radius: 999px; background: rgba(255,252,247,0.9);
       border: 1px solid var(--line); font-size: 0.75rem; font-weight: 600;
     }
+    .brand-logo-mark {
+      width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+      display: grid; place-items: center; overflow: hidden;
+      font-size: 0.55rem; font-weight: 800; letter-spacing: -0.02em;
+      color: var(--brand-on-primary); background: var(--brand-primary);
+    }
+    .brand-logo-mark img { width: 100%; height: 100%; object-fit: contain; }
+    .brand-settings-link {
+      display: inline-block; margin-top: 8px; font-size: 0.72rem; font-weight: 700;
+      color: var(--forest); text-decoration: underline; text-underline-offset: 2px;
+    }
+    .brand-settings-link:hover { color: #1e3329; }
     .swatch { width: 12px; height: 12px; border-radius: 4px; }
 
     .actions {
@@ -809,6 +856,19 @@
     .preview-sidebar h3 {
       margin: 0 0 10px; font-family: var(--serif); font-size: 1.05rem; font-weight: 600;
     }
+    .ai-directions {
+      margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line);
+    }
+    .ai-directions ul {
+      margin: 0; padding: 0; list-style: none; display: grid; gap: 6px;
+    }
+    .ai-directions li {
+      font-size: 12px; line-height: 1.4; color: var(--ink-soft);
+    }
+    .ai-directions li .k {
+      display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 1px;
+    }
     .preview-sidebar .sidebar-actions {
       display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
     }
@@ -855,7 +915,10 @@
     .big-flyer .fly .h { font-size: 20px; }
     .big-flyer .fly .b { font-size: 11px; }
     .big-flyer .fly .cta { font-size: 10px; padding: 6px 12px; }
-    .big-flyer .fly .logo-dot { width: 28px; height: 28px; border-radius: 8px; }
+    .big-flyer .fly .logo-dot,
+    .big-flyer .fly .logo-lettermark,
+    .big-flyer .fly .logo-img { width: 28px; height: 28px; border-radius: 8px; }
+    .big-flyer .fly .logo-lettermark { font-size: 11px; }
     .big-flyer .fly .eyebrow { font-size: 10px; }
     .big-flyer .fly .agenda { font-size: 11px; }
     .big-flyer .fly.church .qr { width: 52px; height: 52px; }
@@ -945,6 +1008,8 @@
     .big-flyer .filled .b,
     .big-flyer .filled .cta,
     .big-flyer .filled .logo-dot,
+    .big-flyer .filled .logo-lettermark,
+    .big-flyer .filled .logo-img,
     .big-flyer .filled .hero-img,
     .big-flyer .filled .qr,
     .big-flyer .filled .qr-img {
@@ -952,7 +1017,9 @@
     }
     .big-flyer .filled .b { animation-delay: 0.08s; }
     .big-flyer .filled .cta { animation-delay: 0.14s; }
-    .big-flyer .filled .logo-dot { animation-delay: 0.04s; }
+    .big-flyer .filled .logo-dot,
+    .big-flyer .filled .logo-lettermark,
+    .big-flyer .filled .logo-img { animation-delay: 0.04s; }
     .big-flyer .filled .qr,
     .big-flyer .filled .qr-img { animation-delay: 0.18s; }
 
@@ -1072,10 +1139,16 @@
           <span class="path-badge">Recommended</span>
           <h3>Update last year’s flyer</h3>
           <p class="path-hint">Keep the layout. Refresh dates, copy, and QR.</p>
-          <div class="start-upload" id="startUpload" role="button" tabindex="0">
-            <div id="startUploadEmpty">
-              <strong>Upload PDF or image</strong>
-              <p class="hint">Last year’s print file or a photo of the flyer</p>
+          <div class="start-upload-wrap">
+            <div class="start-upload" id="startUpload" role="button" tabindex="0">
+              <div id="startUploadEmpty">
+                <strong>Upload PDF or image</strong>
+                <p class="hint">Last year’s print file or a photo of the flyer</p>
+              </div>
+            </div>
+            <div class="asset-actions" id="startUploadActions" hidden>
+              <button type="button" class="asset-action-btn" id="startUploadReplace">Replace</button>
+              <button type="button" class="asset-action-btn asset-action-remove" id="startUploadRemove" aria-label="Remove template file">Remove file</button>
             </div>
           </div>
           <input type="file" id="startFile" accept="image/*,.pdf" hidden />
@@ -1126,12 +1199,20 @@
             <div class="field asset-field">
               <label id="inspFieldLabel">Hero photo</label>
               <div class="asset-slot">
-                <div class="insp" id="inspDrop" role="button" tabindex="0">
-                  <div id="inspEmpty">
-                    <strong>Add photo</strong>
-                    <div class="insp-thumbs" id="inspThumbs"></div>
+                <div class="asset-preview">
+                  <div class="insp" id="inspDrop" role="button" tabindex="0" aria-label="Add inspiration photo">
+                    <div id="inspEmpty">
+                      <strong>Add photo</strong>
+                      <p class="hint">Drop an image or pick a sample below</p>
+                      <div class="insp-thumbs" id="inspThumbs"></div>
+                    </div>
+                  </div>
+                  <div class="asset-actions" id="inspActions" hidden>
+                    <button type="button" class="asset-action-btn" id="inspReplace">Replace</button>
+                    <button type="button" class="asset-action-btn asset-action-remove" id="inspRemove" aria-label="Remove inspiration photo">Remove photo</button>
                   </div>
                 </div>
+                <input type="file" id="inspFile" accept="image/*" hidden />
               </div>
             </div>
           </div>
@@ -1141,9 +1222,15 @@
             <div class="field asset-field">
               <label>Last year’s flyer</label>
               <div class="asset-slot">
-                <div class="custom-upload" id="customUpload" role="button" tabindex="0">
-                  <div id="customUploadEmpty">
-                    <strong>Upload PDF or image</strong>
+                <div class="asset-preview">
+                  <div class="custom-upload" id="customUpload" role="button" tabindex="0" aria-label="Upload template file">
+                    <div id="customUploadEmpty">
+                      <strong>Upload PDF or image</strong>
+                    </div>
+                  </div>
+                  <div class="asset-actions" id="customUploadActions" hidden>
+                    <button type="button" class="asset-action-btn" id="customReplace">Replace</button>
+                    <button type="button" class="asset-action-btn asset-action-remove" id="customRemove" aria-label="Remove template file">Remove file</button>
                   </div>
                 </div>
               </div>
@@ -1153,16 +1240,18 @@
 
           <div class="section-card asset-card" id="brandKitCard">
             <h3>Brand kit</h3>
+            <p class="section-desc">From Settings → Branding</p>
             <div class="toggle-row" id="brandToggleRow">
               <div>
                 <strong>Use brand kit</strong>
-                <p>Riverside Community Association palette</p>
+                <p id="brandKitSummary">Your org colors and logo on previews</p>
                 <div class="brand-chip" id="brandChip" hidden>
-                  <span class="swatch" id="swatchPrimary"></span>
-                  <span class="swatch" id="swatchAccent"></span>
-                  <span class="swatch" id="swatchHighlight"></span>
-                  Riverside Community Association
+                  <span class="brand-logo-mark" id="brandLogoMark" aria-hidden="true"></span>
+                  <span class="swatch" id="swatchPrimary" title="Primary color"></span>
+                  <span class="swatch" id="swatchAccent" title="Accent color"></span>
+                  <span id="brandChipName">Your organization</span>
                 </div>
+                <a href="/settings/branding?section=colors-logos" class="brand-settings-link" id="brandSettingsLink">Edit in Settings → Branding</a>
               </div>
               <button type="button" class="switch" id="brandToggle" role="switch" aria-checked="true" aria-label="Use brand kit"></button>
             </div>
@@ -1173,7 +1262,7 @@
           <h3>Basics</h3>
           <div class="field">
             <label for="orgName">Organization</label>
-            <input type="text" id="orgName" placeholder="e.g. Riverside Elementary PTA" />
+            <input type="text" id="orgName" placeholder="e.g. Oak Park PTA" />
           </div>
           <div class="field">
             <label for="headline">Headline</label>
@@ -1189,7 +1278,7 @@
           <h3>When &amp; where</h3>
           <div class="field">
             <label for="location">Location</label>
-            <input type="text" id="location" placeholder="e.g. Riverside Elementary · 1200 Oak Lane" />
+            <input type="text" id="location" placeholder="e.g. Community center · 1200 Main St" />
           </div>
           <div class="field">
             <label for="directions">Directions (optional)</label>
@@ -1244,7 +1333,7 @@
           <p class="section-desc">Contact line, website, or social handles at the bottom.</p>
           <div class="field">
             <label for="footerLine">Footer / contact / social</label>
-            <input type="text" id="footerLine" placeholder="e.g. riversidepta.org · @RiversidePTA" />
+            <input type="text" id="footerLine" placeholder="e.g. yourorg.org · @YourOrg" />
           </div>
         </div>
 
@@ -1284,11 +1373,11 @@
               <div>
                 <strong>Brand kit</strong>
                 <p>Logo and org colors on every preview and export</p>
-                <div class="brand-chip" id="brandChip" hidden>
-                  <span class="swatch" id="swatchPrimary"></span>
-                  <span class="swatch" id="swatchAccent"></span>
-                  <span class="swatch" id="swatchHighlight"></span>
-                  Riverside Community Association
+                <div class="brand-chip" id="brandChipOptional" hidden>
+                  <span class="brand-logo-mark" id="brandLogoMarkOptional" aria-hidden="true"></span>
+                  <span class="swatch" id="swatchPrimaryOptional"></span>
+                  <span class="swatch" id="swatchAccentOptional"></span>
+                  <span id="brandChipNameOptional">Your organization</span>
                 </div>
               </div>
               <button type="button" class="switch" id="brandToggle" role="switch" aria-checked="true" aria-label="Use brand kit"></button>
@@ -1323,7 +1412,7 @@
           <div class="preview-idle" id="previewIdle">
             <span class="preview-ready-badge">Ready</span>
             <div class="preview-idle-flyer" id="previewIdleFlyer" data-ratio="3/4"></div>
-            <p class="preview-idle-hint">Tap <strong>Generate flyer</strong> when you’re set.</p>
+            <p class="preview-idle-hint" id="previewIdleHint">Tap <strong>Generate flyer</strong> when you’re set.</p>
           </div>
           <div class="gen-state" id="genState" hidden>
             <span class="gen-title">Building your flyer…</span>
@@ -1333,6 +1422,10 @@
           <div class="big-flyer" id="resultFlyer" hidden></div>
         </div>
         <aside class="preview-sidebar no-print">
+          <div class="ai-directions" id="aiDirections">
+            <h3>Directions to AI</h3>
+            <ul id="aiDirectionList"></ul>
+          </div>
           <h3>Slot summary</h3>
           <ul class="slots" id="slotList"></ul>
           <div class="sidebar-actions">
@@ -1348,6 +1441,7 @@
 
   <script>
     const STORAGE_KEY = "hr-flyer-ease-mockup-draft";
+    const FLYER_GENERATE_API = "/api/flyer-mockup/generate";
     let saveTimer = null;
 
     const SAMPLE_CUSTOM_TEMPLATE =
@@ -1361,7 +1455,7 @@
       hasQr: false,
       isCustom: true,
       defaults: {
-        orgName: "Your organization",
+        orgName: "",
         headline: "Fall Festival · Sat Oct 12",
         schoolYear: "2025–2026",
         location: "",
@@ -1370,8 +1464,8 @@
         body: "Update the date, time, and short description — keep everything else.",
         donationTiers: "",
         ctaLabel: "See details →",
-        ctaUrl: "https://riverside.example/details",
-        qrUrl: "https://riverside.example/details",
+        ctaUrl: "https://example.org/details",
+        qrUrl: "https://example.org/details",
         qrCaption: "",
         footer: "",
       },
@@ -1389,19 +1483,19 @@
         cls: "semester",
         hasQr: true,
         defaults: {
-          orgName: "Riverside Elementary PTA",
+          orgName: "",
           headline: "Semester at a Glance",
           schoolYear: "2025–2026",
-          location: "Riverside Elementary",
+          location: "Oak Park Elementary",
           directions: "",
           datesEvents: "Aug 15 — Back to School Night\nSep 12 — Fall Festival\nOct 24 — Book Fair\nNov 14 — Family Movie Night\nDec 5 — Winter Concert",
           body: "",
           donationTiers: "",
           ctaLabel: "Subscribe to calendar",
-          ctaUrl: "https://riverside.example/calendar/subscribe",
-          qrUrl: "https://riverside.example/calendar/subscribe",
+          ctaUrl: "https://example.org/calendar",
+          qrUrl: "https://example.org/calendar",
           qrCaption: "Scan to add all dates",
-          footer: "riversidepta.org · @RiversidePTA",
+          footer: "yourorg.org · @YourOrg",
         },
       },
       {
@@ -1411,7 +1505,7 @@
         cls: "investor",
         hasQr: true,
         defaults: {
-          orgName: "Riverside Elementary PTA",
+          orgName: "",
           headline: "Become an Investor",
           schoolYear: "2025–2026",
           location: "",
@@ -1420,10 +1514,10 @@
           body: "Your gift funds classroom supplies, field trips, and teacher grants. Top participating class wins a pizza party!",
           donationTiers: "$25 — Supporter\n$50 — Friend of the PTA\n$100 — Champion + class reward\n$250 — Investor + name on banner",
           ctaLabel: "Donate now",
-          ctaUrl: "https://riverside.example/give",
-          qrUrl: "https://riverside.example/give",
+          ctaUrl: "https://example.org/give",
+          qrUrl: "https://example.org/give",
           qrCaption: "Scan to give",
-          footer: "Questions? president@riversidepta.org",
+          footer: "Questions? hello@yourorg.org",
         },
       },
       {
@@ -1433,18 +1527,18 @@
         cls: "festival",
         hasQr: false,
         defaults: {
-          orgName: "Riverside Elementary PTA",
+          orgName: "",
           headline: "Fall Festival · Sat Oct 12",
           schoolYear: "2025–2026",
-          location: "Community lawn · 1200 Oak Lane",
+          location: "Community lawn · 1200 Main St",
           directions: "",
           datesEvents: "Sat Oct 12 · 11 AM – 3 PM",
           body: "Games, food trucks, and community fun on the lawn. Free for members · $5 guests.",
           ctaLabel: "Join us →",
-          ctaUrl: "https://riverside.example/fall-festival",
+          ctaUrl: "https://example.org/fall-festival",
           qrUrl: "",
           qrCaption: "",
-          footer: "riversidepta.org",
+          footer: "yourorg.org",
         },
       },
       {
@@ -1454,7 +1548,7 @@
         cls: "festival",
         hasQr: false,
         defaults: {
-          orgName: "Riverside Elementary PTA",
+          orgName: "",
           headline: "Your headline here",
           schoolYear: "2025–2026",
           location: "",
@@ -1462,7 +1556,7 @@
           datesEvents: "",
           body: "Add a short description for your event or announcement.",
           ctaLabel: "Learn more →",
-          ctaUrl: "https://riverside.example",
+          ctaUrl: "https://example.org",
           qrUrl: "",
           qrCaption: "",
           footer: "",
@@ -1475,7 +1569,7 @@
         cls: "festival",
         hasQr: false,
         defaults: {
-          orgName: "Riverside Elementary PTA",
+          orgName: "",
           headline: "Your headline here",
           schoolYear: "2025–2026",
           location: "",
@@ -1483,7 +1577,7 @@
           datesEvents: "",
           body: "Add a short description for your event or announcement.",
           ctaLabel: "Learn more →",
-          ctaUrl: "https://riverside.example",
+          ctaUrl: "https://example.org",
           qrUrl: "",
           qrCaption: "",
           footer: "",
@@ -1497,18 +1591,39 @@
       { id: "fair", url: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80&auto=format&fit=crop", label: "Fair lights" },
     ];
 
+    const SETTINGS_BRAND_KIT = {
+      sourceLabel: "Settings → Branding",
+      settingsHref: "/settings/branding?section=colors-logos",
+      organizationShortName: "Oak Park PTA",
+      primaryColor: "#2F4A3C",
+      accentColor: "#C4922E",
+      fontStyle: "Modern",
+      mascotLabel: "Panthers",
+      ptoLogoUploaded: true,
+      schoolLogoUploaded: false,
+      ptoLogoUrl: null,
+      schoolLogoUrl: null,
+      ink: "#2a2622",
+      paper: "#faf8f4",
+      surface: "#eef4ef",
+      highlight: "#2a7a86",
+      onPrimary: "#fff",
+      onAccent: "#2a2010",
+      muted: "#6a5f55",
+    };
+
     const BRAND_KITS = {
       on: {
-        primary: "#2f4a3c",
-        secondary: "#6b8171",
-        accent: "#c4922e",
-        ink: "#2a2622",
-        paper: "#faf8f4",
-        surface: "#eef4ef",
-        highlight: "#2a7a86",
-        onPrimary: "#fff",
-        onAccent: "#2a2010",
-        muted: "#6a5f55",
+        primary: SETTINGS_BRAND_KIT.primaryColor,
+        secondary: SETTINGS_BRAND_KIT.accentColor,
+        accent: SETTINGS_BRAND_KIT.accentColor,
+        ink: SETTINGS_BRAND_KIT.ink,
+        paper: SETTINGS_BRAND_KIT.paper,
+        surface: SETTINGS_BRAND_KIT.surface,
+        highlight: SETTINGS_BRAND_KIT.highlight,
+        onPrimary: SETTINGS_BRAND_KIT.onPrimary,
+        onAccent: SETTINGS_BRAND_KIT.onAccent,
+        muted: SETTINGS_BRAND_KIT.muted,
       },
       off: {
         primary: "#6b6560",
@@ -1524,13 +1639,27 @@
       },
     };
 
+    const START_PATH_LABELS = {
+      update: "Update last year's flyer",
+      proven: "Use a proven layout",
+      new: "New flyer",
+    };
+    const PRINT_SIZE_LABELS = {
+      letter: "Letter (8.5 × 11 in)",
+      half: "Half page (8.5 × 5.5 in)",
+    };
+
     const state = {
       view: "start",
       startPath: null,
       printSize: "letter",
       templateId: null,
       imageUrl: SAMPLES[0].url,
+      inspirationPhotoSource: "sample",
+      inspirationPhotoLabel: SAMPLES[0].label,
       customTemplateUrl: null,
+      customTemplateFileName: null,
+      customTemplateFileType: null,
       brand: true,
       generating: false,
       previewGenerated: false,
@@ -1601,6 +1730,46 @@
       return (id || state.templateId) === "custom";
     }
 
+    function brandOrgName() {
+      return SETTINGS_BRAND_KIT.organizationShortName;
+    }
+
+    function lettermarkFrom(name) {
+      const words = String(name || "Org").trim().split(/\s+/).filter(Boolean);
+      if (words.length >= 2) return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+      return (words[0] || "O").slice(0, 2).toUpperCase();
+    }
+
+    function brandLogoMarkHTML(sizeClass) {
+      const kit = SETTINGS_BRAND_KIT;
+      if (kit.ptoLogoUrl) {
+        return `<img src="${escapeHtml(kit.ptoLogoUrl)}" alt="" />`;
+      }
+      return lettermarkFrom(kit.organizationShortName);
+    }
+
+    function syncBrandKitCardUI() {
+      const kit = SETTINGS_BRAND_KIT;
+      const summary = document.getElementById("brandKitSummary");
+      if (summary) {
+        summary.textContent = state.brand
+          ? `${kit.organizationShortName} · ${kit.primaryColor} / ${kit.accentColor}`
+          : "Neutral palette — no org logo on previews";
+      }
+      const link = document.getElementById("brandSettingsLink");
+      if (link) link.href = kit.settingsHref;
+
+      document.querySelectorAll("#brandChip, #brandChipOptional").forEach((chip) => {
+        chip.hidden = !state.brand;
+      });
+      document.querySelectorAll("#brandChipName, #brandChipNameOptional").forEach((el) => {
+        el.textContent = kit.organizationShortName;
+      });
+      document.querySelectorAll("#brandLogoMark, #brandLogoMarkOptional").forEach((el) => {
+        el.innerHTML = brandLogoMarkHTML();
+      });
+    }
+
     function getBrandKit() {
       return state.brand ? BRAND_KITS.on : BRAND_KITS.off;
     }
@@ -1620,10 +1789,13 @@
       root.style.setProperty("--brand-muted", k.muted);
       const swPrimary = document.getElementById("swatchPrimary");
       const swAccent = document.getElementById("swatchAccent");
-      const swHighlight = document.getElementById("swatchHighlight");
       if (swPrimary) swPrimary.style.background = k.primary;
       if (swAccent) swAccent.style.background = k.accent;
-      if (swHighlight) swHighlight.style.background = k.highlight;
+      const swPrimaryOpt = document.getElementById("swatchPrimaryOptional");
+      const swAccentOpt = document.getElementById("swatchAccentOptional");
+      if (swPrimaryOpt) swPrimaryOpt.style.background = k.primary;
+      if (swAccentOpt) swAccentOpt.style.background = k.accent;
+      syncBrandKitCardUI();
     }
 
     function syncCustomModeUI() {
@@ -1645,35 +1817,89 @@
     function updateStartUploadUI() {
       const el = document.getElementById("startUpload");
       const empty = document.getElementById("startUploadEmpty");
+      const actions = document.getElementById("startUploadActions");
       if (!el) return;
       if (state.customTemplateUrl && state.startPath === "update") {
         el.classList.add("has");
         el.style.backgroundImage = `url('${state.customTemplateUrl}')`;
         if (empty) empty.hidden = true;
+        if (actions) actions.hidden = false;
       } else {
         el.classList.remove("has");
         el.style.backgroundImage = "";
         if (empty) empty.hidden = false;
+        if (actions) actions.hidden = true;
       }
     }
 
     function updateCustomUploadUI() {
       const el = document.getElementById("customUpload");
       const empty = document.getElementById("customUploadEmpty");
+      const actions = document.getElementById("customUploadActions");
       if (!el) return;
       if (state.customTemplateUrl && isCustomTpl()) {
         el.classList.add("has");
         el.style.backgroundImage = `url('${state.customTemplateUrl}')`;
         if (empty) empty.hidden = true;
+        if (actions) actions.hidden = false;
       } else {
         el.classList.remove("has");
         el.style.backgroundImage = "";
         if (empty) empty.hidden = false;
+        if (actions) actions.hidden = true;
       }
+    }
+
+    function removeCustomTemplate() {
+      state.customTemplateUrl = null;
+      state.customTemplateFileName = null;
+      state.customTemplateFileType = null;
+      if (state.startPath === "update") {
+        state.templateId = null;
+        state.startPath = null;
+      }
+      updateCustomUploadUI();
+      updateStartUploadUI();
+      syncStartContinue();
+      renderStartStep();
+      renderMini();
+      if (state.view === "result" && !state.generating) renderPreviewIdleFlyer();
+      scheduleSave();
+    }
+
+    function removeInspirationPhoto() {
+      state.imageUrl = null;
+      state.inspirationPhotoSource = null;
+      state.inspirationPhotoLabel = null;
+      updateInspUI();
+      renderThumbs();
+      if (state.view === "result" && !state.generating) {
+        if (state.previewGenerated) runGenerate();
+        else renderPreviewIdleFlyer();
+      }
+      scheduleSave();
+    }
+
+    function handleInspirationFile(file) {
+      if (!file || !file.type.startsWith("image/")) return;
+      state.inspirationPhotoSource = "upload";
+      state.inspirationPhotoLabel = file.name || "Uploaded photo";
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.imageUrl = String(reader.result || "");
+        updateInspUI();
+        renderThumbs();
+        if (state.view === "result" && !state.generating) renderPreviewIdleFlyer();
+        scheduleSave();
+      };
+      reader.readAsDataURL(file);
     }
 
     function handleCustomTemplateFile(file) {
       if (!file) return;
+      state.customTemplateFileName = file.name || "Uploaded template";
+      state.customTemplateFileType =
+        file.type === "application/pdf" ? "pdf" : "image";
       const applyUpload = () => {
         state.startPath = "update";
         state.templateId = "custom";
@@ -1703,7 +1929,12 @@
 
     function logoHTML() {
       if (!state.brand) return "";
-      return `<div class="logo-dot" style="background:linear-gradient(135deg,var(--brand-primary),var(--brand-accent))" title="Brand logo"></div>`;
+      const kit = SETTINGS_BRAND_KIT;
+      const label = escapeHtml(kit.organizationShortName);
+      if (kit.ptoLogoUrl) {
+        return `<img class="logo-img" src="${escapeHtml(kit.ptoLogoUrl)}" alt="${label} logo" title="${label}" />`;
+      }
+      return `<div class="logo-lettermark" title="${label}">${escapeHtml(lettermarkFrom(kit.organizationShortName))}</div>`;
     }
 
     function heroBg(img) {
@@ -1734,7 +1965,7 @@
       const ctaUrl = f.ctaUrl || d.ctaUrl || "";
       const qrUrl = (f.qrUrl || d.qrUrl || ctaUrl || "").trim();
       return {
-        orgName: f.orgName || d.orgName || "",
+        orgName: f.orgName || d.orgName || brandOrgName(),
         headline: opts.headline ?? f.headline ?? d.headline ?? "Headline",
         schoolYear: f.schoolYear || d.schoolYear || "",
         location: f.location || d.location || "",
@@ -1823,7 +2054,7 @@
               <div class="head-bar">
                 <div>
                   ${logo}
-                  <div class="org">${escapeHtml(slots.orgName || "Your PTA")}</div>
+                  <div class="org">${escapeHtml(slots.orgName || brandOrgName())}</div>
                 </div>
                 <div class="year">${escapeHtml(slots.schoolYear || "")}</div>
               </div>
@@ -1847,7 +2078,7 @@
             <div class="fly investor${filled}">
               <div class="head">
                 ${logo}
-                <div class="org">${escapeHtml(slots.orgName || "Your PTA")}</div>
+                <div class="org">${escapeHtml(slots.orgName || brandOrgName())}</div>
                 <div class="h">${escapeHtml(h)}</div>
                 ${slots.schoolYear ? `<div class="year">${escapeHtml(slots.schoolYear)}</div>` : ""}
               </div>
@@ -1869,6 +2100,7 @@
               </div>
               <div class="band">
                 ${logo}
+                ${state.brand && slots.orgName ? `<div class="eyebrow">${escapeHtml(slots.orgName)}</div>` : ""}
                 <div class="h">${escapeHtml(h)}</div>
                 <div class="b">${escapeHtml(b)}</div>
                 <div class="cta">${escapeHtml(cta)}</div>
@@ -1880,7 +2112,7 @@
               <div class="hero"><div class="hero-img" style="${bg}"></div></div>
               <div class="band">
                 ${logo}
-                <div class="eyebrow">${escapeHtml(slots.orgName || "Riverside Community")}</div>
+                <div class="eyebrow">${escapeHtml(slots.orgName || brandOrgName())}</div>
                 <div class="orn"></div>
                 <div class="h">${escapeHtml(h)}</div>
                 <div class="b">${escapeHtml(b)}</div>
@@ -2029,7 +2261,7 @@
     function applyTemplateDefaults(tpl) {
       if (!tpl) return;
       const d = tpl.defaults || {};
-      document.getElementById("orgName").value = d.orgName || "";
+      document.getElementById("orgName").value = d.orgName || brandOrgName();
       document.getElementById("headline").value = d.headline || "";
       document.getElementById("schoolYear").value = d.schoolYear || "";
       document.getElementById("location").value = d.location || "";
@@ -2103,7 +2335,11 @@
           startPath: state.startPath,
           printSize: state.printSize,
           imageUrl: state.imageUrl,
+          inspirationPhotoSource: state.inspirationPhotoSource,
+          inspirationPhotoLabel: state.inspirationPhotoLabel,
           customTemplateUrl: state.customTemplateUrl,
+          customTemplateFileName: state.customTemplateFileName,
+          customTemplateFileType: state.customTemplateFileType,
           brand: state.brand,
           ...readDraftFields(),
         };
@@ -2120,7 +2356,7 @@
 
     function defaultsAsFields(d = {}) {
       return {
-        orgName: d.orgName || "",
+        orgName: d.orgName || brandOrgName(),
         headline: d.headline || "",
         schoolYear: d.schoolYear || "",
         location: d.location || "",
@@ -2148,7 +2384,15 @@
         if (d.printSize === "letter" || d.printSize === "half") state.printSize = d.printSize;
         else if (state.templateId === NEW_SIZE_IDS.half) state.printSize = "half";
         if (d.imageUrl) state.imageUrl = d.imageUrl;
+        if (d.inspirationPhotoSource === "sample" || d.inspirationPhotoSource === "upload") {
+          state.inspirationPhotoSource = d.inspirationPhotoSource;
+        }
+        if (d.inspirationPhotoLabel) state.inspirationPhotoLabel = d.inspirationPhotoLabel;
         if (d.customTemplateUrl) state.customTemplateUrl = d.customTemplateUrl;
+        if (d.customTemplateFileName) state.customTemplateFileName = d.customTemplateFileName;
+        if (d.customTemplateFileType === "pdf" || d.customTemplateFileType === "image") {
+          state.customTemplateFileType = d.customTemplateFileType;
+        }
         if (typeof d.brand === "boolean") state.brand = d.brand;
         SLOT_IDS.forEach((id) => {
           if (d[id] != null) document.getElementById(id).value = d[id];
@@ -2230,6 +2474,7 @@
       }
       if (view === "result") {
         renderPreviewIdleFlyer();
+        renderAiDirectionSummary();
         renderPreviewState();
         if (state.autoGenerateOnEnter) {
           state.autoGenerateOnEnter = false;
@@ -2294,6 +2539,8 @@
           e.stopPropagation();
           const sample = SAMPLES.find((s) => s.id === btn.dataset.img);
           state.imageUrl = sample.url;
+          state.inspirationPhotoSource = "sample";
+          state.inspirationPhotoLabel = sample.label;
           updateInspUI();
           renderThumbs();
           scheduleSave();
@@ -2304,10 +2551,20 @@
     function updateInspUI() {
       const drop = document.getElementById("inspDrop");
       const empty = document.getElementById("inspEmpty");
+      const actions = document.getElementById("inspActions");
+      if (!drop) return;
       if (state.imageUrl) {
         drop.classList.add("has");
         drop.style.backgroundImage = `url('${state.imageUrl}')`;
-        empty.hidden = true;
+        drop.setAttribute("aria-label", "Inspiration photo preview");
+        if (empty) empty.hidden = true;
+        if (actions) actions.hidden = false;
+      } else {
+        drop.classList.remove("has");
+        drop.style.backgroundImage = "";
+        drop.setAttribute("aria-label", "Add inspiration photo");
+        if (empty) empty.hidden = false;
+        if (actions) actions.hidden = true;
       }
     }
 
@@ -2316,7 +2573,7 @@
       const tpl = getTpl(state.templateId);
       const nameEl = document.getElementById("selectedTplName");
       if (nameEl) nameEl.textContent = tpl.name;
-      document.getElementById("brandChip").hidden = !state.brand;
+      syncBrandKitCardUI();
       updateQrFieldVisibility();
       updateTemplateFieldHints();
       syncCustomModeUI();
@@ -2345,7 +2602,7 @@
       push("Footer", s.footer);
       if (!tpl.isCustom) {
         rows.push(`<li><span class="k">Photo</span><span>${state.imageUrl ? "Added" : "None"}</span></li>`);
-        rows.push(`<li><span class="k">Brand</span><span>${state.brand ? "On" : "Off"}</span></li>`);
+        rows.push(`<li><span class="k">Brand</span><span>${state.brand ? escapeHtml(SETTINGS_BRAND_KIT.organizationShortName) + " kit" : "Off"}</span></li>`);
       }
       return rows.join("");
     }
@@ -2401,6 +2658,7 @@
       if (!idle || !genState || !wrap) return;
 
       renderPreviewIdleFlyer();
+      renderAiDirectionSummary();
       const tpl = getTpl(state.templateId);
       const slots = resolveSlots({}, tpl);
 
@@ -2434,8 +2692,206 @@
       });
     }
 
-    function runGenerate() {
+    function applyGeneratedSlots(slots) {
+      if (!slots || typeof slots !== "object") return;
+      SLOT_IDS.forEach((id) => {
+        if (typeof slots[id] !== "string") return;
+        const el = document.getElementById(id);
+        if (el) el.value = slots[id];
+      });
+    }
+
+    function resolveInspirationMeta() {
+      if (!state.imageUrl) {
+        return {
+          inspirationPhotoPresent: false,
+          inspirationPhotoSource: null,
+          inspirationPhotoLabel: null,
+          inspirationPhotoNote: null,
+        };
+      }
+      const sample = SAMPLES.find((s) => s.url === state.imageUrl);
+      const source = state.inspirationPhotoSource || (sample ? "sample" : "upload");
+      const label = state.inspirationPhotoLabel || sample?.label || null;
+      const note =
+        source === "upload"
+          ? "User uploaded inspiration photo — image bytes not sent in v1; use slot direction only."
+          : sample
+            ? "Sample stock photo selected for hero slot — image bytes not sent in v1."
+            : "Inspiration photo present — image bytes not sent in v1.";
+      return {
+        inspirationPhotoPresent: true,
+        inspirationPhotoSource: source,
+        inspirationPhotoLabel: label,
+        inspirationPhotoNote: note,
+      };
+    }
+
+    function resolveCustomTemplateMeta() {
+      const present = Boolean(state.customTemplateUrl && isCustomTpl());
+      if (!present) {
+        return {
+          customTemplatePresent: false,
+          customTemplateFileName: null,
+          customTemplateFileType: null,
+          customTemplateNote: null,
+        };
+      }
+      return {
+        customTemplatePresent: true,
+        customTemplateFileName: state.customTemplateFileName,
+        customTemplateFileType: state.customTemplateFileType,
+        customTemplateNote:
+          "Layout locked from uploaded last-year template — file bytes not sent in v1; update slot text only.",
+      };
+    }
+
+    function resolveLogoDisplay() {
+      const kit = SETTINGS_BRAND_KIT;
+      if (kit.ptoLogoUrl && kit.ptoLogoUploaded) return "pto";
+      if (kit.schoolLogoUrl && kit.schoolLogoUploaded) return "school";
+      if (kit.ptoLogoUploaded || kit.schoolLogoUploaded) return "lettermark";
+      return "none";
+    }
+
+    function buildBrandKitPayload() {
+      const kit = SETTINGS_BRAND_KIT;
+      return {
+        organizationShortName: kit.organizationShortName,
+        primaryColor: kit.primaryColor,
+        accentColor: kit.accentColor,
+        fontStyle: kit.fontStyle,
+        mascotLabel: kit.mascotLabel,
+        ptoLogoUploaded: kit.ptoLogoUploaded,
+        schoolLogoUploaded: kit.schoolLogoUploaded,
+        logoDisplay: resolveLogoDisplay(),
+      };
+    }
+
+    function buildStartPayload() {
+      const path = state.startPath || inferStartPath(state.templateId);
+      return {
+        path,
+        pathLabel: path ? START_PATH_LABELS[path] : null,
+        printSize: path === "new" ? state.printSize : null,
+        printSizeLabel:
+          path === "new" ? PRINT_SIZE_LABELS[state.printSize] || null : null,
+      };
+    }
+
+    function buildGeneratePayload(tpl) {
+      return {
+        start: buildStartPayload(),
+        template: {
+          templateId: tpl.id,
+          templateName: tpl.name,
+          isCustom: Boolean(tpl.isCustom),
+          ratio: tpl.ratio || null,
+          hasQr: Boolean(tpl.hasQr),
+        },
+        assets: {
+          ...resolveInspirationMeta(),
+          ...resolveCustomTemplateMeta(),
+        },
+        brandEnabled: Boolean(state.brand),
+        brandKit: buildBrandKitPayload(),
+        fields: readDraftFields(),
+      };
+    }
+
+    function buildAiDirectionSummary(tpl) {
+      const payload = buildGeneratePayload(tpl);
+      const rows = [];
+      const push = (k, v) => {
+        if (v) rows.push({ k, v });
+      };
+
+      push("Start", payload.start.pathLabel);
+      push("Template", payload.template.templateName);
+      if (payload.start.printSizeLabel) push("Print size", payload.start.printSizeLabel);
+      if (payload.assets.customTemplatePresent) {
+        push(
+          "Last-year file",
+          payload.assets.customTemplateFileName || "Uploaded (layout locked)",
+        );
+      }
+      if (payload.assets.inspirationPhotoPresent) {
+        push(
+          "Hero photo",
+          payload.assets.inspirationPhotoLabel ||
+            (payload.assets.inspirationPhotoSource === "upload"
+              ? "User upload"
+              : "Sample photo"),
+        );
+      }
+      push("Brand kit", payload.brandEnabled ? SETTINGS_BRAND_KIT.organizationShortName : "Off");
+
+      const fieldLabels = {
+        orgName: "Organization",
+        headline: "Headline",
+        schoolYear: "School year",
+        location: "Location",
+        directions: "Directions",
+        datesEvents: "Dates & events",
+        bodyCopy: "Body",
+        donationTiers: "Tiers",
+        ctaLabel: "CTA",
+        ctaUrl: "CTA URL",
+        qrUrl: "QR URL",
+        qrCaption: "QR caption",
+        footerLine: "Footer",
+        lastYearNotes: "Last-year notes",
+      };
+      Object.entries(fieldLabels).forEach(([key, label]) => {
+        const value = (payload.fields[key] || "").trim();
+        if (value) push(label, value.length > 48 ? value.slice(0, 45) + "…" : value);
+      });
+
+      return rows;
+    }
+
+    function renderAiDirectionSummary() {
+      const list = document.getElementById("aiDirectionList");
+      if (!list || !state.templateId) {
+        if (list) list.innerHTML = "";
+        return;
+      }
+      const tpl = getTpl(state.templateId);
+      const rows = buildAiDirectionSummary(tpl);
+      list.innerHTML = rows.length
+        ? rows
+            .map(
+              (row) =>
+                `<li><span class="k">${escapeHtml(row.k)}</span><span>${escapeHtml(row.v)}</span></li>`,
+            )
+            .join("")
+        : `<li><span class="k">Direction</span><span>Add inspiration details on step 2</span></li>`;
+    }
+
+    function canCallGenerateApi() {
+      return window.location.protocol !== "file:";
+    }
+
+    function showGenerateError(message) {
+      const hint = document.getElementById("previewIdleHint");
+      const genDetail = document.getElementById("genDetail");
+      if (hint) {
+        hint.innerHTML = `<strong style="color:var(--mustard)">${escapeHtml(message)}</strong>`;
+        window.setTimeout(() => {
+          hint.innerHTML = "Tap <strong>Generate flyer</strong> when you’re set.";
+        }, 9000);
+        return;
+      }
+      if (genDetail) genDetail.textContent = message;
+    }
+
+    async function runGenerate() {
       if (state.generating || !state.templateId) return;
+
+      if (!canCallGenerateApi()) {
+        showGenerateError("Open via http://localhost:3000 or heyralli.com to use AI Generate.");
+        return;
+      }
 
       state.generating = true;
       state.previewGenerated = false;
@@ -2444,15 +2900,15 @@
       const wrap = document.getElementById("resultFlyer");
       const list = document.getElementById("slotList");
       const genDetail = document.getElementById("genDetail");
-      const fields = readDraftFields();
-      const slots = resolveSlots({ fields }, tpl);
+      let fields = readDraftFields();
+      let slots = resolveSlots({ fields }, tpl);
 
       wrap.dataset.ratio = tpl.ratio;
       if (list) list.innerHTML = buildSlotSummary(tpl, slots);
 
       const stages = tpl.isCustom
-        ? ["Reading template…", "Updating copy…", "Almost done…"]
-        : ["Filling in details…", "Applying brand & photo…", "Almost done…"];
+        ? ["Reading template…", "Sending to OpenAI…", "Applying copy…"]
+        : ["Sending directions to OpenAI…", "Filling template slots…", "Almost done…"];
 
       if (genDetail) genDetail.textContent = stages[0];
       renderPreviewState();
@@ -2462,10 +2918,34 @@
       state.generateStageTimer = setInterval(() => {
         stage = Math.min(stage + 1, stages.length - 1);
         if (genDetail) genDetail.textContent = stages[stage];
-      }, 850);
+      }, 1200);
 
       clearTimeout(state.generateTimer);
-      state.generateTimer = setTimeout(() => {
+
+      try {
+        const response = await fetch(FLYER_GENERATE_API, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildGeneratePayload(tpl)),
+        });
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success || !payload.slots) {
+          const err =
+            payload?.error ||
+            (response.status === 401
+              ? "Sign in with an active organization to generate."
+              : response.status === 403
+                ? "You do not have permission to generate flyers."
+                : "Generate failed. Try again.");
+          throw new Error(err);
+        }
+
+        applyGeneratedSlots(payload.slots);
+        fields = readDraftFields();
+        slots = resolveSlots({ fields }, tpl);
+
         clearInterval(state.generateStageTimer);
         wrap.innerHTML = flyerHTML(tpl.id, {
           imageUrl: state.imageUrl,
@@ -2478,7 +2958,13 @@
         state.previewGenerated = true;
         renderPreviewState();
         scheduleSave();
-      }, 2800);
+      } catch (error) {
+        clearInterval(state.generateStageTimer);
+        state.generating = false;
+        state.previewGenerated = false;
+        renderPreviewState();
+        showGenerateError(error?.message || "Generate failed. Try again.");
+      }
     }
 
     function startGenerate() {
@@ -2522,6 +3008,7 @@
       renderStartStep();
       renderMini();
       if (state.view === "result") {
+        renderAiDirectionSummary();
         if (state.previewGenerated) runGenerate();
         else renderPreviewIdleFlyer();
       }
@@ -2534,6 +3021,7 @@
         renderMini();
         if (state.view === "result" && !state.previewGenerated && !state.generating) {
           renderPreviewIdleFlyer();
+          renderAiDirectionSummary();
         }
         scheduleSave();
       });
@@ -2541,33 +3029,87 @@
 
     const customUpload = document.getElementById("customUpload");
     const customFile = document.getElementById("customFile");
-    customUpload.addEventListener("click", () => customFile.click());
+    customUpload.addEventListener("click", (e) => {
+      if (e.target.closest(".asset-actions")) return;
+      if (state.customTemplateUrl && isCustomTpl()) return;
+      customFile.click();
+    });
     customUpload.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
+        if (state.customTemplateUrl && isCustomTpl()) return;
         customFile.click();
       }
     });
     customFile.addEventListener("change", () => {
       const file = customFile.files && customFile.files[0];
       handleCustomTemplateFile(file);
+      customFile.value = "";
+    });
+    document.getElementById("customReplace").addEventListener("click", (e) => {
+      e.stopPropagation();
+      customFile.click();
+    });
+    document.getElementById("customRemove").addEventListener("click", (e) => {
+      e.stopPropagation();
+      removeCustomTemplate();
+    });
+
+    const inspDrop = document.getElementById("inspDrop");
+    const inspFile = document.getElementById("inspFile");
+    inspDrop.addEventListener("click", (e) => {
+      if (e.target.closest(".asset-actions") || e.target.closest(".insp-thumbs")) return;
+      if (state.imageUrl) return;
+      inspFile.click();
+    });
+    inspDrop.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        if (state.imageUrl) return;
+        inspFile.click();
+      }
+    });
+    inspFile.addEventListener("change", () => {
+      const file = inspFile.files && inspFile.files[0];
+      handleInspirationFile(file);
+      inspFile.value = "";
+    });
+    document.getElementById("inspReplace").addEventListener("click", (e) => {
+      e.stopPropagation();
+      inspFile.click();
+    });
+    document.getElementById("inspRemove").addEventListener("click", (e) => {
+      e.stopPropagation();
+      removeInspirationPhoto();
     });
 
     const startUpload = document.getElementById("startUpload");
     const startFile = document.getElementById("startFile");
     startUpload.addEventListener("click", (e) => {
       e.stopPropagation();
+      if (e.target.closest(".asset-actions")) return;
+      if (state.customTemplateUrl && state.startPath === "update") return;
       startFile.click();
     });
     startUpload.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
+        if (state.customTemplateUrl && state.startPath === "update") return;
         startFile.click();
       }
     });
     startFile.addEventListener("change", () => {
       const file = startFile.files && startFile.files[0];
       handleCustomTemplateFile(file);
+      startFile.value = "";
+    });
+    document.getElementById("startUploadReplace").addEventListener("click", (e) => {
+      e.stopPropagation();
+      startFile.click();
+    });
+    document.getElementById("startUploadRemove").addEventListener("click", (e) => {
+      e.stopPropagation();
+      removeCustomTemplate();
     });
 
     document.querySelectorAll(".start-path[data-path]").forEach((card) => {

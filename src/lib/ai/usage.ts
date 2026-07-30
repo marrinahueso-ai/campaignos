@@ -162,7 +162,9 @@ export async function logAiUsage(input: AiUsageLogInput): Promise<void> {
         ? "Creative brief"
         : input.actionType === "homepage_composer_blurb"
           ? "Homepage blurb"
-          : input.actionType === "orchestrate_artwork"
+          : input.actionType === "flyer_composer_slots"
+            ? "Flyer composer slots"
+            : input.actionType === "orchestrate_artwork"
             ? "Artwork orchestration"
             : input.actionType === "generate_artwork"
               ? "Campaign artwork"
@@ -185,7 +187,11 @@ export async function logAiUsage(input: AiUsageLogInput): Promise<void> {
           ? input.success
             ? `AI-generated homepage card blurb (${input.model}, ${tokenSummary}).`
             : `Homepage blurb generation did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim()
-          : input.actionType === "orchestrate_artwork"
+          : input.actionType === "flyer_composer_slots"
+            ? input.success
+              ? `AI-filled flyer template slots (${input.model}, ${tokenSummary}).`
+              : `Flyer slot generation did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim()
+            : input.actionType === "orchestrate_artwork"
             ? input.success
               ? `Artwork prompt orchestration (${input.model}, ${tokenSummary}).`
               : `Artwork orchestration did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim()

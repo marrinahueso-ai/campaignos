@@ -23,6 +23,7 @@ export type AiActionType =
   | "generate_event_brief"
   | "generate_creative_brief"
   | "homepage_composer_blurb"
+  | "flyer_composer_slots"
   | "orchestrate_artwork"
   | "generate_artwork"
   /** Phase 2+ call sites — accepted by logAiUsage today. */

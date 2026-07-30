@@ -72,6 +72,8 @@ export function featureFromAiActionType(actionType: string): string {
       return "creative_brief";
     case "homepage_composer_blurb":
       return "homepage_composer_blurb";
+    case "flyer_composer_slots":
+      return "flyer_composer_slots";
     case "orchestrate_artwork":
       return "artwork_orchestration";
     case "generate_artwork":
