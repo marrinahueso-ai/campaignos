@@ -162,8 +162,8 @@ describe("approvals ease pulse contracts", () => {
     );
 
     assert.match(ease, /relative h-14 w-14 shrink-0 rounded-xl/);
-    assert.match(ease, /grid items-center[\s\S]*minmax\(220px,280px\)_1fr/);
-    assert.match(ease, /aspect-square w-full/);
+    assert.match(ease, /grid overflow-hidden[\s\S]*minmax\(220px,280px\)_1fr/);
+    assert.match(ease, /min-h-\[220px\] w-full md:h-full/);
     assert.match(ease, /resize: isCompact \? "cover" : "contain"/);
     assert.match(ease, /"object-contain object-center"/);
     assert.match(ease, /"object-cover object-center"/);

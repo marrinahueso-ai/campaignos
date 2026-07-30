@@ -108,10 +108,10 @@ export function ApprovalsFocusCard({
     null;
 
   return (
-    <article className="grid items-center overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(220px,280px)_1fr]">
+    <article className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(220px,280px)_1fr]">
       <ArtTile
         item={item}
-        className="aspect-square w-full"
+        className="min-h-[220px] w-full md:h-full md:min-h-0"
         width={800}
         priority
         label={
