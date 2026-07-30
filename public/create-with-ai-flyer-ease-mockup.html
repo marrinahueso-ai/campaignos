@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hey Ralli · Create with AI Flyer Ease Mockup</title>
-  <meta name="description" content="Mockup: Create with AI Flyer — pick a template, add inspiration + optional brand kit and copy; AI fills the template without redesigning it." />
+  <title>Hey Ralli · Flyer</title>
+  <meta name="description" content="Update last year's flyer or pick a proven layout, add your details, and generate print-ready artwork." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
@@ -27,6 +27,17 @@
       --serif: "Fraunces", Georgia, serif;
       --sans: "DM Sans", system-ui, sans-serif;
       --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      /* Riverside Community Association brand kit (mock) — synced by JS when toggle changes */
+      --brand-primary: #2f4a3c;
+      --brand-secondary: #6b8171;
+      --brand-accent: #c4922e;
+      --brand-ink: #2a2622;
+      --brand-paper: #faf8f4;
+      --brand-surface: #eef4ef;
+      --brand-highlight: #2a7a86;
+      --brand-on-primary: #fff;
+      --brand-on-accent: #2a2010;
+      --brand-muted: #6a5f55;
     }
     * { box-sizing: border-box; }
     body {
@@ -85,35 +96,50 @@
     .back-link:hover { color: var(--ink); }
 
     .composer-layout {
-      display: grid; grid-template-columns: 1fr; gap: 16px;
+      display: grid; grid-template-columns: 1fr; gap: 12px;
       animation: rise 0.55s var(--ease) 0.05s both;
     }
     @media (min-width: 900px) {
-      .composer-layout { grid-template-columns: 220px minmax(0, 1fr); align-items: start; }
+      .composer-layout { grid-template-columns: 200px minmax(0, 1fr); align-items: start; gap: 16px; }
     }
     .steps-rail {
-      position: sticky; top: 20px;
-      background: var(--cream-deep); border: 1px solid var(--line);
-      border-radius: 22px; padding: 14px;
+      position: sticky; top: 12px;
+      background: var(--cream-deep); border: none;
+      border-radius: 18px; padding: 10px;
     }
     .steps-label {
-      margin: 0 0 8px; padding: 0 10px;
-      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      margin: 0 0 6px; padding: 0 8px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.08em; color: var(--muted);
     }
     .step-btn {
       width: 100%; text-align: left; border: none; background: transparent;
-      border-radius: 14px; padding: 10px 12px; cursor: pointer;
-      color: var(--ink-soft); font-size: 14px; font-weight: 600;
+      border-radius: 12px; padding: 10px 10px; cursor: pointer;
+      color: var(--ink); font-size: 14px; font-weight: 600;
       transition: background 0.2s, box-shadow 0.2s, color 0.2s;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
-    .step-btn:hover { background: rgba(255, 252, 247, 0.6); color: var(--ink); }
+    .step-btn:hover { background: rgba(255, 252, 247, 0.45); }
+    .step-btn:not(.active) { color: var(--muted); }
+    .step-btn:not(.active):hover { color: var(--ink-soft); }
     .step-btn.active {
       background: var(--white); color: var(--ink); box-shadow: var(--shadow);
     }
+    .step-btn .step-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .step-btn .step-num {
+      flex-shrink: 0; width: 20px; height: 20px; border-radius: 999px;
+      display: grid; place-items: center;
+      font-size: 10px; font-weight: 700;
+      background: rgba(42, 38, 34, 0.1); color: var(--muted);
+    }
+    .step-btn.active .step-num {
+      background: var(--ink); color: var(--cream);
+    }
     .step-btn .hint {
-      display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--muted);
+      display: block; margin-top: 4px; padding-left: 28px;
+      font-size: 11px; font-weight: 500; line-height: 1.35; color: var(--muted);
     }
     .composer-main { min-width: 0; }
 
@@ -121,6 +147,7 @@
       background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
       box-shadow: var(--shadow); padding: 22px 22px 24px;
       animation: soft-in 0.45s var(--ease) both;
+      min-width: 0;
     }
     .panel h2 {
       margin: 0 0 6px; font-family: var(--serif); font-size: 1.55rem; font-weight: 600;
@@ -134,44 +161,39 @@
     }
     .rule strong { color: var(--forest); }
 
-    /* Filter chips */
-    .filters {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
-    }
-    .filter-chip {
-      padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line);
-      background: var(--cream); font-size: 12px; font-weight: 700; color: var(--ink-soft);
-      transition: background 0.2s, border-color 0.2s, color 0.2s;
-    }
-    .filter-chip:hover { border-color: rgba(47, 74, 60, 0.35); }
-    .filter-chip[aria-pressed="true"] {
-      background: var(--forest); color: #fff; border-color: var(--forest);
+    .brand-kit-note {
+      margin: -8px 0 16px; font-size: 0.82rem; font-weight: 600; color: var(--forest);
     }
 
     /* Templates */
     .tpl-grid {
-      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+      display: grid; gap: 12px;
+      width: 100%; max-width: 100%; min-width: 0;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    @media (min-width: 720px) {
-      .tpl-grid { grid-template-columns: repeat(3, 1fr); }
+    @media (min-width: 640px) {
+      .tpl-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
-    @media (min-width: 1000px) {
-      .tpl-grid { grid-template-columns: repeat(5, 1fr); }
+    @media (min-width: 960px) {
+      .tpl-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
     .tpl {
       position: relative; text-align: left; border-radius: 16px; border: 2px solid transparent;
       background: var(--cream); padding: 10px; transition: border-color 0.2s, transform 0.2s;
+      min-width: 0; max-width: 100%;
     }
     .tpl:hover { transform: translateY(-2px); }
-    .tpl[aria-pressed="true"] { border-color: var(--forest); background: #fff; box-shadow: var(--shadow); }
+    .tpl[aria-pressed="true"] { border-color: var(--brand-primary); background: #fff; box-shadow: var(--shadow); }
     .tpl-preview {
       aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden; position: relative;
       border: 1px solid var(--line); background: #ddd;
+      width: 100%; min-width: 0;
     }
     .tpl-preview[data-ratio="1/1"] { aspect-ratio: 1 / 1; }
     .tpl-preview[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-height: 200px; margin: 0 auto; width: auto; }
     .tpl-label {
       margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: var(--ink); line-height: 1.25;
+      overflow-wrap: anywhere;
     }
     .tpl-audience {
       margin-top: 3px; font-size: 0.68rem; font-weight: 700; color: var(--forest);
@@ -184,7 +206,7 @@
       background: rgba(255, 252, 247, 0.95);
     }
     .tpl.custom-tpl[aria-pressed="true"] {
-      border-style: solid; border-color: var(--forest);
+      border-style: solid; border-color: var(--brand-primary);
     }
     .tpl-preview.custom-preview {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -217,7 +239,7 @@
     .custom-mode-note strong { color: var(--teal); }
     body.is-custom-flyer .custom-mode-note { display: block; }
     body.is-custom-flyer #inspFieldLabel::after {
-      content: " (optional — only if you want a new photo)";
+      content: " (optional)";
       font-weight: 500; color: var(--muted);
     }
     .fly.custom { position: relative; background: #c8c2b8; }
@@ -231,7 +253,7 @@
     }
     .fly.custom .edit-overlay .h { font-size: 11px; color: var(--ink); }
     .fly.custom .edit-overlay .b { font-size: 8px; opacity: 0.85; color: var(--ink-soft); }
-    .fly.custom .edit-overlay .cta { background: var(--forest); color: #fff; font-size: 7px; }
+    .fly.custom .edit-overlay .cta { background: var(--brand-primary); color: var(--brand-on-primary); font-size: 7px; }
     .fly.custom .edit-badge {
       position: absolute; top: 8px; left: 8px; z-index: 2;
       padding: 3px 8px; border-radius: 999px; background: rgba(42, 122, 134, 0.92);
@@ -311,42 +333,42 @@
     .fly .agenda div { display: flex; justify-content: space-between; gap: 4px; }
 
     /* 1 · Community festival poster */
-    .fly.festival .band { background: var(--forest); }
+    .fly.festival .band { background: var(--brand-primary); }
     .fly.festival .hero { flex: 1.35; }
     .fly.festival .date-chip {
       position: absolute; top: 8px; right: 8px; z-index: 1;
-      background: var(--mustard); color: #fff; padding: 4px 6px; border-radius: 8px;
+      background: var(--brand-accent); color: var(--brand-on-primary); padding: 4px 6px; border-radius: 8px;
       font-weight: 800; font-size: 7px; text-align: center; line-height: 1.15;
     }
 
     /* 2 · Church gathering */
     .fly.church {
-      background: #f7f3ec; color: #2c2824; flex-direction: column;
+      background: var(--brand-paper); color: var(--brand-ink); flex-direction: column;
     }
     .fly.church .hero {
       flex: 0.85; margin: 10px 10px 0; border-radius: 8px; overflow: hidden;
     }
     .fly.church .band {
-      background: transparent; color: #2c2824; align-items: center; text-align: center;
+      background: transparent; color: var(--brand-ink); align-items: center; text-align: center;
       padding: 8px 12px 10px;
     }
-    .fly.church .h { font-weight: 600; font-size: 12px; color: #3a2f28; }
-    .fly.church .b { color: #6a5f55; opacity: 1; }
-    .fly.church .cta { background: #4a3f36; color: #f7f3ec; align-self: center; }
+    .fly.church .h { font-weight: 600; font-size: 12px; color: var(--brand-primary); }
+    .fly.church .b { color: var(--brand-muted); opacity: 1; }
+    .fly.church .cta { background: var(--brand-primary); color: var(--brand-on-primary); align-self: center; }
     .fly.church .orn {
-      width: 28px; height: 1px; background: #c4a574; margin: 2px auto;
+      width: 28px; height: 1px; background: var(--brand-accent); margin: 2px auto;
     }
     .fly.church .row { width: 100%; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
     .fly.church .qr { width: 28px; height: 28px; }
 
     /* 3 · Youth sports tryouts */
     .fly.sports {
-      background: #0d1b2a; color: #fff;
+      background: var(--brand-primary); color: var(--brand-on-primary);
     }
     .fly.sports .hero { flex: 1; }
     .fly.sports .hero::after {
       content: ""; position: absolute; inset: 0;
-      background: linear-gradient(180deg, transparent 35%, #0d1b2a 95%);
+      background: linear-gradient(180deg, transparent 35%, var(--brand-primary) 95%);
     }
     .fly.sports .band {
       position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
@@ -354,47 +376,47 @@
     }
     .fly.sports .stripe {
       position: absolute; top: 0; left: 0; right: 0; height: 6px; z-index: 2;
-      background: repeating-linear-gradient(90deg, #e85d04 0 12px, #fff 12px 16px, #0d1b2a 16px 28px);
+      background: repeating-linear-gradient(90deg, var(--brand-accent) 0 12px, #fff 12px 16px, var(--brand-primary) 16px 28px);
     }
     .fly.sports .h {
       font-family: var(--sans); font-weight: 800; font-size: 13px; text-transform: uppercase;
       letter-spacing: 0.02em; text-shadow: 0 2px 8px rgba(0,0,0,0.4);
     }
-    .fly.sports .cta { background: #e85d04; color: #fff; border-radius: 4px; }
+    .fly.sports .cta { background: var(--brand-accent); color: var(--brand-on-primary); border-radius: 4px; }
 
     /* 4 · HOA meeting notice */
     .fly.hoa {
-      background: #fff; color: var(--ink); flex-direction: column;
+      background: #fff; color: var(--brand-ink); flex-direction: column;
     }
     .fly.hoa .topbar {
-      background: #1e3a5f; color: #fff; padding: 8px 10px; display: flex; gap: 8px; align-items: center;
+      background: var(--brand-primary); color: var(--brand-on-primary); padding: 8px 10px; display: flex; gap: 8px; align-items: center;
     }
     .fly.hoa .topbar .h { font-size: 10px; font-family: var(--sans); font-weight: 800; }
     .fly.hoa .hero { flex: 0.7; margin: 8px; border-radius: 6px; overflow: hidden; }
     .fly.hoa .band {
-      background: transparent; color: var(--ink); padding: 0 10px 10px; flex: 1;
+      background: transparent; color: var(--brand-ink); padding: 0 10px 10px; flex: 1;
     }
-    .fly.hoa .b { opacity: 1; color: var(--ink-soft); }
-    .fly.hoa .agenda { border-top-color: rgba(30, 58, 95, 0.2); color: var(--ink); }
-    .fly.hoa .cta { background: #1e3a5f; color: #fff; }
+    .fly.hoa .b { opacity: 1; color: var(--brand-muted); }
+    .fly.hoa .agenda { border-top-color: color-mix(in srgb, var(--brand-primary) 20%, transparent); color: var(--brand-ink); }
+    .fly.hoa .cta { background: var(--brand-primary); color: var(--brand-on-primary); }
     .fly.hoa .qr { width: 26px; height: 26px; }
 
     /* 5 · Social square */
     .fly.square {
-      background: #2a7a86;
+      background: var(--brand-highlight);
     }
     .fly.square .hero { flex: 1.2; }
     .fly.square .band {
-      background: #fff; color: var(--ink); flex-direction: row; align-items: center; gap: 8px;
+      background: #fff; color: var(--brand-ink); flex-direction: row; align-items: center; gap: 8px;
     }
     .fly.square .band > .txt { flex: 1; }
-    .fly.square .h { font-size: 10px; color: var(--ink); }
-    .fly.square .b { color: var(--muted); opacity: 1; }
-    .fly.square .cta { background: var(--teal); color: #fff; margin-top: 0; }
+    .fly.square .h { font-size: 10px; color: var(--brand-ink); }
+    .fly.square .b { color: var(--brand-muted); opacity: 1; }
+    .fly.square .cta { background: var(--brand-primary); color: var(--brand-on-primary); margin-top: 0; }
 
     /* 6 · Story / reel tall */
     .fly.story {
-      background: #111;
+      background: var(--brand-primary);
     }
     .fly.story .hero { flex: 1; }
     .fly.story .hero::after {
@@ -410,12 +432,12 @@
       width: 36%; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.35); z-index: 2;
     }
     .fly.story .h { font-size: 14px; }
-    .fly.story .cta { background: #fff; color: #111; }
+    .fly.story .cta { background: #fff; color: var(--brand-primary); }
 
     /* 7 · Fundraiser large QR */
     .fly.fundraiser {
-      background: linear-gradient(160deg, #5c2d2d, #8b3a3a);
-      color: #fff;
+      background: linear-gradient(160deg, var(--brand-primary), var(--brand-secondary));
+      color: var(--brand-on-primary);
     }
     .fly.fundraiser .hero { flex: 0.9; margin: 8px; border-radius: 8px; overflow: hidden; }
     .fly.fundraiser .band {
@@ -425,22 +447,22 @@
     .fly.fundraiser .qr {
       width: 48px; height: 48px; margin: 4px auto 2px; border-width: 2px;
     }
-    .fly.fundraiser .cta { background: #f0c36a; color: #3a2210; align-self: center; }
+    .fly.fundraiser .cta { background: var(--brand-accent); color: var(--brand-on-accent); align-self: center; }
 
     /* 8 · Volunteer signup */
     .fly.volunteer {
-      background: #eef4ef; color: var(--ink); flex-direction: row;
+      background: var(--brand-surface); color: var(--brand-ink); flex-direction: row;
     }
     .fly.volunteer .hero { flex: 1; min-width: 0; }
     .fly.volunteer .band {
-      flex: 1.05; background: #2f4a3c; color: #fff; justify-content: center; gap: 4px;
+      flex: 1.05; background: var(--brand-primary); color: var(--brand-on-primary); justify-content: center; gap: 4px;
     }
     .fly.volunteer .qr { width: 30px; height: 30px; margin-top: 4px; }
-    .fly.volunteer .cta { background: #c4922e; color: #fff; }
+    .fly.volunteer .cta { background: var(--brand-accent); color: var(--brand-on-primary); }
 
     /* 9 · Open house / welcome */
     .fly.openhouse {
-      background: #faf6f0; color: var(--ink);
+      background: var(--brand-paper); color: var(--brand-ink);
     }
     .fly.openhouse .hero {
       flex: 1.1; clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%);
@@ -453,16 +475,16 @@
       background: #fff; border: 1px solid rgba(42,38,34,0.1); border-radius: 10px;
       padding: 8px; box-shadow: 0 6px 16px rgba(42,38,34,0.08);
     }
-    .fly.openhouse .h { color: var(--forest); font-size: 11px; }
-    .fly.openhouse .b { color: var(--ink-soft); opacity: 1; }
-    .fly.openhouse .cta { background: var(--mustard); color: #fff; }
+    .fly.openhouse .h { color: var(--brand-primary); font-size: 11px; }
+    .fly.openhouse .b { color: var(--brand-muted); opacity: 1; }
+    .fly.openhouse .cta { background: var(--brand-accent); color: var(--brand-on-primary); }
 
     /* 10 · Game day handout */
     .fly.gameday {
-      background: #102a43; color: #fff;
+      background: var(--brand-primary); color: var(--brand-on-primary);
     }
     .fly.gameday .vs-bar {
-      display: flex; align-items: stretch; background: #243b53; min-height: 42%;
+      display: flex; align-items: stretch; background: color-mix(in srgb, var(--brand-primary) 75%, var(--brand-ink)); min-height: 42%;
     }
     .fly.gameday .vs-side {
       flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -471,28 +493,87 @@
     .fly.gameday .vs-side .hero-img { opacity: 0.35; }
     .fly.gameday .vs-mid {
       width: 28px; display: flex; align-items: center; justify-content: center;
-      font-weight: 900; font-size: 11px; background: #e85d04; z-index: 1;
+      font-weight: 900; font-size: 11px; background: var(--brand-accent); z-index: 1;
     }
     .fly.gameday .team {
       position: relative; z-index: 1; font-weight: 800; font-size: 9px; text-transform: uppercase;
     }
     .fly.gameday .band {
-      background: #0b1c2c; flex-direction: row; align-items: center; gap: 8px; flex: 1;
+      background: color-mix(in srgb, var(--brand-primary) 88%, var(--brand-ink)); flex-direction: row; align-items: center; gap: 8px; flex: 1;
     }
     .fly.gameday .band > .txt { flex: 1; }
-    .fly.gameday .cta { background: #e85d04; color: #fff; border-radius: 4px; margin-top: 0; }
+    .fly.gameday .cta { background: var(--brand-accent); color: var(--brand-on-primary); border-radius: 4px; margin-top: 0; }
 
-    /* Inputs step */
-    .layout-2 {
-      display: grid; gap: 18px;
+    /* Inspiration step — stacked section cards (SettingsBox / Page intro pattern) */
+    .step-head { margin-bottom: 12px; }
+    .step-head h2 {
+      margin: 0 0 4px; font-family: var(--serif); font-size: 1.55rem; font-weight: 600;
     }
-    @media (min-width: 860px) {
-      .layout-2 { grid-template-columns: 1fr 1.05fr; align-items: start; }
+    .step-head .sub {
+      margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.45; max-width: 40rem;
     }
+    .panel-flush {
+      background: transparent; border: none; box-shadow: none; padding: 0;
+      animation: none;
+    }
+    .insp-tpl-line {
+      margin: 0 0 12px; font-size: 0.88rem; color: var(--muted); line-height: 1.4;
+    }
+    .insp-tpl-line strong {
+      color: var(--ink); font-weight: 600;
+    }
+    .insp-stack {
+      display: flex; flex-direction: column; gap: 12px; min-width: 0;
+    }
+    .section-card {
+      background: var(--white); border: 1px solid var(--line); border-radius: 22px;
+      box-shadow: var(--shadow); padding: 16px 18px 18px;
+      animation: soft-in 0.4s var(--ease) both;
+    }
+    .section-card h3 {
+      margin: 0 0 4px; font-family: var(--serif); font-size: 1.25rem; font-weight: 600;
+      color: var(--ink);
+    }
+    .section-card .section-desc {
+      margin: 0 0 14px; font-size: 0.88rem; color: var(--muted); line-height: 1.45;
+      max-width: 36rem;
+    }
+    .section-card .field:last-child { margin-bottom: 0; }
+    .section-card.emphasis {
+      border-color: rgba(47, 74, 60, 0.18);
+      background: linear-gradient(180deg, rgba(255,252,247,0.98), var(--white));
+    }
+    .field-row-2 { display: grid; gap: 12px; }
+    @media (min-width: 520px) {
+      .field-row-2 { grid-template-columns: 1fr 1fr; }
+    }
+    .qr-url-row { display: grid; gap: 12px; align-items: start; }
+    @media (min-width: 520px) {
+      .qr-url-row { grid-template-columns: minmax(0, 1fr) auto; }
+    }
+    .qr-preview-panel {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 6px; padding: 8px; min-width: 0;
+    }
+    .qr-preview-panel img { width: 72px; height: 72px; border-radius: 6px; }
+    .qr-preview-panel .cap {
+      font-size: 0.68rem; color: var(--muted); text-align: center;
+      line-height: 1.35; max-width: 96px; word-break: break-word;
+    }
+    .qr-preview-panel.empty { opacity: 0.65; }
+    .qr-preview-panel .qr-placeholder {
+      width: 64px; height: 64px; border-radius: 8px;
+      border: 1px dashed rgba(42, 38, 34, 0.22);
+      display: grid; place-items: center;
+      font-size: 0.62rem; font-weight: 600; color: var(--muted);
+      text-align: center; padding: 4px; line-height: 1.25;
+    }
+    .field-highlight label { color: var(--forest); }
+
     .field { margin-bottom: 14px; }
     .field label {
-      display: block; font-size: 0.78rem; font-weight: 700; color: var(--ink-soft);
-      margin-bottom: 6px;
+      display: block; font-size: 0.72rem; font-weight: 700; color: var(--muted);
+      margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;
     }
     .field textarea, .field input[type="text"], .field input[type="url"] {
       width: 100%; border: 1px solid var(--line); border-radius: 12px;
@@ -537,6 +618,69 @@
     }
     .insp-thumbs button[aria-pressed="true"] { border-color: var(--forest); }
 
+    /* Inspiration step — balanced top assets row (photo, template, brand kit) */
+    .top-assets-row {
+      display: grid; gap: 12px; grid-template-columns: 1fr; min-width: 0;
+    }
+    @media (min-width: 520px) {
+      .top-assets-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .top-assets-row.has-custom { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (min-width: 520px) and (max-width: 899px) {
+      .top-assets-row.has-custom { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .asset-card {
+      display: flex; flex-direction: column; min-width: 0; min-height: 0;
+      padding: 14px 16px 16px;
+    }
+    .asset-card h3 {
+      margin: 0 0 2px; font-size: 1.05rem;
+    }
+    .asset-card .section-desc {
+      margin: 0 0 10px; font-size: 0.8rem; line-height: 1.4; max-width: none;
+    }
+    .asset-card .field.asset-field {
+      flex: 1; display: flex; flex-direction: column; margin-bottom: 0; min-height: 0;
+    }
+    .asset-card .asset-slot {
+      flex: 1; min-height: 140px; max-height: 168px;
+      display: flex; flex-direction: column; align-items: stretch; justify-content: center;
+    }
+    .top-assets-row .insp {
+      flex: 1; min-height: 140px; max-height: 168px; padding: 10px 12px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .top-assets-row .insp.has {
+      aspect-ratio: unset; height: 160px; max-height: 168px; min-height: 140px;
+      padding: 0; background-size: cover; background-position: center;
+    }
+    .top-assets-row .insp:not(.has) { overflow-y: auto; }
+    .top-assets-row .insp:not(.has) strong { font-size: 0.84rem; }
+    .top-assets-row .insp .hint { font-size: 0.72rem; margin: 4px 0 0; }
+    .top-assets-row .insp-thumbs { margin-top: 8px; gap: 6px; }
+    .top-assets-row .insp-thumbs button {
+      width: 40px; height: 30px; border-radius: 6px;
+    }
+    .top-assets-row .custom-upload {
+      flex: 1; min-height: 140px; max-height: 168px; padding: 10px 12px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .top-assets-row .custom-upload.has {
+      aspect-ratio: unset; height: 160px; max-height: 168px; min-height: 140px;
+      padding: 0; max-height: 168px; background-size: cover; background-position: center top;
+    }
+    .top-assets-row .custom-upload:not(.has) strong { font-size: 0.84rem; }
+    .top-assets-row .custom-upload .hint { font-size: 0.72rem; margin: 4px 0 0; }
+    .asset-card .toggle-row {
+      flex: 1; min-height: 140px; max-height: 168px; margin: 0;
+      flex-direction: column; align-items: stretch; justify-content: space-between;
+      gap: 8px; padding: 12px 14px;
+    }
+    .asset-card .toggle-row > div:first-child { flex: 1; min-width: 0; }
+    .asset-card .toggle-row strong { font-size: 0.84rem; display: block; }
+    .asset-card .toggle-row p { font-size: 0.72rem; margin: 3px 0 0; line-height: 1.35; }
+    .asset-card .toggle-row .switch { align-self: flex-end; }
+
     .brand-chip {
       display: inline-flex; align-items: center; gap: 8px; margin-top: 10px;
       padding: 6px 10px; border-radius: 999px; background: rgba(255,252,247,0.9);
@@ -559,30 +703,117 @@
       background: transparent; color: var(--ink); border: 1px solid rgba(42, 38, 34, 0.22);
     }
     .btn-secondary:hover { background: rgba(255,252,247,0.8); }
+    .btn-gold { background: var(--mustard); color: var(--ink); }
+    .btn-gold:hover { background: #b38428; }
+    .btn-gold:disabled { opacity: 0.55; cursor: not-allowed; }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    .selected-tpl-mini {
-      border-radius: 14px; border: 1px solid var(--line); overflow: hidden;
-      aspect-ratio: 3/4; max-width: 200px; margin: 0 auto;
-      background: #eee;
+    /* Preview step — dedicated workspace (Preview Campaign pattern) */
+    .preview-header {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      gap: 14px; margin-bottom: 12px;
+      padding: 16px 18px; border-radius: 22px;
+      background: var(--white); border: 1px solid var(--line); box-shadow: var(--shadow);
+      animation: soft-in 0.45s var(--ease) both;
     }
-    .selected-tpl-mini[data-ratio="1/1"] { aspect-ratio: 1 / 1; }
-    .selected-tpl-mini[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-width: 140px; }
-
-    /* Result */
-    .result-grid {
-      display: grid; gap: 20px;
+    .preview-header h2 {
+      margin: 0 0 4px; font-family: var(--serif); font-size: 1.55rem; font-weight: 600;
+    }
+    .preview-header .sub {
+      margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.45; max-width: 28rem;
+    }
+    .preview-header-actions {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px;
+    }
+    .preview-done-actions {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    }
+    .preview-workspace {
+      display: grid; gap: 12px; min-width: 0;
+      border-radius: 22px; border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow);
+      animation: soft-in 0.45s var(--ease) 0.04s both;
     }
     @media (min-width: 860px) {
-      .result-grid { grid-template-columns: 1fr 1.15fr; align-items: start; }
+      .preview-workspace { grid-template-columns: minmax(0, 1fr) minmax(240px, 280px); align-items: stretch; }
+    }
+    /* Composer is two-column from 900px — stack summary below stage until main column is wide enough */
+    @media (min-width: 900px) and (max-width: 979px) {
+      .preview-workspace { grid-template-columns: 1fr; }
+    }
+    .preview-stage {
+      padding: 24px 20px 28px; min-height: 520px; min-width: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: var(--cream);
+      border-radius: 22px 22px 0 0;
+    }
+    @media (min-width: 860px) {
+      .preview-stage { border-radius: 22px 0 0 22px; }
+    }
+    @media (min-width: 900px) and (max-width: 979px) {
+      .preview-stage { border-radius: 22px 22px 0 0; }
+    }
+    .preview-stage.is-building,
+    .preview-stage.is-done {
+      justify-content: center;
+    }
+    .preview-sidebar {
+      padding: 18px; min-width: 0; max-width: 100%;
+      border-top: 1px solid var(--line);
+      background: var(--white);
+      border-radius: 0 0 22px 22px;
+    }
+    @media (min-width: 860px) {
+      .preview-sidebar { border-top: none; border-left: 1px solid var(--line); border-radius: 0 22px 22px 0; }
+    }
+    @media (min-width: 900px) and (max-width: 979px) {
+      .preview-sidebar { border-top: 1px solid var(--line); border-left: none; border-radius: 0 0 22px 22px; }
+    }
+    .preview-sidebar h3 {
+      margin: 0 0 10px; font-family: var(--serif); font-size: 1.05rem; font-weight: 600;
+    }
+    .preview-sidebar .sidebar-actions {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+    }
+    .preview-idle {
+      width: 100%; max-width: 440px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+    }
+    .preview-ready-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 999px;
+      background: rgba(47, 74, 60, 0.08); border: 1px solid rgba(47, 74, 60, 0.14);
+      font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--forest);
+    }
+    .preview-ready-badge::before {
+      content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--mustard);
+    }
+    .preview-idle-flyer {
+      width: 100%; max-width: 400px; margin: 0 auto;
+      border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
+      box-shadow: var(--shadow-lg); background: #eee; position: relative;
+      opacity: 0.88; filter: saturate(0.82);
+    }
+    .preview-idle-flyer[data-ratio="3/4"] { aspect-ratio: 3 / 4; }
+    .preview-idle-flyer[data-ratio="3/2"] { aspect-ratio: 3 / 2; max-width: 420px; }
+    .preview-idle-flyer[data-ratio="1/1"] { aspect-ratio: 1 / 1; max-width: 380px; }
+    .preview-idle-flyer[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-width: 300px; }
+    .preview-idle-flyer .fly { font-size: 10px; }
+    .preview-idle-flyer .fly .h { font-size: 18px; }
+    .preview-idle-flyer .fly .b { font-size: 10px; }
+    .preview-idle-hint {
+      margin: 0; max-width: 22rem; color: var(--muted); font-size: 0.88rem; line-height: 1.45;
     }
     .big-flyer {
       border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
-      box-shadow: var(--shadow-lg); aspect-ratio: 3/4; max-width: 360px; margin: 0 auto;
+      box-shadow: var(--shadow-lg); aspect-ratio: 3/4; width: 100%;
+      max-width: min(420px, 92%); margin: 0 auto;
       animation: soft-in 0.5s var(--ease) both; background: #eee;
     }
-    .big-flyer[data-ratio="1/1"] { aspect-ratio: 1 / 1; max-width: 340px; }
-    .big-flyer[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-width: 260px; }
+    .big-flyer[data-ratio="1/1"] { aspect-ratio: 1 / 1; max-width: min(400px, 92%); }
+    .big-flyer[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-width: min(320px, 72%); }
+    .big-flyer[data-ratio="3/2"] { aspect-ratio: 3 / 2; max-width: min(480px, 92%); }
     .big-flyer .fly { font-size: 11px; }
     .big-flyer .fly .h { font-size: 20px; }
     .big-flyer .fly .b { font-size: 11px; }
@@ -591,9 +822,84 @@
     .big-flyer .fly .eyebrow { font-size: 10px; }
     .big-flyer .fly .agenda { font-size: 11px; }
     .big-flyer .fly.church .qr { width: 52px; height: 52px; }
+    .big-flyer .fly.church .qr-img { width: 52px; height: 52px; }
     .big-flyer .fly.hoa .qr { width: 48px; height: 48px; }
+    .big-flyer .fly.hoa .qr-img { width: 48px; height: 48px; }
     .big-flyer .fly.fundraiser .qr { width: 88px; height: 88px; }
+    .big-flyer .fly.fundraiser .qr-img { width: 88px; height: 88px; }
     .big-flyer .fly.volunteer .qr { width: 56px; height: 56px; }
+    .big-flyer .fly.volunteer .qr-img { width: 56px; height: 56px; }
+    .big-flyer .fly.semester .qr-img { width: 52px; height: 52px; }
+    .big-flyer .fly.investor .qr-img { width: 80px; height: 80px; }
+
+    /* QR image (live from URL) */
+    .qr-img {
+      display: block; flex-shrink: 0; object-fit: contain;
+      background: #fff; border: 1px solid rgba(42, 38, 34, 0.15); border-radius: 4px;
+    }
+
+    .field-prominent textarea { min-height: 120px; }
+    .field textarea.tiers { min-height: 88px; font-family: ui-monospace, monospace; font-size: 0.82rem; }
+
+    /* 11 · Semester at a Glance */
+    .fly.semester {
+      background: var(--brand-paper); color: var(--brand-ink); flex-direction: column;
+    }
+    .fly.semester .head-bar {
+      background: var(--brand-primary); color: var(--brand-on-primary); padding: 8px 10px;
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;
+    }
+    .fly.semester .head-bar .org { font-size: 6px; font-weight: 700; opacity: 0.88; text-transform: uppercase; letter-spacing: 0.05em; }
+    .fly.semester .head-bar .year { font-size: 6px; font-weight: 700; opacity: 0.85; }
+    .fly.semester .main { flex: 1; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+    .fly.semester .main .h { color: var(--brand-primary); font-size: 12px; }
+    .fly.semester .month-list {
+      flex: 1; margin-top: 4px; font-size: 6.5px; line-height: 1.45; color: var(--brand-muted);
+    }
+    .fly.semester .month-list div {
+      display: flex; gap: 6px; padding: 2px 0; border-bottom: 1px solid rgba(42,38,34,0.08);
+    }
+    .fly.semester .month-list .m { font-weight: 800; color: var(--brand-primary); min-width: 2.2em; }
+    .fly.semester .foot-bar {
+      background: var(--brand-surface); border-top: 1px solid var(--line);
+      padding: 7px 10px; display: flex; gap: 8px; align-items: center;
+    }
+    .fly.semester .foot-bar .txt { flex: 1; min-width: 0; }
+    .fly.semester .foot-bar .cta { background: var(--brand-primary); color: var(--brand-on-primary); font-size: 6px; margin-top: 2px; }
+    .fly.semester .foot-bar .qr-caption { font-size: 5.5px; color: var(--muted); margin-top: 2px; }
+    .fly.semester .foot-bar .social { font-size: 5.5px; color: var(--muted); margin-top: 3px; }
+    .fly.semester .foot-bar .qr-img { width: 32px; height: 32px; }
+
+    /* 12 · Become an Investor */
+    .fly.investor {
+      background: linear-gradient(165deg, var(--brand-primary) 0%, var(--brand-secondary) 55%, color-mix(in srgb, var(--brand-secondary) 70%, var(--brand-accent)) 100%);
+      color: var(--brand-on-primary); flex-direction: column;
+    }
+    .fly.investor .head {
+      padding: 8px 10px 4px; text-align: center;
+    }
+    .fly.investor .head .org { font-size: 6px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; }
+    .fly.investor .head .h { font-size: 13px; margin-top: 2px; }
+    .fly.investor .head .year { font-size: 6.5px; opacity: 0.8; margin-top: 2px; }
+    .fly.investor .tiers {
+      margin: 4px 10px; padding: 6px 8px; border-radius: 8px;
+      background: rgba(255,252,247,0.12); border: 1px solid rgba(255,255,255,0.15);
+      font-size: 6.5px; line-height: 1.4;
+    }
+    .fly.investor .tiers div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .fly.investor .tiers div:last-child { border-bottom: none; }
+    .fly.investor .body-block {
+      padding: 0 10px 6px; font-size: 6.5px; opacity: 0.92; line-height: 1.4; text-align: center;
+    }
+    .fly.investor .give-row {
+      margin-top: auto; padding: 8px 10px 10px;
+      display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px;
+      background: rgba(0,0,0,0.15);
+    }
+    .fly.investor .give-row .qr-img { width: 44px; height: 44px; border-radius: 6px; }
+    .fly.investor .give-row .qr-cap { font-size: 6px; opacity: 0.85; }
+    .fly.investor .give-row .cta { background: var(--brand-accent); color: var(--brand-on-accent); align-self: center; }
+    .fly.investor .give-row .footer { font-size: 5.5px; opacity: 0.75; margin-top: 2px; }
     .big-flyer .fly.sports .h { font-size: 24px; }
     .big-flyer .fly.story .h { font-size: 26px; }
     .big-flyer .fly.gameday .team { font-size: 16px; }
@@ -603,19 +909,32 @@
     .big-flyer .filled .cta,
     .big-flyer .filled .logo-dot,
     .big-flyer .filled .hero-img,
-    .big-flyer .filled .qr {
+    .big-flyer .filled .qr,
+    .big-flyer .filled .qr-img {
       animation: fill-slot 0.55s var(--ease) both;
     }
     .big-flyer .filled .b { animation-delay: 0.08s; }
     .big-flyer .filled .cta { animation-delay: 0.14s; }
     .big-flyer .filled .logo-dot { animation-delay: 0.04s; }
-    .big-flyer .filled .qr { animation-delay: 0.18s; }
+    .big-flyer .filled .qr,
+    .big-flyer .filled .qr-img { animation-delay: 0.18s; }
 
     .gen-state {
-      padding: 28px; text-align: center; color: var(--muted); font-size: 0.9rem;
+      width: 100%; max-width: 360px; padding: 40px 24px; text-align: center;
+      color: var(--ink-soft); font-size: 1.05rem; font-weight: 700;
+      border-radius: 20px; border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow);
+    }
+    .gen-state .gen-title {
+      display: block; font-family: var(--serif); font-size: 1.35rem; font-weight: 600;
+      color: var(--ink); margin-bottom: 8px;
+    }
+    .gen-state .gen-detail {
+      display: block; margin-top: 4px; font-size: 0.88rem; font-weight: 500; color: var(--muted);
+      min-height: 1.25em;
     }
     .gen-bar {
-      height: 6px; border-radius: 999px; margin: 14px auto 0; max-width: 180px;
+      height: 8px; border-radius: 999px; margin: 22px auto 0; max-width: 280px; width: 100%;
       background: linear-gradient(90deg, var(--sage), var(--mustard), var(--teal), var(--sage));
       background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
     }
@@ -626,11 +945,15 @@
     .slots li {
       display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
       border-radius: 12px; background: var(--cream); border: 1px solid var(--line);
-      font-size: 0.82rem; line-height: 1.4;
+      font-size: 0.82rem; line-height: 1.4; min-width: 0;
     }
     .slots .k {
       flex-shrink: 0; font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
       text-transform: uppercase; color: var(--forest); min-width: 4.5rem;
+    }
+    .slots li > span:not(.k) {
+      flex: 1; min-width: 0;
+      overflow-wrap: anywhere; word-break: break-word;
     }
 
     .foot-note {
@@ -647,15 +970,16 @@
       body { background: #fff; }
       .no-print { display: none !important; }
       .shell { padding: 0; max-width: none; }
-      [data-panel="result"] {
-        border: none; box-shadow: none; padding: 0;
-      }
-      .result-grid { display: block; }
+      .preview-header, .preview-sidebar, .preview-idle, #genState, .preview-ready-badge { display: none !important; }
+      .preview-workspace { border: none; box-shadow: none; display: block; }
+      .preview-stage { padding: 0; min-height: 0; background: #fff; }
+      #resultFlyer { display: block !important; }
       .big-flyer {
         max-width: none !important; width: 100%; margin: 0 auto;
         box-shadow: none; page-break-inside: avoid;
       }
       .big-flyer[data-ratio="3/4"] { width: 8.5in; aspect-ratio: auto; height: 11in; }
+      .big-flyer[data-ratio="3/2"] { width: 8.5in; aspect-ratio: auto; height: 5.5in; }
       .big-flyer[data-ratio="1/1"] { width: 8in; aspect-ratio: auto; height: 8in; }
       .big-flyer[data-ratio="9/16"] { width: 4.5in; aspect-ratio: auto; height: 8in; }
     }
@@ -671,157 +995,318 @@
       <div>
         <a href="/create-with-ai" class="back-link">← Create with AI</a>
         <h1>Flyer</h1>
-        <p class="lede" id="pageLede">
-          Start with a template. AI fills slots — it does not redesign the flyer.
-        </p>
-        <p class="save-hint" id="saveHint" hidden>Draft saved in this browser</p>
+        <p class="lede" id="pageLede">Update last year or pick a layout, then generate.</p>
       </div>
-      <span class="badge">Preview mockup · not shipped</span>
     </header>
 
     <div class="composer-layout">
       <nav class="steps-rail no-print" aria-label="Flyer builder steps">
         <p class="steps-label">Steps</p>
-        <button type="button" class="step-btn active" data-view="templates" aria-current="step">
-          1 · Templates
-          <span class="hint">Layouts · custom upload</span>
+        <button type="button" class="step-btn active" data-view="start" aria-current="step">
+          <span class="step-row">
+            <span class="step-num" aria-hidden="true">1</span>
+            <span>Start</span>
+          </span>
+          <span class="hint">How to begin</span>
         </button>
         <button type="button" class="step-btn" data-view="inputs">
-          2 · Inspiration
-          <span class="hint">Photo · brand · copy</span>
+          <span class="step-row">
+            <span class="step-num" aria-hidden="true">2</span>
+            <span>Inspiration</span>
+          </span>
+          <span class="hint">Add photo &amp; details</span>
         </button>
         <button type="button" class="step-btn" data-view="result">
-          3 · Generate
-          <span class="hint">Preview · print · export</span>
+          <span class="step-row">
+            <span class="step-num" aria-hidden="true">3</span>
+            <span>Preview</span>
+          </span>
+          <span class="hint">Generate &amp; review</span>
         </button>
       </nav>
 
       <div class="composer-main">
-    <!-- TEMPLATES -->
-    <section class="panel" data-panel="templates">
-      <h2>Choose a flyer template</h2>
-      <p class="sub">AI will place your image, brand colors, and copy into this layout — it won’t invent a new design.</p>
-      <div class="rule">
-        <strong>Template lock.</strong>
-        <span>Pick a Hey Ralli layout — or upload last year’s flyer and only update dates and text. AI won’t invent a new design either way.</span>
+    <!-- START -->
+    <section class="panel" data-panel="start">
+      <h2>How do you want to start?</h2>
+      <p class="sub">Your layout stays fixed — AI fills in dates, copy, and QR.</p>
+      <div class="start-paths">
+        <div class="start-path start-path-primary" data-path="update">
+          <span class="path-badge">Recommended</span>
+          <h3>Update last year’s flyer</h3>
+          <p class="path-hint">Keep the layout. Refresh dates, copy, and QR.</p>
+          <div class="start-upload" id="startUpload" role="button" tabindex="0">
+            <div id="startUploadEmpty">
+              <strong>Upload PDF or image</strong>
+              <p class="hint">Last year’s print file or a photo of the flyer</p>
+            </div>
+          </div>
+          <input type="file" id="startFile" accept="image/*,.pdf" hidden />
+        </div>
+
+        <div class="start-path" data-path="proven">
+          <h3>Use a proven layout</h3>
+          <p class="path-hint">Three trusted layouts in your brand colors.</p>
+          <div class="proven-row" id="provenGrid"></div>
+        </div>
+
+        <div class="start-path start-path-tertiary" data-path="new">
+          <h3>New flyer</h3>
+          <p class="path-hint">Pick a print size — we use one simple locked layout.</p>
+          <div class="size-row">
+            <button type="button" class="size-btn" data-print-size="letter" aria-pressed="false">
+              Letter
+              <span>8.5 × 11 in</span>
+            </button>
+            <button type="button" class="size-btn" data-print-size="half" aria-pressed="false">
+              Half page
+              <span>8.5 × 5.5 in</span>
+            </button>
+          </div>
+        </div>
       </div>
-      <div class="filters" id="tplFilters" aria-label="Filter templates"></div>
-      <div class="tpl-grid" id="tplGrid"></div>
       <div class="actions">
-        <button type="button" class="btn btn-primary" id="toInputs" disabled>Continue with template</button>
+        <button type="button" class="btn btn-primary" id="toInputs" disabled>Continue</button>
       </div>
     </section>
 
     <!-- INPUTS -->
-    <section class="panel" data-panel="inputs" hidden>
-      <h2 id="inputsTitle">Inspiration & copy</h2>
-      <p class="sub" id="inputsSub">Give AI what to put in the template — not a new layout.</p>
-      <div class="custom-mode-note">
-        <strong>Updating your flyer.</strong>
-        Upload a previous year’s PDF or image as the template. Change dates, descriptions, and CTAs below — we’ll keep the layout and refresh the text (and optional new photo).
+    <section class="panel panel-flush" data-panel="inputs" hidden>
+      <div class="step-head">
+        <h2 id="inputsTitle">Inspiration</h2>
+        <p class="sub" id="inputsSub" hidden></p>
       </div>
-      <div class="layout-2">
-        <div>
-          <div class="field" id="customTemplateField" hidden>
-            <label>Your template file <span style="font-weight:500;color:var(--muted)">(last year’s flyer)</span></label>
-            <div class="custom-upload" id="customUpload" role="button" tabindex="0">
-              <div id="customUploadEmpty">
-                <strong>Upload flyer template</strong>
-                <p class="hint">PDF, PNG, or JPG from a past year. This is the layout — not the inspiration photo.</p>
+      <div class="custom-mode-note">
+        Update dates and copy — your layout stays the same.
+      </div>
+
+      <p class="insp-tpl-line">Layout: <strong id="selectedTplName">Choose on Start</strong></p>
+
+      <div id="slotForm" class="insp-stack">
+        <div class="top-assets-row" id="topAssetsRow">
+          <div class="section-card asset-card" id="inspImageCard">
+            <h3>Photo</h3>
+            <div class="field asset-field">
+              <label id="inspFieldLabel">Hero photo</label>
+              <div class="asset-slot">
+                <div class="insp" id="inspDrop" role="button" tabindex="0">
+                  <div id="inspEmpty">
+                    <strong>Add photo</strong>
+                    <div class="insp-thumbs" id="inspThumbs"></div>
+                  </div>
+                </div>
               </div>
             </div>
-            <input type="file" id="customFile" accept="image/*,.pdf" hidden />
           </div>
-          <div class="field">
-            <label id="inspFieldLabel">Inspiration image</label>
-            <div class="insp" id="inspDrop" role="button" tabindex="0">
-              <div id="inspEmpty">
-                <strong>Add a photo</strong>
-                <p class="hint">Upload or pick a sample. This fills the template’s photo slot.</p>
-                <div class="insp-thumbs" id="inspThumbs"></div>
+
+          <div class="section-card asset-card" id="customTemplateField" hidden>
+            <h3>Template file</h3>
+            <div class="field asset-field">
+              <label>Last year’s flyer</label>
+              <div class="asset-slot">
+                <div class="custom-upload" id="customUpload" role="button" tabindex="0">
+                  <div id="customUploadEmpty">
+                    <strong>Upload PDF or image</strong>
+                  </div>
+                </div>
               </div>
+              <input type="file" id="customFile" accept="image/*,.pdf" hidden />
             </div>
           </div>
-          <div class="toggle-row" id="brandToggleRow">
-            <div>
-              <strong>Use brand kit</strong>
-              <p>Logo + colors from your organization branding</p>
-              <div class="brand-chip" id="brandChip" hidden>
-                <span class="swatch" style="background:#2f4a3c"></span>
-                <span class="swatch" style="background:#c4922e"></span>
-                <span class="swatch" style="background:#2a7a86"></span>
-                Riverside Community Association
+
+          <div class="section-card asset-card" id="brandKitCard">
+            <h3>Brand kit</h3>
+            <div class="toggle-row" id="brandToggleRow">
+              <div>
+                <strong>Use brand kit</strong>
+                <p>Riverside Community Association palette</p>
+                <div class="brand-chip" id="brandChip" hidden>
+                  <span class="swatch" id="swatchPrimary"></span>
+                  <span class="swatch" id="swatchAccent"></span>
+                  <span class="swatch" id="swatchHighlight"></span>
+                  Riverside Community Association
+                </div>
               </div>
+              <button type="button" class="switch" id="brandToggle" role="switch" aria-checked="true" aria-label="Use brand kit"></button>
             </div>
-            <button type="button" class="switch" id="brandToggle" role="switch" aria-checked="true" aria-label="Use brand kit"></button>
           </div>
         </div>
-        <div>
+
+        <div class="section-card">
+          <h3>Basics</h3>
           <div class="field">
-            <label>Selected template</label>
-            <div class="selected-tpl-mini" id="miniTpl"></div>
+            <label for="orgName">Organization</label>
+            <input type="text" id="orgName" placeholder="e.g. Riverside Elementary PTA" />
           </div>
           <div class="field">
-            <label>Headline <span style="font-weight:500;color:var(--muted)">(optional — AI can draft)</span></label>
-            <input type="text" id="headline" placeholder="e.g. Fall Festival · Sat Oct 12" value="Fall Festival · Sat Oct 12" />
+            <label for="headline">Headline</label>
+            <input type="text" id="headline" placeholder="e.g. Semester at a Glance" />
           </div>
           <div class="field">
-            <label>Supporting copy <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
-            <textarea id="bodyCopy" placeholder="Games, food trucks, and community fun…">Games, food trucks, and community fun on the lawn. Free for members · $5 guests.</textarea>
-          </div>
-          <div class="field">
-            <label>Call to action</label>
-            <input type="text" id="ctaCopy" value="Join us →" />
-          </div>
-          <div class="field" id="qrField" hidden>
-            <label>Link for QR code <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
-            <input type="url" id="qrLink" placeholder="https://riverside.example/details" value="https://riverside.example/fall-festival" />
-            <p class="hint-inline">Encoded into this template’s QR slot — details page, signup form, or giving link.</p>
+            <label for="schoolYear">School year</label>
+            <input type="text" id="schoolYear" placeholder="e.g. 2025–2026" />
           </div>
         </div>
+
+        <div class="section-card">
+          <h3>When &amp; where</h3>
+          <div class="field">
+            <label for="location">Location</label>
+            <input type="text" id="location" placeholder="e.g. Riverside Elementary · 1200 Oak Lane" />
+          </div>
+          <div class="field">
+            <label for="directions">Directions (optional)</label>
+            <input type="text" id="directions" placeholder="e.g. South lot · main doors" />
+          </div>
+          <div class="field field-prominent" id="datesEventsField">
+            <label for="datesEvents">Dates &amp; events</label>
+            <textarea id="datesEvents" placeholder="One per line — e.g. Aug 15 — Back to School Night"></textarea>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h3>Body</h3>
+          <div class="field">
+            <label for="bodyCopy">Supporting copy</label>
+            <textarea id="bodyCopy" placeholder="Where funds go, rewards, event details…"></textarea>
+          </div>
+        </div>
+
+        <div class="section-card" id="ctaQrCard">
+          <h3>CTA &amp; QR</h3>
+          <div class="field-row-2">
+            <div class="field">
+              <label for="ctaLabel">Button label</label>
+              <input type="text" id="ctaLabel" placeholder="e.g. Subscribe to calendar" />
+            </div>
+            <div class="field">
+              <label for="ctaUrl">Button link</label>
+              <input type="url" id="ctaUrl" placeholder="https://…" />
+            </div>
+          </div>
+          <div class="qr-url-row">
+            <div class="field" id="qrField">
+              <label for="qrUrl">QR link</label>
+              <input type="url" id="qrUrl" placeholder="https://…" />
+              <p class="hint-inline">Calendar or donate link</p>
+            </div>
+            <div class="qr-preview-panel empty" id="qrPreviewPanel">
+              <img id="qrPreviewImg" alt="QR preview" width="72" height="72" hidden />
+              <div class="qr-placeholder" id="qrPlaceholder">Paste URL</div>
+              <div class="cap" id="qrPreviewCap" hidden></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="qrCaption">QR caption (optional)</label>
+            <input type="text" id="qrCaption" placeholder="e.g. Scan to add all dates" />
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h3>Footer</h3>
+          <p class="section-desc">Contact line, website, or social handles at the bottom.</p>
+          <div class="field">
+            <label for="footerLine">Footer / contact / social</label>
+            <input type="text" id="footerLine" placeholder="e.g. riversidepta.org · @RiversidePTA" />
+          </div>
+        </div>
+
+        <details class="insp-optional" id="moreFlyerDetails">
+          <summary>Optional details</summary>
+          <div class="optional-inner">
+            <div class="field field-highlight" id="donationTiersField">
+              <label for="donationTiers">Donation tiers</label>
+              <textarea id="donationTiers" class="tiers" placeholder="$25 — Supporter&#10;$50 — Friend of the PTA&#10;$100 — Champion + class reward"></textarea>
+              <p class="hint-inline">One tier per line — amount, dash, reward label.</p>
+            </div>
+            <div class="field field-highlight" id="lastYearNotesField">
+              <label for="lastYearNotes">Last year’s flyer notes</label>
+              <textarea id="lastYearNotes" placeholder="Paste text from last year’s PDF or note what changed…"></textarea>
+            </div>
+            <div class="field">
+              <label id="inspFieldLabel">Inspiration photo</label>
+              <div class="insp" id="inspDrop" role="button" tabindex="0">
+                <div id="inspEmpty">
+                  <strong>Add a photo</strong>
+                  <p class="hint">Upload or pick a sample for the template photo slot.</p>
+                  <div class="insp-thumbs" id="inspThumbs"></div>
+                </div>
+              </div>
+            </div>
+            <div class="field" id="customTemplateField" hidden>
+              <label>Your template file</label>
+              <div class="custom-upload" id="customUpload" role="button" tabindex="0">
+                <div id="customUploadEmpty">
+                  <strong>Upload flyer template</strong>
+                  <p class="hint">PDF, PNG, or JPG from a past year — the layout, not the photo.</p>
+                </div>
+              </div>
+              <input type="file" id="customFile" accept="image/*,.pdf" hidden />
+            </div>
+            <div class="toggle-row" id="brandToggleRow">
+              <div>
+                <strong>Brand kit</strong>
+                <p>Logo and org colors on every preview and export</p>
+                <div class="brand-chip" id="brandChip" hidden>
+                  <span class="swatch" id="swatchPrimary"></span>
+                  <span class="swatch" id="swatchAccent"></span>
+                  <span class="swatch" id="swatchHighlight"></span>
+                  Riverside Community Association
+                </div>
+              </div>
+              <button type="button" class="switch" id="brandToggle" role="switch" aria-checked="true" aria-label="Use brand kit"></button>
+            </div>
+          </div>
+        </details>
       </div>
       <div class="actions">
-        <button type="button" class="btn btn-secondary" data-goto="templates">Back</button>
+        <button type="button" class="btn btn-secondary" data-goto="start">Back</button>
         <button type="button" class="btn btn-primary" id="toGenerate">Generate inside template</button>
       </div>
     </section>
 
-    <!-- RESULT -->
-    <section class="panel" data-panel="result" hidden>
-      <h2 class="no-print">Your flyer</h2>
-      <p class="sub no-print">Same template structure — photo, brand, and copy filled into fixed slots.</p>
-      <div class="rule no-print">
-        <strong>AI stayed in the template.</strong>
-        <span>No new columns, fonts, or layout. Regenerate refreshes slot content only. Add more templates later without changing this rule.</span>
-      </div>
-      <div class="result-grid">
+    <!-- PREVIEW -->
+    <section class="panel panel-flush" data-panel="result" hidden>
+      <div class="preview-header no-print">
         <div>
-          <div class="big-flyer" id="resultFlyer">
-            <div class="gen-state" id="genState">
-              Filling template slots…
-              <div class="gen-bar" aria-hidden="true"></div>
-            </div>
+          <h2>Preview</h2>
+          <p class="sub">Generate, then print or download.</p>
+        </div>
+        <div class="preview-header-actions">
+          <button type="button" class="btn btn-gold" id="generateBtn">Generate flyer</button>
+          <div class="preview-done-actions" id="previewDoneActions" hidden>
+            <button type="button" class="btn btn-secondary" id="regen">Regenerate</button>
+            <button type="button" class="btn btn-secondary" id="btnPrint">Print</button>
+            <button type="button" class="btn btn-secondary" id="btnDownload">Download</button>
           </div>
         </div>
-        <div class="no-print">
-          <h3 style="margin:0 0 10px;font-family:var(--serif);font-size:1.15rem;">What went into the slots</h3>
+      </div>
+      <div class="preview-workspace">
+        <div class="preview-stage" id="previewStage">
+          <div class="preview-idle" id="previewIdle">
+            <span class="preview-ready-badge">Ready</span>
+            <div class="preview-idle-flyer" id="previewIdleFlyer" data-ratio="3/4"></div>
+            <p class="preview-idle-hint">Tap <strong>Generate flyer</strong> when you’re set.</p>
+          </div>
+          <div class="gen-state" id="genState" hidden>
+            <span class="gen-title">Building your flyer…</span>
+            <span class="gen-detail" id="genDetail">Filling in your details…</span>
+            <div class="gen-bar" role="progressbar" aria-label="Generating flyer"></div>
+          </div>
+          <div class="big-flyer" id="resultFlyer" hidden></div>
+        </div>
+        <aside class="preview-sidebar no-print">
+          <h3>Slot summary</h3>
           <ul class="slots" id="slotList"></ul>
-          <div class="actions">
-            <button type="button" class="btn btn-secondary" id="regen">Regenerate content</button>
-            <button type="button" class="btn btn-secondary" data-goto="templates">Change template</button>
-            <button type="button" class="btn btn-secondary" id="btnPrint">Print flyer</button>
-            <button type="button" class="btn btn-primary" id="btnDownload">Download HTML</button>
+          <div class="sidebar-actions">
+            <button type="button" class="btn btn-secondary" data-goto="inputs">Edit inspiration</button>
+            <button type="button" class="btn btn-secondary" data-goto="start">Change start</button>
           </div>
-        </div>
+        </aside>
       </div>
     </section>
       </div>
     </div>
-
-    <p class="foot-note no-print">
-      Mockup only · <a href="/create-with-ai">Live Create with AI</a> (Flyer not shipped) ·
-      Views: <code>?view=templates|inputs|result</code> · Draft auto-saves locally
-    </p>
   </div>
 
   <script>
@@ -833,189 +1318,140 @@
 
     const CUSTOM_TEMPLATE = {
       id: "custom",
-      name: "Upload your own template",
-      audience: "Any",
-      audiences: ["any", "school", "church", "sports", "hoa"],
-      channels: ["print", "online", "custom"],
+      name: "Last year’s flyer",
       ratio: "3/4",
       cls: "custom",
       hasQr: false,
       isCustom: true,
       defaults: {
+        orgName: "Your organization",
         headline: "Fall Festival · Sat Oct 12",
+        schoolYear: "2025–2026",
+        location: "",
+        directions: "",
+        datesEvents: "Update dates here",
         body: "Update the date, time, and short description — keep everything else.",
-        cta: "See details →",
+        donationTiers: "",
+        ctaLabel: "See details →",
+        ctaUrl: "https://riverside.example/details",
+        qrUrl: "https://riverside.example/details",
+        qrCaption: "",
+        footer: "",
       },
     };
+
+    const PROVEN_IDS = ["semester", "investor", "festival"];
+    const NEW_SIZE_IDS = { letter: "simple-letter", half: "simple-half" };
 
     const TEMPLATES = [
       CUSTOM_TEMPLATE,
       {
+        id: "semester",
+        name: "Semester at a Glance",
+        ratio: "3/4",
+        cls: "semester",
+        hasQr: true,
+        defaults: {
+          orgName: "Riverside Elementary PTA",
+          headline: "Semester at a Glance",
+          schoolYear: "2025–2026",
+          location: "Riverside Elementary",
+          directions: "",
+          datesEvents: "Aug 15 — Back to School Night\nSep 12 — Fall Festival\nOct 24 — Book Fair\nNov 14 — Family Movie Night\nDec 5 — Winter Concert",
+          body: "",
+          donationTiers: "",
+          ctaLabel: "Subscribe to calendar",
+          ctaUrl: "https://riverside.example/calendar/subscribe",
+          qrUrl: "https://riverside.example/calendar/subscribe",
+          qrCaption: "Scan to add all dates",
+          footer: "riversidepta.org · @RiversidePTA",
+        },
+      },
+      {
+        id: "investor",
+        name: "Become an Investor",
+        ratio: "3/4",
+        cls: "investor",
+        hasQr: true,
+        defaults: {
+          orgName: "Riverside Elementary PTA",
+          headline: "Become an Investor",
+          schoolYear: "2025–2026",
+          location: "",
+          directions: "",
+          datesEvents: "",
+          body: "Your gift funds classroom supplies, field trips, and teacher grants. Top participating class wins a pizza party!",
+          donationTiers: "$25 — Supporter\n$50 — Friend of the PTA\n$100 — Champion + class reward\n$250 — Investor + name on banner",
+          ctaLabel: "Donate now",
+          ctaUrl: "https://riverside.example/give",
+          qrUrl: "https://riverside.example/give",
+          qrCaption: "Scan to give",
+          footer: "Questions? president@riversidepta.org",
+        },
+      },
+      {
         id: "festival",
-        name: "Community festival poster",
-        audience: "School",
-        audiences: ["school", "any"],
-        channels: ["print"],
+        name: "Event flyer",
         ratio: "3/4",
         cls: "festival",
         hasQr: false,
         defaults: {
+          orgName: "Riverside Elementary PTA",
           headline: "Fall Festival · Sat Oct 12",
+          schoolYear: "2025–2026",
+          location: "Community lawn · 1200 Oak Lane",
+          directions: "",
+          datesEvents: "Sat Oct 12 · 11 AM – 3 PM",
           body: "Games, food trucks, and community fun on the lawn. Free for members · $5 guests.",
-          cta: "Join us →",
+          ctaLabel: "Join us →",
+          ctaUrl: "https://riverside.example/fall-festival",
+          qrUrl: "",
+          qrCaption: "",
+          footer: "riversidepta.org",
         },
       },
       {
-        id: "church",
-        name: "Sunday gathering invite",
-        audience: "Church",
-        audiences: ["church"],
-        channels: ["print", "qr"],
+        id: "simple-letter",
+        name: "Simple flyer · Letter",
         ratio: "3/4",
-        cls: "church",
-        hasQr: true,
-        defaults: {
-          headline: "Join Us This Sunday",
-          body: "Worship · Fellowship · Kids welcome · 10:00 AM",
-          cta: "Plan your visit",
-          qr: "https://riverside.example/sunday",
-        },
-      },
-      {
-        id: "sports",
-        name: "Youth sports tryouts",
-        audience: "Sports",
-        audiences: ["sports"],
-        channels: ["print"],
-        ratio: "3/4",
-        cls: "sports",
+        cls: "festival",
         hasQr: false,
         defaults: {
-          headline: "Spring Tryouts",
-          body: "Ages 8–14 · Sat Mar 8 · Riverside Field · Bring cleats & water",
-          cta: "Register today",
+          orgName: "Riverside Elementary PTA",
+          headline: "Your headline here",
+          schoolYear: "2025–2026",
+          location: "",
+          directions: "",
+          datesEvents: "",
+          body: "Add a short description for your event or announcement.",
+          ctaLabel: "Learn more →",
+          ctaUrl: "https://riverside.example",
+          qrUrl: "",
+          qrCaption: "",
+          footer: "",
         },
       },
       {
-        id: "hoa",
-        name: "HOA meeting notice",
-        audience: "HOA",
-        audiences: ["hoa"],
-        channels: ["print", "qr"],
-        ratio: "3/4",
-        cls: "hoa",
-        hasQr: true,
-        defaults: {
-          headline: "Monthly Board Meeting",
-          body: "Tue Oct 14 · 7:00 PM · Clubhouse · Members welcome",
-          cta: "View packet",
-          qr: "https://riverside.example/hoa-packet",
-        },
-      },
-      {
-        id: "square",
-        name: "Social square post",
-        audience: "Any",
-        audiences: ["any", "school", "church", "sports", "hoa"],
-        channels: ["online"],
-        ratio: "1/1",
-        cls: "square",
+        id: "simple-half",
+        name: "Simple flyer · Half page",
+        ratio: "3/2",
+        cls: "festival",
         hasQr: false,
         defaults: {
-          headline: "This Saturday!",
-          body: "Fall Festival on the community lawn — food, music, neighbors.",
-          cta: "Save the date",
+          orgName: "Riverside Elementary PTA",
+          headline: "Your headline here",
+          schoolYear: "2025–2026",
+          location: "",
+          directions: "",
+          datesEvents: "",
+          body: "Add a short description for your event or announcement.",
+          ctaLabel: "Learn more →",
+          ctaUrl: "https://riverside.example",
+          qrUrl: "",
+          qrCaption: "",
+          footer: "",
         },
       },
-      {
-        id: "story",
-        name: "Story / reel tall",
-        audience: "Any",
-        audiences: ["any", "school", "church", "sports", "hoa"],
-        channels: ["online"],
-        ratio: "9/16",
-        cls: "story",
-        hasQr: false,
-        defaults: {
-          headline: "Don’t miss Fall Fest",
-          body: "Sat Oct 12 · Lawn · Bring the family",
-          cta: "Swipe up for details",
-        },
-      },
-      {
-        id: "fundraiser",
-        name: "Fundraiser with large QR",
-        audience: "Any",
-        audiences: ["any", "school", "church", "sports", "hoa"],
-        channels: ["print", "qr"],
-        ratio: "3/4",
-        cls: "fundraiser",
-        hasQr: true,
-        defaults: {
-          headline: "Give to Our Campaign",
-          body: "Help fund the new playground. Every gift counts.",
-          cta: "Scan to give",
-          qr: "https://riverside.example/give",
-        },
-      },
-      {
-        id: "volunteer",
-        name: "Volunteer signup",
-        audience: "School",
-        audiences: ["school", "church", "any"],
-        channels: ["print", "qr"],
-        ratio: "3/4",
-        cls: "volunteer",
-        hasQr: true,
-        defaults: {
-          headline: "We Need Volunteers",
-          body: "Shifts for setup, games, and cleanup. Sign up in 60 seconds.",
-          cta: "Sign up",
-          qr: "https://riverside.example/volunteer",
-        },
-      },
-      {
-        id: "openhouse",
-        name: "Open house welcome",
-        audience: "HOA",
-        audiences: ["hoa", "school", "any"],
-        channels: ["print"],
-        ratio: "3/4",
-        cls: "openhouse",
-        hasQr: false,
-        defaults: {
-          headline: "You’re Invited — Open House",
-          body: "Tour the clubhouse, meet neighbors, and learn about membership.",
-          cta: "RSVP welcome",
-        },
-      },
-      {
-        id: "gameday",
-        name: "Game day handout",
-        audience: "Sports",
-        audiences: ["sports"],
-        channels: ["print", "online"],
-        ratio: "3/4",
-        cls: "gameday",
-        hasQr: false,
-        defaults: {
-          headline: "Home Game Saturday",
-          body: "Riverside vs Oak Creek · 2:00 PM · Stadium Field · Free admission",
-          cta: "Cheer us on",
-        },
-      },
-    ];
-
-    const FILTERS = [
-      { id: "all", label: "All" },
-      { id: "custom", label: "Custom" },
-      { id: "print", label: "Print" },
-      { id: "online", label: "Online" },
-      { id: "qr", label: "QR" },
-      { id: "school", label: "School" },
-      { id: "church", label: "Church" },
-      { id: "sports", label: "Sports" },
-      { id: "hoa", label: "HOA" },
     ];
 
     const SAMPLES = [
@@ -1024,68 +1460,198 @@
       { id: "fair", url: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80&auto=format&fit=crop", label: "Fair lights" },
     ];
 
+    const BRAND_KITS = {
+      on: {
+        primary: "#2f4a3c",
+        secondary: "#6b8171",
+        accent: "#c4922e",
+        ink: "#2a2622",
+        paper: "#faf8f4",
+        surface: "#eef4ef",
+        highlight: "#2a7a86",
+        onPrimary: "#fff",
+        onAccent: "#2a2010",
+        muted: "#6a5f55",
+      },
+      off: {
+        primary: "#6b6560",
+        secondary: "#949088",
+        accent: "#a8a299",
+        ink: "#2a2622",
+        paper: "#f5f3f0",
+        surface: "#ebe8e4",
+        highlight: "#7a7570",
+        onPrimary: "#fff",
+        onAccent: "#2a2622",
+        muted: "#7a7166",
+      },
+    };
+
     const state = {
-      view: "templates",
+      view: "start",
+      startPath: null,
+      printSize: "letter",
       templateId: null,
-      filter: "all",
       imageUrl: SAMPLES[0].url,
-      customTemplateUrl: SAMPLE_CUSTOM_TEMPLATE,
+      customTemplateUrl: null,
       brand: true,
       generating: false,
+      previewGenerated: false,
+      autoGenerateOnEnter: false,
+      generateTimer: null,
+      generateStageTimer: null,
     };
 
     const panels = [...document.querySelectorAll("[data-panel]")];
     const stepBtns = [...document.querySelectorAll(".step-btn[data-view]")];
 
     function getTpl(id) {
-      return TEMPLATES.find((t) => t.id === id) || TEMPLATES[1];
+      return TEMPLATES.find((t) => t.id === id) || TEMPLATES.find((t) => t.id === "semester");
+    }
+
+    function inferStartPath(templateId) {
+      if (!templateId) return null;
+      if (templateId === "custom") return "update";
+      if (PROVEN_IDS.includes(templateId)) return "proven";
+      if (templateId === NEW_SIZE_IDS.letter || templateId === NEW_SIZE_IDS.half) return "new";
+      return null;
+    }
+
+    function syncStartPathUI() {
+      document.querySelectorAll(".start-path").forEach((el) => {
+        el.classList.toggle("is-active", el.dataset.path === state.startPath);
+      });
+      document.querySelectorAll("[data-print-size]").forEach((btn) => {
+        btn.setAttribute(
+          "aria-pressed",
+          state.startPath === "new" && btn.dataset.printSize === state.printSize ? "true" : "false"
+        );
+      });
+    }
+
+    function syncStartContinue() {
+      const btn = document.getElementById("toInputs");
+      if (!btn) return;
+      let ok = false;
+      if (state.startPath === "update") {
+        ok = state.templateId === "custom" && !!state.customTemplateUrl;
+      } else if (state.startPath === "proven") {
+        ok = PROVEN_IDS.includes(state.templateId);
+      } else if (state.startPath === "new") {
+        ok = state.templateId === NEW_SIZE_IDS[state.printSize];
+      }
+      btn.disabled = !ok;
+    }
+
+    function selectStartPath(path) {
+      state.startPath = path;
+      if (path === "update") {
+        state.templateId = "custom";
+        applyTemplateDefaults(getTpl("custom"));
+      } else if (path === "new") {
+        state.templateId = NEW_SIZE_IDS[state.printSize];
+        applyTemplateDefaults(getTpl(state.templateId));
+      }
+      state.previewGenerated = false;
+      syncCustomModeUI();
+      syncStartPathUI();
+      syncStartContinue();
+      renderStartStep();
+      scheduleSave();
     }
 
     function isCustomTpl(id) {
       return (id || state.templateId) === "custom";
     }
 
-    function matchesFilter(t, filter) {
-      if (filter === "all") return true;
-      if (filter === "custom") return !!t.isCustom;
-      if (t.isCustom) return false;
-      if (filter === "print" || filter === "online" || filter === "qr") {
-        return t.channels.includes(filter);
-      }
-      return t.audiences.includes(filter);
+    function getBrandKit() {
+      return state.brand ? BRAND_KITS.on : BRAND_KITS.off;
+    }
+
+    function syncBrandKit() {
+      const k = getBrandKit();
+      const root = document.documentElement;
+      root.style.setProperty("--brand-primary", k.primary);
+      root.style.setProperty("--brand-secondary", k.secondary);
+      root.style.setProperty("--brand-accent", k.accent);
+      root.style.setProperty("--brand-ink", k.ink);
+      root.style.setProperty("--brand-paper", k.paper);
+      root.style.setProperty("--brand-surface", k.surface);
+      root.style.setProperty("--brand-highlight", k.highlight);
+      root.style.setProperty("--brand-on-primary", k.onPrimary);
+      root.style.setProperty("--brand-on-accent", k.onAccent);
+      root.style.setProperty("--brand-muted", k.muted);
+      const swPrimary = document.getElementById("swatchPrimary");
+      const swAccent = document.getElementById("swatchAccent");
+      const swHighlight = document.getElementById("swatchHighlight");
+      if (swPrimary) swPrimary.style.background = k.primary;
+      if (swAccent) swAccent.style.background = k.accent;
+      if (swHighlight) swHighlight.style.background = k.highlight;
     }
 
     function syncCustomModeUI() {
       const custom = isCustomTpl();
       document.body.classList.toggle("is-custom-flyer", custom);
       document.getElementById("customTemplateField").hidden = !custom;
+      document.getElementById("topAssetsRow")?.classList.toggle("has-custom", custom);
       document.getElementById("inputsTitle").textContent = custom
         ? "Update your flyer"
-        : "Inspiration & copy";
-      document.getElementById("inputsSub").textContent = custom
-        ? "Keep last year’s layout. Change dates, descriptions, and CTAs — optional new photo."
-        : "Give AI what to put in the template — not a new layout.";
+        : "Inspiration";
+      const inputsSub = document.getElementById("inputsSub");
+      if (inputsSub) {
+        inputsSub.textContent = "";
+        inputsSub.hidden = true;
+      }
       updateCustomUploadUI();
     }
 
-    function updateCustomUploadUI() {
-      const el = document.getElementById("customUpload");
-      const empty = document.getElementById("customUploadEmpty");
+    function updateStartUploadUI() {
+      const el = document.getElementById("startUpload");
+      const empty = document.getElementById("startUploadEmpty");
       if (!el) return;
-      if (state.customTemplateUrl) {
+      if (state.customTemplateUrl && state.startPath === "update") {
         el.classList.add("has");
         el.style.backgroundImage = `url('${state.customTemplateUrl}')`;
-        empty.hidden = true;
+        if (empty) empty.hidden = true;
       } else {
         el.classList.remove("has");
         el.style.backgroundImage = "";
-        empty.hidden = false;
+        if (empty) empty.hidden = false;
       }
+    }
+
+    function handleCustomTemplateFile(file) {
+      if (!file) return;
+      const applyUpload = () => {
+        state.startPath = "update";
+        state.templateId = "custom";
+        applyTemplateDefaults(getTpl("custom"));
+        state.previewGenerated = false;
+        updateCustomUploadUI();
+        updateStartUploadUI();
+        syncStartPathUI();
+        syncStartContinue();
+        renderStartStep();
+        renderMini();
+        scheduleSave();
+      };
+      if (file.type === "application/pdf") {
+        // Mock: PDF preview uses sample flyer art; product would rasterize page 1.
+        state.customTemplateUrl = SAMPLE_CUSTOM_TEMPLATE;
+        applyUpload();
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.customTemplateUrl = String(reader.result || SAMPLE_CUSTOM_TEMPLATE);
+        applyUpload();
+      };
+      reader.readAsDataURL(file);
     }
 
     function logoHTML() {
       if (!state.brand) return "";
-      return `<div class="logo-dot" style="background:linear-gradient(135deg,#2f4a3c,#c4922e)" title="Brand logo"></div>`;
+      return `<div class="logo-dot" style="background:linear-gradient(135deg,var(--brand-primary),var(--brand-accent))" title="Brand logo"></div>`;
     }
 
     function heroBg(img) {
@@ -1093,33 +1659,155 @@
       return isUrl ? `background-image:url('${img}')` : `background:${img}`;
     }
 
+    const SLOT_IDS = [
+      "orgName", "headline", "schoolYear", "location", "directions",
+      "datesEvents", "bodyCopy", "donationTiers", "ctaLabel", "ctaUrl",
+      "qrUrl", "qrCaption", "footerLine", "lastYearNotes",
+    ];
+
+    function readDraftFields() {
+      const fields = {};
+      SLOT_IDS.forEach((id) => {
+        const el = document.getElementById(id);
+        fields[id] = el ? el.value : "";
+      });
+      return fields;
+    }
+
+    function resolveSlots(opts = {}, tpl) {
+      const d = tpl?.defaults || {};
+      const f = opts.fields || readDraftFields();
+      const body = opts.body ?? f.bodyCopy ?? d.body ?? "";
+      const ctaLabel = opts.cta ?? opts.ctaLabel ?? f.ctaLabel ?? d.ctaLabel ?? d.cta ?? "Learn more";
+      const ctaUrl = f.ctaUrl || d.ctaUrl || "";
+      const qrUrl = (f.qrUrl || d.qrUrl || ctaUrl || "").trim();
+      return {
+        orgName: f.orgName || d.orgName || "",
+        headline: opts.headline ?? f.headline ?? d.headline ?? "Headline",
+        schoolYear: f.schoolYear || d.schoolYear || "",
+        location: f.location || d.location || "",
+        directions: f.directions || d.directions || "",
+        datesEvents: f.datesEvents || d.datesEvents || "",
+        body,
+        donationTiers: f.donationTiers || d.donationTiers || "",
+        ctaLabel,
+        ctaUrl,
+        qrUrl,
+        qrCaption: f.qrCaption || d.qrCaption || "",
+        footer: f.footerLine || d.footer || "",
+        lastYearNotes: f.lastYearNotes || "",
+      };
+    }
+
+    function qrImgHtml(url, size) {
+      if (!url) return `<div class="qr" aria-hidden="true"></div>`;
+      const src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
+      return `<img class="qr-img" src="${src}" alt="QR code" width="${size}" height="${size}" loading="lazy" />`;
+    }
+
+    function formatDateLines(text) {
+      const lines = String(text || "").split(/\n+/).map((l) => l.trim()).filter(Boolean);
+      if (!lines.length) return `<div><span class="m">—</span><span>Add dates</span></div>`;
+      return lines.map((line) => {
+        const dash = line.indexOf("—") >= 0 ? line.indexOf("—") : line.indexOf(" - ");
+        if (dash > 0) {
+          const month = line.slice(0, dash).trim();
+          const rest = line.slice(dash + (line[dash] === "—" ? 1 : 3)).trim();
+          return `<div><span class="m">${escapeHtml(month)}</span><span>${escapeHtml(rest)}</span></div>`;
+        }
+        return `<div><span class="m">•</span><span>${escapeHtml(line)}</span></div>`;
+      }).join("");
+    }
+
+    function formatTierLines(text) {
+      const lines = String(text || "").split(/\n+/).map((l) => l.trim()).filter(Boolean);
+      if (!lines.length) return `<div>Add tiers</div>`;
+      return lines.map((line) => `<div>${escapeHtml(line)}</div>`).join("");
+    }
+
+    function locationBlock(slots) {
+      const parts = [slots.location, slots.directions].filter(Boolean);
+      return parts.length ? escapeHtml(parts.join(" · ")) : "";
+    }
+
     function flyerHTML(tplId, opts = {}) {
       const tpl = getTpl(tplId);
-      const img = opts.imageUrl || "linear-gradient(145deg,#6b8171,#d4a84b)";
+      const img = opts.imageUrl || "linear-gradient(145deg,var(--brand-secondary),var(--brand-accent))";
       const bg = heroBg(img);
-      const h = opts.headline || tpl.defaults.headline || "Headline";
-      const b = opts.body || tpl.defaults.body || "Supporting line";
-      const cta = opts.cta || tpl.defaults.cta || "Learn more";
+      const slots = resolveSlots(opts, tpl);
+      const h = slots.headline;
+      const b = slots.body;
+      const cta = slots.ctaLabel;
+      const qrUrl = slots.qrUrl;
       const filled = opts.filled ? " filled" : "";
       const logo = logoHTML();
+      const qrSmall = qrImgHtml(qrUrl, opts.qrSize || 120);
+      const qrMed = qrImgHtml(qrUrl, opts.qrSize || 160);
 
       if (tpl.isCustom || tpl.cls === "custom") {
         const base = opts.templateUrl || state.customTemplateUrl || SAMPLE_CUSTOM_TEMPLATE;
         const baseBg = heroBg(base);
+        const loc = locationBlock(slots);
+        const extra = [slots.datesEvents, loc, slots.footer].filter(Boolean).join(" · ");
         return `
           <div class="fly custom${filled}">
             <div class="hero"><div class="hero-img" style="${baseBg}"></div></div>
-            <div class="edit-badge">Text updated · layout kept</div>
+            <div class="edit-badge">Updated</div>
             <div class="edit-overlay">
               ${logo}
+              ${slots.orgName ? `<div class="eyebrow">${escapeHtml(slots.orgName)}</div>` : ""}
               <div class="h">${escapeHtml(h)}</div>
-              <div class="b">${escapeHtml(b)}</div>
+              <div class="b">${escapeHtml(b || extra || "Updated copy")}</div>
               <div class="cta">${escapeHtml(cta)}</div>
+              ${qrUrl ? `<div style="margin-top:4px">${qrImgHtml(qrUrl, 48)}</div>` : ""}
             </div>
           </div>`;
       }
 
       switch (tpl.cls) {
+        case "semester":
+          return `
+            <div class="fly semester${filled}">
+              <div class="head-bar">
+                <div>
+                  ${logo}
+                  <div class="org">${escapeHtml(slots.orgName || "Your PTA")}</div>
+                </div>
+                <div class="year">${escapeHtml(slots.schoolYear || "")}</div>
+              </div>
+              <div class="main">
+                <div class="h">${escapeHtml(h)}</div>
+                ${locationBlock(slots) ? `<div class="b">${locationBlock(slots)}</div>` : ""}
+                <div class="month-list">${formatDateLines(slots.datesEvents)}</div>
+                ${b ? `<div class="b" style="margin-top:4px">${escapeHtml(b)}</div>` : ""}
+              </div>
+              <div class="foot-bar">
+                <div class="txt">
+                  <div class="cta">${escapeHtml(cta)}</div>
+                  ${slots.qrCaption ? `<div class="qr-caption">${escapeHtml(slots.qrCaption)}</div>` : ""}
+                  ${slots.footer ? `<div class="social">${escapeHtml(slots.footer)}</div>` : ""}
+                </div>
+                ${qrSmall}
+              </div>
+            </div>`;
+        case "investor":
+          return `
+            <div class="fly investor${filled}">
+              <div class="head">
+                ${logo}
+                <div class="org">${escapeHtml(slots.orgName || "Your PTA")}</div>
+                <div class="h">${escapeHtml(h)}</div>
+                ${slots.schoolYear ? `<div class="year">${escapeHtml(slots.schoolYear)}</div>` : ""}
+              </div>
+              <div class="tiers">${formatTierLines(slots.donationTiers)}</div>
+              ${b ? `<div class="body-block">${escapeHtml(b)}</div>` : ""}
+              <div class="give-row">
+                ${qrMed}
+                ${slots.qrCaption ? `<div class="qr-cap">${escapeHtml(slots.qrCaption)}</div>` : ""}
+                <div class="cta">${escapeHtml(cta)}</div>
+                ${slots.footer ? `<div class="footer">${escapeHtml(slots.footer)}</div>` : ""}
+              </div>
+            </div>`;
         case "festival":
           return `
             <div class="fly festival${filled}">
@@ -1127,7 +1815,7 @@
                 <div class="hero-img" style="${bg}"></div>
                 <div class="date-chip">OCT<br>12</div>
               </div>
-              <div class="band" style="${state.brand ? "background:#2f4a3c" : ""}">
+              <div class="band">
                 ${logo}
                 <div class="h">${escapeHtml(h)}</div>
                 <div class="b">${escapeHtml(b)}</div>
@@ -1140,12 +1828,12 @@
               <div class="hero"><div class="hero-img" style="${bg}"></div></div>
               <div class="band">
                 ${logo}
-                <div class="eyebrow">Riverside Community</div>
+                <div class="eyebrow">${escapeHtml(slots.orgName || "Riverside Community")}</div>
                 <div class="orn"></div>
                 <div class="h">${escapeHtml(h)}</div>
                 <div class="b">${escapeHtml(b)}</div>
                 <div class="row">
-                  <div class="qr" aria-hidden="true"></div>
+                  ${qrSmall}
                   <div class="cta">${escapeHtml(cta)}</div>
                 </div>
               </div>
@@ -1182,7 +1870,7 @@
                 </div>
                 <div class="row" style="margin-top:6px">
                   <div class="txt"><div class="cta">${escapeHtml(cta)}</div></div>
-                  <div class="qr" aria-hidden="true"></div>
+                  ${qrSmall}
                 </div>
               </div>
             </div>`;
@@ -1219,7 +1907,7 @@
                 ${logo}
                 <div class="h">${escapeHtml(h)}</div>
                 <div class="b">${escapeHtml(b)}</div>
-                <div class="qr" aria-hidden="true"></div>
+                ${qrMed}
                 <div class="cta">${escapeHtml(cta)}</div>
               </div>
             </div>`;
@@ -1227,12 +1915,12 @@
           return `
             <div class="fly volunteer${filled}">
               <div class="hero"><div class="hero-img" style="${bg}"></div></div>
-              <div class="band" style="${state.brand ? "background:#2f4a3c" : ""}">
+              <div class="band">
                 ${logo}
                 <div class="eyebrow">Help needed</div>
                 <div class="h">${escapeHtml(h)}</div>
                 <div class="b">${escapeHtml(b)}</div>
-                <div class="qr" aria-hidden="true"></div>
+                ${qrSmall}
                 <div class="cta">${escapeHtml(cta)}</div>
               </div>
             </div>`;
@@ -1286,64 +1974,115 @@
         .replace(/"/g, "&quot;");
     }
 
-    function channelTags(t) {
-      return t.channels.map((c) => {
-        const label = c === "qr" ? "QR" : c.charAt(0).toUpperCase() + c.slice(1);
-        return `<span class="ch-tag ${c}">${label}</span>`;
-      }).join("");
-    }
-
     function applyTemplateDefaults(tpl) {
       if (!tpl) return;
-      document.getElementById("headline").value = tpl.defaults.headline || "";
-      document.getElementById("bodyCopy").value = tpl.defaults.body || "";
-      document.getElementById("ctaCopy").value = tpl.defaults.cta || "Join us →";
-      document.getElementById("qrLink").value = tpl.defaults.qr || "https://riverside.example/details";
+      const d = tpl.defaults || {};
+      document.getElementById("orgName").value = d.orgName || "";
+      document.getElementById("headline").value = d.headline || "";
+      document.getElementById("schoolYear").value = d.schoolYear || "";
+      document.getElementById("location").value = d.location || "";
+      document.getElementById("directions").value = d.directions || "";
+      document.getElementById("datesEvents").value = d.datesEvents || "";
+      document.getElementById("bodyCopy").value = d.body || "";
+      document.getElementById("donationTiers").value = d.donationTiers || "";
+      document.getElementById("ctaLabel").value = d.ctaLabel || d.cta || "Learn more";
+      document.getElementById("ctaUrl").value = d.ctaUrl || d.qr || "";
+      document.getElementById("qrUrl").value = d.qrUrl || d.qr || d.ctaUrl || "";
+      document.getElementById("qrCaption").value = d.qrCaption || "";
+      document.getElementById("footerLine").value = d.footer || "";
+      document.getElementById("lastYearNotes").value = "";
+      updateQrPreview();
+      updateTemplateFieldHints();
+    }
+
+    function updateTemplateFieldHints() {
+      const tpl = state.templateId ? getTpl(state.templateId) : null;
+      const isSemester = tpl?.id === "semester";
+      const isInvestor = tpl?.id === "investor";
+      const isCustom = tpl?.isCustom;
+      document.getElementById("datesEventsField")?.classList.toggle("field-prominent", isSemester);
+      const moreCard = document.getElementById("moreFlyerCard");
+      if (moreCard) {
+        moreCard.classList.toggle("emphasis", isInvestor || isCustom);
+      }
+      document.getElementById("donationTiersField")?.classList.toggle("field-highlight", isInvestor);
+      document.getElementById("lastYearNotesField")?.classList.toggle("field-highlight", isCustom);
+    }
+
+    function updateQrPreview() {
+      const url = (document.getElementById("qrUrl").value.trim()
+        || document.getElementById("ctaUrl").value.trim());
+      const panel = document.getElementById("qrPreviewPanel");
+      const img = document.getElementById("qrPreviewImg");
+      const placeholder = document.getElementById("qrPlaceholder");
+      const cap = document.getElementById("qrPreviewCap");
+      if (!panel || !img) return;
+      if (url && /^https?:\/\//i.test(url)) {
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(url)}`;
+        img.hidden = false;
+        if (placeholder) placeholder.hidden = true;
+        panel.classList.remove("empty");
+        const caption = document.getElementById("qrCaption").value.trim();
+        if (cap) {
+          cap.textContent = caption || "";
+          cap.hidden = !caption;
+        }
+      } else {
+        img.hidden = true;
+        img.removeAttribute("src");
+        if (placeholder) placeholder.hidden = false;
+        panel.classList.add("empty");
+        if (cap) {
+          cap.textContent = "";
+          cap.hidden = true;
+        }
+      }
     }
 
     function updateQrFieldVisibility() {
-      const tpl = state.templateId ? getTpl(state.templateId) : null;
-      document.getElementById("qrField").hidden = !(tpl && tpl.hasQr);
-    }
-
-    function readDraftFields() {
-      return {
-        headline: document.getElementById("headline").value,
-        bodyCopy: document.getElementById("bodyCopy").value,
-        ctaCopy: document.getElementById("ctaCopy").value,
-        qrLink: document.getElementById("qrLink").value,
-      };
+      /* QR + structured slots always visible for founder slot-model testing */
+      document.getElementById("qrField").hidden = false;
     }
 
     function persistDraft() {
       try {
         const payload = {
           templateId: state.templateId,
-          filter: state.filter,
+          startPath: state.startPath,
+          printSize: state.printSize,
           imageUrl: state.imageUrl,
           customTemplateUrl: state.customTemplateUrl,
           brand: state.brand,
           ...readDraftFields(),
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-        const hint = document.getElementById("saveHint");
-        hint.hidden = false;
-        hint.textContent = "Draft saved in this browser";
-        hint.classList.remove("unsaved");
       } catch (_) {
-        const hint = document.getElementById("saveHint");
-        hint.hidden = false;
-        hint.textContent = "Could not save draft";
+        /* local draft optional */
       }
     }
 
     function scheduleSave() {
-      const hint = document.getElementById("saveHint");
-      hint.hidden = false;
-      hint.textContent = "Saving…";
-      hint.classList.add("unsaved");
       clearTimeout(saveTimer);
       saveTimer = setTimeout(persistDraft, 400);
+    }
+
+    function defaultsAsFields(d = {}) {
+      return {
+        orgName: d.orgName || "",
+        headline: d.headline || "",
+        schoolYear: d.schoolYear || "",
+        location: d.location || "",
+        directions: d.directions || "",
+        datesEvents: d.datesEvents || "",
+        bodyCopy: d.body || "",
+        donationTiers: d.donationTiers || "",
+        ctaLabel: d.ctaLabel || d.cta || "",
+        ctaUrl: d.ctaUrl || d.qr || "",
+        qrUrl: d.qrUrl || d.qr || d.ctaUrl || "",
+        qrCaption: d.qrCaption || "",
+        footerLine: d.footer || "",
+        lastYearNotes: "",
+      };
     }
 
     function loadDraft() {
@@ -1352,30 +2091,35 @@
         if (!raw) return;
         const d = JSON.parse(raw);
         if (d.templateId) state.templateId = d.templateId;
-        if (d.filter) state.filter = d.filter;
+        if (d.startPath) state.startPath = d.startPath;
+        else if (d.templateId) state.startPath = inferStartPath(d.templateId);
+        if (d.printSize === "letter" || d.printSize === "half") state.printSize = d.printSize;
+        else if (state.templateId === NEW_SIZE_IDS.half) state.printSize = "half";
         if (d.imageUrl) state.imageUrl = d.imageUrl;
         if (d.customTemplateUrl) state.customTemplateUrl = d.customTemplateUrl;
         if (typeof d.brand === "boolean") state.brand = d.brand;
-        if (d.headline != null) document.getElementById("headline").value = d.headline;
+        SLOT_IDS.forEach((id) => {
+          if (d[id] != null) document.getElementById(id).value = d[id];
+        });
+        /* backward compat with older draft keys */
+        if (d.headline != null && !d.orgName) document.getElementById("headline").value = d.headline;
         if (d.bodyCopy != null) document.getElementById("bodyCopy").value = d.bodyCopy;
-        if (d.ctaCopy != null) document.getElementById("ctaCopy").value = d.ctaCopy;
-        if (d.qrLink != null) document.getElementById("qrLink").value = d.qrLink;
+        if (d.ctaCopy != null && !d.ctaLabel) document.getElementById("ctaLabel").value = d.ctaCopy;
+        if (d.qrLink != null && !d.qrUrl) document.getElementById("qrUrl").value = d.qrLink;
         document.getElementById("brandToggle").setAttribute("aria-checked", state.brand ? "true" : "false");
-        if (state.templateId) document.getElementById("toInputs").disabled = false;
+        syncStartContinue();
+        updateQrPreview();
+        updateTemplateFieldHints();
       } catch (_) { /* ignore corrupt draft */ }
     }
 
     function exportFlyerHtml() {
       const tpl = getTpl(state.templateId);
-      const headline = document.getElementById("headline").value.trim() || tpl.defaults.headline;
-      const body = document.getElementById("bodyCopy").value.trim() || tpl.defaults.body;
-      const cta = document.getElementById("ctaCopy").value.trim() || tpl.defaults.cta;
+      const slots = resolveSlots({}, tpl);
       const flyerInner = flyerHTML(tpl.id, {
         imageUrl: state.imageUrl,
         templateUrl: state.customTemplateUrl,
-        headline,
-        body,
-        cta,
+        fields: readDraftFields(),
         filled: true,
       });
       const pageStyles = document.querySelector("style")?.textContent || "";
@@ -1384,15 +2128,20 @@
           ? "width:8in;min-height:8in;"
           : tpl.ratio === "9/16"
             ? "width:4.5in;min-height:8in;"
-            : "width:8.5in;min-height:11in;";
+            : tpl.ratio === "3/2"
+              ? "width:8.5in;min-height:5.5in;"
+              : "width:8.5in;min-height:11in;";
+      const k = getBrandKit();
+      const brandBlock = `:root{--brand-primary:${k.primary};--brand-secondary:${k.secondary};--brand-accent:${k.accent};--brand-ink:${k.ink};--brand-paper:${k.paper};--brand-surface:${k.surface};--brand-highlight:${k.highlight};--brand-on-primary:${k.onPrimary};--brand-on-accent:${k.onAccent};--brand-muted:${k.muted};}`;
       return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(headline)} · Flyer</title>
+<title>${escapeHtml(slots.headline)} · Flyer</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Fraunces:wght@600;700&display=swap" rel="stylesheet" />
 <style>
+  ${brandBlock}
   ${pageStyles}
   body { margin: 0; font-family: "DM Sans", system-ui, sans-serif; background: #f6f2eb; }
   .wrap { ${ratioCss} margin: 0 auto; overflow: hidden; }
@@ -1427,75 +2176,59 @@
         updateQrFieldVisibility();
         renderMini();
       }
-      if (view === "result") runGenerate();
-      const ledes = {
-        templates: "Start with a template. AI fills slots — it does not redesign the flyer.",
-        inputs: "Inspiration image, optional brand kit, and copy feed the template slots.",
-        result: "Generated inside your chosen template. Swap templates anytime; AI never leaves the layout.",
-      };
-      document.getElementById("pageLede").textContent = ledes[view] || ledes.templates;
-    }
-
-    function renderFilters() {
-      const el = document.getElementById("tplFilters");
-      el.innerHTML = FILTERS.map((f) => `
-        <button type="button" class="filter-chip" data-filter="${f.id}" aria-pressed="${state.filter === f.id}">${f.label}</button>
-      `).join("");
-      el.querySelectorAll(".filter-chip").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          state.filter = btn.dataset.filter;
-          renderFilters();
-          renderTemplates();
-          scheduleSave();
-        });
-      });
-    }
-
-    function renderTemplates() {
-      const grid = document.getElementById("tplGrid");
-      const list = TEMPLATES.filter((t) => matchesFilter(t, state.filter));
-      if (!list.length) {
-        grid.innerHTML = `<p style="grid-column:1/-1;color:var(--muted);font-size:0.9rem;margin:8px 0">No templates match this filter.</p>`;
-        return;
-      }
-      grid.innerHTML = list.map((t) => {
-        if (t.isCustom) {
-          const preview = state.customTemplateUrl
-            ? `<div class="tpl-preview" data-ratio="3/4" style="background-image:url('${state.customTemplateUrl}');background-size:cover;background-position:center"></div>`
-            : `<div class="tpl-preview custom-preview" data-ratio="3/4"><span class="up-icon" aria-hidden="true">↑</span><span>Upload PDF or image<br>from a past year</span></div>`;
-          return `
-            <button type="button" class="tpl custom-tpl" data-tpl="custom" aria-pressed="${state.templateId === "custom"}">
-              ${preview}
-              <div class="tpl-label">${escapeHtml(t.name)}</div>
-              <div class="tpl-audience">Reuse last year’s design</div>
-              <div class="tpl-channels"><span class="ch-tag print">Print</span><span class="ch-tag online">Online</span><span class="ch-tag">Custom</span></div>
-            </button>`;
+      if (view === "result") {
+        renderPreviewIdleFlyer();
+        renderPreviewState();
+        if (state.autoGenerateOnEnter) {
+          state.autoGenerateOnEnter = false;
+          runGenerate();
         }
+      }
+      const ledes = {
+        start: "Update last year or pick a layout, then generate.",
+        inputs: "Photo, org details, dates, QR, and brand.",
+        result: "Generate, review, print, or download.",
+      };
+      document.getElementById("pageLede").textContent = ledes[view] || ledes.start;
+    }
+
+    function renderStartStep() {
+      const provenGrid = document.getElementById("provenGrid");
+      if (!provenGrid) return;
+
+      provenGrid.innerHTML = PROVEN_IDS.map((id) => {
+        const t = getTpl(id);
+        const selected = state.startPath === "proven" && state.templateId === id;
         return `
-        <button type="button" class="tpl" data-tpl="${t.id}" aria-pressed="${state.templateId === t.id}">
-          <div class="tpl-preview" data-ratio="${t.ratio}">${flyerHTML(t.id, {
-            imageUrl: state.imageUrl,
-            headline: t.defaults.headline.split("·")[0].trim().slice(0, 28),
-            body: t.defaults.body.slice(0, 48),
-            cta: t.defaults.cta,
-          })}</div>
-          <div class="tpl-label">${escapeHtml(t.name)}</div>
-          <div class="tpl-audience">${escapeHtml(t.audience)}</div>
-          <div class="tpl-channels">${channelTags(t)}</div>
-        </button>`;
+          <button type="button" class="proven-tpl" data-proven="${id}" aria-pressed="${selected}">
+            <div class="proven-preview" data-ratio="${t.ratio}">${flyerHTML(t.id, {
+              imageUrl: state.imageUrl,
+              fields: defaultsAsFields(t.defaults),
+            })}</div>
+            <span class="proven-name">${escapeHtml(t.name)}</span>
+          </button>`;
       }).join("");
-      grid.querySelectorAll(".tpl").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const next = getTpl(btn.dataset.tpl);
-          const changed = state.templateId !== next.id;
-          state.templateId = next.id;
-          document.getElementById("toInputs").disabled = false;
-          if (changed) applyTemplateDefaults(next);
+
+      provenGrid.querySelectorAll(".proven-tpl").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.proven;
+          state.startPath = "proven";
+          state.templateId = id;
+          applyTemplateDefaults(getTpl(id));
+          state.previewGenerated = false;
+          updateTemplateFieldHints();
           syncCustomModeUI();
-          renderTemplates();
+          syncStartPathUI();
+          syncStartContinue();
+          renderStartStep();
           scheduleSave();
         });
       });
+
+      updateStartUploadUI();
+      syncStartPathUI();
+      syncStartContinue();
     }
 
     function renderThumbs() {
@@ -1527,90 +2260,195 @@
     }
 
     function renderMini() {
-      const mini = document.getElementById("miniTpl");
       if (!state.templateId) return;
       const tpl = getTpl(state.templateId);
-      mini.dataset.ratio = tpl.ratio;
-      mini.innerHTML = flyerHTML(state.templateId, {
-        imageUrl: state.imageUrl,
-        templateUrl: state.customTemplateUrl,
-        headline: document.getElementById("headline").value || "Headline",
-        body: document.getElementById("bodyCopy").value || "Copy",
-        cta: document.getElementById("ctaCopy").value || "CTA",
-      });
+      const nameEl = document.getElementById("selectedTplName");
+      if (nameEl) nameEl.textContent = tpl.name;
       document.getElementById("brandChip").hidden = !state.brand;
       updateQrFieldVisibility();
+      updateTemplateFieldHints();
       syncCustomModeUI();
     }
 
-    function runGenerate() {
+    function buildSlotSummary(tpl, s) {
+      const rows = [];
+      const push = (k, v) => { if (v) rows.push(`<li><span class="k">${k}</span><span>${escapeHtml(v)}</span></li>`); };
+      if (tpl.isCustom) {
+        rows.push(`<li><span class="k">Template</span><span>Your upload</span></li>`);
+        if (s.lastYearNotes) push("Notes", s.lastYearNotes);
+      } else {
+        rows.push(`<li><span class="k">Template</span><span>${escapeHtml(tpl.name)}</span></li>`);
+      }
+      push("Org", s.orgName);
+      push("Title", s.headline);
+      push("Year", s.schoolYear);
+      push("Location", [s.location, s.directions].filter(Boolean).join(" · "));
+      push("Dates", s.datesEvents);
+      push("Body", s.body);
+      push("Tiers", s.donationTiers);
+      push("CTA", `${s.ctaLabel}${s.ctaUrl ? " → " + s.ctaUrl : ""}`);
+      if (s.qrUrl) {
+        rows.push(`<li><span class="k">QR</span><span>${escapeHtml(s.qrCaption || "Scan link")} → ${escapeHtml(s.qrUrl)}</span></li>`);
+      }
+      push("Footer", s.footer);
+      if (!tpl.isCustom) {
+        rows.push(`<li><span class="k">Photo</span><span>${state.imageUrl ? "Added" : "None"}</span></li>`);
+        rows.push(`<li><span class="k">Brand</span><span>${state.brand ? "On" : "Off"}</span></li>`);
+      }
+      return rows.join("");
+    }
+
+    function renderPreviewIdleFlyer() {
+      const idleFlyer = document.getElementById("previewIdleFlyer");
+      if (!idleFlyer || !state.templateId) return;
+      const tpl = getTpl(state.templateId);
+      idleFlyer.dataset.ratio = tpl.ratio;
+      idleFlyer.innerHTML = flyerHTML(tpl.id, {
+        imageUrl: state.imageUrl,
+        templateUrl: state.customTemplateUrl,
+        fields: readDraftFields(),
+      });
+    }
+
+    function setPreviewActions(mode) {
+      const genBtn = document.getElementById("generateBtn");
+      const doneActions = document.getElementById("previewDoneActions");
+      const regen = document.getElementById("regen");
+      const btnPrint = document.getElementById("btnPrint");
+      const btnDownload = document.getElementById("btnDownload");
+
+      if (mode === "idle") {
+        if (genBtn) {
+          genBtn.hidden = false;
+          genBtn.disabled = false;
+          genBtn.textContent = "Generate flyer";
+        }
+        if (doneActions) doneActions.hidden = true;
+      } else if (mode === "building") {
+        if (genBtn) {
+          genBtn.hidden = false;
+          genBtn.disabled = true;
+          genBtn.textContent = "Building…";
+        }
+        if (doneActions) doneActions.hidden = true;
+      } else if (mode === "done") {
+        if (genBtn) genBtn.hidden = true;
+        if (doneActions) doneActions.hidden = false;
+        if (regen) regen.disabled = false;
+        if (btnPrint) btnPrint.disabled = false;
+        if (btnDownload) btnDownload.disabled = false;
+      }
+    }
+
+    function renderPreviewState() {
+      const idle = document.getElementById("previewIdle");
+      const genState = document.getElementById("genState");
       const wrap = document.getElementById("resultFlyer");
       const list = document.getElementById("slotList");
-      const tpl = getTpl(state.templateId);
-      wrap.dataset.ratio = tpl.ratio;
-      const genMsg = tpl.isCustom
-        ? "Updating dates & copy on your uploaded template…"
-        : "Placing photo, brand, and copy into locked slots…";
-      wrap.innerHTML = `<div class="gen-state">${genMsg}<div class="gen-bar"></div></div>`;
-      list.innerHTML = "";
-      const headline = document.getElementById("headline").value.trim() || tpl.defaults.headline;
-      const body = document.getElementById("bodyCopy").value.trim() || tpl.defaults.body;
-      const cta = document.getElementById("ctaCopy").value.trim() || tpl.defaults.cta;
-      const qrLink = document.getElementById("qrLink").value.trim() || tpl.defaults.qr || "https://riverside.example/details";
+      const stage = document.getElementById("previewStage");
+      if (!idle || !genState || !wrap) return;
 
-      setTimeout(() => {
+      renderPreviewIdleFlyer();
+      const tpl = getTpl(state.templateId);
+      const slots = resolveSlots({}, tpl);
+
+      if (stage) {
+        stage.classList.toggle("is-building", state.generating);
+        stage.classList.toggle("is-done", state.previewGenerated && !state.generating);
+      }
+
+      if (state.generating) {
+        idle.hidden = true;
+        genState.hidden = false;
+        wrap.hidden = true;
+        setPreviewActions("building");
+      } else if (state.previewGenerated) {
+        idle.hidden = true;
+        genState.hidden = true;
+        wrap.hidden = false;
+        if (list) list.innerHTML = buildSlotSummary(tpl, slots);
+        setPreviewActions("done");
+      } else {
+        idle.hidden = false;
+        genState.hidden = true;
+        wrap.hidden = true;
+        wrap.innerHTML = "";
+        if (list) list.innerHTML = buildSlotSummary(tpl, slots);
+        setPreviewActions("idle");
+      }
+
+      document.querySelectorAll(".preview-sidebar [data-goto]").forEach((btn) => {
+        btn.disabled = state.generating;
+      });
+    }
+
+    function runGenerate() {
+      if (state.generating || !state.templateId) return;
+
+      state.generating = true;
+      state.previewGenerated = false;
+
+      const tpl = getTpl(state.templateId);
+      const wrap = document.getElementById("resultFlyer");
+      const list = document.getElementById("slotList");
+      const genDetail = document.getElementById("genDetail");
+      const fields = readDraftFields();
+      const slots = resolveSlots({ fields }, tpl);
+
+      wrap.dataset.ratio = tpl.ratio;
+      if (list) list.innerHTML = buildSlotSummary(tpl, slots);
+
+      const stages = tpl.isCustom
+        ? ["Reading template…", "Updating copy…", "Almost done…"]
+        : ["Filling in details…", "Applying brand & photo…", "Almost done…"];
+
+      if (genDetail) genDetail.textContent = stages[0];
+      renderPreviewState();
+
+      clearInterval(state.generateStageTimer);
+      let stage = 0;
+      state.generateStageTimer = setInterval(() => {
+        stage = Math.min(stage + 1, stages.length - 1);
+        if (genDetail) genDetail.textContent = stages[stage];
+      }, 850);
+
+      clearTimeout(state.generateTimer);
+      state.generateTimer = setTimeout(() => {
+        clearInterval(state.generateStageTimer);
         wrap.innerHTML = flyerHTML(tpl.id, {
           imageUrl: state.imageUrl,
           templateUrl: state.customTemplateUrl,
-          headline,
-          body,
-          cta,
+          fields,
           filled: true,
         });
-        const slots = tpl.isCustom
-          ? [
-              `<li><span class="k">Template</span><span>Your uploaded flyer — layout kept</span></li>`,
-              `<li><span class="k">Source</span><span>Previous year file (PDF/image)</span></li>`,
-              `<li><span class="k">Photo</span><span>${state.imageUrl && state.imageUrl !== SAMPLES[0].url ? "Optional new inspiration applied where needed" : "Kept from your uploaded template"}</span></li>`,
-              `<li><span class="k">Headline</span><span>${escapeHtml(headline)}</span></li>`,
-              `<li><span class="k">Body</span><span>${escapeHtml(body)}</span></li>`,
-              `<li><span class="k">CTA</span><span>${escapeHtml(cta)}</span></li>`,
-              `<li><span class="k">AI rule</span><span>Update dates &amp; text only — do not redesign</span></li>`,
-            ]
-          : [
-              `<li><span class="k">Template</span><span>${escapeHtml(tpl.name)} — layout unchanged</span></li>`,
-              `<li><span class="k">Format</span><span>${tpl.ratio === "1/1" ? "Square 1:1 (online)" : tpl.ratio === "9/16" ? "Story 9:16 (online)" : "Letter 3:4 (print)"} · ${tpl.channels.map((c) => c.toUpperCase()).join(" · ")}</span></li>`,
-              `<li><span class="k">Photo</span><span>Inspiration image → photo slot</span></li>`,
-              `<li><span class="k">Brand</span><span>${state.brand ? "Logo + kit colors applied where the layout allows" : "Brand kit off — template default colors"}</span></li>`,
-              `<li><span class="k">Headline</span><span>${escapeHtml(headline)}</span></li>`,
-              `<li><span class="k">Body</span><span>${escapeHtml(body)}</span></li>`,
-              `<li><span class="k">CTA</span><span>${escapeHtml(cta)}</span></li>`,
-            ];
-        if (tpl.hasQr) {
-          slots.push(`<li><span class="k">QR</span><span>Encoded link → ${escapeHtml(qrLink)}</span></li>`);
-        }
-        list.innerHTML = slots.join("");
+        if (list) list.innerHTML = buildSlotSummary(tpl, slots);
+        state.generating = false;
+        state.previewGenerated = true;
+        renderPreviewState();
         scheduleSave();
-      }, 900);
+      }, 2800);
+    }
+
+    function startGenerate() {
+      runGenerate();
     }
 
     // Wire
     stepBtns.forEach((btn) => btn.addEventListener("click", () => {
       const view = btn.dataset.view;
-      if ((view === "inputs" || view === "result") && !state.templateId) {
-        state.templateId = "festival";
-        applyTemplateDefaults(getTpl("festival"));
-        document.getElementById("toInputs").disabled = false;
-        renderTemplates();
-      }
+      if ((view === "inputs" || view === "result") && !state.templateId) return;
       setView(view);
     }));
     document.querySelectorAll("[data-goto]").forEach((btn) => {
       btn.addEventListener("click", () => setView(btn.dataset.goto));
     });
     document.getElementById("toInputs").addEventListener("click", () => setView("inputs"));
-    document.getElementById("toGenerate").addEventListener("click", () => setView("result"));
-    document.getElementById("regen").addEventListener("click", () => runGenerate());
+    document.getElementById("toGenerate").addEventListener("click", () => {
+      state.autoGenerateOnEnter = true;
+      setView("result");
+    });
+    document.getElementById("generateBtn").addEventListener("click", startGenerate);
+    document.getElementById("regen").addEventListener("click", startGenerate);
     document.getElementById("btnPrint").addEventListener("click", () => window.print());
     document.getElementById("btnDownload").addEventListener("click", () => {
       const html = exportFlyerHtml();
@@ -1628,13 +2466,23 @@
     brandToggle.addEventListener("click", () => {
       state.brand = !state.brand;
       brandToggle.setAttribute("aria-checked", state.brand ? "true" : "false");
+      syncBrandKit();
+      renderStartStep();
       renderMini();
+      if (state.view === "result") {
+        if (state.previewGenerated) runGenerate();
+        else renderPreviewIdleFlyer();
+      }
       scheduleSave();
     });
 
-    ["headline", "bodyCopy", "ctaCopy", "qrLink"].forEach((id) => {
+    SLOT_IDS.forEach((id) => {
       document.getElementById(id).addEventListener("input", () => {
+        if (id === "qrUrl" || id === "ctaUrl" || id === "qrCaption") updateQrPreview();
         renderMini();
+        if (state.view === "result" && !state.previewGenerated && !state.generating) {
+          renderPreviewIdleFlyer();
+        }
         scheduleSave();
       });
     });
@@ -1650,44 +2498,67 @@
     });
     customFile.addEventListener("change", () => {
       const file = customFile.files && customFile.files[0];
-      if (!file) return;
-      if (file.type === "application/pdf") {
-        // Mock: PDF preview uses sample flyer art; product would rasterize page 1.
-        state.customTemplateUrl = SAMPLE_CUSTOM_TEMPLATE;
-        updateCustomUploadUI();
-        renderMini();
-        renderTemplates();
-        scheduleSave();
-        return;
+      handleCustomTemplateFile(file);
+    });
+
+    const startUpload = document.getElementById("startUpload");
+    const startFile = document.getElementById("startFile");
+    startUpload.addEventListener("click", (e) => {
+      e.stopPropagation();
+      startFile.click();
+    });
+    startUpload.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        startFile.click();
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        state.customTemplateUrl = String(reader.result || SAMPLE_CUSTOM_TEMPLATE);
-        updateCustomUploadUI();
-        renderMini();
-        renderTemplates();
+    });
+    startFile.addEventListener("change", () => {
+      const file = startFile.files && startFile.files[0];
+      handleCustomTemplateFile(file);
+    });
+
+    document.querySelectorAll(".start-path[data-path]").forEach((card) => {
+      card.addEventListener("click", (e) => {
+        const path = card.dataset.path;
+        if (path === "update" && e.target.closest("#startUpload")) return;
+        if (path === "proven" && e.target.closest(".proven-tpl")) return;
+        if (path === "new" && e.target.closest("[data-print-size]")) return;
+        if (path === "update" || path === "new") selectStartPath(path);
+      });
+    });
+
+    document.querySelectorAll("[data-print-size]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        state.printSize = btn.dataset.printSize;
+        state.startPath = "new";
+        state.templateId = NEW_SIZE_IDS[state.printSize];
+        applyTemplateDefaults(getTpl(state.templateId));
+        state.previewGenerated = false;
+        syncStartPathUI();
+        syncStartContinue();
+        renderStartStep();
         scheduleSave();
-      };
-      reader.readAsDataURL(file);
+      });
     });
 
     loadDraft();
-    renderFilters();
-    renderTemplates();
+    syncBrandKit();
+    if (state.templateId && !document.getElementById("headline").value.trim()) {
+      applyTemplateDefaults(getTpl(state.templateId));
+    }
+    renderStartStep();
     renderThumbs();
     updateInspUI();
     syncCustomModeUI();
+    syncStartPathUI();
 
     const params = new URLSearchParams(location.search);
-    let initial = params.get("view") || "templates";
-    if (initial === "chooser") initial = "templates";
-    if (["templates", "inputs", "result"].includes(initial) && !state.templateId) {
-      state.templateId = "festival";
-      applyTemplateDefaults(getTpl("festival"));
-      document.getElementById("toInputs").disabled = false;
-      renderTemplates();
-    }
-    setView(["templates", "inputs", "result"].includes(initial) ? initial : "templates");
+    let initial = params.get("view") || "start";
+    if (initial === "templates" || initial === "chooser") initial = "start";
+    const validViews = ["start", "inputs", "result"];
+    setView(validViews.includes(initial) ? initial : "start");
   </script>
 </body>
 </html>

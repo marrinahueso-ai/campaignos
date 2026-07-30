@@ -76,7 +76,7 @@ const ALSO_AVAILABLE: AlsoItem[] = [
   {
     id: "flyer",
     title: "Flyer",
-    href: "/create-with-ai-flyer-ease-mockup.html?view=templates",
+    href: "/create-with-ai-flyer-ease-mockup.html?view=start",
     artClass: "bg-[linear-gradient(145deg,#2f4a3c,#6b8171_50%,#d4a84b)]",
     status: "live",
   },
