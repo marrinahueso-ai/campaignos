@@ -1151,12 +1151,100 @@
     }
     .save-hint.unsaved { color: var(--mustard); }
 
+    /* Edit Artwork — revise from selected Preview version */
+    .edit-artwork-grid {
+      display: grid; gap: 22px; align-items: start;
+    }
+    @media (min-width: 860px) {
+      .edit-artwork-grid { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: 28px; }
+    }
+    .edit-base-card {
+      border-radius: 18px; border: 1px solid var(--line);
+      background: var(--cream); padding: 14px 14px 16px;
+    }
+    .edit-base-eyebrow {
+      margin: 0 0 8px; font-size: 10px; font-weight: 800;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+    }
+    .edit-base-frame {
+      border-radius: 14px; overflow: hidden; border: 1px solid var(--line);
+      background: #eee; box-shadow: var(--shadow);
+      aspect-ratio: 2 / 3; max-width: 320px; margin: 0 auto;
+      position: relative;
+    }
+    .edit-base-frame img {
+      display: block; width: 100%; height: 100%; object-fit: cover;
+    }
+    .edit-base-empty {
+      display: grid; place-items: center; height: 100%; min-height: 220px;
+      padding: 20px; text-align: center; color: var(--muted); font-size: 0.88rem; line-height: 1.4;
+    }
+    .edit-base-meta {
+      margin: 10px 0 0; font-size: 0.78rem; color: var(--ink-soft); line-height: 1.4; text-align: center;
+    }
+    .edit-base-meta strong { color: var(--forest); font-weight: 700; }
+    .edit-chip-row {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
+    }
+    .edit-chip {
+      border: 1px solid var(--line); background: var(--cream);
+      border-radius: 999px; padding: 7px 12px;
+      font-size: 12px; font-weight: 600; color: var(--ink);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .edit-chip:hover { border-color: rgba(47, 74, 60, 0.35); background: rgba(47, 74, 60, 0.06); }
+    .edit-style-row {
+      margin-top: 4px;
+    }
+    .edit-style-labels {
+      display: flex; justify-content: space-between; gap: 8px;
+      font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 6px;
+    }
+    .edit-style-labels .mid { color: var(--ink); }
+    .edit-style-row input[type="range"] {
+      width: 100%; accent-color: var(--forest);
+    }
+    .edit-actions {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line);
+    }
+    .edit-actions .btn { min-height: 42px; }
+    .edit-error {
+      margin: 0; flex: 1 1 100%; font-size: 0.86rem; color: #a33;
+      line-height: 1.4;
+    }
+    .edit-hint-banner {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px 14px; margin-bottom: 18px;
+      border-radius: 14px; background: rgba(47, 74, 60, 0.07);
+      border: 1px solid rgba(47, 74, 60, 0.12);
+      font-size: 0.88rem; line-height: 1.45; color: var(--ink-soft);
+    }
+    .edit-hint-banner strong { color: var(--forest); }
+    .edit-details-link {
+      display: inline-block; margin-top: 10px;
+      font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none;
+    }
+    .edit-details-link:hover { color: var(--forest); }
+    .preview-sidebar .sidebar-actions {
+      flex-direction: column; align-items: stretch; gap: 8px;
+    }
+    .edit-gen-overlay {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      background: rgba(246, 242, 235, 0.72); backdrop-filter: blur(2px);
+      padding: 16px; text-align: center;
+    }
+    .edit-gen-overlay[hidden] { display: none !important; }
+    .edit-gen-overlay span {
+      font-size: 0.86rem; font-weight: 700; color: var(--forest);
+    }
+
     @media print {
       body { background: #fff; }
       .no-print { display: none !important; }
       .shell { padding: 0; max-width: none; }
       .preview-header, .preview-sidebar, .preview-idle, #genState, .preview-ready-badge,
-      .preview-versions { display: none !important; }
+      .preview-versions, [data-panel="edit"] { display: none !important; }
       .preview-workspace { border: none; box-shadow: none; display: block; }
       .preview-stage { padding: 0; min-height: 0; background: #fff; }
       #resultFlyer { display: block !important; }
@@ -1534,13 +1622,84 @@
         </div>
         <aside class="preview-sidebar no-print">
           <div class="sidebar-actions">
-            <button type="button" class="btn btn-secondary" data-goto="inputs">Edit</button>
+            <button type="button" class="btn btn-secondary" id="btnEditArtwork">Edit artwork</button>
+            <a href="#" class="edit-details-link" id="editDetailsLink">Edit details (Inspiration)</a>
           </div>
         </aside>
       </div>
       <div class="preview-versions no-print" id="previewVersions" hidden>
         <p class="preview-versions-label">Versions</p>
         <div class="preview-versions-strip" id="previewVersionsStrip" role="list"></div>
+      </div>
+    </section>
+
+    <!-- EDIT ARTWORK — revise from selected Preview version -->
+    <section class="panel" data-panel="edit" hidden>
+      <div class="step-head">
+        <h2>Edit artwork</h2>
+        <p class="sub">Describe changes — AI revises from the version you selected in Preview.</p>
+      </div>
+      <div class="edit-hint-banner">
+        <div>
+          <strong>Starts from your selected version</strong> — not a blank Inspiration restart.
+          Facts (org, dates, QR) stay as-is unless you change them under Edit details.
+        </div>
+      </div>
+      <div class="edit-artwork-grid">
+        <div class="edit-base-card">
+          <p class="edit-base-eyebrow">Base version</p>
+          <div class="edit-base-frame" id="editBaseFrame">
+            <div class="edit-base-empty" id="editBaseEmpty">Generate a flyer in Preview first, then come back to edit.</div>
+            <img id="editBaseImg" alt="Selected flyer version to revise" hidden />
+            <div class="edit-gen-overlay" id="editGenOverlay" hidden>
+              <span id="editGenLabel">Applying changes…</span>
+            </div>
+          </div>
+          <p class="edit-base-meta" id="editBaseMeta">No version selected yet.</p>
+        </div>
+        <div>
+          <div class="field">
+            <div class="field-label-row">
+              <label for="editDirection">What should change?</label>
+              <button
+                type="button"
+                class="voice-btn"
+                id="editDirectionVoice"
+                aria-label="Speak change direction"
+                title="Speak change direction"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M5 11a7 7 0 0 0 14 0" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 18v3" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <textarea
+              id="editDirection"
+              rows="5"
+              placeholder="e.g. Bigger headline, warmer stadium lights, make the date banner easier to read…"
+            ></textarea>
+            <p class="hint-inline" id="editDirectionVoiceHint" hidden>Listening… tap the mic to stop.</p>
+          </div>
+          <div>
+            <p class="edit-base-eyebrow" style="margin-bottom: 0;">Quick suggestions</p>
+            <div class="edit-chip-row" id="editChips"></div>
+          </div>
+          <div class="edit-style-row" style="margin-top: 18px;">
+            <div class="edit-style-labels">
+              <span>More creative</span>
+              <span class="mid" id="editStyleLabel">Balanced</span>
+              <span>More similar</span>
+            </div>
+            <input type="range" id="editStyleStrength" min="0" max="100" value="55" aria-label="How similar to keep the base version" />
+          </div>
+          <div class="edit-actions">
+            <button type="button" class="btn btn-secondary" id="editCancelBtn">Back to Preview</button>
+            <button type="button" class="btn btn-gold" id="editApplyBtn">Apply changes</button>
+            <p class="edit-error" id="editError" hidden></p>
+          </div>
+        </div>
       </div>
     </section>
       </div>
@@ -1825,7 +1984,20 @@
       generateTimer: null,
       generateStageTimer: null,
       provenLayoutChosen: false,
+      editDirection: "",
+      editStyleStrength: 55,
+      editGenerating: false,
+      editBaseVersionId: null,
     };
+
+    const EDIT_QUICK_SUGGESTIONS = [
+      "Bigger headline",
+      "Clearer date/time",
+      "More green",
+      "Warmer tones",
+      "Simpler layout",
+      "Less clutter",
+    ];
 
     function isPersistableFlyerImageUrl(url) {
       if (typeof url !== "string") return false;
@@ -2947,8 +3119,10 @@
     function setView(view) {
       state.view = view;
       panels.forEach((p) => { p.hidden = p.dataset.panel !== view; });
+      // Edit Artwork is a Preview sub-step — keep Preview highlighted in the rail.
+      const railView = view === "edit" ? "result" : view;
       stepBtns.forEach((btn) => {
-        const active = btn.dataset.view === view;
+        const active = btn.dataset.view === railView;
         btn.classList.toggle("active", active);
         if (active) btn.setAttribute("aria-current", "step");
         else btn.removeAttribute("aria-current");
@@ -2969,6 +3143,12 @@
           state.autoGenerateOnEnter = false;
           runGenerate();
         }
+      } else if (view === "edit") {
+        if (!getActiveFlyerVersion() && !isPersistableFlyerImageUrl(state.generatedImageUrl)) {
+          setView("result");
+          return;
+        }
+        renderEditArtwork();
       } else {
         renderVersionsStrip();
       }
@@ -2976,8 +3156,248 @@
         start: "Update last year’s flyer or start a new one, then generate.",
         inputs: "Photo, org details, dates, QR, and brand.",
         result: "Generate, review, print, or download.",
+        edit: "Revise the selected version — describe what should change.",
       };
       document.getElementById("pageLede").textContent = ledes[view] || ledes.start;
+    }
+
+    function getActiveFlyerVersion() {
+      return (
+        findFlyerVersion(state.versions, state.activeVersionId) ||
+        (state.generatedImageUrl
+          ? state.versions.find((v) => v.imageUrl === state.generatedImageUrl)
+          : null) ||
+        state.versions[0] ||
+        null
+      );
+    }
+
+    function editStyleLabel(value) {
+      if (value < 35) return "More creative";
+      if (value > 65) return "More similar";
+      return "Balanced";
+    }
+
+    function styleStrengthPromptHint(value) {
+      if (value < 35) {
+        return "You may reinterpret the design more freely while keeping the same event and facts.";
+      }
+      if (value > 65) {
+        return "Stay very close to the attached flyer’s layout, colors, and typography — only apply the requested changes.";
+      }
+      return "Balance creative variation with fidelity to the attached flyer.";
+    }
+
+    function renderEditArtwork() {
+      const img = document.getElementById("editBaseImg");
+      const empty = document.getElementById("editBaseEmpty");
+      const meta = document.getElementById("editBaseMeta");
+      const overlay = document.getElementById("editGenOverlay");
+      const applyBtn = document.getElementById("editApplyBtn");
+      const styleInput = document.getElementById("editStyleStrength");
+      const styleLabel = document.getElementById("editStyleLabel");
+      const directionEl = document.getElementById("editDirection");
+      const version = getActiveFlyerVersion();
+      const baseUrl =
+        (version && version.imageUrl) ||
+        (isPersistableFlyerImageUrl(state.generatedImageUrl)
+          ? state.generatedImageUrl
+          : null);
+
+      state.editBaseVersionId = version?.id || null;
+
+      if (directionEl && document.activeElement !== directionEl) {
+        directionEl.value = state.editDirection || "";
+      }
+      if (styleInput) styleInput.value = String(state.editStyleStrength ?? 55);
+      if (styleLabel) styleLabel.textContent = editStyleLabel(state.editStyleStrength ?? 55);
+
+      if (img && empty) {
+        if (baseUrl) {
+          img.src = baseUrl;
+          img.hidden = false;
+          empty.hidden = true;
+        } else {
+          img.removeAttribute("src");
+          img.hidden = true;
+          empty.hidden = false;
+        }
+      }
+
+      if (meta) {
+        if (baseUrl && version) {
+          const versions = normalizeFlyerVersions(state.versions);
+          const index = versions.findIndex((v) => v.id === version.id);
+          const n = index >= 0 ? versions.length - index : versions.length;
+          meta.innerHTML = `Revising <strong>version ${n}</strong> — selected in Preview. Apply changes creates a new version.`;
+        } else if (baseUrl) {
+          meta.innerHTML = `Revising the <strong>current Preview</strong> flyer. Apply changes creates a new version.`;
+        } else {
+          meta.textContent = "Generate a flyer in Preview first, then open Edit artwork.";
+        }
+      }
+
+      if (overlay) overlay.hidden = !state.editGenerating;
+      if (applyBtn) {
+        applyBtn.disabled = state.editGenerating || !baseUrl;
+        applyBtn.textContent = state.editGenerating ? "Applying…" : "Apply changes";
+      }
+      const cancelBtn = document.getElementById("editCancelBtn");
+      if (cancelBtn) cancelBtn.disabled = state.editGenerating;
+    }
+
+    function buildEditGeneratePayload(tpl, baseImageUrl, editInstructions) {
+      const fields = { ...readDraftFields() };
+      const strength = Number(state.editStyleStrength) || 55;
+      const reviseBlock = [
+        "Revise the attached flyer artwork (the selected Preview version).",
+        "Keep the same event, organization, and facts unless the change request says otherwise.",
+        styleStrengthPromptHint(strength),
+        editInstructions
+          ? `Requested changes:\n${editInstructions}`
+          : "No specific change text — produce a refined variation of the attached flyer.",
+      ].join("\n\n");
+
+      fields.aiDirection = reviseBlock;
+
+      return {
+        start: buildStartPayload(),
+        template: {
+          templateId: tpl.id,
+          templateName: tpl.name,
+          isCustom: Boolean(tpl.isCustom),
+          ratio: tpl.ratio || null,
+          hasQr: Boolean(tpl.hasQr),
+        },
+        assets: {
+          inspirationPhotoPresent: true,
+          inspirationPhotoSource: "upload",
+          inspirationPhotoLabel: "Selected Preview version",
+          inspirationPhotoNote:
+            "This attached image is the current flyer version to revise — treat it as the visual base.",
+          inspirationPhotoUrl: resolveReferenceImageUrl(baseImageUrl),
+          customTemplatePresent: false,
+          customTemplateFileName: null,
+          customTemplateFileType: null,
+          customTemplateNote: null,
+          customTemplateImageUrl: null,
+        },
+        brandEnabled: Boolean(state.brand),
+        brandKit: buildBrandKitPayload(),
+        fields,
+      };
+    }
+
+    async function runEditRegenerate() {
+      const errorEl = document.getElementById("editError");
+      const overlay = document.getElementById("editGenOverlay");
+      const genLabel = document.getElementById("editGenLabel");
+      if (errorEl) {
+        errorEl.hidden = true;
+        errorEl.textContent = "";
+      }
+
+      const version = getActiveFlyerVersion();
+      const baseUrl =
+        (version && version.imageUrl) ||
+        (isPersistableFlyerImageUrl(state.generatedImageUrl)
+          ? state.generatedImageUrl
+          : null);
+
+      if (!baseUrl) {
+        if (errorEl) {
+          errorEl.hidden = false;
+          errorEl.textContent = "No Preview version to revise. Generate a flyer first.";
+        }
+        return;
+      }
+      if (!state.templateId) {
+        if (errorEl) {
+          errorEl.hidden = false;
+          errorEl.textContent = "Missing flyer template — go back to Start.";
+        }
+        return;
+      }
+      if (!canCallGenerateApi()) {
+        if (errorEl) {
+          errorEl.hidden = false;
+          errorEl.textContent =
+            "Open via http://localhost:3000 or heyralli.com to apply AI changes.";
+        }
+        return;
+      }
+      if (state.editGenerating || state.generating) return;
+
+      const directionEl = document.getElementById("editDirection");
+      state.editDirection = directionEl ? directionEl.value.trim() : "";
+      const tpl = getTpl(state.templateId);
+
+      state.editGenerating = true;
+      renderEditArtwork();
+      if (overlay) overlay.hidden = false;
+      if (genLabel) genLabel.textContent = "Applying changes with your base version…";
+
+      try {
+        const response = await fetch(FLYER_GENERATE_API, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            buildEditGeneratePayload(tpl, baseUrl, state.editDirection),
+          ),
+        });
+        const payload = await response.json().catch(() => null);
+        const imageSrc = payload?.imageUrl || payload?.imageBase64;
+        if (!response.ok || !payload?.success || !imageSrc) {
+          const err =
+            payload?.error ||
+            (response.status === 401
+              ? "Sign in with an active organization to regenerate."
+              : response.status === 403
+                ? "You do not have permission to generate flyers."
+                : "Could not apply changes. Try again.");
+          throw new Error(err);
+        }
+
+        state.versions = addFlyerVersion(state.versions, imageSrc, {
+          createdAt: Date.now(),
+        });
+        const newest = state.versions[0];
+        state.generatedImageUrl = newest?.imageUrl || imageSrc;
+        state.activeVersionId = newest?.id || null;
+        state.previewGenerated = true;
+        state.editDirection = "";
+        const cleared = document.getElementById("editDirection");
+        if (cleared) cleared.value = "";
+        if (payload.slots) applyGeneratedSlots(payload.slots);
+        state.editGenerating = false;
+        persistDraft();
+        setView("result");
+      } catch (error) {
+        state.editGenerating = false;
+        renderEditArtwork();
+        if (errorEl) {
+          errorEl.hidden = false;
+          errorEl.textContent = error?.message || "Could not apply changes. Try again.";
+        }
+      }
+    }
+
+    function openEditArtwork() {
+      if (state.generating || state.editGenerating) return;
+      if (!state.previewGenerated || !getActiveFlyerVersion()) {
+        showGenerateError("Generate a flyer first, then use Edit artwork.");
+        return;
+      }
+      state.editDirection = "";
+      const directionEl = document.getElementById("editDirection");
+      if (directionEl) directionEl.value = "";
+      const errorEl = document.getElementById("editError");
+      if (errorEl) {
+        errorEl.hidden = true;
+        errorEl.textContent = "";
+      }
+      setView("edit");
     }
 
     function renderStartStep() {
@@ -3232,9 +3652,16 @@
         setPreviewActions("idle");
       }
 
-      document.querySelectorAll(".preview-sidebar [data-goto]").forEach((btn) => {
-        btn.disabled = state.generating;
-      });
+      const editArtworkBtn = document.getElementById("btnEditArtwork");
+      if (editArtworkBtn) {
+        editArtworkBtn.disabled =
+          state.generating || !state.previewGenerated || !state.generatedImageUrl;
+      }
+      const detailsLink = document.getElementById("editDetailsLink");
+      if (detailsLink) {
+        detailsLink.style.pointerEvents = state.generating ? "none" : "";
+        detailsLink.style.opacity = state.generating ? "0.5" : "";
+      }
       renderVersionsStrip();
     }
 
@@ -3533,6 +3960,45 @@
     });
     document.getElementById("generateBtn").addEventListener("click", startGenerate);
     document.getElementById("regen").addEventListener("click", startGenerate);
+    document.getElementById("btnEditArtwork")?.addEventListener("click", openEditArtwork);
+    document.getElementById("editDetailsLink")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (state.generating || state.editGenerating) return;
+      setView("inputs");
+    });
+    document.getElementById("editCancelBtn")?.addEventListener("click", () => {
+      if (state.editGenerating) return;
+      setView("result");
+    });
+    document.getElementById("editApplyBtn")?.addEventListener("click", () => {
+      void runEditRegenerate();
+    });
+    document.getElementById("editDirection")?.addEventListener("input", (e) => {
+      state.editDirection = e.target.value;
+    });
+    document.getElementById("editStyleStrength")?.addEventListener("input", (e) => {
+      state.editStyleStrength = Number(e.target.value) || 55;
+      const label = document.getElementById("editStyleLabel");
+      if (label) label.textContent = editStyleLabel(state.editStyleStrength);
+    });
+    (function setupEditChips() {
+      const row = document.getElementById("editChips");
+      if (!row) return;
+      row.innerHTML = EDIT_QUICK_SUGGESTIONS.map(
+        (chip) =>
+          `<button type="button" class="edit-chip" data-chip="${escapeHtml(chip)}">${escapeHtml(chip)}</button>`,
+      ).join("");
+      row.querySelectorAll("[data-chip]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const chip = btn.dataset.chip || "";
+          const ta = document.getElementById("editDirection");
+          if (!ta) return;
+          const prev = ta.value.trim();
+          ta.value = prev ? `${prev}. ${chip}` : chip;
+          state.editDirection = ta.value;
+        });
+      });
+    })();
     document.getElementById("btnPrint").addEventListener("click", () => window.print());
     document.getElementById("btnDownload").addEventListener("click", async () => {
       const title = (document.getElementById("headline").value.trim() || "flyer")
@@ -3705,10 +4171,10 @@
       return win.SpeechRecognition || win.webkitSpeechRecognition || null;
     }
 
-    function setupAiDirectionVoice() {
-      const btn = document.getElementById("aiDirectionVoice");
-      const textarea = document.getElementById("aiDirection");
-      const hint = document.getElementById("aiDirectionVoiceHint");
+    function setupVoiceForTextarea(btnId, textareaId, hintId, onSpoken) {
+      const btn = document.getElementById(btnId);
+      const textarea = document.getElementById(textareaId);
+      const hint = document.getElementById(hintId);
       if (!btn || !textarea) return;
 
       const SpeechRecognitionCtor = getSpeechRecognitionConstructor();
@@ -3761,7 +4227,8 @@
           }
           const spoken = `${finalTranscript}${interim}`.trim();
           textarea.value = [baseText, spoken].filter(Boolean).join(baseText ? " " : "");
-          scheduleSave();
+          if (typeof onSpoken === "function") onSpoken(textarea.value);
+          else scheduleSave();
         };
         recognition.onerror = () => stop();
         recognition.onend = () => {
@@ -3781,6 +4248,21 @@
       });
     }
 
+    function setupAiDirectionVoice() {
+      setupVoiceForTextarea("aiDirectionVoice", "aiDirection", "aiDirectionVoiceHint");
+    }
+
+    function setupEditDirectionVoice() {
+      setupVoiceForTextarea(
+        "editDirectionVoice",
+        "editDirection",
+        "editDirectionVoiceHint",
+        (value) => {
+          state.editDirection = value;
+        },
+      );
+    }
+
     loadDraft();
     clearPlaceholderFields();
     syncBrandKit();
@@ -3793,11 +4275,13 @@
     syncCustomModeUI();
     syncStartPathUI();
     setupAiDirectionVoice();
+    setupEditDirectionVoice();
 
     const params = new URLSearchParams(location.search);
     let initial = params.get("view") || "start";
     if (initial === "templates" || initial === "chooser") initial = "start";
-    const validViews = ["start", "inputs", "result"];
+    if (initial === "editArtwork" || initial === "edit-artwork") initial = "edit";
+    const validViews = ["start", "inputs", "result", "edit"];
     setView(validViews.includes(initial) ? initial : "start");
 
     hydrateBrandKitFromApi().then(() => {
