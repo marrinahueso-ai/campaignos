@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { mapApprovalItemToRevision } from "@/components/approvals-revision/map-item";
+import { approvalEmailFormatVariables } from "@/lib/email/approval-content-preview";
 import { mapSchedulingItemRow } from "@/lib/approvals-scheduling/map-items";
 import type { ApprovalSchedulingItemRow } from "@/lib/approvals-scheduling/types";
 import { FLYER_COMPOSER_MILESTONE_PREFIX } from "@/lib/flyer-composer/approval";
@@ -66,9 +67,34 @@ describe("flyer approval scheduling mapping", () => {
     const model = mapApprovalItemToRevision(item, "creator");
     assert.equal(model.contentType, "flyer");
     assert.equal(model.typeChip, "Flyer");
+    assert.equal(model.storyArtworkUrl, null);
     assert.equal(
       model.editArtworkHref,
       "/create-with-ai/flyer?view=result",
     );
+  });
+
+  it("approver revision model starts with empty note (not creator resubmit copy)", () => {
+    const item = mapSchedulingItemRow(
+      row,
+      "Spring Fair",
+      "Approver",
+      "President",
+      true,
+      true,
+    );
+    const model = mapApprovalItemToRevision(item, "approver");
+    assert.equal(model.contentType, "flyer");
+    assert.equal(model.noteBody, "");
+    assert.equal(model.storyArtworkUrl, null);
+  });
+
+  it("email format variables use print flyer language for flyer items", () => {
+    const flyer = approvalEmailFormatVariables(true);
+    assert.equal(flyer.ARTWORK_SUMMARY, "Print flyer");
+    assert.equal(flyer.CTA_LABEL, "Open Flyer composer");
+    const social = approvalEmailFormatVariables(false);
+    assert.match(social.ARTWORK_SUMMARY, /1:1 feed/);
+    assert.equal(social.CTA_LABEL, "Edit artwork");
   });
 });

@@ -12,7 +12,27 @@ const KNOWN_TAGS = new Set<string>([
   "Stories",
   "Preview",
   "Links",
+  "QR",
+  "Layout",
 ]);
+
+/** Approver tag chips for Social change requests. */
+export const SOCIAL_REVISION_TAGS: RevisionTag[] = [
+  "Artwork",
+  "Stories",
+  "Date",
+  "Caption",
+  "Copy",
+];
+
+/** Approver tag chips for print Flyer change requests. */
+export const FLYER_REVISION_TAGS: RevisionTag[] = [
+  "Artwork",
+  "Date",
+  "Copy",
+  "QR",
+  "Layout",
+];
 
 export function encodeRevisionNotes(
   comment: string,
@@ -93,6 +113,8 @@ export function checklistFromTags(
     Stories: "Story artwork (9:16) or story blocks",
     Preview: "Check full-page preview",
     Links: "Signup or CTA links",
+    QR: "QR code or signup link on the flyer",
+    Layout: "Spacing, hierarchy, or print crop",
   };
 
   return source.map((tag) => ({

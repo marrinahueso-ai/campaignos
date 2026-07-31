@@ -384,10 +384,12 @@ export async function sendFlyerComposerForApproval(
         recipientEmail,
         approverRole: assignee.organizationRoleName ?? "committee-chair",
         schedulingItemId,
+        campaignMilestoneId,
         feedArtworkUrl: hosted.url,
         storyArtworkUrl: null as string | null,
         captionText,
         storyCaption: null as string | null,
+        contentKind: "flyer" as const,
       };
       if (isResubmitAfterChanges) {
         await sendApprovalResubmittedEmail(emailInput);

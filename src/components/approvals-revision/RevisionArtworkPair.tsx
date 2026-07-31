@@ -4,11 +4,15 @@ import { WarmBreathFrame } from "@/components/motion/WarmBreathFrame";
 
 export type RevisionArtScope = "feed" | "story" | "both";
 
+export type RevisionArtworkVariant = "social" | "flyer";
+
 type RevisionArtworkPairProps = {
   feedUrl: string | null;
   storyUrl: string | null;
   title: string;
   subtitle: string;
+  /** Social = feed+story pair; flyer = single letter/print preview. */
+  variant?: RevisionArtworkVariant;
   /** Which slot(s) show the “AI updated” badge. */
   artUpdated?: RevisionArtScope | false | null;
   /** Which slot(s) play the regen shimmer / warm breath while waiting. */
@@ -33,7 +37,7 @@ function ArtSlot({
   updated,
   animating,
 }: {
-  view: "feed" | "story";
+  view: "feed" | "story" | "flyer";
   url: string | null;
   title: string;
   subtitle: string;
@@ -41,8 +45,21 @@ function ArtSlot({
   animating: boolean;
 }) {
   const isStory = view === "story";
-  const emptyLabel = isStory ? "No story artwork yet" : "No feed artwork yet";
-  const label = isStory ? "Story · 9:16" : "Feed · 1:1";
+  const isFlyer = view === "flyer";
+  const emptyLabel = isFlyer
+    ? "No flyer artwork yet"
+    : isStory
+      ? "No story artwork yet"
+      : "No feed artwork yet";
+  const label = isFlyer
+    ? "Flyer · print"
+    : isStory
+      ? "Story · 9:16"
+      : "Feed · 1:1";
+  const artClass = isFlyer ? "is-flyer" : isStory ? "is-story" : "is-feed";
+  const generateLabel = isFlyer
+    ? "generating flyer artwork"
+    : `generating ${isStory ? "story" : "feed"} artwork`;
 
   return (
     <div
@@ -51,14 +68,11 @@ function ArtSlot({
       data-has-art={url ? "true" : "false"}
     >
       <div className="rev-art-slot-label">{label}</div>
-      <WarmBreathFrame
-        active={animating}
-        label={`Generating ${isStory ? "story" : "feed"} artwork`}
-      >
+      <WarmBreathFrame active={animating} label={generateLabel}>
         <div
           className={[
             "rev-art",
-            isStory ? "is-story" : "is-feed",
+            artClass,
             !url ? "is-empty" : "",
             animating ? "is-regen" : "",
           ]
@@ -86,20 +100,46 @@ function ArtSlot({
 }
 
 /**
- * Side-by-side feed (1:1) + story (9:16) preview for Revision workspace.
- * Always renders both slots — never hide story when URL is missing.
+ * Preview for Revision workspace.
+ * Social: side-by-side feed (1:1) + story (9:16) — both slots always render.
+ * Flyer: single letter/print preview.
  */
 export function RevisionArtworkPair({
   feedUrl,
   storyUrl,
   title,
   subtitle,
+  variant = "social",
   artUpdated = false,
   animating = false,
   showEditHints = false,
 }: RevisionArtworkPairProps) {
+  if (variant === "flyer") {
+    return (
+      <div className="rev-art-pair-wrap" data-revision-artwork-pair="flyer">
+        <div className="rev-label">Preview</div>
+        <div className="rev-art-pair is-flyer">
+          <ArtSlot
+            view="flyer"
+            url={feedUrl}
+            title={title}
+            subtitle={subtitle}
+            updated={Boolean(artUpdated)}
+            animating={Boolean(animating)}
+          />
+        </div>
+        {showEditHints ? (
+          <p className="rev-art-pair-hint">
+            Open Flyer composer to revise print artwork, then send for
+            re-approval.
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
-    <div className="rev-art-pair-wrap" data-revision-artwork-pair>
+    <div className="rev-art-pair-wrap" data-revision-artwork-pair="social">
       <div className="rev-label">Preview</div>
       <div className="rev-art-pair">
         <ArtSlot

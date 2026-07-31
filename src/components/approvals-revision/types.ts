@@ -16,7 +16,9 @@ export type RevisionTag =
   | "Subject"
   | "Stories"
   | "Preview"
-  | "Links";
+  | "Links"
+  | "QR"
+  | "Layout";
 
 export interface RevisionChecklistItem {
   id: string;

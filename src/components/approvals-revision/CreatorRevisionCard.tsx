@@ -291,6 +291,8 @@ export function CreatorRevisionCard({
     return idle;
   }
 
+  const isFlyer = model.contentType === "flyer";
+
   return (
     <div className="rev-shell">
       <Link href={model.backHref} className="rev-back">
@@ -298,10 +300,20 @@ export function CreatorRevisionCard({
       </Link>
       <h1>{model.title}</h1>
       <p className="rev-lede">
-        Approver comments become AI instructions. Regenerate{" "}
-        <strong>feed (1:1)</strong>, <strong>story (9:16)</strong>, or{" "}
-        <strong>caption</strong> here — no bounce to Create with AI Preview just
-        to fix and resubmit.
+        {isFlyer ? (
+          <>
+            Approver comments guide your print edits. Open{" "}
+            <strong>Flyer composer</strong> to revise artwork, then send for
+            re-approval.
+          </>
+        ) : (
+          <>
+            Approver comments become AI instructions. Regenerate{" "}
+            <strong>feed (1:1)</strong>, <strong>story (9:16)</strong>, or{" "}
+            <strong>caption</strong> here — no bounce to Create with AI Preview
+            just to fix and resubmit.
+          </>
+        )}
       </p>
 
       <div className="rev-card">
@@ -314,18 +326,25 @@ export function CreatorRevisionCard({
         <div className="rev-split">
           <div>
             <RevisionArtworkPair
+              variant={isFlyer ? "flyer" : "social"}
               feedUrl={feedArtworkUrl}
-              storyUrl={storyArtworkUrl}
+              storyUrl={isFlyer ? null : storyArtworkUrl}
               title={model.previewTitle}
               subtitle={scheduleLabel || model.previewSubtitle}
-              artUpdated={artUpdated}
-              animating={artAnimating}
+              artUpdated={isFlyer ? false : artUpdated}
+              animating={isFlyer ? false : artAnimating}
               showEditHints
             />
-            {captionText ? (
+            {!isFlyer && captionText ? (
               <div
                 className={`rev-caption-box${captionAnimating ? " is-regen" : ""}`}
               >
+                {captionText}
+              </div>
+            ) : null}
+            {isFlyer && captionText ? (
+              <div className="rev-caption-box">
+                <div className="rev-label">On-flyer copy</div>
                 {captionText}
               </div>
             ) : null}
@@ -338,93 +357,115 @@ export function CreatorRevisionCard({
               <p>{model.noteBody}</p>
             </div>
 
-            <div className="rev-ai-panel">
-              <div className="rev-label rev-label-teal">
-                Instruct AI (from their note)
+            {isFlyer ? (
+              <div className="rev-ai-panel">
+                <div className="rev-label rev-label-teal">Revise in Flyer</div>
+                <p className="rev-ai-hint" style={{ marginTop: 0 }}>
+                  Print flyers edit in Flyer composer (letter layout, QR, and
+                  copy). Come back here when the artwork is ready to resubmit.
+                </p>
+                <div className="rev-ai-actions">
+                  {model.editArtworkHref ? (
+                    <Link
+                      href={model.editArtworkHref}
+                      className="rev-btn rev-btn-ai"
+                    >
+                      Open Flyer composer
+                    </Link>
+                  ) : null}
+                </div>
               </div>
-              <textarea
-                className="rev-ai-textarea"
-                aria-label="AI instructions"
-                value={aiInstructions}
-                onChange={(e) => setAiInstructions(e.target.value)}
-                rows={3}
-                disabled={busy}
-              />
-              <div className="rev-ai-actions">
-                <button
-                  type="button"
-                  className="rev-btn rev-btn-ai"
-                  onClick={() => onRegenerateArtwork("feed")}
+            ) : (
+              <div className="rev-ai-panel">
+                <div className="rev-label rev-label-teal">
+                  Instruct AI (from their note)
+                </div>
+                <textarea
+                  className="rev-ai-textarea"
+                  aria-label="AI instructions"
+                  value={aiInstructions}
+                  onChange={(e) => setAiInstructions(e.target.value)}
+                  rows={3}
                   disabled={busy}
-                >
-                  {artButtonLabel("feed", "✦ Regenerate feed (1:1)")}
-                </button>
-                <button
-                  type="button"
-                  className="rev-btn rev-btn-ai"
-                  onClick={() => onRegenerateArtwork("story")}
-                  disabled={busy}
-                >
-                  {artButtonLabel("story", "✦ Regenerate story (9:16)")}
-                </button>
-                <button
-                  type="button"
-                  className="rev-btn rev-btn-secondary"
-                  onClick={() => onRegenerateArtwork("both")}
-                  disabled={busy}
-                >
-                  {artButtonLabel("both", "✦ Regenerate both")}
-                </button>
-                <button
-                  type="button"
-                  className="rev-btn rev-btn-ai"
-                  onClick={onRegenerateCaption}
-                  disabled={busy}
-                >
-                  {regeneratingCaption ? "✦ Writing…" : "✦ Regenerate caption"}
-                </button>
-                <button
-                  type="button"
-                  className="rev-btn rev-btn-secondary"
-                  onClick={resetInstructionsFromNote}
-                  disabled={busy}
-                >
-                  Use note as-is
-                </button>
+                />
+                <div className="rev-ai-actions">
+                  <button
+                    type="button"
+                    className="rev-btn rev-btn-ai"
+                    onClick={() => onRegenerateArtwork("feed")}
+                    disabled={busy}
+                  >
+                    {artButtonLabel("feed", "✦ Regenerate feed (1:1)")}
+                  </button>
+                  <button
+                    type="button"
+                    className="rev-btn rev-btn-ai"
+                    onClick={() => onRegenerateArtwork("story")}
+                    disabled={busy}
+                  >
+                    {artButtonLabel("story", "✦ Regenerate story (9:16)")}
+                  </button>
+                  <button
+                    type="button"
+                    className="rev-btn rev-btn-secondary"
+                    onClick={() => onRegenerateArtwork("both")}
+                    disabled={busy}
+                  >
+                    {artButtonLabel("both", "✦ Regenerate both")}
+                  </button>
+                  <button
+                    type="button"
+                    className="rev-btn rev-btn-ai"
+                    onClick={onRegenerateCaption}
+                    disabled={busy}
+                  >
+                    {regeneratingCaption ? "✦ Writing…" : "✦ Regenerate caption"}
+                  </button>
+                  <button
+                    type="button"
+                    className="rev-btn rev-btn-secondary"
+                    onClick={resetInstructionsFromNote}
+                    disabled={busy}
+                  >
+                    Use note as-is
+                  </button>
+                </div>
+                <p className="rev-ai-hint">
+                  Prefilled from the change request. Tweak the instruction, then
+                  regenerate feed, story, both, and/or caption. Credits apply
+                  like Create with AI regenerate.
+                </p>
               </div>
-              <p className="rev-ai-hint">
-                Prefilled from the change request. Tweak the instruction, then
-                regenerate feed, story, both, and/or caption. Credits apply like
-                Create with AI regenerate.
-              </p>
-            </div>
+            )}
 
-            <div className="rev-schedule">
-              <div className="rev-label">Change scheduled date</div>
-              <div className="rev-schedule-row">
-                <input
-                  type="date"
-                  className="rev-schedule-input"
-                  value={scheduleDate}
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                  onBlur={onScheduleBlur}
-                  disabled={busy || model.isDemo}
-                  aria-label="Schedule date"
-                />
-                <input
-                  type="time"
-                  className="rev-schedule-input"
-                  value={scheduleTime}
-                  onChange={(e) => setScheduleTime(e.target.value)}
-                  onBlur={onScheduleBlur}
-                  disabled={busy || model.isDemo}
-                  aria-label="Schedule time"
-                />
+            {!isFlyer ? (
+              <div className="rev-schedule">
+                <div className="rev-label">Change scheduled date</div>
+                <div className="rev-schedule-row">
+                  <input
+                    type="date"
+                    className="rev-schedule-input"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    onBlur={onScheduleBlur}
+                    disabled={busy || model.isDemo}
+                    aria-label="Schedule date"
+                  />
+                  <input
+                    type="time"
+                    className="rev-schedule-input"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    onBlur={onScheduleBlur}
+                    disabled={busy || model.isDemo}
+                    aria-label="Schedule time"
+                  />
+                </div>
+                {savingSchedule ? (
+                  <p className="rev-ai-hint">Saving schedule…</p>
+                ) : null}
               </div>
-              {savingSchedule ? (
-                <p className="rev-ai-hint">Saving schedule…</p>
-              ) : null}
-            </div>
+            ) : null}
 
             <ul className="rev-checklist">
               {checklist.map((item) => (
@@ -459,8 +500,9 @@ export function CreatorRevisionCard({
                 Back to Approvals
               </Link>
               <p className="rev-hint">
-                After AI updates look right → Send for re-approval. Same shell
-                for future Newsletter / Flyer / Homepage revisions.
+                {isFlyer
+                  ? "After Flyer composer looks right → Send for re-approval."
+                  : "After AI updates look right → Send for re-approval. Same shell for future Newsletter / Homepage revisions."}
               </p>
               {error ? (
                 <p className="rev-hint rev-error" role="alert">

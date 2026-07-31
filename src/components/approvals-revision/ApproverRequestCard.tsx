@@ -9,20 +9,17 @@ import type {
   RevisionWorkspaceModel,
 } from "@/components/approvals-revision/types";
 import {
+  FLYER_REVISION_TAGS,
+  SOCIAL_REVISION_TAGS,
+} from "@/lib/approvals-revision/revision-notes";
+import {
   approveUnifiedItemAction,
   requestUnifiedChangesAction,
 } from "@/lib/approvals-scheduling/actions";
 
-const DEFAULT_TAGS: RevisionTag[] = [
-  "Artwork",
-  "Stories",
-  "Date",
-  "Caption",
-  "Copy",
-];
-
 /**
  * Approver Request changes card — matches mockup § Approver.
+ * Branches Social (feed+story) vs Flyer (print) from model.contentType.
  */
 export function ApproverRequestCard({
   model,
@@ -30,10 +27,14 @@ export function ApproverRequestCard({
   model: RevisionWorkspaceModel;
 }) {
   const router = useRouter();
+  const isFlyer = model.contentType === "flyer";
+  const tagOptions = isFlyer ? FLYER_REVISION_TAGS : SOCIAL_REVISION_TAGS;
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState(model.noteBody);
   const [tags, setTags] = useState<RevisionTag[]>(
-    model.revisionTags.length > 0 ? model.revisionTags : ["Artwork", "Date"],
+    model.revisionTags.length > 0
+      ? model.revisionTags.filter((t) => tagOptions.includes(t))
+      : ["Artwork", "Date"],
   );
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -108,8 +109,9 @@ export function ApproverRequestCard({
       </Link>
       <h1>{model.title}</h1>
       <p className="rev-lede">
-        Review feed (1:1) and story (9:16) together. Add a short note and
-        optional tags so the creator checklist writes itself.
+        {isFlyer
+          ? "Review the print flyer artwork. Add a short note and optional tags so the creator checklist writes itself."
+          : "Review feed (1:1) and story (9:16) together. Add a short note and optional tags so the creator checklist writes itself."}
       </p>
 
       <div className="rev-card">
@@ -122,8 +124,9 @@ export function ApproverRequestCard({
         <div className="rev-split">
           <div>
             <RevisionArtworkPair
+              variant={isFlyer ? "flyer" : "social"}
               feedUrl={model.feedArtworkUrl}
-              storyUrl={model.storyArtworkUrl}
+              storyUrl={isFlyer ? null : model.storyArtworkUrl}
               title={model.previewTitle}
               subtitle={model.previewSubtitle}
             />
@@ -143,7 +146,7 @@ export function ApproverRequestCard({
             <div className="rev-field">
               <label>Tag what needs work (helps their checklist)</label>
               <div className="rev-chips">
-                {DEFAULT_TAGS.map((tag) => (
+                {tagOptions.map((tag) => (
                   <button
                     key={tag}
                     type="button"
@@ -172,11 +175,12 @@ export function ApproverRequestCard({
                 onClick={onApprove}
                 disabled={pending}
               >
-                Approve &amp; schedule
+                {isFlyer ? "Approve" : "Approve & schedule"}
               </button>
               <p className="rev-hint">
-                Tags become the creator’s revision checklist. Works the same
-                when content type is Newsletter or Homepage later.
+                {isFlyer
+                  ? "Tags become the creator’s revision checklist. Flyer approval saves a print-ready draft — nothing posts to Meta."
+                  : "Tags become the creator’s revision checklist. Works the same when content type is Newsletter or Homepage later."}
               </p>
               {error ? (
                 <p className="rev-hint" role="alert" style={{ color: "#a65a3a" }}>

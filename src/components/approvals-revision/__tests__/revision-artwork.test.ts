@@ -112,7 +112,7 @@ describe("resolveRevisionArtworkUrls", () => {
 });
 
 describe("Revision dual-format UI wiring", () => {
-  it("Creator and Approver cards always mount RevisionArtworkPair", () => {
+  it("Creator and Approver cards mount RevisionArtworkPair with social regenerate", () => {
     const creator = readFileSync(
       new URL("../CreatorRevisionCard.tsx", import.meta.url),
       "utf8",
@@ -135,6 +135,37 @@ describe("Revision dual-format UI wiring", () => {
     assert.match(pair, /Story · 9:16/);
     assert.match(pair, /No story artwork yet/);
     assert.match(pair, /view="story"/);
-    assert.match(pair, /Always renders both slots/);
+    assert.match(pair, /both slots always render/i);
+  });
+
+  it("branches Flyer print preview + tags away from Social feed/story", () => {
+    const creator = readFileSync(
+      new URL("../CreatorRevisionCard.tsx", import.meta.url),
+      "utf8",
+    );
+    const approver = readFileSync(
+      new URL("../ApproverRequestCard.tsx", import.meta.url),
+      "utf8",
+    );
+    const pair = readFileSync(
+      new URL("../RevisionArtworkPair.tsx", import.meta.url),
+      "utf8",
+    );
+
+    assert.match(approver, /contentType === "flyer"/);
+    assert.match(approver, /Review the print flyer artwork/);
+    assert.match(approver, /FLYER_REVISION_TAGS/);
+    assert.match(approver, /Approve(?! & schedule)/);
+    assert.match(approver, /variant=\{isFlyer \? "flyer" : "social"\}/);
+    assert.doesNotMatch(
+      approver,
+      /DEFAULT_TAGS[\s\S]*Stories[\s\S]*Caption/,
+    );
+
+    assert.match(creator, /Open Flyer composer/);
+    assert.match(creator, /variant=\{isFlyer \? "flyer" : "social"\}/);
+    assert.match(pair, /variant === "flyer"/);
+    assert.match(pair, /Flyer · print/);
+    assert.match(pair, /No flyer artwork yet/);
   });
 });

@@ -1,7 +1,7 @@
 # Resend email templates
 
 **Status:** Living  
-**Last updated:** July 29, 2026  
+**Last updated:** July 31, 2026  
 **Preview:** [transactional email mockup](../../public/resend-email-templates-mockup.html)
 
 ## Ship now
@@ -38,7 +38,7 @@ Every transactional template uses the same restrained shell:
 - A dark charcoal header: **Hey Ralli** at left and an uppercase category label at right.
 - A 560px rounded card with one short headline, one concise sentence, and one dark CTA.
 - Approval and reminder cards use soft green; welcome, invite, agreement, story-kit, and trial cards use soft beige; publishing, billing, and connection recovery cards use a calm soft rose-neutral.
-- A compact meta or preview box is optional only when it helps the recipient act. Artwork-format labels (`1:1` and `9:16`) belong only to approval and story-kit templates.
+- A compact meta or preview box is optional only when it helps the recipient act. Artwork-format labels use Resend variable `{{{ARTWORK_SUMMARY}}}` (fallback `1:1 feed · 9:16 story`; Flyer sends pass `Print flyer`). CTA button label uses `{{{CTA_LABEL}}}` where the action differs (e.g. change-request → `Open Flyer composer` vs `Edit artwork`). Story-kit keeps fixed Stories language.
 - No marketing sections, extra CTAs, purple, or decorative emoji. Use direct, calm operational language.
 
 HTML uses tables and inline styles for email-client compatibility. Resend variables

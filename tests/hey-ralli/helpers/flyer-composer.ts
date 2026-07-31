@@ -41,7 +41,7 @@ export const MOCK_GENERATED_SLOTS: Record<SlotFieldId, string> = {
 };
 
 export async function openFlyerComposer(page: Page, view: "start" | "inputs" | "result" = "start") {
-  await page.goto(`/create-with-ai-flyer.html?view=${view}`);
+  await page.goto(`/create-with-ai-flyer.html?embed=1&view=${view}`);
   await page.evaluate((key) => localStorage.removeItem(key), FLYER_COMPOSER_STORAGE_KEY);
   await page.reload();
   await page.waitForSelector('[data-panel="start"]');

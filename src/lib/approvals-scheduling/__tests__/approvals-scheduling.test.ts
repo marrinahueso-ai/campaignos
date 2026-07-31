@@ -336,6 +336,9 @@ describe("approval notification hooks", () => {
     assert.match(source, /absoluteCampaignBuilderPreviewMilestoneHref/);
     assert.match(source, /isFlyerComposerMilestoneId/);
     assert.match(source, /flyerComposerEditHref/);
+    assert.match(source, /approvalEmailFormatVariables/);
+    assert.match(source, /ARTWORK_SUMMARY/);
+    assert.match(source, /CTA_LABEL/);
     assert.doesNotMatch(source, /Edit & resend/);
     assert.match(source, /export async function sendContentApprovedEmail/);
     assert.match(source, /export async function sendScheduledDeliveryEmail/);

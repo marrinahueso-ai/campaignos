@@ -86,16 +86,20 @@ export function mapApprovalItemToRevision(
   const artwork = resolveRevisionArtworkUrls(item);
   const preview = getUnifiedApprovalPreview(item);
   const parsedNotes = parseRevisionNotes(item.notes);
-  const noteBody =
-    parsedNotes.comment ||
-    "Your approver asked for updates. Make the edits below, then send for re-approval.";
-  const noteWho = `${item.assigneeName || "Approver"}${
-    item.assigneeRole ? ` · ${item.assigneeRole}` : ""
-  }`;
-
   const isFlyer =
     item.channel === "flyer" ||
     isFlyerComposerMilestoneId(item.campaignMilestoneId);
+
+  const noteBody =
+    parsedNotes.comment ||
+    (mode === "creator"
+      ? isFlyer
+        ? "Your approver asked for updates. Open Flyer composer, revise the print artwork, then send for re-approval."
+        : "Your approver asked for updates. Make the edits below, then send for re-approval."
+      : "");
+  const noteWho = `${item.assigneeName || "Approver"}${
+    item.assigneeRole ? ` · ${item.assigneeRole}` : ""
+  }`;
 
   const editArtworkHref = isFlyer
     ? flyerComposerEditHref()
@@ -155,7 +159,7 @@ export function mapApprovalItemToRevision(
     previewFootnote: "",
     captionText: preview.captionText,
     feedArtworkUrl: artwork.feedArtworkUrl,
-    storyArtworkUrl: artwork.storyArtworkUrl,
+    storyArtworkUrl: isFlyer ? null : artwork.storyArtworkUrl,
     scheduleAt: item.scheduleAt,
     scheduleDate,
     scheduleTime,

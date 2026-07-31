@@ -48,4 +48,27 @@ describe("approval content preview", () => {
     assert.match(text, /Feed artwork: https:\/\/cdn\.example\/feed\.png/);
     assert.match(text, /Caption:\nHello families/);
   });
+
+  it("uses flyer labels when contentKind is flyer", () => {
+    const html = buildApprovalContentPreviewHtml({
+      contentKind: "flyer",
+      feedArtworkUrl: "https://cdn.example/flyer.png",
+      storyArtworkUrl: "https://cdn.example/story.png",
+      captionText: "Friday Night Lights",
+      storyCaption: "ignored for flyer",
+    });
+    assert.match(html, /Flyer artwork/);
+    assert.match(html, /On-flyer copy/);
+    assert.match(html, /Friday Night Lights/);
+    assert.doesNotMatch(html, /Feed artwork/);
+    assert.doesNotMatch(html, /Story artwork/);
+
+    const text = buildApprovalContentPreviewText({
+      contentKind: "flyer",
+      feedArtworkUrl: "https://cdn.example/flyer.png",
+      captionText: "Friday Night Lights",
+    });
+    assert.match(text, /Flyer artwork:/);
+    assert.match(text, /On-flyer copy:\nFriday Night Lights/);
+  });
 });

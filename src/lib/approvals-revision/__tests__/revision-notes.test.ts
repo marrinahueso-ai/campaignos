@@ -107,4 +107,13 @@ describe("artworkFromSnapshot per-view patch", () => {
     assert.equal(rows[1]?.tag, "Stories");
     assert.match(rows[1]?.detail ?? "", /9:16/);
   });
+
+  it("encodes flyer QR and Layout tags", () => {
+    const encoded = encodeRevisionNotes("Move the QR lower", ["QR", "Layout"]);
+    const parsed = parseRevisionNotes(encoded);
+    assert.deepEqual(parsed.tags, ["QR", "Layout"]);
+    const rows = checklistFromTags(["QR", "Layout"], null);
+    assert.match(rows[0]?.detail ?? "", /QR/i);
+    assert.match(rows[1]?.detail ?? "", /Spacing|layout|print/i);
+  });
 });

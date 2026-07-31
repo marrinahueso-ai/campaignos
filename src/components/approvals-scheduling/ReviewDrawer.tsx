@@ -355,7 +355,7 @@ export function ReviewDrawer({
               <div className="flex min-w-0 flex-col gap-4">
                 <div>
                   <p className="mb-2 text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
-                    Caption
+                    {isFlyer ? "On-flyer copy" : "Caption"}
                   </p>
                   <div
                     className={cn(
@@ -363,7 +363,8 @@ export function ReviewDrawer({
                       !caption && "italic text-cos-muted",
                     )}
                   >
-                    {caption || "No caption yet."}
+                    {caption ||
+                      (isFlyer ? "No on-flyer copy yet." : "No caption yet.")}
                   </div>
                 </div>
 
@@ -410,7 +411,11 @@ export function ReviewDrawer({
                 onClick={onApprove}
                 className="rounded-full bg-cos-text px-[18px] py-2.5 text-[13px] font-bold text-cos-card transition hover:bg-[#1a1714] disabled:opacity-50"
               >
-                {isSubmitting ? "Saving…" : "Approve & schedule"}
+                {isSubmitting
+                  ? "Saving…"
+                  : isFlyer
+                    ? "Approve"
+                    : "Approve & schedule"}
               </button>
               <button
                 type="button"
@@ -421,7 +426,9 @@ export function ReviewDrawer({
                 Request changes
               </button>
               <p className="min-w-[160px] flex-1 text-xs text-cos-muted">
-                Review only — leave your note on Request changes.
+                {isFlyer
+                  ? "Print draft only — leave your note on Request changes."
+                  : "Review only — leave your note on Request changes."}
               </p>
             </>
           ) : item.workflowStatus === "scheduled" ||

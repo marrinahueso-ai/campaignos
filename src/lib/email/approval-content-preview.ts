@@ -1,10 +1,31 @@
 import { escapeHtml, sanitizeHrefUrl } from "@/lib/utils/html";
 
+export type ApprovalEmailContentKind = "social" | "flyer";
+
 export interface ApprovalEmailContentPreview {
   feedArtworkUrl?: string | null;
   storyArtworkUrl?: string | null;
   captionText?: string | null;
   storyCaption?: string | null;
+  /** When `flyer`, labels use print-flyer language (no feed/story). */
+  contentKind?: ApprovalEmailContentKind | null;
+}
+
+/** Resend template vars that switch Social vs Flyer artwork language. */
+export function approvalEmailFormatVariables(isFlyer: boolean): {
+  ARTWORK_SUMMARY: string;
+  CTA_LABEL: string;
+} {
+  if (isFlyer) {
+    return {
+      ARTWORK_SUMMARY: "Print flyer",
+      CTA_LABEL: "Open Flyer composer",
+    };
+  }
+  return {
+    ARTWORK_SUMMARY: "1:1 feed · 9:16 story",
+    CTA_LABEL: "Edit artwork",
+  };
 }
 
 function artworkBlock(
@@ -46,6 +67,28 @@ function captionBlock(label: string, text: string): string {
 export function buildApprovalContentPreviewHtml(
   input: ApprovalEmailContentPreview,
 ): string {
+  const isFlyer = input.contentKind === "flyer";
+
+  if (isFlyer) {
+    const flyer = artworkBlock(
+      input.feedArtworkUrl,
+      "Flyer artwork",
+      "Print flyer preview",
+      240,
+    );
+    const copy = input.captionText?.trim() || "";
+    const captions = copy ? captionBlock("On-flyer copy", copy) : "";
+    if (!flyer && !captions) {
+      return "";
+    }
+    return `
+    <div style="margin:20px 0 8px;padding:18px 0 4px;border-top:1px solid #ddd4c8;">
+      ${flyer ? `<div style="margin:0 0 4px;">${flyer}</div>` : ""}
+      ${captions}
+    </div>
+  `;
+  }
+
   const feed = artworkBlock(
     input.feedArtworkUrl,
     "Feed artwork",
@@ -89,7 +132,20 @@ export function buildApprovalContentPreviewHtml(
 export function buildApprovalContentPreviewText(
   input: ApprovalEmailContentPreview,
 ): string {
+  const isFlyer = input.contentKind === "flyer";
   const parts: string[] = [];
+
+  if (isFlyer) {
+    if (input.feedArtworkUrl?.trim()) {
+      parts.push(`Flyer artwork: ${input.feedArtworkUrl.trim()}`);
+    }
+    const copy = input.captionText?.trim() || "";
+    if (copy) {
+      parts.push(`On-flyer copy:\n${copy}`);
+    }
+    return parts.length > 0 ? `\n\n${parts.join("\n\n")}` : "";
+  }
+
   if (input.feedArtworkUrl?.trim()) {
     parts.push(`Feed artwork: ${input.feedArtworkUrl.trim()}`);
   }

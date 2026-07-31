@@ -325,6 +325,7 @@ export async function sendCampaignBuilderForApproval(
       recipientEmail,
       approverRole: assignee.organizationRoleName ?? "committee-chair",
       schedulingItemId,
+      campaignMilestoneId: milestone.id,
       feedArtworkUrl: preview.artwork.feedUrl,
       storyArtworkUrl: preview.artwork.storyUrl,
       captionText,
