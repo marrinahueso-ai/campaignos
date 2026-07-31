@@ -1,7 +1,7 @@
 import "server-only";
 
 import {
-  approvalEmailFormatVariables,
+  buildApprovalEmailArtworkVariables,
   type ApprovalEmailContentPreview,
 } from "@/lib/email/approval-content-preview";
 import {
@@ -229,8 +229,17 @@ export async function sendApprovalAssignedEmail(
   const { isFlyerComposerMilestoneId } = await import(
     "@/lib/flyer-composer/approval"
   );
-  const isFlyer = isFlyerComposerMilestoneId(input.campaignMilestoneId);
-  const format = approvalEmailFormatVariables(isFlyer);
+  const isFlyer =
+    input.contentKind === "flyer" ||
+    isFlyerComposerMilestoneId(input.campaignMilestoneId);
+  const artwork = buildApprovalEmailArtworkVariables({
+    isFlyer,
+    feedArtworkUrl: input.feedArtworkUrl,
+    storyArtworkUrl: input.storyArtworkUrl,
+    captionText: input.captionText,
+    storyCaption: input.storyCaption,
+    ctaLabel: "Review approval",
+  });
   const href = approvalsPageUrl(input.eventId);
 
   return dispatchApprovalEmail({
@@ -242,8 +251,9 @@ export async function sendApprovalAssignedEmail(
     variables: {
       CONTENT_NAME: `${input.milestoneName} in ${input.campaignName}`,
       ACTION_URL: href,
-      ARTWORK_SUMMARY: format.ARTWORK_SUMMARY,
-      CTA_LABEL: "Review approval",
+      ARTWORK_SUMMARY: artwork.ARTWORK_SUMMARY,
+      CTA_LABEL: artwork.CTA_LABEL,
+      ARTWORK_PREVIEW_HTML: artwork.ARTWORK_PREVIEW_HTML,
     },
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
@@ -257,8 +267,17 @@ export async function sendApprovalResubmittedEmail(
   const { isFlyerComposerMilestoneId } = await import(
     "@/lib/flyer-composer/approval"
   );
-  const isFlyer = isFlyerComposerMilestoneId(input.campaignMilestoneId);
-  const format = approvalEmailFormatVariables(isFlyer);
+  const isFlyer =
+    input.contentKind === "flyer" ||
+    isFlyerComposerMilestoneId(input.campaignMilestoneId);
+  const artwork = buildApprovalEmailArtworkVariables({
+    isFlyer,
+    feedArtworkUrl: input.feedArtworkUrl,
+    storyArtworkUrl: input.storyArtworkUrl,
+    captionText: input.captionText,
+    storyCaption: input.storyCaption,
+    ctaLabel: "Review approval",
+  });
   const href = approvalsPageUrl(input.eventId);
 
   return dispatchApprovalEmail({
@@ -270,8 +289,9 @@ export async function sendApprovalResubmittedEmail(
     variables: {
       CONTENT_NAME: `${input.milestoneName} in ${input.campaignName}`,
       ACTION_URL: href,
-      ARTWORK_SUMMARY: format.ARTWORK_SUMMARY,
-      CTA_LABEL: "Review approval",
+      ARTWORK_SUMMARY: artwork.ARTWORK_SUMMARY,
+      CTA_LABEL: artwork.CTA_LABEL,
+      ARTWORK_PREVIEW_HTML: artwork.ARTWORK_PREVIEW_HTML,
     },
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
@@ -293,8 +313,16 @@ export async function sendChangeRequestedEmail(
   const { isFlyerComposerMilestoneId, flyerComposerEditHref } = await import(
     "@/lib/flyer-composer/approval"
   );
-  const isFlyer = isFlyerComposerMilestoneId(input.campaignMilestoneId);
-  const format = approvalEmailFormatVariables(isFlyer);
+  const isFlyer =
+    input.contentKind === "flyer" ||
+    isFlyerComposerMilestoneId(input.campaignMilestoneId);
+  const artwork = buildApprovalEmailArtworkVariables({
+    isFlyer,
+    feedArtworkUrl: input.feedArtworkUrl,
+    storyArtworkUrl: input.storyArtworkUrl,
+    captionText: input.captionText,
+    storyCaption: input.storyCaption,
+  });
   const base =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
   const reviewHref = `${base.replace(/\/$/, "")}/events/${input.eventId}/campaign-builder#review`;
@@ -326,8 +354,9 @@ export async function sendChangeRequestedEmail(
       CONTENT_NAME: `${input.milestoneName} in ${input.campaignName}`,
       CHANGE_NOTE: input.comment,
       ACTION_URL: primaryHref,
-      ARTWORK_SUMMARY: format.ARTWORK_SUMMARY,
-      CTA_LABEL: format.CTA_LABEL,
+      ARTWORK_SUMMARY: artwork.ARTWORK_SUMMARY,
+      CTA_LABEL: artwork.CTA_LABEL,
+      ARTWORK_PREVIEW_HTML: artwork.ARTWORK_PREVIEW_HTML,
     },
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
@@ -348,8 +377,17 @@ export async function sendContentApprovedEmail(
   const { isFlyerComposerMilestoneId } = await import(
     "@/lib/flyer-composer/approval"
   );
-  const isFlyer = isFlyerComposerMilestoneId(input.campaignMilestoneId);
-  const format = approvalEmailFormatVariables(isFlyer);
+  const isFlyer =
+    input.contentKind === "flyer" ||
+    isFlyerComposerMilestoneId(input.campaignMilestoneId);
+  const artwork = buildApprovalEmailArtworkVariables({
+    isFlyer,
+    feedArtworkUrl: input.feedArtworkUrl,
+    storyArtworkUrl: input.storyArtworkUrl,
+    captionText: input.captionText,
+    storyCaption: input.storyCaption,
+    ctaLabel: isFlyer ? "View in Approvals" : "View schedule",
+  });
   const href = approvalsPageUrl(input.eventId);
 
   return dispatchApprovalEmail({
@@ -361,8 +399,9 @@ export async function sendContentApprovedEmail(
     variables: {
       CONTENT_NAME: `${input.milestoneName} in ${input.campaignName}`,
       ACTION_URL: href,
-      ARTWORK_SUMMARY: format.ARTWORK_SUMMARY,
-      CTA_LABEL: isFlyer ? "View in Approvals" : "View schedule",
+      ARTWORK_SUMMARY: artwork.ARTWORK_SUMMARY,
+      CTA_LABEL: artwork.CTA_LABEL,
+      ARTWORK_PREVIEW_HTML: artwork.ARTWORK_PREVIEW_HTML,
     },
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
@@ -383,8 +422,17 @@ export async function sendScheduledDeliveryEmail(
   const { isFlyerComposerMilestoneId } = await import(
     "@/lib/flyer-composer/approval"
   );
-  const isFlyer = isFlyerComposerMilestoneId(input.campaignMilestoneId);
-  const format = approvalEmailFormatVariables(isFlyer);
+  const isFlyer =
+    input.contentKind === "flyer" ||
+    isFlyerComposerMilestoneId(input.campaignMilestoneId);
+  const artwork = buildApprovalEmailArtworkVariables({
+    isFlyer,
+    feedArtworkUrl: input.feedArtworkUrl,
+    storyArtworkUrl: input.storyArtworkUrl,
+    captionText: input.captionText,
+    storyCaption: input.storyCaption,
+    ctaLabel: "View in Approvals",
+  });
   const href = approvalsPageUrl(input.eventId);
 
   return dispatchApprovalEmail({
@@ -397,8 +445,9 @@ export async function sendScheduledDeliveryEmail(
       CONTENT_NAME: `${input.milestoneName} in ${input.campaignName}`,
       SCHEDULE_TIME: input.scheduleLabel,
       ACTION_URL: href,
-      ARTWORK_SUMMARY: format.ARTWORK_SUMMARY,
-      CTA_LABEL: "View in Approvals",
+      ARTWORK_SUMMARY: artwork.ARTWORK_SUMMARY,
+      CTA_LABEL: artwork.CTA_LABEL,
+      ARTWORK_PREVIEW_HTML: artwork.ARTWORK_PREVIEW_HTML,
     },
     schedulingItemId: input.schedulingItemId,
   });

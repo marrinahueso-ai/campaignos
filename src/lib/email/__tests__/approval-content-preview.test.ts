@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   buildApprovalContentPreviewHtml,
   buildApprovalContentPreviewText,
+  buildApprovalEmailArtworkVariables,
 } from "@/lib/email/approval-content-preview";
 
 describe("approval content preview", () => {
@@ -19,7 +20,7 @@ describe("approval content preview", () => {
     assert.match(html, /https:\/\/cdn\.example\/feed\.png/);
     assert.match(html, /https:\/\/cdn\.example\/story\.png/);
     assert.match(html, /Bring snacks Friday!/);
-    assert.match(html, />Caption</);
+    assert.match(html, /Caption/);
   });
 
   it("shows separate feed and story captions when they differ", () => {
@@ -47,6 +48,27 @@ describe("approval content preview", () => {
 
     assert.match(text, /Feed artwork: https:\/\/cdn\.example\/feed\.png/);
     assert.match(text, /Caption:\nHello families/);
+  });
+
+  it("builds Resend vars with preview HTML for social and flyer", () => {
+    const social = buildApprovalEmailArtworkVariables({
+      isFlyer: false,
+      feedArtworkUrl: "https://cdn.example/feed.png",
+      storyArtworkUrl: "https://cdn.example/story.png",
+      ctaLabel: "Review approval",
+    });
+    assert.equal(social.ARTWORK_SUMMARY, "1:1 feed · 9:16 story");
+    assert.equal(social.CTA_LABEL, "Review approval");
+    assert.match(social.ARTWORK_PREVIEW_HTML, /src="https:\/\/cdn\.example\/feed\.png"/);
+    assert.match(social.ARTWORK_PREVIEW_HTML, /src="https:\/\/cdn\.example\/story\.png"/);
+
+    const flyer = buildApprovalEmailArtworkVariables({
+      isFlyer: true,
+      feedArtworkUrl: "https://cdn.example/flyer.png",
+    });
+    assert.equal(flyer.ARTWORK_SUMMARY, "Print flyer");
+    assert.match(flyer.ARTWORK_PREVIEW_HTML, /Flyer artwork/);
+    assert.doesNotMatch(flyer.ARTWORK_PREVIEW_HTML, /Story artwork/);
   });
 
   it("uses flyer labels when contentKind is flyer", () => {
