@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Homepage Composer — Save by month (mockup)</title>
+  <meta name="description" content="Clickable ease mockup: work on next month’s homepage with a simple month workspace, Save this month, and Copy from prior month." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, select { font: inherit; color: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+    [hidden] { display: none !important; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes soft-in {
+      from { opacity: 0; transform: scale(0.988); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes pulse-soft {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(42, 122, 134, 0); }
+      50% { box-shadow: 0 0 0 4px rgba(42, 122, 134, 0.12); }
+    }
+
+    .shell { max-width: 1100px; margin: 0 auto; padding: 18px 18px 72px; }
+
+    .mock-banner {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 10px 16px; margin-bottom: 16px; padding: 10px 14px;
+      border-radius: 14px; border: 1px dashed rgba(196, 146, 46, 0.4);
+      background: rgba(196, 146, 46, 0.1); color: #7a5a12;
+      font-size: 13px; font-weight: 600; animation: rise 0.4s var(--ease) both;
+    }
+    .mock-banner a { color: var(--teal); font-weight: 700; text-decoration: none; }
+    .mock-banner a:hover { text-decoration: underline; }
+
+    .how {
+      margin-bottom: 18px; padding: 14px 16px;
+      border-radius: 16px; border: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.85);
+      box-shadow: var(--shadow);
+      animation: rise 0.45s var(--ease) 0.04s both;
+    }
+    .how summary {
+      cursor: pointer; font-size: 13px; font-weight: 700; color: var(--ink-soft);
+      list-style: none;
+    }
+    .how summary::-webkit-details-marker { display: none; }
+    .how summary::before {
+      content: "▸ "; color: var(--teal); font-weight: 800;
+    }
+    .how[open] summary::before { content: "▾ "; }
+    .how p {
+      margin: 10px 0 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft);
+      max-width: 48rem;
+    }
+    .how ol {
+      margin: 8px 0 0; padding-left: 1.2rem;
+      font-size: 13px; line-height: 1.55; color: var(--ink-soft);
+    }
+    .how li { margin: 2px 0; }
+    .how code {
+      font-size: 12px; padding: 1px 5px; border-radius: 6px;
+      background: var(--cream-deep); color: var(--ink);
+    }
+
+    .try {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px;
+      padding: 4px; border-radius: 999px;
+      background: rgba(255, 252, 247, 0.85); border: 1px solid var(--line);
+      box-shadow: var(--shadow); animation: rise 0.45s var(--ease) 0.06s both;
+    }
+    .try button {
+      border-radius: 999px; padding: 9px 14px; font-size: 12px; font-weight: 700;
+      color: var(--muted); transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    .try button:hover { color: var(--ink); background: rgba(42, 38, 34, 0.04); }
+    .try button .n {
+      display: inline-grid; place-items: center;
+      width: 18px; height: 18px; margin-right: 6px; border-radius: 999px;
+      font-size: 10px; background: rgba(42, 38, 34, 0.08); color: var(--muted);
+      vertical-align: -1px;
+    }
+
+    .top {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      gap: 12px; margin-bottom: 14px; animation: rise 0.45s var(--ease) 0.08s both;
+    }
+    .back-link {
+      display: inline-block; margin-bottom: 6px; font-size: 13px; font-weight: 600;
+      color: var(--muted); text-decoration: none;
+    }
+    .back-link:hover { color: var(--ink); }
+    .top h1 {
+      margin: 0; font-family: var(--serif); font-size: clamp(1.85rem, 3.5vw, 2.45rem);
+      font-weight: 600; letter-spacing: -0.02em; line-height: 1.1;
+    }
+    .top .lede {
+      margin: 6px 0 0; max-width: 34rem; color: var(--ink-soft);
+      font-size: 0.95rem; line-height: 1.45;
+    }
+    .save-status {
+      font-size: 12px; font-weight: 650; color: var(--sage);
+      padding-top: 4px; transition: color 0.2s;
+    }
+    .save-status.unsaved { color: var(--mustard); }
+    .save-status.empty { color: var(--muted); }
+
+    .layout {
+      display: grid; grid-template-columns: 1fr; gap: 14px;
+      animation: rise 0.5s var(--ease) 0.1s both;
+    }
+    @media (min-width: 900px) {
+      .layout { grid-template-columns: 180px minmax(0, 1fr); align-items: start; }
+    }
+
+    .steps-rail {
+      position: sticky; top: 12px;
+      background: var(--cream-deep); border-radius: 18px; padding: 10px;
+    }
+    .steps-label {
+      margin: 0 0 6px; padding: 0 8px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted);
+    }
+    .step-btn {
+      width: 100%; text-align: left; border-radius: 12px; padding: 10px;
+      font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 2px;
+    }
+    .step-btn.active { background: var(--white); color: var(--ink); box-shadow: var(--shadow); }
+    .step-btn .hint {
+      display: block; margin-top: 3px; font-size: 11px; font-weight: 500; color: var(--muted);
+    }
+
+    /* Month workspace — the one new job */
+    .month-bar {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 12px; padding: 12px 14px;
+      border-radius: 18px; border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .month-bar.highlight {
+      border-color: rgba(42, 122, 134, 0.35);
+      animation: pulse-soft 1.2s var(--ease) 2;
+    }
+    .month-left { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; min-width: 0; }
+    .month-label {
+      font-size: 10px; font-weight: 750; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted);
+    }
+    .month-picker {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px; border-radius: 999px;
+      background: var(--cream); border: 1px solid var(--line);
+    }
+    .month-nav {
+      width: 34px; height: 34px; border-radius: 999px;
+      display: grid; place-items: center;
+      color: var(--ink-soft); transition: background 0.12s, color 0.12s;
+    }
+    .month-nav:hover:not(:disabled) { background: var(--white); color: var(--ink); }
+    .month-nav:disabled { opacity: 0.35; cursor: not-allowed; }
+    .month-nav svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .month-select {
+      appearance: none; -webkit-appearance: none;
+      border: none; background: transparent;
+      font-family: var(--serif); font-size: 1.15rem; font-weight: 600;
+      letter-spacing: -0.02em; padding: 4px 28px 4px 10px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%237a7166' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+      cursor: pointer; color: var(--ink); max-width: 11rem;
+    }
+    .month-meta {
+      font-size: 12.5px; color: var(--ink-soft); line-height: 1.35;
+    }
+    .month-meta strong { color: var(--ink); font-weight: 650; }
+    .month-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 15px; border-radius: 999px; font-size: 13px; font-weight: 700;
+      border: 1.5px solid transparent; text-decoration: none;
+      transition: filter 0.15s, transform 0.15s, background 0.15s;
+    }
+    .btn:hover { filter: brightness(1.04); }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--forest); color: var(--cream); }
+    .btn-secondary { background: var(--cream); border-color: var(--line); color: var(--ink); }
+    .btn-ghost {
+      background: transparent; color: var(--teal); font-weight: 700;
+      padding: 8px 10px; border: none;
+    }
+    .btn-ghost:hover { text-decoration: underline; filter: none; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+
+    .panel {
+      background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 20px 20px 22px;
+      animation: soft-in 0.35s var(--ease) both;
+    }
+    .panel-head {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      gap: 10px; margin-bottom: 14px;
+    }
+    .panel h2 {
+      margin: 0; font-family: var(--serif); font-size: 1.5rem; font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .panel .sub { margin: 4px 0 0; color: var(--ink-soft); font-size: 0.92rem; line-height: 1.4; }
+    .panel-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .note {
+      margin-bottom: 14px; padding: 11px 13px; border-radius: 14px;
+      background: rgba(196, 146, 46, 0.1); border: 1px solid rgba(196, 146, 46, 0.22);
+      font-size: 13px; line-height: 1.45; color: #6a4f14;
+    }
+
+    .cols {
+      display: grid; grid-template-columns: 1fr; gap: 14px;
+    }
+    @media (min-width: 760px) {
+      .cols { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.15fr); }
+    }
+
+    .col-title {
+      margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--ink);
+    }
+    .filter-label {
+      display: block; margin-bottom: 4px;
+      font-size: 10px; font-weight: 750; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted);
+    }
+    .filter-select {
+      width: 100%; max-width: 200px; margin-bottom: 10px;
+      padding: 9px 12px; border-radius: 12px;
+      border: 1px solid var(--line); background: var(--cream);
+      font-size: 13px; font-weight: 600;
+    }
+    .event-list { display: flex; flex-direction: column; gap: 4px; }
+    .event-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 4px; font-size: 13px; line-height: 1.35; color: var(--ink-soft);
+    }
+    .event-row input { margin-top: 2px; accent-color: var(--forest); }
+    .event-row strong { color: var(--ink); font-weight: 600; }
+
+    .sort-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; margin-bottom: 10px;
+    }
+    .sort-row select {
+      padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line);
+      background: var(--cream); font-size: 12px; font-weight: 600;
+    }
+
+    .card {
+      border: 1px solid var(--line); border-radius: 16px; padding: 12px;
+      background: var(--cream);
+      margin-bottom: 10px;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    .card-top {
+      display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;
+    }
+    .thumb {
+      width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(145deg, #3d6a58, #2a7a86);
+    }
+    .card:nth-child(2) .thumb { background: linear-gradient(145deg, #c4922e, #8a6a2a); }
+    .card:nth-child(3) .thumb { background: linear-gradient(145deg, #2f4a3c, #6b8171); }
+    .card h3 { margin: 0; font-size: 15px; font-weight: 700; }
+    .card .desc {
+      margin: 4px 0 0; font-size: 12.5px; color: var(--ink-soft); line-height: 1.4;
+    }
+    .card-meta {
+      display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 8px;
+      font-size: 11px; font-weight: 650; color: var(--muted);
+    }
+    .card-meta span {
+      padding: 3px 8px; border-radius: 999px;
+      background: rgba(255, 252, 247, 0.9); border: 1px solid var(--line);
+    }
+
+    .empty {
+      text-align: center; padding: 36px 20px;
+      border: 1.5px dashed rgba(42, 38, 34, 0.14);
+      border-radius: 16px; background: rgba(246, 242, 235, 0.5);
+    }
+    .empty h3 {
+      margin: 0; font-family: var(--serif); font-size: 1.25rem; font-weight: 600;
+    }
+    .empty p {
+      margin: 8px auto 16px; max-width: 22rem;
+      font-size: 13.5px; color: var(--ink-soft); line-height: 1.45;
+    }
+
+    .toast {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+      z-index: 40; padding: 11px 18px; border-radius: 999px;
+      background: var(--ink); color: var(--cream);
+      font-size: 13px; font-weight: 650;
+      box-shadow: 0 12px 32px rgba(42, 38, 34, 0.22);
+      animation: toast-in 0.3s var(--ease) both;
+    }
+
+    .copy-menu {
+      position: absolute; right: 0; top: calc(100% + 6px); z-index: 20;
+      min-width: 180px; padding: 6px;
+      border-radius: 14px; border: 1px solid var(--line);
+      background: var(--white); box-shadow: 0 14px 36px rgba(42, 38, 34, 0.14);
+      animation: soft-in 0.2s var(--ease) both;
+    }
+    .copy-wrap { position: relative; }
+    .copy-menu button {
+      display: block; width: 100%; text-align: left;
+      padding: 9px 12px; border-radius: 10px;
+      font-size: 13px; font-weight: 600; color: var(--ink);
+    }
+    .copy-menu button:hover { background: var(--cream); }
+    .copy-menu .hint {
+      display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <!--
+    Product model (mock only — not wired):
+    Each calendar month is its own homepage draft snapshot (cards + optional header/footer overrides).
+    Founders work ahead by switching “Working on” month, editing, and Save this month.
+    Header/Footer can stay shared (“Design once”); Cards change monthly.
+    “Copy from …” seeds an empty month from a prior saved snapshot.
+  -->
+  <div class="shell">
+    <div class="mock-banner">
+      <span>Mockup · Save homepage by month — clickable only, not production</span>
+      <a href="/homepage-composer">Open real Homepage Composer →</a>
+    </div>
+
+    <details class="how">
+      <summary>How it works</summary>
+      <p>
+        In product, each month would store its own homepage draft (cards, and anything else that changes monthly).
+        Header and footer stay “design once.” Switching months loads that month’s snapshot — empty until you save or copy.
+        This page is a visual mock only; nothing is persisted to the server.
+      </p>
+      <ol>
+        <li>Pick <strong>Working on</strong> month (August → September).</li>
+        <li><strong>Save this month</strong> stores that month’s cards under August.</li>
+        <li>September starts empty — or use <strong>Copy from…</strong> to start from July/August.</li>
+      </ol>
+    </details>
+
+    <div class="try" aria-label="Suggested clicks">
+      <button type="button" data-demo="save"><span class="n">1</span>Save August</button>
+      <button type="button" data-demo="sep"><span class="n">2</span>Switch to September</button>
+      <button type="button" data-demo="copy"><span class="n">3</span>Copy from July</button>
+      <button type="button" data-demo="aug"><span class="n">4</span>Back to August</button>
+    </div>
+
+    <div class="top">
+      <div>
+        <a class="back-link" href="/create-with-ai/website-pages">← Website pages</a>
+        <h1>Homepage Composer</h1>
+        <p class="lede">Build your homepage — header, cards, footer, helpful resources, colors, and on/off dates.</p>
+      </div>
+      <p class="save-status" id="saveStatus" aria-live="polite">August saved</p>
+    </div>
+
+    <div class="layout">
+      <aside class="steps-rail">
+        <p class="steps-label">Steps</p>
+        <div class="step-btn">1 · Header<small class="hint">Design once</small></div>
+        <div class="step-btn">2 · Footer<small class="hint">Design once</small></div>
+        <div class="step-btn active">3 · Cards<small class="hint">Change monthly</small></div>
+        <div class="step-btn">4 · Preview<small class="hint">Full page</small></div>
+        <div class="step-btn">5 · Export<small class="hint">Full page HTML</small></div>
+      </aside>
+
+      <div>
+        <!-- Month workspace -->
+        <div class="month-bar" id="monthBar">
+          <div class="month-left">
+            <div>
+              <div class="month-label">Working on</div>
+              <div class="month-picker" id="monthPicker">
+                <button type="button" class="month-nav" id="prevMonth" aria-label="Previous month">
+                  <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <select class="month-select" id="monthSelect" aria-label="Working on month">
+                  <option value="2026-07">July 2026</option>
+                  <option value="2026-08" selected>August 2026</option>
+                  <option value="2026-09">September 2026</option>
+                  <option value="2026-10">October 2026</option>
+                </select>
+                <button type="button" class="month-nav" id="nextMonth" aria-label="Next month">
+                  <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+              </div>
+            </div>
+            <p class="month-meta" id="monthMeta">
+              Saved homepage for <strong>August</strong>
+            </p>
+          </div>
+          <div class="month-actions">
+            <div class="copy-wrap">
+              <button type="button" class="btn btn-ghost" id="copyBtn">Copy from…</button>
+              <div class="copy-menu" id="copyMenu" hidden>
+                <button type="button" data-copy="2026-07">July 2026<span class="hint">Saved · 2 cards</span></button>
+                <button type="button" data-copy="2026-08">August 2026<span class="hint">Saved · 3 cards</span></button>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary" id="saveMonthBtn">Save this month</button>
+          </div>
+        </div>
+
+        <section class="panel" id="cardsPanel">
+          <div class="panel-head">
+            <div>
+              <h2>Homepage cards</h2>
+              <p class="sub" id="cardsSub">Cards for August — reorder, edit, then save this month.</p>
+            </div>
+            <div class="panel-actions">
+              <button type="button" class="btn btn-secondary">← Footer</button>
+              <button type="button" class="btn btn-secondary">+ Add other card</button>
+              <button type="button" class="btn btn-primary">Preview →</button>
+            </div>
+          </div>
+
+          <div class="note">
+            On / off dates still control when each card appears. Saving by month keeps a full draft for that month so you can build September while August is live.
+          </div>
+
+          <div class="cols">
+            <div>
+              <p class="col-title">From your events</p>
+              <label class="filter-label" for="eventMonth">Month</label>
+              <select class="filter-select" id="eventMonth" aria-label="Event list month filter">
+                <option>July 2026</option>
+                <option selected>August 2026</option>
+                <option>September 2026</option>
+              </select>
+              <div class="event-list" id="eventList">
+                <!-- filled by JS -->
+              </div>
+            </div>
+
+            <div>
+              <div class="sort-row">
+                <p class="col-title" style="margin:0">On homepage — drag to reorder</p>
+                <select aria-label="Sort">
+                  <option>Sort: Custom order</option>
+                </select>
+              </div>
+              <div id="homepageCards">
+                <!-- filled by JS -->
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script>
+    (function () {
+      var MONTHS = [
+        { key: "2026-07", label: "July 2026", short: "July" },
+        { key: "2026-08", label: "August 2026", short: "August" },
+        { key: "2026-09", label: "September 2026", short: "September" },
+        { key: "2026-10", label: "October 2026", short: "October" }
+      ];
+
+      var EVENTS = {
+        "2026-07": [
+          { title: "Summer Spirit Wear Store Closes", date: "Jul 15", checked: true },
+          { title: "Invest in Our Why", date: "Jul 31", checked: true }
+        ],
+        "2026-08": [
+          { title: "School Supply Sorting", date: "Aug 8", checked: true },
+          { title: "Meet the Teacher", date: "Aug 14", checked: true },
+          { title: "First Day of School", date: "Aug 18", checked: false },
+          { title: "Booster Club Kickoff", date: "Aug 22", checked: true }
+        ],
+        "2026-09": [
+          { title: "Labor Day — No School", date: "Sep 7", checked: false },
+          { title: "Fall Fundraiser Launch", date: "Sep 12", checked: false },
+          { title: "Curriculum Night", date: "Sep 18", checked: false }
+        ],
+        "2026-10": [
+          { title: "Fall Festival", date: "Oct 10", checked: false },
+          { title: "Book Fair", date: "Oct 20", checked: false }
+        ]
+      };
+
+      var CARD_LIBRARY = {
+        "2026-07": [
+          { title: "Invest in Our Why", desc: "Support our school community with a gift that fuels programs all year.", on: "Jul 1", off: "Aug 15" },
+          { title: "Summer Spirit Wear", desc: "Last chance to grab spirit wear before the store closes.", on: "Jul 1", off: "Jul 15" }
+        ],
+        "2026-08": [
+          { title: "Invest in Our Why", desc: "Support our school community with a gift that fuels programs all year.", on: "Aug 1", off: "Sep 7" },
+          { title: "School Supply Sorting", desc: "Help us sort and pack classroom supplies before the first day.", on: "Aug 1", off: "Aug 9" },
+          { title: "Meet the Teacher", desc: "Stop by, meet your teacher, and drop off supplies.", on: "Aug 10", off: "Aug 15" }
+        ],
+        "2026-09": [],
+        "2026-10": []
+      };
+
+      // In-memory “saved” state for the mock
+      var saved = {
+        "2026-07": JSON.parse(JSON.stringify(CARD_LIBRARY["2026-07"])),
+        "2026-08": JSON.parse(JSON.stringify(CARD_LIBRARY["2026-08"])),
+        "2026-09": null,
+        "2026-10": null
+      };
+      var drafts = {
+        "2026-07": JSON.parse(JSON.stringify(saved["2026-07"])),
+        "2026-08": JSON.parse(JSON.stringify(saved["2026-08"])),
+        "2026-09": [],
+        "2026-10": []
+      };
+      var dirty = { "2026-07": false, "2026-08": false, "2026-09": false, "2026-10": false };
+      var current = "2026-08";
+      var toastTimer = null;
+
+      var els = {
+        select: document.getElementById("monthSelect"),
+        prev: document.getElementById("prevMonth"),
+        next: document.getElementById("nextMonth"),
+        meta: document.getElementById("monthMeta"),
+        status: document.getElementById("saveStatus"),
+        saveBtn: document.getElementById("saveMonthBtn"),
+        copyBtn: document.getElementById("copyBtn"),
+        copyMenu: document.getElementById("copyMenu"),
+        cards: document.getElementById("homepageCards"),
+        events: document.getElementById("eventList"),
+        eventMonth: document.getElementById("eventMonth"),
+        cardsSub: document.getElementById("cardsSub"),
+        monthBar: document.getElementById("monthBar"),
+        toast: document.getElementById("toast")
+      };
+
+      function monthInfo(key) {
+        return MONTHS.find(function (m) { return m.key === key; });
+      }
+
+      function indexOf(key) {
+        return MONTHS.findIndex(function (m) { return m.key === key; });
+      }
+
+      function showToast(msg) {
+        els.toast.textContent = msg;
+        els.toast.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { els.toast.hidden = true; }, 2200);
+      }
+
+      function flashMonthBar() {
+        els.monthBar.classList.remove("highlight");
+        void els.monthBar.offsetWidth;
+        els.monthBar.classList.add("highlight");
+      }
+
+      function renderEvents() {
+        var list = EVENTS[current] || [];
+        els.eventMonth.value = monthInfo(current).label;
+        els.events.innerHTML = list.map(function (e) {
+          return (
+            '<label class="event-row">' +
+              '<input type="checkbox"' + (e.checked ? " checked" : "") + " />" +
+              "<span><strong>" + e.title + "</strong> (" + e.date + ")</span>" +
+            "</label>"
+          );
+        }).join("") || '<p style="font-size:13px;color:var(--muted);padding:8px 4px;">No events this month.</p>';
+      }
+
+      function renderCards() {
+        var cards = drafts[current] || [];
+        var info = monthInfo(current);
+
+        if (!cards.length) {
+          var hasPrior = !!saved["2026-07"] || !!saved["2026-08"];
+          els.cards.innerHTML =
+            '<div class="empty">' +
+              "<h3>No cards for " + info.short + " yet</h3>" +
+              "<p>This month is its own draft. Add cards from events, or copy a saved month to get started.</p>" +
+              (hasPrior
+                ? '<button type="button" class="btn btn-secondary" id="emptyCopy">Copy from July</button>'
+                : '<button type="button" class="btn btn-secondary">+ Add other card</button>') +
+            "</div>";
+          var emptyCopy = document.getElementById("emptyCopy");
+          if (emptyCopy) {
+            emptyCopy.addEventListener("click", function () { copyFrom("2026-07"); });
+          }
+          return;
+        }
+
+        els.cards.innerHTML = cards.map(function (c) {
+          return (
+            '<article class="card">' +
+              '<div class="card-top">' +
+                '<div class="thumb" aria-hidden="true"></div>' +
+                "<div><h3>" + c.title + "</h3>" +
+                '<p class="desc">' + c.desc + "</p></div>" +
+              "</div>" +
+              '<div class="card-meta">' +
+                "<span>On " + c.on + "</span>" +
+                "<span>Off " + c.off + "</span>" +
+              "</div>" +
+            "</article>"
+          );
+        }).join("");
+      }
+
+      function updateChrome() {
+        var info = monthInfo(current);
+        var isSaved = saved[current] !== null && !dirty[current];
+        var isEmpty = !(drafts[current] && drafts[current].length);
+        var neverSaved = saved[current] === null;
+
+        els.select.value = current;
+        els.prev.disabled = indexOf(current) <= 0;
+        els.next.disabled = indexOf(current) >= MONTHS.length - 1;
+        els.cardsSub.textContent = isEmpty
+          ? "Empty draft for " + info.short + " — add cards or copy from a prior month."
+          : "Cards for " + info.short + " — reorder, edit, then save this month.";
+
+        if (dirty[current]) {
+          els.meta.innerHTML = "Unsaved changes for <strong>" + info.short + "</strong>";
+          els.status.textContent = info.short + " · unsaved";
+          els.status.className = "save-status unsaved";
+        } else if (neverSaved && isEmpty) {
+          els.meta.innerHTML = "Empty draft — not saved yet";
+          els.status.textContent = info.short + " · empty";
+          els.status.className = "save-status empty";
+        } else {
+          els.meta.innerHTML = "Saved homepage for <strong>" + info.short + "</strong>";
+          els.status.textContent = info.short + " saved";
+          els.status.className = "save-status";
+        }
+
+        els.saveBtn.disabled = isSaved && !neverSaved && !dirty[current];
+        if (neverSaved || dirty[current]) {
+          els.saveBtn.disabled = false;
+        }
+        // Keep Save always clickable for demo clarity
+        els.saveBtn.disabled = false;
+      }
+
+      function switchMonth(key) {
+        if (!monthInfo(key)) return;
+        current = key;
+        els.copyMenu.hidden = true;
+        renderEvents();
+        renderCards();
+        updateChrome();
+        flashMonthBar();
+      }
+
+      function saveMonth() {
+        saved[current] = JSON.parse(JSON.stringify(drafts[current] || []));
+        dirty[current] = false;
+        updateChrome();
+        var info = monthInfo(current);
+        showToast("Saved " + info.short + " homepage");
+      }
+
+      function copyFrom(fromKey) {
+        var source = saved[fromKey];
+        if (!source || !source.length) {
+          showToast("Nothing saved in that month yet");
+          return;
+        }
+        drafts[current] = JSON.parse(JSON.stringify(source));
+        dirty[current] = true;
+        els.copyMenu.hidden = true;
+        renderCards();
+        updateChrome();
+        showToast("Copied " + monthInfo(fromKey).short + " → " + monthInfo(current).short);
+      }
+
+      els.select.addEventListener("change", function () {
+        switchMonth(els.select.value);
+      });
+      els.prev.addEventListener("click", function () {
+        var i = indexOf(current);
+        if (i > 0) switchMonth(MONTHS[i - 1].key);
+      });
+      els.next.addEventListener("click", function () {
+        var i = indexOf(current);
+        if (i < MONTHS.length - 1) switchMonth(MONTHS[i + 1].key);
+      });
+      els.saveBtn.addEventListener("click", saveMonth);
+      els.copyBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        els.copyMenu.hidden = !els.copyMenu.hidden;
+      });
+      els.copyMenu.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-copy]");
+        if (btn) copyFrom(btn.getAttribute("data-copy"));
+      });
+      document.addEventListener("click", function () {
+        els.copyMenu.hidden = true;
+      });
+      els.copyBtn.addEventListener("click", function (e) { e.stopPropagation(); });
+
+      // Demo story pills
+      document.querySelectorAll("[data-demo]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var demo = btn.getAttribute("data-demo");
+          if (demo === "save") {
+            switchMonth("2026-08");
+            setTimeout(saveMonth, 180);
+          } else if (demo === "sep") {
+            switchMonth("2026-09");
+            showToast("September is a separate draft");
+          } else if (demo === "copy") {
+            switchMonth("2026-09");
+            setTimeout(function () { copyFrom("2026-07"); }, 220);
+          } else if (demo === "aug") {
+            switchMonth("2026-08");
+            showToast("August still has its own cards");
+          }
+        });
+      });
+
+      // Sync event filter select (visual only — follows workspace month)
+      els.eventMonth.addEventListener("change", function () {
+        /* Event picker filter stays independent in real product;
+           here we keep it in sync for the mock story. */
+      });
+
+      renderEvents();
+      renderCards();
+      updateChrome();
+    })();
+  </script>
+</body>
+</html>
