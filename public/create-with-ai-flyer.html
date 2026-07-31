@@ -1444,30 +1444,53 @@
       font-size: 0.86rem; font-weight: 700; color: var(--forest);
     }
 
+    /* Fallback when popup print window is blocked — print only the flyer image. */
+    #printOnlyFlyer {
+      display: none;
+    }
     @media print {
-      body { background: #fff; }
-      .no-print { display: none !important; }
-      .shell { padding: 0; max-width: none; }
-      .preview-header, .preview-under, .preview-idle, #genState, .preview-ready-badge,
-      .preview-versions, .preview-sidebar, [data-panel="edit"] { display: none !important; }
-      .preview-workspace { border: none; box-shadow: none; display: block; }
-      .flyer-stage, .preview-stage {
+      @page { size: letter portrait; margin: 0; }
+      html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+      body.print-flyer-only > *:not(#printOnlyFlyer) { display: none !important; }
+      body.print-flyer-only #printOnlyFlyer {
+        display: flex !important; align-items: center; justify-content: center;
+        position: fixed; inset: 0; width: 8.5in; height: 11in; margin: 0; padding: 0;
+        background: #fff;
+      }
+      body.print-flyer-only #printOnlyFlyer img {
+        display: block; width: 100%; height: 100%; object-fit: contain;
+        page-break-inside: avoid; break-inside: avoid;
+      }
+      /* Non-generated / template HTML flyer path (composer DOM) */
+      body:not(.print-flyer-only) .no-print { display: none !important; }
+      body:not(.print-flyer-only) .shell { padding: 0; max-width: none; }
+      body:not(.print-flyer-only) .preview-header,
+      body:not(.print-flyer-only) .preview-under,
+      body:not(.print-flyer-only) .preview-idle,
+      body:not(.print-flyer-only) #genState,
+      body:not(.print-flyer-only) .preview-ready-badge,
+      body:not(.print-flyer-only) .preview-versions,
+      body:not(.print-flyer-only) .preview-sidebar,
+      body:not(.print-flyer-only) [data-panel="edit"],
+      body:not(.print-flyer-only) .composer-layout > .steps-rail,
+      body:not(.print-flyer-only) .top { display: none !important; }
+      body:not(.print-flyer-only) .preview-workspace { border: none; box-shadow: none; display: block; }
+      body:not(.print-flyer-only) .flyer-stage,
+      body:not(.print-flyer-only) .preview-stage {
         padding: 0; min-height: 0; background: #fff; box-shadow: none; border-radius: 0;
+        display: block; overflow: visible;
       }
-      #resultFlyer { display: block !important; }
-      .big-flyer {
-        max-width: none !important; width: 100%; margin: 0 auto;
-        box-shadow: none; page-break-inside: avoid; border: none;
+      body:not(.print-flyer-only) #resultFlyer { display: block !important; }
+      body:not(.print-flyer-only) .big-flyer {
+        max-width: none !important; width: 8.5in; height: 11in; margin: 0;
+        box-shadow: none; page-break-inside: avoid; border: none; border-radius: 0;
+        aspect-ratio: auto;
       }
-      .big-flyer[data-ratio="3/4"] { width: 8.5in; aspect-ratio: auto; height: 11in; }
-      .big-flyer[data-ratio="3/2"] { width: 8.5in; aspect-ratio: auto; height: 5.5in; }
-      .big-flyer[data-ratio="1/1"] { width: 8in; aspect-ratio: auto; height: 8in; }
-      .big-flyer[data-ratio="9/16"] { width: 4.5in; aspect-ratio: auto; height: 8in; }
-      /* Generated PNGs are 2:3 — size the print frame to the image, not wider letter. */
-      .big-flyer.is-generated-image,
-      .big-flyer.is-generated-image[data-ratio="3/4"],
-      .big-flyer.is-generated-image[data-ratio="9/16"] {
-        width: 7.33in; height: 11in; aspect-ratio: auto; max-width: none !important;
+      body:not(.print-flyer-only) .big-flyer[data-ratio="3/2"] { width: 8.5in; height: 5.5in; }
+      body:not(.print-flyer-only) .big-flyer[data-ratio="1/1"] { width: 8in; height: 8in; }
+      body:not(.print-flyer-only) .big-flyer[data-ratio="9/16"] { width: 4.5in; height: 8in; }
+      body:not(.print-flyer-only) .generated-flyer-img {
+        width: 100% !important; height: 100% !important; object-fit: contain !important;
       }
     }
 
@@ -4975,10 +4998,108 @@
         });
       });
     })();
-    document.getElementById("btnPrint").addEventListener("click", () => window.print());
-    document.getElementById("btnDownload").addEventListener("click", async () => {
-      const title = (document.getElementById("headline").value.trim() || "flyer")
+    function flyerFileStem() {
+      return (document.getElementById("headline").value.trim() || "flyer")
         .replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").toLowerCase();
+    }
+
+    /** Safari crops iframe/composer print; open a letter-only document with the PNG. */
+    function printGeneratedFlyerImage(imageUrl) {
+      const title = flyerFileStem();
+      const safeUrl = String(imageUrl).replace(/"/g, "&quot;");
+      const safeTitle = escapeHtml(title);
+      const printHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>${safeTitle} · Print</title>
+<style>
+  @page { size: letter portrait; margin: 0; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #fff;
+  }
+  body {
+    display: flex; align-items: center; justify-content: center;
+  }
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  @media print {
+    html, body { width: 8.5in; height: 11in; overflow: hidden; }
+    img { width: 100%; height: 100%; object-fit: contain; }
+  }
+</style>
+</head>
+<body>
+<img src="${safeUrl}" alt="${safeTitle} flyer" />
+<script>
+(function () {
+  var img = document.querySelector("img");
+  function go() {
+    setTimeout(function () {
+      try { window.focus(); } catch (e) {}
+      window.print();
+    }, 80);
+  }
+  if (img && img.complete && img.naturalWidth) go();
+  else if (img) { img.onload = go; img.onerror = go; }
+  else go();
+  window.addEventListener("afterprint", function () {
+    try { window.close(); } catch (e) {}
+  });
+})();
+<\/script>
+</body>
+</html>`;
+
+      const w = window.open("about:blank", "_blank");
+      if (w) {
+        w.document.open();
+        w.document.write(printHtml);
+        w.document.close();
+        return;
+      }
+
+      // Popup blocked — same-document print root (hides chrome via body.print-flyer-only).
+      let root = document.getElementById("printOnlyFlyer");
+      if (!root) {
+        root = document.createElement("div");
+        root.id = "printOnlyFlyer";
+        document.body.appendChild(root);
+      }
+      root.innerHTML = `<img src="${safeUrl}" alt="${safeTitle} flyer" />`;
+      document.body.classList.add("print-flyer-only");
+      const cleanup = () => {
+        document.body.classList.remove("print-flyer-only");
+        root.replaceChildren();
+        window.removeEventListener("afterprint", cleanup);
+      };
+      window.addEventListener("afterprint", cleanup);
+      const img = root.querySelector("img");
+      const go = () => setTimeout(() => window.print(), 80);
+      if (img && img.complete && img.naturalWidth) go();
+      else if (img) { img.onload = go; img.onerror = go; }
+      else go();
+    }
+
+    function printFlyer() {
+      if (state.generatedImageUrl) {
+        printGeneratedFlyerImage(state.generatedImageUrl);
+        return;
+      }
+      // Template/HTML flyer: keep composer @media print path.
+      window.print();
+    }
+
+    document.getElementById("btnPrint").addEventListener("click", () => printFlyer());
+    document.getElementById("btnDownload").addEventListener("click", async () => {
+      const title = flyerFileStem();
       if (state.generatedImageUrl) {
         try {
           const response = await fetch(state.generatedImageUrl);
