@@ -896,6 +896,40 @@
     .preview-sidebar .sidebar-actions {
       display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0;
     }
+    .preview-versions {
+      margin-top: 12px; padding: 14px 16px 16px;
+      border-radius: 22px; border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow);
+      animation: soft-in 0.4s var(--ease) both;
+    }
+    .preview-versions[hidden] { display: none !important; }
+    .preview-versions-label {
+      margin: 0 0 10px; font-size: 11px; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+    }
+    .preview-versions-strip {
+      display: flex; gap: 10px; overflow-x: auto; padding-bottom: 2px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .version-thumb {
+      flex: 0 0 auto; width: 64px; padding: 0; border: 2px solid transparent;
+      border-radius: 12px; background: var(--cream); cursor: pointer;
+      overflow: hidden; aspect-ratio: 2 / 3; box-shadow: var(--shadow);
+      transition: border-color 0.15s var(--ease), transform 0.15s var(--ease);
+    }
+    .version-thumb:hover { transform: translateY(-1px); border-color: rgba(47, 74, 60, 0.28); }
+    .version-thumb[aria-pressed="true"] {
+      border-color: var(--forest);
+      box-shadow: 0 0 0 1px var(--forest), var(--shadow);
+    }
+    .version-thumb img {
+      display: block; width: 100%; height: 100%; object-fit: cover;
+    }
+    .version-thumb-fallback {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; height: 100%; font-size: 10px; font-weight: 800;
+      color: var(--muted); background: #eee;
+    }
     .preview-idle {
       width: 100%; max-width: 440px; text-align: center;
       display: flex; flex-direction: column; align-items: center; gap: 14px;
@@ -1121,7 +1155,8 @@
       body { background: #fff; }
       .no-print { display: none !important; }
       .shell { padding: 0; max-width: none; }
-      .preview-header, .preview-sidebar, .preview-idle, #genState, .preview-ready-badge { display: none !important; }
+      .preview-header, .preview-sidebar, .preview-idle, #genState, .preview-ready-badge,
+      .preview-versions { display: none !important; }
       .preview-workspace { border: none; box-shadow: none; display: block; }
       .preview-stage { padding: 0; min-height: 0; background: #fff; }
       #resultFlyer { display: block !important; }
@@ -1503,6 +1538,10 @@
           </div>
         </aside>
       </div>
+      <div class="preview-versions no-print" id="previewVersions" hidden>
+        <p class="preview-versions-label">Versions</p>
+        <div class="preview-versions-strip" id="previewVersionsStrip" role="list"></div>
+      </div>
     </section>
       </div>
     </div>
@@ -1511,6 +1550,8 @@
   <script>
     const STORAGE_KEY = "hr-flyer-composer-draft";
     const FLYER_GENERATE_API = "/api/flyer-composer/generate";
+    /** Keep in sync with src/lib/flyer-composer/version-history.ts */
+    const MAX_FLYER_VERSIONS = 10;
     let saveTimer = null;
 
     const SAMPLE_CUSTOM_TEMPLATE =
@@ -1778,11 +1819,87 @@
       generating: false,
       previewGenerated: false,
       generatedImageUrl: null,
+      versions: [],
+      activeVersionId: null,
       autoGenerateOnEnter: false,
       generateTimer: null,
       generateStageTimer: null,
       provenLayoutChosen: false,
     };
+
+    function isPersistableFlyerImageUrl(url) {
+      if (typeof url !== "string") return false;
+      const trimmed = url.trim();
+      if (!trimmed) return false;
+      return (
+        trimmed.startsWith("https://") ||
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("data:image/")
+      );
+    }
+
+    function normalizeFlyerVersions(raw, max = MAX_FLYER_VERSIONS) {
+      if (!Array.isArray(raw)) return [];
+      const seen = new Set();
+      const out = [];
+      for (const item of raw) {
+        if (!item || typeof item !== "object") continue;
+        if (!isPersistableFlyerImageUrl(item.imageUrl)) continue;
+        const imageUrl = String(item.imageUrl).trim();
+        if (seen.has(imageUrl)) continue;
+        seen.add(imageUrl);
+        const id =
+          typeof item.id === "string" && item.id.trim()
+            ? item.id.trim()
+            : `v-${item.createdAt ?? out.length}-${out.length}`;
+        const createdAt =
+          typeof item.createdAt === "number" && Number.isFinite(item.createdAt)
+            ? item.createdAt
+            : Date.now() - out.length;
+        out.push({ id, imageUrl, createdAt });
+        if (out.length >= max) break;
+      }
+      return out;
+    }
+
+    function addFlyerVersion(versions, imageUrl, options = {}) {
+      if (!isPersistableFlyerImageUrl(imageUrl)) {
+        return normalizeFlyerVersions(versions, options.max);
+      }
+      const trimmed = imageUrl.trim();
+      const max = options.max ?? MAX_FLYER_VERSIONS;
+      const createdAt = options.createdAt ?? Date.now();
+      const id = (options.id && String(options.id).trim()) || `v-${createdAt}`;
+      const withoutDup = (versions || []).filter((v) => v.imageUrl !== trimmed);
+      return normalizeFlyerVersions([{ id, imageUrl: trimmed, createdAt }, ...withoutDup], max);
+    }
+
+    function slimFlyerVersionsForQuota(versions, currentImageUrl) {
+      const preferred = (versions || []).filter(
+        (v) =>
+          v.imageUrl.startsWith("https://") ||
+          v.imageUrl.startsWith("http://") ||
+          v.imageUrl === currentImageUrl
+      );
+      if (preferred.length) return normalizeFlyerVersions(preferred);
+      if (isPersistableFlyerImageUrl(currentImageUrl)) {
+        return addFlyerVersion([], currentImageUrl, { max: 1 });
+      }
+      return [];
+    }
+
+    function findFlyerVersion(versions, id) {
+      if (!id) return null;
+      return (versions || []).find((v) => v.id === id) || null;
+    }
+
+    function restoreGeneratedFromVersion(version) {
+      if (!version || !isPersistableFlyerImageUrl(version.imageUrl)) return false;
+      state.generatedImageUrl = version.imageUrl;
+      state.activeVersionId = version.id;
+      state.previewGenerated = true;
+      return true;
+    }
 
     const panels = [...document.querySelectorAll("[data-panel]")];
     const stepBtns = [...document.querySelectorAll(".step-btn[data-view]")];
@@ -2594,26 +2711,48 @@
       document.getElementById("qrField").hidden = false;
     }
 
+    function buildDraftPayload(versionsOverride) {
+      const versions = normalizeFlyerVersions(
+        versionsOverride != null ? versionsOverride : state.versions
+      );
+      return {
+        templateId: state.templateId,
+        startPath: state.startPath,
+        printSize: state.printSize,
+        provenLayoutChosen: state.provenLayoutChosen,
+        imageUrl: state.imageUrl,
+        inspirationPhotoSource: state.inspirationPhotoSource,
+        inspirationPhotoLabel: state.inspirationPhotoLabel,
+        inspirationPhotoExplicit: state.inspirationPhotoExplicit,
+        customTemplateUrl: state.customTemplateUrl,
+        customTemplateFileName: state.customTemplateFileName,
+        customTemplateFileType: state.customTemplateFileType,
+        brand: state.brand,
+        generatedImageUrl: state.generatedImageUrl,
+        previewGenerated: state.previewGenerated === true && !!state.generatedImageUrl,
+        activeVersionId: state.activeVersionId,
+        versions,
+        ...readDraftFields(),
+      };
+    }
+
     function persistDraft() {
       try {
-        const payload = {
-          templateId: state.templateId,
-          startPath: state.startPath,
-          printSize: state.printSize,
-          provenLayoutChosen: state.provenLayoutChosen,
-          imageUrl: state.imageUrl,
-          inspirationPhotoSource: state.inspirationPhotoSource,
-          inspirationPhotoLabel: state.inspirationPhotoLabel,
-          inspirationPhotoExplicit: state.inspirationPhotoExplicit,
-          customTemplateUrl: state.customTemplateUrl,
-          customTemplateFileName: state.customTemplateFileName,
-          customTemplateFileType: state.customTemplateFileType,
-          brand: state.brand,
-          ...readDraftFields(),
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(buildDraftPayload()));
       } catch (_) {
-        /* local draft optional */
+        try {
+          const slimVersions = slimFlyerVersionsForQuota(
+            state.versions,
+            state.generatedImageUrl
+          );
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(buildDraftPayload(slimVersions))
+          );
+          state.versions = slimVersions;
+        } catch {
+          /* local draft optional */
+        }
       }
     }
 
@@ -2680,6 +2819,37 @@
           state.customTemplateFileType = d.customTemplateFileType;
         }
         if (typeof d.brand === "boolean") state.brand = d.brand;
+        state.versions = normalizeFlyerVersions(d.versions);
+        if (isPersistableFlyerImageUrl(d.generatedImageUrl)) {
+          state.generatedImageUrl = d.generatedImageUrl.trim();
+        } else {
+          state.generatedImageUrl = null;
+        }
+        if (state.generatedImageUrl && !state.versions.length) {
+          state.versions = addFlyerVersion([], state.generatedImageUrl);
+        }
+        if (
+          state.generatedImageUrl &&
+          !state.versions.some((v) => v.imageUrl === state.generatedImageUrl)
+        ) {
+          state.versions = addFlyerVersion(state.versions, state.generatedImageUrl);
+        }
+        const savedActive = findFlyerVersion(state.versions, d.activeVersionId);
+        if (savedActive) {
+          state.activeVersionId = savedActive.id;
+          if (!state.generatedImageUrl) state.generatedImageUrl = savedActive.imageUrl;
+        } else if (state.generatedImageUrl) {
+          const match = state.versions.find((v) => v.imageUrl === state.generatedImageUrl);
+          state.activeVersionId = match?.id || state.versions[0]?.id || null;
+        } else if (state.versions[0]) {
+          state.activeVersionId = state.versions[0].id;
+          state.generatedImageUrl = state.versions[0].imageUrl;
+        } else {
+          state.activeVersionId = null;
+        }
+        state.previewGenerated =
+          (d.previewGenerated === true || !!state.generatedImageUrl) &&
+          !!state.generatedImageUrl;
         SLOT_IDS.forEach((id) => {
           if (d[id] != null && document.getElementById(id)) {
             document.getElementById(id).value = d[id];
@@ -2799,6 +2969,8 @@
           state.autoGenerateOnEnter = false;
           runGenerate();
         }
+      } else {
+        renderVersionsStrip();
       }
       const ledes = {
         start: "Update last year’s flyer or start a new one, then generate.",
@@ -2975,6 +3147,58 @@
       }
     }
 
+    function formatVersionLabel(version, index, total) {
+      const n = total - index;
+      try {
+        const d = new Date(version.createdAt);
+        if (!Number.isNaN(d.getTime())) {
+          return `Version ${n}, ${d.toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          })}`;
+        }
+      } catch {
+        /* ignore */
+      }
+      return `Version ${n}`;
+    }
+
+    function renderVersionsStrip() {
+      const panel = document.getElementById("previewVersions");
+      const strip = document.getElementById("previewVersionsStrip");
+      if (!panel || !strip) return;
+      const versions = normalizeFlyerVersions(state.versions);
+      state.versions = versions;
+      if (!versions.length || state.view !== "result") {
+        panel.hidden = true;
+        strip.innerHTML = "";
+        return;
+      }
+      panel.hidden = false;
+      strip.innerHTML = versions
+        .map((version, index) => {
+          const pressed =
+            state.previewGenerated && version.id === state.activeVersionId
+              ? "true"
+              : "false";
+          const label = formatVersionLabel(version, index, versions.length);
+          return `<button type="button" class="version-thumb" role="listitem" data-version-id="${escapeHtml(version.id)}" aria-pressed="${pressed}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><img src="${escapeHtml(version.imageUrl)}" alt="" loading="lazy" /></button>`;
+        })
+        .join("");
+      strip.querySelectorAll("[data-version-id]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (state.generating) return;
+          const version = findFlyerVersion(state.versions, btn.dataset.versionId);
+          if (!version || version.id === state.activeVersionId) return;
+          if (!restoreGeneratedFromVersion(version)) return;
+          renderPreviewState();
+          scheduleSave();
+        });
+      });
+    }
+
     function renderPreviewState() {
       const idle = document.getElementById("previewIdle");
       const genState = document.getElementById("genState");
@@ -2994,7 +3218,7 @@
         genState.hidden = false;
         wrap.hidden = true;
         setPreviewActions("building");
-      } else if (state.previewGenerated) {
+      } else if (state.previewGenerated && state.generatedImageUrl) {
         idle.hidden = true;
         genState.hidden = true;
         wrap.hidden = false;
@@ -3011,6 +3235,7 @@
       document.querySelectorAll(".preview-sidebar [data-goto]").forEach((btn) => {
         btn.disabled = state.generating;
       });
+      renderVersionsStrip();
     }
 
     function applyGeneratedSlots(slots) {
@@ -3186,7 +3411,6 @@
       state.generating = true;
       state.previewGenerated = false;
       state.generatedImageUrl = null;
-      state.generatedImageUrl = null;
 
       const tpl = getTpl(state.templateId);
       const wrap = document.getElementById("resultFlyer");
@@ -3246,7 +3470,13 @@
           throw new Error(err);
         }
 
-        state.generatedImageUrl = imageSrc;
+        state.versions = addFlyerVersion(state.versions, imageSrc, {
+          createdAt: Date.now(),
+        });
+        const newest = state.versions[0];
+        state.generatedImageUrl = newest?.imageUrl || imageSrc;
+        state.activeVersionId = newest?.id || null;
+        state.previewGenerated = true;
         if (payload.slots) {
           applyGeneratedSlots(payload.slots);
         }
@@ -3255,16 +3485,24 @@
 
         clearInterval(state.generateStageTimer);
         state.generating = false;
-        state.previewGenerated = true;
         renderPreviewState();
-        scheduleSave();
+        persistDraft();
       } catch (error) {
         clearInterval(state.generateStageTimer);
         state.generating = false;
-        state.previewGenerated = false;
-      state.generatedImageUrl = null;
-        state.generatedImageUrl = null;
+        const fallback =
+          findFlyerVersion(state.versions, state.activeVersionId) ||
+          state.versions[0] ||
+          null;
+        if (fallback && restoreGeneratedFromVersion(fallback)) {
+          /* keep prior art after a failed regenerate — no re-charge */
+        } else {
+          state.previewGenerated = false;
+          state.generatedImageUrl = null;
+          state.activeVersionId = null;
+        }
         renderPreviewState();
+        scheduleSave();
         showGenerateError(error?.message || "Generate failed. Try again.");
       } finally {
         if (genElapsed) genElapsed.hidden = true;
