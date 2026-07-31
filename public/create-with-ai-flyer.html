@@ -859,10 +859,10 @@
     .btn-ghost:hover { text-decoration: underline; }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    /* Preview — matches flyer-event-files-ease-mockup: stage + aside */
+    /* Preview — hero letter art; quiet tools; one approval CTA in aside */
     .preview-header {
       display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
-      gap: 12px; margin-bottom: 16px;
+      gap: 12px; margin-bottom: 14px;
       animation: soft-in 0.45s var(--ease) both;
     }
     .preview-header h2 {
@@ -875,14 +875,21 @@
       display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px;
     }
     .preview-done-actions {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
     }
+    /* Quiet secondary tools — do not compete with the letter hero */
+    .btn-tool {
+      background: transparent; color: var(--muted); border: none;
+      padding: 8px 12px; border-radius: 999px; font-weight: 650; font-size: 0.82rem;
+    }
+    .btn-tool:hover { color: var(--ink); background: rgba(42, 38, 34, 0.05); }
+    .btn-tool:disabled { opacity: 0.4; cursor: not-allowed; }
     .preview-workspace {
-      display: grid; grid-template-columns: 1fr; gap: 14px; min-width: 0;
+      display: grid; grid-template-columns: 1fr; gap: 16px; min-width: 0;
       animation: soft-in 0.45s var(--ease) 0.04s both;
     }
     @media (min-width: 800px) {
-      .preview-workspace { grid-template-columns: minmax(0, 1fr) 240px; align-items: start; }
+      .preview-workspace { grid-template-columns: minmax(0, 1fr) 220px; align-items: start; }
     }
     .preview-main-col { min-width: 0; display: flex; flex-direction: column; gap: 0; }
     .flyer-stage,
@@ -901,71 +908,79 @@
       place-items: center;
     }
     .preview-under {
-      margin-top: 14px;
-      display: flex; flex-direction: column; align-items: stretch; gap: 12px;
+      margin-top: 12px;
+      display: flex; flex-direction: column; align-items: stretch; gap: 10px;
     }
     .preview-under .sidebar-edit-row {
-      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
     }
-    .preview-under .edit-details-link { margin-top: 0; color: var(--teal); font-weight: 650; }
-    /* Soft Saved to Files / Tied to — under art, not a competing CTA block */
-    .saved-banner {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
-      padding: 12px 14px; border-radius: 14px;
-      background: rgba(42, 122, 134, 0.09); border: 1px solid rgba(42, 122, 134, 0.2);
+    .preview-under .edit-details-link {
+      margin-top: 0; color: var(--muted); font-weight: 550; font-size: 13px;
     }
-    .saved-banner.is-draft {
-      background: rgba(196, 146, 46, 0.1); border-color: rgba(196, 146, 46, 0.22);
+    .preview-under .edit-details-link:hover { color: var(--ink-soft); text-decoration: underline; }
+    /* Soft one-line status — not a fat banner stealing focus from the art */
+    .saved-status {
+      display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px;
+      padding: 2px 0; font-size: 12.5px; line-height: 1.4; color: var(--muted);
     }
-    .saved-banner .saved-copy {
-      flex: 1; min-width: 180px; font-size: 13px; line-height: 1.4; color: var(--ink-soft);
+    .saved-status.is-draft { color: #7a5a12; }
+    .saved-status .saved-copy { min-width: 0; }
+    .saved-status .saved-copy strong { color: var(--ink-soft); font-weight: 650; }
+    .saved-status .saved-copy em { font-style: normal; color: var(--teal); font-weight: 650; }
+    .saved-status .saved-link {
+      color: var(--teal); font-weight: 650; text-decoration: none; white-space: nowrap;
     }
-    .saved-banner .saved-copy strong { color: var(--ink); }
-    .saved-banner .saved-copy em { font-style: normal; color: var(--teal); font-weight: 700; }
-    .saved-banner .saved-hint {
-      margin-top: 2px; font-size: 12px; color: var(--muted);
-    }
-    .saved-banner[hidden] { display: none !important; }
+    .saved-status .saved-link:hover { text-decoration: underline; }
+    .saved-status[hidden] { display: none !important; }
 
-    .preview-sidebar { display: flex; flex-direction: column; gap: 12px; }
+    .preview-sidebar { display: flex; flex-direction: column; gap: 10px; }
     .sidebar-box {
-      padding: 14px; border-radius: 16px; border: 1px solid var(--line);
-      background: var(--white);
+      padding: 12px 12px 10px; border-radius: 14px; border: 1px solid transparent;
+      background: transparent;
     }
-    .panel .sidebar-box { background: var(--cream); }
+    .panel .sidebar-box { background: transparent; }
+    .sidebar-box.approval-panel {
+      border-color: var(--line);
+      background: rgba(255, 252, 247, 0.55);
+    }
     .sidebar-box .label {
-      margin: 0 0 8px; font-size: 10px; font-weight: 800; text-transform: uppercase;
+      margin: 0 0 6px; font-size: 10px; font-weight: 750; text-transform: uppercase;
       letter-spacing: 0.08em; color: var(--muted);
     }
+    .sidebar-campaign-row {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
+    }
     .sidebar-box .btn { width: 100%; margin-top: 8px; }
-    .sidebar-box .btn-ghost { width: auto; margin-top: 8px; padding-left: 0; }
+    .sidebar-box .btn-ghost {
+      width: auto; margin-top: 0; padding: 4px 6px; font-size: 12px; font-weight: 600;
+    }
     .sidebar-box > p:not(.label):not(.approval-status) {
       margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4;
     }
     .preview-chip {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 700;
-      background: rgba(42, 122, 134, 0.1); color: var(--teal);
-      border: 1px solid rgba(42, 122, 134, 0.18);
+      padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 650;
+      background: rgba(42, 122, 134, 0.08); color: var(--teal);
+      border: 1px solid rgba(42, 122, 134, 0.14);
     }
-    .preview-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+    .preview-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
     .preview-chip.is-draft {
-      background: rgba(196, 146, 46, 0.12); color: #7a5a12;
-      border-color: rgba(196, 146, 46, 0.28);
+      background: rgba(196, 146, 46, 0.1); color: #7a5a12;
+      border-color: rgba(196, 146, 46, 0.22);
     }
     .preview-chip.is-draft .dot { background: var(--mustard); }
 
-    /* Approvals live in the aside — quiet status, not under the art */
+    /* Approvals — single primary CTA in aside (not also in header) */
     .approval-panel { display: block; }
     .approval-panel[hidden] { display: none !important; }
     .approval-status {
-      margin: 0 0 4px; font-size: 12px; line-height: 1.4; color: var(--muted);
+      margin: 0 0 8px; font-size: 12px; line-height: 1.4; color: var(--muted);
     }
-    .approval-status[data-kind="pending"] { color: #2a7a86; font-weight: 650; }
-    .approval-status[data-kind="changes"] { color: #a65a3a; font-weight: 650; }
-    .approval-status[data-kind="approved"] { color: #2f4a3c; font-weight: 650; }
+    .approval-status[data-kind="pending"] { color: #2a7a86; font-weight: 600; }
+    .approval-status[data-kind="changes"] { color: #a65a3a; font-weight: 600; }
+    .approval-status[data-kind="approved"] { color: #2f4a3c; font-weight: 600; }
     .approval-status[data-kind="error"] { color: #8b3f3f; }
-    .approval-status a { color: inherit; font-weight: 750; }
+    .approval-status a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 
     /* Start — quiet campaign chip (UX concepts live in event-files mockup) */
     .tied-quiet {
@@ -1057,22 +1072,24 @@
       position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
       overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
     }
+    /* Versions sit under Edit — secondary focus after the letter hero */
     .preview-versions {
-      margin-top: 16px;
+      margin-top: 2px;
+      padding-top: 2px;
       animation: soft-in 0.4s var(--ease) both;
     }
     .preview-versions[hidden] { display: none !important; }
     .preview-versions-label {
-      margin: 0 0 8px; font-size: 11px; font-weight: 800;
+      margin: 0 0 6px; font-size: 10px; font-weight: 750;
       letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
     }
     .preview-versions-strip {
-      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;
       -webkit-overflow-scrolling: touch;
     }
     .version-thumb {
-      flex: 0 0 auto; width: 72px; padding: 4px; border: 2px solid transparent;
-      border-radius: 12px; background: var(--cream-deep); cursor: pointer;
+      flex: 0 0 auto; width: 56px; padding: 3px; border: 2px solid transparent;
+      border-radius: 10px; background: var(--cream-deep); cursor: pointer;
       overflow: hidden; aspect-ratio: 2 / 3;
       transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
     }
@@ -1810,7 +1827,7 @@
       </div>
     </section>
 
-    <!-- PREVIEW — composition matches flyer-event-files-ease-mockup -->
+    <!-- PREVIEW — hero letter · Edit · Versions · soft Saved line · slim aside -->
     <section class="panel" data-panel="result" hidden>
       <div class="preview-header no-print">
         <div>
@@ -1820,12 +1837,9 @@
         <div class="preview-header-actions">
           <button type="button" class="btn btn-gold" id="generateBtn">Generate flyer</button>
           <div class="preview-done-actions" id="previewDoneActions" hidden>
-            <button type="button" class="btn btn-secondary" id="regen">Regenerate</button>
-            <button type="button" class="btn btn-secondary" id="btnPrint">Print</button>
-            <button type="button" class="btn btn-secondary" id="btnDownload">Download</button>
-            <button type="button" class="btn btn-primary" id="btnSendForApprovalHeader" disabled>
-              Send for approval
-            </button>
+            <button type="button" class="btn btn-tool" id="regen">Regenerate</button>
+            <button type="button" class="btn btn-tool" id="btnPrint">Print</button>
+            <button type="button" class="btn btn-tool" id="btnDownload">Download</button>
           </div>
         </div>
       </div>
@@ -1848,22 +1862,28 @@
           <div class="preview-under no-print">
             <div class="sidebar-edit-row">
               <button type="button" class="btn btn-secondary" id="btnEditArtwork">Edit artwork</button>
-              <a href="#" class="edit-details-link" id="editDetailsLink">Edit details (Inspiration)</a>
+              <a href="#" class="edit-details-link" id="editDetailsLink">Edit details</a>
             </div>
-            <div class="saved-banner" id="savedBanner" hidden>
-              <div class="saved-copy" id="savedBannerCopy"></div>
-              <a class="btn btn-teal" id="savedBannerAction" href="#">Open Files</a>
+            <div class="preview-versions" id="previewVersions" hidden>
+              <p class="preview-versions-label">Versions</p>
+              <div class="preview-versions-strip" id="previewVersionsStrip" role="list"></div>
+            </div>
+            <div class="saved-status" id="savedBanner" hidden>
+              <span class="saved-copy" id="savedBannerCopy"></span>
+              <a class="saved-link" id="savedBannerAction" href="#">Open Files</a>
             </div>
           </div>
         </div>
         <aside class="preview-sidebar no-print" aria-label="Preview campaign and approvals">
           <div class="sidebar-box">
-            <p class="label">Campaign</p>
-            <span class="preview-chip is-draft" id="previewCampaignChip">
-              <span class="dot" aria-hidden="true"></span>
-              <span id="previewCampaignChipLabel">Not tied yet</span>
-            </span>
-            <button type="button" class="btn btn-ghost" id="previewChangeCampaign">Change…</button>
+            <p class="label">Tied to</p>
+            <div class="sidebar-campaign-row">
+              <span class="preview-chip is-draft" id="previewCampaignChip">
+                <span class="dot" aria-hidden="true"></span>
+                <span id="previewCampaignChipLabel">Not tied yet</span>
+              </span>
+              <button type="button" class="btn btn-ghost" id="previewChangeCampaign">Change</button>
+            </div>
           </div>
           <div class="sidebar-box approval-panel" id="approvalPanel" hidden>
             <p class="label">Approvals</p>
@@ -1873,16 +1893,7 @@
               Send for approval
             </button>
           </div>
-          <div class="sidebar-box" id="previewAlsoBox">
-            <p class="label">Also</p>
-            <a class="btn btn-secondary" id="previewOpenFiles" href="/files">View in Event Files</a>
-            <a class="btn btn-secondary" id="previewOpenApprovals" href="/approvals">Open Approvals</a>
-          </div>
         </aside>
-      </div>
-      <div class="preview-versions no-print" id="previewVersions" hidden>
-        <p class="preview-versions-label">Versions</p>
-        <div class="preview-versions-strip" id="previewVersionsStrip" role="list"></div>
       </div>
     </section>
 
@@ -4044,7 +4055,7 @@
       openTiedQuietOnStart();
     }
 
-    /** Soft Saved-to-Files banner + Campaign aside — mock hierarchy, not a hero CTA. */
+    /** Soft Saved-to status line + Tied-to chip — never the hero. */
     function renderPreviewCampaignChrome() {
       const event = selectedApprovalEvent();
       const chip = document.getElementById("previewCampaignChip");
@@ -4052,8 +4063,6 @@
       const banner = document.getElementById("savedBanner");
       const bannerCopy = document.getElementById("savedBannerCopy");
       const bannerAction = document.getElementById("savedBannerAction");
-      const openFiles = document.getElementById("previewOpenFiles");
-      const openApprovals = document.getElementById("previewOpenApprovals");
       const previewSub = document.getElementById("previewSub");
       const hasArt =
         state.previewGenerated && !!getActiveFlyerVersion()?.imageUrl;
@@ -4085,39 +4094,22 @@
           if (event) {
             banner.classList.remove("is-draft");
             bannerCopy.innerHTML =
-              `Saved to <strong>${escapeHtml(event.title)}</strong> → <em>Files</em>` +
-              `<div class="saved-hint">Event-tied versions also appear under Generated on the event Files tab.</div>`;
+              `Saved to <strong>${escapeHtml(event.title)}</strong> → <em>Files</em>`;
+            bannerAction.hidden = false;
             bannerAction.textContent = "Open Files";
             bannerAction.href = eventFilesHref(event.id);
-            bannerAction.className = "btn btn-teal";
+            bannerAction.className = "saved-link";
           } else {
             banner.classList.add("is-draft");
-            bannerCopy.innerHTML =
-              `<strong>Saved on this device only.</strong> Pick or create a campaign to put versions in Files — so your team can find them without knowing the architecture.`;
+            bannerCopy.innerHTML = `<strong>Saved on this device only.</strong>`;
+            bannerAction.hidden = false;
             bannerAction.textContent = "Choose campaign…";
             bannerAction.href = "#";
-            bannerAction.className = "btn btn-teal";
+            bannerAction.className = "saved-link";
           }
         }
       }
 
-      if (openFiles) {
-        if (event) {
-          openFiles.href = eventFilesHref(event.id);
-          openFiles.textContent = "View in Event Files";
-          openFiles.removeAttribute("aria-disabled");
-        } else {
-          openFiles.href = "#";
-          openFiles.textContent = "Choose campaign for Files";
-        }
-      }
-      if (openApprovals) {
-        openApprovals.href = "/approvals";
-        if (document.body.classList.contains("is-embed")) {
-          openApprovals.setAttribute("target", "_top");
-          if (openFiles && event) openFiles.setAttribute("target", "_top");
-        }
-      }
       if (bannerAction && event && document.body.classList.contains("is-embed")) {
         bannerAction.setAttribute("target", "_top");
       } else if (bannerAction) {
@@ -4246,12 +4238,10 @@
     }
 
     function syncApprovalSendButtons(disabled, label) {
-      ["btnSendForApproval", "btnSendForApprovalHeader"].forEach((id) => {
-        const btn = document.getElementById(id);
-        if (!btn) return;
-        btn.disabled = disabled;
-        btn.textContent = label;
-      });
+      const btn = document.getElementById("btnSendForApproval");
+      if (!btn) return;
+      btn.disabled = disabled;
+      btn.textContent = label;
     }
 
     function renderApprovalPanel() {
@@ -4264,8 +4254,6 @@
         !!getActiveFlyerVersion()?.imageUrl &&
         state.view === "result";
       panel.hidden = !hasArt;
-      const headerSend = document.getElementById("btnSendForApprovalHeader");
-      if (headerSend) headerSend.hidden = !hasArt;
       renderPreviewCampaignChrome();
       if (!hasArt) return;
 
@@ -4775,20 +4763,10 @@
       .getElementById("btnSendForApproval")
       ?.addEventListener("click", onSendForApprovalClick);
     document
-      .getElementById("btnSendForApprovalHeader")
-      ?.addEventListener("click", onSendForApprovalClick);
-    document
       .getElementById("previewChangeCampaign")
       ?.addEventListener("click", openTiedCampaignPicker);
     document
       .getElementById("savedBannerAction")
-      ?.addEventListener("click", (e) => {
-        const event = selectedApprovalEvent();
-        if (event) return; /* follow href → Files */
-        openTiedCampaignPicker(e);
-      });
-    document
-      .getElementById("previewOpenFiles")
       ?.addEventListener("click", (e) => {
         const event = selectedApprovalEvent();
         if (event) return; /* follow href → Files */
