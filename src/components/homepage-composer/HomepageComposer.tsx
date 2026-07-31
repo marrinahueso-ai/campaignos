@@ -287,7 +287,6 @@ export function HomepageComposer({
   const [saveStatus, setSaveStatus] = useState<DraftSaveStatus>({
     kind: "idle",
   });
-  const [copyMenuOpen, setCopyMenuOpen] = useState(false);
   const [monthToast, setMonthToast] = useState<string | null>(null);
   const [monthBarPulse, setMonthBarPulse] = useState(false);
   const artworkInputRef = useRef<HTMLInputElement>(null);
@@ -460,7 +459,6 @@ export function HomepageComposer({
   const goToWorkingMonth = useCallback(
     (nextMonth: string) => {
       if (!nextMonth || nextMonth === stateRef.current.workingMonth) return;
-      setCopyMenuOpen(false);
       setState((prev) => switchWorkingMonth(prev, nextMonth));
       pulseMonthBar();
     },
@@ -470,7 +468,6 @@ export function HomepageComposer({
   const handleSaveThisMonth = useCallback(() => {
     const month = stateRef.current.workingMonth;
     setState((prev) => saveWorkingMonth(prev));
-    setCopyMenuOpen(false);
     showMonthToast(`Saved ${formatMonthShort(month)} homepage`);
   }, [showMonthToast]);
 
@@ -478,7 +475,6 @@ export function HomepageComposer({
     (fromMonth: string) => {
       const current = stateRef.current;
       const next = copyMonthCardsFrom(current, fromMonth);
-      setCopyMenuOpen(false);
       if (!next) {
         showMonthToast("Nothing saved in that month yet");
         return;
@@ -490,13 +486,6 @@ export function HomepageComposer({
     },
     [showMonthToast],
   );
-
-  useEffect(() => {
-    if (!copyMenuOpen) return;
-    const onDocClick = () => setCopyMenuOpen(false);
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
-  }, [copyMenuOpen]);
 
   useEffect(() => {
     return () => {
@@ -1828,36 +1817,34 @@ export function HomepageComposer({
 
           {step === "cards" && (
             <section className="space-y-2.5">
-              <PanelHead
-                title="Homepage cards"
-                body={
-                  state.cards.length === 0
-                    ? `Empty draft for ${workingMonthShort} — add cards or copy from a prior month.`
-                    : `Edit and reorder ${workingMonthShort}. On/off dates control when each card appears.`
-                }
-                actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setStep("footer")}
-                    >
-                      ← Footer
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={addCustomCard}
-                    >
-                      <Plus className="h-4 w-4" strokeWidth={1.75} />
-                      Add other card
-                    </Button>
-                    <Button type="button" onClick={() => setStep("preview")}>
-                      Preview →
-                    </Button>
-                  </>
-                }
-              />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-cos-muted transition hover:text-cos-text"
+                  onClick={() => setStep("footer")}
+                >
+                  <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+                  Back to footer
+                </button>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={addCustomCard}
+                  >
+                    <Plus className="h-4 w-4" strokeWidth={1.75} />
+                    Add other card
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setStep("preview")}
+                  >
+                    Preview →
+                  </Button>
+                </div>
+              </div>
 
               <div
                 className={cn(
@@ -1932,41 +1919,7 @@ export function HomepageComposer({
                         : "Saved"}
                   </span>
                 </div>
-                <div className="ml-auto flex flex-wrap items-center gap-1.5">
-                  <div className="relative">
-                    <button
-                      type="button"
-                      className="rounded-full px-2 py-1.5 text-xs font-semibold text-[#2a7a86] hover:underline disabled:opacity-45"
-                      disabled={copyFromMonths.length === 0}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCopyMenuOpen((open) => !open);
-                      }}
-                    >
-                      Copy from…
-                    </button>
-                    {copyMenuOpen ? (
-                      <div
-                        className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[180px] rounded-[14px] border border-cos-border bg-cos-card p-1.5 shadow-[0_14px_36px_rgba(42,38,34,0.14)]"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {copyFromMonths.map((item) => (
-                          <button
-                            key={item.key}
-                            type="button"
-                            className="block w-full rounded-[10px] px-3 py-2 text-left text-sm font-semibold text-cos-text hover:bg-cos-bg-alt"
-                            onClick={() => handleCopyFromMonth(item.key)}
-                          >
-                            {formatMonthLabel(item.key)}
-                            <span className="mt-0.5 block text-[11px] font-medium text-cos-muted">
-                              Saved · {item.cardCount}{" "}
-                              {item.cardCount === 1 ? "card" : "cards"}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
+                <div className="ml-auto">
                   <Button
                     type="button"
                     variant="secondary"

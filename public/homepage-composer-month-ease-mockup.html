@@ -236,9 +236,15 @@
       animation: soft-in 0.35s var(--ease) both;
     }
     .panel-head {
-      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
       gap: 10px; margin-bottom: 12px;
     }
+    .back-footer {
+      display: inline-flex; align-items: center; gap: 4px;
+      border: 0; background: transparent; padding: 0;
+      font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer;
+    }
+    .back-footer:hover { color: var(--ink); }
     .panel h2 {
       margin: 0; font-family: var(--serif); font-size: 1.5rem; font-weight: 600;
       letter-spacing: -0.02em;
@@ -409,17 +415,17 @@
 
       <div>
         <section class="panel" id="cardsPanel">
-          <div class="panel-head">
-            <div>
-              <h2>Homepage cards</h2>
-              <p class="sub" id="cardsSub">Edit and reorder August. On/off dates control when each card appears.</p>
-            </div>
+          <div class="panel-head" style="align-items:center;">
+            <button type="button" class="back-footer" id="backFooter">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+              Back to footer
+            </button>
             <div class="panel-actions">
-              <button type="button" class="btn btn-secondary">← Footer</button>
               <button type="button" class="btn btn-secondary">+ Add other card</button>
               <button type="button" class="btn btn-primary">Preview →</button>
             </div>
           </div>
+          <p class="sub" id="cardsSub" hidden>Edit and reorder August. On/off dates control when each card appears.</p>
 
           <!-- Month workspace — above the two columns only -->
           <div class="month-bar" id="monthBar">
@@ -442,13 +448,6 @@
               <p class="month-meta" id="monthMeta">Saved</p>
             </div>
             <div class="month-actions">
-              <div class="copy-wrap">
-                <button type="button" class="btn btn-ghost" id="copyBtn">Copy from…</button>
-                <div class="copy-menu" id="copyMenu" hidden>
-                  <button type="button" data-copy="2026-07">July 2026<span class="hint">Saved · 2 cards</span></button>
-                  <button type="button" data-copy="2026-08">August 2026<span class="hint">Saved · 3 cards</span></button>
-                </div>
-              </div>
               <button type="button" class="btn btn-secondary" id="saveMonthBtn">Save this month</button>
             </div>
           </div>
@@ -555,8 +554,6 @@
         meta: document.getElementById("monthMeta"),
         status: document.getElementById("saveStatus"),
         saveBtn: document.getElementById("saveMonthBtn"),
-        copyBtn: document.getElementById("copyBtn"),
-        copyMenu: document.getElementById("copyMenu"),
         cards: document.getElementById("homepageCards"),
         events: document.getElementById("eventList"),
         eventMonth: document.getElementById("eventMonth"),
@@ -646,9 +643,11 @@
         els.select.value = current;
         els.prev.disabled = indexOf(current) <= 0;
         els.next.disabled = indexOf(current) >= MONTHS.length - 1;
-        els.cardsSub.textContent = isEmpty
-          ? "Empty draft for " + info.short + " — add cards or copy from a prior month."
-          : "Edit and reorder " + info.short + ". On/off dates control when each card appears.";
+        if (els.cardsSub) {
+          els.cardsSub.textContent = isEmpty
+            ? "Empty draft for " + info.short + " — add cards or copy from a prior month."
+            : "Edit and reorder " + info.short + ". On/off dates control when each card appears.";
+        }
 
         if (dirty[current]) {
           els.meta.textContent = "Unsaved";
@@ -675,7 +674,6 @@
       function switchMonth(key) {
         if (!monthInfo(key)) return;
         current = key;
-        els.copyMenu.hidden = true;
         renderEvents();
         renderCards();
         updateChrome();
@@ -698,7 +696,6 @@
         }
         drafts[current] = JSON.parse(JSON.stringify(source));
         dirty[current] = true;
-        els.copyMenu.hidden = true;
         renderCards();
         updateChrome();
         showToast("Copied " + monthInfo(fromKey).short + " → " + monthInfo(current).short);
@@ -716,18 +713,6 @@
         if (i < MONTHS.length - 1) switchMonth(MONTHS[i + 1].key);
       });
       els.saveBtn.addEventListener("click", saveMonth);
-      els.copyBtn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        els.copyMenu.hidden = !els.copyMenu.hidden;
-      });
-      els.copyMenu.addEventListener("click", function (e) {
-        var btn = e.target.closest("[data-copy]");
-        if (btn) copyFrom(btn.getAttribute("data-copy"));
-      });
-      document.addEventListener("click", function () {
-        els.copyMenu.hidden = true;
-      });
-      els.copyBtn.addEventListener("click", function (e) { e.stopPropagation(); });
 
       // Demo story pills
       document.querySelectorAll("[data-demo]").forEach(function (btn) {
