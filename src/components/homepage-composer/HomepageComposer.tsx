@@ -1827,92 +1827,85 @@ export function HomepageComposer({
           )}
 
           {step === "cards" && (
-            <section className="space-y-3">
+            <section className="space-y-2.5">
               <div
                 className={cn(
-                  "flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-cos-border bg-cos-card px-3.5 py-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)]",
+                  "flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[12px] bg-cos-bg-alt/70 px-2.5 py-1.5",
                   monthBarPulse &&
-                    "border-[rgba(42,122,134,0.35)] shadow-[0_0_0_4px_rgba(42,122,134,0.12)]",
+                    "ring-2 ring-[rgba(42,122,134,0.22)] ring-offset-2 ring-offset-cos-bg",
                 )}
               >
-                <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-cos-muted">
-                      Working on
-                    </p>
-                    <div className="mt-1 inline-flex items-center gap-1 rounded-full border border-cos-border bg-cos-bg-alt p-1">
-                      <button
-                        type="button"
-                        className="inline-grid h-8 w-8 place-items-center rounded-full text-cos-muted transition hover:bg-cos-card hover:text-cos-text disabled:opacity-35"
-                        aria-label="Previous month"
-                        disabled={workingMonthIndex <= 0}
-                        onClick={() => {
-                          const prev = workingMonthKeys[workingMonthIndex - 1];
-                          if (prev) goToWorkingMonth(prev);
-                        }}
-                      >
-                        <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-                      </button>
-                      <select
-                        className="max-w-[11rem] appearance-none border-none bg-transparent py-1 pl-2.5 pr-7 font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-cos-text focus:outline-none"
-                        style={{
-                          backgroundImage:
-                            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%237a7166' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E\")",
-                          backgroundRepeat: "no-repeat",
-                          backgroundPosition: "right 8px center",
-                        }}
-                        aria-label="Working on month"
-                        value={state.workingMonth}
-                        onChange={(e) => goToWorkingMonth(e.target.value)}
-                      >
-                        {workingMonthKeys.map((month) => (
-                          <option key={month} value={month}>
-                            {formatMonthLabel(month)}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className="inline-grid h-8 w-8 place-items-center rounded-full text-cos-muted transition hover:bg-cos-card hover:text-cos-text disabled:opacity-35"
-                        aria-label="Next month"
-                        disabled={
-                          workingMonthIndex < 0 ||
-                          workingMonthIndex >= workingMonthKeys.length - 1
-                        }
-                        onClick={() => {
-                          const next = workingMonthKeys[workingMonthIndex + 1];
-                          if (next) goToWorkingMonth(next);
-                        }}
-                      >
-                        <ChevronRight className="h-4 w-4" strokeWidth={2} />
-                      </button>
-                    </div>
+                <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-2.5">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-cos-muted">
+                    Working on
+                  </span>
+                  <div className="inline-flex items-center gap-0.5 rounded-full border border-cos-border/80 bg-cos-card p-0.5">
+                    <button
+                      type="button"
+                      className="inline-grid h-7 w-7 place-items-center rounded-full text-cos-muted transition hover:bg-cos-bg-alt hover:text-cos-text disabled:opacity-35"
+                      aria-label="Previous month"
+                      disabled={workingMonthIndex <= 0}
+                      onClick={() => {
+                        const prev = workingMonthKeys[workingMonthIndex - 1];
+                        if (prev) goToWorkingMonth(prev);
+                      }}
+                    >
+                      <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+                    </button>
+                    <select
+                      className="max-w-[10.5rem] appearance-none border-none bg-transparent py-0.5 pl-1.5 pr-6 text-sm font-semibold text-cos-text focus:outline-none"
+                      style={{
+                        backgroundImage:
+                          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%237a7166' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E\")",
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 6px center",
+                      }}
+                      aria-label="Working on month"
+                      value={state.workingMonth}
+                      onChange={(e) => goToWorkingMonth(e.target.value)}
+                    >
+                      {workingMonthKeys.map((month) => (
+                        <option key={month} value={month}>
+                          {formatMonthLabel(month)}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="inline-grid h-7 w-7 place-items-center rounded-full text-cos-muted transition hover:bg-cos-bg-alt hover:text-cos-text disabled:opacity-35"
+                      aria-label="Next month"
+                      disabled={
+                        workingMonthIndex < 0 ||
+                        workingMonthIndex >= workingMonthKeys.length - 1
+                      }
+                      onClick={() => {
+                        const next = workingMonthKeys[workingMonthIndex + 1];
+                        if (next) goToWorkingMonth(next);
+                      }}
+                    >
+                      <ChevronRight className="h-4 w-4" strokeWidth={2} />
+                    </button>
                   </div>
-                  <p className="text-[12.5px] leading-snug text-cos-muted">
-                    {monthStatus === "unsaved" ? (
-                      <>
-                        Unsaved changes for{" "}
-                        <strong className="font-semibold text-cos-text">
-                          {workingMonthShort}
-                        </strong>
-                      </>
-                    ) : monthStatus === "empty" ? (
-                      "Empty draft — not saved yet"
-                    ) : (
-                      <>
-                        Saved homepage for{" "}
-                        <strong className="font-semibold text-cos-text">
-                          {workingMonthShort}
-                        </strong>
-                      </>
+                  <span
+                    className={cn(
+                      "text-[11px] leading-snug",
+                      monthStatus === "unsaved"
+                        ? "font-medium text-cos-brand-mustard"
+                        : "text-cos-muted",
                     )}
-                  </p>
+                  >
+                    {monthStatus === "unsaved"
+                      ? "Unsaved"
+                      : monthStatus === "empty"
+                        ? "Empty"
+                        : "Saved"}
+                  </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="ml-auto flex flex-wrap items-center gap-1.5">
                   <div className="relative">
                     <button
                       type="button"
-                      className="rounded-full px-2.5 py-2 text-sm font-bold text-[#2a7a86] hover:underline disabled:opacity-45"
+                      className="rounded-full px-2 py-1.5 text-xs font-semibold text-[#2a7a86] hover:underline disabled:opacity-45"
                       disabled={copyFromMonths.length === 0}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1943,7 +1936,12 @@ export function HomepageComposer({
                       </div>
                     ) : null}
                   </div>
-                  <Button type="button" onClick={handleSaveThisMonth}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleSaveThisMonth}
+                  >
                     Save this month
                   </Button>
                 </div>
@@ -1954,7 +1952,7 @@ export function HomepageComposer({
                 body={
                   state.cards.length === 0
                     ? `Empty draft for ${workingMonthShort} — add cards or copy from a prior month.`
-                    : `Cards for ${workingMonthShort} — reorder, edit, then save this month.`
+                    : `Edit and reorder ${workingMonthShort}. On/off dates control when each card appears.`
                 }
                 actions={
                   <>
@@ -1979,11 +1977,6 @@ export function HomepageComposer({
                   </>
                 }
               />
-              <div className="rounded-[12px] bg-cos-brand-mustard/35 px-3 py-2 text-xs leading-snug text-cos-text sm:text-sm">
-                On / off dates still control when each card appears. Saving by
-                month keeps a full draft for that month so you can build ahead
-                while another month is live.
-              </div>
               <div className="grid gap-3 xl:grid-cols-[260px_minmax(0,1fr)]">
                 <div className="rounded-[18px] border border-cos-border bg-cos-card p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                   <h3 className="font-display text-lg text-cos-text">
@@ -2059,7 +2052,7 @@ export function HomepageComposer({
                   </div>
                 </div>
 
-                <div className="rounded-[18px] border border-cos-border bg-cos-bg-alt p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+                <div className="overflow-visible rounded-[18px] border border-cos-border bg-cos-bg-alt p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h3 className="font-display text-xl text-cos-text">
                       On homepage · drag to reorder
@@ -2115,24 +2108,30 @@ export function HomepageComposer({
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-3 space-y-3">
+                    <div className="mt-3 space-y-3 overflow-visible pb-2">
                       {state.cards.map((card) => (
                         <div
                           key={card.id}
-                          draggable
-                          onDragStart={() => onDragStart(card.id)}
                           onDragOver={(e) => onDragOver(e, card.id)}
-                          onDragEnd={() => setDragId(null)}
                           className={cn(
-                            "rounded-[14px] border border-cos-border bg-cos-card p-3 transition-colors duration-150 hover:border-cos-brand-sage",
+                            "overflow-visible rounded-[14px] border border-cos-border bg-cos-card p-3 transition-colors duration-150 hover:border-cos-brand-sage",
                             dragId === card.id && "opacity-50",
                           )}
                         >
-                          <div className="grid grid-cols-[24px_72px_minmax(0,1fr)] items-start gap-3">
-                            <GripVertical
-                              className="mt-2 h-5 w-5 cursor-grab justify-self-center text-cos-muted"
-                              strokeWidth={1.5}
-                            />
+                          <div className="grid grid-cols-[24px_72px_minmax(0,1fr)] items-start gap-3 overflow-visible">
+                            <div
+                              draggable
+                              onDragStart={() => onDragStart(card.id)}
+                              onDragEnd={() => setDragId(null)}
+                              title="Drag to reorder"
+                              aria-label="Drag to reorder"
+                              className="mt-2 cursor-grab justify-self-center text-cos-muted active:cursor-grabbing"
+                            >
+                              <GripVertical
+                                className="h-5 w-5"
+                                strokeWidth={1.5}
+                              />
+                            </div>
                             <div className="space-y-1.5">
                               <div className="aspect-square h-[72px] w-[72px] overflow-hidden rounded-[14px] bg-cos-bg-alt">
                                 {card.imageUrl ? (
@@ -2198,7 +2197,7 @@ export function HomepageComposer({
                                 </Link>
                               </div>
                             </div>
-                            <div className="min-w-0 space-y-2">
+                            <div className="min-w-0 space-y-2 overflow-visible">
                               <div className="flex flex-wrap items-center gap-2">
                                 <input
                                   className="min-w-0 flex-1 rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 font-display text-sm font-semibold text-cos-text"
@@ -2337,8 +2336,8 @@ export function HomepageComposer({
                                 face. On / Off below only control when the card
                                 is visible.
                               </p>
-                              <div className="grid gap-2 rounded-[12px] bg-cos-bg-alt/80 p-2 sm:grid-cols-[auto_1fr_1fr]">
-                                <label className="flex items-center gap-2 text-xs font-semibold text-cos-text">
+                              <div className="grid gap-2 overflow-visible rounded-[12px] bg-cos-bg-alt/80 p-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]">
+                                <label className="flex items-center gap-2 text-xs font-semibold text-cos-text sm:self-end sm:pb-1.5">
                                   <input
                                     type="checkbox"
                                     checked={card.alwaysOn}
@@ -2350,36 +2349,50 @@ export function HomepageComposer({
                                   />
                                   Always on
                                 </label>
-                                <label className="block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
-                                  On date
-                                  <input
-                                    type="date"
-                                    className="mt-1 w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs text-cos-text disabled:opacity-40"
-                                    disabled={card.alwaysOn}
-                                    value={card.startsOn ?? ""}
-                                    onChange={(e) =>
-                                      updateCard(card.id, {
-                                        startsOn: e.target.value || null,
-                                        alwaysOn: false,
-                                      })
-                                    }
-                                  />
-                                </label>
-                                <label className="block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
-                                  Off date
-                                  <input
-                                    type="date"
-                                    className="mt-1 w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs text-cos-text disabled:opacity-40"
-                                    disabled={card.alwaysOn}
-                                    value={card.expiresOn ?? ""}
-                                    onChange={(e) =>
-                                      updateCard(card.id, {
-                                        expiresOn: e.target.value || null,
-                                        alwaysOn: false,
-                                      })
-                                    }
-                                  />
-                                </label>
+                                <div className="grid gap-2 overflow-visible sm:col-span-2 sm:grid-cols-2 focus-within:pb-[min(20rem,50vh)]">
+                                  <label className="relative z-20 block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
+                                    On date
+                                    <input
+                                      type="date"
+                                      className="mt-1 w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-cos-text disabled:opacity-40"
+                                      disabled={card.alwaysOn}
+                                      value={card.startsOn ?? ""}
+                                      onFocus={(e) => {
+                                        e.currentTarget.scrollIntoView({
+                                          block: "center",
+                                          inline: "nearest",
+                                        });
+                                      }}
+                                      onChange={(e) =>
+                                        updateCard(card.id, {
+                                          startsOn: e.target.value || null,
+                                          alwaysOn: false,
+                                        })
+                                      }
+                                    />
+                                  </label>
+                                  <label className="relative z-20 block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
+                                    Off date
+                                    <input
+                                      type="date"
+                                      className="mt-1 w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-cos-text disabled:opacity-40"
+                                      disabled={card.alwaysOn}
+                                      value={card.expiresOn ?? ""}
+                                      onFocus={(e) => {
+                                        e.currentTarget.scrollIntoView({
+                                          block: "center",
+                                          inline: "nearest",
+                                        });
+                                      }}
+                                      onChange={(e) =>
+                                        updateCard(card.id, {
+                                          expiresOn: e.target.value || null,
+                                          alwaysOn: false,
+                                        })
+                                      }
+                                    />
+                                  </label>
+                                </div>
                               </div>
                             </div>
                           </div>
