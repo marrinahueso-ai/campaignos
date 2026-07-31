@@ -147,7 +147,9 @@ test.describe("Flyer composer AI direction smoke", () => {
     await goToPreview(page);
 
     await expect(page.locator(".preview-sidebar")).toBeVisible();
-    await expect(page.locator('.preview-sidebar [data-goto="inputs"]')).toHaveText("Edit");
+    await expect(page.locator("#btnEdit")).toBeVisible();
+    await expect(page.locator("#btnEdit")).toHaveText("Edit");
+    await expect(page.locator("#editDetailsLink")).toHaveCount(0);
     await expect(page.locator(".preview-sidebar")).not.toContainText("Directions to AI");
     await expect(page.locator(".preview-sidebar")).not.toContainText("Slot summary");
 
@@ -211,6 +213,94 @@ test.describe("Flyer composer AI direction smoke", () => {
     await page.locator("#btnDownload").click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(/flyer\.png$/);
+  });
+
+  test("Edit pop-out: Artwork|Details toggle and one regenerate payload", async ({
+    page,
+  }) => {
+    await selectNewFlyerLetter(page);
+    await fillAllSlotFields(page, {
+      orgName: "Edit Sync PTA",
+      headline: "Original Headline",
+      datesEvents: "Oct 10 — Game Night",
+      location: "Gym",
+      ctaLabel: "RSVP",
+      ctaUrl: "https://example.org/rsvp",
+      qrUrl: "https://example.org/qr",
+      footerLine: "editsync.org",
+    });
+    await goToPreview(page);
+
+    await page.route(FLYER_GENERATE_API, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          error: null,
+          imageUrl: null,
+          imageBase64: MOCK_GENERATED_IMAGE,
+          slots: null,
+          aiUsed: true,
+        }),
+      });
+    });
+    await page.locator("#generateBtn").click();
+    await expect(page.locator("#generatedFlyerImg")).toBeVisible({ timeout: 20_000 });
+
+    await page.locator("#btnEdit").click();
+    await expect(page.locator('[data-panel="edit"]')).toBeVisible();
+    await expect(page.locator("#editTabArtwork")).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#editPaneArtwork")).toBeVisible();
+    await expect(page.locator("#editPaneDetails")).toBeHidden();
+    await expect(page.locator("#editApplyBtn")).toBeVisible();
+
+    await page.locator("#editDirection").fill("Bigger headline, warmer lights");
+    await page.locator("#editTabDetails").click();
+    await expect(page.locator("#editTabDetails")).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#editPaneDetails")).toBeVisible();
+    await expect(page.locator("#editPaneArtwork")).toBeHidden();
+    await expect(page.locator("#editHeadline")).toHaveValue("Original Headline");
+
+    await page.locator("#editHeadline").fill("Updated Headline");
+    await page.locator("#editDatesEvents").fill("Oct 17 — Game Night");
+    // Inspiration fields stay in sync while editing Details
+    await expect(slotField(page, "headline")).toHaveValue("Updated Headline");
+    await expect(slotField(page, "datesEvents")).toHaveValue("Oct 17 — Game Night");
+
+    // Regenerate CTA stays visible on Details pane
+    await expect(page.locator("#editApplyBtn")).toBeVisible();
+
+    let editRequestBody: Record<string, unknown> | null = null;
+    await page.route(FLYER_GENERATE_API, async (route) => {
+      editRequestBody = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          error: null,
+          imageUrl: null,
+          imageBase64: MOCK_GENERATED_IMAGE,
+          slots: null,
+          aiUsed: true,
+        }),
+      });
+    });
+
+    await page.locator("#editApplyBtn").click();
+    await expect(page.locator('[data-panel="result"]')).toBeVisible({ timeout: 20_000 });
+    expect(editRequestBody).toBeTruthy();
+    const fields = editRequestBody!.fields as Record<string, string>;
+    expect(fields.headline).toBe("Updated Headline");
+    expect(fields.datesEvents).toBe("Oct 17 — Game Night");
+    expect(fields.aiDirection).toMatch(/Artwork change notes/i);
+    expect(fields.aiDirection).toMatch(/Bigger headline, warmer lights/);
+    expect(fields.aiDirection).toMatch(/Current flyer facts/i);
+    expect(editRequestBody!.assets).toMatchObject({
+      inspirationPhotoPresent: true,
+      inspirationPhotoLabel: "Selected Preview version",
+    });
   });
 
   test("Semester generate coalesces calendar lines mis-slotted in bodyCopy", async ({

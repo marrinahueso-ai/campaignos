@@ -67,7 +67,9 @@ export async function openProvenLayoutsOptional(page: Page) {
 
 export async function selectProvenTemplate(page: Page, templateId: "semester" | "investor" | "festival") {
   await openProvenLayoutsOptional(page);
-  await page.locator(`.proven-tpl[data-proven="${templateId}"]`).click();
+  const proven = page.locator(`.proven-tpl[data-proven="${templateId}"]`);
+  await proven.waitFor({ state: "attached" });
+  await proven.click({ force: true });
   await page.locator("#toInputs").click();
   await page.waitForSelector('[data-panel="inputs"]:not([hidden])');
 }
@@ -79,7 +81,16 @@ export async function fillAllSlotFields(
   await openOptionalDetails(page);
   for (const id of SLOT_FIELD_IDS) {
     const value = values[id] ?? `Smoke ${id} ${Date.now()}`;
-    await page.locator(`#slotForm #${id}`).fill(value);
+    const field = page.locator(`#slotForm #${id}`);
+    // bodyCopy is a hidden carrier field — set via evaluate when not visible.
+    if (id === "bodyCopy" || !(await field.isVisible())) {
+      await field.evaluate((el, next) => {
+        (el as HTMLInputElement | HTMLTextAreaElement).value = next;
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+      }, value);
+      continue;
+    }
+    await field.fill(value);
   }
 }
 

@@ -698,8 +698,7 @@
 
               <div class="preview-under">
                 <div class="preview-edit-row">
-                  <button type="button" class="btn btn-secondary" id="btnEditArtworkMock">Edit artwork</button>
-                  <a href="#" class="edit-details-link" data-goto="inspire">Edit details</a>
+                  <button type="button" class="btn btn-secondary" id="btnEditMock">Edit</button>
                 </div>
                 <div class="versions">
                   <p class="versions-label">Versions</p>
@@ -1122,8 +1121,8 @@
     });
 
     $("#btnApprovalBound").addEventListener("click", () => showToast("Sent for approval (mock)"));
-    $("#btnEditArtworkMock")?.addEventListener("click", () =>
-      showToast("Edit artwork — regenerate from the selected version"),
+    $("#btnEditMock")?.addEventListener("click", () =>
+      showToast("Edit — Artwork | Details, then regenerate once"),
     );
 
     $("#btnApprovalUnbound").addEventListener("click", () => openBindModal("approval"));

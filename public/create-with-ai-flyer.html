@@ -877,7 +877,7 @@
     .preview-done-actions {
       display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
     }
-    /* Icon tools — same pill/outline as Edit artwork */
+    /* Icon tools — same pill/outline as Edit */
     .btn-tool {
       width: 40px; height: 40px; padding: 0;
       background: var(--white); color: var(--ink);
@@ -919,10 +919,6 @@
     .preview-under .sidebar-edit-row {
       display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
     }
-    .preview-under .edit-details-link {
-      margin-top: 0; color: var(--muted); font-weight: 550; font-size: 13px;
-    }
-    .preview-under .edit-details-link:hover { color: var(--ink-soft); text-decoration: underline; }
     /* Soft one-line status — not a fat banner stealing focus from the art */
     .saved-status {
       display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px;
@@ -1347,7 +1343,7 @@
     }
     .save-hint.unsaved { color: var(--mustard); }
 
-    /* Edit Artwork — revise from selected Preview version */
+    /* Edit — revise from selected Preview version (Artwork | Details) */
     .edit-artwork-grid {
       display: grid; gap: 22px; align-items: start;
     }
@@ -1379,6 +1375,27 @@
       margin: 10px 0 0; font-size: 0.78rem; color: var(--ink-soft); line-height: 1.4; text-align: center;
     }
     .edit-base-meta strong { color: var(--forest); font-weight: 700; }
+    .edit-mode-toggle {
+      display: inline-flex; gap: 2px; padding: 3px; margin: 0 0 16px;
+      border-radius: 999px; border: 1px solid var(--line);
+      background: rgba(42, 38, 34, 0.05);
+    }
+    .edit-mode-toggle [role="tab"] {
+      border: none; background: transparent; color: var(--muted);
+      border-radius: 999px; padding: 8px 16px;
+      font-size: 13px; font-weight: 650; line-height: 1.2;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    .edit-mode-toggle [role="tab"]:hover { color: var(--ink); }
+    .edit-mode-toggle [role="tab"][aria-selected="true"] {
+      background: var(--white); color: var(--ink);
+      box-shadow: 0 1px 2px rgba(42, 38, 34, 0.08);
+    }
+    .edit-mode-toggle [role="tab"]:disabled { opacity: 0.45; cursor: not-allowed; }
+    .edit-pane[hidden] { display: none !important; }
+    .edit-details-fields { display: flex; flex-direction: column; gap: 12px; }
+    .edit-details-fields .field { margin: 0; }
+    .edit-details-fields textarea { min-height: 72px; }
     .edit-chip-row {
       display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
     }
@@ -1417,11 +1434,6 @@
       font-size: 0.88rem; line-height: 1.45; color: var(--ink-soft);
     }
     .edit-hint-banner strong { color: var(--forest); }
-    .edit-details-link {
-      display: inline-block;
-      font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none;
-    }
-    .edit-details-link:hover { color: var(--forest); }
     .edit-gen-overlay {
       position: absolute; inset: 0; display: grid; place-items: center;
       background: rgba(246, 242, 235, 0.72); backdrop-filter: blur(2px);
@@ -1871,8 +1883,7 @@
           </div>
           <div class="preview-under no-print">
             <div class="sidebar-edit-row">
-              <button type="button" class="btn btn-secondary" id="btnEditArtwork">Edit artwork</button>
-              <a href="#" class="edit-details-link" id="editDetailsLink">Edit details</a>
+              <button type="button" class="btn btn-secondary" id="btnEdit">Edit</button>
             </div>
             <div class="preview-versions" id="previewVersions" hidden>
               <p class="preview-versions-label">Versions</p>
@@ -1907,15 +1918,15 @@
       </div>
     </section>
 
-    <!-- EDIT ARTWORK — revise from selected Preview version -->
+    <!-- EDIT — Artwork | Details; one regenerate from selected version -->
     <section class="panel" data-panel="edit" hidden>
       <div class="step-head">
-        <h2>Edit artwork</h2>
-        <p class="sub">Describe what should change on the selected version.</p>
+        <h2>Edit</h2>
+        <p class="sub">Adjust artwork or flyer details, then regenerate once.</p>
       </div>
       <div class="edit-hint-banner">
         <div>
-          Starts from your selected version. Facts stay as-is unless you change them under Edit details.
+          Uses your selected version. Artwork notes and Details both apply when you regenerate.
         </div>
       </div>
       <div class="edit-artwork-grid">
@@ -1931,42 +1942,90 @@
           <p class="edit-base-meta" id="editBaseMeta">No version selected yet.</p>
         </div>
         <div>
-          <div class="field">
-            <div class="field-label-row">
-              <label for="editDirection">What should change?</label>
-              <button
-                type="button"
-                class="voice-btn"
-                id="editDirectionVoice"
-                aria-label="Speak change direction"
-                title="Speak change direction"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                  <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M5 11a7 7 0 0 0 14 0" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M12 18v3" stroke-linecap="round"/>
-                </svg>
-              </button>
+          <div class="edit-mode-toggle" role="tablist" aria-label="Edit mode">
+            <button type="button" role="tab" id="editTabArtwork" data-edit-pane="artwork" aria-controls="editPaneArtwork" aria-selected="true">Artwork</button>
+            <button type="button" role="tab" id="editTabDetails" data-edit-pane="details" aria-controls="editPaneDetails" aria-selected="false">Details</button>
+          </div>
+
+          <div class="edit-pane" id="editPaneArtwork" role="tabpanel" aria-labelledby="editTabArtwork">
+            <div class="field">
+              <div class="field-label-row">
+                <label for="editDirection">What should change?</label>
+                <button
+                  type="button"
+                  class="voice-btn"
+                  id="editDirectionVoice"
+                  aria-label="Speak change direction"
+                  title="Speak change direction"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M5 11a7 7 0 0 0 14 0" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 18v3" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+              <textarea
+                id="editDirection"
+                rows="5"
+                placeholder="e.g. Bigger headline, warmer stadium lights, make the date banner easier to read…"
+              ></textarea>
+              <p class="hint-inline" id="editDirectionVoiceHint" hidden>Listening… tap the mic to stop.</p>
             </div>
-            <textarea
-              id="editDirection"
-              rows="5"
-              placeholder="e.g. Bigger headline, warmer stadium lights, make the date banner easier to read…"
-            ></textarea>
-            <p class="hint-inline" id="editDirectionVoiceHint" hidden>Listening… tap the mic to stop.</p>
-          </div>
-          <div>
-            <p class="edit-base-eyebrow" style="margin-bottom: 0;">Quick suggestions</p>
-            <div class="edit-chip-row" id="editChips"></div>
-          </div>
-          <div class="edit-style-row" style="margin-top: 18px;">
-            <div class="edit-style-labels">
-              <span>More creative</span>
-              <span class="mid" id="editStyleLabel">Balanced</span>
-              <span>More similar</span>
+            <div>
+              <p class="edit-base-eyebrow" style="margin-bottom: 0;">Quick suggestions</p>
+              <div class="edit-chip-row" id="editChips"></div>
             </div>
-            <input type="range" id="editStyleStrength" min="0" max="100" value="55" aria-label="How similar to keep the base version" />
+            <div class="edit-style-row" style="margin-top: 18px;">
+              <div class="edit-style-labels">
+                <span>More creative</span>
+                <span class="mid" id="editStyleLabel">Balanced</span>
+                <span>More similar</span>
+              </div>
+              <input type="range" id="editStyleStrength" min="0" max="100" value="55" aria-label="How similar to keep the base version" />
+            </div>
           </div>
+
+          <div class="edit-pane" id="editPaneDetails" role="tabpanel" aria-labelledby="editTabDetails" hidden>
+            <div class="edit-details-fields">
+              <div class="field">
+                <label for="editOrgName">Organization</label>
+                <input type="text" id="editOrgName" data-sync-slot="orgName" placeholder="e.g. Your organization" />
+              </div>
+              <div class="field">
+                <label for="editHeadline">Headline</label>
+                <input type="text" id="editHeadline" data-sync-slot="headline" placeholder="e.g. Friday Night Lights" />
+              </div>
+              <div class="field">
+                <label for="editDatesEvents">When</label>
+                <textarea id="editDatesEvents" data-sync-slot="datesEvents" rows="3" placeholder="e.g. Fri Oct 10 · 6–8 PM"></textarea>
+              </div>
+              <div class="field">
+                <label for="editLocation">Location</label>
+                <input type="text" id="editLocation" data-sync-slot="location" placeholder="e.g. School lawn · South lot" />
+              </div>
+              <div class="field-row-2">
+                <div class="field">
+                  <label for="editCtaLabel">CTA label</label>
+                  <input type="text" id="editCtaLabel" data-sync-slot="ctaLabel" placeholder="e.g. Join us →" />
+                </div>
+                <div class="field">
+                  <label for="editCtaUrl">CTA link</label>
+                  <input type="url" id="editCtaUrl" data-sync-slot="ctaUrl" placeholder="https://…" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="editQrUrl">QR link</label>
+                <input type="url" id="editQrUrl" data-sync-slot="qrUrl" placeholder="https://…" />
+                <p class="hint-inline">Defaults to the CTA link if left blank</p>
+              </div>
+              <div class="field">
+                <label for="editFooterLine">Footer</label>
+                <input type="text" id="editFooterLine" data-sync-slot="footerLine" placeholder="e.g. yourorg.org · @YourOrg" />
+              </div>
+            </div>
+          </div>
+
           <div class="edit-actions">
             <button type="button" class="btn btn-secondary" id="editCancelBtn">Back to Preview</button>
             <button type="button" class="btn btn-gold" id="editApplyBtn">Regenerate artwork</button>
@@ -2264,6 +2323,7 @@
       editStyleStrength: 55,
       editGenerating: false,
       editBaseVersionId: null,
+      editPane: "artwork",
       approvalSubmissionKey: null,
       approvalEventId: null,
       approvalSchedulingItemId: null,
@@ -3475,7 +3535,7 @@
     function setView(view) {
       state.view = view;
       panels.forEach((p) => { p.hidden = p.dataset.panel !== view; });
-      // Edit Artwork is a Preview sub-step — keep Preview highlighted in the rail.
+      // Edit is a Preview sub-step — keep Preview highlighted in the rail.
       const railView = view === "edit" ? "result" : view;
       stepBtns.forEach((btn) => {
         const active = btn.dataset.view === railView;
@@ -3512,7 +3572,7 @@
         start: "Update last year’s flyer or start a new one.",
         inputs: "Add photo, brand, and details.",
         result: "Generate and review versions.",
-        edit: "Describe what should change.",
+        edit: "Adjust artwork or flyer details.",
       };
       document.getElementById("pageLede").textContent = ledes[view] || ledes.start;
       if (view === "start") renderTiedPanel();
@@ -3545,6 +3605,65 @@
       return "Balance creative variation with fidelity to the attached flyer.";
     }
 
+    const EDIT_DETAIL_SLOTS = [
+      "orgName",
+      "headline",
+      "datesEvents",
+      "location",
+      "ctaLabel",
+      "ctaUrl",
+      "qrUrl",
+      "footerLine",
+    ];
+
+    function editDetailInputs() {
+      return Array.from(document.querySelectorAll("[data-sync-slot]"));
+    }
+
+    function syncEditDetailsFromDraft() {
+      editDetailInputs().forEach((el) => {
+        const slot = el.dataset.syncSlot;
+        if (!slot || document.activeElement === el) return;
+        const source = document.getElementById(slot);
+        el.value = source ? source.value : "";
+      });
+    }
+
+    function syncEditDetailsToDraft() {
+      editDetailInputs().forEach((el) => {
+        const slot = el.dataset.syncSlot;
+        if (!slot) return;
+        const target = document.getElementById(slot);
+        if (target) target.value = el.value;
+      });
+      updateQrPreview();
+    }
+
+    function setEditPane(pane) {
+      const next = pane === "details" ? "details" : "artwork";
+      if (state.editPane === "details" && next !== "details") {
+        syncEditDetailsToDraft();
+        scheduleSave();
+      }
+      state.editPane = next;
+      if (next === "details") syncEditDetailsFromDraft();
+
+      const artworkPane = document.getElementById("editPaneArtwork");
+      const detailsPane = document.getElementById("editPaneDetails");
+      const artworkTab = document.getElementById("editTabArtwork");
+      const detailsTab = document.getElementById("editTabDetails");
+      if (artworkPane) artworkPane.hidden = next !== "artwork";
+      if (detailsPane) detailsPane.hidden = next !== "details";
+      if (artworkTab) {
+        artworkTab.setAttribute("aria-selected", next === "artwork" ? "true" : "false");
+        artworkTab.disabled = Boolean(state.editGenerating);
+      }
+      if (detailsTab) {
+        detailsTab.setAttribute("aria-selected", next === "details" ? "true" : "false");
+        detailsTab.disabled = Boolean(state.editGenerating);
+      }
+    }
+
     function renderEditArtwork() {
       const img = document.getElementById("editBaseImg");
       const empty = document.getElementById("editBaseEmpty");
@@ -3562,12 +3681,14 @@
           : null);
 
       state.editBaseVersionId = version?.id || null;
+      setEditPane(state.editPane || "artwork");
 
       if (directionEl && document.activeElement !== directionEl) {
         directionEl.value = state.editDirection || "";
       }
       if (styleInput) styleInput.value = String(state.editStyleStrength ?? 55);
       if (styleLabel) styleLabel.textContent = editStyleLabel(state.editStyleStrength ?? 55);
+      if (state.editPane === "details") syncEditDetailsFromDraft();
 
       if (img && empty) {
         if (baseUrl) {
@@ -3601,18 +3722,31 @@
       }
       const cancelBtn = document.getElementById("editCancelBtn");
       if (cancelBtn) cancelBtn.disabled = state.editGenerating;
+      editDetailInputs().forEach((el) => {
+        el.disabled = Boolean(state.editGenerating);
+      });
+      if (directionEl) directionEl.disabled = Boolean(state.editGenerating);
+      if (styleInput) styleInput.disabled = Boolean(state.editGenerating);
     }
 
     function buildEditGeneratePayload(tpl, baseImageUrl, editInstructions) {
+      syncEditDetailsToDraft();
       const fields = { ...readDraftFields() };
       const strength = Number(state.editStyleStrength) || 55;
+      const factLines = EDIT_DETAIL_SLOTS.map((id) => {
+        const value = String(fields[id] || "").trim();
+        return value ? `${id}: ${value}` : null;
+      }).filter(Boolean);
       const reviseBlock = [
         "Revise the attached flyer artwork (the selected Preview version).",
-        "Keep the same event, organization, and facts unless the change request says otherwise.",
+        "Apply both: (1) artwork change notes / style below, and (2) the current Details facts in the structured fields.",
+        factLines.length
+          ? `Current flyer facts to render:\n${factLines.join("\n")}`
+          : "Current flyer facts are in the structured fields payload.",
         styleStrengthPromptHint(strength),
         editInstructions
-          ? `Requested changes:\n${editInstructions}`
-          : "No specific change text — produce a refined variation of the attached flyer.",
+          ? `Artwork change notes:\n${editInstructions}`
+          : "No specific artwork change notes — refine the attached flyer while honoring Details facts.",
       ].join("\n\n");
 
       fields.aiDirection = reviseBlock;
@@ -3740,13 +3874,14 @@
       }
     }
 
-    function openEditArtwork() {
+    function openEdit() {
       if (state.generating || state.editGenerating) return;
       if (!state.previewGenerated || !getActiveFlyerVersion()) {
-        showGenerateError("Generate a flyer first, then use Edit artwork.");
+        showGenerateError("Generate a flyer first, then use Edit.");
         return;
       }
       state.editDirection = "";
+      state.editPane = "artwork";
       const directionEl = document.getElementById("editDirection");
       if (directionEl) directionEl.value = "";
       const errorEl = document.getElementById("editError");
@@ -3754,6 +3889,7 @@
         errorEl.hidden = true;
         errorEl.textContent = "";
       }
+      syncEditDetailsFromDraft();
       setView("edit");
     }
 
@@ -4007,15 +4143,10 @@
         setPreviewActions("idle");
       }
 
-      const editArtworkBtn = document.getElementById("btnEditArtwork");
-      if (editArtworkBtn) {
-        editArtworkBtn.disabled =
+      const editBtn = document.getElementById("btnEdit");
+      if (editBtn) {
+        editBtn.disabled =
           state.generating || !state.previewGenerated || !state.generatedImageUrl;
-      }
-      const detailsLink = document.getElementById("editDetailsLink");
-      if (detailsLink) {
-        detailsLink.style.pointerEvents = state.generating ? "none" : "";
-        detailsLink.style.opacity = state.generating ? "0.5" : "";
       }
       renderVersionsStrip();
       renderPreviewCampaignChrome();
@@ -4795,18 +4926,21 @@
         renderTiedPanel();
       });
     });
-    document.getElementById("btnEditArtwork")?.addEventListener("click", openEditArtwork);
-    document.getElementById("editDetailsLink")?.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (state.generating || state.editGenerating) return;
-      setView("inputs");
-    });
+    document.getElementById("btnEdit")?.addEventListener("click", openEdit);
     document.getElementById("editCancelBtn")?.addEventListener("click", () => {
       if (state.editGenerating) return;
+      syncEditDetailsToDraft();
+      scheduleSave();
       setView("result");
     });
     document.getElementById("editApplyBtn")?.addEventListener("click", () => {
       void runEditRegenerate();
+    });
+    document.querySelectorAll("[data-edit-pane]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (state.editGenerating) return;
+        setEditPane(btn.dataset.editPane);
+      });
     });
     document.getElementById("editDirection")?.addEventListener("input", (e) => {
       state.editDirection = e.target.value;
@@ -4815,6 +4949,12 @@
       state.editStyleStrength = Number(e.target.value) || 55;
       const label = document.getElementById("editStyleLabel");
       if (label) label.textContent = editStyleLabel(state.editStyleStrength);
+    });
+    editDetailInputs().forEach((el) => {
+      el.addEventListener("input", () => {
+        syncEditDetailsToDraft();
+        scheduleSave();
+      });
     });
     (function setupEditChips() {
       const row = document.getElementById("editChips");
@@ -4825,6 +4965,7 @@
       ).join("");
       row.querySelectorAll("[data-chip]").forEach((btn) => {
         btn.addEventListener("click", () => {
+          if (state.editGenerating) return;
           const chip = btn.dataset.chip || "";
           const ta = document.getElementById("editDirection");
           if (!ta) return;
