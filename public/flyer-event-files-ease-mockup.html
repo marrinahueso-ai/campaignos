@@ -1106,9 +1106,13 @@
       });
     });
 
-    $("#btnRegenMock").addEventListener("click", () => showToast("Regenerated (mock) · still saved to Files"));
+    $("#btnRegenMock").addEventListener("click", () =>
+      showToast("Opens Edit artwork — instruct AI on the selected version (not an instant re-roll)"),
+    );
     $("#btnApprovalBound").addEventListener("click", () => showToast("Sent for approval (mock)"));
-    $("#btnEditArtworkMock")?.addEventListener("click", () => showToast("Edit artwork (mock)"));
+    $("#btnEditArtworkMock")?.addEventListener("click", () =>
+      showToast("Edit artwork — same regenerate-from-version path as Regenerate"),
+    );
 
     $("#btnApprovalUnbound").addEventListener("click", () => openBindModal("approval"));
     $("#btnSaveFilesUnbound").addEventListener("click", () => openBindModal("files"));

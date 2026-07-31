@@ -1897,11 +1897,11 @@
       </div>
     </section>
 
-    <!-- EDIT ARTWORK — revise from selected Preview version -->
+    <!-- EDIT ARTWORK — revise from selected Preview version (Social-style regenerate) -->
     <section class="panel" data-panel="edit" hidden>
       <div class="step-head">
         <h2>Edit artwork</h2>
-        <p class="sub">Describe changes — AI revises from the version you selected in Preview.</p>
+        <p class="sub">Regenerate from the version you selected — describe changes below.</p>
       </div>
       <div class="edit-hint-banner">
         <div>
@@ -1916,7 +1916,7 @@
             <div class="edit-base-empty" id="editBaseEmpty">Generate a flyer in Preview first, then come back to edit.</div>
             <img id="editBaseImg" alt="Selected flyer version to revise" hidden />
             <div class="edit-gen-overlay" id="editGenOverlay" hidden>
-              <span id="editGenLabel">Applying changes…</span>
+              <span id="editGenLabel">Generating…</span>
             </div>
           </div>
           <p class="edit-base-meta" id="editBaseMeta">No version selected yet.</p>
@@ -1960,7 +1960,7 @@
           </div>
           <div class="edit-actions">
             <button type="button" class="btn btn-secondary" id="editCancelBtn">Back to Preview</button>
-            <button type="button" class="btn btn-gold" id="editApplyBtn">Apply changes</button>
+            <button type="button" class="btn btn-gold" id="editApplyBtn">Regenerate artwork</button>
             <p class="edit-error" id="editError" hidden></p>
           </div>
         </div>
@@ -3503,7 +3503,7 @@
         start: "Update last year’s flyer or start a new one, then generate.",
         inputs: "Photo, template file, brand kit, and details.",
         result: "Generate, keep versions, and always see where they live.",
-        edit: "Revise the selected version — describe what should change.",
+        edit: "Regenerate from the selected version — describe what should change.",
       };
       document.getElementById("pageLede").textContent = ledes[view] || ledes.start;
       if (view === "start") renderTiedPanel();
@@ -3577,9 +3577,9 @@
           const versions = normalizeFlyerVersions(state.versions);
           const index = versions.findIndex((v) => v.id === version.id);
           const n = index >= 0 ? versions.length - index : versions.length;
-          meta.innerHTML = `Revising <strong>version ${n}</strong> — selected in Preview. Apply changes creates a new version.`;
+          meta.innerHTML = `Revising <strong>version ${n}</strong> — selected in Preview. Regenerate artwork creates a new version.`;
         } else if (baseUrl) {
-          meta.innerHTML = `Revising the <strong>current Preview</strong> flyer. Apply changes creates a new version.`;
+          meta.innerHTML = `Revising the <strong>current Preview</strong> flyer. Regenerate artwork creates a new version.`;
         } else {
           meta.textContent = "Generate a flyer in Preview first, then open Edit artwork.";
         }
@@ -3588,7 +3588,7 @@
       if (overlay) overlay.hidden = !state.editGenerating;
       if (applyBtn) {
         applyBtn.disabled = state.editGenerating || !baseUrl;
-        applyBtn.textContent = state.editGenerating ? "Applying…" : "Apply changes";
+        applyBtn.textContent = state.editGenerating ? "Generating…" : "Regenerate artwork";
       }
       const cancelBtn = document.getElementById("editCancelBtn");
       if (cancelBtn) cancelBtn.disabled = state.editGenerating;
@@ -3683,7 +3683,7 @@
       state.editGenerating = true;
       renderEditArtwork();
       if (overlay) overlay.hidden = false;
-      if (genLabel) genLabel.textContent = "Applying changes with your base version…";
+      if (genLabel) genLabel.textContent = "Regenerating from your base version…";
 
       try {
         const response = await fetch(FLYER_GENERATE_API, {
@@ -3703,7 +3703,7 @@
               ? "Sign in with an active organization to regenerate."
               : response.status === 403
                 ? "You do not have permission to generate flyers."
-                : "Could not apply changes. Try again.");
+                : "Could not regenerate. Try again.");
           throw new Error(err);
         }
 
@@ -3726,7 +3726,7 @@
         renderEditArtwork();
         if (errorEl) {
           errorEl.hidden = false;
-          errorEl.textContent = error?.message || "Could not apply changes. Try again.";
+          errorEl.textContent = error?.message || "Could not regenerate. Try again.";
         }
       }
     }
@@ -3734,7 +3734,7 @@
     function openEditArtwork() {
       if (state.generating || state.editGenerating) return;
       if (!state.previewGenerated || !getActiveFlyerVersion()) {
-        showGenerateError("Generate a flyer first, then use Edit artwork.");
+        showGenerateError("Generate a flyer first, then use Regenerate or Edit artwork.");
         return;
       }
       state.editDirection = "";
@@ -4791,7 +4791,8 @@
         renderTiedPanel();
       });
     });
-    document.getElementById("regen").addEventListener("click", startGenerate);
+    /* Preview Regenerate = Social path: open Edit artwork (instructions on current version), not instant re-roll */
+    document.getElementById("regen").addEventListener("click", openEditArtwork);
     document.getElementById("btnEditArtwork")?.addEventListener("click", openEditArtwork);
     document.getElementById("editDetailsLink")?.addEventListener("click", (e) => {
       e.preventDefault();
