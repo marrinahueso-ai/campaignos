@@ -458,8 +458,9 @@ describe("Approval Routing — ReviewDrawer preview identity", () => {
     );
     assert.match(
       mapSource,
-      /preview:\s*\{\s*captionText: row\.caption_text,\s*storyCaptionSnippet: row\.story_caption,\s*feedArtworkUrl: row\.feed_artwork_url,\s*storyArtworkUrl: row\.story_artwork_url,/s,
+      /preview:\s*\{\s*captionText: row\.caption_text,\s*storyCaptionSnippet: row\.story_caption,\s*feedArtworkUrl: row\.feed_artwork_url,\s*storyArtworkUrl: isFlyer \? null : row\.story_artwork_url,/s,
     );
+    assert.match(mapSource, /isFlyerComposerMilestoneId/);
     assert.match(
       mapSource,
       /thumbnailUrl: row\.feed_artwork_url \?\? row\.story_artwork_url/,

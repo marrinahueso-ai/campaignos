@@ -23,6 +23,12 @@ function artBackground(item: UnifiedApprovalItem): string {
 }
 
 function platformLabel(item: UnifiedApprovalItem): string {
+  if (
+    item.channel === "flyer" ||
+    item.campaignMilestoneId?.startsWith("flyer-composer:")
+  ) {
+    return "Flyer";
+  }
   if (item.platforms.length === 0) {
     return "Social";
   }

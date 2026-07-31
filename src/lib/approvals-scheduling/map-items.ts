@@ -17,6 +17,7 @@ import type {
   UnifiedPlatform,
 } from "@/lib/approvals-scheduling/types";
 import { normalizeMilestoneName } from "@/lib/campaign-builder-v2/milestone-names";
+import { isFlyerComposerMilestoneId } from "@/lib/flyer-composer/approval";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 import type { ApprovalQueueItem } from "@/types/event-workspace";
@@ -265,6 +266,13 @@ export function mapSchedulingItemRow(
     });
   }
 
+  const isFlyer = isFlyerComposerMilestoneId(row.campaign_milestone_id);
+  const resolvedPlatforms = isFlyer
+    ? []
+    : platforms.length > 0
+      ? platforms
+      : (["facebook", "instagram"] as UnifiedPlatform[]);
+
   return {
     id: `cb2-${row.id}`,
     source: "campaign_builder",
@@ -286,8 +294,8 @@ export function mapSchedulingItemRow(
     assigneeInitials: initialsFromName(assigneeDisplayName),
     nextAction: nextActionForStatus(workflowStatus, needsApproverAssignment),
     nextActionTime: `Submitted ${formatRelativeTime(row.requested_at, now)}`,
-    deliveryMethod,
-    platforms: platforms.length > 0 ? platforms : ["facebook", "instagram"],
+    deliveryMethod: isFlyer ? "draft-only" : deliveryMethod,
+    platforms: resolvedPlatforms,
     scheduleAt: row.schedule_at,
     scheduleLabel: row.schedule_at ? formatDateTime(row.schedule_at) : null,
     assignedToMe,
@@ -302,13 +310,13 @@ export function mapSchedulingItemRow(
       workflowStatus === "failed"
         ? row.notes?.trim() || "Couldn’t post to your Page. Try again."
         : null,
-    channel: null,
+    channel: isFlyer ? "flyer" : null,
     notes: row.notes,
     preview: {
       captionText: row.caption_text,
       storyCaptionSnippet: row.story_caption,
       feedArtworkUrl: row.feed_artwork_url,
-      storyArtworkUrl: row.story_artwork_url,
+      storyArtworkUrl: isFlyer ? null : row.story_artwork_url,
     },
     requestedAt: row.requested_at,
     approvalHistory: history,

@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Flyer ↔ Event ↔ Files (mockup)</title>
+  <meta name="description" content="Clickable ease mockup: tie a flyer to an event or standalone campaign, see Saved to Event → Files, and the Event Files Generated section." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --warn: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.14), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.11), transparent 50%),
+        radial-gradient(ellipse 50% 35% at 50% 100%, rgba(42, 122, 134, 0.07), transparent 55%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, a { font: inherit; color: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+    [hidden] { display: none !important; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes soft-in {
+      from { opacity: 0; transform: scale(0.985); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .shell { max-width: 1080px; margin: 0 auto; padding: 20px 20px 80px; }
+
+    .mock-banner {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 10px 16px; margin-bottom: 18px; padding: 10px 14px;
+      border-radius: 14px; border: 1px dashed rgba(196, 146, 46, 0.4);
+      background: rgba(196, 146, 46, 0.1); color: #7a5a12;
+      font-size: 13px; font-weight: 600; animation: rise 0.4s var(--ease) both;
+    }
+    .mock-banner a { color: var(--teal); font-weight: 700; text-decoration: none; }
+    .mock-banner a:hover { text-decoration: underline; }
+
+    .story {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 22px;
+      padding: 4px; border-radius: 999px;
+      background: rgba(255, 252, 247, 0.85); border: 1px solid var(--line);
+      box-shadow: var(--shadow); animation: rise 0.45s var(--ease) 0.04s both;
+    }
+    .story button {
+      border-radius: 999px; padding: 9px 14px; font-size: 12px; font-weight: 700;
+      color: var(--muted); transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    .story button:hover { color: var(--ink); background: rgba(42, 38, 34, 0.04); }
+    .story button.active {
+      background: var(--white); color: var(--ink); box-shadow: var(--shadow);
+    }
+    .story button .n {
+      display: inline-grid; place-items: center;
+      width: 18px; height: 18px; margin-right: 6px; border-radius: 999px;
+      font-size: 10px; background: rgba(42, 38, 34, 0.08); color: var(--muted);
+      vertical-align: -1px;
+    }
+    .story button.active .n { background: var(--forest); color: var(--cream); }
+
+    .screen { animation: soft-in 0.4s var(--ease) both; }
+
+    .top {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      gap: 14px; margin-bottom: 20px;
+    }
+    .top h1 {
+      margin: 0; font-family: var(--serif); font-size: clamp(1.85rem, 3.5vw, 2.5rem);
+      font-weight: 600; letter-spacing: -0.02em; line-height: 1.1;
+    }
+    .top .lede { margin: 8px 0 0; max-width: 34rem; color: var(--ink-soft); font-size: 0.98rem; line-height: 1.5; }
+    .back-link {
+      display: inline-block; margin-bottom: 8px; font-size: 13px; font-weight: 600;
+      color: var(--muted); text-decoration: none;
+    }
+    .back-link:hover { color: var(--ink); }
+
+    .layout {
+      display: grid; grid-template-columns: 1fr; gap: 14px;
+    }
+    @media (min-width: 900px) {
+      .layout { grid-template-columns: 180px minmax(0, 1fr); align-items: start; gap: 16px; }
+    }
+    .steps-rail {
+      position: sticky; top: 12px;
+      background: var(--cream-deep); border-radius: 18px; padding: 10px;
+    }
+    .steps-label {
+      margin: 0 0 6px; padding: 0 8px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted);
+    }
+    .step-btn {
+      width: 100%; text-align: left; border-radius: 12px; padding: 10px;
+      font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 2px;
+    }
+    .step-btn:hover { background: rgba(255, 252, 247, 0.45); color: var(--ink-soft); }
+    .step-btn.active { background: var(--white); color: var(--ink); box-shadow: var(--shadow); }
+    .step-btn .hint {
+      display: block; margin-top: 3px; font-size: 11px; font-weight: 500; color: var(--muted);
+    }
+
+    .panel {
+      background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 22px 22px 24px;
+    }
+    .panel h2 {
+      margin: 0; font-family: var(--serif); font-size: 1.55rem; font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .panel .sub { margin: 6px 0 0; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.45; }
+
+    .section-card {
+      margin-top: 16px; padding: 16px 16px 18px;
+      border-radius: 18px; border: 1px solid var(--line);
+      background:
+        radial-gradient(ellipse 70% 80% at 0% 0%, rgba(42, 122, 134, 0.07), transparent 55%),
+        var(--cream);
+    }
+    .section-card h3 {
+      margin: 0 0 4px; font-size: 15px; font-weight: 700;
+    }
+    .section-card .section-desc {
+      margin: 0 0 14px; font-size: 13px; color: var(--muted); line-height: 1.4;
+    }
+
+    .tied-modes {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;
+    }
+    @media (max-width: 560px) { .tied-modes { grid-template-columns: 1fr; } }
+    .mode-btn {
+      text-align: left; padding: 12px 14px; border-radius: 14px;
+      border: 1.5px solid var(--line); background: var(--white);
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .mode-btn:hover { border-color: rgba(42, 122, 134, 0.35); }
+    .mode-btn.active {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(42, 122, 134, 0.12);
+      background: #f7fbfb;
+    }
+    .mode-btn strong { display: block; font-size: 14px; margin-bottom: 2px; }
+    .mode-btn span { font-size: 12px; color: var(--muted); line-height: 1.35; }
+
+    .search-wrap { position: relative; margin-bottom: 10px; }
+    .search-wrap svg {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; stroke: var(--muted); fill: none; stroke-width: 1.8; pointer-events: none;
+    }
+    .search-wrap input {
+      width: 100%; padding: 11px 12px 11px 36px; border-radius: 12px;
+      border: 1px solid var(--line); background: var(--white); outline: none;
+    }
+    .search-wrap input:focus { border-color: rgba(42, 122, 134, 0.45); box-shadow: 0 0 0 3px rgba(42, 122, 134, 0.1); }
+
+    .event-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow: auto; }
+    .event-row {
+      display: flex; align-items: center; gap: 12px; text-align: left;
+      padding: 10px 12px; border-radius: 12px; border: 1px solid transparent;
+      background: var(--white); transition: background 0.12s, border-color 0.12s;
+    }
+    .event-row:hover { background: rgba(255, 252, 247, 0.9); border-color: var(--line); }
+    .event-row.selected {
+      border-color: var(--teal); background: #f3fafb;
+      box-shadow: 0 0 0 2px rgba(42, 122, 134, 0.1);
+    }
+    .event-swatch {
+      width: 10px; height: 36px; border-radius: 999px; flex-shrink: 0;
+    }
+    .event-row strong { display: block; font-size: 14px; }
+    .event-row p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+    .event-row .pick {
+      margin-left: auto; font-size: 11px; font-weight: 700; color: var(--teal);
+      opacity: 0; transition: opacity 0.12s;
+    }
+    .event-row.selected .pick, .event-row:hover .pick { opacity: 1; }
+
+    .create-fields { display: grid; gap: 10px; }
+    .field label {
+      display: block; margin-bottom: 5px; font-size: 12px; font-weight: 700; color: var(--ink-soft);
+    }
+    .field input {
+      width: 100%; padding: 11px 12px; border-radius: 12px;
+      border: 1px solid var(--line); background: var(--white); outline: none;
+    }
+    .field input:focus { border-color: rgba(42, 122, 134, 0.45); box-shadow: 0 0 0 3px rgba(42, 122, 134, 0.1); }
+
+    .unbound-note {
+      margin-top: 12px; padding: 12px 14px; border-radius: 14px;
+      background: rgba(196, 146, 46, 0.1); border: 1px solid rgba(196, 146, 46, 0.22);
+      font-size: 13px; line-height: 1.45; color: #6a4f14;
+    }
+    .unbound-note strong { color: var(--ink); }
+    .bound-note {
+      margin-top: 12px; padding: 12px 14px; border-radius: 14px;
+      background: rgba(42, 122, 134, 0.08); border: 1px solid rgba(42, 122, 134, 0.18);
+      font-size: 13px; line-height: 1.45; color: var(--ink-soft);
+    }
+    .bound-note strong { color: var(--teal); }
+
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      background: rgba(42, 122, 134, 0.1); color: var(--teal);
+      border: 1px solid rgba(42, 122, 134, 0.18);
+    }
+    .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+    .chip.draft {
+      background: rgba(196, 146, 46, 0.12); color: #7a5a12;
+      border-color: rgba(196, 146, 46, 0.28);
+    }
+    .chip.draft .dot { background: var(--mustard); }
+
+    .actions {
+      display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end;
+      margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line);
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 11px 16px; border-radius: 999px; font-size: 14px; font-weight: 700;
+      border: 1.5px solid transparent; text-decoration: none;
+      transition: filter 0.15s, transform 0.15s;
+    }
+    .btn:hover { filter: brightness(1.04); }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--forest); color: var(--cream); }
+    .btn-secondary { background: var(--cream); border-color: var(--line); color: var(--ink); }
+    .btn-teal { background: var(--teal); color: var(--cream); }
+    .btn-ghost { background: transparent; color: var(--teal); font-weight: 700; padding: 8px 10px; }
+
+    /* Preview */
+    .preview-header {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      gap: 12px; margin-bottom: 16px;
+    }
+    .preview-workspace {
+      display: grid; grid-template-columns: 1fr; gap: 14px;
+    }
+    @media (min-width: 800px) {
+      .preview-workspace { grid-template-columns: minmax(0, 1fr) 240px; align-items: start; }
+    }
+    .flyer-stage {
+      position: relative; border-radius: 18px; overflow: hidden;
+      background:
+        linear-gradient(160deg, #2f4a3c 0%, #3d6a58 42%, #2a7a86 100%);
+      min-height: 360px; display: grid; place-items: center; padding: 28px;
+      box-shadow: var(--shadow-lg);
+    }
+    .flyer-card {
+      width: min(100%, 240px); aspect-ratio: 3 / 4; border-radius: 10px;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 252, 247, 0.2), transparent 50%),
+        linear-gradient(180deg, #faf8f4 0%, #ebe4d9 100%);
+      border: 1px solid rgba(255, 252, 247, 0.35);
+      box-shadow: 0 16px 40px rgba(20, 30, 28, 0.35);
+      padding: 18px 16px; display: flex; flex-direction: column; gap: 8px;
+      color: var(--ink); text-align: center;
+    }
+    .flyer-card .eyebrow {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--teal);
+    }
+    .flyer-card h3 {
+      margin: 0; font-family: var(--serif); font-size: 1.35rem; line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+    .flyer-card .meta { font-size: 11px; color: var(--muted); line-height: 1.4; }
+    .flyer-card .hero-block {
+      flex: 1; margin: 6px 0; border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(47, 74, 60, 0.85), rgba(42, 122, 134, 0.7)),
+        repeating-linear-gradient(-12deg, transparent, transparent 8px, rgba(255,255,255,0.04) 8px, rgba(255,255,255,0.04) 16px);
+      display: grid; place-items: center; color: var(--cream);
+      font-family: var(--serif); font-size: 13px; font-weight: 600;
+    }
+    .flyer-card .cta {
+      margin-top: auto; align-self: center; padding: 7px 14px; border-radius: 999px;
+      background: var(--forest); color: var(--cream); font-size: 11px; font-weight: 700;
+    }
+
+    .saved-banner {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+      margin-top: 14px; padding: 12px 14px; border-radius: 14px;
+      background: rgba(42, 122, 134, 0.09); border: 1px solid rgba(42, 122, 134, 0.2);
+    }
+    .saved-banner .saved-copy { flex: 1; min-width: 180px; font-size: 13px; line-height: 1.4; color: var(--ink-soft); }
+    .saved-banner .saved-copy strong { color: var(--ink); }
+    .saved-banner .saved-copy em { font-style: normal; color: var(--teal); font-weight: 700; }
+
+    .preview-sidebar { display: flex; flex-direction: column; gap: 12px; }
+    .sidebar-box {
+      padding: 14px; border-radius: 16px; border: 1px solid var(--line);
+      background: var(--cream);
+    }
+    .sidebar-box .label {
+      margin: 0 0 8px; font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted);
+    }
+    .sidebar-box .btn { width: 100%; margin-top: 8px; }
+    .sidebar-box p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+    .versions { margin-top: 16px; }
+    .versions-label {
+      margin: 0 0 8px; font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted);
+    }
+    .versions-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .ver {
+      flex: 0 0 auto; width: 72px; border-radius: 12px; border: 2px solid transparent;
+      background: var(--cream-deep); padding: 4px; text-align: center; cursor: pointer;
+      transition: border-color 0.12s, box-shadow 0.12s;
+    }
+    .ver:hover { border-color: rgba(42, 122, 134, 0.3); }
+    .ver.active { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(42, 122, 134, 0.12); }
+    .ver .thumb {
+      aspect-ratio: 3/4; border-radius: 8px;
+      background: linear-gradient(160deg, #2f4a3c, #2a7a86);
+    }
+    .ver:nth-child(2) .thumb { background: linear-gradient(160deg, #3d6a58, #c4922e); }
+    .ver:nth-child(3) .thumb { background: linear-gradient(160deg, #2a7a86, #6b8171); }
+    .ver span { display: block; margin-top: 4px; font-size: 10px; font-weight: 700; color: var(--muted); }
+
+    /* Event Files */
+    .crumb { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 10px; }
+    .crumb span { color: var(--ink); }
+    .event-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .meta-chip {
+      padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      background: var(--cream-deep); color: var(--ink-soft);
+    }
+    .event-tabs {
+      display: flex; flex-wrap: wrap; gap: 4px; margin: 18px 0 16px; padding: 3px;
+      border-radius: 999px; background: rgba(255, 252, 247, 0.85); border: 1px solid var(--line);
+      width: fit-content; max-width: 100%;
+    }
+    .event-tabs button {
+      padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--muted);
+    }
+    .event-tabs button.active { background: var(--white); color: var(--ink); box-shadow: var(--shadow); }
+
+    .file-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;
+    }
+    .file-card {
+      padding: 12px; border-radius: 14px; border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow);
+    }
+    .file-card .thumb-doc {
+      height: 72px; border-radius: 10px; margin-bottom: 8px;
+      background: linear-gradient(180deg, #ebe4d9, #ddd4c6);
+      display: grid; place-items: center; font-size: 11px; font-weight: 800; color: var(--muted);
+    }
+    .file-card strong { display: block; font-size: 12px; line-height: 1.3; }
+    .file-card p { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
+
+    .generated-box {
+      margin-top: 22px; padding: 16px; border-radius: 18px;
+      border: 1px solid rgba(42, 122, 134, 0.18);
+      background:
+        radial-gradient(ellipse 60% 80% at 0% 0%, rgba(42, 122, 134, 0.08), transparent 55%),
+        var(--cream);
+    }
+    .generated-box .section-head {
+      display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+      gap: 8px; margin-bottom: 12px;
+    }
+    .generated-box h2 {
+      margin: 0; font-family: var(--serif); font-size: 1.25rem; font-weight: 600;
+    }
+    .generated-box .section-head p { margin: 0; font-size: 12px; color: var(--muted); font-weight: 600; }
+    .generated-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;
+    }
+    .gen-card {
+      background: var(--white); border: 1px solid var(--line); border-radius: 14px;
+      overflow: hidden; box-shadow: var(--shadow); cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .gen-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .gen-card.highlight {
+      outline: 2px solid var(--teal);
+      outline-offset: 2px;
+      animation: soft-in 0.5s var(--ease);
+    }
+    .gen-art {
+      aspect-ratio: 3/4; max-height: 160px;
+      background: linear-gradient(160deg, #2f4a3c, #2a7a86);
+    }
+    .gen-card:nth-child(2) .gen-art { background: linear-gradient(160deg, #3d6a58, #c4922e); }
+    .gen-card:nth-child(3) .gen-art { background: linear-gradient(160deg, #2a7a86, #6b8171); }
+    .gen-body { padding: 10px 12px 12px; }
+    .gen-body strong { display: block; font-size: 12px; margin-bottom: 6px; line-height: 1.3; }
+    .pill {
+      display: inline-flex; padding: 3px 8px; border-radius: 999px;
+      font-size: 10px; font-weight: 800;
+      background: rgba(42, 122, 134, 0.12); color: var(--teal);
+    }
+    .pill.draft { background: rgba(196, 146, 46, 0.14); color: #7a5a12; }
+    .pill.social { background: rgba(107, 129, 113, 0.16); color: var(--forest); }
+
+    .note {
+      margin-top: 28px; padding: 16px 18px; border-radius: 18px;
+      background: rgba(255, 252, 247, 0.7); border: 1px solid var(--line);
+      font-size: 13px; color: var(--ink-soft); line-height: 1.5;
+    }
+    .note h3 {
+      margin: 0 0 8px; font-family: var(--serif); font-size: 1.05rem; color: var(--ink);
+    }
+    .note ul { margin: 0; padding-left: 1.1rem; }
+    .note li { margin-bottom: 4px; }
+    .note strong { color: var(--ink); }
+
+    /* Modal */
+    .modal-root {
+      position: fixed; inset: 0; z-index: 40;
+      display: grid; place-items: center; padding: 20px;
+      background: rgba(42, 38, 34, 0.35); backdrop-filter: blur(3px);
+      animation: soft-in 0.25s var(--ease);
+    }
+    .modal {
+      width: min(100%, 420px); background: var(--white); border-radius: 22px;
+      border: 1px solid var(--line); box-shadow: var(--shadow-lg); padding: 22px;
+    }
+    .modal h3 {
+      margin: 0 0 8px; font-family: var(--serif); font-size: 1.35rem; font-weight: 600;
+    }
+    .modal p { margin: 0 0 16px; font-size: 14px; color: var(--ink-soft); line-height: 1.45; }
+    .modal .actions { margin-top: 0; padding-top: 0; border: none; justify-content: stretch; }
+    .modal .actions .btn { flex: 1; }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 50; padding: 12px 18px; border-radius: 999px;
+      background: var(--forest); color: var(--cream); font-size: 13px; font-weight: 700;
+      box-shadow: var(--shadow-lg); animation: toast-in 0.3s var(--ease);
+      max-width: calc(100% - 32px); text-align: center;
+    }
+
+    .basics-mini {
+      display: grid; gap: 10px; margin-top: 14px;
+    }
+    .basics-mini .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 560px) { .basics-mini .row2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="mock-banner">
+      <span>Mockup only · Flyer ↔ campaign ↔ Event Files — not wired to production</span>
+      <span>
+        <a href="/create-with-ai/flyer?view=start">Open live Flyer</a>
+        ·
+        <a href="/files-smart-filing-mockup.html">Smart filing mock</a>
+      </span>
+    </div>
+
+    <nav class="story" role="tablist" aria-label="Mock story steps">
+      <button type="button" class="active" data-screen="inspire" role="tab" aria-selected="true">
+        <span class="n">1</span>Inspiration · Tied to
+      </button>
+      <button type="button" data-screen="preview" role="tab" aria-selected="false">
+        <span class="n">2</span>Preview · Saved to Files
+      </button>
+      <button type="button" data-screen="files" role="tab" aria-selected="false">
+        <span class="n">3</span>Event Files
+      </button>
+      <button type="button" data-screen="unbound" role="tab" aria-selected="false">
+        <span class="n">4</span>Unbound → prompt
+      </button>
+    </nav>
+
+    <!-- 1. INSPIRATION / CAMPAIGN BINDING -->
+    <section class="screen" id="screen-inspire" data-screen-panel="inspire">
+      <div class="top">
+        <div>
+          <a class="back-link" href="/create-with-ai/flyer?view=start">← Flyer (live)</a>
+          <h1>Flyer</h1>
+          <p class="lede">Pick a campaign so versions land where your team already looks — Event Files. Or create your own for a standalone ask.</p>
+        </div>
+        <span class="chip draft" id="inspireChip"><span class="dot"></span> Draft · not tied yet</span>
+      </div>
+
+      <div class="layout">
+        <nav class="steps-rail" aria-label="Flyer steps">
+          <p class="steps-label">Steps</p>
+          <button type="button" class="step-btn">Start<span class="hint">How to begin</span></button>
+          <button type="button" class="step-btn active">Inspiration<span class="hint">Campaign + details</span></button>
+          <button type="button" class="step-btn" data-goto="preview">Preview<span class="hint">Generate &amp; review</span></button>
+        </nav>
+
+        <div class="panel">
+          <h2>Inspiration</h2>
+          <p class="sub">Tie this flyer to a campaign first — then add direction and generate.</p>
+
+          <div class="section-card">
+            <h3>Tied to</h3>
+            <p class="section-desc">Existing event, or create your own (standalone campaign).</p>
+
+            <div class="tied-modes" role="group" aria-label="How to bind">
+              <button type="button" class="mode-btn active" data-mode="pick" id="modePick">
+                <strong>Pick an event</strong>
+                <span>Search your calendar campaigns</span>
+              </button>
+              <button type="button" class="mode-btn" data-mode="create" id="modeCreate">
+                <strong>Create your own</strong>
+                <span>Name + optional date — standalone</span>
+              </button>
+            </div>
+
+            <div id="pickPane">
+              <div class="search-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input type="search" id="eventSearch" placeholder="Search events…" autocomplete="off" />
+              </div>
+              <div class="event-list" id="eventList" role="listbox" aria-label="Events"></div>
+            </div>
+
+            <div id="createPane" hidden>
+              <div class="create-fields">
+                <div class="field">
+                  <label for="campaignName">Campaign name</label>
+                  <input id="campaignName" type="text" placeholder="e.g. Spring Investor Ask" value="Spring Investor Ask" />
+                </div>
+                <div class="field">
+                  <label for="campaignDate">Date (optional)</label>
+                  <input id="campaignDate" type="date" value="2026-04-12" />
+                </div>
+              </div>
+            </div>
+
+            <div class="unbound-note" id="unboundNote">
+              <strong>No campaign yet.</strong> Versions stay on this device until you pick or create one — then they sync into that event’s Files.
+            </div>
+            <div class="bound-note" id="boundNote" hidden>
+              Versions will save to <strong id="boundNoteName">School Supply Sorting</strong> → Files after you generate.
+            </div>
+          </div>
+
+          <div class="basics-mini">
+            <div class="field">
+              <label for="headline">Headline</label>
+              <input id="headline" type="text" value="School Supply Sorting" />
+            </div>
+            <div class="row2">
+              <div class="field">
+                <label for="when">When</label>
+                <input id="when" type="text" value="Aug 4 · 9:00 AM" />
+              </div>
+              <div class="field">
+                <label for="where">Where</label>
+                <input id="where" type="text" value="Gym · South lot" />
+              </div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" data-goto="unbound">Skip for now</button>
+            <button type="button" class="btn btn-primary" id="toPreviewBound">Continue to Preview</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <h3>What founders should feel</h3>
+        <ul>
+          <li><strong>Pick existing</strong> — flyer versions show up in that event’s Files (like Social’s Generated).</li>
+          <li><strong>Create your own</strong> — standalone campaign; still a real place in Files, not a mystery folder.</li>
+          <li><strong>Skip</strong> — draft-only on device until they bind (see step 4).</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 2. PREVIEW · BOUND -->
+    <section class="screen" id="screen-preview" data-screen-panel="preview" hidden>
+      <div class="top">
+        <div>
+          <a class="back-link" href="#" data-goto="inspire">← Inspiration</a>
+          <h1>Preview</h1>
+          <p class="lede">Generate, keep versions, and always see where they live — no architecture homework.</p>
+        </div>
+        <span class="chip" id="previewChip"><span class="dot"></span> School Supply Sorting</span>
+      </div>
+
+      <div class="layout">
+        <nav class="steps-rail" aria-label="Flyer steps">
+          <p class="steps-label">Steps</p>
+          <button type="button" class="step-btn">Start<span class="hint">How to begin</span></button>
+          <button type="button" class="step-btn" data-goto="inspire">Inspiration<span class="hint">Campaign + details</span></button>
+          <button type="button" class="step-btn active">Preview<span class="hint">Generate &amp; review</span></button>
+        </nav>
+
+        <div class="panel">
+          <div class="preview-header">
+            <div>
+              <h2>Preview</h2>
+              <p class="sub">Three versions ready — tied to your campaign.</p>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <button type="button" class="btn btn-secondary" id="btnRegenMock">Regenerate</button>
+              <button type="button" class="btn btn-primary" id="btnApprovalBound">Send for approval</button>
+            </div>
+          </div>
+
+          <div class="preview-workspace">
+            <div>
+              <div class="flyer-stage">
+                <div class="flyer-card" id="flyerCard">
+                  <div class="eyebrow">Lincoln Elementary PTO</div>
+                  <h3 id="flyerTitle">School Supply Sorting</h3>
+                  <div class="meta" id="flyerMeta">Aug 4 · 9:00 AM<br />Gym · South lot</div>
+                  <div class="hero-block">Bring supplies · help sort</div>
+                  <div class="cta">Sign up to help</div>
+                </div>
+              </div>
+
+              <div class="saved-banner" id="savedBanner">
+                <div class="saved-copy">
+                  Saved to <strong id="savedEventName">School Supply Sorting</strong> → <em>Files</em>
+                  <div style="margin-top:2px;font-size:12px;color:var(--muted)">Event-tied versions also appear under Generated on the event Files tab.</div>
+                </div>
+                <button type="button" class="btn btn-teal" data-goto="files" id="openFilesBtn">Open Files</button>
+              </div>
+            </div>
+
+            <aside class="preview-sidebar">
+              <div class="sidebar-box">
+                <p class="label">Campaign</p>
+                <span class="chip" id="sidebarChip"><span class="dot"></span> <span id="sidebarChipName">School Supply Sorting</span></span>
+                <button type="button" class="btn btn-ghost" data-goto="inspire" style="margin-top:8px;padding-left:0">Change…</button>
+              </div>
+              <div class="sidebar-box">
+                <p class="label">Approvals</p>
+                <p>Send the selected version for a chair yes.</p>
+                <button type="button" class="btn btn-primary" id="btnApprovalBound2">Send for approval</button>
+              </div>
+              <div class="sidebar-box">
+                <p class="label">Also</p>
+                <button type="button" class="btn btn-secondary" data-goto="files">View in Event Files</button>
+              </div>
+            </aside>
+          </div>
+
+          <div class="versions">
+            <p class="versions-label">Versions</p>
+            <div class="versions-strip" role="list">
+              <button type="button" class="ver active" data-ver="1" aria-pressed="true"><div class="thumb"></div><span>v3 · Now</span></button>
+              <button type="button" class="ver" data-ver="2" aria-pressed="false"><div class="thumb"></div><span>v2</span></button>
+              <button type="button" class="ver" data-ver="3" aria-pressed="false"><div class="thumb"></div><span>v1</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. EVENT FILES -->
+    <section class="screen" id="screen-files" data-screen-panel="files" hidden>
+      <div class="crumb">Events → <span id="filesEventCrumb">School Supply Sorting</span></div>
+      <div class="top">
+        <div>
+          <h1 id="filesEventTitle">School Supply Sorting</h1>
+          <div class="event-meta">
+            <span class="meta-chip" id="filesEventDate">Aug 4 · 9:00 AM</span>
+            <span class="meta-chip" style="background:rgba(42,122,134,0.1);color:var(--teal)">Planning</span>
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary" data-goto="preview">← Back to Preview</button>
+      </div>
+
+      <nav class="event-tabs" aria-label="Event sections">
+        <button type="button">Overview</button>
+        <button type="button">Tasks</button>
+        <button type="button" class="active">Files</button>
+        <button type="button">Volunteers</button>
+      </nav>
+
+      <div class="panel" style="padding-top:18px">
+        <p class="sub" style="margin:0 0 14px">Uploads for this event — plus Generated artwork from Create with AI.</p>
+
+        <div class="file-grid">
+          <article class="file-card">
+            <div class="thumb-doc">PDF</div>
+            <strong>Volunteer signup flyer.pdf</strong>
+            <p>1.2 MB · Jul 22</p>
+          </article>
+          <article class="file-card">
+            <div class="thumb-doc">DOC</div>
+            <strong>Supply checklist.docx</strong>
+            <p>64 KB · Jul 18</p>
+          </article>
+          <article class="file-card">
+            <div class="thumb-doc">IMG</div>
+            <strong>Gym layout sketch.png</strong>
+            <p>840 KB · Jul 20</p>
+          </article>
+        </div>
+
+        <div class="generated-box">
+          <div class="section-head">
+            <h2>Generated</h2>
+            <p>Read-only · from Create with AI · like Social’s Generated for posts</p>
+          </div>
+          <div class="generated-grid">
+            <article class="gen-card highlight" id="genFlyerCard">
+              <div class="gen-art"></div>
+              <div class="gen-body">
+                <strong id="genFlyerName">School Supply Sorting flyer</strong>
+                <span class="pill">Flyer · v3</span>
+              </div>
+            </article>
+            <article class="gen-card">
+              <div class="gen-art"></div>
+              <div class="gen-body">
+                <strong>Volunteer ask Story</strong>
+                <span class="pill social">Social · Posted</span>
+              </div>
+            </article>
+            <article class="gen-card">
+              <div class="gen-art"></div>
+              <div class="gen-body">
+                <strong>Supply drive countdown</strong>
+                <span class="pill social">Social · Scheduled</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <h3>Destination clarity</h3>
+        <ul>
+          <li>Flyer versions sit in <strong>Generated</strong> — not mixed into upload chaos.</li>
+          <li>Same mental model as Social’s “Generated for posts.”</li>
+          <li>Standalone “Create your own” campaigns get the same Files home.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 4. UNBOUND PREVIEW → PROMPT -->
+    <section class="screen" id="screen-unbound" data-screen-panel="unbound" hidden>
+      <div class="top">
+        <div>
+          <a class="back-link" href="#" data-goto="inspire">← Inspiration</a>
+          <h1>Preview</h1>
+          <p class="lede">Draft-only path — versions stay on this device until a campaign is chosen.</p>
+        </div>
+        <span class="chip draft"><span class="dot"></span> Draft · this device</span>
+      </div>
+
+      <div class="panel">
+        <div class="preview-header">
+          <div>
+            <h2>Preview</h2>
+            <p class="sub">Looks good — but it’s not in Files yet.</p>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <button type="button" class="btn btn-secondary" id="btnSaveFilesUnbound">Save to Files</button>
+            <button type="button" class="btn btn-primary" id="btnApprovalUnbound">Send for approval</button>
+          </div>
+        </div>
+
+        <div class="preview-workspace">
+          <div>
+            <div class="flyer-stage" style="min-height:300px">
+              <div class="flyer-card">
+                <div class="eyebrow">Lincoln Elementary PTO</div>
+                <h3>Spring Investor Ask</h3>
+                <div class="meta">Draft · not tied to an event yet</div>
+                <div class="hero-block">Become a champion</div>
+                <div class="cta">Give today</div>
+              </div>
+            </div>
+            <div class="unbound-note" style="margin-top:14px">
+              <strong>Saved on this device only.</strong> Pick or create a campaign to put versions in Files — so your team can find them without knowing the architecture.
+            </div>
+          </div>
+          <aside class="preview-sidebar">
+            <div class="sidebar-box">
+              <p class="label">Campaign</p>
+              <span class="chip draft"><span class="dot"></span> Not tied yet</span>
+              <button type="button" class="btn btn-teal" data-goto="inspire" style="margin-top:10px">Choose campaign…</button>
+            </div>
+            <div class="sidebar-box">
+              <p class="label">Try the gate</p>
+              <p>Tap Send for approval or Save to Files — you’ll get a light prompt first.</p>
+            </div>
+          </aside>
+        </div>
+
+        <div class="versions">
+          <p class="versions-label">Versions · local draft</p>
+          <div class="versions-strip">
+            <button type="button" class="ver active"><div class="thumb"></div><span>v1 · Draft</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Bind prompt modal -->
+  <div class="modal-root" id="bindModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bindModalTitle">
+      <h3 id="bindModalTitle">Where should this live?</h3>
+      <p id="bindModalBody">Pick an event or create your own before sending for approval — then versions show up in that campaign’s Files.</p>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" id="bindModalCancel">Not now</button>
+        <button type="button" class="btn btn-primary" id="bindModalGo">Pick / create</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script>
+    const EVENTS = [
+      { id: "supply", name: "School Supply Sorting", date: "Aug 4 · 9:00 AM", color: "#2f4a3c" },
+      { id: "fair", name: "Fall Book Fair", date: "Aug 14 · All day", color: "#c4922e" },
+      { id: "night", name: "Family Night", date: "Sep 12 · 6:00 PM", color: "#2a7a86" },
+      { id: "funrun", name: "Fun Run", date: "Oct 3 · 8:00 AM", color: "#6b8171" },
+    ];
+
+    const state = {
+      screen: "inspire",
+      mode: "pick", // pick | create
+      selectedEventId: null,
+      customName: "Spring Investor Ask",
+      customDate: "2026-04-12",
+      bindIntent: null, // approval | files
+    };
+
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+
+    function boundCampaign() {
+      if (state.mode === "create") {
+        const name = ($("#campaignName")?.value || state.customName || "Standalone campaign").trim();
+        const d = $("#campaignDate")?.value;
+        let dateLabel = "Standalone campaign";
+        if (d) {
+          try {
+            dateLabel = new Date(d + "T12:00:00").toLocaleDateString("en-US", {
+              month: "short", day: "numeric", year: "numeric",
+            });
+          } catch (_) {}
+        }
+        return { id: "custom", name, date: dateLabel, color: "#2a7a86", standalone: true };
+      }
+      const ev = EVENTS.find((e) => e.id === state.selectedEventId);
+      return ev || null;
+    }
+
+    function showToast(msg) {
+      const el = $("#toast");
+      el.textContent = msg;
+      el.hidden = false;
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => { el.hidden = true; }, 2600);
+    }
+
+    function setScreen(id) {
+      state.screen = id;
+      $$(".story button").forEach((btn) => {
+        const on = btn.dataset.screen === id;
+        btn.classList.toggle("active", on);
+        btn.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      $$("[data-screen-panel]").forEach((panel) => {
+        panel.hidden = panel.dataset.screenPanel !== id;
+      });
+
+      if (id === "preview") syncBoundPreview();
+      if (id === "files") syncFilesView();
+
+      const url = new URL(location.href);
+      url.searchParams.set("screen", id);
+      history.replaceState(null, "", url);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function syncBoundPreview() {
+      const c = boundCampaign() || EVENTS[0];
+      $("#previewChip").innerHTML = `<span class="dot"></span> ${escapeHtml(c.name)}`;
+      $("#sidebarChipName").textContent = c.name;
+      $("#savedEventName").textContent = c.name;
+      $("#flyerTitle").textContent = c.name;
+      $("#flyerMeta").innerHTML = `${escapeHtml(c.date)}<br />Gym · South lot`;
+      if (c.standalone) {
+        $("#savedBanner .saved-copy").innerHTML =
+          `Saved to <strong>${escapeHtml(c.name)}</strong> → <em>Files</em>` +
+          `<div style="margin-top:2px;font-size:12px;color:var(--muted)">Standalone campaign — same Files home, no event on the calendar required.</div>`;
+      } else {
+        $("#savedBanner .saved-copy").innerHTML =
+          `Saved to <strong>${escapeHtml(c.name)}</strong> → <em>Files</em>` +
+          `<div style="margin-top:2px;font-size:12px;color:var(--muted)">Event-tied versions also appear under Generated on the event Files tab.</div>`;
+      }
+    }
+
+    function syncFilesView() {
+      const c = boundCampaign() || EVENTS[0];
+      $("#filesEventCrumb").textContent = c.name;
+      $("#filesEventTitle").textContent = c.name;
+      $("#filesEventDate").textContent = c.date;
+      $("#genFlyerName").textContent = `${c.name} flyer`;
+      const card = $("#genFlyerCard");
+      card.classList.remove("highlight");
+      void card.offsetWidth;
+      card.classList.add("highlight");
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function renderEvents() {
+      const q = ($("#eventSearch")?.value || "").trim().toLowerCase();
+      const list = $("#eventList");
+      list.innerHTML = "";
+      const filtered = EVENTS.filter(
+        (e) => !q || e.name.toLowerCase().includes(q) || e.date.toLowerCase().includes(q)
+      );
+      if (!filtered.length) {
+        list.innerHTML = `<p style="margin:8px;font-size:13px;color:var(--muted)">No events match. Try Create your own.</p>`;
+        return;
+      }
+      for (const ev of filtered) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "event-row" + (state.selectedEventId === ev.id ? " selected" : "");
+        btn.setAttribute("role", "option");
+        btn.setAttribute("aria-selected", state.selectedEventId === ev.id ? "true" : "false");
+        btn.innerHTML = `
+          <span class="event-swatch" style="background:${ev.color}"></span>
+          <span><strong>${escapeHtml(ev.name)}</strong><p>${escapeHtml(ev.date)}</p></span>
+          <span class="pick">${state.selectedEventId === ev.id ? "Selected" : "Select"}</span>`;
+        btn.addEventListener("click", () => {
+          state.selectedEventId = ev.id;
+          state.mode = "pick";
+          $("#headline").value = ev.name;
+          $("#when").value = ev.date;
+          updateBindUI();
+          renderEvents();
+        });
+        list.appendChild(btn);
+      }
+    }
+
+    function updateBindUI() {
+      const pick = state.mode === "pick";
+      $("#modePick").classList.toggle("active", pick);
+      $("#modeCreate").classList.toggle("active", !pick);
+      $("#pickPane").hidden = !pick;
+      $("#createPane").hidden = pick;
+
+      const c = boundCampaign();
+      const bound = pick ? !!state.selectedEventId : !!( $("#campaignName")?.value || "").trim();
+
+      $("#unboundNote").hidden = bound;
+      $("#boundNote").hidden = !bound;
+      if (bound && c) {
+        $("#boundNoteName").textContent = c.name;
+        $("#inspireChip").className = "chip";
+        $("#inspireChip").innerHTML = `<span class="dot"></span> ${escapeHtml(c.name)}`;
+      } else {
+        $("#inspireChip").className = "chip draft";
+        $("#inspireChip").innerHTML = `<span class="dot"></span> Draft · not tied yet`;
+      }
+    }
+
+    function openBindModal(intent) {
+      state.bindIntent = intent;
+      const forApproval = intent === "approval";
+      $("#bindModalTitle").textContent = forApproval
+        ? "Choose a campaign first"
+        : "Save to which Files?";
+      $("#bindModalBody").textContent = forApproval
+        ? "Pick an event or create your own before sending for approval — then versions show up in that campaign’s Files."
+        : "Versions stay on this device until a campaign is chosen. Pick an existing event or create your own so teammates find them in Files.";
+      $("#bindModal").hidden = false;
+    }
+
+    function closeBindModal() {
+      $("#bindModal").hidden = true;
+      state.bindIntent = null;
+    }
+
+    // Story nav
+    $$(".story button").forEach((btn) => {
+      btn.addEventListener("click", () => setScreen(btn.dataset.screen));
+    });
+
+    // data-goto
+    document.addEventListener("click", (e) => {
+      const t = e.target.closest("[data-goto]");
+      if (!t) return;
+      e.preventDefault();
+      setScreen(t.dataset.goto);
+    });
+
+    // Mode toggle
+    $("#modePick").addEventListener("click", () => {
+      state.mode = "pick";
+      updateBindUI();
+    });
+    $("#modeCreate").addEventListener("click", () => {
+      state.mode = "create";
+      state.selectedEventId = null;
+      updateBindUI();
+      renderEvents();
+    });
+
+    $("#eventSearch").addEventListener("input", renderEvents);
+    $("#campaignName").addEventListener("input", updateBindUI);
+    $("#campaignDate").addEventListener("input", updateBindUI);
+
+    $("#toPreviewBound").addEventListener("click", () => {
+      const c = boundCampaign();
+      const bound = state.mode === "create"
+        ? !!( $("#campaignName").value || "").trim()
+        : !!state.selectedEventId;
+      if (!bound) {
+        showToast("Pick an event or create your own — or Skip for the draft path.");
+        return;
+      }
+      if (state.mode === "create") {
+        state.customName = $("#campaignName").value.trim();
+      }
+      setScreen("preview");
+      showToast(`Tied to ${c.name}`);
+    });
+
+    $$(".ver").forEach((v) => {
+      v.addEventListener("click", () => {
+        const strip = v.parentElement;
+        strip.querySelectorAll(".ver").forEach((x) => {
+          x.classList.remove("active");
+          x.setAttribute("aria-pressed", "false");
+        });
+        v.classList.add("active");
+        v.setAttribute("aria-pressed", "true");
+      });
+    });
+
+    $("#btnRegenMock").addEventListener("click", () => showToast("Regenerated (mock) · still saved to Files"));
+    $("#btnApprovalBound").addEventListener("click", () => showToast("Sent for approval (mock)"));
+    $("#btnApprovalBound2").addEventListener("click", () => showToast("Sent for approval (mock)"));
+
+    $("#btnApprovalUnbound").addEventListener("click", () => openBindModal("approval"));
+    $("#btnSaveFilesUnbound").addEventListener("click", () => openBindModal("files"));
+    $("#bindModalCancel").addEventListener("click", closeBindModal);
+    $("#bindModalGo").addEventListener("click", () => {
+      closeBindModal();
+      setScreen("inspire");
+      showToast("Pick or create a campaign, then continue");
+    });
+    $("#bindModal").addEventListener("click", (e) => {
+      if (e.target === $("#bindModal")) closeBindModal();
+    });
+
+    // Init
+    renderEvents();
+    updateBindUI();
+    const initial = new URLSearchParams(location.search).get("screen");
+    if (initial && $(`[data-screen-panel="${initial}"]`)) {
+      setScreen(initial);
+    }
+  </script>
+</body>
+</html>

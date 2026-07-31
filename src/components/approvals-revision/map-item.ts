@@ -13,6 +13,10 @@ import {
   getUnifiedApprovalPreview,
   type UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
+import {
+  flyerComposerEditHref,
+  isFlyerComposerMilestoneId,
+} from "@/lib/flyer-composer/approval";
 
 /**
  * Resolve feed + story URLs for Revision dual preview.
@@ -42,6 +46,12 @@ function platformChip(
   item: UnifiedApprovalItem,
   artwork: { feedArtworkUrl: string | null; storyArtworkUrl: string | null },
 ): string {
+  if (
+    item.channel === "flyer" ||
+    isFlyerComposerMilestoneId(item.campaignMilestoneId)
+  ) {
+    return "Flyer";
+  }
   const feed = Boolean(artwork.feedArtworkUrl);
   const story = Boolean(artwork.storyArtworkUrl);
   if (feed && story) return "Social · Feed + Story";
@@ -83,8 +93,13 @@ export function mapApprovalItemToRevision(
     item.assigneeRole ? ` · ${item.assigneeRole}` : ""
   }`;
 
-  const editArtworkHref =
-    item.eventId && item.campaignMilestoneId
+  const isFlyer =
+    item.channel === "flyer" ||
+    isFlyerComposerMilestoneId(item.campaignMilestoneId);
+
+  const editArtworkHref = isFlyer
+    ? flyerComposerEditHref()
+    : item.eventId && item.campaignMilestoneId
       ? campaignBuilderEditArtworkHref(
           item.eventId,
           item.campaignMilestoneId,
@@ -93,8 +108,9 @@ export function mapApprovalItemToRevision(
         ? campaignBuilderHref(item.eventId, "preview")
         : null;
 
-  const changeDateHref =
-    item.eventId && item.campaignMilestoneId
+  const changeDateHref = isFlyer
+    ? flyerComposerEditHref()
+    : item.eventId && item.campaignMilestoneId
       ? campaignBuilderPreviewMilestoneHref(
           item.eventId,
           item.campaignMilestoneId,
@@ -126,7 +142,7 @@ export function mapApprovalItemToRevision(
   return {
     itemId: item.id,
     mode,
-    contentType: "social",
+    contentType: isFlyer ? "flyer" : "social",
     typeChip: platformChip(item, artwork),
     statusChip:
       mode === "creator" ? "Changes requested" : "Needs your review",

@@ -73,6 +73,14 @@
     }
 
     .shell { max-width: 1120px; margin: 0 auto; padding: 20px 20px 72px; }
+    body.is-embed { min-height: 100%; background: var(--cream); }
+    body.is-embed .shell {
+      max-width: 1120px; padding: 8px 16px 32px;
+      min-height: 100%;
+    }
+    body.is-embed .top { margin-bottom: 14px; }
+    body.is-embed .top h1 { font-size: clamp(1.65rem, 3vw, 2.2rem); }
+    body.is-embed .composer-layout { min-height: calc(100dvh - 7.5rem); }
 
     .top {
       display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
@@ -827,14 +835,19 @@
     .btn-gold { background: var(--mustard); color: var(--ink); }
     .btn-gold:hover { background: #b38428; }
     .btn-gold:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-teal { background: var(--teal); color: var(--cream); }
+    .btn-teal:hover { filter: brightness(1.05); }
+    .btn-ghost {
+      background: transparent; color: var(--teal); font-weight: 700;
+      padding: 8px 10px; border: none;
+    }
+    .btn-ghost:hover { text-decoration: underline; }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    /* Preview step — dedicated workspace (Preview Campaign pattern) */
+    /* Preview — matches flyer-event-files-ease-mockup: stage + aside */
     .preview-header {
       display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
-      gap: 14px; margin-bottom: 12px;
-      padding: 16px 18px; border-radius: 22px;
-      background: var(--white); border: 1px solid var(--line); box-shadow: var(--shadow);
+      gap: 12px; margin-bottom: 16px;
       animation: soft-in 0.45s var(--ease) both;
     }
     .preview-header h2 {
@@ -850,140 +863,285 @@
       display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
     }
     .preview-workspace {
-      display: grid; gap: 12px; min-width: 0;
-      border-radius: 22px; border: 1px solid var(--line);
-      background: var(--white); box-shadow: var(--shadow);
+      display: grid; grid-template-columns: 1fr; gap: 14px; min-width: 0;
       animation: soft-in 0.45s var(--ease) 0.04s both;
     }
-    @media (min-width: 860px) {
-      .preview-workspace { grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; }
+    @media (min-width: 800px) {
+      .preview-workspace { grid-template-columns: minmax(0, 1fr) 240px; align-items: start; }
     }
-    /* Composer is two-column from 900px — stack summary below stage until main column is wide enough */
-    @media (min-width: 900px) and (max-width: 979px) {
-      .preview-workspace { grid-template-columns: 1fr; }
-    }
+    .preview-main-col { min-width: 0; display: flex; flex-direction: column; gap: 0; }
+    .flyer-stage,
     .preview-stage {
-      padding: 24px 20px 28px; min-height: 520px; min-width: 0;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: var(--cream);
-      border-radius: 22px 22px 0 0;
+      position: relative; border-radius: 18px; overflow: hidden; min-width: 0;
+      background:
+        linear-gradient(160deg, #2f4a3c 0%, #3d6a58 42%, #2a7a86 100%);
+      min-height: 380px; display: grid; place-items: center; padding: 28px 24px;
+      box-shadow: var(--shadow-lg);
     }
-    @media (min-width: 860px) {
-      .preview-stage { border-radius: 22px 0 0 22px; }
-    }
-    @media (min-width: 900px) and (max-width: 979px) {
-      .preview-stage { border-radius: 22px 22px 0 0; }
-    }
+    .flyer-stage.is-building,
+    .flyer-stage.is-done,
     .preview-stage.is-building,
     .preview-stage.is-done {
-      justify-content: center;
+      place-items: center;
     }
-    .preview-sidebar {
-      padding: 18px; min-width: 0; max-width: 100%;
-      border-top: 1px solid var(--line);
+    .preview-under {
+      margin-top: 14px;
+      display: flex; flex-direction: column; align-items: stretch; gap: 12px;
+    }
+    .preview-under .sidebar-edit-row {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    }
+    .preview-under .edit-details-link { margin-top: 0; color: var(--teal); font-weight: 650; }
+    /* Soft Saved to Files / Tied to — under art, not a competing CTA block */
+    .saved-banner {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+      padding: 12px 14px; border-radius: 14px;
+      background: rgba(42, 122, 134, 0.09); border: 1px solid rgba(42, 122, 134, 0.2);
+    }
+    .saved-banner.is-draft {
+      background: rgba(196, 146, 46, 0.1); border-color: rgba(196, 146, 46, 0.22);
+    }
+    .saved-banner .saved-copy {
+      flex: 1; min-width: 180px; font-size: 13px; line-height: 1.4; color: var(--ink-soft);
+    }
+    .saved-banner .saved-copy strong { color: var(--ink); }
+    .saved-banner .saved-copy em { font-style: normal; color: var(--teal); font-weight: 700; }
+    .saved-banner .saved-hint {
+      margin-top: 2px; font-size: 12px; color: var(--muted);
+    }
+    .saved-banner[hidden] { display: none !important; }
+
+    .preview-sidebar { display: flex; flex-direction: column; gap: 12px; }
+    .sidebar-box {
+      padding: 14px; border-radius: 16px; border: 1px solid var(--line);
       background: var(--white);
-      border-radius: 0 0 22px 22px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
     }
-    @media (min-width: 860px) {
-      .preview-sidebar { border-top: none; border-left: 1px solid var(--line); border-radius: 0 22px 22px 0; }
+    .panel .sidebar-box { background: var(--cream); }
+    .sidebar-box .label {
+      margin: 0 0 8px; font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted);
     }
-    @media (min-width: 900px) and (max-width: 979px) {
-      .preview-sidebar { border-top: 1px solid var(--line); border-left: none; border-radius: 0 0 22px 22px; }
+    .sidebar-box .btn { width: 100%; margin-top: 8px; }
+    .sidebar-box .btn-ghost { width: auto; margin-top: 8px; padding-left: 0; }
+    .sidebar-box > p:not(.label):not(.approval-status) {
+      margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4;
     }
-    .preview-sidebar .sidebar-actions {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0;
+    .preview-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      background: rgba(42, 122, 134, 0.1); color: var(--teal);
+      border: 1px solid rgba(42, 122, 134, 0.18);
+    }
+    .preview-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+    .preview-chip.is-draft {
+      background: rgba(196, 146, 46, 0.12); color: #7a5a12;
+      border-color: rgba(196, 146, 46, 0.28);
+    }
+    .preview-chip.is-draft .dot { background: var(--mustard); }
+
+    /* Approvals live in the aside — quiet status, not under the art */
+    .approval-panel { display: block; }
+    .approval-panel[hidden] { display: none !important; }
+    .approval-status {
+      margin: 0 0 4px; font-size: 12px; line-height: 1.4; color: var(--muted);
+    }
+    .approval-status[data-kind="pending"] { color: #2a7a86; font-weight: 650; }
+    .approval-status[data-kind="changes"] { color: #a65a3a; font-weight: 650; }
+    .approval-status[data-kind="approved"] { color: #2f4a3c; font-weight: 650; }
+    .approval-status[data-kind="error"] { color: #8b3f3f; }
+    .approval-status a { color: inherit; font-weight: 750; }
+
+    /* Start — quiet campaign chip (UX concepts live in event-files mockup) */
+    .tied-quiet {
+      margin: 16px 0 4px; border-radius: 14px; border: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.65);
+    }
+    .tied-quiet > summary {
+      list-style: none; cursor: pointer; display: flex; flex-wrap: wrap;
+      align-items: center; gap: 8px 12px; padding: 10px 12px;
+      font-size: 13px; color: var(--muted);
+    }
+    .tied-quiet > summary::-webkit-details-marker { display: none; }
+    .tied-quiet > summary::after {
+      content: "▸"; margin-left: auto; font-size: 11px; color: var(--muted);
+      transition: transform 0.15s;
+    }
+    .tied-quiet[open] > summary::after { transform: rotate(90deg); }
+    .tied-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border-radius: 999px;
+      border: 1px solid var(--line); background: var(--white);
+      font-size: 12px; font-weight: 700; color: var(--ink-soft);
+    }
+    .tied-chip .dot {
+      width: 7px; height: 7px; border-radius: 999px; background: var(--mustard);
+    }
+    .tied-chip.is-bound .dot { background: var(--teal); }
+    .tied-summary-hint { font-size: 12px; font-weight: 500; }
+    .tied-quiet-body { padding: 0 12px 12px; }
+    .tied-modes {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px;
+    }
+    @media (max-width: 560px) { .tied-modes { grid-template-columns: 1fr; } }
+    .tied-mode-btn {
+      text-align: left; padding: 8px 10px; border-radius: 12px;
+      border: 1px solid var(--line); background: var(--white);
+      cursor: pointer; font: inherit; color: inherit;
+    }
+    .tied-mode-btn:hover { border-color: rgba(42, 122, 134, 0.35); }
+    .tied-mode-btn.active {
+      border-color: rgba(42, 122, 134, 0.45);
+      background: #f7fbfb;
+    }
+    .tied-mode-btn strong { display: block; font-size: 13px; margin-bottom: 1px; }
+    .tied-mode-btn span { display: block; font-size: 11px; color: var(--muted); line-height: 1.3; }
+    .tied-quiet select {
+      width: 100%; margin-bottom: 8px; padding: 9px 11px;
+      border: 1px solid var(--line); border-radius: 11px;
+      background: var(--white); color: var(--ink); font: inherit; font-size: 13px;
+    }
+    .tied-inspiration {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 8px 10px; border-radius: 12px; border: 1px dashed var(--line);
+      background: var(--cream);
+    }
+    .tied-inspiration[hidden] { display: none !important; }
+    .tied-insp-thumb {
+      flex: 0 0 auto; width: 40px; height: 40px; border-radius: 9px;
+      overflow: hidden; background: var(--cream-deep); border: 1px solid var(--line);
+    }
+    .tied-insp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .tied-insp-thumb.empty {
+      display: grid; place-items: center; font-size: 9px; font-weight: 800;
+      color: var(--muted); letter-spacing: 0.03em; text-transform: uppercase;
+    }
+    .tied-insp-copy { min-width: 0; flex: 1; }
+    .tied-insp-copy strong { display: block; font-size: 12px; margin-bottom: 1px; }
+    .tied-insp-copy p { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.35; }
+    .tied-create-pane p {
+      margin: 0 0 8px; font-size: 12px; color: var(--ink-soft); line-height: 1.4;
+    }
+    .tied-create-pane a {
+      display: inline-flex; font-size: 12px; font-weight: 700; color: var(--teal);
+      text-decoration: none;
+    }
+    .tied-create-pane a:hover { text-decoration: underline; }
+    .tied-unbound-note {
+      margin-top: 8px; font-size: 11px; color: var(--muted); line-height: 1.4;
+    }
+    .tied-unbound-note[hidden] { display: none !important; }
+    .tied-mock-link {
+      margin: 10px 0 0; font-size: 12px; text-align: left;
+    }
+    .tied-mock-link a {
+      color: var(--teal); font-weight: 650; text-decoration: none;
+    }
+    .tied-mock-link a:hover { text-decoration: underline; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
     }
     .preview-versions {
-      margin-top: 12px; padding: 14px 16px 16px;
-      border-radius: 22px; border: 1px solid var(--line);
-      background: var(--white); box-shadow: var(--shadow);
+      margin-top: 16px;
       animation: soft-in 0.4s var(--ease) both;
     }
     .preview-versions[hidden] { display: none !important; }
     .preview-versions-label {
-      margin: 0 0 10px; font-size: 11px; font-weight: 800;
-      letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+      margin: 0 0 8px; font-size: 11px; font-weight: 800;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
     }
     .preview-versions-strip {
-      display: flex; gap: 10px; overflow-x: auto; padding-bottom: 2px;
+      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
       -webkit-overflow-scrolling: touch;
     }
     .version-thumb {
-      flex: 0 0 auto; width: 64px; padding: 0; border: 2px solid transparent;
-      border-radius: 12px; background: var(--cream); cursor: pointer;
-      overflow: hidden; aspect-ratio: 2 / 3; box-shadow: var(--shadow);
-      transition: border-color 0.15s var(--ease), transform 0.15s var(--ease);
+      flex: 0 0 auto; width: 72px; padding: 4px; border: 2px solid transparent;
+      border-radius: 12px; background: var(--cream-deep); cursor: pointer;
+      overflow: hidden; aspect-ratio: 2 / 3;
+      transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
     }
-    .version-thumb:hover { transform: translateY(-1px); border-color: rgba(47, 74, 60, 0.28); }
+    .version-thumb:hover { border-color: rgba(42, 122, 134, 0.3); }
     .version-thumb[aria-pressed="true"] {
-      border-color: var(--forest);
-      box-shadow: 0 0 0 1px var(--forest), var(--shadow);
+      border-color: var(--teal);
+      box-shadow: 0 0 0 2px rgba(42, 122, 134, 0.12);
     }
     .version-thumb img {
-      display: block; width: 100%; height: 100%; object-fit: cover;
+      display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;
     }
     .version-thumb-fallback {
       display: flex; align-items: center; justify-content: center;
       width: 100%; height: 100%; font-size: 10px; font-weight: 800;
-      color: var(--muted); background: #eee;
+      color: var(--muted); background: #eee; border-radius: 8px;
     }
     .preview-idle {
-      width: 100%; max-width: 440px; text-align: center;
-      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      width: min(100%, 280px); text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
     }
     .preview-ready-badge {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 5px 12px; border-radius: 999px;
-      background: rgba(47, 74, 60, 0.08); border: 1px solid rgba(47, 74, 60, 0.14);
+      background: rgba(255, 252, 247, 0.16); border: 1px solid rgba(255, 252, 247, 0.28);
       font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
-      color: var(--forest);
+      color: var(--cream);
     }
     .preview-ready-badge::before {
       content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--mustard);
     }
     .preview-idle-flyer {
-      width: 100%; max-width: 400px; margin: 0 auto;
-      border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
-      box-shadow: var(--shadow-lg); background: #eee; position: relative;
-      opacity: 0.88; filter: saturate(0.82);
+      width: min(100%, 240px); margin: 0 auto;
+      border-radius: 10px; overflow: hidden; border: 1px solid rgba(255, 252, 247, 0.35);
+      box-shadow: 0 16px 40px rgba(20, 30, 28, 0.35); background: #eee; position: relative;
+      opacity: 0.92; filter: saturate(0.88); aspect-ratio: 2 / 3;
     }
-    .preview-idle-flyer[data-ratio="3/4"] { aspect-ratio: 3 / 4; }
-    .preview-idle-flyer[data-ratio="3/2"] { aspect-ratio: 3 / 2; max-width: 420px; }
-    .preview-idle-flyer[data-ratio="1/1"] { aspect-ratio: 1 / 1; max-width: 380px; }
-    .preview-idle-flyer[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-width: 300px; }
-    .preview-idle-flyer .fly { font-size: 10px; }
-    .preview-idle-flyer .fly .h { font-size: 18px; }
-    .preview-idle-flyer .fly .b { font-size: 10px; }
+    .preview-idle-flyer[data-ratio="3/4"] { aspect-ratio: 2 / 3; }
+    .preview-idle-flyer[data-ratio="3/2"] { aspect-ratio: 3 / 2; width: min(100%, 320px); }
+    .preview-idle-flyer[data-ratio="1/1"] { aspect-ratio: 1 / 1; width: min(100%, 240px); }
+    .preview-idle-flyer[data-ratio="9/16"] { aspect-ratio: 9 / 16; width: min(100%, 200px); }
+    .preview-idle-flyer .fly { font-size: 7px; }
+    .preview-idle-flyer .fly .h { font-size: 12px; }
+    .preview-idle-flyer .fly .b { font-size: 7px; }
     .preview-idle-hint {
-      margin: 0; max-width: 22rem; color: var(--muted); font-size: 0.88rem; line-height: 1.45;
+      margin: 0; max-width: 16rem; color: rgba(255, 252, 247, 0.85);
+      font-size: 0.85rem; line-height: 1.45;
     }
+    /* Letter stage card — AI portrait is 1024×1536 (2:3); keep true letter, no square crop */
     .big-flyer {
-      border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
-      box-shadow: var(--shadow-lg); aspect-ratio: 3/4; width: 100%;
-      max-width: min(420px, 92%); margin: 0 auto;
-      animation: soft-in 0.5s var(--ease) both; background: var(--brand-paper, #faf8f4);
+      border-radius: 10px; overflow: hidden;
+      border: 1px solid rgba(255, 252, 247, 0.35);
+      box-shadow: 0 16px 40px rgba(20, 30, 28, 0.35);
+      aspect-ratio: 2 / 3;
+      width: min(100%, 320px);
+      max-width: 320px;
+      margin: 0 auto;
+      animation: soft-in 0.5s var(--ease) both;
+      background: var(--brand-paper, #faf8f4);
     }
     .big-flyer.is-generated-image {
       background: #fff; display: flex; align-items: center; justify-content: center;
+      aspect-ratio: 2 / 3;
+      width: min(100%, 320px);
+      max-width: 320px;
     }
-    /* AI portrait size is 1024×1536 (2:3). Letter UI ratio is 3:4 — match the
-       image so object-fit:contain does not letterbox white side gutters. */
     .big-flyer.is-generated-image[data-ratio="3/4"],
     .big-flyer.is-generated-image[data-ratio="9/16"] {
       aspect-ratio: 2 / 3;
-      max-width: min(380px, 88%);
+      width: min(100%, 320px);
+      max-width: 320px;
     }
     .generated-flyer-img {
-      display: block; width: 100%; height: 100%; object-fit: cover;
+      display: block; width: 100%; height: 100%; object-fit: contain;
       background: transparent;
     }
     .big-flyer > .fly { min-height: 100%; }
-    .big-flyer[data-ratio="1/1"] { aspect-ratio: 1 / 1; max-width: min(400px, 92%); }
-    .big-flyer[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-width: min(320px, 72%); }
-    .big-flyer[data-ratio="3/2"] { aspect-ratio: 3 / 2; max-width: min(480px, 92%); }
+    .big-flyer[data-ratio="1/1"] {
+      aspect-ratio: 1 / 1; width: min(100%, 260px); max-width: 260px;
+    }
+    .big-flyer[data-ratio="9/16"] {
+      aspect-ratio: 9 / 16; width: min(100%, 220px); max-width: 220px;
+    }
+    .big-flyer[data-ratio="3/2"] {
+      aspect-ratio: 3 / 2; width: min(100%, 360px); max-width: 360px;
+    }
     .big-flyer .fly { font-size: 11px; }
     .big-flyer .fly .h { font-size: 20px; }
     .big-flyer .fly .b { font-size: 11px; }
@@ -1222,13 +1380,10 @@
     }
     .edit-hint-banner strong { color: var(--forest); }
     .edit-details-link {
-      display: inline-block; margin-top: 10px;
+      display: inline-block;
       font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none;
     }
     .edit-details-link:hover { color: var(--forest); }
-    .preview-sidebar .sidebar-actions {
-      flex-direction: column; align-items: stretch; gap: 8px;
-    }
     .edit-gen-overlay {
       position: absolute; inset: 0; display: grid; place-items: center;
       background: rgba(246, 242, 235, 0.72); backdrop-filter: blur(2px);
@@ -1243,20 +1398,23 @@
       body { background: #fff; }
       .no-print { display: none !important; }
       .shell { padding: 0; max-width: none; }
-      .preview-header, .preview-sidebar, .preview-idle, #genState, .preview-ready-badge,
-      .preview-versions, [data-panel="edit"] { display: none !important; }
+      .preview-header, .preview-under, .preview-idle, #genState, .preview-ready-badge,
+      .preview-versions, .preview-sidebar, [data-panel="edit"] { display: none !important; }
       .preview-workspace { border: none; box-shadow: none; display: block; }
-      .preview-stage { padding: 0; min-height: 0; background: #fff; }
+      .flyer-stage, .preview-stage {
+        padding: 0; min-height: 0; background: #fff; box-shadow: none; border-radius: 0;
+      }
       #resultFlyer { display: block !important; }
       .big-flyer {
         max-width: none !important; width: 100%; margin: 0 auto;
-        box-shadow: none; page-break-inside: avoid;
+        box-shadow: none; page-break-inside: avoid; border: none;
       }
       .big-flyer[data-ratio="3/4"] { width: 8.5in; aspect-ratio: auto; height: 11in; }
       .big-flyer[data-ratio="3/2"] { width: 8.5in; aspect-ratio: auto; height: 5.5in; }
       .big-flyer[data-ratio="1/1"] { width: 8in; aspect-ratio: auto; height: 8in; }
       .big-flyer[data-ratio="9/16"] { width: 4.5in; aspect-ratio: auto; height: 8in; }
       /* Generated PNGs are 2:3 — size the print frame to the image, not wider letter. */
+      .big-flyer.is-generated-image,
       .big-flyer.is-generated-image[data-ratio="3/4"],
       .big-flyer.is-generated-image[data-ratio="9/16"] {
         width: 7.33in; height: 11in; aspect-ratio: auto; max-width: none !important;
@@ -1293,7 +1451,7 @@
             <span class="step-num" aria-hidden="true">2</span>
             <span>Inspiration</span>
           </span>
-          <span class="hint">Add photo &amp; details</span>
+          <span class="hint">Photo, template, brand</span>
         </button>
         <button type="button" class="step-btn" data-view="result">
           <span class="step-row">
@@ -1309,6 +1467,7 @@
     <section class="panel" data-panel="start">
       <h2>How do you want to start?</h2>
       <p class="sub">Add a photo and your direction — AI designs a polished print flyer.</p>
+
       <div class="start-paths">
         <div class="start-path start-path-primary" data-path="update">
           <span class="path-badge">Recommended</span>
@@ -1353,6 +1512,52 @@
           <div class="proven-row" id="provenGrid"></div>
         </div>
       </details>
+
+      <details class="tied-quiet no-print" id="startTiedCard">
+        <summary>
+          <span class="tied-chip" id="tiedChipSummary">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="tiedChipLabel">Tied to… optional</span>
+          </span>
+          <span class="tied-summary-hint">Campaign for Approvals &amp; Files</span>
+        </summary>
+        <div class="tied-quiet-body">
+          <div class="tied-modes" role="group" aria-label="How to bind">
+            <button type="button" class="tied-mode-btn active" data-tied-mode="pick" id="tiedModePick">
+              <strong>Pick an event</strong>
+              <span>Existing calendar campaign</span>
+            </button>
+            <button type="button" class="tied-mode-btn" data-tied-mode="create" id="tiedModeCreate">
+              <strong>Create your own</strong>
+              <span>Standalone campaign in Events</span>
+            </button>
+          </div>
+          <div id="tiedPickPane">
+            <label class="sr-only" for="approvalEventSelect">Campaign for this flyer</label>
+            <select id="approvalEventSelect" aria-label="Campaign for this flyer">
+              <option value="">Choose a campaign…</option>
+            </select>
+            <div class="tied-inspiration" id="tiedInspiration" hidden>
+              <div class="tied-insp-thumb empty" id="tiedInspThumb" aria-hidden="true">—</div>
+              <div class="tied-insp-copy">
+                <strong id="tiedInspTitle">Social / inspiration imagery</strong>
+                <p id="tiedInspDetail">Pick a campaign to see if Social artwork exists.</p>
+              </div>
+            </div>
+            <p class="tied-unbound-note" id="tiedUnboundNote">
+              Optional for now — pick a campaign before Send for approval. Drafts stay on this device until tied.
+            </p>
+          </div>
+          <div id="tiedCreatePane" class="tied-create-pane" hidden>
+            <p>Create a campaign in Events, then return and pick it here.</p>
+            <a href="/events/create" id="tiedCreateLink">Create campaign →</a>
+          </div>
+          <p class="tied-mock-link">
+            <a href="/flyer-event-files-ease-mockup.html">UX reference: Flyer ↔ Event ↔ Files</a>
+          </p>
+        </div>
+      </details>
+
       <div class="actions">
         <button type="button" class="btn btn-primary" id="toInputs" disabled>Continue</button>
       </div>
@@ -1589,12 +1794,12 @@
       </div>
     </section>
 
-    <!-- PREVIEW -->
-    <section class="panel panel-flush" data-panel="result" hidden>
+    <!-- PREVIEW — composition matches flyer-event-files-ease-mockup -->
+    <section class="panel" data-panel="result" hidden>
       <div class="preview-header no-print">
         <div>
           <h2>Preview</h2>
-          <p class="sub">Generate, then print or download.</p>
+          <p class="sub" id="previewSub">Generate, keep versions, and always see where they live.</p>
         </div>
         <div class="preview-header-actions">
           <button type="button" class="btn btn-gold" id="generateBtn">Generate flyer</button>
@@ -1602,28 +1807,60 @@
             <button type="button" class="btn btn-secondary" id="regen">Regenerate</button>
             <button type="button" class="btn btn-secondary" id="btnPrint">Print</button>
             <button type="button" class="btn btn-secondary" id="btnDownload">Download</button>
+            <button type="button" class="btn btn-primary" id="btnSendForApprovalHeader" disabled>
+              Send for approval
+            </button>
           </div>
         </div>
       </div>
       <div class="preview-workspace">
-        <div class="preview-stage" id="previewStage">
-          <div class="preview-idle" id="previewIdle">
-            <span class="preview-ready-badge">Ready</span>
-            <div class="preview-idle-flyer" id="previewIdleFlyer" data-ratio="3/4"></div>
-            <p class="preview-idle-hint" id="previewIdleHint">Tap <strong>Generate flyer</strong> when you’re set.</p>
+        <div class="preview-main-col">
+          <div class="flyer-stage preview-stage" id="previewStage">
+            <div class="preview-idle" id="previewIdle">
+              <span class="preview-ready-badge">Ready</span>
+              <div class="preview-idle-flyer" id="previewIdleFlyer" data-ratio="3/4"></div>
+              <p class="preview-idle-hint" id="previewIdleHint">Tap <strong>Generate flyer</strong> when you’re set.</p>
+            </div>
+            <div class="gen-state" id="genState" hidden>
+              <span class="gen-title">Designing your flyer…</span>
+              <span class="gen-detail" id="genDetail">Sending full direction to OpenAI…</span>
+              <div class="gen-bar" role="progressbar" aria-label="Generating flyer"></div>
+              <span class="gen-elapsed" id="genElapsed" hidden></span>
+            </div>
+            <div class="big-flyer" id="resultFlyer" hidden></div>
           </div>
-          <div class="gen-state" id="genState" hidden>
-            <span class="gen-title">Designing your flyer…</span>
-            <span class="gen-detail" id="genDetail">Sending full direction to OpenAI…</span>
-            <div class="gen-bar" role="progressbar" aria-label="Generating flyer"></div>
-            <span class="gen-elapsed" id="genElapsed" hidden></span>
+          <div class="preview-under no-print">
+            <div class="sidebar-edit-row">
+              <button type="button" class="btn btn-secondary" id="btnEditArtwork">Edit artwork</button>
+              <a href="#" class="edit-details-link" id="editDetailsLink">Edit details (Inspiration)</a>
+            </div>
+            <div class="saved-banner" id="savedBanner" hidden>
+              <div class="saved-copy" id="savedBannerCopy"></div>
+              <a class="btn btn-teal" id="savedBannerAction" href="#">Open Files</a>
+            </div>
           </div>
-          <div class="big-flyer" id="resultFlyer" hidden></div>
         </div>
-        <aside class="preview-sidebar no-print">
-          <div class="sidebar-actions">
-            <button type="button" class="btn btn-secondary" id="btnEditArtwork">Edit artwork</button>
-            <a href="#" class="edit-details-link" id="editDetailsLink">Edit details (Inspiration)</a>
+        <aside class="preview-sidebar no-print" aria-label="Preview campaign and approvals">
+          <div class="sidebar-box">
+            <p class="label">Campaign</p>
+            <span class="preview-chip is-draft" id="previewCampaignChip">
+              <span class="dot" aria-hidden="true"></span>
+              <span id="previewCampaignChipLabel">Not tied yet</span>
+            </span>
+            <button type="button" class="btn btn-ghost" id="previewChangeCampaign">Change…</button>
+          </div>
+          <div class="sidebar-box approval-panel" id="approvalPanel" hidden>
+            <p class="label">Approvals</p>
+            <p id="approvalAsideHint">Send the selected version for a chair yes.</p>
+            <p class="approval-status" id="approvalStatus" hidden></p>
+            <button type="button" class="btn btn-primary" id="btnSendForApproval" disabled>
+              Send for approval
+            </button>
+          </div>
+          <div class="sidebar-box" id="previewAlsoBox">
+            <p class="label">Also</p>
+            <a class="btn btn-secondary" id="previewOpenFiles" href="/files">View in Event Files</a>
+            <a class="btn btn-secondary" id="previewOpenApprovals" href="/approvals">Open Approvals</a>
           </div>
         </aside>
       </div>
@@ -1709,6 +1946,9 @@
   <script>
     const STORAGE_KEY = "hr-flyer-composer-draft";
     const FLYER_GENERATE_API = "/api/flyer-composer/generate";
+    const FLYER_EVENTS_API = "/api/flyer-composer/events";
+    const FLYER_SEND_APPROVAL_API = "/api/flyer-composer/send-for-approval";
+    const FLYER_APPROVAL_STATUS_API = "/api/flyer-composer/approval-status";
     /** Keep in sync with src/lib/flyer-composer/version-history.ts */
     const MAX_FLYER_VERSIONS = 10;
     let saveTimer = null;
@@ -1988,7 +2228,62 @@
       editStyleStrength: 55,
       editGenerating: false,
       editBaseVersionId: null,
+      approvalSubmissionKey: null,
+      approvalEventId: null,
+      approvalSchedulingItemId: null,
+      approvalWorkflowStatus: null,
+      approvalSending: false,
+      approvalEvents: [],
+      approvalEventsLoaded: false,
+      tiedMode: "pick",
     };
+
+    function ensureApprovalSubmissionKey() {
+      if (
+        typeof state.approvalSubmissionKey === "string" &&
+        state.approvalSubmissionKey.trim()
+      ) {
+        return state.approvalSubmissionKey.trim();
+      }
+      const key =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `flyer-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      state.approvalSubmissionKey = key;
+      return key;
+    }
+
+    function approvalStatusLabel(status) {
+      switch (status) {
+        case "in_queue":
+          return "In queue";
+        case "assigned_to_me":
+          return "Awaiting approval";
+        case "changes_requested":
+          return "Changes requested";
+        case "scheduled":
+        case "posted":
+        case "published":
+          return "Approved";
+        case "failed":
+          return "Failed";
+        default:
+          return status ? String(status).replace(/_/g, " ") : "";
+      }
+    }
+
+    function approvalStatusKind(status) {
+      if (status === "changes_requested") return "changes";
+      if (
+        status === "scheduled" ||
+        status === "posted" ||
+        status === "published"
+      ) {
+        return "approved";
+      }
+      if (status === "in_queue" || status === "assigned_to_me") return "pending";
+      return "";
+    }
 
     const EDIT_QUICK_SUGGESTIONS = [
       "Bigger headline",
@@ -2904,6 +3199,10 @@
         previewGenerated: state.previewGenerated === true && !!state.generatedImageUrl,
         activeVersionId: state.activeVersionId,
         versions,
+        approvalSubmissionKey: ensureApprovalSubmissionKey(),
+        approvalEventId: state.approvalEventId,
+        approvalSchedulingItemId: state.approvalSchedulingItemId,
+        approvalWorkflowStatus: state.approvalWorkflowStatus,
         ...readDraftFields(),
       };
     }
@@ -3022,6 +3321,27 @@
         state.previewGenerated =
           (d.previewGenerated === true || !!state.generatedImageUrl) &&
           !!state.generatedImageUrl;
+        if (
+          typeof d.approvalSubmissionKey === "string" &&
+          d.approvalSubmissionKey.trim()
+        ) {
+          state.approvalSubmissionKey = d.approvalSubmissionKey.trim();
+        }
+        if (typeof d.approvalEventId === "string" && d.approvalEventId.trim()) {
+          state.approvalEventId = d.approvalEventId.trim();
+        }
+        if (
+          typeof d.approvalSchedulingItemId === "string" &&
+          d.approvalSchedulingItemId.trim()
+        ) {
+          state.approvalSchedulingItemId = d.approvalSchedulingItemId.trim();
+        }
+        if (
+          typeof d.approvalWorkflowStatus === "string" &&
+          d.approvalWorkflowStatus.trim()
+        ) {
+          state.approvalWorkflowStatus = d.approvalWorkflowStatus.trim();
+        }
         SLOT_IDS.forEach((id) => {
           if (d[id] != null && document.getElementById(id)) {
             document.getElementById(id).value = d[id];
@@ -3154,11 +3474,12 @@
       }
       const ledes = {
         start: "Update last year’s flyer or start a new one, then generate.",
-        inputs: "Photo, org details, dates, QR, and brand.",
-        result: "Generate, review, print, or download.",
+        inputs: "Photo, template file, brand kit, and details.",
+        result: "Generate, keep versions, and always see where they live.",
         edit: "Revise the selected version — describe what should change.",
       };
       document.getElementById("pageLede").textContent = ledes[view] || ledes.start;
+      if (view === "start") renderTiedPanel();
     }
 
     function getActiveFlyerVersion() {
@@ -3663,6 +3984,478 @@
         detailsLink.style.opacity = state.generating ? "0.5" : "";
       }
       renderVersionsStrip();
+      renderPreviewCampaignChrome();
+      renderApprovalPanel();
+    }
+
+    function setApprovalStatusMessage(message, kind) {
+      const el = document.getElementById("approvalStatus");
+      const hint = document.getElementById("approvalAsideHint");
+      if (!el) return;
+      if (!message) {
+        el.hidden = true;
+        el.textContent = "";
+        el.removeAttribute("data-kind");
+        if (hint) hint.hidden = false;
+        return;
+      }
+      el.hidden = false;
+      el.dataset.kind = kind || "";
+      el.innerHTML = message;
+      if (hint) hint.hidden = true;
+    }
+
+    function selectedApprovalEvent() {
+      const id = state.approvalEventId || "";
+      if (!id) return null;
+      return (state.approvalEvents || []).find((event) => event.id === id) || null;
+    }
+
+    function embedTopAttr() {
+      return document.body.classList.contains("is-embed") ? ' target="_top"' : "";
+    }
+
+    function approvalsHrefHtml(label) {
+      return `<a href="/approvals"${embedTopAttr()}>${label}</a>`;
+    }
+
+    function eventFilesHref(eventId) {
+      return `/events/${encodeURIComponent(eventId)}?tab=files`;
+    }
+
+    function openTiedCampaignPicker(e) {
+      if (e) e.preventDefault();
+      openTiedQuietOnStart();
+    }
+
+    /** Soft Saved-to-Files banner + Campaign aside — mock hierarchy, not a hero CTA. */
+    function renderPreviewCampaignChrome() {
+      const event = selectedApprovalEvent();
+      const chip = document.getElementById("previewCampaignChip");
+      const chipLabel = document.getElementById("previewCampaignChipLabel");
+      const banner = document.getElementById("savedBanner");
+      const bannerCopy = document.getElementById("savedBannerCopy");
+      const bannerAction = document.getElementById("savedBannerAction");
+      const openFiles = document.getElementById("previewOpenFiles");
+      const openApprovals = document.getElementById("previewOpenApprovals");
+      const previewSub = document.getElementById("previewSub");
+      const hasArt =
+        state.previewGenerated && !!getActiveFlyerVersion()?.imageUrl;
+
+      if (chip && chipLabel) {
+        if (event) {
+          chip.classList.remove("is-draft");
+          chipLabel.textContent = event.title;
+        } else {
+          chip.classList.add("is-draft");
+          chipLabel.textContent = "Not tied yet";
+        }
+      }
+
+      if (previewSub) {
+        if (hasArt && event) {
+          previewSub.textContent = "Versions ready — tied to your campaign.";
+        } else if (hasArt) {
+          previewSub.textContent = "Looks good — pick a campaign so teammates find it in Files.";
+        } else {
+          previewSub.textContent =
+            "Generate, keep versions, and always see where they live.";
+        }
+      }
+
+      if (banner && bannerCopy && bannerAction) {
+        banner.hidden = !hasArt;
+        if (hasArt) {
+          if (event) {
+            banner.classList.remove("is-draft");
+            bannerCopy.innerHTML =
+              `Saved to <strong>${escapeHtml(event.title)}</strong> → <em>Files</em>` +
+              `<div class="saved-hint">Event-tied versions also appear under Generated on the event Files tab.</div>`;
+            bannerAction.textContent = "Open Files";
+            bannerAction.href = eventFilesHref(event.id);
+            bannerAction.className = "btn btn-teal";
+          } else {
+            banner.classList.add("is-draft");
+            bannerCopy.innerHTML =
+              `<strong>Saved on this device only.</strong> Pick or create a campaign to put versions in Files — so your team can find them without knowing the architecture.`;
+            bannerAction.textContent = "Choose campaign…";
+            bannerAction.href = "#";
+            bannerAction.className = "btn btn-teal";
+          }
+        }
+      }
+
+      if (openFiles) {
+        if (event) {
+          openFiles.href = eventFilesHref(event.id);
+          openFiles.textContent = "View in Event Files";
+          openFiles.removeAttribute("aria-disabled");
+        } else {
+          openFiles.href = "#";
+          openFiles.textContent = "Choose campaign for Files";
+        }
+      }
+      if (openApprovals) {
+        openApprovals.href = "/approvals";
+        if (document.body.classList.contains("is-embed")) {
+          openApprovals.setAttribute("target", "_top");
+          if (openFiles && event) openFiles.setAttribute("target", "_top");
+        }
+      }
+      if (bannerAction && event && document.body.classList.contains("is-embed")) {
+        bannerAction.setAttribute("target", "_top");
+      } else if (bannerAction) {
+        bannerAction.removeAttribute("target");
+      }
+    }
+
+    function populateApprovalEventSelect() {
+      const select = document.getElementById("approvalEventSelect");
+      if (!select) return;
+      const events = state.approvalEvents || [];
+      const current = state.approvalEventId || "";
+      select.innerHTML =
+        `<option value="">Choose a campaign…</option>` +
+        events
+          .map((event) => {
+            const label = event.date
+              ? `${event.title} · ${event.date}`
+              : event.title;
+            return `<option value="${escapeHtml(event.id)}">${escapeHtml(label)}</option>`;
+          })
+          .join("");
+      if (current && events.some((e) => e.id === current)) {
+        select.value = current;
+      } else if (events.length === 1) {
+        select.value = events[0].id;
+        state.approvalEventId = events[0].id;
+      } else {
+        select.value = current || "";
+        if (current && !events.some((e) => e.id === current)) {
+          state.approvalEventId = null;
+          select.value = "";
+        }
+      }
+    }
+
+    function renderTiedInspiration() {
+      const card = document.getElementById("tiedInspiration");
+      const thumb = document.getElementById("tiedInspThumb");
+      const title = document.getElementById("tiedInspTitle");
+      const detail = document.getElementById("tiedInspDetail");
+      const unbound = document.getElementById("tiedUnboundNote");
+      if (!card || !thumb || !title || !detail) return;
+
+      const event = selectedApprovalEvent();
+      if (!event) {
+        card.hidden = !state.approvalEventsLoaded;
+        thumb.className = "tied-insp-thumb empty";
+        thumb.innerHTML = "None";
+        title.textContent = "Social / inspiration imagery";
+        detail.textContent = state.approvalEventsLoaded
+          ? "Pick a campaign to check for existing Social artwork."
+          : "Loading campaigns…";
+        if (unbound) unbound.hidden = false;
+        return;
+      }
+
+      if (unbound) unbound.hidden = true;
+      card.hidden = false;
+      const imageUrl =
+        typeof event.socialImageUrl === "string" && event.socialImageUrl.trim()
+          ? event.socialImageUrl.trim()
+          : null;
+      const hasImagery = event.hasSocialImagery === true || Boolean(imageUrl);
+
+      if (hasImagery && imageUrl) {
+        thumb.className = "tied-insp-thumb";
+        thumb.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />`;
+        title.textContent = "Social inspiration available";
+        detail.textContent =
+          "This event already has Social / approved square artwork you can use as mood for the flyer.";
+      } else {
+        thumb.className = "tied-insp-thumb empty";
+        thumb.innerHTML = "None";
+        title.textContent = "No Social inspiration yet";
+        detail.textContent =
+          "No approved Social square for this event yet — upload a photo on Inspiration, or generate Social first.";
+      }
+    }
+
+    function openTiedQuietOnStart() {
+      setView("start");
+      const card = document.getElementById("startTiedCard");
+      if (card) card.open = true;
+      const select = document.getElementById("approvalEventSelect");
+      if (select) {
+        try {
+          select.focus({ preventScroll: false });
+        } catch {
+          select.focus();
+        }
+      }
+    }
+
+    function renderTiedChip() {
+      const chip = document.getElementById("tiedChipSummary");
+      const label = document.getElementById("tiedChipLabel");
+      if (!chip || !label) return;
+      const event = selectedApprovalEvent();
+      if (!event) {
+        chip.classList.remove("is-bound");
+        label.textContent = "Tied to… optional";
+        return;
+      }
+      chip.classList.add("is-bound");
+      label.textContent = event.date
+        ? `Tied to ${event.title}`
+        : `Tied to ${event.title}`;
+    }
+
+    function renderTiedPanel() {
+      const pickPane = document.getElementById("tiedPickPane");
+      const createPane = document.getElementById("tiedCreatePane");
+      const pickBtn = document.getElementById("tiedModePick");
+      const createBtn = document.getElementById("tiedModeCreate");
+      const mode = state.tiedMode === "create" ? "create" : "pick";
+      if (pickPane) pickPane.hidden = mode !== "pick";
+      if (createPane) createPane.hidden = mode !== "create";
+      if (pickBtn) pickBtn.classList.toggle("active", mode === "pick");
+      if (createBtn) createBtn.classList.toggle("active", mode === "create");
+      if (mode === "pick") {
+        populateApprovalEventSelect();
+        renderTiedInspiration();
+      }
+      renderTiedChip();
+    }
+
+    function syncApprovalSendButtons(disabled, label) {
+      ["btnSendForApproval", "btnSendForApprovalHeader"].forEach((id) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.disabled = disabled;
+        btn.textContent = label;
+      });
+    }
+
+    function renderApprovalPanel() {
+      const panel = document.getElementById("approvalPanel");
+      const sendBtn = document.getElementById("btnSendForApproval");
+      if (!panel || !sendBtn) return;
+
+      const hasArt =
+        state.previewGenerated &&
+        !!getActiveFlyerVersion()?.imageUrl &&
+        state.view === "result";
+      panel.hidden = !hasArt;
+      const headerSend = document.getElementById("btnSendForApprovalHeader");
+      if (headerSend) headerSend.hidden = !hasArt;
+      renderPreviewCampaignChrome();
+      if (!hasArt) return;
+
+      ensureApprovalSubmissionKey();
+      const hasCampaign = Boolean(state.approvalEventId);
+
+      const pending =
+        state.approvalWorkflowStatus === "in_queue" ||
+        state.approvalWorkflowStatus === "assigned_to_me";
+      const changes =
+        state.approvalWorkflowStatus === "changes_requested";
+      const approved =
+        state.approvalWorkflowStatus === "scheduled" ||
+        state.approvalWorkflowStatus === "posted" ||
+        state.approvalWorkflowStatus === "published";
+
+      if (state.approvalSending) {
+        syncApprovalSendButtons(true, "Sending…");
+        setApprovalStatusMessage("Sending selected version for approval…", "pending");
+      } else if (changes) {
+        syncApprovalSendButtons(!hasCampaign || state.generating, "Resend for approval");
+        setApprovalStatusMessage(
+          `Changes requested — edit artwork, then resend. ${approvalsHrefHtml("Open Approvals")}`,
+          "changes",
+        );
+      } else if (pending) {
+        syncApprovalSendButtons(!hasCampaign || state.generating, "Update approval");
+        setApprovalStatusMessage(
+          `${approvalStatusLabel(state.approvalWorkflowStatus)} — selected version can update the queue. ${approvalsHrefHtml("Open Approvals")}`,
+          "pending",
+        );
+      } else if (approved) {
+        syncApprovalSendButtons(!hasCampaign || state.generating, "Send again");
+        setApprovalStatusMessage(
+          `Approved — print-ready. ${approvalsHrefHtml("Open Approvals")}`,
+          "approved",
+        );
+      } else if (!state.approvalEventsLoaded) {
+        syncApprovalSendButtons(true, "Send for approval");
+        setApprovalStatusMessage("Loading campaigns…", "");
+      } else if (!(state.approvalEvents || []).length) {
+        syncApprovalSendButtons(true, "Send for approval");
+        setApprovalStatusMessage(
+          "Add a campaign (Tied to… on Start), then send.",
+          "error",
+        );
+      } else {
+        syncApprovalSendButtons(!hasCampaign || state.generating, "Send for approval");
+        if (!hasCampaign) {
+          setApprovalStatusMessage(
+            "Optional until send — expand Tied to… on Start to pick a campaign.",
+            "",
+          );
+        } else {
+          setApprovalStatusMessage("", "");
+        }
+      }
+    }
+
+    async function loadApprovalEvents() {
+      if (!canCallGenerateApi()) {
+        state.approvalEventsLoaded = true;
+        state.approvalEvents = [];
+        renderTiedPanel();
+        renderApprovalPanel();
+        return;
+      }
+      try {
+        const response = await fetch(FLYER_EVENTS_API, {
+          credentials: "include",
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) {
+          state.approvalEvents = [];
+        } else {
+          state.approvalEvents = Array.isArray(payload.events)
+            ? payload.events
+            : [];
+        }
+      } catch {
+        state.approvalEvents = [];
+      }
+      state.approvalEventsLoaded = true;
+      renderTiedPanel();
+      renderApprovalPanel();
+      if (state.approvalEventId && state.approvalSubmissionKey) {
+        refreshApprovalStatus();
+      }
+    }
+
+    async function refreshApprovalStatus() {
+      if (
+        !canCallGenerateApi() ||
+        !state.approvalEventId ||
+        !state.approvalSubmissionKey
+      ) {
+        return;
+      }
+      try {
+        const params = new URLSearchParams({
+          eventId: state.approvalEventId,
+          submissionKey: state.approvalSubmissionKey,
+        });
+        const response = await fetch(
+          `${FLYER_APPROVAL_STATUS_API}?${params.toString()}`,
+          { credentials: "include" },
+        );
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success || !payload.status) return;
+        state.approvalSchedulingItemId = payload.status.schedulingItemId || null;
+        state.approvalWorkflowStatus = payload.status.workflowStatus || null;
+        scheduleSave();
+        renderApprovalPanel();
+      } catch {
+        /* optional */
+      }
+    }
+
+    async function sendSelectedVersionForApproval() {
+      const version = getActiveFlyerVersion();
+      const imageUrl =
+        (version && version.imageUrl) ||
+        (isPersistableFlyerImageUrl(state.generatedImageUrl)
+          ? state.generatedImageUrl
+          : null);
+      const eventId = state.approvalEventId || "";
+
+      if (!imageUrl) {
+        setApprovalStatusMessage("Generate a flyer version first.", "error");
+        return;
+      }
+      if (!eventId) {
+        setApprovalStatusMessage(
+          "Choose a campaign first (Tied to… on Start).",
+          "error",
+        );
+        openTiedQuietOnStart();
+        return;
+      }
+      if (!canCallGenerateApi()) {
+        setApprovalStatusMessage(
+          "Open via http://localhost:3000 or heyralli.com to send for approval.",
+          "error",
+        );
+        return;
+      }
+      if (state.approvalSending) return;
+
+      const fields = readDraftFields();
+      const tpl = state.templateId ? getTpl(state.templateId) : null;
+      state.approvalSending = true;
+      state.approvalEventId = eventId;
+      renderApprovalPanel();
+
+      try {
+        const response = await fetch(FLYER_SEND_APPROVAL_API, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventId,
+            submissionKey: ensureApprovalSubmissionKey(),
+            imageUrl,
+            versionId: version?.id || null,
+            headline: fields.headline || null,
+            orgName: fields.orgName || null,
+            templateName: tpl?.name || null,
+            captionText:
+              [fields.orgName, fields.headline, fields.datesEvents]
+                .filter(Boolean)
+                .join(" · ") || null,
+          }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) {
+          const err =
+            payload?.error ||
+            (response.status === 401
+              ? "Sign in with an active organization to send for approval."
+              : response.status === 403
+                ? "You do not have permission to send for approval."
+                : "Could not send for approval. Try again.");
+          throw new Error(err);
+        }
+        state.approvalSchedulingItemId = payload.schedulingItemId || null;
+        state.approvalWorkflowStatus =
+          payload.workflowStatus ||
+          state.approvalWorkflowStatus ||
+          "in_queue";
+        if (payload.feedArtworkUrl && version) {
+          /* keep local version; hosted URL already preferred when generated */
+        }
+        scheduleSave();
+        setApprovalStatusMessage(
+          `${payload.message || "Flyer sent for approval."} ${approvalsHrefHtml("Open Approvals")}`,
+          "pending",
+        );
+      } catch (error) {
+        setApprovalStatusMessage(
+          error instanceof Error ? error.message : "Could not send for approval.",
+          "error",
+        );
+      } finally {
+        state.approvalSending = false;
+        renderApprovalPanel();
+      }
     }
 
     function applyGeneratedSlots(slots) {
@@ -3959,6 +4752,51 @@
       setView("result");
     });
     document.getElementById("generateBtn").addEventListener("click", startGenerate);
+    function onSendForApprovalClick() {
+      void sendSelectedVersionForApproval();
+    }
+    document
+      .getElementById("btnSendForApproval")
+      ?.addEventListener("click", onSendForApprovalClick);
+    document
+      .getElementById("btnSendForApprovalHeader")
+      ?.addEventListener("click", onSendForApprovalClick);
+    document
+      .getElementById("previewChangeCampaign")
+      ?.addEventListener("click", openTiedCampaignPicker);
+    document
+      .getElementById("savedBannerAction")
+      ?.addEventListener("click", (e) => {
+        const event = selectedApprovalEvent();
+        if (event) return; /* follow href → Files */
+        openTiedCampaignPicker(e);
+      });
+    document
+      .getElementById("previewOpenFiles")
+      ?.addEventListener("click", (e) => {
+        const event = selectedApprovalEvent();
+        if (event) return; /* follow href → Files */
+        openTiedCampaignPicker(e);
+      });
+    document
+      .getElementById("approvalEventSelect")
+      ?.addEventListener("change", (event) => {
+        state.approvalEventId = event.target.value || null;
+        state.approvalWorkflowStatus = null;
+        state.approvalSchedulingItemId = null;
+        scheduleSave();
+        renderTiedPanel();
+        renderPreviewCampaignChrome();
+        renderApprovalPanel();
+        if (state.approvalEventId) void refreshApprovalStatus();
+      });
+    document.querySelectorAll("[data-tied-mode]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        state.tiedMode = btn.dataset.tiedMode === "create" ? "create" : "pick";
+        renderTiedPanel();
+      });
+    });
     document.getElementById("regen").addEventListener("click", startGenerate);
     document.getElementById("btnEditArtwork")?.addEventListener("click", openEditArtwork);
     document.getElementById("editDetailsLink")?.addEventListener("click", (e) => {
@@ -4278,6 +5116,15 @@
     setupEditDirectionVoice();
 
     const params = new URLSearchParams(location.search);
+    const isEmbed = params.get("embed") === "1";
+    if (isEmbed) {
+      document.body.classList.add("is-embed");
+      document.querySelectorAll('a[href^="/"]').forEach((link) => {
+        if (!link.target) link.setAttribute("target", "_top");
+      });
+      const back = document.querySelector(".back-link");
+      if (back) back.setAttribute("href", "/create-with-ai");
+    }
     let initial = params.get("view") || "start";
     if (initial === "templates" || initial === "chooser") initial = "start";
     if (initial === "editArtwork" || initial === "edit-artwork") initial = "edit";
@@ -4289,7 +5136,10 @@
       // Only fill empty org name from Settings — never reset Basics/Direction.
       setFieldIfEmpty("orgName", brandOrgName());
       renderStartStep();
+      renderTiedPanel();
     });
+    ensureApprovalSubmissionKey();
+    void loadApprovalEvents();
   </script>
 </body>
 </html>

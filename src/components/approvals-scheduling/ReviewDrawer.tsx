@@ -21,6 +21,10 @@ import {
   approvalOutcomeChip,
   canRetryFailedApproval,
 } from "@/lib/approvals-scheduling/outcome-display";
+import {
+  flyerComposerEditHref,
+  isFlyerComposerMilestoneId,
+} from "@/lib/flyer-composer/approval";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
 import { cn } from "@/lib/utils/cn";
@@ -68,7 +72,17 @@ function HistoryList({ entries }: { entries: UnifiedApprovalHistoryEntry[] }) {
   );
 }
 
+function isFlyerApprovalItem(item: UnifiedApprovalItem): boolean {
+  return (
+    item.channel === "flyer" ||
+    isFlyerComposerMilestoneId(item.campaignMilestoneId)
+  );
+}
+
 function platformLabel(item: UnifiedApprovalItem): string {
+  if (isFlyerApprovalItem(item)) {
+    return "Print flyer";
+  }
   if (item.platforms.length === 0) {
     return "Social";
   }
@@ -84,6 +98,9 @@ function platformLabel(item: UnifiedApprovalItem): string {
 }
 
 function scheduleSubline(item: UnifiedApprovalItem): string {
+  if (isFlyerApprovalItem(item)) {
+    return "Print-ready — approve to clear the queue";
+  }
   if (item.deliveryMethod === "manual-email") {
     return "Email post kit — ready once you approve";
   }
@@ -100,6 +117,7 @@ function scheduleSubline(item: UnifiedApprovalItem): string {
 }
 
 function typeChipLabel(item: UnifiedApprovalItem): string {
+  if (isFlyerApprovalItem(item)) return "Flyer";
   const hasFeed = Boolean(item.preview.feedArtworkUrl);
   const hasStory = Boolean(item.preview.storyArtworkUrl);
   if (hasFeed && hasStory) return "Social · Feed + Story";
@@ -125,15 +143,18 @@ export function ReviewDrawer({
 
   const changeRequestComment = changeRequestDisplayComment(item.notes);
   const showChangeRequestBanner = item.workflowStatus === "changes_requested";
-  const editPreviewHref =
-    item.campaignMilestoneId != null
+  const isFlyer = isFlyerApprovalItem(item);
+  const editPreviewHref = isFlyer
+    ? flyerComposerEditHref()
+    : item.campaignMilestoneId != null
       ? campaignBuilderPreviewMilestoneHref(
           item.eventId,
           item.campaignMilestoneId,
         )
       : null;
-  const editArtworkHref =
-    item.campaignMilestoneId != null
+  const editArtworkHref = isFlyer
+    ? flyerComposerEditHref()
+    : item.campaignMilestoneId != null
       ? campaignBuilderEditArtworkHref(item.eventId, item.campaignMilestoneId)
       : null;
 
@@ -144,14 +165,17 @@ export function ReviewDrawer({
     item.preview.storyCaptionSnippet?.trim() ||
     null;
   const storyCaption =
+    !isFlyer &&
     item.preview.storyCaptionSnippet?.trim() &&
     item.preview.storyCaptionSnippet.trim() !== caption
       ? item.preview.storyCaptionSnippet.trim()
       : null;
   const feedUrl = item.preview.feedArtworkUrl;
-  const storyUrl = item.preview.storyArtworkUrl;
+  const storyUrl = isFlyer ? null : item.preview.storyArtworkUrl;
   const platforms = platformLabel(item);
-  const whenLabel = item.scheduleLabel || "Schedule not set";
+  const whenLabel = isFlyer
+    ? "Print-ready"
+    : item.scheduleLabel || "Schedule not set";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
@@ -176,8 +200,9 @@ export function ReviewDrawer({
               {item.campaignName}
             </h2>
             <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-cos-muted">
-              Review feed + story, caption, and when it posts. Notes live on
-              Request changes — not here.
+              {isFlyer
+                ? "Review the print flyer artwork. Notes live on Request changes — not here."
+                : "Review feed + story, caption, and when it posts. Notes live on Request changes — not here."}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="inline-flex rounded-full bg-[rgba(42,122,134,0.12)] px-2.5 py-1 text-[11px] font-extrabold text-[#2a7a86]">
@@ -254,10 +279,10 @@ export function ReviewDrawer({
                   <div className="mt-3 flex flex-wrap gap-2">
                     {editArtworkHref ? (
                       <Button href={editArtworkHref} variant="primary" size="sm">
-                        Edit artwork
+                        {isFlyer ? "Open Flyer composer" : "Edit artwork"}
                       </Button>
                     ) : null}
-                    {editPreviewHref ? (
+                    {!isFlyer && editPreviewHref ? (
                       <Button
                         href={editPreviewHref}
                         variant="secondary"
@@ -273,37 +298,58 @@ export function ReviewDrawer({
 
             <div className="grid items-start gap-5 lg:grid-cols-[1.15fr_0.85fr]">
               <div>
-                <div className="mx-auto grid max-w-[420px] grid-cols-2 items-end gap-3.5 max-[520px]:max-w-[280px] max-[520px]:grid-cols-1 max-[520px]:justify-items-center">
-                  <div className="flex min-w-0 flex-col items-center">
+                {isFlyer ? (
+                  <div className="mx-auto flex max-w-[320px] flex-col items-center">
                     <p className="mb-2 text-center text-[10px] font-extrabold tracking-[0.07em] text-cos-muted uppercase">
-                      Feed · 1:1
+                      Flyer artwork
                     </p>
                     <ArtworkLightboxThumbnail
                       src={feedUrl}
-                      alt={`${item.milestoneName} feed artwork`}
+                      alt={`${item.milestoneName} flyer artwork`}
                       variant="feed"
                       wrapperClassName="w-full max-w-[280px]"
-                      frameClassName="aspect-square w-full shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
-                      placeholder="No feed artwork yet"
+                      frameClassName="aspect-[2/3] w-full shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                      placeholder="No flyer artwork yet"
                     />
-                  </div>
-                  <div className="flex min-w-0 flex-col items-center">
-                    <p className="mb-2 text-center text-[10px] font-extrabold tracking-[0.07em] text-cos-muted uppercase">
-                      Story · 9:16
+                    <p className="mt-2.5 text-center text-xs leading-snug text-cos-muted">
+                      Tap the image to enlarge
                     </p>
-                    <ArtworkLightboxThumbnail
-                      src={storyUrl}
-                      alt={`${item.milestoneName} story artwork`}
-                      variant="story"
-                      wrapperClassName="w-full max-w-[200px]"
-                      frameClassName="aspect-[9/16] w-full max-h-[360px] shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
-                      placeholder="No story artwork yet"
-                    />
                   </div>
-                </div>
-                <p className="mt-2.5 text-center text-xs leading-snug text-cos-muted">
-                  Tap either image to enlarge
-                </p>
+                ) : (
+                  <>
+                    <div className="mx-auto grid max-w-[420px] grid-cols-2 items-end gap-3.5 max-[520px]:max-w-[280px] max-[520px]:grid-cols-1 max-[520px]:justify-items-center">
+                      <div className="flex min-w-0 flex-col items-center">
+                        <p className="mb-2 text-center text-[10px] font-extrabold tracking-[0.07em] text-cos-muted uppercase">
+                          Feed · 1:1
+                        </p>
+                        <ArtworkLightboxThumbnail
+                          src={feedUrl}
+                          alt={`${item.milestoneName} feed artwork`}
+                          variant="feed"
+                          wrapperClassName="w-full max-w-[280px]"
+                          frameClassName="aspect-square w-full shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                          placeholder="No feed artwork yet"
+                        />
+                      </div>
+                      <div className="flex min-w-0 flex-col items-center">
+                        <p className="mb-2 text-center text-[10px] font-extrabold tracking-[0.07em] text-cos-muted uppercase">
+                          Story · 9:16
+                        </p>
+                        <ArtworkLightboxThumbnail
+                          src={storyUrl}
+                          alt={`${item.milestoneName} story artwork`}
+                          variant="story"
+                          wrapperClassName="w-full max-w-[200px]"
+                          frameClassName="aspect-[9/16] w-full max-h-[360px] shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                          placeholder="No story artwork yet"
+                        />
+                      </div>
+                    </div>
+                    <p className="mt-2.5 text-center text-xs leading-snug text-cos-muted">
+                      Tap either image to enlarge
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="flex min-w-0 flex-col gap-4">

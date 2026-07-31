@@ -269,21 +269,29 @@ export async function sendChangeRequestedEmail(
     approvalRequestId?: string | null;
   },
 ): Promise<CampaignApprovalNotificationResult> {
+  const { isFlyerComposerMilestoneId, flyerComposerEditHref } = await import(
+    "@/lib/flyer-composer/approval"
+  );
+  const isFlyer = isFlyerComposerMilestoneId(input.campaignMilestoneId);
   const base =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
   const reviewHref = `${base.replace(/\/$/, "")}/events/${input.eventId}/campaign-builder#review`;
-  const editPreviewHref = input.campaignMilestoneId
-    ? absoluteCampaignBuilderPreviewMilestoneHref(
-        input.eventId,
-        input.campaignMilestoneId,
-      )
-    : null;
-  const editArtworkHref = input.campaignMilestoneId
-    ? absoluteCampaignBuilderEditArtworkHref(
-        input.eventId,
-        input.campaignMilestoneId,
-      )
-    : null;
+  const editPreviewHref = isFlyer
+    ? flyerComposerEditHref({ absolute: true })
+    : input.campaignMilestoneId
+      ? absoluteCampaignBuilderPreviewMilestoneHref(
+          input.eventId,
+          input.campaignMilestoneId,
+        )
+      : null;
+  const editArtworkHref = isFlyer
+    ? flyerComposerEditHref({ absolute: true })
+    : input.campaignMilestoneId
+      ? absoluteCampaignBuilderEditArtworkHref(
+          input.eventId,
+          input.campaignMilestoneId,
+        )
+      : null;
   const changeDateHref = editPreviewHref;
   const primaryHref = editArtworkHref ?? changeDateHref ?? reviewHref;
   return dispatchApprovalEmail({
