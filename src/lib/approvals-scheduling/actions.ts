@@ -341,7 +341,7 @@ async function runApproveSchedulingSideEffects(input: {
 
   if (input.campaignName && input.milestoneName) {
     if (creatorEmail) {
-      await sendContentApprovedEmail({
+      const approvedMail = await sendContentApprovedEmail({
         eventId,
         campaignName: input.campaignName,
         milestoneName: input.milestoneName,
@@ -353,6 +353,16 @@ async function runApproveSchedulingSideEffects(input: {
         captionText: row.caption_text,
         storyCaption: row.story_caption,
       });
+      if (!approvedMail.success) {
+        const emailWarning = `Approved, but we couldn’t email the creator: ${approvedMail.message}`;
+        metaWarning = metaWarning
+          ? `${metaWarning} ${emailWarning}`
+          : emailWarning;
+        console.error(
+          "Content-approved email after approve failed:",
+          approvedMail.message,
+        );
+      }
     }
 
     if (isManualUploadKit && manualRecipient) {
@@ -410,7 +420,7 @@ async function runApproveSchedulingSideEffects(input: {
       }
       // Beyond 30 days → daily cron /api/cron/manual-upload-emails
     } else if (creatorEmail && row.schedule_at) {
-      await sendScheduledDeliveryEmail({
+      const scheduledMail = await sendScheduledDeliveryEmail({
         eventId,
         campaignName: input.campaignName,
         milestoneName: input.milestoneName,
@@ -423,6 +433,16 @@ async function runApproveSchedulingSideEffects(input: {
         captionText: row.caption_text,
         storyCaption: row.story_caption,
       });
+      if (!scheduledMail.success) {
+        const emailWarning = `Approved, but we couldn’t email the schedule notice: ${scheduledMail.message}`;
+        metaWarning = metaWarning
+          ? `${metaWarning} ${emailWarning}`
+          : emailWarning;
+        console.error(
+          "Scheduled-delivery email after approve failed:",
+          scheduledMail.message,
+        );
+      }
     }
   }
 

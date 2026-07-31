@@ -38,7 +38,7 @@ Every transactional template uses the same restrained shell:
 - A dark charcoal header: **Hey Ralli** at left and an uppercase category label at right.
 - A 560px rounded card with one short headline, one concise sentence, and one dark CTA.
 - Approval and reminder cards use soft green; welcome, invite, agreement, story-kit, and trial cards use soft beige; publishing, billing, and connection recovery cards use a calm soft rose-neutral.
-- A compact meta or preview box is optional only when it helps the recipient act. **Approval emails with artwork thumbnails are app-rendered** via `sendEmail({ html })` in `approval-notifications.ts` (`buildApprovalTransactionalEmail`) — Resend template variables HTML-escape markup, so `<img>` tags cannot be injected through `{{{ARTWORK_PREVIEW_HTML}}}`. Dashboard aliases `approval-assigned` etc. remain for reference/tests; live approval sends no longer depend on them for body HTML. Story-kit keeps its template + attachments path.
+- A compact meta or preview box is optional only when it helps the recipient act. **Approval emails with artwork thumbnails are app-rendered** via `sendEmail({ html })` in `approval-notifications.ts` (`buildApprovalTransactionalEmail`). Do **not** inject preview HTML into Resend template variables: (1) variables HTML-escape markup so `<img>` never renders, and (2) each variable value is capped at **2,000 characters** (422: `The template, variables, value field has a 2,000 character limit per value`) — feed+story signed/public URLs routinely exceed that. Dashboard aliases `approval-assigned` etc. remain for reference; live approval sends no longer depend on them for body HTML. Story-kit keeps its template + attachments path.
 - No marketing sections, extra CTAs, purple, or decorative emoji. Use direct, calm operational language.
 
 HTML uses tables and inline styles for email-client compatibility. Resend variables
@@ -51,11 +51,11 @@ subject lines; key casing must match the sending code exactly.
 |---|---|---|
 | `organization-welcome` | `src/lib/email/send-organization-welcome.ts` → new founding signup | Wired |
 | `team-invite` | `src/lib/auth/actions.ts` → team invite and resend | Wired |
-| `approval-assigned` | `src/lib/campaign-builder-v2/approval-notifications.ts` | Wired |
-| `approval-resubmitted` | `src/lib/campaign-builder-v2/approval-notifications.ts` | Wired |
-| `approval-changes-requested` | `src/lib/campaign-builder-v2/approval-notifications.ts` | Wired |
-| `approval-content-approved` | `src/lib/campaign-builder-v2/approval-notifications.ts` | Wired |
-| `approval-scheduled-delivery` | `src/lib/campaign-builder-v2/approval-notifications.ts` | Wired |
+| `approval-assigned` | `approval-notifications.ts` → `sendEmail({ html })` (alias unused for live body) | App HTML |
+| `approval-resubmitted` | `approval-notifications.ts` → `sendEmail({ html })` | App HTML |
+| `approval-changes-requested` | `approval-notifications.ts` → `sendEmail({ html })` | App HTML |
+| `approval-content-approved` | `approval-notifications.ts` → `sendEmail({ html })` | App HTML |
+| `approval-scheduled-delivery` | `approval-notifications.ts` → `sendEmail({ html })` | App HTML |
 | `story-post-kit` | `src/lib/meta-publishing/send-story-post-kit.ts` and approval scheduling; template body plus immediate-send attachments | Wired |
 | `developer-agreement-countersign` | `src/lib/developer-agreements/packet.ts` | Wired |
 | `developer-agreement-executed` | `src/lib/developer-agreements/packet.ts` → template body plus executed-copy attachment | Wired |

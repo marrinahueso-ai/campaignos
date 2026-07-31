@@ -318,6 +318,16 @@ describe("approval routing source checks", () => {
     assert.match(source, /logApprovalNotificationSkipped/);
     assert.match(source, /priorAssigneeEmail/);
   });
+
+  it("flyer send-for-approval surfaces email notify outcome in the message", () => {
+    const source = readFileSync(
+      new URL("../../flyer-composer/send-for-approval.ts", import.meta.url),
+      "utf8",
+    );
+    assert.match(source, /notifyResult/);
+    assert.match(source, /Approver notified at/);
+    assert.match(source, /Approver email skipped/);
+  });
 });
 
 describe("approval notification hooks", () => {

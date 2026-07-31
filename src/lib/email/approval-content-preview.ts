@@ -1,5 +1,13 @@
 import { escapeHtml, sanitizeHrefUrl } from "@/lib/utils/html";
 
+/**
+ * Resend rejects template variable values longer than this (HTTP 422:
+ * "The `template, variables, value` field has a 2,000 character limit per value.").
+ * Approval artwork HTML routinely exceeds this when feed + story URLs are inlined,
+ * so approval notifications must use `sendEmail({ html })` — never template vars.
+ */
+export const RESEND_TEMPLATE_VARIABLE_MAX_CHARS = 2000;
+
 export type ApprovalEmailContentKind = "social" | "flyer";
 
 export interface ApprovalEmailContentPreview {
@@ -29,8 +37,9 @@ export function approvalEmailFormatVariables(isFlyer: boolean): {
 }
 
 /**
- * Variables for approval Resend templates — includes pre-rendered image HTML
- * so {{{ARTWORK_PREVIEW_HTML}}} shows real thumbnails (not just format labels).
+ * Artwork summary / CTA / preview HTML for approval emails.
+ * Preview HTML is for `sendEmail({ html })` only — do not pass it as a Resend
+ * template variable (2,000 char limit + HTML escaping).
  */
 export function buildApprovalEmailArtworkVariables(input: {
   isFlyer: boolean;

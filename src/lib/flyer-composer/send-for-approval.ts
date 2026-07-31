@@ -367,15 +367,18 @@ export async function sendFlyerComposerForApproval(
       ? ("approval_resubmitted" as const)
       : ("approval_assigned" as const);
 
+    let emailNote = "";
     if (!recipientEmail) {
+      const skipReason =
+        "No approver email — assign an approver in Team Access or on the event.";
       await logApprovalNotificationSkipped({
         eventId: input.eventId,
         notificationType,
         recipientEmail: null,
-        errorMessage:
-          "No approver email — assign an approver in Team Access or on the event.",
+        errorMessage: skipReason,
         schedulingItemId,
       });
+      emailNote = ` Approver email skipped: ${skipReason}`;
     } else {
       const emailInput = {
         eventId: input.eventId,
@@ -391,12 +394,28 @@ export async function sendFlyerComposerForApproval(
         storyCaption: null as string | null,
         contentKind: "flyer" as const,
       };
-      if (isResubmitAfterChanges) {
-        await sendApprovalResubmittedEmail(emailInput);
+      const notifyResult = isResubmitAfterChanges
+        ? await sendApprovalResubmittedEmail(emailInput)
+        : await sendApprovalAssignedEmail(emailInput);
+      if (notifyResult.wired) {
+        emailNote = ` Approver notified at ${recipientEmail}.`;
       } else {
-        await sendApprovalAssignedEmail(emailInput);
+        emailNote = ` Approver email skipped: ${notifyResult.message}`;
       }
     }
+
+    return {
+      success: true,
+      message: `${
+        isResubmitAfterChanges
+          ? "Flyer resent for approval."
+          : "Flyer sent for approval."
+      }${emailNote}`,
+      schedulingItemId,
+      workflowStatus,
+      campaignMilestoneId,
+      feedArtworkUrl: hosted.url,
+    };
   }
 
   return {
