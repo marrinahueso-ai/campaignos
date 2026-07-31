@@ -1,15 +1,17 @@
 import "server-only";
 
 import {
+  buildApprovalContentPreviewText,
   buildApprovalEmailArtworkVariables,
+  buildApprovalTransactionalEmail,
   type ApprovalEmailContentPreview,
 } from "@/lib/email/approval-content-preview";
 import {
   isEmailConfigured,
   resolveSocialsFromAddress,
+  sendEmail,
   sendTemplateEmail,
 } from "@/lib/email/send";
-import type { EmailAttachment } from "@/lib/email/send";
 import { buildSocialsManualUploadEmail } from "@/lib/email/socials-manual-upload-email";
 import {
   absoluteCampaignBuilderEditArtworkHref,
@@ -20,6 +22,7 @@ import {
 } from "@/lib/settings-v2/account-notification-prefs";
 import { getAccountNotificationPreferencesForEmail } from "@/lib/settings-v2/account-queries";
 import { createClient } from "@/lib/supabase/server";
+import { escapeHtml } from "@/lib/utils/html";
 
 export interface CampaignApprovalNotificationInput extends ApprovalEmailContentPreview {
   eventId: string;
@@ -133,12 +136,10 @@ async function dispatchApprovalEmail(input: {
   notificationType: NotificationType;
   recipientEmail: string;
   subject: string;
-  templateId: string;
-  variables: Record<string, string | number>;
+  html: string;
+  text: string;
   schedulingItemId?: string | null;
   approvalRequestId?: string | null;
-  attachments?: EmailAttachment[];
-  scheduledAt?: string | null;
   from?: string | null;
 }): Promise<CampaignApprovalNotificationResult> {
   if (isApprovalNeedsAttentionType(input.notificationType)) {
@@ -184,15 +185,14 @@ async function dispatchApprovalEmail(input: {
     };
   }
 
-  const result = await sendTemplateEmail({
+  // App-rendered HTML (not Resend templates): template variables HTML-escape
+  // markup, so <img> thumbnails never show when injected as ARTWORK_PREVIEW_HTML.
+  const result = await sendEmail({
     to: [input.recipientEmail],
     subject: input.subject,
-    templateId: input.templateId,
-    variables: input.variables,
-    attachments: input.scheduledAt ? undefined : input.attachments,
-    scheduledAt: input.scheduledAt ?? undefined,
+    html: input.html,
+    text: input.text,
     from: input.from ?? undefined,
-    idempotencyKey: `${input.notificationType}/${input.schedulingItemId ?? input.approvalRequestId ?? input.eventId}`,
   });
 
   await logApprovalNotification({
@@ -217,10 +217,37 @@ async function dispatchApprovalEmail(input: {
   return {
     success: true,
     wired: true,
-    message: input.scheduledAt
-      ? "Post kit email scheduled."
-      : "Email notification sent.",
+    message: "Email notification sent.",
   };
+}
+
+function contentLabel(milestoneName: string, campaignName: string): string {
+  return `${milestoneName} in ${campaignName}`;
+}
+
+function artworkEmailBits(
+  input: ApprovalEmailContentPreview & {
+    campaignMilestoneId?: string | null;
+    ctaLabel?: string;
+  },
+  isFlyer: boolean,
+) {
+  const artwork = buildApprovalEmailArtworkVariables({
+    isFlyer,
+    feedArtworkUrl: input.feedArtworkUrl,
+    storyArtworkUrl: input.storyArtworkUrl,
+    captionText: input.captionText,
+    storyCaption: input.storyCaption,
+    ctaLabel: input.ctaLabel,
+  });
+  const artworkPreviewText = buildApprovalContentPreviewText({
+    feedArtworkUrl: input.feedArtworkUrl,
+    storyArtworkUrl: input.storyArtworkUrl,
+    captionText: input.captionText,
+    storyCaption: input.storyCaption,
+    contentKind: isFlyer ? "flyer" : "social",
+  });
+  return { artwork, artworkPreviewText };
 }
 
 export async function sendApprovalAssignedEmail(
@@ -232,29 +259,33 @@ export async function sendApprovalAssignedEmail(
   const isFlyer =
     input.contentKind === "flyer" ||
     isFlyerComposerMilestoneId(input.campaignMilestoneId);
-  const artwork = buildApprovalEmailArtworkVariables({
+  const { artwork, artworkPreviewText } = artworkEmailBits(
+    { ...input, ctaLabel: "Review approval" },
     isFlyer,
-    feedArtworkUrl: input.feedArtworkUrl,
-    storyArtworkUrl: input.storyArtworkUrl,
-    captionText: input.captionText,
-    storyCaption: input.storyCaption,
-    ctaLabel: "Review approval",
-  });
+  );
+  const label = contentLabel(input.milestoneName, input.campaignName);
   const href = approvalsPageUrl(input.eventId);
+  const mail = buildApprovalTransactionalEmail({
+    categoryLabel: "APPROVAL",
+    headline: "Approval assigned to you",
+    bodyHtml: `<strong style="color:#14241c;">${escapeHtml(label)}</strong> is waiting for your review.`,
+    bodyText: `${label} is waiting for your review.`,
+    previewHeading: "Artwork to review",
+    artworkSummary: artwork.ARTWORK_SUMMARY,
+    artworkPreviewHtml: artwork.ARTWORK_PREVIEW_HTML,
+    artworkPreviewText,
+    ctaLabel: artwork.CTA_LABEL,
+    actionUrl: href,
+    footer: "You're receiving this because approvals need your attention.",
+  });
 
   return dispatchApprovalEmail({
     eventId: input.eventId,
     notificationType: "approval_assigned",
     recipientEmail: input.recipientEmail,
     subject: `Approval needed: ${input.milestoneName}`,
-    templateId: "approval-assigned",
-    variables: {
-      CONTENT_NAME: `${input.milestoneName} in ${input.campaignName}`,
-      ACTION_URL: href,
-      ARTWORK_SUMMARY: artwork.ARTWORK_SUMMARY,
-      CTA_LABEL: artwork.CTA_LABEL,
-      ARTWORK_PREVIEW_HTML: artwork.ARTWORK_PREVIEW_HTML,
-    },
+    html: mail.html,
+    text: mail.text,
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
   });
@@ -270,29 +301,33 @@ export async function sendApprovalResubmittedEmail(
   const isFlyer =
     input.contentKind === "flyer" ||
     isFlyerComposerMilestoneId(input.campaignMilestoneId);
-  const artwork = buildApprovalEmailArtworkVariables({
+  const { artwork, artworkPreviewText } = artworkEmailBits(
+    { ...input, ctaLabel: "Review approval" },
     isFlyer,
-    feedArtworkUrl: input.feedArtworkUrl,
-    storyArtworkUrl: input.storyArtworkUrl,
-    captionText: input.captionText,
-    storyCaption: input.storyCaption,
-    ctaLabel: "Review approval",
-  });
+  );
+  const label = contentLabel(input.milestoneName, input.campaignName);
   const href = approvalsPageUrl(input.eventId);
+  const mail = buildApprovalTransactionalEmail({
+    categoryLabel: "APPROVAL",
+    headline: "Ready for another look",
+    bodyHtml: `<strong style="color:#14241c;">${escapeHtml(label)}</strong> was updated and sent back for review.`,
+    bodyText: `${label} was updated and sent back for review.`,
+    previewHeading: "Updated artwork",
+    artworkSummary: artwork.ARTWORK_SUMMARY,
+    artworkPreviewHtml: artwork.ARTWORK_PREVIEW_HTML,
+    artworkPreviewText,
+    ctaLabel: artwork.CTA_LABEL,
+    actionUrl: href,
+    footer: "You're receiving this because approvals need your attention.",
+  });
 
   return dispatchApprovalEmail({
     eventId: input.eventId,
     notificationType: "approval_resubmitted",
     recipientEmail: input.recipientEmail,
     subject: `Resubmitted for approval: ${input.milestoneName}`,
-    templateId: "approval-resubmitted",
-    variables: {
-      CONTENT_NAME: `${input.milestoneName} in ${input.campaignName}`,
-      ACTION_URL: href,
-      ARTWORK_SUMMARY: artwork.ARTWORK_SUMMARY,
-      CTA_LABEL: artwork.CTA_LABEL,
-      ARTWORK_PREVIEW_HTML: artwork.ARTWORK_PREVIEW_HTML,
-    },
+    html: mail.html,
+    text: mail.text,
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
   });
@@ -316,13 +351,7 @@ export async function sendChangeRequestedEmail(
   const isFlyer =
     input.contentKind === "flyer" ||
     isFlyerComposerMilestoneId(input.campaignMilestoneId);
-  const artwork = buildApprovalEmailArtworkVariables({
-    isFlyer,
-    feedArtworkUrl: input.feedArtworkUrl,
-    storyArtworkUrl: input.storyArtworkUrl,
-    captionText: input.captionText,
-    storyCaption: input.storyCaption,
-  });
+  const { artwork, artworkPreviewText } = artworkEmailBits(input, isFlyer);
   const base =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
   const reviewHref = `${base.replace(/\/$/, "")}/events/${input.eventId}/campaign-builder#review`;
@@ -342,22 +371,31 @@ export async function sendChangeRequestedEmail(
           input.campaignMilestoneId,
         )
       : null;
-  const changeDateHref = editPreviewHref;
-  const primaryHref = editArtworkHref ?? changeDateHref ?? reviewHref;
+  const primaryHref = editArtworkHref ?? editPreviewHref ?? reviewHref;
+  const label = contentLabel(input.milestoneName, input.campaignName);
+  const mail = buildApprovalTransactionalEmail({
+    categoryLabel: "APPROVAL",
+    headline: "Changes requested",
+    bodyHtml: `A teammate asked for an update to <strong style="color:#14241c;">${escapeHtml(label)}</strong>.`,
+    bodyText: `A teammate asked for an update to ${label}.`,
+    previewHeading: "Current artwork",
+    artworkSummary: artwork.ARTWORK_SUMMARY,
+    artworkPreviewHtml: artwork.ARTWORK_PREVIEW_HTML,
+    artworkPreviewText,
+    ctaLabel: artwork.CTA_LABEL,
+    actionUrl: primaryHref,
+    detailHeading: "What to fix",
+    detailBody: input.comment,
+    footer: "Sent by Hey Ralli",
+  });
+
   return dispatchApprovalEmail({
     eventId: input.eventId,
     notificationType: "change_requested",
     recipientEmail: input.recipientEmail,
     subject: `Changes requested: ${input.milestoneName}`,
-    templateId: "approval-changes-requested",
-    variables: {
-      CONTENT_NAME: `${input.milestoneName} in ${input.campaignName}`,
-      CHANGE_NOTE: input.comment,
-      ACTION_URL: primaryHref,
-      ARTWORK_SUMMARY: artwork.ARTWORK_SUMMARY,
-      CTA_LABEL: artwork.CTA_LABEL,
-      ARTWORK_PREVIEW_HTML: artwork.ARTWORK_PREVIEW_HTML,
-    },
+    html: mail.html,
+    text: mail.text,
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
   });
@@ -380,29 +418,36 @@ export async function sendContentApprovedEmail(
   const isFlyer =
     input.contentKind === "flyer" ||
     isFlyerComposerMilestoneId(input.campaignMilestoneId);
-  const artwork = buildApprovalEmailArtworkVariables({
+  const { artwork, artworkPreviewText } = artworkEmailBits(
+    {
+      ...input,
+      ctaLabel: isFlyer ? "View in Approvals" : "View schedule",
+    },
     isFlyer,
-    feedArtworkUrl: input.feedArtworkUrl,
-    storyArtworkUrl: input.storyArtworkUrl,
-    captionText: input.captionText,
-    storyCaption: input.storyCaption,
-    ctaLabel: isFlyer ? "View in Approvals" : "View schedule",
-  });
+  );
   const href = approvalsPageUrl(input.eventId);
+  const label = contentLabel(input.milestoneName, input.campaignName);
+  const mail = buildApprovalTransactionalEmail({
+    categoryLabel: "APPROVAL",
+    headline: "Content approved",
+    bodyHtml: `<strong style="color:#14241c;">${escapeHtml(label)}</strong> is approved and ready for delivery.`,
+    bodyText: `${label} is approved and ready for delivery.`,
+    previewHeading: "Approved artwork",
+    artworkSummary: artwork.ARTWORK_SUMMARY,
+    artworkPreviewHtml: artwork.ARTWORK_PREVIEW_HTML,
+    artworkPreviewText,
+    ctaLabel: artwork.CTA_LABEL,
+    actionUrl: href,
+    footer: "Sent by Hey Ralli",
+  });
 
   return dispatchApprovalEmail({
     eventId: input.eventId,
     notificationType: "content_approved",
     recipientEmail: input.recipientEmail,
     subject: `Approved: ${input.milestoneName}`,
-    templateId: "approval-content-approved",
-    variables: {
-      CONTENT_NAME: `${input.milestoneName} in ${input.campaignName}`,
-      ACTION_URL: href,
-      ARTWORK_SUMMARY: artwork.ARTWORK_SUMMARY,
-      CTA_LABEL: artwork.CTA_LABEL,
-      ARTWORK_PREVIEW_HTML: artwork.ARTWORK_PREVIEW_HTML,
-    },
+    html: mail.html,
+    text: mail.text,
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
   });
@@ -425,30 +470,33 @@ export async function sendScheduledDeliveryEmail(
   const isFlyer =
     input.contentKind === "flyer" ||
     isFlyerComposerMilestoneId(input.campaignMilestoneId);
-  const artwork = buildApprovalEmailArtworkVariables({
+  const { artwork, artworkPreviewText } = artworkEmailBits(
+    { ...input, ctaLabel: "View in Approvals" },
     isFlyer,
-    feedArtworkUrl: input.feedArtworkUrl,
-    storyArtworkUrl: input.storyArtworkUrl,
-    captionText: input.captionText,
-    storyCaption: input.storyCaption,
-    ctaLabel: "View in Approvals",
-  });
+  );
   const href = approvalsPageUrl(input.eventId);
+  const label = contentLabel(input.milestoneName, input.campaignName);
+  const mail = buildApprovalTransactionalEmail({
+    categoryLabel: "SCHEDULE",
+    headline: "Scheduled for delivery",
+    bodyHtml: `<strong style="color:#14241c;">${escapeHtml(label)}</strong> is scheduled for ${escapeHtml(input.scheduleLabel)}.`,
+    bodyText: `${label} is scheduled for ${input.scheduleLabel}.`,
+    previewHeading: "Scheduled artwork",
+    artworkSummary: artwork.ARTWORK_SUMMARY,
+    artworkPreviewHtml: artwork.ARTWORK_PREVIEW_HTML,
+    artworkPreviewText,
+    ctaLabel: artwork.CTA_LABEL,
+    actionUrl: href,
+    footer: "Sent by Hey Ralli",
+  });
 
   return dispatchApprovalEmail({
     eventId: input.eventId,
     notificationType: "scheduled_delivery",
     recipientEmail: input.recipientEmail,
     subject: `Scheduled: ${input.milestoneName}`,
-    templateId: "approval-scheduled-delivery",
-    variables: {
-      CONTENT_NAME: `${input.milestoneName} in ${input.campaignName}`,
-      SCHEDULE_TIME: input.scheduleLabel,
-      ACTION_URL: href,
-      ARTWORK_SUMMARY: artwork.ARTWORK_SUMMARY,
-      CTA_LABEL: artwork.CTA_LABEL,
-      ARTWORK_PREVIEW_HTML: artwork.ARTWORK_PREVIEW_HTML,
-    },
+    html: mail.html,
+    text: mail.text,
     schedulingItemId: input.schedulingItemId,
   });
 }
@@ -477,20 +525,61 @@ export async function sendCampaignManualUploadEmail(
 
   const scheduledAt = input.scheduledAt?.trim() || null;
 
-  return dispatchApprovalEmail({
-    eventId: input.eventId,
-    notificationType: "scheduled_delivery",
-    recipientEmail: input.recipientEmail,
+  if (!isEmailConfigured()) {
+    await logApprovalNotification({
+      eventId: input.eventId,
+      notificationType: "scheduled_delivery",
+      recipientEmail: input.recipientEmail,
+      status: "skipped",
+      errorMessage: "RESEND_API_KEY is not configured.",
+      schedulingItemId: input.schedulingItemId,
+    });
+    return {
+      success: false,
+      wired: false,
+      message:
+        "Email isn’t set up yet — your team was notified in the app only.",
+    };
+  }
+
+  // Story post kit still uses the Resend template + optional image attachments.
+  const result = await sendTemplateEmail({
+    to: [input.recipientEmail],
     subject: content.subject,
     templateId: "story-post-kit",
     variables: {
       CONTENT_NAME: `${input.campaignName} — ${input.milestoneName}`,
       ACTION_URL: approvalsPageUrl(input.eventId),
     },
-    schedulingItemId: input.schedulingItemId,
-    // Attachments only for immediate sends — Resend blocks them when scheduled.
     attachments: scheduledAt ? undefined : content.attachments,
-    scheduledAt,
+    scheduledAt: scheduledAt ?? undefined,
     from: resolveSocialsFromAddress(),
+    idempotencyKey: `scheduled_delivery/${input.schedulingItemId ?? input.eventId}`,
   });
+
+  await logApprovalNotification({
+    eventId: input.eventId,
+    notificationType: "scheduled_delivery",
+    recipientEmail: input.recipientEmail,
+    status: result.success ? "sent" : "failed",
+    providerMessageId: result.id ?? null,
+    errorMessage: result.error ?? null,
+    schedulingItemId: input.schedulingItemId,
+  });
+
+  if (!result.success) {
+    return {
+      success: false,
+      wired: false,
+      message: result.error ?? "Failed to send email notification.",
+    };
+  }
+
+  return {
+    success: true,
+    wired: true,
+    message: scheduledAt
+      ? "Post kit email scheduled."
+      : "Email notification sent.",
+  };
 }

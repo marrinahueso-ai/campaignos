@@ -38,7 +38,7 @@ Every transactional template uses the same restrained shell:
 - A dark charcoal header: **Hey Ralli** at left and an uppercase category label at right.
 - A 560px rounded card with one short headline, one concise sentence, and one dark CTA.
 - Approval and reminder cards use soft green; welcome, invite, agreement, story-kit, and trial cards use soft beige; publishing, billing, and connection recovery cards use a calm soft rose-neutral.
-- A compact meta or preview box is optional only when it helps the recipient act. Artwork-format labels use Resend variable `{{{ARTWORK_SUMMARY}}}` (fallback `1:1 feed · 9:16 story`; Flyer sends pass `Print flyer`). Live thumbnails use `{{{ARTWORK_PREVIEW_HTML}}}` (pre-rendered feed/story or flyer `<img>` markup from `buildApprovalEmailArtworkVariables`; empty fallback when no URLs). CTA button label uses `{{{CTA_LABEL}}}` where the action differs (e.g. change-request → `Open Flyer composer` vs `Edit artwork`). Story-kit keeps fixed Stories language.
+- A compact meta or preview box is optional only when it helps the recipient act. **Approval emails with artwork thumbnails are app-rendered** via `sendEmail({ html })` in `approval-notifications.ts` (`buildApprovalTransactionalEmail`) — Resend template variables HTML-escape markup, so `<img>` tags cannot be injected through `{{{ARTWORK_PREVIEW_HTML}}}`. Dashboard aliases `approval-assigned` etc. remain for reference/tests; live approval sends no longer depend on them for body HTML. Story-kit keeps its template + attachments path.
 - No marketing sections, extra CTAs, purple, or decorative emoji. Use direct, calm operational language.
 
 HTML uses tables and inline styles for email-client compatibility. Resend variables

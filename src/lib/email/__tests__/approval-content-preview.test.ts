@@ -4,6 +4,7 @@ import {
   buildApprovalContentPreviewHtml,
   buildApprovalContentPreviewText,
   buildApprovalEmailArtworkVariables,
+  buildApprovalTransactionalEmail,
 } from "@/lib/email/approval-content-preview";
 
 describe("approval content preview", () => {
@@ -48,6 +49,30 @@ describe("approval content preview", () => {
 
     assert.match(text, /Feed artwork: https:\/\/cdn\.example\/feed\.png/);
     assert.match(text, /Caption:\nHello families/);
+  });
+
+  it("builds full transactional HTML with real img tags (not escaped)", () => {
+    const preview = buildApprovalEmailArtworkVariables({
+      isFlyer: false,
+      feedArtworkUrl: "https://cdn.example/feed.png",
+      storyArtworkUrl: "https://cdn.example/story.png",
+    });
+    const mail = buildApprovalTransactionalEmail({
+      categoryLabel: "APPROVAL",
+      headline: "Approval assigned to you",
+      bodyHtml: "Content is waiting.",
+      bodyText: "Content is waiting.",
+      previewHeading: "Artwork to review",
+      artworkSummary: preview.ARTWORK_SUMMARY,
+      artworkPreviewHtml: preview.ARTWORK_PREVIEW_HTML,
+      artworkPreviewText: "",
+      ctaLabel: "Review approval",
+      actionUrl: "https://heyralli.com/approvals",
+      footer: "You're receiving this because approvals need your attention.",
+    });
+    assert.match(mail.html, /<img[\s\S]*src="https:\/\/cdn\.example\/feed\.png"/);
+    assert.match(mail.html, /<img[\s\S]*src="https:\/\/cdn\.example\/story\.png"/);
+    assert.doesNotMatch(mail.html, /&lt;img/);
   });
 
   it("builds Resend vars with preview HTML for social and flyer", () => {
