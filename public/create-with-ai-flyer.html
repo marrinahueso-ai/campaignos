@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hey Ralli · Flyer</title>
-  <meta name="description" content="Update last year's flyer or start a new one, add your details, and generate print-ready artwork." />
+  <meta name="description" content="Update last year's flyer or start a new one, add your details, and generate artwork." />
   <!-- Bare static URL has no dashboard Sidebar/header; product shell is /create-with-ai/flyer (iframe uses embed=1). -->
   <script>
     (function () {
@@ -1470,7 +1470,7 @@
       <div>
         <a href="/create-with-ai" class="back-link">← Create with AI</a>
         <h1>Flyer</h1>
-        <p class="lede" id="pageLede">Update last year’s flyer or start a new one, then generate.</p>
+        <p class="lede" id="pageLede">Update last year’s flyer or start a new one.</p>
       </div>
     </header>
 
@@ -1482,21 +1482,18 @@
             <span class="step-num" aria-hidden="true">1</span>
             <span>Start</span>
           </span>
-          <span class="hint">How to begin</span>
         </button>
         <button type="button" class="step-btn" data-view="inputs">
           <span class="step-row">
             <span class="step-num" aria-hidden="true">2</span>
             <span>Inspiration</span>
           </span>
-          <span class="hint">Photo, template, brand</span>
         </button>
         <button type="button" class="step-btn" data-view="result">
           <span class="step-row">
             <span class="step-num" aria-hidden="true">3</span>
             <span>Preview</span>
           </span>
-          <span class="hint">Generate &amp; review</span>
         </button>
       </nav>
 
@@ -1504,18 +1501,17 @@
     <!-- START -->
     <section class="panel" data-panel="start">
       <h2>How do you want to start?</h2>
-      <p class="sub">Add a photo and your direction — AI designs a polished print flyer.</p>
 
       <div class="start-paths">
         <div class="start-path start-path-primary" data-path="update">
           <span class="path-badge">Recommended</span>
           <h3>Update last year’s flyer</h3>
-          <p class="path-hint">Upload last year’s file as a guide — refresh dates, copy, and QR.</p>
+          <p class="path-hint">Upload last year’s file, then refresh the details.</p>
           <div class="start-upload-wrap">
             <div class="start-upload" id="startUpload" role="button" tabindex="0">
               <div id="startUploadEmpty">
                 <strong>Upload PDF or image</strong>
-                <p class="hint">Last year’s print file or a photo of the flyer</p>
+                <p class="hint">Last year’s print file or a photo</p>
               </div>
             </div>
             <div class="asset-actions" id="startUploadActions" hidden>
@@ -1528,7 +1524,7 @@
 
         <div class="start-path start-path-primary" data-path="new">
           <h3>New flyer</h3>
-          <p class="path-hint">Pick a print size — Letter or half page.</p>
+          <p class="path-hint">Letter or half page.</p>
           <div class="size-row">
             <button type="button" class="size-btn" data-print-size="letter" aria-pressed="false">
               Letter
@@ -1543,10 +1539,10 @@
       </div>
       <!-- Proven layouts de-emphasized — optional later; not part of primary Start flow -->
       <details class="proven-optional" id="provenOptional">
-        <summary>Or start from a layout (optional)</summary>
+        <summary>Or start from a layout</summary>
         <div class="start-path" data-path="proven">
-          <h3>Use a proven layout</h3>
-          <p class="path-hint">Semester calendar, investor tiers, or event poster — in your brand colors.</p>
+          <h3>Use a layout</h3>
+          <p class="path-hint">Semester calendar, donor tiers, or event poster.</p>
           <div class="proven-row" id="provenGrid"></div>
         </div>
       </details>
@@ -1555,19 +1551,19 @@
         <summary>
           <span class="tied-chip" id="tiedChipSummary">
             <span class="dot" aria-hidden="true"></span>
-            <span id="tiedChipLabel">Tied to… optional</span>
+            <span id="tiedChipLabel">Campaign (optional)</span>
           </span>
-          <span class="tied-summary-hint">Campaign for Approvals &amp; Files</span>
+          <span class="tied-summary-hint">For Files &amp; Approvals</span>
         </summary>
         <div class="tied-quiet-body">
           <div class="tied-modes" role="group" aria-label="How to bind">
             <button type="button" class="tied-mode-btn active" data-tied-mode="pick" id="tiedModePick">
-              <strong>Pick an event</strong>
-              <span>Existing calendar campaign</span>
+              <strong>Pick a campaign</strong>
+              <span>From your calendar</span>
             </button>
             <button type="button" class="tied-mode-btn" data-tied-mode="create" id="tiedModeCreate">
-              <strong>Create your own</strong>
-              <span>Standalone campaign in Events</span>
+              <strong>Create new</strong>
+              <span>Standalone campaign</span>
             </button>
           </div>
           <div id="tiedPickPane">
@@ -1608,7 +1604,7 @@
         <p class="sub" id="inputsSub" hidden></p>
       </div>
       <div class="custom-mode-note">
-        Last year’s file is a guide — refresh dates and copy. A photo becomes the hero scene.
+        Last year’s file is a guide — refresh dates and copy.
       </div>
 
       <p class="insp-tpl-line">Layout: <strong id="selectedTplName">Choose on Start</strong></p>
@@ -1624,7 +1620,7 @@
                   <div class="insp" id="inspDrop" role="button" tabindex="0" aria-label="Add inspiration photo">
                     <div id="inspEmpty">
                       <strong>Add photo</strong>
-                      <p class="hint">Drop an image or pick a sample below (optional)</p>
+                      <p class="hint">Optional — drop an image or pick a sample</p>
                       <p class="hint samples-label" id="inspSamplesLabel" hidden>Samples</p>
                       <div class="insp-thumbs" id="inspThumbs"></div>
                     </div>
@@ -1662,11 +1658,10 @@
 
           <div class="section-card asset-card" id="brandKitCard">
             <h3>Brand kit</h3>
-            <p class="section-desc">From Settings → Branding</p>
             <div class="toggle-row" id="brandToggleRow">
               <div>
                 <strong>Use brand kit</strong>
-                <p id="brandKitSummary">Your org colors and logo on previews</p>
+                <p id="brandKitSummary">Org colors and logo</p>
                 <div class="brand-chip" id="brandChip" hidden>
                   <span class="brand-logo-mark" id="brandLogoMark" aria-hidden="true"></span>
                   <span class="swatch" id="swatchPrimary" title="Primary color"></span>
@@ -1714,7 +1709,7 @@
 
         <div class="section-card" id="aiDirectionCard">
           <h3>Direction for AI</h3>
-          <p class="section-desc">Like social — tell AI the look and feel. Event details above stay facts on the flyer.</p>
+          <p class="section-desc">Describe the look and feel. Details above stay as facts.</p>
           <div class="field">
             <div class="field-label-row">
               <label for="aiDirection">Artwork direction</label>
@@ -1754,7 +1749,7 @@
             <div class="field" id="qrField">
               <label for="qrUrl">QR link</label>
               <input type="url" id="qrUrl" placeholder="https://…" />
-              <p class="hint-inline">Calendar or donate link</p>
+              <p class="hint-inline">Signup, calendar, or donate link</p>
             </div>
             <div class="qr-preview-panel empty" id="qrPreviewPanel">
               <img id="qrPreviewImg" alt="QR preview" width="72" height="72" hidden />
@@ -1770,9 +1765,8 @@
 
         <div class="section-card">
           <h3>Footer</h3>
-          <p class="section-desc">Contact line, website, or social handles at the bottom.</p>
           <div class="field">
-            <label for="footerLine">Footer / contact / social</label>
+            <label for="footerLine">Contact or website</label>
             <input type="text" id="footerLine" placeholder="e.g. yourorg.org · @YourOrg" />
           </div>
         </div>
@@ -1783,7 +1777,7 @@
             <div class="field field-highlight" id="donationTiersField">
               <label for="donationTiers">Donation tiers</label>
               <textarea id="donationTiers" class="tiers" placeholder="$25 — Supporter&#10;$50 — Friend of the PTA&#10;$100 — Champion + class reward"></textarea>
-              <p class="hint-inline">One tier per line — amount, dash, reward label.</p>
+              <p class="hint-inline">One tier per line</p>
             </div>
             <div class="field field-highlight" id="lastYearNotesField">
               <label for="lastYearNotes">Last year’s flyer notes</label>
@@ -1837,7 +1831,7 @@
       <div class="preview-header no-print">
         <div>
           <h2>Preview</h2>
-          <p class="sub" id="previewSub">Generate, keep versions, and always see where they live.</p>
+          <p class="sub" id="previewSub">Generate and review versions.</p>
         </div>
         <div class="preview-header-actions">
           <button type="button" class="btn btn-gold" id="generateBtn">Generate flyer</button>
@@ -1865,7 +1859,7 @@
             <div class="preview-idle" id="previewIdle">
               <span class="preview-ready-badge">Ready</span>
               <div class="preview-idle-flyer" id="previewIdleFlyer" data-ratio="3/4"></div>
-              <p class="preview-idle-hint" id="previewIdleHint">Tap <strong>Generate flyer</strong> when you’re set.</p>
+              <p class="preview-idle-hint" id="previewIdleHint">Tap <strong>Generate flyer</strong> to begin.</p>
             </div>
             <div class="gen-state" id="genState" hidden>
               <span class="gen-title">Designing your flyer…</span>
@@ -1892,18 +1886,18 @@
         </div>
         <aside class="preview-sidebar no-print" aria-label="Preview campaign and approvals">
           <div class="sidebar-box">
-            <p class="label">Tied to</p>
+            <p class="label">Campaign</p>
             <div class="sidebar-campaign-row">
               <span class="preview-chip is-draft" id="previewCampaignChip">
                 <span class="dot" aria-hidden="true"></span>
-                <span id="previewCampaignChipLabel">Not tied yet</span>
+                <span id="previewCampaignChipLabel">None yet</span>
               </span>
               <button type="button" class="btn btn-ghost" id="previewChangeCampaign">Change</button>
             </div>
           </div>
           <div class="sidebar-box approval-panel" id="approvalPanel" hidden>
             <p class="label">Approvals</p>
-            <p id="approvalAsideHint">Send the selected version for a chair yes.</p>
+            <p id="approvalAsideHint">Send this version for approval.</p>
             <p class="approval-status" id="approvalStatus" hidden></p>
             <button type="button" class="btn btn-primary" id="btnSendForApproval" disabled>
               Send for approval
@@ -1913,23 +1907,22 @@
       </div>
     </section>
 
-    <!-- EDIT ARTWORK — revise from selected Preview version (Social-style regenerate) -->
+    <!-- EDIT ARTWORK — revise from selected Preview version -->
     <section class="panel" data-panel="edit" hidden>
       <div class="step-head">
         <h2>Edit artwork</h2>
-        <p class="sub">Regenerate from the version you selected — describe changes below.</p>
+        <p class="sub">Describe what should change on the selected version.</p>
       </div>
       <div class="edit-hint-banner">
         <div>
-          <strong>Starts from your selected version</strong> — not a blank Inspiration restart.
-          Facts (org, dates, QR) stay as-is unless you change them under Edit details.
+          Starts from your selected version. Facts stay as-is unless you change them under Edit details.
         </div>
       </div>
       <div class="edit-artwork-grid">
         <div class="edit-base-card">
-          <p class="edit-base-eyebrow">Base version</p>
+          <p class="edit-base-eyebrow">Selected version</p>
           <div class="edit-base-frame" id="editBaseFrame">
-            <div class="edit-base-empty" id="editBaseEmpty">Generate a flyer in Preview first, then come back to edit.</div>
+            <div class="edit-base-empty" id="editBaseEmpty">Generate a flyer in Preview first.</div>
             <img id="editBaseImg" alt="Selected flyer version to revise" hidden />
             <div class="edit-gen-overlay" id="editGenOverlay" hidden>
               <span id="editGenLabel">Generating…</span>
@@ -2299,9 +2292,9 @@
     function approvalStatusLabel(status) {
       switch (status) {
         case "in_queue":
-          return "In queue";
+          return "Waiting for approval";
         case "assigned_to_me":
-          return "Awaiting approval";
+          return "Waiting for approval";
         case "changes_requested":
           return "Changes requested";
         case "scheduled":
@@ -2309,7 +2302,7 @@
         case "published":
           return "Approved";
         case "failed":
-          return "Failed";
+          return "Couldn’t send";
         default:
           return status ? String(status).replace(/_/g, " ") : "";
       }
@@ -3516,10 +3509,10 @@
         renderVersionsStrip();
       }
       const ledes = {
-        start: "Update last year’s flyer or start a new one, then generate.",
-        inputs: "Photo, template file, brand kit, and details.",
-        result: "Generate, keep versions, and always see where they live.",
-        edit: "Regenerate from the selected version — describe what should change.",
+        start: "Update last year’s flyer or start a new one.",
+        inputs: "Add photo, brand, and details.",
+        result: "Generate and review versions.",
+        edit: "Describe what should change.",
       };
       document.getElementById("pageLede").textContent = ledes[view] || ledes.start;
       if (view === "start") renderTiedPanel();
@@ -3593,11 +3586,11 @@
           const versions = normalizeFlyerVersions(state.versions);
           const index = versions.findIndex((v) => v.id === version.id);
           const n = index >= 0 ? versions.length - index : versions.length;
-          meta.innerHTML = `Revising <strong>version ${n}</strong> — selected in Preview. Regenerate artwork creates a new version.`;
+          meta.innerHTML = `Version ${n} — regenerating creates a new version.`;
         } else if (baseUrl) {
-          meta.innerHTML = `Revising the <strong>current Preview</strong> flyer. Regenerate artwork creates a new version.`;
+          meta.innerHTML = `Current Preview — regenerating creates a new version.`;
         } else {
-          meta.textContent = "Generate a flyer in Preview first, then open Edit artwork.";
+          meta.textContent = "Generate a flyer in Preview first.";
         }
       }
 
@@ -4087,18 +4080,17 @@
           chipLabel.textContent = event.title;
         } else {
           chip.classList.add("is-draft");
-          chipLabel.textContent = "Not tied yet";
+          chipLabel.textContent = "None yet";
         }
       }
 
       if (previewSub) {
         if (hasArt && event) {
-          previewSub.textContent = "Versions ready — tied to your campaign.";
+          previewSub.textContent = "Versions ready.";
         } else if (hasArt) {
-          previewSub.textContent = "Looks good — pick a campaign so teammates find it in Files.";
+          previewSub.textContent = "Pick a campaign to save to Files.";
         } else {
-          previewSub.textContent =
-            "Generate, keep versions, and always see where they live.";
+          previewSub.textContent = "Generate and review versions.";
         }
       }
 
@@ -4108,16 +4100,16 @@
           if (event) {
             banner.classList.remove("is-draft");
             bannerCopy.innerHTML =
-              `Saved to <strong>${escapeHtml(event.title)}</strong> → <em>Files</em>`;
+              `Saved to <strong>${escapeHtml(event.title)}</strong> · Files`;
             bannerAction.hidden = false;
             bannerAction.textContent = "Open Files";
             bannerAction.href = eventFilesHref(event.id);
             bannerAction.className = "saved-link";
           } else {
             banner.classList.add("is-draft");
-            bannerCopy.innerHTML = `<strong>Saved on this device only.</strong>`;
+            bannerCopy.innerHTML = `Saved on this device only.`;
             bannerAction.hidden = false;
-            bannerAction.textContent = "Choose campaign…";
+            bannerAction.textContent = "Choose campaign";
             bannerAction.href = "#";
             bannerAction.className = "saved-link";
           }
@@ -4225,13 +4217,11 @@
       const event = selectedApprovalEvent();
       if (!event) {
         chip.classList.remove("is-bound");
-        label.textContent = "Tied to… optional";
+        label.textContent = "Campaign (optional)";
         return;
       }
       chip.classList.add("is-bound");
-      label.textContent = event.date
-        ? `Tied to ${event.title}`
-        : `Tied to ${event.title}`;
+      label.textContent = event.title;
     }
 
     function renderTiedPanel() {
@@ -4286,7 +4276,7 @@
 
       if (state.approvalSending) {
         syncApprovalSendButtons(true, "Sending…");
-        setApprovalStatusMessage("Sending selected version for approval…", "pending");
+        setApprovalStatusMessage("Sending for approval…", "pending");
       } else if (changes) {
         syncApprovalSendButtons(!hasCampaign || state.generating, "Resend for approval");
         setApprovalStatusMessage(
@@ -4296,13 +4286,13 @@
       } else if (pending) {
         syncApprovalSendButtons(!hasCampaign || state.generating, "Update approval");
         setApprovalStatusMessage(
-          `${approvalStatusLabel(state.approvalWorkflowStatus)} — selected version can update the queue. ${approvalsHrefHtml("Open Approvals")}`,
+          `Waiting for approval. ${approvalsHrefHtml("Open Approvals")}`,
           "pending",
         );
       } else if (approved) {
         syncApprovalSendButtons(!hasCampaign || state.generating, "Send again");
         setApprovalStatusMessage(
-          `Approved — print-ready. ${approvalsHrefHtml("Open Approvals")}`,
+          `Approved. ${approvalsHrefHtml("Open Approvals")}`,
           "approved",
         );
       } else if (!state.approvalEventsLoaded) {
@@ -4311,14 +4301,14 @@
       } else if (!(state.approvalEvents || []).length) {
         syncApprovalSendButtons(true, "Send for approval");
         setApprovalStatusMessage(
-          "Add a campaign (Tied to… on Start), then send.",
+          "Add a campaign on Start, then send.",
           "error",
         );
       } else {
         syncApprovalSendButtons(!hasCampaign || state.generating, "Send for approval");
         if (!hasCampaign) {
           setApprovalStatusMessage(
-            "Optional until send — expand Tied to… on Start to pick a campaign.",
+            "Choose a campaign before sending.",
             "",
           );
         } else {
@@ -4401,7 +4391,7 @@
       }
       if (!eventId) {
         setApprovalStatusMessage(
-          "Choose a campaign first (Tied to… on Start).",
+          "Choose a campaign first.",
           "error",
         );
         openTiedQuietOnStart();

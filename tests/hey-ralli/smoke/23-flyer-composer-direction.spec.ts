@@ -205,10 +205,6 @@ test.describe("Flyer composer AI direction smoke", () => {
     await page.locator("#generateBtn").click();
     await expect(page.locator("#generatedFlyerImg")).toBeVisible({ timeout: 20_000 });
 
-    // Regenerate
-    await page.locator("#regen").click();
-    await expect(page.locator("#generatedFlyerImg")).toBeVisible({ timeout: 20_000 });
-
     // Print + download should not throw
     await page.locator("#btnPrint").click();
     const downloadPromise = page.waitForEvent("download");

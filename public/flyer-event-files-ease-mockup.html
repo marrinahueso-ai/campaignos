@@ -527,7 +527,7 @@
 
     <nav class="story" role="tablist" aria-label="Mock story steps">
       <button type="button" class="active" data-screen="inspire" role="tab" aria-selected="true">
-        <span class="n">1</span>Inspiration · Tied to
+        <span class="n">1</span>Inspiration · Campaign
       </button>
       <button type="button" data-screen="preview" role="tab" aria-selected="false">
         <span class="n">2</span>Preview · Saved to Files
@@ -546,7 +546,7 @@
         <div>
           <a class="back-link" href="/create-with-ai/flyer?view=start">← Flyer (live)</a>
           <h1>Flyer</h1>
-          <p class="lede">Pick a campaign so versions land where your team already looks — Event Files. Or create your own for a standalone ask.</p>
+          <p class="lede">Pick or create a campaign so versions save to Files.</p>
         </div>
         <span class="chip draft" id="inspireChip"><span class="dot"></span> Draft · not tied yet</span>
       </div>
@@ -564,7 +564,7 @@
           <p class="sub">Tie this flyer to a campaign first — then add direction and generate.</p>
 
           <div class="section-card">
-            <h3>Tied to</h3>
+            <h3>Campaign</h3>
             <p class="section-desc">Existing event, or create your own (standalone campaign).</p>
 
             <div class="tied-modes" role="group" aria-label="How to bind">
@@ -647,7 +647,7 @@
         <div>
           <a class="back-link" href="#" data-goto="inspire">← Inspiration</a>
           <h1>Preview</h1>
-          <p class="lede">Generate, keep versions, and always see where they live — no architecture homework.</p>
+          <p class="lede">Generate and review versions.</p>
         </div>
         <span class="chip" id="previewChip"><span class="dot"></span> School Supply Sorting</span>
       </div>
@@ -655,16 +655,16 @@
       <div class="layout">
         <nav class="steps-rail" aria-label="Flyer steps">
           <p class="steps-label">Steps</p>
-          <button type="button" class="step-btn">Start<span class="hint">How to begin</span></button>
-          <button type="button" class="step-btn" data-goto="inspire">Inspiration<span class="hint">Campaign + details</span></button>
-          <button type="button" class="step-btn active">Preview<span class="hint">Generate &amp; review</span></button>
+          <button type="button" class="step-btn">Start</button>
+          <button type="button" class="step-btn" data-goto="inspire">Inspiration</button>
+          <button type="button" class="step-btn active">Preview</button>
         </nav>
 
         <div class="panel">
           <div class="preview-header">
             <div>
               <h2>Preview</h2>
-              <p class="sub">Three versions ready — tied to your campaign.</p>
+              <p class="sub">Versions ready.</p>
             </div>
             <div class="preview-done-actions">
               <button type="button" class="btn btn-tool" aria-label="Print" title="Print">
@@ -720,7 +720,7 @@
 
             <aside class="preview-sidebar">
               <div class="sidebar-box">
-                <p class="label">Tied to</p>
+                <p class="label">Campaign</p>
                 <div class="sidebar-campaign-row">
                   <span class="chip" id="sidebarChip"><span class="dot"></span> <span id="sidebarChipName">School Supply Sorting</span></span>
                   <button type="button" class="btn btn-ghost" data-goto="inspire">Change</button>
@@ -728,7 +728,7 @@
               </div>
               <div class="sidebar-box approval-panel">
                 <p class="label">Approvals</p>
-                <p>Send the selected version for a chair yes.</p>
+                <p>Send this version for approval.</p>
                 <button type="button" class="btn btn-primary" id="btnApprovalBound">Send for approval</button>
               </div>
             </aside>
@@ -826,7 +826,7 @@
         <div>
           <a class="back-link" href="#" data-goto="inspire">← Inspiration</a>
           <h1>Preview</h1>
-          <p class="lede">Draft-only path — versions stay on this device until a campaign is chosen.</p>
+          <p class="lede">Saved on this device until you choose a campaign.</p>
         </div>
         <span class="chip draft"><span class="dot"></span> Draft · this device</span>
       </div>
@@ -855,7 +855,7 @@
               </div>
             </div>
             <div class="unbound-note" style="margin-top:14px">
-              <strong>Saved on this device only.</strong> Pick or create a campaign to put versions in Files — so your team can find them without knowing the architecture.
+              <strong>Saved on this device only.</strong> Choose a campaign to save versions to Files.
             </div>
           </div>
           <aside class="preview-sidebar">
@@ -1106,7 +1106,7 @@
         state.customName = $("#campaignName").value.trim();
       }
       setScreen("preview");
-      showToast(`Tied to ${c.name}`);
+      showToast(`Campaign: ${c.name}`);
     });
 
     $$(".ver").forEach((v) => {
