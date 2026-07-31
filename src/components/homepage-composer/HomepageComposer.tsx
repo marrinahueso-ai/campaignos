@@ -1828,6 +1828,37 @@ export function HomepageComposer({
 
           {step === "cards" && (
             <section className="space-y-2.5">
+              <PanelHead
+                title="Homepage cards"
+                body={
+                  state.cards.length === 0
+                    ? `Empty draft for ${workingMonthShort} — add cards or copy from a prior month.`
+                    : `Edit and reorder ${workingMonthShort}. On/off dates control when each card appears.`
+                }
+                actions={
+                  <>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setStep("footer")}
+                    >
+                      ← Footer
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={addCustomCard}
+                    >
+                      <Plus className="h-4 w-4" strokeWidth={1.75} />
+                      Add other card
+                    </Button>
+                    <Button type="button" onClick={() => setStep("preview")}>
+                      Preview →
+                    </Button>
+                  </>
+                }
+              />
+
               <div
                 className={cn(
                   "flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[12px] bg-cos-bg-alt/70 px-2.5 py-1.5",
@@ -1947,36 +1978,6 @@ export function HomepageComposer({
                 </div>
               </div>
 
-              <PanelHead
-                title="Homepage cards"
-                body={
-                  state.cards.length === 0
-                    ? `Empty draft for ${workingMonthShort} — add cards or copy from a prior month.`
-                    : `Edit and reorder ${workingMonthShort}. On/off dates control when each card appears.`
-                }
-                actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setStep("footer")}
-                    >
-                      ← Footer
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={addCustomCard}
-                    >
-                      <Plus className="h-4 w-4" strokeWidth={1.75} />
-                      Add other card
-                    </Button>
-                    <Button type="button" onClick={() => setStep("preview")}>
-                      Preview →
-                    </Button>
-                  </>
-                }
-              />
               <div className="grid gap-3 xl:grid-cols-[260px_minmax(0,1fr)]">
                 <div className="rounded-[18px] border border-cos-border bg-cos-card p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                   <h3 className="font-display text-lg text-cos-text">

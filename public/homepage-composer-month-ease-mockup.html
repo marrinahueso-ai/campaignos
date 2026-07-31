@@ -169,49 +169,49 @@
       display: block; margin-top: 3px; font-size: 11px; font-weight: 500; color: var(--muted);
     }
 
-    /* Month workspace — the one new job */
+    /* Month workspace — quiet strip above the two card columns */
     .month-bar {
       display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-      gap: 12px; margin-bottom: 12px; padding: 12px 14px;
-      border-radius: 18px; border: 1px solid var(--line);
-      background: var(--white); box-shadow: var(--shadow);
-      transition: border-color 0.2s, box-shadow 0.2s;
+      gap: 8px 12px; margin: 0 0 12px; padding: 6px 10px;
+      border-radius: 12px; border: none;
+      background: rgba(235, 228, 217, 0.7);
+      transition: box-shadow 0.2s;
     }
     .month-bar.highlight {
-      border-color: rgba(42, 122, 134, 0.35);
       animation: pulse-soft 1.2s var(--ease) 2;
+      box-shadow: 0 0 0 2px rgba(42, 122, 134, 0.22);
     }
-    .month-left { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; min-width: 0; }
+    .month-left { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; min-width: 0; }
     .month-label {
       font-size: 10px; font-weight: 750; text-transform: uppercase;
       letter-spacing: 0.08em; color: var(--muted);
     }
     .month-picker {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 4px; border-radius: 999px;
-      background: var(--cream); border: 1px solid var(--line);
+      display: inline-flex; align-items: center; gap: 2px;
+      padding: 2px; border-radius: 999px;
+      background: var(--white); border: 1px solid var(--line);
     }
     .month-nav {
-      width: 34px; height: 34px; border-radius: 999px;
+      width: 28px; height: 28px; border-radius: 999px;
       display: grid; place-items: center;
       color: var(--ink-soft); transition: background 0.12s, color 0.12s;
     }
-    .month-nav:hover:not(:disabled) { background: var(--white); color: var(--ink); }
+    .month-nav:hover:not(:disabled) { background: var(--cream); color: var(--ink); }
     .month-nav:disabled { opacity: 0.35; cursor: not-allowed; }
     .month-nav svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
     .month-select {
       appearance: none; -webkit-appearance: none;
       border: none; background: transparent;
-      font-family: var(--serif); font-size: 1.15rem; font-weight: 600;
-      letter-spacing: -0.02em; padding: 4px 28px 4px 10px;
+      font-size: 0.9rem; font-weight: 650;
+      letter-spacing: -0.01em; padding: 2px 24px 2px 6px;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%237a7166' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 8px center;
-      cursor: pointer; color: var(--ink); max-width: 11rem;
+      background-repeat: no-repeat; background-position: right 6px center;
+      cursor: pointer; color: var(--ink); max-width: 10.5rem;
     }
     .month-meta {
-      font-size: 12.5px; color: var(--ink-soft); line-height: 1.35;
+      font-size: 11px; color: var(--muted); line-height: 1.35;
     }
-    .month-meta strong { color: var(--ink); font-weight: 650; }
+    .month-meta strong { color: var(--ink-soft); font-weight: 650; }
     .month-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -237,7 +237,7 @@
     }
     .panel-head {
       display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
-      gap: 10px; margin-bottom: 14px;
+      gap: 10px; margin-bottom: 12px;
     }
     .panel h2 {
       margin: 0; font-family: var(--serif); font-size: 1.5rem; font-weight: 600;
@@ -245,12 +245,6 @@
     }
     .panel .sub { margin: 4px 0 0; color: var(--ink-soft); font-size: 0.92rem; line-height: 1.4; }
     .panel-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-
-    .note {
-      margin-bottom: 14px; padding: 11px 13px; border-radius: 14px;
-      background: rgba(196, 146, 46, 0.1); border: 1px solid rgba(196, 146, 46, 0.22);
-      font-size: 13px; line-height: 1.45; color: #6a4f14;
-    }
 
     .cols {
       display: grid; grid-template-columns: 1fr; gap: 14px;
@@ -414,11 +408,23 @@
       </aside>
 
       <div>
-        <!-- Month workspace -->
-        <div class="month-bar" id="monthBar">
-          <div class="month-left">
+        <section class="panel" id="cardsPanel">
+          <div class="panel-head">
             <div>
-              <div class="month-label">Working on</div>
+              <h2>Homepage cards</h2>
+              <p class="sub" id="cardsSub">Edit and reorder August. On/off dates control when each card appears.</p>
+            </div>
+            <div class="panel-actions">
+              <button type="button" class="btn btn-secondary">← Footer</button>
+              <button type="button" class="btn btn-secondary">+ Add other card</button>
+              <button type="button" class="btn btn-primary">Preview →</button>
+            </div>
+          </div>
+
+          <!-- Month workspace — above the two columns only -->
+          <div class="month-bar" id="monthBar">
+            <div class="month-left">
+              <span class="month-label">Working on</span>
               <div class="month-picker" id="monthPicker">
                 <button type="button" class="month-nav" id="prevMonth" aria-label="Previous month">
                   <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
@@ -433,38 +439,18 @@
                   <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                 </button>
               </div>
+              <p class="month-meta" id="monthMeta">Saved</p>
             </div>
-            <p class="month-meta" id="monthMeta">
-              Saved homepage for <strong>August</strong>
-            </p>
-          </div>
-          <div class="month-actions">
-            <div class="copy-wrap">
-              <button type="button" class="btn btn-ghost" id="copyBtn">Copy from…</button>
-              <div class="copy-menu" id="copyMenu" hidden>
-                <button type="button" data-copy="2026-07">July 2026<span class="hint">Saved · 2 cards</span></button>
-                <button type="button" data-copy="2026-08">August 2026<span class="hint">Saved · 3 cards</span></button>
+            <div class="month-actions">
+              <div class="copy-wrap">
+                <button type="button" class="btn btn-ghost" id="copyBtn">Copy from…</button>
+                <div class="copy-menu" id="copyMenu" hidden>
+                  <button type="button" data-copy="2026-07">July 2026<span class="hint">Saved · 2 cards</span></button>
+                  <button type="button" data-copy="2026-08">August 2026<span class="hint">Saved · 3 cards</span></button>
+                </div>
               </div>
+              <button type="button" class="btn btn-secondary" id="saveMonthBtn">Save this month</button>
             </div>
-            <button type="button" class="btn btn-primary" id="saveMonthBtn">Save this month</button>
-          </div>
-        </div>
-
-        <section class="panel" id="cardsPanel">
-          <div class="panel-head">
-            <div>
-              <h2>Homepage cards</h2>
-              <p class="sub" id="cardsSub">Cards for August — reorder, edit, then save this month.</p>
-            </div>
-            <div class="panel-actions">
-              <button type="button" class="btn btn-secondary">← Footer</button>
-              <button type="button" class="btn btn-secondary">+ Add other card</button>
-              <button type="button" class="btn btn-primary">Preview →</button>
-            </div>
-          </div>
-
-          <div class="note">
-            On / off dates still control when each card appears. Saving by month keeps a full draft for that month so you can build September while August is live.
           </div>
 
           <div class="cols">
@@ -662,18 +648,18 @@
         els.next.disabled = indexOf(current) >= MONTHS.length - 1;
         els.cardsSub.textContent = isEmpty
           ? "Empty draft for " + info.short + " — add cards or copy from a prior month."
-          : "Cards for " + info.short + " — reorder, edit, then save this month.";
+          : "Edit and reorder " + info.short + ". On/off dates control when each card appears.";
 
         if (dirty[current]) {
-          els.meta.innerHTML = "Unsaved changes for <strong>" + info.short + "</strong>";
+          els.meta.textContent = "Unsaved";
           els.status.textContent = info.short + " · unsaved";
           els.status.className = "save-status unsaved";
         } else if (neverSaved && isEmpty) {
-          els.meta.innerHTML = "Empty draft — not saved yet";
+          els.meta.textContent = "Empty";
           els.status.textContent = info.short + " · empty";
           els.status.className = "save-status empty";
         } else {
-          els.meta.innerHTML = "Saved homepage for <strong>" + info.short + "</strong>";
+          els.meta.textContent = "Saved";
           els.status.textContent = info.short + " saved";
           els.status.className = "save-status";
         }
