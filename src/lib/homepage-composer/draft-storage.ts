@@ -1,4 +1,10 @@
 import { createComposerDraftStore } from "@/lib/composer-draft-storage";
+import {
+  mergeMonthMapArtwork,
+  slimMonthCards,
+  slimMonthMap,
+  stashWorkingMonth,
+} from "@/lib/homepage-composer/month-drafts";
 import type { HomepageComposerState } from "@/lib/homepage-composer/types";
 
 export type { DraftSaveStatus } from "@/lib/composer-draft-storage";
@@ -18,11 +24,9 @@ function isLegacyHomepageState(
 function slimForQuota(state: HomepageComposerState): HomepageComposerState {
   return {
     ...state,
-    cards: state.cards.map((card) =>
-      card.imageUrl?.startsWith("data:")
-        ? { ...card, imageUrl: null }
-        : card,
-    ),
+    cards: slimMonthCards(state.cards),
+    monthDrafts: slimMonthMap(state.monthDrafts ?? {}),
+    monthSaved: slimMonthMap(state.monthSaved ?? {}),
   };
 }
 
@@ -35,17 +39,38 @@ function mergeFromOlder(
       .filter((c) => c.imageUrl)
       .map((c) => [c.id, c.imageUrl] as const),
   );
-  if (artById.size === 0) return newer;
 
-  let changed = false;
-  const cards = newer.cards.map((card) => {
-    if (card.imageUrl) return card;
-    const fromIdb = artById.get(card.id);
-    if (!fromIdb) return card;
-    changed = true;
-    return { ...card, imageUrl: fromIdb };
-  });
-  return changed ? { ...newer, cards } : newer;
+  let cards = newer.cards;
+  if (artById.size > 0) {
+    let changed = false;
+    cards = newer.cards.map((card) => {
+      if (card.imageUrl) return card;
+      const fromIdb = artById.get(card.id);
+      if (!fromIdb) return card;
+      changed = true;
+      return { ...card, imageUrl: fromIdb };
+    });
+    if (!changed) cards = newer.cards;
+  }
+
+  const monthDrafts = mergeMonthMapArtwork(
+    newer.monthDrafts ?? {},
+    older.monthDrafts ?? {},
+  );
+  const monthSaved = mergeMonthMapArtwork(
+    newer.monthSaved ?? {},
+    older.monthSaved ?? {},
+  );
+
+  if (
+    cards === newer.cards &&
+    monthDrafts === (newer.monthDrafts ?? {}) &&
+    monthSaved === (newer.monthSaved ?? {})
+  ) {
+    return newer;
+  }
+
+  return { ...newer, cards, monthDrafts, monthSaved };
 }
 
 const store = createComposerDraftStore<HomepageComposerState>({
@@ -77,13 +102,18 @@ export async function loadComposerDraftRaw(
  * Persist full draft (including uploaded artwork URLs / data URLs).
  * Writes localStorage synchronously first so a mid-navigation unmount cannot
  * cancel the only copy, then mirrors to IndexedDB for large payloads.
+ * Stashes the active working month into monthDrafts before write.
  */
 export async function saveComposerDraft(
   organizationId: string | null,
   state: HomepageComposerState,
   savedAt: number = Date.now(),
 ): Promise<void> {
-  return store.save(organizationId, state, savedAt);
+  const withStash =
+    state.workingMonth && state.monthDrafts
+      ? stashWorkingMonth(state)
+      : state;
+  return store.save(organizationId, withStash, savedAt);
 }
 
 /** Parse storage payload to composer state (v4 envelope or legacy raw). */

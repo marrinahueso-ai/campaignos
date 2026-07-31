@@ -9,29 +9,35 @@ import type { HomepageComposerState } from "@/lib/homepage-composer/types";
 import { parseComposerDraftRaw } from "@/lib/homepage-composer/draft-storage";
 
 function sampleState(): HomepageComposerState {
+  const cards: HomepageComposerState["cards"] = [
+    {
+      id: "event-evt-1",
+      source: "event",
+      eventId: "evt-1",
+      title: "Spring Fair",
+      blurb: "Join us!",
+      imageUrl: "https://cdn.example/art.jpg",
+      linkUrl: "https://example.com/volunteer",
+      linkLabel: "Volunteer →",
+      date: "2026-04-10",
+      time: "10:00 AM",
+      startsOn: "2026-03-01",
+      expiresOn: "2026-04-10",
+      alwaysOn: false,
+    },
+  ];
+  const workingMonth = "2026-04";
+  const snapshot = { cards, selectedEventIds: ["evt-1"] };
   return {
     header: defaultHeader("Test School"),
     footer: defaultFooter(),
     cardsSectionTitle: "Back-to-School Essentials",
     resources: [],
+    workingMonth,
     selectedEventIds: ["evt-1"],
-    cards: [
-      {
-        id: "event-evt-1",
-        source: "event",
-        eventId: "evt-1",
-        title: "Spring Fair",
-        blurb: "Join us!",
-        imageUrl: "https://cdn.example/art.jpg",
-        linkUrl: "https://example.com/volunteer",
-        linkLabel: "Volunteer →",
-        date: "2026-04-10",
-        time: "10:00 AM",
-        startsOn: "2026-03-01",
-        expiresOn: "2026-04-10",
-        alwaysOn: false,
-      },
-    ],
+    cards,
+    monthDrafts: { [workingMonth]: snapshot },
+    monthSaved: { [workingMonth]: snapshot },
   };
 }
 

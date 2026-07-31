@@ -35,8 +35,23 @@ export async function prepareHomepageStateForShare(
     return { state, error: null };
   }
 
+  const monthKey = state.workingMonth;
+  const nextSnapshot = {
+    cards: nextCards,
+    selectedEventIds: [...state.selectedEventIds],
+  };
+
   return {
-    state: { ...state, cards: nextCards },
+    state: {
+      ...state,
+      cards: nextCards,
+      monthDrafts: monthKey
+        ? { ...state.monthDrafts, [monthKey]: nextSnapshot }
+        : state.monthDrafts,
+      monthSaved: monthKey && state.monthSaved?.[monthKey]
+        ? { ...state.monthSaved, [monthKey]: nextSnapshot }
+        : state.monthSaved,
+    },
     error: null,
   };
 }

@@ -29,6 +29,17 @@ import {
 } from "@/lib/homepage-composer/draft-storage";
 import { DEFAULT_HOMEPAGE_EMOJI } from "@/lib/homepage-composer/emoji";
 import { exportHomepageHtml } from "@/lib/homepage-composer/export-html";
+import {
+  copyMonthCardsFrom,
+  currentMonthYyyyMm,
+  formatMonthLabel,
+  formatMonthShort,
+  saveWorkingMonth,
+  savedMonthsForCopy,
+  switchWorkingMonth,
+  workingMonthStatus,
+  workspaceMonthOptions,
+} from "@/lib/homepage-composer/month-drafts";
 import { createHomepageComposerShareAction } from "@/lib/homepage-composer/share-actions";
 import { campaignBuilderHref } from "@/lib/campaign-builder-v2/navigation";
 import { saveEventVolunteerSignupUrlAction } from "@/lib/event-playbooks/planning-actions";
@@ -47,6 +58,8 @@ import {
 import { cn } from "@/lib/utils/cn";
 import {
   Calendar,
+  ChevronLeft,
+  ChevronRight,
   Download,
   ExternalLink,
   GripVertical,
@@ -185,11 +198,6 @@ function formatSliderLabel(ymd: string): string {
   });
 }
 
-function currentMonthYyyyMm(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
 function defaultEventFilterMonth(events: HomepageComposerEvent[]): string {
   const currentMonth = currentMonthYyyyMm();
   const dated = [...events]
@@ -244,12 +252,6 @@ function formatPreviewSliderLabel(value: string): string {
   return formatSliderLabel(value);
 }
 
-function formatMonthLabel(yyyyMm: string): string {
-  const [y, m] = yyyyMm.split("-").map((p) => parseInt(p, 10));
-  const dt = new Date(y!, m! - 1, 1);
-  return dt.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-}
-
 export function HomepageComposer({
   organizationId,
   organizationName,
@@ -285,7 +287,13 @@ export function HomepageComposer({
   const [saveStatus, setSaveStatus] = useState<DraftSaveStatus>({
     kind: "idle",
   });
+  const [copyMenuOpen, setCopyMenuOpen] = useState(false);
+  const [monthToast, setMonthToast] = useState<string | null>(null);
+  const [monthBarPulse, setMonthBarPulse] = useState(false);
   const artworkInputRef = useRef<HTMLInputElement>(null);
+  const monthToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const artworkCardIdRef = useRef<string | null>(null);
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
   const organizationNameRef = useRef(organizationName);
@@ -407,6 +415,25 @@ export function HomepageComposer({
 
   const monthOptions = useMemo(() => eventMonthOptions(events), [events]);
 
+  const workingMonthKeys = useMemo(
+    () =>
+      workspaceMonthOptions(events, {
+        workingMonth: state.workingMonth,
+        monthDrafts: state.monthDrafts,
+        monthSaved: state.monthSaved,
+      }),
+    [events, state.workingMonth, state.monthDrafts, state.monthSaved],
+  );
+
+  const copyFromMonths = useMemo(
+    () => savedMonthsForCopy(state),
+    [state],
+  );
+
+  const monthStatus = workingMonthStatus(state);
+  const workingMonthShort = formatMonthShort(state.workingMonth);
+  const workingMonthIndex = workingMonthKeys.indexOf(state.workingMonth);
+
   const filteredEvents = useMemo(
     () =>
       events.filter(
@@ -414,6 +441,68 @@ export function HomepageComposer({
       ),
     [events, eventFilterMonth],
   );
+
+  const showMonthToast = useCallback((message: string) => {
+    setMonthToast(message);
+    if (monthToastTimerRef.current) clearTimeout(monthToastTimerRef.current);
+    monthToastTimerRef.current = setTimeout(() => {
+      setMonthToast(null);
+      monthToastTimerRef.current = null;
+    }, 2200);
+  }, []);
+
+  const pulseMonthBar = useCallback(() => {
+    setMonthBarPulse(false);
+    requestAnimationFrame(() => setMonthBarPulse(true));
+    window.setTimeout(() => setMonthBarPulse(false), 1400);
+  }, []);
+
+  const goToWorkingMonth = useCallback(
+    (nextMonth: string) => {
+      if (!nextMonth || nextMonth === stateRef.current.workingMonth) return;
+      setCopyMenuOpen(false);
+      setState((prev) => switchWorkingMonth(prev, nextMonth));
+      pulseMonthBar();
+    },
+    [pulseMonthBar],
+  );
+
+  const handleSaveThisMonth = useCallback(() => {
+    const month = stateRef.current.workingMonth;
+    setState((prev) => saveWorkingMonth(prev));
+    setCopyMenuOpen(false);
+    showMonthToast(`Saved ${formatMonthShort(month)} homepage`);
+  }, [showMonthToast]);
+
+  const handleCopyFromMonth = useCallback(
+    (fromMonth: string) => {
+      const current = stateRef.current;
+      const next = copyMonthCardsFrom(current, fromMonth);
+      setCopyMenuOpen(false);
+      if (!next) {
+        showMonthToast("Nothing saved in that month yet");
+        return;
+      }
+      setState(next);
+      showMonthToast(
+        `Copied ${formatMonthShort(fromMonth)} → ${formatMonthShort(current.workingMonth)}`,
+      );
+    },
+    [showMonthToast],
+  );
+
+  useEffect(() => {
+    if (!copyMenuOpen) return;
+    const onDocClick = () => setCopyMenuOpen(false);
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, [copyMenuOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (monthToastTimerRef.current) clearTimeout(monthToastTimerRef.current);
+    };
+  }, []);
 
   const toggleEvent = useCallback(
     (eventId: string, checked: boolean) => {
@@ -917,13 +1006,26 @@ export function HomepageComposer({
                 "shrink-0 text-[11px] font-semibold sm:text-xs",
                 saveStatus.kind === "error"
                   ? "text-cos-error"
-                  : saveStatus.kind === "saved"
-                    ? "text-cos-brand-sage"
-                    : "text-cos-muted",
+                  : step === "cards" && monthStatus === "unsaved"
+                    ? "text-cos-brand-mustard"
+                    : step === "cards" && monthStatus === "empty"
+                      ? "text-cos-muted"
+                      : saveStatus.kind === "saved" ||
+                          (step === "cards" && monthStatus === "saved")
+                        ? "text-cos-brand-sage"
+                        : "text-cos-muted",
               )}
               aria-live="polite"
             >
-              {formatSaveStatus(saveStatus)}
+              {saveStatus.kind === "error"
+                ? formatSaveStatus(saveStatus)
+                : step === "cards"
+                  ? monthStatus === "saved"
+                    ? `${workingMonthShort} saved`
+                    : monthStatus === "empty"
+                      ? `${workingMonthShort} · empty`
+                      : `${workingMonthShort} · unsaved`
+                  : formatSaveStatus(saveStatus)}
             </p>
           </div>
         </div>
@@ -1726,9 +1828,134 @@ export function HomepageComposer({
 
           {step === "cards" && (
             <section className="space-y-3">
+              <div
+                className={cn(
+                  "flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-cos-border bg-cos-card px-3.5 py-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)]",
+                  monthBarPulse &&
+                    "border-[rgba(42,122,134,0.35)] shadow-[0_0_0_4px_rgba(42,122,134,0.12)]",
+                )}
+              >
+                <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-cos-muted">
+                      Working on
+                    </p>
+                    <div className="mt-1 inline-flex items-center gap-1 rounded-full border border-cos-border bg-cos-bg-alt p-1">
+                      <button
+                        type="button"
+                        className="inline-grid h-8 w-8 place-items-center rounded-full text-cos-muted transition hover:bg-cos-card hover:text-cos-text disabled:opacity-35"
+                        aria-label="Previous month"
+                        disabled={workingMonthIndex <= 0}
+                        onClick={() => {
+                          const prev = workingMonthKeys[workingMonthIndex - 1];
+                          if (prev) goToWorkingMonth(prev);
+                        }}
+                      >
+                        <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+                      </button>
+                      <select
+                        className="max-w-[11rem] appearance-none border-none bg-transparent py-1 pl-2.5 pr-7 font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-cos-text focus:outline-none"
+                        style={{
+                          backgroundImage:
+                            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%237a7166' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E\")",
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "right 8px center",
+                        }}
+                        aria-label="Working on month"
+                        value={state.workingMonth}
+                        onChange={(e) => goToWorkingMonth(e.target.value)}
+                      >
+                        {workingMonthKeys.map((month) => (
+                          <option key={month} value={month}>
+                            {formatMonthLabel(month)}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="inline-grid h-8 w-8 place-items-center rounded-full text-cos-muted transition hover:bg-cos-card hover:text-cos-text disabled:opacity-35"
+                        aria-label="Next month"
+                        disabled={
+                          workingMonthIndex < 0 ||
+                          workingMonthIndex >= workingMonthKeys.length - 1
+                        }
+                        onClick={() => {
+                          const next = workingMonthKeys[workingMonthIndex + 1];
+                          if (next) goToWorkingMonth(next);
+                        }}
+                      >
+                        <ChevronRight className="h-4 w-4" strokeWidth={2} />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[12.5px] leading-snug text-cos-muted">
+                    {monthStatus === "unsaved" ? (
+                      <>
+                        Unsaved changes for{" "}
+                        <strong className="font-semibold text-cos-text">
+                          {workingMonthShort}
+                        </strong>
+                      </>
+                    ) : monthStatus === "empty" ? (
+                      "Empty draft — not saved yet"
+                    ) : (
+                      <>
+                        Saved homepage for{" "}
+                        <strong className="font-semibold text-cos-text">
+                          {workingMonthShort}
+                        </strong>
+                      </>
+                    )}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      className="rounded-full px-2.5 py-2 text-sm font-bold text-[#2a7a86] hover:underline disabled:opacity-45"
+                      disabled={copyFromMonths.length === 0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCopyMenuOpen((open) => !open);
+                      }}
+                    >
+                      Copy from…
+                    </button>
+                    {copyMenuOpen ? (
+                      <div
+                        className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[180px] rounded-[14px] border border-cos-border bg-cos-card p-1.5 shadow-[0_14px_36px_rgba(42,38,34,0.14)]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {copyFromMonths.map((item) => (
+                          <button
+                            key={item.key}
+                            type="button"
+                            className="block w-full rounded-[10px] px-3 py-2 text-left text-sm font-semibold text-cos-text hover:bg-cos-bg-alt"
+                            onClick={() => handleCopyFromMonth(item.key)}
+                          >
+                            {formatMonthLabel(item.key)}
+                            <span className="mt-0.5 block text-[11px] font-medium text-cos-muted">
+                              Saved · {item.cardCount}{" "}
+                              {item.cardCount === 1 ? "card" : "cards"}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                  <Button type="button" onClick={handleSaveThisMonth}>
+                    Save this month
+                  </Button>
+                </div>
+              </div>
+
               <PanelHead
                 title="Homepage cards"
-                body="Pick events, edit blurbs, and set on/off dates. Cards section hides in export if none are added."
+                body={
+                  state.cards.length === 0
+                    ? `Empty draft for ${workingMonthShort} — add cards or copy from a prior month.`
+                    : `Cards for ${workingMonthShort} — reorder, edit, then save this month.`
+                }
                 actions={
                   <>
                     <Button
@@ -1753,9 +1980,9 @@ export function HomepageComposer({
                 }
               />
               <div className="rounded-[12px] bg-cos-brand-mustard/35 px-3 py-2 text-xs leading-snug text-cos-text sm:text-sm">
-                <strong>On / off dates:</strong> card shows starting at local
-                midnight on the on date, stays through the off date, then hides
-                the next morning. Use Always on for evergreen cards.
+                On / off dates still control when each card appears. Saving by
+                month keeps a full draft for that month so you can build ahead
+                while another month is live.
               </div>
               <div className="grid gap-3 xl:grid-cols-[260px_minmax(0,1fr)]">
                 <div className="rounded-[18px] border border-cos-border bg-cos-card p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
@@ -1764,12 +1991,13 @@ export function HomepageComposer({
                   </h3>
                   <label className="mt-3 block">
                     <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[0.05em] text-cos-muted">
-                      Month
+                      Event list month
                     </span>
                     <select
                       className="w-full rounded-xl border border-cos-border bg-cos-card px-3 py-2.5 text-sm text-cos-text"
                       value={eventFilterMonth}
                       onChange={(e) => setEventFilterMonth(e.target.value)}
+                      aria-label="Event list month filter"
                     >
                       {monthOptions.map((month) => (
                         <option key={month} value={month}>
@@ -1778,6 +2006,9 @@ export function HomepageComposer({
                       ))}
                     </select>
                   </label>
+                  <p className="mt-1.5 text-[11px] leading-snug text-cos-muted">
+                    Filters this list only — not your homepage draft month.
+                  </p>
                   <div className="mt-3 max-h-[70vh] space-y-2 overflow-auto">
                     {events.length === 0 ? (
                       <p className="text-sm text-cos-muted">
@@ -1852,9 +2083,37 @@ export function HomepageComposer({
                     </label>
                   </div>
                   {state.cards.length === 0 ? (
-                    <p className="mt-4 text-sm text-cos-muted">
-                      No cards yet — section will be hidden in the exported page.
-                    </p>
+                    <div className="mt-4 rounded-[16px] border border-dashed border-cos-border bg-cos-bg-alt/60 px-5 py-9 text-center">
+                      <h4 className="font-display text-xl text-cos-text">
+                        No cards for {workingMonthShort} yet
+                      </h4>
+                      <p className="mx-auto mt-2 max-w-sm text-sm leading-snug text-cos-muted">
+                        This month is its own draft. Add cards from events, or
+                        copy a saved month to get started.
+                      </p>
+                      <div className="mt-4 flex flex-wrap justify-center gap-2">
+                        {copyFromMonths[0] ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() =>
+                              handleCopyFromMonth(copyFromMonths[0]!.key)
+                            }
+                          >
+                            Copy from {formatMonthShort(copyFromMonths[0].key)}
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={addCustomCard}
+                          >
+                            <Plus className="h-4 w-4" strokeWidth={1.75} />
+                            Add other card
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   ) : (
                     <div className="mt-3 space-y-3">
                       {state.cards.map((card) => (
@@ -2137,7 +2396,7 @@ export function HomepageComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Preview"
-                body="Exact full page visitors will see — header, cards, footer, and quick links. Drag the date slider to watch cards roll on and off. On full month, open the share page or save as PDF to send for review."
+                body={`Showing ${formatMonthLabel(state.workingMonth)} cards with your shared header and footer. Drag the date slider to watch cards roll on and off. On full month, open the share page or save as PDF to send for review.`}
                 actions={
                   <>
                     <Button
@@ -2303,6 +2562,15 @@ export function HomepageComposer({
           )}
         </div>
       </div>
+
+      {monthToast ? (
+        <div
+          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-full bg-cos-text px-4 py-2.5 text-sm font-semibold text-cos-bg shadow-[0_12px_32px_rgba(42,38,34,0.22)]"
+          role="status"
+        >
+          {monthToast}
+        </div>
+      ) : null}
     </div>
   );
 }

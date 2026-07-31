@@ -90,6 +90,12 @@ export type HomepageFooterConfig = {
   colors: HomepageFooterColors;
 };
 
+/** Cards + event picks for one calendar month (YYYY-MM). */
+export type HomepageMonthCardsSnapshot = {
+  cards: HomepageCard[];
+  selectedEventIds: string[];
+};
+
 export type HomepageComposerState = {
   header: HomepageHeaderConfig;
   footer: HomepageFooterConfig;
@@ -97,7 +103,19 @@ export type HomepageComposerState = {
   cardsSectionTitle: string;
   /** Helpful Resources quick links (emoji + label + url) */
   resources: HomepageResourceLink[];
-  /** Selected event ids (from Create with AI / calendar events) */
+  /**
+   * Active “Working on” month (YYYY-MM). `cards` / `selectedEventIds` are for
+   * this month; header/footer/resources stay shared across months.
+   */
+  workingMonth: string;
+  /** Selected event ids for the active working month */
   selectedEventIds: string[];
+  /** Homepage cards for the active working month */
   cards: HomepageCard[];
+  /** Working drafts keyed by YYYY-MM (includes active after stash/save). */
+  monthDrafts: Record<string, HomepageMonthCardsSnapshot>;
+  /**
+   * Explicit “Save this month” snapshots — Copy from… sources and saved status.
+   */
+  monthSaved: Record<string, HomepageMonthCardsSnapshot>;
 };

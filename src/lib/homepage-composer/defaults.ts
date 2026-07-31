@@ -3,6 +3,10 @@ import {
   contrastingText,
 } from "@/lib/homepage-composer/colors";
 import { buildEventBlurb } from "@/lib/homepage-composer/blurbs";
+import {
+  currentMonthYyyyMm,
+  snapshotFromState,
+} from "@/lib/homepage-composer/month-drafts";
 import type {
   HomepageAnnouncement,
   HomepageCard,
@@ -12,6 +16,7 @@ import type {
   HomepageFooterConfig,
   HomepageHeaderColors,
   HomepageHeaderConfig,
+  HomepageMonthCardsSnapshot,
   HomepageResourceLink,
 } from "@/lib/homepage-composer/types";
 import { normalizeHref } from "@/lib/homepage-composer/urls";
@@ -161,6 +166,57 @@ export function cardFromEvent(event: HomepageComposerEvent): HomepageCard {
   };
 }
 
+function normalizeMonthSnapshot(
+  raw: unknown,
+): HomepageMonthCardsSnapshot | null {
+  if (!raw || typeof raw !== "object") return null;
+  const parsed = raw as Partial<HomepageMonthCardsSnapshot>;
+  if (!Array.isArray(parsed.cards)) return null;
+  return {
+    selectedEventIds: Array.isArray(parsed.selectedEventIds)
+      ? parsed.selectedEventIds.filter((id): id is string => typeof id === "string")
+      : [],
+    cards: parsed.cards.map((card, i) => normalizeCard(card, i)),
+  };
+}
+
+function normalizeCard(card: HomepageCard, i: number): HomepageCard {
+  const cleanedLink = normalizeHref(card.linkUrl || "");
+  const linkUrl = cleanedLink === "#" ? "" : cleanedLink;
+  const rawLabel =
+    typeof card.linkLabel === "string" ? card.linkLabel.trim() : "";
+  return {
+    id: card.id || `card-legacy-${i}`,
+    source: card.source === "event" ? "event" : "custom",
+    eventId: card.eventId ?? null,
+    title: card.title || "Untitled card",
+    blurb: card.blurb || "",
+    imageUrl: card.imageUrl ?? null,
+    linkUrl,
+    linkLabel: rawLabel || (linkUrl ? "Learn More →" : ""),
+    date: card.date ?? null,
+    time: card.time ?? null,
+    startsOn: card.startsOn ?? null,
+    expiresOn: card.expiresOn ?? null,
+    alwaysOn: Boolean(card.alwaysOn),
+  };
+}
+
+function normalizeMonthMap(
+  raw: unknown,
+): Record<string, HomepageMonthCardsSnapshot> {
+  if (!raw || typeof raw !== "object") return {};
+  const next: Record<string, HomepageMonthCardsSnapshot> = {};
+  for (const [key, value] of Object.entries(
+    raw as Record<string, unknown>,
+  )) {
+    if (!/^\d{4}-\d{2}$/.test(key)) continue;
+    const snapshot = normalizeMonthSnapshot(value);
+    if (snapshot) next[key] = snapshot;
+  }
+  return next;
+}
+
 export function buildInitialState(
   events: HomepageComposerEvent[],
   organizationName?: string | null,
@@ -172,14 +228,24 @@ export function buildInitialState(
 
   const eventCards = upcoming.map(cardFromEvent);
   const evergreen = defaultEvergreenCards();
+  const workingMonth = currentMonthYyyyMm();
+  const cards = [...evergreen.slice(0, 1), ...eventCards, ...evergreen.slice(1)];
+  const selectedEventIds = upcoming.map((e) => e.id);
+  const monthSnapshot: HomepageMonthCardsSnapshot = {
+    cards: cards.map((card) => ({ ...card })),
+    selectedEventIds: [...selectedEventIds],
+  };
 
   return {
     header: defaultHeader(organizationName),
     footer: defaultFooter(),
     cardsSectionTitle: defaultCardsSectionTitle(),
     resources: defaultResources(),
-    selectedEventIds: upcoming.map((e) => e.id),
-    cards: [...evergreen.slice(0, 1), ...eventCards, ...evergreen.slice(1)],
+    workingMonth,
+    selectedEventIds,
+    cards,
+    monthDrafts: { [workingMonth]: monthSnapshot },
+    monthSaved: {},
   };
 }
 
@@ -235,7 +301,7 @@ export function normalizeComposerState(
       }))
     : null;
 
-  return {
+  const normalized: HomepageComposerState = {
     header: {
       ...base.header,
       ...parsed.header,
@@ -272,27 +338,32 @@ export function normalizeComposerState(
     selectedEventIds: Array.isArray(parsed.selectedEventIds)
       ? parsed.selectedEventIds
       : [],
-    cards: parsed.cards.map((card, i) => {
-      const cleanedLink = normalizeHref(card.linkUrl || "");
-      const linkUrl = cleanedLink === "#" ? "" : cleanedLink;
-      const rawLabel =
-        typeof card.linkLabel === "string" ? card.linkLabel.trim() : "";
-      return {
-        id: card.id || `card-legacy-${i}`,
-        source: card.source === "event" ? "event" : "custom",
-        eventId: card.eventId ?? null,
-        title: card.title || "Untitled card",
-        blurb: card.blurb || "",
-        imageUrl: card.imageUrl ?? null,
-        linkUrl,
-        // Older drafts omit linkLabel; default when a URL exists, else empty.
-        linkLabel: rawLabel || (linkUrl ? "Learn More →" : ""),
-        date: card.date ?? null,
-        time: card.time ?? null,
-        startsOn: card.startsOn ?? null,
-        expiresOn: card.expiresOn ?? null,
-        alwaysOn: Boolean(card.alwaysOn),
-      };
-    }),
+    cards: parsed.cards.map((card, i) => normalizeCard(card, i)),
+    workingMonth:
+      typeof parsed.workingMonth === "string" &&
+      /^\d{4}-\d{2}$/.test(parsed.workingMonth)
+        ? parsed.workingMonth
+        : currentMonthYyyyMm(),
+    monthDrafts: normalizeMonthMap(parsed.monthDrafts),
+    monthSaved: normalizeMonthMap(parsed.monthSaved),
   };
+
+  // Legacy drafts (no month maps): treat current cards as this month’s draft + save.
+  const hasMonthData =
+    Object.keys(normalized.monthDrafts).length > 0 ||
+    Object.keys(normalized.monthSaved).length > 0;
+  if (!hasMonthData) {
+    const snapshot = snapshotFromState(normalized);
+    normalized.monthDrafts = { [normalized.workingMonth]: snapshot };
+    normalized.monthSaved = {
+      [normalized.workingMonth]: snapshotFromState(normalized),
+    };
+  } else if (!normalized.monthDrafts[normalized.workingMonth]) {
+    normalized.monthDrafts = {
+      ...normalized.monthDrafts,
+      [normalized.workingMonth]: snapshotFromState(normalized),
+    };
+  }
+
+  return normalized;
 }

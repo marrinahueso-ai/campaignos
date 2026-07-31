@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering (Hey Ralli)  
-**Last updated:** July 27, 2026  
+**Last updated:** July 31, 2026  
 **Related:** [QA guide](../qa/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Billing / AI credits](../ops/billing-and-access.md)
 
 Client-heavy Membership Toolkit homepage builder. Server actions cover AI blurbs and artwork hosting; drafts stay in the browser.
@@ -28,9 +28,10 @@ Steps: `header` → `footer` → `cards` → `preview` → `export` (`HomepageCo
 |------|------|
 | `src/components/homepage-composer/HomepageComposer.tsx` | Step UI, autosave flush, card CRUD, preview scrubber, export UX |
 | `src/components/homepage-composer/SettingsBox.tsx` | Shared settings panel chrome (also used by Newsletter) |
-| `src/lib/homepage-composer/types.ts` | State + card/header/footer shapes (`cardsSectionTitle` for cards grid heading) |
-| `src/lib/homepage-composer/defaults.ts` | Initial state, `cardFromEvent`, normalize / migrate fields |
-| `src/lib/homepage-composer/draft-storage.ts` | localStorage + IndexedDB envelope v4 (via shared store) |
+| `src/lib/homepage-composer/types.ts` | State + card/header/footer shapes (`cardsSectionTitle`, `workingMonth`, `monthDrafts`, `monthSaved`) |
+| `src/lib/homepage-composer/defaults.ts` | Initial state, `cardFromEvent`, normalize / migrate fields (legacy → current-month save) |
+| `src/lib/homepage-composer/month-drafts.ts` | Per-month card stash/switch/save/copy helpers |
+| `src/lib/homepage-composer/draft-storage.ts` | localStorage + IndexedDB envelope v4 (via shared store); stashes active month on save |
 | `src/lib/composer-draft-storage.ts` | Shared newest-wins draft store (Homepage + Newsletter) |
 | `src/lib/homepage-composer/blurb-actions.ts` | Server action → generate blurb |
 | `src/lib/homepage-composer/generate-blurb.ts` / `generate-blurb-prompt.ts` | Model call, ≤2 sentences, brand voice |
@@ -71,6 +72,19 @@ Envelope:
 **Flush:** Composer debounces ~350ms; also flushes on `visibilitychange` (hidden), `pagehide`, `beforeunload`, and effect cleanup so navigate-away cannot drop the pending timer.
 
 Drafts are **not** stored in Postgres.
+
+### Save by month
+
+Header, footer, `cardsSectionTitle`, and resources are **shared** across months. Cards + `selectedEventIds` are scoped to `workingMonth` (YYYY-MM):
+
+| Field | Role |
+|-------|------|
+| `workingMonth` | Active Cards-step workspace |
+| `cards` / `selectedEventIds` | Live editors for `workingMonth` |
+| `monthDrafts` | Working snapshots per month (autosave stashes active month here) |
+| `monthSaved` | Explicit **Save this month** snapshots — sources for **Copy from…** |
+
+Legacy drafts without month maps migrate into `monthDrafts` + `monthSaved` for the current calendar month.
 
 ---
 

@@ -12,8 +12,28 @@ import {
   formatCardVisibilityMemo,
   formatVisibilityShortDate,
 } from "@/lib/homepage-composer/export-html";
+import { currentMonthYyyyMm } from "@/lib/homepage-composer/month-drafts";
 import type { HomepageCard, HomepageComposerState } from "@/lib/homepage-composer/types";
 import { normalizeHref } from "@/lib/homepage-composer/urls";
+
+function withMonthFields(
+  state: Omit<
+    HomepageComposerState,
+    "workingMonth" | "monthDrafts" | "monthSaved"
+  >,
+): HomepageComposerState {
+  const workingMonth = currentMonthYyyyMm();
+  const snapshot = {
+    cards: state.cards,
+    selectedEventIds: state.selectedEventIds,
+  };
+  return {
+    ...state,
+    workingMonth,
+    monthDrafts: { [workingMonth]: snapshot },
+    monthSaved: {},
+  };
+}
 
 describe("homepage composer card linkLabel + date", () => {
   it("rejects active URL schemes before rich HTML export", () => {
@@ -64,6 +84,8 @@ describe("homepage composer card linkLabel + date", () => {
     assert.equal(normalized.cards[1]?.linkLabel, "");
     assert.equal(normalized.cards[1]?.date, "2026-08-08");
     assert.equal(normalized.cardsSectionTitle, defaultCardsSectionTitle());
+    assert.ok(normalized.workingMonth);
+    assert.ok(normalized.monthSaved[normalized.workingMonth]);
   });
 
   it("migrates missing cardsSectionTitle on old drafts", () => {
@@ -80,7 +102,7 @@ describe("homepage composer card linkLabel + date", () => {
   });
 
   it("exports editable cards section title", () => {
-    const state: HomepageComposerState = {
+    const state = withMonthFields({
       header: defaultHeader("Test"),
       footer: defaultFooter(),
       cardsSectionTitle: "Fall Family Events",
@@ -103,7 +125,7 @@ describe("homepage composer card linkLabel + date", () => {
           alwaysOn: true,
         },
       ],
-    };
+    });
 
     const html = exportHomepageHtml(state);
     assert.match(html, /Fall Family Events/);
@@ -111,7 +133,7 @@ describe("homepage composer card linkLabel + date", () => {
   });
 
   it("exports editable linkLabel and card date", () => {
-    const state: HomepageComposerState = {
+    const state = withMonthFields({
       header: defaultHeader("Test"),
       footer: defaultFooter(),
       cardsSectionTitle: defaultCardsSectionTitle(),
@@ -134,7 +156,7 @@ describe("homepage composer card linkLabel + date", () => {
           alwaysOn: true,
         },
       ],
-    };
+    });
 
     const html = exportHomepageHtml(state);
     assert.match(html, /Details →/);
@@ -147,7 +169,7 @@ describe("homepage composer card linkLabel + date", () => {
   });
 
   it("renders date-only cards in the meta date slot above an empty link slot", () => {
-    const state: HomepageComposerState = {
+    const state = withMonthFields({
       header: defaultHeader("Test"),
       footer: defaultFooter(),
       cardsSectionTitle: defaultCardsSectionTitle(),
@@ -170,7 +192,7 @@ describe("homepage composer card linkLabel + date", () => {
           alwaysOn: true,
         },
       ],
-    };
+    });
 
     const html = exportHomepageHtml(state);
     assert.match(html, /Sep 12 · 9:30 AM/);
@@ -218,14 +240,14 @@ describe("homepage composer card linkLabel + date", () => {
       "Always on",
     );
 
-    const state: HomepageComposerState = {
+    const state = withMonthFields({
       header: defaultHeader("Test"),
       footer: defaultFooter(),
       cardsSectionTitle: defaultCardsSectionTitle(),
       resources: [],
       selectedEventIds: [],
       cards: [windowed],
-    };
+    });
     const plain = exportHomepageHtml(state, { showAllCards: true });
     assert.doesNotMatch(plain, /ees-visibility-memo/);
     const download = exportHomepageHtml(state, {
