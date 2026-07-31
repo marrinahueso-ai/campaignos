@@ -59,6 +59,12 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: SECURITY_HEADERS,
       },
+      // Flyer composer is embedded same-origin via FlyerComposerHost iframe.
+      // Global DENY / frame-ancestors 'none' would blank the dashboard shell.
+      {
+        source: "/create-with-ai-flyer.html",
+        headers: FLYER_EMBED_HEADERS,
+      },
     ];
   },
 };
@@ -95,6 +101,26 @@ const SECURITY_HEADERS = [
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
   },
+];
+
+/** Same-origin embed of the static Flyer composer (Create with AI → Flyer). */
+const FLYER_EMBED_CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.us.sentry.io https://vitals.vercel-insights.com",
+  "frame-src 'self'",
+  "frame-ancestors 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
+
+const FLYER_EMBED_HEADERS = [
+  { key: "Content-Security-Policy", value: FLYER_EMBED_CSP },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
 ];
 
 const analyzeEnabled = process.env.ANALYZE === "true";

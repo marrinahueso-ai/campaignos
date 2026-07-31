@@ -167,5 +167,8 @@ describe("Revision dual-format UI wiring", () => {
     assert.match(pair, /variant === "flyer"/);
     assert.match(pair, /Flyer · print/);
     assert.match(pair, /No flyer artwork yet/);
+    assert.match(pair, /enlargeable/);
+    assert.match(pair, /FlyerPreviewLightbox|rev-flyer-lightbox/);
+    assert.match(pair, /ZoomIn/);
   });
 });
