@@ -44,3 +44,33 @@ export async function copyToClipboard(text: string): Promise<void> {
     throw new Error("Copy to clipboard failed.");
   }
 }
+
+/**
+ * Prefer writing both `text/html` and `text/plain` (for WYSIWYG paste).
+ * Falls back to plain text via {@link copyToClipboard} when ClipboardItem
+ * / `clipboard.write` is unavailable.
+ */
+export async function copyHtmlAndPlainText(
+  html: string,
+  plain: string,
+): Promise<void> {
+  if (
+    typeof navigator !== "undefined" &&
+    typeof ClipboardItem !== "undefined" &&
+    navigator.clipboard?.write
+  ) {
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([plain], { type: "text/plain" }),
+        }),
+      ]);
+      return;
+    } catch {
+      // Fall through to plain-text copy.
+    }
+  }
+
+  await copyToClipboard(plain);
+}

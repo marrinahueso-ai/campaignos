@@ -20,6 +20,7 @@ import {
   type DraftSaveStatus,
 } from "@/lib/newsletter-composer/draft-storage";
 import { exportNewsletterHtml } from "@/lib/newsletter-composer/export-html";
+import { exportNewsletterMtk } from "@/lib/newsletter-composer/export-mtk";
 import { uploadNewsletterComposerArtworkAction } from "@/lib/newsletter-composer/artwork-actions";
 import { compressImageForUpload } from "@/lib/homepage-composer/compress-image";
 import type {
@@ -31,6 +32,10 @@ import type {
   NewsletterVolunteerAsk,
 } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
+import {
+  copyHtmlAndPlainText,
+  copyToClipboard,
+} from "@/lib/utils/clipboard";
 import {
   ChevronDown,
   GripVertical,
@@ -141,7 +146,7 @@ export function NewsletterComposer({
   });
   const [previewMode, setPreviewMode] = useState<"phone" | "desktop">("phone");
   const [uploadingHeader, setUploadingHeader] = useState(false);
-  const [copyDone, setCopyDone] = useState(false);
+  const [copyDone, setCopyDone] = useState<"html" | "mtk" | null>(null);
   const [manualStoryOpen, setManualStoryOpen] = useState(false);
   const [manualVolOpen, setManualVolOpen] = useState(false);
   const [layoutSort, setLayoutSort] = useState("manual");
@@ -321,11 +326,22 @@ export function NewsletterComposer({
   async function copyHtml() {
     const html = exportNewsletterHtml(state);
     try {
-      await navigator.clipboard.writeText(html);
-      setCopyDone(true);
-      window.setTimeout(() => setCopyDone(false), 2000);
+      await copyToClipboard(html);
+      setCopyDone("html");
+      window.setTimeout(() => setCopyDone(null), 2000);
     } catch {
-      window.alert("Could not copy — select and copy from a download instead.");
+      window.alert("Could not copy — select and copy manually.");
+    }
+  }
+
+  async function copyMtk() {
+    const { html, text } = exportNewsletterMtk(state);
+    try {
+      await copyHtmlAndPlainText(html, text);
+      setCopyDone("mtk");
+      window.setTimeout(() => setCopyDone(null), 2000);
+    } catch {
+      window.alert("Could not copy — select and copy manually.");
     }
   }
 
@@ -511,6 +527,7 @@ export function NewsletterComposer({
               state={state}
               copyDone={copyDone}
               onCopy={copyHtml}
+              onCopyMtk={copyMtk}
               onBack={() => nextStep("preview")}
             />
           )}
@@ -2523,11 +2540,13 @@ function SendStep({
   state,
   copyDone,
   onCopy,
+  onCopyMtk,
   onBack,
 }: {
   state: NewsletterComposerState;
-  copyDone: boolean;
+  copyDone: "html" | "mtk" | null;
   onCopy: () => void;
+  onCopyMtk: () => void;
   onBack: () => void;
 }) {
   const included = state.stories.filter((s) => s.included).length;
@@ -2535,7 +2554,7 @@ function SendStep({
     <section className="space-y-4">
       <PanelHead
         title="Send or export"
-        body="Copy email-safe HTML for your email tool or newsletter platform."
+        body="Copy email-safe HTML for your ESP, or a simplified rich-text version for Membership Toolkit Quick Email."
         actions={
           <Button type="button" variant="secondary" onClick={onBack}>
             ← Preview
@@ -2548,15 +2567,19 @@ function SendStep({
       >
         <div className="flex flex-wrap gap-2">
           <Button type="button" onClick={onCopy}>
-            {copyDone ? "Copied!" : "Copy email HTML"}
+            {copyDone === "html" ? "Copied!" : "Copy email HTML"}
+          </Button>
+          <Button type="button" variant="secondary" onClick={onCopyMtk}>
+            {copyDone === "mtk" ? "Copied!" : "Copy for Membership Toolkit"}
           </Button>
           <Button type="button" variant="secondary" href="/create-with-ai">
             Back to Create with AI
           </Button>
         </div>
         <p className="mt-3 text-xs text-cos-muted">
-          Export the HTML first, then paste it into your email tool — same
-          flow as Homepage.
+          <strong>Copy email HTML</strong> is for tools that accept full HTML.
+          <strong> Copy for Membership Toolkit</strong> pastes as rich text
+          (no images — placeholders mark where to upload artwork in MTK).
         </p>
       </SettingsBox>
     </section>

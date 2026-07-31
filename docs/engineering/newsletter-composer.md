@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering (Hey Ralli)  
-**Last updated:** July 26, 2026  
+**Last updated:** July 31, 2026  
 **Related:** [QA guide](../qa/newsletter-composer.md) · [Feature list](../product/feature-list.md) · [Homepage Composer eng](./homepage-composer.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md)
 
 Client-heavy scoop-style email builder. Server actions host artwork; drafts stay in the browser. No in-app SMTP send.
@@ -28,7 +28,7 @@ Steps: `header` → `message` → `stories` → `mustdos` → `footer` → `layo
 
 | Path | Role |
 |------|------|
-| `src/components/newsletter-composer/NewsletterComposer.tsx` | Multi-step UI, draft hydrate/save, uploads, copy HTML |
+| `src/components/newsletter-composer/NewsletterComposer.tsx` | Multi-step UI, draft hydrate/save, uploads, copy HTML / MTK |
 | `src/components/newsletter-composer/EmailPreviewPhone.tsx` | Phone / desktop preview shells |
 | `src/lib/newsletter-composer/types.ts` | State, stories, layout blocks, sponsors, socials |
 | `src/lib/newsletter-composer/defaults.ts` | Initial state, layout sync with stories, chip/story helpers |
@@ -36,6 +36,8 @@ Steps: `header` → `message` → `stories` → `mustdos` → `footer` → `layo
 | `src/lib/composer-draft-storage.ts` | Shared newest-wins draft store (Homepage + Newsletter) |
 | `src/lib/newsletter-composer/artwork-actions.ts` | Upload header / story / sponsor / volunteer art |
 | `src/lib/newsletter-composer/export-html.ts` | Email-safe HTML + preview fragment |
+| `src/lib/newsletter-composer/export-mtk.ts` | Membership Toolkit rich-text fragment + plain text |
+| `src/lib/utils/clipboard.ts` | `copyToClipboard` + `copyHtmlAndPlainText` (ClipboardItem) |
 | `src/lib/homepage-composer/compress-image.ts` | Shared client compress before upload |
 | `src/lib/homepage-composer/volunteer-links.ts` | Signup URLs for event-sourced volunteer asks |
 
@@ -91,17 +93,25 @@ Uploads are storage-only. AI credits for Social Campaign Builder remain separate
 |--------|-----|
 | `exportNewsletterHtml(state)` | Full HTML document for clipboard / email tools |
 | `exportNewsletterPreviewFragment(state)` | Inner body for in-app phone/desktop preview |
+| `exportNewsletterMtk(state)` | Body-ish rich fragment + plain text for Membership Toolkit Quick Email |
 
 Implementation notes:
 
-- Table-based, ~560px content column, cream page background.
-- `orderedLayoutBlocks(state)` drives section order.
+- Table-based, ~560px content column, cream page background (`export-html`).
+- `orderedLayoutBlocks(state)` drives section order for both exporters.
 - Story rendering: featured stories first (badge); then a “News & events” / “More news & events” band for non-featured included stories.
 - Section bands: calendar, volunteer, sponsors, links, socials / CTA with distinct colors.
 - Links normalized to `https://` when scheme missing.
-- Images expected as hosted URLs from the upload action.
+- Images expected as hosted URLs from the upload action (full HTML export only).
 
-**Send step** = `navigator.clipboard.writeText(exportNewsletterHtml(state))` — no delivery API.
+**MTK export** (`export-mtk.ts`): semantic tags (`h2`/`h3`, `p`, `ul`/`li`, `a`, `hr`, `strong`/`em`); no `<!DOCTYPE>` / cream tables; **no `<img>`** — artwork becomes `[Image: …]` placeholder lines; returns `{ html, text }`.
+
+**Send step**
+
+- Copy email HTML → `copyToClipboard(exportNewsletterHtml(state))`
+- Copy for Membership Toolkit → `copyHtmlAndPlainText(html, text)` (ClipboardItem `text/html` + `text/plain`, plain fallback)
+
+No delivery API.
 
 ---
 

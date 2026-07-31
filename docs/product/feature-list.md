@@ -129,7 +129,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - **Save by month** (work ahead on next month’s homepage) — **shipped**: Cards step quiet **Working on** strip above the two columns (not page/step chrome) · **Save this month** · **Copy from…** prior saved month; header/footer/resources stay shared; cards + event picks scoped per YYYY-MM in the org draft (`monthDrafts` / `monthSaved`); event list month filter stays independent. Ease mock kept: [`public/homepage-composer-month-ease-mockup.html`](../../public/homepage-composer-month-ease-mockup.html)
 
 ## Newsletter Composer
-- Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); community email layout (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export; durable draft autosave (shared newest-wins localStorage + IndexedDB store, flush on navigate/hide) — **shipped** (soft launch; further polish deferred) — living docs: [QA](../qa/newsletter-composer.md) · [Engineering](../engineering/newsletter-composer.md)
+- Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); community email layout (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export + **Copy for Membership Toolkit** (rich-text clipboard without images, placeholders for artwork); durable draft autosave (shared newest-wins localStorage + IndexedDB store, flush on navigate/hide) — **shipped** (soft launch; further polish deferred) — living docs: [QA](../qa/newsletter-composer.md) · [Engineering](../engineering/newsletter-composer.md)
 
 ## Artwork & creative
 - AI artwork generation (feed + story), approve/deny/adjust — **shipped**

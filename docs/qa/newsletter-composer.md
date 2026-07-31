@@ -2,10 +2,10 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA (Hey Ralli)  
-**Last updated:** July 26, 2026  
+**Last updated:** July 31, 2026  
 **Related:** [Engineering companion](../engineering/newsletter-composer.md) · [Feature list](../product/feature-list.md) · [Homepage Composer QA](./homepage-composer.md) · [Storage RLS](../engineering/storage-rls.md) · [Launch checklist](./launch-checklist.md)
 
-Soft-launch scoop-style family email builder. Managers assemble header, leadership message, stories, must-dos (calendar / volunteer / sponsors), footer, reorder layout, preview phone + desktop, and copy email HTML.
+Soft-launch scoop-style family email builder. Managers assemble header, leadership message, stories, must-dos (calendar / volunteer / sponsors), footer, reorder layout, preview phone + desktop, and copy email HTML or Membership Toolkit–ready rich text.
 
 ---
 
@@ -39,7 +39,7 @@ No separate sidebar nav item — entry is Create with AI → Newsletter (or dire
 | 5 | **Footer** | Social networks, footer CTA headline/label/URL, fine print |
 | 6 | **Layout** | Drag / sort layout blocks (header, message, stories, calendar, volunteer, sponsors, links, CTA, socials) |
 | 7 | **Preview** | Toggle **phone** vs **desktop** email chrome |
-| 8 | **Send** | Copy email-safe HTML (clipboard); back to Create with AI |
+| 8 | **Send** | **Copy email HTML** (full email for ESPs) or **Copy for Membership Toolkit** (rich text, no images — placeholders for artwork); back to Create with AI |
 
 Draft status shows while editing (“Saving draft…”, “Draft saved”).
 
@@ -53,6 +53,7 @@ Draft status shows while editing (“Saving draft…”, “Draft saved”).
 - Header / story / sponsor / volunteer image upload → hosted HTTPS URLs
 - Desktop + phone preview components
 - HTML export (full document, table layout, ~560px content width)
+- Membership Toolkit export (simplified rich HTML + plain text; image placeholders, no `<img>`)
 - Draft autosave: localStorage + IndexedDB v2 envelope (`newsletter-composer:v2:{org}`; reads v1); newest-wins load; flush on hide/unload
 - Shared SettingsBox chrome with Homepage Composer
 
@@ -81,8 +82,9 @@ Draft status shows while editing (“Saving draft…”, “Draft saved”).
 ### Preview / export
 
 10. Phone vs desktop preview both render the same body content.
-11. **Send** → Copy HTML → paste into a mail tester / blank HTML file: sections readable, links work, images are `https://` (no giant base64).
-12. Excluded stories / disabled socials do not appear in export.
+11. **Send** → Copy email HTML → paste into a mail tester / blank HTML file: sections readable, links work, images are `https://` (no giant base64).
+11b. **Send** → Copy for Membership Toolkit → paste into a WYSIWYG (or MTK Quick Email): headings/lists/links survive; no images; lines like `[Image: …]` mark artwork to upload manually.
+12. Excluded stories / disabled socials do not appear in either export.
 
 ### Access / empty
 
@@ -97,7 +99,8 @@ Draft status shows while editing (“Saving draft…”, “Draft saved”).
 - Drafts are **browser-local**, not cross-device (Chrome and Safari do not share drafts).
 - Autosave debounces ~450ms and flushes on tab hide / unload (same pattern as Homepage).
 - No AI Generate text / no credit burn on this surface today.
-- **Send** means copy HTML — Hey Ralli does not deliver the email.
+- **Send** means copy to clipboard (full HTML or MTK rich text) — Hey Ralli does not deliver the email.
+- MTK paste does not include images; chairs upload artwork in Membership Toolkit using the placeholders.
 - Sponsor logos are required for display; missing logo blocks a clean sponsor row.
 
 ---
@@ -108,4 +111,5 @@ Draft status shows while editing (“Saving draft…”, “Draft saved”).
 2. Set issue name + header image.  
 3. Add one event story (featured) + one calendar chip + one sponsor with logo.  
 4. Preview phone → desktop.  
-5. Copy HTML and confirm sections + images.
+5. Copy email HTML and confirm sections + images.  
+6. Copy for Membership Toolkit and confirm rich paste + `[Image: …]` placeholders (no embedded images).
