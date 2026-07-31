@@ -74,7 +74,7 @@ export function parseRevisionNotes(raw: string | null | undefined): {
 export function deriveAiInstructionsFromNote(noteBody: string): string {
   const text = noteBody.trim();
   if (!text) {
-    return "Apply the approver's requested changes to the artwork and caption.";
+    return "Apply the approver's requested changes.";
   }
 
   let out = text
@@ -94,6 +94,7 @@ export function deriveAiInstructionsFromNote(noteBody: string): string {
 export function checklistFromTags(
   tags: RevisionTag[],
   scheduleLabel: string | null,
+  options?: { isFlyer?: boolean },
 ): Array<{
   id: string;
   tag: RevisionTag;
@@ -101,12 +102,19 @@ export function checklistFromTags(
   detail: string;
   done: boolean;
 }> {
+  const isFlyer = Boolean(options?.isFlyer);
   const source =
-    tags.length > 0 ? tags : (["Artwork", "Date", "Caption"] as RevisionTag[]);
+    tags.length > 0
+      ? tags
+      : isFlyer
+        ? (["Artwork", "Date", "Copy"] as RevisionTag[])
+        : (["Artwork", "Date", "Caption"] as RevisionTag[]);
 
   const details: Record<RevisionTag, string> = {
     Artwork: "Update the creative",
-    Date: scheduleLabel || "Adjust publish date if needed",
+    Date:
+      scheduleLabel ||
+      (isFlyer ? "Adjust event date if needed" : "Adjust publish date if needed"),
     Caption: "Optional — match new details",
     Copy: "Update wording",
     Subject: "Email subject line",

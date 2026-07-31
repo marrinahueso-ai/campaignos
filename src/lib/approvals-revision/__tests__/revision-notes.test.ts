@@ -56,6 +56,15 @@ describe("deriveAiInstructionsFromNote", () => {
       /approver's requested changes/i,
     );
   });
+
+  it("uses flyer checklist defaults when empty tags", () => {
+    const defaults = checklistFromTags([], null, { isFlyer: true });
+    assert.deepEqual(
+      defaults.map((row) => row.tag),
+      ["Artwork", "Date", "Copy"],
+    );
+    assert.match(defaults[1]?.detail ?? "", /event date/i);
+  });
 });
 
 describe("mergeRevisionResubmitFields", () => {

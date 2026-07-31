@@ -53,7 +53,7 @@ export function ChangeRequestBanner({
             : "text-xs font-semibold tracking-[0.12em] text-red-800 uppercase"
         }
       >
-        {awaitingApproval ? "Awaiting approval" : "Changes requested"}
+        {awaitingApproval ? "Waiting for approval" : "Changes requested"}
       </p>
       {!awaitingApproval ? (
         displayComment ? (

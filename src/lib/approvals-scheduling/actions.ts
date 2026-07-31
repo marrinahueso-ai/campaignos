@@ -417,6 +417,7 @@ async function runApproveSchedulingSideEffects(input: {
         recipientEmail: creatorEmail,
         scheduleLabel: formatDateTime(row.schedule_at),
         schedulingItemId,
+        campaignMilestoneId: row.campaign_milestone_id,
         feedArtworkUrl: row.feed_artwork_url,
         storyArtworkUrl: row.story_artwork_url,
         captionText: row.caption_text,
@@ -784,10 +785,18 @@ export async function resubmitUnifiedApprovalAction(input: {
       storyCaption: mergedSnapshot.storyCaption,
     });
   }
+  const { isFlyerComposerMilestoneId } = await import(
+    "@/lib/flyer-composer/approval"
+  );
+  const isFlyerResubmit = isFlyerComposerMilestoneId(
+    schedulingRow?.campaign_milestone_id,
+  );
   await logEventActivity({
     eventId: input.eventId,
     activityType: "board_approval",
-    title: "Post sent for re-approval",
+    title: isFlyerResubmit
+      ? "Flyer sent for re-approval"
+      : "Post sent for re-approval",
     description: `${input.milestoneName} is back in the approval queue.`,
   });
 

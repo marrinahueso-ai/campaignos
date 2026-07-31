@@ -169,7 +169,7 @@ export function mapApprovalItemToRevision(
     revisionTags: parsedNotes.tags,
     checklist:
       mode === "creator"
-        ? checklistFromTags(parsedNotes.tags, item.scheduleLabel)
+        ? checklistFromTags(parsedNotes.tags, item.scheduleLabel, { isFlyer })
         : [],
     timeline,
     editArtworkHref,
