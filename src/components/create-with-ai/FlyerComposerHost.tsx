@@ -1,3 +1,6 @@
+import { statSync } from "node:fs";
+import { join } from "node:path";
+
 type FlyerComposerHostProps = {
   view?: string | null;
   eventId?: string | null;
@@ -5,6 +8,20 @@ type FlyerComposerHostProps = {
 };
 
 const VALID_VIEWS = new Set(["start", "inputs", "result", "edit"]);
+
+/** Bust iframe cache when the static flyer HTML file changes. */
+function flyerHtmlCacheKey(): string {
+  try {
+    return String(
+      Math.floor(
+        statSync(join(process.cwd(), "public/create-with-ai-flyer.html"))
+          .mtimeMs,
+      ),
+    );
+  } catch {
+    return "1";
+  }
+}
 
 /** Hosts the static Flyer composer inside dashboard Sidebar + header chrome. */
 export function FlyerComposerHost({
@@ -21,7 +38,11 @@ export function FlyerComposerHost({
           ? "edit"
           : "start";
 
-  const params = new URLSearchParams({ embed: "1", view: resolved });
+  const params = new URLSearchParams({
+    embed: "1",
+    view: resolved,
+    v: flyerHtmlCacheKey(),
+  });
   const trimmedEventId = eventId?.trim();
   if (trimmedEventId) {
     params.set("eventId", trimmedEventId);

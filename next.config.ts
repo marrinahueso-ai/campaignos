@@ -121,6 +121,8 @@ const FLYER_EMBED_CSP = [
 const FLYER_EMBED_HEADERS = [
   { key: "Content-Security-Policy", value: FLYER_EMBED_CSP },
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  // Static public HTML is easy to pin in the browser / iframe; always revalidate.
+  { key: "Cache-Control", value: "no-store, must-revalidate" },
 ];
 
 const analyzeEnabled = process.env.ANALYZE === "true";
