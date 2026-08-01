@@ -12,14 +12,11 @@ import {
   FLYER_REVISION_TAGS,
   SOCIAL_REVISION_TAGS,
 } from "@/lib/approvals-revision/revision-notes";
-import {
-  approveUnifiedItemAction,
-  requestUnifiedChangesAction,
-} from "@/lib/approvals-scheduling/actions";
+import { requestUnifiedChangesAction } from "@/lib/approvals-scheduling/actions";
 
 /**
- * Approver Request changes card — matches mockup § Approver.
- * Branches Social (feed+story) vs Flyer (print) from model.contentType.
+ * Approver Request changes card — UX Pilot: note + tags, then Send.
+ * Approve stays on open review. Branches Social vs Flyer from contentType.
  */
 export function ApproverRequestCard({
   model,
@@ -38,6 +35,7 @@ export function ApproverRequestCard({
   );
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const canSend = note.trim().length > 0;
 
   function toggleTag(tag: RevisionTag) {
     setTags((prev) =>
@@ -45,7 +43,7 @@ export function ApproverRequestCard({
     );
   }
 
-  function onRequestChanges() {
+  function onSendChangeRequest() {
     if (model.isDemo) {
       setMessage(
         "Demo fixture — open a real Changes item from Approvals to save.",
@@ -76,42 +74,16 @@ export function ApproverRequestCard({
     });
   }
 
-  function onApprove() {
-    if (model.isDemo) {
-      setMessage("Demo fixture — approve from a real Approvals item.");
-      return;
-    }
-    setError(null);
-    startTransition(async () => {
-      const result = await approveUnifiedItemAction({
-        eventId: model.eventId,
-        communicationItemId: model.communicationItemId,
-        schedulingItemId: model.schedulingItemId,
-        campaignName: model.campaignName,
-        milestoneName: model.milestoneName,
-      });
-      if (!result.success) {
-        setError(result.error ?? "Couldn’t approve that. Try again.");
-        return;
-      }
-      if (result.warning) {
-        setMessage(result.warning);
-      }
-      router.push("/approvals");
-      router.refresh();
-    });
-  }
-
   return (
     <div className="rev-shell">
       <Link href={model.backHref} className="rev-back">
-        ← Back to Approvals
+        ← Back to review
       </Link>
       <h1>{model.title}</h1>
       <p className="rev-lede">
         {isFlyer
-          ? "Review the print flyer artwork. Add a short note and optional tags so the creator checklist writes itself."
-          : "Review feed (1:1) and story (9:16) together. Add a short note and optional tags so the creator checklist writes itself."}
+          ? "Tell the creator what to fix on the print flyer. They’ll update it and send it back."
+          : "Tell the creator what to fix. They’ll update the post and send it back."}
       </p>
 
       <div className="rev-card">
@@ -139,7 +111,7 @@ export function ApproverRequestCard({
                 id="rev-approver-note"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Add a short note…"
+                placeholder="e.g. Warm up the headline, make the logo bigger, move the date to Aug 12…"
                 disabled={pending}
               />
             </div>
@@ -163,24 +135,18 @@ export function ApproverRequestCard({
             <div className="rev-actions">
               <button
                 type="button"
-                className="rev-btn rev-btn-danger-soft"
-                onClick={onRequestChanges}
-                disabled={pending}
-              >
-                {pending ? "Saving…" : "Request changes"}
-              </button>
-              <button
-                type="button"
                 className="rev-btn rev-btn-primary"
-                onClick={onApprove}
-                disabled={pending}
+                onClick={onSendChangeRequest}
+                disabled={pending || !canSend}
               >
-                {isFlyer ? "Approve" : "Approve & schedule"}
+                {pending ? "Sending…" : "Send change request"}
               </button>
+              <Link href={model.backHref} className="rev-btn rev-btn-secondary">
+                Cancel
+              </Link>
               <p className="rev-hint">
-                {isFlyer
-                  ? "Tags become the creator’s revision checklist. Flyer approval saves a print-ready draft — nothing posts to Meta."
-                  : "Tags become the creator’s revision checklist. Works the same when content type is Newsletter or Homepage later."}
+                Tags become the creator’s revision checklist. Creator will be
+                notified by email.
               </p>
               {error ? (
                 <p className="rev-hint" role="alert" style={{ color: "#a65a3a" }}>

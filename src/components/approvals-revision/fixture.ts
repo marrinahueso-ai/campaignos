@@ -64,7 +64,7 @@ export const REVISION_DEMO_CREATOR: RevisionWorkspaceModel = {
   ],
   editArtworkHref: null,
   changeDateHref: null,
-  backHref: "/approvals",
+  backHref: "/approvals?review=demo",
   eventId: "demo-event",
   campaignName: "Fall Festival",
   milestoneName: "Milestone 2",

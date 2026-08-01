@@ -174,7 +174,8 @@ export function mapApprovalItemToRevision(
     timeline,
     editArtworkHref,
     changeDateHref,
-    backHref: "/approvals",
+    // Reopen open review for this item (approver “Back to review”).
+    backHref: `/approvals?review=${encodeURIComponent(item.id)}`,
     eventId: item.eventId,
     campaignName: item.campaignName,
     milestoneName: item.milestoneName,

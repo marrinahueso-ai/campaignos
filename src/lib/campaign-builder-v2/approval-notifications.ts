@@ -126,9 +126,18 @@ async function logApprovalNotification(input: {
   }
 }
 
-function approvalsPageUrl(eventId: string): string {
+function approvalsPageUrl(
+  eventId: string,
+  options?: { schedulingItemId?: string | null },
+): string {
   const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
-  return `${base}/approvals?event=${eventId}`;
+  const params = new URLSearchParams({ event: eventId });
+  // Create with AI / unified hub ids use `cb2-{scheduling_item_id}`.
+  const schedulingItemId = options?.schedulingItemId?.trim();
+  if (schedulingItemId) {
+    params.set("review", `cb2-${schedulingItemId}`);
+  }
+  return `${base}/approvals?${params.toString()}`;
 }
 
 async function dispatchApprovalEmail(input: {
@@ -264,7 +273,9 @@ export async function sendApprovalAssignedEmail(
     isFlyer,
   );
   const label = contentLabel(input.milestoneName, input.campaignName);
-  const href = approvalsPageUrl(input.eventId);
+  const href = approvalsPageUrl(input.eventId, {
+    schedulingItemId: input.schedulingItemId,
+  });
   const mail = buildApprovalTransactionalEmail({
     categoryLabel: "APPROVAL",
     headline: "Approval assigned to you",
@@ -306,7 +317,9 @@ export async function sendApprovalResubmittedEmail(
     isFlyer,
   );
   const label = contentLabel(input.milestoneName, input.campaignName);
-  const href = approvalsPageUrl(input.eventId);
+  const href = approvalsPageUrl(input.eventId, {
+    schedulingItemId: input.schedulingItemId,
+  });
   const mail = buildApprovalTransactionalEmail({
     categoryLabel: "APPROVAL",
     headline: "Ready for another look",

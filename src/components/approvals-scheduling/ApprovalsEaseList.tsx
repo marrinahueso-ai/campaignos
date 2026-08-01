@@ -217,15 +217,11 @@ export function ApprovalsQueueRow({
       className={cn(
         "grid w-full items-center gap-3.5 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.55)] px-3.5 py-3 transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)]",
         showRetry
-          ? "grid-cols-[56px_1fr_auto] sm:grid-cols-[56px_1fr_auto_auto_auto]"
-          : "grid-cols-[56px_1fr_auto] sm:grid-cols-[56px_1fr_auto_auto]",
+          ? "grid-cols-[56px_1fr_auto_auto] sm:grid-cols-[56px_1fr_auto_auto_auto_auto]"
+          : "grid-cols-[56px_1fr_auto] sm:grid-cols-[56px_1fr_auto_auto_auto]",
       )}
     >
-      <button
-        type="button"
-        onClick={() => onReview(item)}
-        className="col-span-2 grid min-w-0 grid-cols-[56px_1fr] items-center gap-3.5 text-left sm:col-span-3 sm:grid-cols-[56px_1fr_auto_auto] sm:gap-3.5"
-      >
+      <div className="col-span-2 grid min-w-0 grid-cols-[56px_1fr] items-center gap-3.5 sm:col-span-3 sm:grid-cols-[56px_1fr_auto_auto] sm:gap-3.5">
         <ArtTile
           item={item}
           className="relative h-14 w-14 shrink-0 rounded-xl"
@@ -256,6 +252,13 @@ export function ApprovalsQueueRow({
             </span>
           ) : null}
         </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => onReview(item)}
+        className="rounded-full border border-cos-border bg-cos-card px-3 py-2 text-[12px] font-bold text-cos-text transition hover:border-[#6b8171] hover:-translate-y-px"
+      >
+        View
       </button>
       {showRetry ? (
         <button

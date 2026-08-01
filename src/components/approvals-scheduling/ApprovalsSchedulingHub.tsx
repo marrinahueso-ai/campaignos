@@ -2,10 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { Search } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { revisionPath } from "@/components/approvals-revision/map-item";
-import { ApprovalFlowGuide } from "@/components/approvals-scheduling/ApprovalFlowGuide";
 import {
   ApprovalsEmptyEase,
   ApprovalsFocusCard,
@@ -95,6 +94,7 @@ export function ApprovalsSchedulingHub({
   initialSummaryLayout: _initialSummaryLayout,
 }: ApprovalsSchedulingHubProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const refreshApprovalsTab = useEventTabMutationRefresh("approvals");
   const lockedId = lockedEventId?.trim() || null;
   const [activeFilter, setActiveFilter] = useState<ApprovalsEasePulse>(
@@ -107,6 +107,7 @@ export function ApprovalsSchedulingHub({
     initialSearchFromEventFilter(initialEventFilter, campaigns, lockedId),
   );
   const [reviewItem, setReviewItem] = useState<UnifiedApprovalItem | null>(null);
+  const openedReviewFromQuery = useRef<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -192,6 +193,25 @@ export function ApprovalsSchedulingHub({
       );
     });
   }
+
+  // Deep link from Request changes “Back to review” / email invite → open view.
+  useEffect(() => {
+    const reviewId = searchParams.get("review")?.trim();
+    if (!reviewId || openedReviewFromQuery.current === reviewId) {
+      return;
+    }
+    const match = items.find((item) => item.id === reviewId);
+    if (!match) {
+      return;
+    }
+    openedReviewFromQuery.current = reviewId;
+    openReview(match);
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("review");
+    const qs = next.toString();
+    router.replace(qs ? `/approvals?${qs}` : "/approvals", { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open once per review id
+  }, [items, searchParams, router]);
 
   async function handleApprove() {
     if (!reviewItem) {
@@ -471,8 +491,6 @@ export function ApprovalsSchedulingHub({
           </>
         )}
       </section>
-
-      {!embedded ? <ApprovalFlowGuide /> : null}
 
       <ReviewDrawer
         item={reviewItem}

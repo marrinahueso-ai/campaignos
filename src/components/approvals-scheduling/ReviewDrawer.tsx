@@ -409,7 +409,7 @@ export function ReviewDrawer({
                 type="button"
                 disabled={isSubmitting}
                 onClick={onApprove}
-                className="rounded-full bg-cos-text px-[18px] py-2.5 text-[13px] font-bold text-cos-card transition hover:bg-[#1a1714] disabled:opacity-50"
+                className="rounded-full bg-[var(--color-cos-success,#2f4a3c)] px-[18px] py-2.5 text-[13px] font-bold text-[#fffcf7] transition hover:brightness-110 disabled:opacity-50"
               >
                 {isSubmitting
                   ? "Saving…"
@@ -427,8 +427,8 @@ export function ReviewDrawer({
               </button>
               <p className="min-w-[160px] flex-1 text-xs text-cos-muted">
                 {isFlyer
-                  ? "Print draft only — leave your note on Request changes."
-                  : "Review only — leave your note on Request changes."}
+                  ? "Print draft only — notes go on Request changes."
+                  : "Leave your note on Request changes — not here."}
               </p>
             </>
           ) : item.workflowStatus === "scheduled" ||
