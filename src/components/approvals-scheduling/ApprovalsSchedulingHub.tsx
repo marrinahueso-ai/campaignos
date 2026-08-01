@@ -52,6 +52,14 @@ const ReviewDrawer = dynamic(
   { ssr: false },
 );
 
+const RequestChangesModal = dynamic(
+  () =>
+    import("@/components/approvals-scheduling/RequestChangesModal").then(
+      (module) => module.RequestChangesModal,
+    ),
+  { ssr: false },
+);
+
 const ApprovalClearedCelebration = dynamic(
   () =>
     import("@/components/motion/ApprovalClearedCelebration").then(
@@ -108,6 +116,9 @@ export function ApprovalsSchedulingHub({
     initialSearchFromEventFilter(initialEventFilter, campaigns, lockedId),
   );
   const [reviewItem, setReviewItem] = useState<UnifiedApprovalItem | null>(null);
+  const [requestItem, setRequestItem] = useState<UnifiedApprovalItem | null>(
+    null,
+  );
   const openedReviewFromQuery = useRef<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
@@ -169,14 +180,14 @@ export function ApprovalsSchedulingHub({
     ? canActOnUnifiedItem(reviewItem, canViewAll)
     : false;
 
-  /** Changes-requested → new Revision shell (creator). Do not use legacy drawer. */
+  /** Changes-requested → Revision shell (creator). */
   function openRevisionCreator(item: UnifiedApprovalItem) {
     router.push(revisionPath(item.id, "creator"));
   }
 
-  /** Request changes → new Revision shell (approver). Do not merge into drawer. */
-  function openRevisionApprover(item: UnifiedApprovalItem) {
-    router.push(revisionPath(item.id, "approver"));
+  function openRequestChanges(item: UnifiedApprovalItem) {
+    setReviewItem(null);
+    setRequestItem(item);
   }
 
   function openReview(item: UnifiedApprovalItem) {
@@ -184,6 +195,7 @@ export function ApprovalsSchedulingHub({
       openRevisionCreator(item);
       return;
     }
+    setRequestItem(null);
     setReviewItem(item);
     if (!unifiedItemNeedsPreviewEnrichment(item)) {
       return;
@@ -493,15 +505,30 @@ export function ApprovalsSchedulingHub({
         onApprove={handleApprove}
         onRequestChanges={() => {
           if (!reviewItem) return;
-          // Change-request UX lives only on the Revision shell — not the open view.
-          openRevisionApprover(reviewItem);
-          setReviewItem(null);
+          openRequestChanges(reviewItem);
         }}
         onRetry={
           reviewItem ? () => void handleRetry(reviewItem) : undefined
         }
         isSubmitting={isSubmitting || retryingId === reviewItem?.id}
         canAct={canActOnReviewItem}
+      />
+
+      <RequestChangesModal
+        item={requestItem}
+        open={Boolean(requestItem)}
+        onClose={() => setRequestItem(null)}
+        onBackToReview={() => {
+          if (!requestItem) return;
+          const item = requestItem;
+          setRequestItem(null);
+          setReviewItem(item);
+        }}
+        onSuccess={() => {
+          setRequestItem(null);
+          setReviewItem(null);
+          void refreshApprovalsTab();
+        }}
       />
 
       <ApprovalClearedCelebration

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { revisionPath } from "@/components/approvals-revision/map-item";
+import { RequestChangesModal } from "@/components/approvals-scheduling/RequestChangesModal";
 import { ReviewDrawer } from "@/components/approvals-scheduling/ReviewDrawer";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import {
@@ -79,6 +80,9 @@ export function EventDetailApprovalsEasePanel({
   const [reviewItem, setReviewItem] = useState<UnifiedApprovalItem | null>(
     null,
   );
+  const [requestItem, setRequestItem] = useState<UnifiedApprovalItem | null>(
+    null,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -109,6 +113,7 @@ export function EventDetailApprovalsEasePanel({
       router.push(revisionPath(item.id, "creator"));
       return;
     }
+    setRequestItem(null);
     setReviewItem(item);
   };
 
@@ -216,7 +221,7 @@ export function EventDetailApprovalsEasePanel({
         onApprove={handleApprove}
         onRequestChanges={() => {
           if (!reviewItem) return;
-          router.push(revisionPath(reviewItem.id, "approver"));
+          setRequestItem(reviewItem);
           setReviewItem(null);
         }}
         onRetry={
@@ -230,6 +235,23 @@ export function EventDetailApprovalsEasePanel({
             ? canActOnUnifiedItem(reviewItem, canViewAll)
             : false
         }
+      />
+
+      <RequestChangesModal
+        item={requestItem}
+        open={Boolean(requestItem)}
+        onClose={() => setRequestItem(null)}
+        onBackToReview={() => {
+          if (!requestItem) return;
+          const item = requestItem;
+          setRequestItem(null);
+          setReviewItem(item);
+        }}
+        onSuccess={() => {
+          setRequestItem(null);
+          setReviewItem(null);
+          void refresh();
+        }}
       />
 
       <ApprovalClearedCelebration
