@@ -8,9 +8,7 @@ function readSrc(relativeFromTest: string): string {
 
 describe("tasks ease UI contracts", () => {
   const shell = readSrc("../../../components/tasks-v2/TasksEaseShell.tsx");
-  const list = readSrc("../../../components/tasks-v2/TasksEaseList.tsx");
   const board = readSrc("../../../components/tasks-v2/TasksEaseBoard.tsx");
-  const customBoard = readSrc("../../../components/tasks-v2/TasksEaseCustomBoard.tsx");
   const page = readSrc("../../../app/(dashboard)/tasks/page.tsx");
 
   it("wires /tasks to the Ease shell, not the dense TasksV2Shell", () => {
@@ -25,12 +23,15 @@ describe("tasks ease UI contracts", () => {
     assert.doesNotMatch(shell, /My Tasks/);
   });
 
-  it("uses short List / Status / Focus / Custom view labels", () => {
-    assert.match(shell, /label: "List"/);
-    assert.match(shell, /label: "Status"/);
-    assert.match(shell, /label: "Focus"/);
-    assert.match(shell, /label: "Custom"/);
-    assert.match(shell, /role="tablist"/);
+  it("keeps Status board as the only Tasks view", () => {
+    assert.match(shell, /TasksEaseBoard/);
+    assert.match(shell, /Status/);
+    assert.doesNotMatch(shell, /TasksEaseList/);
+    assert.doesNotMatch(shell, /TasksEaseCustomBoard/);
+    assert.doesNotMatch(shell, /label: "List"/);
+    assert.doesNotMatch(shell, /label: "Focus"/);
+    assert.doesNotMatch(shell, /label: "Custom"/);
+    assert.doesNotMatch(shell, /role="tablist"/);
   });
 
   it("shows pulse filters as quiet text links with counts", () => {
@@ -39,45 +40,29 @@ describe("tasks ease UI contracts", () => {
     assert.doesNotMatch(shell, /TasksV2SummaryCards/);
   });
 
-  it("uses DashboardWidgetColorPicker (dot variant) for event + column colors", () => {
+  it("uses DashboardWidgetColorPicker (dot variant) for event chips", () => {
     assert.match(shell, /DashboardWidgetColorPicker/);
     assert.match(shell, /variant="dot"/);
-    assert.match(list, /DashboardWidgetColorPicker/);
-    assert.match(board, /DashboardWidgetColorPicker/);
-    assert.match(customBoard, /DashboardWidgetColorPicker/);
   });
 
-  it("lists tasks in a Pilot table with event links and color stripe", () => {
-    assert.match(list, /group\.eventHref/);
-    assert.match(list, /borderLeft: `4px solid \$\{stripeColor\}`/);
-    assert.match(list, /<table/);
-    assert.match(list, /Due Date/);
-    assert.match(list, /Priority/);
-    assert.match(list, /deriveTaskPriority/);
-    assert.match(list, /Escalate/);
+  it("renders Pilot status columns with Needs Review and quick-add", () => {
+    assert.match(board, /Needs Review/);
+    assert.match(board, /onAddTask/);
+    assert.match(board, /To Do/);
+    assert.match(board, /In Progress/);
+    assert.match(board, /borderLeft: `3px solid \$\{eventColor\}`/);
+    assert.match(shell, /onAddTask=\{data\.canEdit \? openAddTask/);
   });
 
   it("mutes completed tasks with line-through title styling", () => {
-    assert.match(list, /isDone && "text-cos-muted line-through"/);
-    assert.match(board, /isDone && "text-cos-muted line-through"/);
-    assert.match(customBoard, /isDone && "text-cos-muted line-through"/);
-  });
-
-  it("keeps board columns event-linked with a card stripe color", () => {
-    assert.match(board, /borderLeft: `3px solid \$\{eventColor\}`/);
-    assert.match(board, /borderTop: `3px solid \$\{columnColor\}`/);
+    assert.match(board, /isDone && "text-cos-muted mb-2 line-through"/);
   });
 
   it("offers Ask AI for tasks + Add task actions in the header", () => {
     assert.match(shell, /Ask AI for tasks/);
     assert.match(shell, /Add task/);
     assert.match(shell, /createTaskHubTaskAction/);
-  });
-
-  it("keeps custom boards as a rearrangement of existing event tasks (no new task type)", () => {
-    assert.match(customBoard, /loadTasksEaseCustomBoard/);
-    assert.match(customBoard, /resolveCustomColumnId/);
-    assert.doesNotMatch(customBoard, /createTaskHubTaskAction/);
+    assert.match(shell, /openAddTask/);
   });
 
   it("uses Ease task drawer with due date, assignee, priority, and notes", () => {

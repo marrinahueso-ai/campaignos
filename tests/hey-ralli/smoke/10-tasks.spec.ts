@@ -18,7 +18,7 @@ test.describe("Tasks workspace (Ease)", () => {
     await loginWithTestUser(page);
   });
 
-  test("Tasks page loads with Team/Mine scope and List/Status/Focus/Custom views", async ({
+  test("Tasks page loads with Team/Mine scope and Status board", async ({
     page,
   }) => {
     await gotoTasks(page);
@@ -33,21 +33,19 @@ test.describe("Tasks workspace (Ease)", () => {
     await expect(main.getByRole("group", { name: /who.s tasks/i }).getByText(/^team$/i)).toBeVisible();
     await expect(main.getByRole("group", { name: /who.s tasks/i }).getByText(/^mine$/i)).toBeVisible();
 
-    await expect(main.getByRole("tab", { name: /^list$/i })).toBeVisible();
-    await expect(main.getByRole("tab", { name: /^status$/i })).toBeVisible();
-    await expect(main.getByRole("tab", { name: /^focus$/i })).toBeVisible();
-    await expect(main.getByRole("tab", { name: /^custom$/i })).toBeVisible();
+    await expect(main.getByText(/^status$/i).first()).toBeVisible();
+    await expect(main.getByRole("tab", { name: /^list$/i })).toHaveCount(0);
+    await expect(main.getByRole("tab", { name: /^focus$/i })).toHaveCount(0);
+    await expect(main.getByRole("tab", { name: /^custom$/i })).toHaveCount(0);
 
     await expect(main.getByRole("button", { name: /ask ai for tasks/i })).toBeVisible();
     await expect(main.getByRole("button", { name: /^add task$/i })).toBeVisible();
 
-    // Old dense chrome is gone.
     await expect(main.getByRole("tab", { name: /main table/i })).toHaveCount(0);
     await expect(main.getByRole("tab", { name: /^my tasks$/i })).toHaveCount(0);
-    await expect(main.getByRole("tab", { name: /^board$/i })).toHaveCount(0);
   });
 
-  test("Mine scope shows a personal, event-grouped list", async ({ page }) => {
+  test("Mine scope shows personal tasks without erroring", async ({ page }) => {
     await gotoTasks(page);
     const main = mainContent(page);
 
@@ -55,22 +53,17 @@ test.describe("Tasks workspace (Ease)", () => {
     await expect(page).toHaveURL(/scope=mine/);
     await expect(main).not.toContainText("Internal Server Error");
 
-    // Empty or populated are both valid — surface should not error.
     await expect(
       main
-        .getByText(/nothing assigned to you|no tasks yet/i)
-        .or(main.locator("table"))
-        .or(main.locator("article"))
+        .getByText(/no tasks on the board|nothing assigned to you/i)
+        .or(main.getByText(/^to do$/i))
         .first(),
     ).toBeVisible({ timeout: 20_000 });
   });
 
-  test("Status and Focus boards render event-linked columns", async ({ page }) => {
+  test("Status board renders event-linked columns", async ({ page }) => {
     await gotoTasks(page);
     const main = mainContent(page);
-
-    await main.getByRole("tab", { name: /^status$/i }).click();
-    await expect(page).toHaveURL(/view=board/);
     await expect(main).not.toContainText("Internal Server Error");
 
     const emptyBoard = main.getByText(/no tasks on the board/i);
@@ -79,38 +72,26 @@ test.describe("Tasks workspace (Ease)", () => {
     } else {
       await expect(main.getByText(/^to do$/i)).toBeVisible({ timeout: 20_000 });
       await expect(main.getByText(/^done$/i)).toBeVisible();
-    }
-
-    await main.getByRole("tab", { name: /^focus$/i }).click();
-    await expect(page).toHaveURL(/view=focus/);
-    await expect(main).not.toContainText("Internal Server Error");
-    if (!(await emptyBoard.isVisible().catch(() => false))) {
-      await expect(main.getByText(/^to-do$/i)).toBeVisible({ timeout: 20_000 });
-      await expect(main.getByText(/^this week$/i)).toBeVisible();
-      await expect(main.getByText(/^in progress$/i)).toBeVisible();
+      await expect(main.getByText(/^needs review$/i)).toBeVisible();
     }
   });
 
-  test("Custom board offers a column editor", async ({ page }) => {
+  test("Add task opens the Pilot modal", async ({ page }) => {
     await gotoTasks(page);
     const main = mainContent(page);
 
-    await main.getByRole("tab", { name: /^custom$/i }).click();
-    await expect(page).toHaveURL(/view=custom/);
-    await expect(main).not.toContainText("Internal Server Error");
-    await expect(main.getByRole("heading", { name: /custom board/i })).toBeVisible();
-    await expect(main.getByRole("button", { name: /add column/i })).toBeVisible();
-    await expect(main.getByRole("button", { name: /open board/i })).toBeVisible();
+    await main.getByRole("button", { name: /^add task$/i }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    await expect(dialog.getByRole("heading", { name: /add a task/i })).toBeVisible();
+    await expect(dialog.getByText(/tell your team what needs doing/i)).toBeVisible();
   });
 
-  test("Opening a task shows the notes drawer", async ({ page }) => {
+  test("Opening a task shows the edit modal with notes", async ({ page }) => {
     await gotoTasks(page);
     const main = mainContent(page);
 
-    const taskTitle = main
-      .locator("table button strong")
-      .or(main.locator("article button strong"))
-      .first();
+    const taskTitle = main.locator("h4").first();
     if ((await taskTitle.count()) === 0) {
       test.skip(true, "No tasks available to open in this environment.");
       return;

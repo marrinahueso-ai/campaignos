@@ -267,6 +267,6 @@ test.describe("Launch checklist (settings / team / billing / approvals)", () => 
     await expect(
       main.getByRole("button", { name: /^add task$/i }).first(),
     ).toBeVisible();
-    await expect(main.getByRole("tab", { name: /^list$/i })).toBeVisible();
+    await expect(main.getByText(/^status$/i).first()).toBeVisible();
   });
 });

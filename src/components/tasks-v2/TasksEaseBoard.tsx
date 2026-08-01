@@ -1,30 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
+import { Calendar, Check, MoreHorizontal, Paperclip, Plus } from "lucide-react";
 import {
   readTaskHubDragPayload,
   setTaskHubDragData,
 } from "@/components/task-hub/task-hub-dnd";
-import {
-  updateTaskHubTaskAction,
-  updateTaskHubTaskStatusAction,
-} from "@/lib/task-hub/actions";
+import { TasksV2OwnerAvatar } from "@/components/tasks-v2/TasksV2OwnerAvatar";
+import { updateTaskHubTaskStatusAction } from "@/lib/task-hub/actions";
 import { tasksByBoardColumn } from "@/lib/task-hub/grouping";
-import {
-  FOCUS_BOARD_COLUMNS,
-  FOCUS_BOARD_LABELS,
-  FOCUS_IN_PROGRESS_WIP_LIMIT,
-  focusColumnDropPatch,
-  groupTasksByFocusColumn,
-  type FocusBoardColumn,
-} from "@/lib/tasks-v2/kanban-focus-board";
-import {
-  getColumnColorOverride,
-  loadTasksEaseColors,
-  resolveColumnColor,
-  saveColumnColor,
-} from "@/lib/tasks-v2/tasks-ease-colors";
 import { flattenEventGroups } from "@/lib/tasks-v2/group-by-event";
 import { formatLocalDate, getTodayDateString } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
@@ -32,46 +16,51 @@ import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 import type { TaskHubTaskItem } from "@/types/task-hub";
 import type { TasksV2EventGroup } from "@/types/tasks-v2";
 
-export type TasksEaseBoardMode = "status" | "focus";
-
 interface StatusColumnMeta {
   key: EventPlaybookTaskStatus;
   label: string;
-  defaultColor: string;
+  /** Show + to open Add task with this Board status. */
+  canQuickAdd: boolean;
+  accent?: "amber";
 }
 
 const STATUS_COLUMNS: StatusColumnMeta[] = [
-  { key: "todo", label: "To do", defaultColor: "#a65a3a" },
-  { key: "in_progress", label: "In progress", defaultColor: "#c4922e" },
-  { key: "blocked", label: "Deferred", defaultColor: "#7a7166" },
-  { key: "done", label: "Done", defaultColor: "#2a7a86" },
+  { key: "todo", label: "To Do", canQuickAdd: true },
+  { key: "in_progress", label: "In Progress", canQuickAdd: true },
+  { key: "blocked", label: "Needs Review", canQuickAdd: false, accent: "amber" },
+  { key: "done", label: "Done", canQuickAdd: false },
 ];
 
-const FOCUS_COLUMN_DEFAULT_COLOR: Record<FocusBoardColumn, string> = {
-  todo: "#a65a3a",
-  this_week: "#c4922e",
-  in_progress: "#6b8171",
-  done: "#2a7a86",
-};
-
 interface TasksEaseBoardProps {
-  mode: TasksEaseBoardMode;
   eventGroups: TasksV2EventGroup[];
   canEdit: boolean;
   eventColors: Record<string, string>;
+  viewerUserId?: string | null;
   onOpenTask: (task: TaskHubTaskItem) => void;
+  /** Open the Pilot Add task modal, optionally preselecting Board status. */
+  onAddTask?: (status: EventPlaybookTaskStatus) => void;
 }
 
 function cardDueLabel(task: TaskHubTaskItem, today: string): {
   label: string;
   overdue: boolean;
+  completed?: string;
 } {
   if (task.status === "done") {
-    return { label: "Done", overdue: false };
+    const due = task.monday?.mondayDueDate ?? task.dueDate;
+    return {
+      label: due
+        ? `Completed ${formatLocalDate(due, { month: "short", day: "numeric" })}`
+        : "Completed",
+      overdue: false,
+      completed: due
+        ? formatLocalDate(due, { month: "short", day: "numeric" })
+        : undefined,
+    };
   }
   const due = task.monday?.mondayDueDate ?? task.dueDate;
   if (!due) {
-    return { label: "\u2014", overdue: false };
+    return { label: "—", overdue: false };
   }
   if (due < today) {
     return { label: "Overdue", overdue: true };
@@ -83,13 +72,14 @@ function cardDueLabel(task: TaskHubTaskItem, today: string): {
 }
 
 export function TasksEaseBoard({
-  mode,
   eventGroups,
   canEdit,
   eventColors,
+  viewerUserId = null,
   onOpenTask,
+  onAddTask,
 }: TasksEaseBoardProps) {
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const sourceTasks = useMemo(
     () => flattenEventGroups(eventGroups),
     [eventGroups],
@@ -102,12 +92,6 @@ export function TasksEaseBoard({
     () => new Set(),
   );
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-  const [columnColorTick, setColumnColorTick] = useState(0);
-
-  useEffect(() => {
-    loadTasksEaseColors();
-    setColumnColorTick((tick) => tick + 1);
-  }, []);
 
   useEffect(() => {
     setTasks(sourceTasks);
@@ -168,61 +152,16 @@ export function TasksEaseBoard({
         return;
       }
       setTasks((current) =>
-        current.map((entry) => (entry.id === task.id ? { ...entry, status } : entry)),
+        current.map((entry) =>
+          entry.id === task.id ? { ...entry, status } : entry,
+        ),
       );
     });
-  }
-
-  function applyFocusDrop(task: TaskHubTaskItem, column: FocusBoardColumn) {
-    if (pendingTaskIds.has(task.id)) return;
-
-    const patch = focusColumnDropPatch(column);
-    const nextStatus = patch.status;
-    const nextDueDate = patch.dueDate !== undefined ? patch.dueDate : task.dueDate;
-
-    if (
-      resolveStatus(task) === nextStatus &&
-      (task.dueDate ?? null) === (nextDueDate ?? null)
-    ) {
-      return;
-    }
-
-    setTaskStatuses((current) => ({ ...current, [task.id]: nextStatus }));
-    setTasks((current) =>
-      current.map((entry) =>
-        entry.id === task.id
-          ? { ...entry, status: nextStatus, dueDate: nextDueDate ?? null }
-          : entry,
-      ),
-    );
-    setPending(task.id, true);
-
-    startTransition(async () => {
-      const result = await updateTaskHubTaskAction(
-        task.eventId,
-        task.id,
-        {
-          status: nextStatus,
-          ...(patch.dueDate !== undefined ? { dueDate: patch.dueDate } : {}),
-        },
-        task.title,
-      );
-      setPending(task.id, false);
-      if (!result.success) {
-        setTasks(sourceTasks);
-        setTaskStatuses({});
-      }
-    });
-  }
-
-  function handleColumnColorChange(key: string, color: string | null) {
-    saveColumnColor(key, color);
-    setColumnColorTick((tick) => tick + 1);
   }
 
   function handleDrop(
     event: React.DragEvent,
-    onMatch: (task: TaskHubTaskItem) => void,
+    status: EventPlaybookTaskStatus,
   ) {
     event.preventDefault();
     const payload = readTaskHubDragPayload(event);
@@ -232,18 +171,28 @@ export function TasksEaseBoard({
       setDragOverColumn(null);
       return;
     }
-    onMatch(task);
+    applyStatus(task, status);
     setDragOverColumn(null);
   }
 
   const today = getTodayDateString();
+  const resolved = tasks.map((task) => ({
+    ...task,
+    status: resolveStatus(task),
+  }));
+  const columns = tasksByBoardColumn(resolved);
 
-  function renderCard(task: TaskHubTaskItem) {
+  function renderCard(task: TaskHubTaskItem, columnAccent?: "amber") {
     const isPending = pendingTaskIds.has(task.id);
     const status = resolveStatus(task);
     const isDone = status === "done";
-    const eventColor = eventColorLookup.get(task.eventId) ?? "#2f4a3c";
+    const eventColor = eventColorLookup.get(task.eventId) ?? "#c4922e";
     const due = cardDueLabel({ ...task, status }, today);
+    const needsYou =
+      Boolean(viewerUserId) &&
+      task.assigneeUserId === viewerUserId &&
+      !isDone;
+    const hasNotes = Boolean(task.notes?.trim());
 
     return (
       <div
@@ -259,26 +208,81 @@ export function TasksEaseBoard({
         }}
         onClick={() => onOpenTask(task)}
         className={cn(
-          "mb-2 cursor-pointer rounded-2xl bg-cos-card p-3 text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition hover:-translate-y-0.5",
+          "cursor-grab rounded-2xl border border-[#e8e2d9] bg-white p-4 text-left transition hover:border-[#2f4a3c] hover:shadow-[0_4px_12px_rgba(47,74,60,0.05)] active:cursor-grabbing",
           isPending && "opacity-60",
-          isDone && "opacity-80",
+          columnAccent === "amber" && "border-amber-100 bg-amber-50/20",
+          isDone && "opacity-60",
         )}
         style={{ borderLeft: `3px solid ${eventColor}` }}
       >
-        <strong
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: eventColor }}
+              aria-hidden
+            />
+            <span className="truncate text-[10px] font-bold tracking-tighter text-[#a8a29c] uppercase">
+              {task.event.eventTitle}
+            </span>
+          </div>
+          {needsYou ? (
+            <span className="shrink-0 rounded bg-amber-100 px-2 py-0.5 text-[9px] font-bold tracking-tighter text-amber-700 uppercase">
+              Needs you
+            </span>
+          ) : isDone ? (
+            <Check className="h-3 w-3 shrink-0 text-[#2f4a3c]" aria-hidden />
+          ) : (
+            <button
+              type="button"
+              aria-label={`Open ${task.title}`}
+              className="text-[#a8a29c] hover:text-[#2a2622]"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenTask(task);
+              }}
+            >
+              <MoreHorizontal className="h-3 w-3" aria-hidden />
+            </button>
+          )}
+        </div>
+
+        <h4
           className={cn(
-            "block truncate text-[13px] font-semibold text-cos-text",
-            isDone && "text-cos-muted line-through",
+            "mb-4 text-sm font-bold text-[#2a2622]",
+            isDone && "text-cos-muted mb-2 line-through",
           )}
         >
           {task.title}
-        </strong>
-        <span className="mt-1 block truncate text-[11px] font-semibold text-cos-muted">
-          {task.event.eventTitle}
-        </span>
-        <div className="mt-2.5 flex items-center justify-between gap-2 text-[11px] font-bold text-cos-muted">
-          <span className="truncate">{task.assigneeName ?? "Unassigned"}</span>
-          <span className={cn(due.overdue && "text-[#a65a3a]")}>{due.label}</span>
+        </h4>
+
+        <div className="flex items-center justify-between gap-2">
+          {isDone ? (
+            <span className="text-[10px] text-[#a8a29c]">{due.label}</span>
+          ) : hasNotes ? (
+            <div className="flex min-w-0 items-center gap-2 text-[11px] text-[#a8a29c]">
+              <Paperclip className="h-3 w-3 shrink-0" aria-hidden />
+              <span className="truncate">Has notes</span>
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "flex items-center gap-2 text-[11px]",
+                due.overdue
+                  ? "font-bold text-[#a67b27]"
+                  : "text-[#a8a29c]",
+              )}
+            >
+              <Calendar className="h-3 w-3 shrink-0" aria-hidden />
+              <span>{due.label}</span>
+            </div>
+          )}
+          <span className={cn(isDone && "grayscale")}>
+            <TasksV2OwnerAvatar
+              name={task.assigneeName}
+              initials={task.assigneeInitials}
+            />
+          </span>
         </div>
       </div>
     );
@@ -286,172 +290,107 @@ export function TasksEaseBoard({
 
   if (tasks.length === 0) {
     return (
-      <div className="rounded-[22px] border border-dashed border-cos-border bg-[rgba(255,252,247,0.55)] px-6 py-12 text-center">
-        <strong className="mb-2 block font-display text-[22px] font-semibold text-cos-text">
+      <div className="rounded-2xl border border-dashed border-[#e8e2d9] bg-white/70 px-6 py-12 text-center">
+        <strong
+          className="mb-2 block text-[22px] font-semibold text-[#2a2622]"
+          style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+        >
           No tasks on the board
         </strong>
-        <p className="mx-auto max-w-md text-sm leading-relaxed text-cos-muted">
+        <p className="mx-auto max-w-md text-sm leading-relaxed text-[#5c5752]">
           When your team adds tasks to events, they show up here as cards.
         </p>
+        {canEdit && onAddTask ? (
+          <button
+            type="button"
+            onClick={() => onAddTask("todo")}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#2f4a3c] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#253a2f]"
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden />
+            Add task
+          </button>
+        ) : null}
       </div>
     );
   }
-
-  if (mode === "status") {
-    const resolved = tasks.map((task) => ({ ...task, status: resolveStatus(task) }));
-    const columns = tasksByBoardColumn(resolved);
-
-    return (
-      <div className="space-y-3">
-        <div
-          key={columnColorTick}
-          className="grid gap-3 overflow-x-auto pb-1"
-          style={{ gridTemplateColumns: "repeat(4, minmax(200px, 1fr))" }}
-        >
-          {STATUS_COLUMNS.map((column) => {
-            const columnKey = `status:${column.key}`;
-            const columnColor = resolveColumnColor(columnKey, column.defaultColor);
-            const columnTasks = columns[column.key];
-
-            return (
-              <div
-                key={column.key}
-                onDragOver={(event) => {
-                  if (!canEdit) return;
-                  event.preventDefault();
-                  event.dataTransfer.dropEffect = "move";
-                  setDragOverColumn(columnKey);
-                }}
-                onDragLeave={() =>
-                  setDragOverColumn((current) => (current === columnKey ? null : current))
-                }
-                onDrop={(event) =>
-                  handleDrop(event, (task) => applyStatus(task, column.key))
-                }
-                className={cn(
-                  "min-h-[18rem] rounded-[18px] border border-cos-border p-3",
-                  dragOverColumn === columnKey &&
-                    "ring-2 ring-cos-brand-sage ring-offset-2 ring-offset-cos-bg",
-                )}
-                style={{
-                  borderTop: `3px solid ${columnColor}`,
-                  backgroundColor: `color-mix(in srgb, ${columnColor} 8%, rgba(255,252,247,0.7))`,
-                }}
-              >
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <DashboardWidgetColorPicker
-                      label={column.label}
-                      value={getColumnColorOverride(columnKey)}
-                      swatchColor={columnColor}
-                      variant="dot"
-                      onChange={(color) => handleColumnColorChange(columnKey, color)}
-                    />
-                    <h3 className="truncate font-display text-[15px] font-semibold text-cos-text">
-                      {column.label}
-                    </h3>
-                  </div>
-                  <span className="text-xs font-extrabold text-cos-muted">
-                    {columnTasks.length}
-                  </span>
-                </div>
-                {columnTasks.length === 0 ? (
-                  <p className="px-1 py-8 text-center text-xs text-cos-muted">
-                    {canEdit ? "Drop tasks here" : "No tasks"}
-                  </p>
-                ) : (
-                  columnTasks.map((task) => renderCard(task))
-                )}
-              </div>
-            );
-          })}
-        </div>
-        <p className="text-xs text-cos-muted">
-          Drag cards between columns — same tasks as each event’s Tasks tab.
-        </p>
-      </div>
-    );
-  }
-
-  const focusColumns = groupTasksByFocusColumn(tasks, taskStatuses);
 
   return (
-    <div className="space-y-3">
-      <div
-        key={columnColorTick}
-        className="grid gap-3 overflow-x-auto pb-1"
-        style={{ gridTemplateColumns: "repeat(4, minmax(200px, 1fr))" }}
-      >
-        {FOCUS_BOARD_COLUMNS.map((column) => {
-          const columnKey = `focus:${column}`;
-          const columnColor = resolveColumnColor(
-            columnKey,
-            FOCUS_COLUMN_DEFAULT_COLOR[column],
-          );
-          const columnTasks = focusColumns[column];
-          const countLabel =
-            column === "in_progress"
-              ? `${columnTasks.length} / ${FOCUS_IN_PROGRESS_WIP_LIMIT}`
-              : String(columnTasks.length);
+    <div className="flex gap-6 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {STATUS_COLUMNS.map((column) => {
+        const columnKey = `status:${column.key}`;
+        const columnTasks = columns[column.key];
 
-          return (
+        return (
+          <div
+            key={column.key}
+            onDragOver={(event) => {
+              if (!canEdit) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "move";
+              setDragOverColumn(columnKey);
+            }}
+            onDragLeave={() =>
+              setDragOverColumn((current) =>
+                current === columnKey ? null : current,
+              )
+            }
+            onDrop={(event) => handleDrop(event, column.key)}
+            className={cn(
+              "flex w-[320px] shrink-0 flex-col gap-4",
+              dragOverColumn === columnKey &&
+                "rounded-2xl ring-2 ring-[#2f4a3c]/30 ring-offset-2 ring-offset-[#f6f2eb]",
+            )}
+          >
             <div
-              key={column}
-              onDragOver={(event) => {
-                if (!canEdit) return;
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "move";
-                setDragOverColumn(columnKey);
-              }}
-              onDragLeave={() =>
-                setDragOverColumn((current) => (current === columnKey ? null : current))
-              }
-              onDrop={(event) =>
-                handleDrop(event, (task) => applyFocusDrop(task, column))
-              }
               className={cn(
-                "min-h-[18rem] rounded-[18px] border border-cos-border p-3",
-                dragOverColumn === columnKey &&
-                  "ring-2 ring-cos-brand-sage ring-offset-2 ring-offset-cos-bg",
+                "mb-2 flex items-center justify-between px-2",
+                column.accent === "amber" && "border-b-2 border-amber-100 pb-2",
               )}
-              style={{
-                borderTop: `3px solid ${columnColor}`,
-                backgroundColor: `color-mix(in srgb, ${columnColor} 8%, rgba(255,252,247,0.7))`,
-              }}
             >
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <DashboardWidgetColorPicker
-                    label={FOCUS_BOARD_LABELS[column]}
-                    value={getColumnColorOverride(columnKey)}
-                    swatchColor={columnColor}
-                    variant="dot"
-                    onChange={(color) => handleColumnColorChange(columnKey, color)}
-                  />
-                  <h3 className="truncate font-display text-[15px] font-semibold text-cos-text">
-                    {FOCUS_BOARD_LABELS[column]}
-                  </h3>
-                </div>
-                <span className="text-xs font-extrabold text-cos-muted">
-                  {countLabel}
+              <div className="flex items-center gap-3">
+                <h3 className="text-sm font-bold text-[#2a2622]">
+                  {column.label}
+                </h3>
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[10px] font-bold",
+                    column.accent === "amber"
+                      ? "bg-amber-50 text-amber-600"
+                      : "bg-[#e8e2d9]/40 text-[#5c5752]",
+                  )}
+                >
+                  {columnTasks.length}
                 </span>
               </div>
+              {column.canQuickAdd && canEdit && onAddTask ? (
+                <button
+                  type="button"
+                  aria-label={`Add task to ${column.label}`}
+                  onClick={() => onAddTask(column.key)}
+                  className="text-[#a8a29c] transition hover:text-[#2a2622]"
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+
+            <div
+              className={cn(
+                "flex min-h-[12rem] flex-col gap-3",
+                column.key === "done" && "opacity-60",
+              )}
+            >
               {columnTasks.length === 0 ? (
-                <p className="px-1 py-8 text-center text-xs text-cos-muted">
+                <p className="px-2 py-8 text-center text-xs text-[#a8a29c]">
                   {canEdit ? "Drop tasks here" : "No tasks"}
                 </p>
               ) : (
-                columnTasks.map((task) => renderCard(task))
+                columnTasks.map((task) => renderCard(task, column.accent))
               )}
             </div>
-          );
-        })}
-      </div>
-      <p className="text-xs text-cos-muted" aria-live="polite">
-        {pending
-          ? "Saving…"
-          : "Sorted by what’s due soon — same tasks as each event’s Tasks tab."}
-      </p>
+          </div>
+        );
+      })}
     </div>
   );
 }

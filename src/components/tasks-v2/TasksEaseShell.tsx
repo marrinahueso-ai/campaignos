@@ -6,8 +6,6 @@ import { Calendar, CheckSquare, Shield, Sparkles, X } from "lucide-react";
 import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
 import { TasksEaseAskAi } from "@/components/tasks-v2/TasksEaseAskAi";
 import { TasksEaseBoard } from "@/components/tasks-v2/TasksEaseBoard";
-import { TasksEaseCustomBoard } from "@/components/tasks-v2/TasksEaseCustomBoard";
-import { TasksEaseList } from "@/components/tasks-v2/TasksEaseList";
 import { TasksEaseTaskDrawer } from "@/components/tasks-v2/TasksEaseTaskDrawer";
 import { eventTasksHref } from "@/lib/events/event-responsibility";
 import {
@@ -38,22 +36,9 @@ import type { TaskHubEventOption, TaskHubTaskItem } from "@/types/task-hub";
 import type { TasksV2EventGroup, TasksV2PageData } from "@/types/tasks-v2";
 
 export type TasksEaseScope = "team" | "mine";
-export type TasksEaseView = "list" | "board" | "focus" | "custom";
-
-const VIEW_TABS: { id: TasksEaseView; label: string }[] = [
-  { id: "list", label: "List" },
-  { id: "board", label: "Status" },
-  { id: "focus", label: "Focus" },
-  { id: "custom", label: "Custom" },
-];
 
 function parseScope(value: string | null): TasksEaseScope {
   return value === "mine" ? "mine" : "team";
-}
-
-function parseView(value: string | null): TasksEaseView {
-  if (value === "board" || value === "focus" || value === "custom") return value;
-  return "list";
 }
 
 function buildEmptyEventGroup(
@@ -114,9 +99,6 @@ export function TasksEaseShell({
   const [scope, setScope] = useState<TasksEaseScope>(() =>
     parseScope(searchParams.get("scope")),
   );
-  const [view, setView] = useState<TasksEaseView>(() =>
-    parseView(searchParams.get("view")),
-  );
   const [pulse, setPulse] = useState<TasksEasePulse | null>(() =>
     parseTasksEasePulse(searchParams.get("pulse")),
   );
@@ -152,7 +134,6 @@ export function TasksEaseShell({
   const syncUrl = useCallback(
     (next: {
       scope: TasksEaseScope;
-      view: TasksEaseView;
       pulse: TasksEasePulse | null;
       event: string | null;
     }) => {
@@ -160,8 +141,8 @@ export function TasksEaseShell({
       const params = new URLSearchParams(window.location.search);
       if (next.scope === "team") params.delete("scope");
       else params.set("scope", next.scope);
-      if (next.view === "list") params.delete("view");
-      else params.set("view", next.view);
+      // Status board is the only view — drop legacy List/Focus/Custom params.
+      params.delete("view");
       if (!next.pulse) params.delete("pulse");
       else params.set("pulse", next.pulse);
       if (!next.event) params.delete("event");
@@ -175,23 +156,25 @@ export function TasksEaseShell({
 
   function handleScopeChange(next: TasksEaseScope) {
     setScope(next);
-    syncUrl({ scope: next, view, pulse, event: eventFilter });
-  }
-
-  function handleViewChange(next: TasksEaseView) {
-    setView(next);
-    syncUrl({ scope, view: next, pulse, event: eventFilter });
+    syncUrl({ scope: next, pulse, event: eventFilter });
   }
 
   function handlePulseChange(next: TasksEasePulse) {
     const resolved = pulse === next ? null : next;
     setPulse(resolved);
-    syncUrl({ scope, view, pulse: resolved, event: eventFilter });
+    syncUrl({ scope, pulse: resolved, event: eventFilter });
   }
 
   function handleEventChipChange(next: string | null) {
     setEventFilter(next);
-    syncUrl({ scope, view, pulse, event: next });
+    syncUrl({ scope, pulse, event: next });
+  }
+
+  function openAddTask(status: EventPlaybookTaskStatus = "todo") {
+    setAddTaskSuccess(null);
+    setAddTaskError(null);
+    setAddTaskStatus(status);
+    setAddTaskOpen(true);
   }
 
   function rememberTaskPatch(next: TaskHubTaskItem) {
@@ -218,11 +201,11 @@ export function TasksEaseShell({
   const scopedGroups = useMemo(() => {
     if (scope === "mine") {
       return filterEventGroupsForMyView(data.eventGroups, data.viewer, "my_tasks", {
-        includeDone: view !== "list",
+        includeDone: true,
       });
     }
     return data.eventGroups;
-  }, [data.eventGroups, data.viewer, scope, view]);
+  }, [data.eventGroups, data.viewer, scope]);
 
   const eventScopedGroups = useMemo(() => {
     if (!eventFilter) {
@@ -459,7 +442,7 @@ export function TasksEaseShell({
       setAddTaskSuccess(`Added “${title}” to ${eventOption.eventTitle}.`);
       // Clear pulse so a Needs you / Done filter doesn’t hide the new task.
       setPulse(null);
-      syncUrl({ scope, view, pulse: null, event: eventFilter });
+      syncUrl({ scope, pulse: null, event: eventFilter });
     });
   }
 
@@ -502,11 +485,7 @@ export function TasksEaseShell({
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => {
-                setAddTaskSuccess(null);
-                setAddTaskError(null);
-                setAddTaskOpen(true);
-              }}
+              onClick={() => openAddTask("todo")}
               disabled={!data.canEdit}
               className="rounded-xl border border-[#e8e2d9] bg-white px-5 py-2.5 text-[14px] font-bold text-[#2a2622] transition hover:bg-[#faf8f5] disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -573,29 +552,14 @@ export function TasksEaseShell({
                 ))}
               </div>
 
-              <nav
+              <div
                 className="flex h-full items-center gap-6"
-                role="tablist"
-                aria-label="Task views"
+                aria-label="Task view"
               >
-                {VIEW_TABS.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={view === tab.id}
-                    onClick={() => handleViewChange(tab.id)}
-                    className={cn(
-                      "border-b-2 px-1 py-4 text-sm transition",
-                      view === tab.id
-                        ? "border-[#2f4a3c] font-bold text-[#2a2622]"
-                        : "border-transparent font-medium text-[#5c5752] hover:text-[#2a2622]",
-                    )}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </nav>
+                <span className="border-b-2 border-[#2f4a3c] px-1 py-4 text-sm font-bold text-[#2a2622]">
+                  Status
+                </span>
+              </div>
             </div>
 
             <div className="hidden items-center gap-6 pb-3 xl:flex">
@@ -745,46 +709,14 @@ export function TasksEaseShell({
         </div>
 
         <div>
-          {view === "list" ? (
-            <TasksEaseList
-              eventGroups={displayGroups}
-              canEdit={data.canEdit}
-              orgMembers={data.orgMembers}
-              eventColors={eventColors}
-              onEventColorChange={handleEventColorChange}
-              onOpenTask={setActiveTask}
-              viewerUserId={data.viewer.userId}
-              emptyTitle={
-                scope === "mine" ? "Nothing assigned to you" : "No tasks yet"
-              }
-              emptyBody={
-                scope === "mine"
-                  ? "When a teammate puts your name on an event task, it shows up here. Switch to Team to see everyone’s list."
-                  : eventFilter
-                    ? "Add a task or ask AI for suggestions for this event."
-                    : "When your team adds tasks to events, they show up here."
-              }
-            />
-          ) : null}
-
-          {view === "board" || view === "focus" ? (
-            <TasksEaseBoard
-              mode={view === "board" ? "status" : "focus"}
-              eventGroups={displayGroups}
-              canEdit={data.canEdit}
-              eventColors={eventColors}
-              onOpenTask={setActiveTask}
-            />
-          ) : null}
-
-          {view === "custom" ? (
-            <TasksEaseCustomBoard
-              eventGroups={displayGroups}
-              canEdit={data.canEdit}
-              eventColors={eventColors}
-              onOpenTask={setActiveTask}
-            />
-          ) : null}
+          <TasksEaseBoard
+            eventGroups={displayGroups}
+            canEdit={data.canEdit}
+            eventColors={eventColors}
+            viewerUserId={data.viewer.userId}
+            onOpenTask={setActiveTask}
+            onAddTask={data.canEdit ? openAddTask : undefined}
+          />
         </div>
       </div>
 
