@@ -340,6 +340,22 @@ function ComposerTopChrome({
 
 type ReviewHandoffOutcome = "sent" | "approved";
 
+type ReviewHandoffDetails = {
+  outcome: ReviewHandoffOutcome;
+  postCount: number;
+  reviewerName: string | null;
+  notifiedEmail: string | null;
+  emailSkippedReason: string | null;
+};
+
+const EMPTY_HANDOFF: ReviewHandoffDetails = {
+  outcome: "sent",
+  postCount: 0,
+  reviewerName: null,
+  notifiedEmail: null,
+  emailSkippedReason: null,
+};
+
 export function SocialMediaComposer({
   eventTitle: _eventTitle,
 }: {
@@ -348,7 +364,7 @@ export function SocialMediaComposer({
 }) {
   const { currentStep } = useCampaignBuilder();
   const [toast, setToast] = useState<string | null>(null);
-  const [reviewOutcome, setReviewOutcome] = useState<ReviewHandoffOutcome>("sent");
+  const [handoff, setHandoff] = useState<ReviewHandoffDetails>(EMPTY_HANDOFF);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function showToast(message: string) {
@@ -383,12 +399,9 @@ export function SocialMediaComposer({
                 {activeNav === "preview" ? (
                   <PreviewPanel onToast={showToast} />
                 ) : currentStep === "published" ? (
-                  <PublishedPanel outcome={reviewOutcome} />
+                  <PublishedPanel handoff={handoff} />
                 ) : currentStep === "review" ? (
-                  <ReviewPanel
-                    onToast={showToast}
-                    onHandoffOutcome={setReviewOutcome}
-                  />
+                  <ReviewPanel onToast={showToast} onHandoff={setHandoff} />
                 ) : (
                   <SetupPanel onToast={showToast} />
                 )}
@@ -1793,10 +1806,10 @@ function reviewPostDateLabel(
 
 function ReviewPanel({
   onToast,
-  onHandoffOutcome,
+  onHandoff,
 }: {
   onToast: (message: string) => void;
-  onHandoffOutcome: (outcome: ReviewHandoffOutcome) => void;
+  onHandoff: (details: ReviewHandoffDetails) => void;
 }) {
   const {
     session,
@@ -1942,7 +1955,13 @@ function ReviewPanel({
         for (const preview of eligiblePreviews) {
           updatePreviewContent(preview.milestoneId, previewAfterResendForApproval(preview));
         }
-        onHandoffOutcome("sent");
+        onHandoff({
+          outcome: "sent",
+          postCount: result.createdCount ?? eligibleMilestones.length,
+          reviewerName: result.reviewerName ?? reviewerName,
+          notifiedEmail: result.notifiedEmail ?? null,
+          emailSkippedReason: result.emailSkippedReason ?? null,
+        });
         goToStep("published");
       }
     } finally {
@@ -1964,7 +1983,13 @@ function ReviewPanel({
       const result = await approveAllAndScheduleAction(session.eventId);
       onToast(result.message);
       if (result.success) {
-        onHandoffOutcome("approved");
+        onHandoff({
+          outcome: "approved",
+          postCount: milestones.length,
+          reviewerName: reviewerName ?? "You",
+          notifiedEmail: null,
+          emailSkippedReason: null,
+        });
         goToStep("published");
       }
     } finally {
@@ -2202,35 +2227,136 @@ function ReviewPanel({
   );
 }
 
-function PublishedPanel({ outcome }: { outcome: ReviewHandoffOutcome }) {
+function PublishedPanel({ handoff }: { handoff: ReviewHandoffDetails }) {
   const { goToStep, session } = useCampaignBuilder();
   const campaign = session.inspiration.campaignName || "Your campaign";
-  const sent = outcome === "sent";
+  const sent = handoff.outcome === "sent";
+  const postCount = handoff.postCount > 0 ? handoff.postCount : null;
+  const postPhrase =
+    postCount == null
+      ? "your posts"
+      : `${postCount} post${postCount === 1 ? "" : "s"}`;
+  const reviewerLabel = handoff.reviewerName?.trim() || "your approver";
+  const approvalsHref = `/events/${session.eventId}?tab=approvals`;
 
   return (
-    <section>
-      <div className="panel-head">
-        <div>
-          <h2>{sent ? "Sent for approval" : "Approved & scheduled"}</h2>
-          <p>
-            {sent
-              ? `${campaign} is on its way to your approver.`
-              : `${campaign} is approved. Meta scheduling is underway.`}
-          </p>
+    <section className="handoff-confirm">
+      <ComposerTopChrome
+        currentStep="published"
+        goToStep={goToStep}
+        cta={
+          <div className="composer-cta-row">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => goToStep("review")}
+            >
+              Back to Review
+            </button>
+            <Link href={approvalsHref} className="btn btn-forest">
+              Open Approvals
+            </Link>
+          </div>
+        }
+      />
+
+      <div className="handoff-card">
+        <div className="handoff-check" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+            <path
+              d="M5 12.5 10 17.5 19 7.5"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
-        <div className="actions">
-          <button type="button" className="btn btn-secondary" onClick={() => goToStep("review")}>
-            ← Back to Review
+        <h2>{sent ? "Sent for Approval" : "Approved & Scheduled"}</h2>
+        <p className="handoff-lede">
+          {sent ? (
+            <>
+              The <strong>{campaign}</strong> campaign
+              {postCount != null ? (
+                <>
+                  {" "}
+                  with <strong>{postPhrase}</strong>
+                </>
+              ) : null}{" "}
+              has been sent to <strong>{reviewerLabel}</strong>.
+            </>
+          ) : (
+            <>
+              The <strong>{campaign}</strong> campaign
+              {postCount != null ? (
+                <>
+                  {" "}
+                  with <strong>{postPhrase}</strong>
+                </>
+              ) : null}{" "}
+              is approved. Scheduling is underway.
+            </>
+          )}
+        </p>
+
+        {sent ? (
+          <div className="handoff-facts">
+            <div className="handoff-fact">
+              <span className="handoff-fact-label">Reviewer</span>
+              <strong>{reviewerLabel}</strong>
+            </div>
+            <div className="handoff-fact">
+              <span className="handoff-fact-label">Email status</span>
+              {handoff.notifiedEmail ? (
+                <strong className="handoff-email-ok">
+                  <span aria-hidden="true">✓</span>
+                  Notified at {handoff.notifiedEmail}
+                </strong>
+              ) : (
+                <>
+                  <strong>
+                    {handoff.emailSkippedReason
+                      ? "Email not sent"
+                      : "Queued in Approvals"}
+                  </strong>
+                  {handoff.emailSkippedReason ? (
+                    <span className="handoff-fact-note">
+                      {handoff.emailSkippedReason}
+                    </span>
+                  ) : null}
+                </>
+              )}
+            </div>
+            <div className="handoff-fact">
+              <span className="handoff-fact-label">Posts count</span>
+              <strong>
+                {postCount != null
+                  ? `${postCount} Post${postCount === 1 ? "" : "s"}`
+                  : "—"}
+              </strong>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="handoff-next">
+          <strong>What happens next:</strong>{" "}
+          {sent
+            ? "They’ll approve or request changes. Changes come back to Preview, then you re-send."
+            : "Track Posted, Scheduled, or Failed status in Approvals."}
+        </div>
+
+        <div className="handoff-actions">
+          <Link href={approvalsHref} className="btn btn-forest">
+            Open Approvals →
+          </Link>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => goToStep("review")}
+          >
+            Back to Review
           </button>
         </div>
-      </div>
-      <div className="box">
-        <h3>What happens next</h3>
-        <p className="desc">
-          {sent
-            ? "Your approver will review the submitted posts. Any changes requested route back to Preview for edits, then a quick re-send."
-            : "Check Approvals for Posted / Scheduled / Failed status. You can still open posts in Preview if you need tweaks before they go live."}
-        </p>
       </div>
     </section>
   );

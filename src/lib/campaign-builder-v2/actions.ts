@@ -1001,6 +1001,10 @@ export async function sendForApprovalAction(input: {
 }): Promise<{
   success: boolean;
   message: string;
+  createdCount?: number;
+  notifiedEmail?: string | null;
+  emailSkippedReason?: string | null;
+  reviewerName?: string | null;
 }> {
   if (input.milestones?.length && input.previewContents?.length) {
     const result = await sendCampaignBuilderForApproval({
@@ -1022,6 +1026,10 @@ export async function sendForApprovalAction(input: {
     return {
       success: result.success,
       message: result.message,
+      createdCount: result.createdCount,
+      notifiedEmail: result.notifiedEmail ?? null,
+      emailSkippedReason: result.emailSkippedReason ?? null,
+      reviewerName: result.reviewerName ?? null,
     };
   }
 
@@ -1042,6 +1050,10 @@ export async function sendForApprovalAction(input: {
   return {
     success: result.success,
     message: result.message,
+    createdCount: result.createdCount,
+    notifiedEmail: result.notifiedEmail ?? null,
+    emailSkippedReason: result.emailSkippedReason ?? null,
+    reviewerName: result.reviewerName ?? null,
   };
 }
 

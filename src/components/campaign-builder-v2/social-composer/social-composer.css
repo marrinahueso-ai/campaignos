@@ -760,6 +760,19 @@
   align-items: flex-end;
   gap: 4px;
 }
+.smc .composer-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.smc a.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
 .smc .preview-progress-spacer { min-height: 1px; }
 .smc .btn-quiet {
   border: none;
@@ -1081,6 +1094,131 @@
   font-size: 11px;
   font-weight: 600;
   color: var(--muted);
+}
+
+/* —— Send-for-approval confirmation (UX Pilot) —— */
+.smc .handoff-confirm {
+  min-width: 0;
+}
+.smc .handoff-card {
+  max-width: 640px;
+  margin: 28px auto 12px;
+  padding: 36px 36px 32px;
+  text-align: center;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+.smc .handoff-check {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--forest);
+  color: #fff;
+}
+.smc .handoff-card h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1.15;
+}
+.smc .handoff-lede {
+  margin: 14px auto 0;
+  max-width: 34rem;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.smc .handoff-lede strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.smc .handoff-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 28px 0 0;
+  padding: 22px 8px 0;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+.smc .handoff-fact-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.smc .handoff-fact strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.35;
+  word-break: break-word;
+}
+.smc .handoff-email-ok {
+  display: inline-flex !important;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--forest) !important;
+}
+.smc .handoff-email-ok span {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.smc .handoff-fact-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.smc .handoff-next {
+  margin: 22px 0 0;
+  padding: 14px 16px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(247, 244, 238, 0.85);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.smc .handoff-next strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.smc .handoff-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 26px;
+}
+.smc .handoff-actions .btn {
+  min-width: 11rem;
+}
+@media (max-width: 720px) {
+  .smc .handoff-card {
+    margin-top: 16px;
+    padding: 28px 20px 24px;
+  }
+  .smc .handoff-facts {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
 }
 .smc .status-chip {
   display: inline-block;

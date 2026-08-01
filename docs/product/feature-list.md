@@ -124,7 +124,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Review Approval workflow sidebar shows org default approver from Team Access (same resolution as send-for-approval); unassigned when none — **shipped**
 - Review footer / Social Review chrome shows one primary CTA: **Send for approval** when Team Access has a distinct reviewer; **Approve all & schedule** when the approver is missing, unassigned, or yourself — **shipped**
 - Review **Send for approval** / **Approve all & schedule** stays disabled until posts are ready; blocker callout + Missing … on cards; fix in Preview — **shipped**
-- Handoff confirmation notice (not a stepper step): **Sent for approval** or **Approved & scheduled**; returns to Review — **shipped**
+- Handoff confirmation (not a stepper step; Review pill stays active): UX Pilot card — check + **Sent for Approval** / **Approved & Scheduled** · campaign + post count + reviewer · Reviewer / Email status / Posts count facts · What happens next · **Open Approvals** + **Back to Review** — **shipped**
 - Full Meta slot sync after approval — **stub** / incomplete
 
 ## Homepage Composer

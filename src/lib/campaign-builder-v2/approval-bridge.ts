@@ -39,6 +39,12 @@ export interface SendCampaignBuilderForApprovalResult {
   success: boolean;
   message: string;
   createdCount: number;
+  /** Approver email when a notification was successfully sent. */
+  notifiedEmail?: string | null;
+  /** Set when email could not be sent (muted, missing address, provider error). */
+  emailSkippedReason?: string | null;
+  /** Display name from Team Access resolution, when available. */
+  reviewerName?: string | null;
 }
 
 /** Meta / publish schedule_at — unchanged from pre–Manual Email Commit 4 behavior. */
@@ -79,6 +85,9 @@ export async function sendCampaignBuilderForApproval(
       success: false,
       message: "Organization or campaign not found.",
       createdCount: 0,
+      notifiedEmail: null,
+      emailSkippedReason: null,
+      reviewerName: null,
     };
   }
 
@@ -116,8 +125,17 @@ export async function sendCampaignBuilderForApproval(
           ? `Generate artwork before sending for approval. Missing artwork: ${skippedWithoutArtwork.join(", ")}.`
           : "Generate artwork for at least one milestone before sending for approval.",
       createdCount: 0,
+      notifiedEmail: null,
+      emailSkippedReason: null,
+      reviewerName: assignee.hasAssignedPerson
+        ? assignee.assigneeDisplayName.trim() || null
+        : null,
     };
   }
+
+  const reviewerName = assignee.hasAssignedPerson
+    ? assignee.assigneeDisplayName.trim() || null
+    : null;
 
   const supabase = await createClient();
   const now = new Date().toISOString();
@@ -226,6 +244,9 @@ export async function sendCampaignBuilderForApproval(
           message:
             "Approval scheduling table is not migrated yet. Run migration 048_approval_scheduling_unified.sql.",
           createdCount: 0,
+          notifiedEmail: null,
+          emailSkippedReason: null,
+          reviewerName,
         };
       }
 
@@ -247,6 +268,9 @@ export async function sendCampaignBuilderForApproval(
             message:
               "Unable to save approval items (database permissions). Please try again or contact support.",
             createdCount: 0,
+            notifiedEmail: null,
+            emailSkippedReason: null,
+            reviewerName,
           };
         }
         continue;
@@ -350,6 +374,9 @@ export async function sendCampaignBuilderForApproval(
       success: false,
       message: "Unable to create approval queue items.",
       createdCount: 0,
+      notifiedEmail: null,
+      emailSkippedReason: emailSkippedReason,
+      reviewerName,
     };
   }
   await logEventActivity({
@@ -377,6 +404,9 @@ export async function sendCampaignBuilderForApproval(
     success: true,
     message: `${createdCount} milestone${createdCount === 1 ? "" : "s"} sent for approval.${skippedNote}${emailNote}`,
     createdCount,
+    notifiedEmail: emailsSent > 0 ? lastNotifiedEmail : null,
+    emailSkippedReason: emailsSent > 0 ? null : emailSkippedReason,
+    reviewerName,
   };
 }
 
@@ -390,6 +420,9 @@ export async function sendCampaignBuilderForApprovalFromSession(
       success: false,
       message: "Campaign session not found. Save your work in Create with AI first.",
       createdCount: 0,
+      notifiedEmail: null,
+      emailSkippedReason: null,
+      reviewerName: null,
     };
   }
 
