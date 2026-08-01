@@ -148,6 +148,8 @@ test.describe("Flyer composer AI direction smoke", () => {
     await goToPreview(page);
 
     await expect(page.locator(".preview-sidebar")).toBeVisible();
+    await expect(page.locator("#btnPreviewBack")).toBeVisible();
+    await expect(page.locator("#btnPreviewBack")).toHaveText("Back");
     await expect(page.locator("#btnEdit")).toBeVisible();
     await expect(page.locator("#btnEdit")).toHaveText("Edit with AI");
     await expect(page.locator("#editDetailsLink")).toHaveCount(0);
@@ -174,7 +176,20 @@ test.describe("Flyer composer AI direction smoke", () => {
     await page.locator("#generateBtn").click();
     await expect(page.locator("#resultFlyer")).toBeVisible({ timeout: 20_000 });
     await expect(page.locator("#generatedFlyerImg")).toBeVisible();
+    await expect(page.locator("#resultFlyer .art-edit")).toBeVisible();
     await expect(page.locator("#previewDoneActions")).toBeVisible();
+
+    await page.locator("#resultFlyer .art-edit").click();
+    await expect(page.locator('[data-panel="edit"]')).toBeVisible();
+    await page.locator("#editCancelBtn").click();
+    await expect(page.locator('[data-panel="result"]')).toBeVisible();
+
+    await page.locator("#btnPreviewBack").click();
+    await expect(page.locator('[data-panel="inputs"]')).toBeVisible();
+    // Step pill (not Continue) — avoid auto-generate on re-enter
+    await page.locator('.step-btn[data-view="result"]').click();
+    await expect(page.locator('[data-panel="result"]')).toBeVisible();
+    await expect(page.locator("#generatedFlyerImg")).toBeVisible();
 
     expect(generateRequestBody).toBeTruthy();
     expect(generateRequestBody!.fields).toBeTruthy();

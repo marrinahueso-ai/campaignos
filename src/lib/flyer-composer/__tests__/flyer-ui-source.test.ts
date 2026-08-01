@@ -1,0 +1,38 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, it } from "node:test";
+
+const flyerHtml = readFileSync(
+  join(process.cwd(), "public/create-with-ai-flyer.html"),
+  "utf8",
+);
+
+describe("flyer composer UI source contract", () => {
+  it("uses Pilot Fraunces + DM Sans stack (same as Social Create-with-AI)", () => {
+    assert.match(flyerHtml, /fonts\.googleapis\.com.*Fraunces/);
+    assert.match(flyerHtml, /fonts\.googleapis\.com.*DM\+Sans|family=DM\+Sans/);
+    assert.match(flyerHtml, /--serif:\s*"Fraunces"/);
+    assert.match(flyerHtml, /--sans:\s*"DM Sans"/);
+    assert.match(flyerHtml, /button,\s*input,\s*textarea,\s*select/);
+  });
+
+  it("Preview stage exposes Social-matching art-edit pencil + Back to Inspiration", () => {
+    assert.match(flyerHtml, /class="art-edit/);
+    assert.match(flyerHtml, /title="Edit artwork"/);
+    assert.match(flyerHtml, /function openEditForVersion/);
+    assert.match(flyerHtml, /function artEditButtonHtml/);
+    assert.match(
+      flyerHtml,
+      /id="btnPreviewBack"[^>]*data-goto="inputs"|data-goto="inputs"[^>]*id="btnPreviewBack"/,
+    );
+  });
+
+  it("keeps Edit drawer + send-for-approval path (no one-off approval bypass)", () => {
+    assert.match(flyerHtml, /function openEdit\s*\(/);
+    assert.match(flyerHtml, /setView\("edit"\)/);
+    assert.match(flyerHtml, /FLYER_SEND_APPROVAL_API/);
+    assert.match(flyerHtml, /id="btnSendForApproval"/);
+    assert.match(flyerHtml, /data-panel="edit"/);
+  });
+});

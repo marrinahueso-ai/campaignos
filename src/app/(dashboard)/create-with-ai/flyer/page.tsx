@@ -1,4 +1,5 @@
 import { FlyerComposerHost } from "@/components/create-with-ai/FlyerComposerHost";
+import { getCurrentOrganization } from "@/lib/auth/organization-context";
 
 export const metadata = {
   title: "Flyer · Create with AI",
@@ -23,10 +24,12 @@ export default async function FlyerComposerPage({
   const params = await searchParams;
   const eventId = (params.eventId || params.event || "").trim() || null;
   const fresh = params.fresh === "1" || params.fresh === "true";
+  const organization = await getCurrentOrganization();
   return (
     <FlyerComposerHost
       view={params.view ?? null}
       eventId={eventId}
+      organizationId={organization?.id ?? null}
       fresh={fresh}
     />
   );

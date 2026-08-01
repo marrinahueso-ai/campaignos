@@ -4,6 +4,8 @@ import { getSchoolProfile } from "@/lib/organizations/queries";
 
 /** JSON shape returned by GET /api/flyer-composer/brand-kit */
 export type FlyerComposerBrandKitResponse = {
+  /** Active org id — scopes flyer localStorage drafts (multi-tenant). */
+  organizationId: string;
   organizationShortName: string;
   primaryColor: string;
   accentColor: string;
@@ -39,6 +41,7 @@ export async function getFlyerComposerBrandKit(): Promise<FlyerComposerBrandKitR
   const schoolLogoUrl = brandAssets?.schoolLogo ?? null;
 
   return {
+    organizationId: organization.id,
     organizationShortName: shortenOrganizationName(organization.name),
     primaryColor,
     accentColor,

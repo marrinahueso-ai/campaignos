@@ -2,7 +2,7 @@
 
 **Status:** Living
 **Owner:** Engineering
-**Last updated:** August 1, 2026 (multi-tenant / IDOR hardening pass); July 29, 2026 (all 25 findings, including Low/Info cleanup, fixed); Jul 30 2026 OWASP ZAP soft-launch pass — [owasp-zap.md](./owasp-zap.md)
+**Last updated:** August 1, 2026 (Flyer composer localStorage tenant isolation M10; multi-tenant / IDOR hardening pass); July 29, 2026 (all 25 findings, including Low/Info cleanup, fixed); Jul 30 2026 OWASP ZAP soft-launch pass — [owasp-zap.md](./owasp-zap.md)
 **Related:** [Security](./README.md) · [OWASP ZAP soft-launch pass](./owasp-zap.md) · [Access & onboarding](./access-and-onboarding.md) · [Multi-tenant isolation](./multi-tenant-isolation.md) · [Access control](../engineering/access-control.md) · [Feature list](../product/feature-list.md)
 
 Tracks findings from the July 2026 full-app security audit (Authentication, Authorization/RBAC/RLS, injection/XSS/CSRF, API security & architecture) and their remediation status. Read this before re-auditing so prior findings aren't rediscovered as new.
@@ -69,10 +69,12 @@ App-layer gates on event-scoped mutations and service-role storage uploads. RLS 
 | M7 | `resolveScopedOrganizationId` returned client org ids as-is | Asserts active membership for explicit ids; `undefined` still resolves to current org ([`org-scope.ts`](../../src/lib/events/org-scope.ts)) | ✅ Fixed |
 | M8 | Tasks Ease localStorage keys unscoped; not cleared on sign-out | Org (+ user) scoped keys via [`tasks-ease-storage-scope.ts`](../../src/lib/tasks-v2/tasks-ease-storage-scope.ts); cleared in `SignOutForm` alongside CB2 | ✅ Fixed |
 | M9 | Legacy unauthenticated latest-org fallback when membership table missing | Fail closed in `NODE_ENV === "production"` in [`organization-context.ts`](../../src/lib/auth/organization-context.ts); local-dev fallback retained | ✅ Fixed |
+| M10 | Flyer composer localStorage drafts used a global / event-only key; School B Preview could restore under School A (or any no-event session) | Org + event scoped keys (`hr-flyer-composer-draft:{orgId}:{eventId\|no-event}`) via [`storage-scope.ts`](../../src/lib/flyer-composer/storage-scope.ts) + [`create-with-ai-flyer.html`](../../public/create-with-ai-flyer.html); restore requires matching `organizationId` + `approvalEventId`; iframe remounts on org/event change; cleared in `SignOutForm` | ✅ Fixed |
 
 ### Known follow-up (not in this pass)
 
 - **Public bucket → signed URLs migration:** event-assets (and related) still serve public URLs after upload. Migrating to signed/private URLs is a larger storage + client change; app-layer event/org gates above are the primary control for this pass. Track under storage hardening when scheduled.
+- **Flyer residual:** Generated flyer PNGs saved to event Files / public artwork URLs remain reachable by anyone with the URL (same as other event assets). Tenant isolation for *which draft/preview loads in the composer* is fixed; URL secrecy is not.
 
 ## Already solid — no action needed
 

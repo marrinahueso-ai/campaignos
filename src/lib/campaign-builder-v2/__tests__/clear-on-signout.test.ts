@@ -10,6 +10,11 @@ import {
   setTasksEaseStorageScope,
   tasksEaseStorageKey,
 } from "../../tasks-v2/tasks-ease-storage-scope.ts";
+import {
+  FLYER_COMPOSER_DRAFT_STORAGE_PREFIX,
+  clearFlyerComposerLocalStorageOnSignOut,
+  flyerComposerDraftStorageKey,
+} from "../../flyer-composer/storage-scope.ts";
 
 function withMockLocalStorage(
   initial: Record<string, string>,
@@ -113,6 +118,30 @@ describe("clearTasksEaseLocalStorageOnSignOut", () => {
         assert.ok(
           colorKey!.startsWith(TASKS_EASE_STORAGE_PREFIX),
         );
+      },
+    );
+  });
+});
+
+describe("clearFlyerComposerLocalStorageOnSignOut", () => {
+  it("removes flyer draft keys and leaves unrelated keys", () => {
+    const scoped = flyerComposerDraftStorageKey({
+      organizationId: "org-a",
+      eventId: "evt-1",
+    });
+    assert.ok(scoped);
+
+    withMockLocalStorage(
+      {
+        [scoped!]: "{}",
+        [FLYER_COMPOSER_DRAFT_STORAGE_PREFIX]: "{}",
+        "cos-sidebar-collapsed": "true",
+      },
+      (store) => {
+        clearFlyerComposerLocalStorageOnSignOut();
+        assert.equal(store.has(scoped!), false);
+        assert.equal(store.has(FLYER_COMPOSER_DRAFT_STORAGE_PREFIX), false);
+        assert.equal(store.has("cos-sidebar-collapsed"), true);
       },
     );
   });
