@@ -161,13 +161,13 @@ export function ApprovalsFocusCard({
             {item.publishError}
           </p>
         ) : null}
-        <div className="mt-auto flex flex-wrap gap-2 pt-3">
+        <div className="mt-auto flex flex-wrap items-center justify-end gap-2 pt-3">
           {showRetry ? (
             <button
               type="button"
               disabled={isRetrying}
               onClick={() => onRetry?.(item)}
-              className="rounded-full bg-[#2f4a3c] px-5 py-2.5 text-[13px] font-bold text-[#fffcf7] transition hover:-translate-y-px hover:brightness-110 disabled:opacity-50"
+              className="rounded-[12px] bg-[#2a2622] px-5 py-2.5 text-[13px] font-bold text-[#fffcf7] transition hover:brightness-110 disabled:opacity-50"
             >
               {isRetrying ? "Retrying…" : "Retry"}
             </button>
@@ -175,7 +175,7 @@ export function ApprovalsFocusCard({
           <button
             type="button"
             onClick={() => onReview(item)}
-            className="rounded-full bg-[#2a2622] px-5 py-2.5 text-[13px] font-bold text-[#fffcf7] transition hover:-translate-y-px hover:bg-[#1a1714]"
+            className="rounded-[12px] bg-[#2f4a3c] px-5 py-2.5 text-[13px] font-bold text-[#fffcf7] transition hover:brightness-110"
           >
             {item.workflowStatus === "changes_requested"
               ? "Open revision"

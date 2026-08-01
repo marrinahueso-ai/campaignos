@@ -120,6 +120,12 @@ export function ApprovalsSchedulingHub({
     null,
   );
   const openedReviewFromQuery = useRef<string | null>(null);
+
+  // Prefetch open-review + request-changes pop-outs so focus-card CTA feels instant.
+  useEffect(() => {
+    void import("@/components/approvals-scheduling/ReviewDrawer");
+    void import("@/components/approvals-scheduling/RequestChangesModal");
+  }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
