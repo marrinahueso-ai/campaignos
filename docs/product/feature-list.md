@@ -223,7 +223,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Tasks — Ease redesign **shipped**
 - Customer-facing Tasks copy uses organization/team/event language (not school-only, migration, or wiring jargon); calm empties on List/boards/event tab — **shipped**
 - `TasksEaseShell` replaces the dense Main Table / My Tasks / Board chrome at `/tasks` — soft cream shell, Fraunces heading, quiet pills throughout (`src/components/tasks-v2/TasksEaseShell.tsx`) — **shipped**
-- **Pilot List chrome (Aug 2026):** Fraunces title + team subtitle; Team/Mine segmented control; underline List/Status/Focus/Custom tabs; KPI pulse (Needs you / This week / Overdue / Done); moss event chips; flat List table (Task · Event · Status · Due · Assignee · Actions) with overdue gold + blocked “Review”; Add task opens Pilot modal (title, notes, event, assignee, due, status) — **shipped**
+- **Pilot List chrome (Aug 2026):** Fraunces title + team subtitle; Team/Mine segmented control; underline List/Status/Focus/Custom tabs; KPI pulse; moss event chips; flat List table with sortable Priority, overdue Escalate, Needs Review/Review; Ask AI Beta + review-queue tip; Add task modal (Context/Notes, Priority, event, assignee, due, status) — **shipped**
 - **Team | Mine** scope toggle (`?scope=`) — Team = all org-accessible event tasks; Mine = assigned to the signed-in user (`assignee_user_id`) — **shipped**
 - **List | Status | Focus | Custom** views (`?view=`) with short labels; List is the default — **shipped**
 - Pulse row as quiet text links with live counts — Needs you / This week / Overdue / Done (`?pulse=`, toggles off on repeat click) — **shipped**

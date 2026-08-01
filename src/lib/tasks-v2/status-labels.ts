@@ -6,7 +6,7 @@ export function tasksV2StatusLabel(status: TasksV2DisplayStatus): string {
     case "in_progress":
       return "In Progress";
     case "blocked":
-      return "Blocked";
+      return "Needs Review";
     case "done":
       return "Done";
     case "deferred":

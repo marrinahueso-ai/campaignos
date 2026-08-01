@@ -52,6 +52,9 @@ describe("tasks ease UI contracts", () => {
     assert.match(list, /borderLeft: `4px solid \$\{stripeColor\}`/);
     assert.match(list, /<table/);
     assert.match(list, /Due Date/);
+    assert.match(list, /Priority/);
+    assert.match(list, /deriveTaskPriority/);
+    assert.match(list, /Escalate/);
   });
 
   it("mutes completed tasks with line-through title styling", () => {

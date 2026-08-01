@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { Shield, Sparkles } from "lucide-react";
 import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
 import { TasksEaseAskAi } from "@/components/tasks-v2/TasksEaseAskAi";
 import { TasksEaseBoard } from "@/components/tasks-v2/TasksEaseBoard";
@@ -33,9 +33,14 @@ import {
   taskMatchesTasksEasePulse,
   type TasksEasePulse,
 } from "@/lib/tasks-v2/tasks-ease-pulse";
+import { addDaysToDateOnly, getTodayDateString } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 import type { TaskHubEventOption, TaskHubTaskItem } from "@/types/task-hub";
-import type { TasksV2EventGroup, TasksV2PageData } from "@/types/tasks-v2";
+import type {
+  TasksV2EventGroup,
+  TasksV2PageData,
+  TasksV2Priority,
+} from "@/types/tasks-v2";
 
 export type TasksEaseScope = "team" | "mine";
 export type TasksEaseView = "list" | "board" | "focus" | "custom";
@@ -135,6 +140,8 @@ export function TasksEaseShell({
   const [addTaskAssigneeUserId, setAddTaskAssigneeUserId] = useState("");
   const [addTaskStatus, setAddTaskStatus] =
     useState<EventPlaybookTaskStatus>("todo");
+  const [addTaskPriority, setAddTaskPriority] =
+    useState<TasksV2Priority>("medium");
   const [addTaskPending, setAddTaskPending] = useState(false);
   const [addTaskError, setAddTaskError] = useState<string | null>(null);
   const [addTaskSuccess, setAddTaskSuccess] = useState<string | null>(null);
@@ -344,7 +351,21 @@ export function TasksEaseShell({
     setAddTaskDueDate("");
     setAddTaskAssigneeUserId("");
     setAddTaskStatus("todo");
+    setAddTaskPriority("medium");
     setAddTaskError(null);
+  }
+
+  /** When no due date is set, priority suggests one so the list Priority column stays meaningful. */
+  function dueDateFromPriority(
+    due: string,
+    priority: TasksV2Priority,
+  ): string | null {
+    const trimmed = due.trim();
+    if (trimmed) return trimmed;
+    const today = getTodayDateString();
+    if (priority === "high") return today;
+    if (priority === "medium") return addDaysToDateOnly(today, 7);
+    return addDaysToDateOnly(today, 21);
   }
 
   function handleAddTaskSubmit() {
@@ -390,7 +411,7 @@ export function TasksEaseShell({
       : assigneeName
         ? deriveInitials(assigneeName)
         : null;
-    const dueDate = addTaskDueDate.trim() || null;
+    const dueDate = dueDateFromPriority(addTaskDueDate, addTaskPriority);
     const notes = addTaskNotes.trim() || null;
     const status = addTaskStatus;
 
@@ -512,14 +533,30 @@ export function TasksEaseShell({
             >
               Add task
             </button>
-            <button
-              type="button"
-              onClick={() => setAskAiOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#2a2622] px-5 py-2.5 text-[14px] font-bold text-white transition hover:bg-[#253a2f]"
-            >
-              <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              Ask AI for tasks
-            </button>
+            <div className="group relative">
+              <button
+                type="button"
+                onClick={() => setAskAiOpen(true)}
+                className="relative inline-flex items-center gap-2 rounded-xl bg-[#2a2622] px-5 py-2.5 text-[14px] font-bold text-white transition hover:bg-[#253a2f]"
+              >
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                Ask AI for tasks
+                <span className="absolute -top-2 -right-2 rounded-full border border-white bg-[#c4922e] px-1.5 py-0.5 text-[9px] tracking-tighter text-white uppercase">
+                  Beta
+                </span>
+              </button>
+              <div className="pointer-events-none absolute top-full right-0 z-[60] mt-2 hidden w-64 rounded-xl border border-[#e8e2d9] bg-white p-3 shadow-xl group-hover:block">
+                <p className="text-[11px] leading-relaxed text-[#5c5752] italic">
+                  <Shield
+                    className="mr-1 inline h-3 w-3 text-[#c4922e]"
+                    aria-hidden
+                  />
+                  Generated tasks will enter a{" "}
+                  <strong className="not-italic">Review &amp; Approve</strong>{" "}
+                  queue before appearing in your official list.
+                </p>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -832,13 +869,13 @@ export function TasksEaseShell({
 
               <label className="block space-y-2">
                 <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
-                  Description (Optional)
+                  Context/Notes
                 </span>
                 <textarea
                   value={addTaskNotes}
                   onChange={(event) => setAddTaskNotes(event.target.value)}
                   rows={3}
-                  placeholder="Add more details..."
+                  placeholder="Provide links, specific requirements, or background context to help the assignee..."
                   className="w-full resize-none rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-5 py-4 text-sm text-[#2a2622] outline-none transition focus:border-[#2f4a3c] focus:ring-2 focus:ring-[#2f4a3c]/10"
                 />
               </label>
@@ -863,6 +900,23 @@ export function TasksEaseShell({
                         </option>
                       ))
                     )}
+                  </select>
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
+                    Priority
+                  </span>
+                  <select
+                    value={addTaskPriority}
+                    onChange={(event) =>
+                      setAddTaskPriority(event.target.value as TasksV2Priority)
+                    }
+                    className="w-full appearance-none rounded-xl border border-[#e8e2d9] bg-[#faf8f5] py-3.5 pr-10 pl-5 text-sm font-medium text-[#2a2622] outline-none focus:ring-2 focus:ring-[#2f4a3c]/10"
+                  >
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="low">Low</option>
                   </select>
                 </label>
 
@@ -902,7 +956,7 @@ export function TasksEaseShell({
                   />
                 </label>
 
-                <label className="block space-y-2">
+                <label className="block space-y-2 sm:col-span-2">
                   <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
                     Board Status
                   </span>
@@ -918,7 +972,6 @@ export function TasksEaseShell({
                     <option value="todo">To Do</option>
                     <option value="in_progress">In Progress</option>
                     <option value="blocked">Needs Review</option>
-                    <option value="done">Done</option>
                   </select>
                 </label>
               </div>

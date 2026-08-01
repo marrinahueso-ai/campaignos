@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { Check, MoreHorizontal, Paperclip, Pencil } from "lucide-react";
+import {
+  ArrowUp,
+  ChevronsUp,
+  Check,
+  Flag,
+  Minus,
+  MoreHorizontal,
+  Paperclip,
+  Pencil,
+} from "lucide-react";
 import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
 import { TasksV2AssigneeSelect } from "@/components/tasks-v2/TasksV2AssigneeSelect";
 import { TasksV2StatusPill } from "@/components/tasks-v2/TasksV2StatusPill";
@@ -10,11 +19,13 @@ import {
   updateTaskHubTaskAction,
   updateTaskHubTaskStatusAction,
 } from "@/lib/task-hub/actions";
+import { deriveTaskPriority } from "@/lib/tasks-v2/derive-priority";
+import { tasksV2PriorityLabel } from "@/lib/tasks-v2/status-labels";
 import { formatLocalDate, getTodayDateString } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 import type { TaskHubOrgMember, TaskHubTaskItem } from "@/types/task-hub";
-import type { TasksV2EventGroup } from "@/types/tasks-v2";
+import type { TasksV2EventGroup, TasksV2Priority } from "@/types/tasks-v2";
 
 interface TasksEaseListProps {
   eventGroups: TasksV2EventGroup[];
@@ -36,31 +47,70 @@ type TaskOverride = Partial<
   >
 >;
 
+type PrioritySort = "none" | "asc" | "desc";
+
+const PRIORITY_RANK: Record<TasksV2Priority, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+};
+
 function effectiveDue(task: TaskHubTaskItem): string | null {
   return task.monday?.mondayDueDate ?? task.dueDate ?? null;
 }
 
 function formatDueCell(task: TaskHubTaskItem, today: string): {
   label: string;
+  dateLabel: string;
   overdue: boolean;
 } {
   if (task.status === "done") {
     const due = effectiveDue(task);
-    return {
-      label: due
-        ? formatLocalDate(due, { month: "short", day: "numeric" })
-        : "—",
-      overdue: false,
-    };
+    const dateLabel = due
+      ? formatLocalDate(due, { month: "short", day: "numeric" })
+      : "—";
+    return { label: dateLabel, dateLabel, overdue: false };
   }
   const due = effectiveDue(task);
-  if (!due) return { label: "—", overdue: false };
+  if (!due) return { label: "—", dateLabel: "—", overdue: false };
   const overdue = due < today;
   const isToday = due === today;
   const dateLabel = formatLocalDate(due, { month: "short", day: "numeric" });
-  if (isToday) return { label: "Today", overdue: false };
-  if (overdue) return { label: `${dateLabel} (Overdue)`, overdue: true };
-  return { label: dateLabel, overdue: false };
+  if (isToday) return { label: "Today", dateLabel: "Today", overdue: false };
+  if (overdue) {
+    return {
+      label: `${dateLabel} (Overdue)`,
+      dateLabel,
+      overdue: true,
+    };
+  }
+  return { label: dateLabel, dateLabel, overdue: false };
+}
+
+function PriorityMark({ priority }: { priority: TasksV2Priority }) {
+  const label = tasksV2PriorityLabel(priority);
+  if (priority === "high") {
+    return (
+      <span className="flex items-center gap-1.5 text-[10px] font-bold text-red-600 uppercase">
+        <ChevronsUp className="h-3 w-3" aria-hidden />
+        {label}
+      </span>
+    );
+  }
+  if (priority === "medium") {
+    return (
+      <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 uppercase">
+        <ArrowUp className="h-3 w-3" aria-hidden />
+        {label}
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#a8a29c] uppercase">
+      <Minus className="h-3 w-3" aria-hidden />
+      {label}
+    </span>
+  );
 }
 
 export function TasksEaseList({
@@ -77,6 +127,7 @@ export function TasksEaseList({
   const [, startTransition] = useTransition();
   const [overrides, setOverrides] = useState<Record<string, TaskOverride>>({});
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
+  const [prioritySort, setPrioritySort] = useState<PrioritySort>("none");
   const today = getTodayDateString();
 
   const flatRows = useMemo(() => {
@@ -86,8 +137,13 @@ export function TasksEaseList({
         rows.push({ group, task });
       }
     }
-    return rows;
-  }, [eventGroups]);
+    if (prioritySort === "none") return rows;
+    return [...rows].sort((a, b) => {
+      const pa = PRIORITY_RANK[deriveTaskPriority(a.task, today)];
+      const pb = PRIORITY_RANK[deriveTaskPriority(b.task, today)];
+      return prioritySort === "asc" ? pa - pb : pb - pa;
+    });
+  }, [eventGroups, prioritySort, today]);
 
   function resolveTask(task: TaskHubTaskItem): TaskHubTaskItem {
     const override = overrides[task.id];
@@ -167,9 +223,15 @@ export function TasksEaseList({
     });
   }
 
+  function cyclePrioritySort() {
+    setPrioritySort((current) =>
+      current === "none" ? "asc" : current === "asc" ? "desc" : "none",
+    );
+  }
+
   if (eventGroups.length === 0 || flatRows.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-[#e8e2d9] bg-white/70 px-6 py-12 text-center">
+      <div className="overflow-hidden rounded-2xl border border-dashed border-[#e8e2d9] bg-white/70 px-6 py-12 text-center">
         <strong
           className="mb-2 block text-[22px] font-semibold text-[#2a2622]"
           style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
@@ -190,6 +252,25 @@ export function TasksEaseList({
           <tr className="border-b border-[#e8e2d9] bg-[#faf8f5]/50 text-[11px] font-bold tracking-widest text-[#a8a29c] uppercase">
             <th className="w-12 px-6 py-4 text-center" aria-label="Done" />
             <th className="px-6 py-4">Task</th>
+            <th className="px-6 py-4">
+              <button
+                type="button"
+                onClick={cyclePrioritySort}
+                className="inline-flex items-center gap-1 uppercase transition hover:text-[#2a2622]"
+                aria-label={`Sort by priority${
+                  prioritySort === "none"
+                    ? ""
+                    : prioritySort === "asc"
+                      ? ", high to low"
+                      : ", low to high"
+                }`}
+              >
+                Priority
+                <span className="text-[10px] opacity-70" aria-hidden>
+                  {prioritySort === "asc" ? "↑" : prioritySort === "desc" ? "↓" : "⇅"}
+                </span>
+              </button>
+            </th>
             <th className="px-6 py-4">Event</th>
             <th className="px-6 py-4">Status</th>
             <th className="px-6 py-4">Due Date</th>
@@ -204,23 +285,36 @@ export function TasksEaseList({
             const isDone = task.status === "done";
             const stripeColor = eventColors[group.eventId] ?? group.accentColor;
             const due = formatDueCell(task, today);
+            const priority = deriveTaskPriority(task, today);
             const needsYou =
               Boolean(viewerUserId) &&
               task.assigneeUserId === viewerUserId &&
               !isDone;
             const hasNotes = Boolean(task.notes?.trim());
             const highlightBlocked = task.status === "blocked" && !isDone;
+            const notePreview = task.notes?.trim()
+              ? task.notes.trim().length > 48
+                ? `${task.notes.trim().slice(0, 48)}…`
+                : task.notes.trim()
+              : null;
 
             return (
               <tr
                 key={rawTask.id}
                 className={cn(
                   "group transition-all",
-                  isDone && "opacity-60 grayscale hover:opacity-100 hover:grayscale-0",
+                  isDone &&
+                    "opacity-60 grayscale hover:opacity-100 hover:grayscale-0",
                   highlightBlocked &&
                     "border-l-4 border-amber-400 bg-amber-50/20 hover:bg-amber-50/40",
-                  !highlightBlocked && !isDone && "hover:bg-[#faf8f5]/40",
-                  !highlightBlocked && isDone && "hover:bg-[#faf8f5]/30",
+                  due.overdue &&
+                    !highlightBlocked &&
+                    !isDone &&
+                    "bg-[#fdf8eb]/40 hover:bg-[#fdf8eb]/60",
+                  !highlightBlocked &&
+                    !due.overdue &&
+                    !isDone &&
+                    "hover:bg-[#faf8f5]/40",
                 )}
                 style={
                   !highlightBlocked
@@ -276,7 +370,15 @@ export function TasksEaseList({
                         />
                       ) : null}
                     </span>
+                    {notePreview && !isDone ? (
+                      <p className="mt-0.5 text-[12px] text-[#5c5752]">
+                        {notePreview}
+                      </p>
+                    ) : null}
                   </button>
+                </td>
+                <td className="px-6 py-4">
+                  <PriorityMark priority={priority} />
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
@@ -315,15 +417,27 @@ export function TasksEaseList({
                     }
                   />
                 </td>
-                <td
-                  className={cn(
-                    "px-6 py-4 text-[12px]",
-                    due.overdue
-                      ? "font-bold text-[#a67b27]"
-                      : "text-[#5c5752]",
+                <td className="px-6 py-4">
+                  {due.overdue ? (
+                    <div className="flex flex-col">
+                      <span className="text-[12px] font-bold text-[#a67b27]">
+                        {due.dateLabel}{" "}
+                        <span className="ml-1 text-[10px] font-normal uppercase">
+                          (Overdue)
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onOpenTask(rawTask)}
+                        className="mt-1 flex items-center gap-1 text-[9px] font-bold text-[#c4922e] uppercase hover:text-[#a67b27]"
+                      >
+                        <Flag className="h-2.5 w-2.5" aria-hidden />
+                        Escalate
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-[12px] text-[#5c5752]">{due.label}</span>
                   )}
-                >
-                  {due.label}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
@@ -356,6 +470,17 @@ export function TasksEaseList({
                     </button>
                   ) : (
                     <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                      {due.overdue ? (
+                        <button
+                          type="button"
+                          onClick={() => onOpenTask(rawTask)}
+                          aria-label={`Escalate ${task.title}`}
+                          title="Flag for follow-up"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#c4922e] transition hover:border-[#e8e2d9] hover:bg-white"
+                        >
+                          <Flag className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => onOpenTask(rawTask)}
