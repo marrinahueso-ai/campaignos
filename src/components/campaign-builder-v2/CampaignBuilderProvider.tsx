@@ -1039,6 +1039,19 @@ export function CampaignBuilderProvider({
         // Legacy Posts step (#milestones) lives inside Preview now.
         const targetStep = step === "milestones" ? "preview" : step;
         const leavingInspiration = currentStepRef.current === "inspiration";
+
+        // Navigate immediately so soft remounts (revalidatePath after send /
+        // approve) land on the target step — especially #published confirmation.
+        // Persist step before any await; flush runs after.
+        if (targetStep !== "preview" && targetStep !== "review") {
+          setGenerationProgress(null);
+        }
+        setLocationHash(targetStep);
+        setCurrentStep(targetStep);
+        currentStepRef.current = targetStep;
+        persistBuilderStep(eventId, targetStep);
+        updateSession((prev) => ({ ...prev, currentStep: targetStep }));
+
         // Only reconcile when leaving Creative Setup. Auto-syncing on every
         // Preview hop when communication plan ids drift rebuilt milestones
         // mid-generation and erased artwork the user just created.
@@ -1071,22 +1084,22 @@ export function CampaignBuilderProvider({
         if (leavingInspiration) {
           setInspirationUploadError(null);
         }
-        // Always flush before step changes so deletions persist before Preview
-        // mounts (debounce alone can lose the race with navigate).
+        // Flush after navigate so deletions still persist before Preview work,
+        // without losing #published to a remount mid-await.
         if (syncChanged) {
           await persistSession(sessionRef.current);
         } else {
           await flushSave();
         }
-        if (targetStep !== "preview" && targetStep !== "review") {
-          setGenerationProgress(null);
-        }
-        setLocationHash(targetStep);
-        setCurrentStep(targetStep);
-        updateSession((prev) => ({ ...prev, currentStep: targetStep }));
       })();
     },
-    [flushSave, persistSession, syncMilestonesToSelectedPlaybook, updateSession],
+    [
+      eventId,
+      flushSave,
+      persistSession,
+      syncMilestonesToSelectedPlaybook,
+      updateSession,
+    ],
   );
 
   // Clear finished generation progress so non-active step UI state is not kept hot.

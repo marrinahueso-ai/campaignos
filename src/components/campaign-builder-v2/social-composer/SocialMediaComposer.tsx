@@ -356,7 +356,51 @@ const EMPTY_HANDOFF: ReviewHandoffDetails = {
   emailSkippedReason: null,
 };
 
+function handoffSessionKey(eventId: string): string {
+  return `cb2:handoff:${eventId}`;
+}
+
+function readStoredHandoff(eventId: string): ReviewHandoffDetails {
+  if (typeof window === "undefined") {
+    return EMPTY_HANDOFF;
+  }
+  try {
+    const raw = window.sessionStorage.getItem(handoffSessionKey(eventId));
+    if (!raw) {
+      return EMPTY_HANDOFF;
+    }
+    const parsed = JSON.parse(raw) as Partial<ReviewHandoffDetails>;
+    if (parsed.outcome !== "sent" && parsed.outcome !== "approved") {
+      return EMPTY_HANDOFF;
+    }
+    return {
+      outcome: parsed.outcome,
+      postCount: typeof parsed.postCount === "number" ? parsed.postCount : 0,
+      reviewerName: parsed.reviewerName ?? null,
+      notifiedEmail: parsed.notifiedEmail ?? null,
+      emailSkippedReason: parsed.emailSkippedReason ?? null,
+    };
+  } catch {
+    return EMPTY_HANDOFF;
+  }
+}
+
+function persistHandoff(eventId: string, details: ReviewHandoffDetails): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.sessionStorage.setItem(
+      handoffSessionKey(eventId),
+      JSON.stringify(details),
+    );
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
 export function SocialMediaComposer({
+  eventId,
   eventTitle: _eventTitle,
 }: {
   eventId: string;
@@ -364,7 +408,9 @@ export function SocialMediaComposer({
 }) {
   const { currentStep } = useCampaignBuilder();
   const [toast, setToast] = useState<string | null>(null);
-  const [handoff, setHandoff] = useState<ReviewHandoffDetails>(EMPTY_HANDOFF);
+  const [handoff, setHandoff] = useState<ReviewHandoffDetails>(() =>
+    readStoredHandoff(eventId),
+  );
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function showToast(message: string) {
@@ -375,7 +421,16 @@ export function SocialMediaComposer({
     toastTimer.current = setTimeout(() => setToast(null), 2200);
   }
 
+  function rememberHandoff(details: ReviewHandoffDetails) {
+    persistHandoff(eventId, details);
+    setHandoff(details);
+  }
+
   const activeNav = composerNavFromStep(currentStep);
+  // Confirmation is not a stepper step — check it before nav buckets.
+  const showPublished = currentStep === "published";
+  const showPreview = !showPublished && activeNav === "preview";
+  const showReview = !showPublished && currentStep === "review";
 
   return (
     <div
@@ -396,12 +451,12 @@ export function SocialMediaComposer({
 
             <div className="layout layout-focus">
               <div className="panel">
-                {activeNav === "preview" ? (
-                  <PreviewPanel onToast={showToast} />
-                ) : currentStep === "published" ? (
+                {showPublished ? (
                   <PublishedPanel handoff={handoff} />
-                ) : currentStep === "review" ? (
-                  <ReviewPanel onToast={showToast} onHandoff={setHandoff} />
+                ) : showPreview ? (
+                  <PreviewPanel onToast={showToast} />
+                ) : showReview ? (
+                  <ReviewPanel onToast={showToast} onHandoff={rememberHandoff} />
                 ) : (
                   <SetupPanel onToast={showToast} />
                 )}
@@ -2340,9 +2395,11 @@ function PublishedPanel({ handoff }: { handoff: ReviewHandoffDetails }) {
 
         <div className="handoff-next">
           <strong>What happens next:</strong>{" "}
-          {sent
-            ? "They’ll approve or request changes. Changes come back to Preview, then you re-send."
-            : "Track Posted, Scheduled, or Failed status in Approvals."}
+          <em>
+            {sent
+              ? "They’ll approve or request changes. Changes come back to Preview, then you re-send."
+              : "Track Posted, Scheduled, or Failed status in Approvals."}
+          </em>
         </div>
 
         <div className="handoff-actions">
