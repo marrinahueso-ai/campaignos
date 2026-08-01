@@ -654,10 +654,10 @@ export function VolunteerComposer({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <Link
-            href="/create-with-ai/website-pages"
+            href="/create-with-ai"
             className="mb-1 inline-block text-xs font-medium text-cos-muted hover:text-cos-text sm:text-sm"
           >
-            ← Website pages
+            ← Create with AI
           </Link>
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
             <div className="min-w-0">
@@ -949,21 +949,12 @@ export function VolunteerComposer({
                 title="Design your footer"
                 body="Thank-you band colors, copy, and buttons — design once for the bottom of the page."
                 actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setStep("header")}
-                    >
-                      ← Header
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => setStep("opportunities")}
-                    >
-                      Save → Opportunities
-                    </Button>
-                  </>
+                  <Button
+                    type="button"
+                    onClick={() => setStep("opportunities")}
+                  >
+                    Save → Opportunities
+                  </Button>
                 }
               />
 
@@ -1140,13 +1131,6 @@ export function VolunteerComposer({
                 body="Pick events, edit signup links, and set on/off dates so only open roles show."
                 actions={
                   <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setStep("footer")}
-                    >
-                      ← Footer
-                    </Button>
                     <Button
                       type="button"
                       variant="secondary"
@@ -1505,18 +1489,9 @@ export function VolunteerComposer({
                 title="Preview"
                 body="Full page preview. Drag the date slider to watch opportunities open, stay available, or close."
                 actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setStep("opportunities")}
-                    >
-                      ← Opportunities
-                    </Button>
-                    <Button type="button" onClick={() => setStep("export")}>
-                      Looks good → Export
-                    </Button>
-                  </>
+                  <Button type="button" onClick={() => setStep("export")}>
+                    Looks good → Export
+                  </Button>
                 }
               />
 
@@ -1629,18 +1604,9 @@ export function VolunteerComposer({
                 title="Copy full page code"
                 body="Complete Volunteer page HTML — paste into your website’s custom HTML block."
                 actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setStep("preview")}
-                    >
-                      ← Preview
-                    </Button>
-                    <Button type="button" onClick={() => void copyHtml()}>
-                      {copyLabel}
-                    </Button>
-                  </>
+                  <Button type="button" onClick={() => void copyHtml()}>
+                    {copyLabel}
+                  </Button>
                 }
               />
               <div className="max-w-4xl rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">

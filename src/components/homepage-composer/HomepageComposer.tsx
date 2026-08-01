@@ -975,10 +975,10 @@ export function HomepageComposer({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <Link
-            href="/create-with-ai/website-pages"
+            href="/create-with-ai"
             className="mb-1 inline-block text-xs font-medium text-cos-muted hover:text-cos-text sm:text-sm"
           >
-            ← Website pages
+            ← Create with AI
           </Link>
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
             <div className="min-w-0">
@@ -1534,18 +1534,9 @@ export function HomepageComposer({
                 title="Design your footer"
                 body="Get Involved colors plus Helpful Resources quick links."
                 actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setStep("header")}
-                    >
-                      ← Header
-                    </Button>
-                    <Button type="button" onClick={() => setStep("cards")}>
-                      Save → Cards
-                    </Button>
-                  </>
+                  <Button type="button" onClick={() => setStep("cards")}>
+                    Save → Cards
+                  </Button>
                 }
               />
 
@@ -1817,33 +1808,23 @@ export function HomepageComposer({
 
           {step === "cards" && (
             <section className="space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <button
+              <div className="flex flex-wrap items-center justify-end gap-1.5">
+                <Button
                   type="button"
-                  className="inline-flex items-center gap-1 text-sm font-medium text-cos-muted transition hover:text-cos-text"
-                  onClick={() => setStep("footer")}
+                  variant="secondary"
+                  size="sm"
+                  onClick={addCustomCard}
                 >
-                  <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-                  Back to footer
-                </button>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={addCustomCard}
-                  >
-                    <Plus className="h-4 w-4" strokeWidth={1.75} />
-                    Add other card
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => setStep("preview")}
-                  >
-                    Preview →
-                  </Button>
-                </div>
+                  <Plus className="h-4 w-4" strokeWidth={1.75} />
+                  Add other card
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setStep("preview")}
+                >
+                  Preview →
+                </Button>
               </div>
 
               <div
@@ -2365,18 +2346,9 @@ export function HomepageComposer({
                 title="Preview"
                 body={`Showing ${formatMonthLabel(state.workingMonth)} cards with your shared header and footer. Drag the date slider to watch cards roll on and off. On full month, open the share page or save as PDF to send for review.`}
                 actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setStep("cards")}
-                    >
-                      ← Cards
-                    </Button>
-                    <Button type="button" onClick={() => setStep("export")}>
-                      Looks good → Export
-                    </Button>
-                  </>
+                  <Button type="button" onClick={() => setStep("export")}>
+                    Looks good → Export
+                  </Button>
                 }
               />
 
@@ -2499,18 +2471,9 @@ export function HomepageComposer({
                 title="Copy full page code"
                 body="Complete homepage HTML — styles, header, cards, footer, helpful resources, and date script."
                 actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setStep("preview")}
-                    >
-                      ← Preview
-                    </Button>
-                    <Button type="button" onClick={copyHtml}>
-                      {copyLabel}
-                    </Button>
-                  </>
+                  <Button type="button" onClick={copyHtml}>
+                    {copyLabel}
+                  </Button>
                 }
               />
               <div className="max-w-4xl rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
