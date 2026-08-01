@@ -18,7 +18,7 @@ const RalliAiAssistantDialog = dynamic(
 );
 
 /**
- * Sidebar pin stays eager; dialog + ask logic load only when opened.
+ * Ask Ralli entry (Help Center). Dialog + ask logic load only when opened.
  */
 export function RalliAiAssistantWidget({
   compact = false,

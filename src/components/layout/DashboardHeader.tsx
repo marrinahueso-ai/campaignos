@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Menu, Settings, X } from "lucide-react";
+import { CircleHelp, Home, Menu, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutForm } from "@/components/auth/SignOutForm";
@@ -82,6 +82,13 @@ export function DashboardHeader({
             active={pathname === "/dashboard" || pathname === "/"}
           >
             <Home className="h-4 w-4" strokeWidth={1.5} />
+          </UtilityIconLink>
+          <UtilityIconLink
+            href="/help"
+            label="Help"
+            active={pathname.startsWith("/help")}
+          >
+            <CircleHelp className="h-4 w-4" strokeWidth={1.5} />
           </UtilityIconLink>
           <UtilityIconLink
             href="/settings"

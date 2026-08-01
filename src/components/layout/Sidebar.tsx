@@ -19,7 +19,6 @@ import {
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AiCreditsWidget } from "@/components/layout/AiCreditsWidget";
-import { RalliAiAssistantWidget } from "@/components/layout/RalliAiAssistantWidget";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type MouseEvent } from "react";
 import {
@@ -409,7 +408,7 @@ export function Sidebar({
         </div>
       )}
 
-      {/* Scrollable primary nav; Ask Ralli sits after the last primary item. */}
+      {/* Scrollable primary nav. Help lives in the top rail (?). Ask Ralli parked. */}
       <nav
         className={cn(
           "min-h-0 flex-1 space-y-0.5 overflow-y-auto",
@@ -600,10 +599,6 @@ export function Sidebar({
           )
         ) : null}
 
-        {/* After primary nav — scrolls with nav, not footer-pinned. */}
-        <div className={cn(showLabels ? "pt-3" : "flex justify-center pt-2")}>
-          {showLabels ? <RalliAiAssistantWidget /> : <RalliAiAssistantWidget compact />}
-        </div>
       </nav>
 
       {/* AI credits stay at the bottom of the sidebar. */}

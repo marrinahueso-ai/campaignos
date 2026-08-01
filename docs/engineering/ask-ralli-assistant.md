@@ -2,10 +2,10 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 25, 2026  
+**Last updated:** July 31, 2026  
 **Related:** [Architecture](./architecture.md) · [Feature list](../product/feature-list.md) · [QA overview](../qa/architecture-overview.md) · [Testing guide](../qa/testing-guide.md)
 
-In-app coach + product guide for Hey Ralli. Users open **Hey Ralli Assistant** from the sidebar (pinned under Insights) and ask operational, briefing, draft, insights, or how-to questions.
+In-app coach + product guide for Hey Ralli. Users open **Hey Ralli Assistant** from **Help Center** (`/help` — demoted from the sidebar so curated how-tos lead) and ask operational, briefing, draft, insights, or how-to questions.
 
 **Product rule:** Answers that cite org/event facts must come from loaded context packs (or curated FAQ). Do not invent approvals, tasks, events, metrics, or volunteer counts.
 
@@ -60,7 +60,7 @@ Widget: `src/components/layout/RalliAiAssistantWidget.tsx` (`pickEventOption` �
 
 ### UI placement
 
-Sidebar (`Sidebar.tsx`): scrollable nav ends at Insights; **Hey Ralli Assistant** is pinned below so it stays on screen. Expanded: card + “Ask Ralli →”. Collapsed: sparkles icon (`aria-label="Hey Ralli Assistant"`).
+**Demoted:** not sidebar-pinned. Entry on Help Center (`HelpAskRalli` → `RalliAiAssistantWidget`): card + “Ask Ralli →”. Top rail **?** opens `/help`. Feature code and API remain; soft-launch prioritizes Help how-tos.
 
 Dialog eyebrows by source: ops/org → **Your next steps**; pto → **PTO tips**; insights → **Insights**; content → **Draft helper**; faq/ai → **Product how-tos**. Persona: calm, practical “experienced PTO president” voice across coaches.
 
@@ -115,7 +115,7 @@ Unit tests: `src/lib/ralli-assistant/__tests__/*.test.ts`.
 
 **Coverage in that spec**
 
-1. Open Ask Ralli from sidebar → dialog  
+1. Open Ask Ralli from Help Center (`/help`) → dialog  
 2. “Give me today’s summary” / “What needs my approval?” → org/ops (`Your next steps` + Approvals/Today chips), not Calendar FAQ  
 3. Ambiguous event chips — asserted only if staging returns them; otherwise annotated skip (unit tests cover resolver)  
 4. “Where do I find approvals?” → FAQ + Approvals link (`Product how-tos`)
@@ -135,7 +135,7 @@ Unit tests: `src/lib/ralli-assistant/__tests__/*.test.ts`.
 
 ### UX / regression checklist
 
-- [ ] Sidebar: Ask Ralli card pinned **under Insights** (visible without scrolling the whole nav away)
+- [ ] Help Center: Ask Ralli card present; top-rail **?** opens `/help`; not in sidebar
 - [ ] Suggestion chips open a useful answer without typing
 - [ ] Ambiguity: dated event option chips → click regenerates with that event (same question)
 - [ ] Answer body does not show raw markdown `[Label](/path)` when chips are present

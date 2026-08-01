@@ -196,14 +196,22 @@ test.describe("Ask Ralli Assistant", () => {
 });
 
 async function openAskRalliDialog(page: Page): Promise<Locator> {
-  // Expanded sidebar: "Ask Ralli →" on the pinned card after primary nav.
+  // Demoted: Ask Ralli lives on Help Center (not sidebar-pinned).
   const openLabeled = page.getByRole("button", { name: /^ask ralli/i });
+  if (!(await openLabeled.isVisible().catch(() => false))) {
+    await page.goto("/help");
+    await expect(page.getByRole("heading", { name: /help center/i })).toBeVisible({
+      timeout: 15_000,
+    });
+  }
+
+  const openLabeledReady = page.getByRole("button", { name: /^ask ralli/i });
   const openCompact = page.getByRole("button", {
     name: /^hey ralli assistant$/i,
   });
 
-  if (await openLabeled.isVisible().catch(() => false)) {
-    await openLabeled.click();
+  if (await openLabeledReady.isVisible().catch(() => false)) {
+    await openLabeledReady.click();
   } else if (await openCompact.isVisible().catch(() => false)) {
     await openCompact.click();
   } else {
