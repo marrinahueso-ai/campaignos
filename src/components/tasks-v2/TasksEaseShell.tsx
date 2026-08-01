@@ -10,8 +10,13 @@ import { TasksEaseCustomBoard } from "@/components/tasks-v2/TasksEaseCustomBoard
 import { TasksEaseList } from "@/components/tasks-v2/TasksEaseList";
 import { TasksEaseTaskDrawer } from "@/components/tasks-v2/TasksEaseTaskDrawer";
 import { eventTasksHref } from "@/lib/events/event-responsibility";
-import { createTaskHubTaskAction } from "@/lib/task-hub/actions";
+import {
+  createTaskHubTaskAction,
+  updateTaskHubTaskAction,
+  updateTaskHubTaskStatusAction,
+} from "@/lib/task-hub/actions";
 import { deriveInitials } from "@/lib/task-hub/org-members";
+import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 import { flattenEventGroups } from "@/lib/tasks-v2/group-by-event";
 import {
   filterEventGroupsByTasks,
@@ -125,6 +130,11 @@ export function TasksEaseShell({
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [addTaskEventId, setAddTaskEventId] = useState("");
   const [addTaskTitle, setAddTaskTitle] = useState("");
+  const [addTaskNotes, setAddTaskNotes] = useState("");
+  const [addTaskDueDate, setAddTaskDueDate] = useState("");
+  const [addTaskAssigneeUserId, setAddTaskAssigneeUserId] = useState("");
+  const [addTaskStatus, setAddTaskStatus] =
+    useState<EventPlaybookTaskStatus>("todo");
   const [addTaskPending, setAddTaskPending] = useState(false);
   const [addTaskError, setAddTaskError] = useState<string | null>(null);
   const [addTaskSuccess, setAddTaskSuccess] = useState<string | null>(null);
@@ -328,6 +338,15 @@ export function TasksEaseShell({
     setPendingCreated((current) => current.filter((task) => !known.has(task.id)));
   }, [data.eventGroups, pendingCreated.length]);
 
+  function resetAddTaskForm() {
+    setAddTaskTitle("");
+    setAddTaskNotes("");
+    setAddTaskDueDate("");
+    setAddTaskAssigneeUserId("");
+    setAddTaskStatus("todo");
+    setAddTaskError(null);
+  }
+
   function handleAddTaskSubmit() {
     if (!data.canEdit) {
       setAddTaskError("You don’t have permission to add tasks.");
@@ -347,18 +366,33 @@ export function TasksEaseShell({
     }
 
     // Mine scope only shows assigned tasks — assign to self so the new row is visible.
-    const assignToSelf = scope === "mine" && Boolean(data.viewer.userId);
+    const assignToSelf =
+      (scope === "mine" && !addTaskAssigneeUserId && Boolean(data.viewer.userId)) ||
+      addTaskAssigneeUserId === data.viewer.userId;
+    const pickedMember = data.orgMembers.find(
+      (member) => member.userId && member.userId === addTaskAssigneeUserId,
+    );
     const selfMember = data.orgMembers.find(
       (member) => member.userId && member.userId === data.viewer.userId,
     );
-    const assigneeUserId = assignToSelf ? data.viewer.userId : null;
-    const assigneeName = assignToSelf
-      ? (selfMember?.displayName ?? data.viewer.displayName ?? "You")
-      : null;
-    const assigneeInitials = assignToSelf
-      ? (selfMember?.initials ??
-        (assigneeName ? deriveInitials(assigneeName) : "YO"))
-      : null;
+    const assigneeMember =
+      pickedMember ?? (assignToSelf && !addTaskAssigneeUserId ? selfMember : null);
+    const assigneeUserId =
+      assigneeMember?.userId ??
+      (assignToSelf && !addTaskAssigneeUserId ? data.viewer.userId : null);
+    const assigneeName = assigneeMember
+      ? assigneeMember.displayName
+      : assignToSelf
+        ? (data.viewer.displayName ?? "You")
+        : null;
+    const assigneeInitials = assigneeMember
+      ? assigneeMember.initials
+      : assigneeName
+        ? deriveInitials(assigneeName)
+        : null;
+    const dueDate = addTaskDueDate.trim() || null;
+    const notes = addTaskNotes.trim() || null;
+    const status = addTaskStatus;
 
     setAddTaskPending(true);
     setAddTaskError(null);
@@ -366,28 +400,48 @@ export function TasksEaseShell({
     startTransition(async () => {
       const result = await createTaskHubTaskAction(addTaskEventId, {
         title,
+        dueDate,
         assigneeUserId,
         assigneeName,
         assigneeInitials,
       });
-      setAddTaskPending(false);
       if (!result.success || !result.taskId) {
+        setAddTaskPending(false);
         setAddTaskError(result.error ?? "Could not add task.");
         return;
       }
+
+      if (notes) {
+        await updateTaskHubTaskAction(
+          addTaskEventId,
+          result.taskId,
+          { notes },
+          title,
+        );
+      }
+      if (status !== "todo") {
+        await updateTaskHubTaskStatusAction(
+          addTaskEventId,
+          result.taskId,
+          status,
+          title,
+        );
+      }
+
+      setAddTaskPending(false);
 
       const optimistic: TaskHubTaskItem = {
         id: result.taskId,
         eventId: addTaskEventId,
         title,
-        status: "todo",
+        status,
         sortOrder: 0,
-        dueDate: null,
+        dueDate,
         assigneeName,
         assigneeInitials,
         assigneeUserId,
         groupId: null,
-        notes: null,
+        notes,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         event: {
@@ -400,7 +454,7 @@ export function TasksEaseShell({
 
       setPendingCreated((current) => [optimistic, ...current]);
       setTaskPatches((current) => ({ ...current, [optimistic.id]: optimistic }));
-      setAddTaskTitle("");
+      resetAddTaskForm();
       setAddTaskOpen(false);
       setAddTaskSuccess(`Added “${title}” to ${eventOption.eventTitle}.`);
       // Clear pulse so a Needs you / Done filter doesn’t hide the new task.
@@ -411,8 +465,8 @@ export function TasksEaseShell({
 
   const subtitle =
     scope === "mine"
-      ? "Only tasks assigned to you — still grouped by the event they belong to."
-      : "Your team’s tasks across events — the same list each event’s Tasks tab uses.";
+      ? "Only tasks assigned to you — still tied to the events they belong to."
+      : "Your team’s work across all events — coordinated in one place.";
 
   if (!data.tablesAvailable) {
     return (
@@ -427,108 +481,47 @@ export function TasksEaseShell({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-[22px] before:pointer-events-none before:absolute before:top-0 before:left-[-2rem] before:h-60 before:w-60 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:top-10 after:right-0 after:h-52 after:w-52 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']">
-      <div className="relative space-y-5">
-        <header className="flex flex-wrap items-end justify-between gap-3.5">
+    <div className="relative">
+      <div className="space-y-6">
+        <header className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div className="min-w-0">
-            <h1 className="font-display text-[clamp(2rem,4vw,2.75rem)] tracking-[-0.02em] text-cos-text">
+            <h1
+              className="text-[44px] leading-tight text-[#2a2622]"
+              style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+            >
               Tasks
             </h1>
-            <p className="mt-1.5 max-w-[48ch] text-sm leading-relaxed text-cos-muted">
-              {subtitle}
-            </p>
+            <p className="mt-2 text-lg text-[#5c5752]">{subtitle}</p>
             {data.tasksCapped ? (
-              <p className="mt-1.5 text-sm text-cos-muted" role="status">
-                Showing the first {data.tasksCap?.toLocaleString() ?? "1,000"} tasks.
-                Open an event’s Tasks tab for the full list on that event.
+              <p className="mt-1.5 text-sm text-[#5c5752]" role="status">
+                Showing the first {data.tasksCap?.toLocaleString() ?? "1,000"}{" "}
+                tasks. Open an event’s Tasks tab for the full list on that event.
               </p>
             ) : null}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={() => {
                 setAddTaskSuccess(null);
                 setAddTaskError(null);
-                setAddTaskOpen((open) => !open);
+                setAddTaskOpen(true);
               }}
               disabled={!data.canEdit}
-              className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl border border-[#e8e2d9] bg-white px-5 py-2.5 text-[14px] font-bold text-[#2a2622] transition hover:bg-[#faf8f5] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Add task
             </button>
             <button
               type="button"
               onClick={() => setAskAiOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#2a2622] px-5 py-2.5 text-[14px] font-bold text-white transition hover:bg-[#253a2f]"
             >
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
               Ask AI for tasks
             </button>
           </div>
         </header>
-
-        {addTaskOpen ? (
-          <div className="rounded-2xl border border-cos-border bg-cos-card p-4 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
-            <div className="flex flex-wrap items-end gap-2.5">
-              <label className="min-w-[10rem] flex-1 text-xs font-semibold tracking-[0.08em] text-cos-muted uppercase">
-                Event
-                <select
-                  value={addTaskEventId}
-                  onChange={(event) => setAddTaskEventId(event.target.value)}
-                  disabled={addTaskEventOptions.length === 0}
-                  className="mt-1.5 block w-full rounded-xl border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text shadow-sm"
-                >
-                  {addTaskEventOptions.length === 0 ? (
-                    <option value="">No events available</option>
-                  ) : (
-                    addTaskEventOptions.map((event) => (
-                      <option key={event.eventId} value={event.eventId}>
-                        {event.eventTitle}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </label>
-              <label className="min-w-[14rem] flex-[2] text-xs font-semibold tracking-[0.08em] text-cos-muted uppercase">
-                Task name
-                <input
-                  value={addTaskTitle}
-                  onChange={(event) => setAddTaskTitle(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      handleAddTaskSubmit();
-                    }
-                  }}
-                  placeholder="e.g. Confirm venue setup with the venue contact"
-                  autoFocus
-                  className="mt-1.5 block w-full rounded-xl border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text shadow-sm placeholder:text-cos-muted"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={handleAddTaskSubmit}
-                disabled={addTaskPending || !addTaskTitle.trim() || !addTaskEventId}
-                className="inline-flex items-center rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {addTaskPending ? "Adding…" : "Add"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setAddTaskOpen(false)}
-                className="rounded-full px-3 py-2.5 text-[13px] font-bold text-cos-muted hover:text-cos-text"
-              >
-                Cancel
-              </button>
-            </div>
-            {addTaskError ? (
-              <p className="mt-2 text-xs text-cos-error" role="alert">
-                {addTaskError}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
 
         {addTaskSuccess ? (
           <p
@@ -539,140 +532,203 @@ export function TasksEaseShell({
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-x-4.5 gap-y-2.5">
-          <div
-            className="inline-flex gap-0.5 rounded-full border border-cos-border bg-[rgba(255,252,247,0.55)] p-[3px]"
-            role="group"
-            aria-label="Who’s tasks"
-          >
-            {(["team", "mine"] as TasksEaseScope[]).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => handleScopeChange(option)}
-                className={cn(
-                  "rounded-full px-3.5 py-[7px] text-[13px] font-bold transition",
-                  scope === option
-                    ? "bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
-                    : "text-cos-muted hover:text-cos-text",
-                )}
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col justify-between gap-4 border-b border-[#e8e2d9] xl:flex-row xl:items-center">
+            <div className="flex flex-wrap items-center gap-6">
+              <div
+                className="mb-[-1px] flex rounded-xl border border-[#e8e2d9] bg-[#faf8f5] p-1"
+                role="group"
+                aria-label="Who’s tasks"
               >
-                {option === "team" ? "Team" : "Mine"}
-              </button>
-            ))}
+                {(["team", "mine"] as TasksEaseScope[]).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => handleScopeChange(option)}
+                    className={cn(
+                      "rounded-lg px-4 py-1.5 text-sm transition",
+                      scope === option
+                        ? "bg-white font-bold text-[#2a2622] shadow-sm"
+                        : "font-medium text-[#5c5752] hover:text-[#2a2622]",
+                    )}
+                  >
+                    {option === "team" ? "Team" : "Mine"}
+                  </button>
+                ))}
+              </div>
+
+              <nav
+                className="flex h-full items-center gap-6"
+                role="tablist"
+                aria-label="Task views"
+              >
+                {VIEW_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={view === tab.id}
+                    onClick={() => handleViewChange(tab.id)}
+                    className={cn(
+                      "border-b-2 px-1 py-4 text-sm transition",
+                      view === tab.id
+                        ? "border-[#2f4a3c] font-bold text-[#2a2622]"
+                        : "border-transparent font-medium text-[#5c5752] hover:text-[#2a2622]",
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            <div className="hidden items-center gap-6 pb-3 xl:flex">
+              {TASKS_EASE_PULSE_OPTIONS.filter((option) => option.id !== "done").map(
+                (option, index) => {
+                  const active = pulse === option.id;
+                  const isOverdue = option.id === "overdue";
+                  return (
+                    <div key={option.id} className="flex items-center gap-6">
+                      {index > 0 ? (
+                        <div className="h-6 w-px bg-[#e8e2d9]" aria-hidden />
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => handlePulseChange(option.id)}
+                        className={cn(
+                          "flex flex-col items-end transition",
+                          active && "opacity-100",
+                        )}
+                      >
+                        <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
+                          {option.label}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-sm font-bold",
+                            isOverdue ? "text-[#a67b27]" : "text-[#2a2622]",
+                            active && "underline decoration-[1.5px] underline-offset-4",
+                          )}
+                        >
+                          {pulseCounts[option.id]}
+                        </span>
+                      </button>
+                    </div>
+                  );
+                },
+              )}
+              {/* Keep Done pulse available for filters / contracts */}
+              <div className="flex items-center gap-6">
+                <div className="h-6 w-px bg-[#e8e2d9]" aria-hidden />
+                <button
+                  type="button"
+                  onClick={() => handlePulseChange("done")}
+                  className="flex flex-col items-end"
+                >
+                  <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
+                    Done
+                  </span>
+                  <span
+                    className={cn(
+                      "text-sm font-bold text-[#2a2622]",
+                      pulse === "done" &&
+                        "underline decoration-[1.5px] underline-offset-4",
+                    )}
+                  >
+                    {pulseCounts.done}
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <nav className="flex flex-wrap gap-0.5" role="tablist" aria-label="Task views">
-            {VIEW_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={view === tab.id}
-                onClick={() => handleViewChange(tab.id)}
-                className={cn(
-                  "rounded-full px-3 py-[7px] text-[13px] font-semibold transition",
-                  view === tab.id
-                    ? "bg-[rgba(255,252,247,0.85)] text-cos-text"
-                    : "text-cos-muted hover:text-cos-text",
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1 px-0.5">
-          <span className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-            Focus
-          </span>
-          {TASKS_EASE_PULSE_OPTIONS.map((option) => {
-            const active = pulse === option.id;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => handlePulseChange(option.id)}
-                className={cn(
-                  "text-[13px] font-semibold text-cos-muted transition hover:text-cos-text",
-                  active && "font-extrabold text-cos-text underline decoration-[1.5px] underline-offset-4",
-                )}
-              >
-                {option.label}
-                <em
+          {/* Mobile / smaller screens: pulse as text links */}
+          <div className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1 xl:hidden">
+            {TASKS_EASE_PULSE_OPTIONS.map((option) => {
+              const active = pulse === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => handlePulseChange(option.id)}
                   className={cn(
-                    "ml-[3px] not-italic font-bold text-cos-muted",
-                    active && "text-cos-text",
+                    "text-[13px] font-semibold text-[#5c5752] transition hover:text-[#2a2622]",
+                    active &&
+                      "font-extrabold text-[#2a2622] underline decoration-[1.5px] underline-offset-4",
                   )}
                 >
-                  {pulseCounts[option.id]}
-                </em>
-              </button>
-            );
-          })}
-        </div>
+                  {option.label}
+                  <em
+                    className={cn(
+                      "ml-[3px] font-bold text-[#5c5752] not-italic",
+                      option.id === "overdue" && "text-[#a67b27]",
+                      active && "text-[#2a2622]",
+                    )}
+                  >
+                    {pulseCounts[option.id]}
+                  </em>
+                </button>
+              );
+            })}
+          </div>
 
-        {chipEvents.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-0.5 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-              Events
-            </span>
-            <div
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2 py-1",
-                !eventFilter && "border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]",
-              )}
-            >
+          {chipEvents.length > 0 ? (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <span className="mr-2 shrink-0 text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
+                Events:
+              </span>
               <button
                 type="button"
                 onClick={() => handleEventChipChange(null)}
                 className={cn(
-                  "text-xs font-bold",
-                  !eventFilter ? "text-cos-text" : "text-cos-muted hover:text-cos-text",
+                  "shrink-0 rounded-full px-4 py-1.5 text-[12px] font-bold transition",
+                  !eventFilter
+                    ? "bg-[#2f4a3c] text-white shadow-sm"
+                    : "border border-[#e8e2d9] bg-white font-medium text-[#5c5752] hover:bg-[#faf8f5]",
                 )}
               >
                 All events
               </button>
-            </div>
-            {chipEvents.map((group) => {
-              const active = eventFilter === group.eventId;
-              const color = eventColors[group.eventId] ?? group.accentColor;
-              return (
-                <div
-                  key={group.eventId}
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-full py-1 pr-2 pl-1",
-                    active && "border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]",
-                  )}
-                >
-                  <DashboardWidgetColorPicker
-                    label={group.eventTitle}
-                    value={eventColors[group.eventId] ?? null}
-                    swatchColor={group.accentColor}
-                    variant="dot"
-                    onChange={(nextColor) =>
-                      handleEventColorChange(group.eventId, nextColor)
-                    }
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleEventChipChange(active ? null : group.eventId)}
+              {chipEvents.map((group) => {
+                const active = eventFilter === group.eventId;
+                const color = eventColors[group.eventId] ?? group.accentColor;
+                return (
+                  <div
+                    key={group.eventId}
                     className={cn(
-                      "text-xs font-bold",
-                      active ? "text-cos-text" : "text-cos-muted hover:text-cos-text",
+                      "inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-[12px] transition",
+                      active
+                        ? "bg-[#2f4a3c] font-bold text-white shadow-sm"
+                        : "border border-[#e8e2d9] bg-white font-medium text-[#5c5752] hover:bg-[#faf8f5]",
                     )}
-                    style={active ? undefined : { color }}
                   >
-                    {group.eventTitle}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
+                    <DashboardWidgetColorPicker
+                      label={group.eventTitle}
+                      value={eventColors[group.eventId] ?? null}
+                      swatchColor={group.accentColor}
+                      variant="dot"
+                      onChange={(nextColor) =>
+                        handleEventColorChange(group.eventId, nextColor)
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleEventChipChange(active ? null : group.eventId)
+                      }
+                      className="font-inherit"
+                      style={active ? undefined : { color }}
+                    >
+                      {group.eventTitle}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
 
-        <div className="pt-1">
+        <div>
           {view === "list" ? (
             <TasksEaseList
               eventGroups={displayGroups}
@@ -681,6 +737,7 @@ export function TasksEaseShell({
               eventColors={eventColors}
               onEventColorChange={handleEventColorChange}
               onOpenTask={setActiveTask}
+              viewerUserId={data.viewer.userId}
               emptyTitle={
                 scope === "mine" ? "Nothing assigned to you" : "No tasks yet"
               }
@@ -715,6 +772,190 @@ export function TasksEaseShell({
         </div>
       </div>
 
+      {addTaskOpen ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close add task"
+            className="absolute inset-0 bg-[#2a2622]/40 backdrop-blur-sm"
+            onClick={() => {
+              setAddTaskOpen(false);
+              setAddTaskError(null);
+            }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tasks-ease-add-task-title"
+            className="relative w-full max-w-xl overflow-hidden rounded-[32px] border border-[#e8e2d9] bg-white shadow-2xl"
+          >
+            <div className="flex items-center justify-between px-10 pt-10 pb-6">
+              <h2
+                id="tasks-ease-add-task-title"
+                className="text-[28px] text-[#2a2622] italic"
+                style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+              >
+                Add a task
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setAddTaskOpen(false);
+                  setAddTaskError(null);
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-[#5c5752] transition hover:bg-[#faf8f5]"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-8 px-10 pb-10">
+              <label className="block space-y-2">
+                <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
+                  Task Title
+                </span>
+                <input
+                  value={addTaskTitle}
+                  onChange={(event) => setAddTaskTitle(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleAddTaskSubmit();
+                    }
+                  }}
+                  placeholder="e.g. Call the rental company..."
+                  autoFocus
+                  className="w-full rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-5 py-4 text-sm font-medium text-[#2a2622] outline-none transition focus:border-[#2f4a3c] focus:ring-2 focus:ring-[#2f4a3c]/10"
+                />
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
+                  Description (Optional)
+                </span>
+                <textarea
+                  value={addTaskNotes}
+                  onChange={(event) => setAddTaskNotes(event.target.value)}
+                  rows={3}
+                  placeholder="Add more details..."
+                  className="w-full resize-none rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-5 py-4 text-sm text-[#2a2622] outline-none transition focus:border-[#2f4a3c] focus:ring-2 focus:ring-[#2f4a3c]/10"
+                />
+              </label>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
+                    Tied to Event
+                  </span>
+                  <select
+                    value={addTaskEventId}
+                    onChange={(event) => setAddTaskEventId(event.target.value)}
+                    disabled={addTaskEventOptions.length === 0}
+                    className="w-full appearance-none rounded-xl border border-[#e8e2d9] bg-[#faf8f5] py-3.5 pr-10 pl-5 text-sm font-medium text-[#2a2622] outline-none focus:ring-2 focus:ring-[#2f4a3c]/10"
+                  >
+                    {addTaskEventOptions.length === 0 ? (
+                      <option value="">No events available</option>
+                    ) : (
+                      addTaskEventOptions.map((event) => (
+                        <option key={event.eventId} value={event.eventId}>
+                          {event.eventTitle}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
+                    Assignee
+                  </span>
+                  <select
+                    value={addTaskAssigneeUserId}
+                    onChange={(event) =>
+                      setAddTaskAssigneeUserId(event.target.value)
+                    }
+                    className="w-full appearance-none rounded-xl border border-[#e8e2d9] bg-[#faf8f5] py-3.5 pr-10 pl-5 text-sm font-medium text-[#2a2622] outline-none focus:ring-2 focus:ring-[#2f4a3c]/10"
+                  >
+                    <option value="">Unassigned</option>
+                    {data.orgMembers
+                      .filter((member) => member.userId)
+                      .map((member) => (
+                        <option key={member.id} value={member.userId!}>
+                          {member.userId === data.viewer.userId
+                            ? `${member.displayName} (You)`
+                            : member.displayName}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
+                    Due Date
+                  </span>
+                  <input
+                    type="date"
+                    value={addTaskDueDate}
+                    onChange={(event) => setAddTaskDueDate(event.target.value)}
+                    className="w-full rounded-xl border border-[#e8e2d9] bg-[#faf8f5] py-3.5 pr-4 pl-5 text-sm font-medium text-[#2a2622] outline-none focus:ring-2 focus:ring-[#2f4a3c]/10"
+                  />
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
+                    Board Status
+                  </span>
+                  <select
+                    value={addTaskStatus}
+                    onChange={(event) =>
+                      setAddTaskStatus(
+                        event.target.value as EventPlaybookTaskStatus,
+                      )
+                    }
+                    className="w-full appearance-none rounded-xl border border-[#e8e2d9] bg-[#faf8f5] py-3.5 pr-10 pl-5 text-sm font-medium text-[#2a2622] outline-none focus:ring-2 focus:ring-[#2f4a3c]/10"
+                  >
+                    <option value="todo">To Do</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="blocked">Needs Review</option>
+                    <option value="done">Done</option>
+                  </select>
+                </label>
+              </div>
+
+              {addTaskError ? (
+                <p className="text-sm text-red-700" role="alert">
+                  {addTaskError}
+                </p>
+              ) : null}
+
+              <div className="flex flex-col gap-4 pt-2">
+                <button
+                  type="button"
+                  onClick={handleAddTaskSubmit}
+                  disabled={
+                    addTaskPending || !addTaskTitle.trim() || !addTaskEventId
+                  }
+                  className="w-full rounded-2xl bg-[#2f4a3c] py-4 text-lg font-bold text-white shadow-xl shadow-[#2f4a3c]/10 transition hover:bg-[#253a2f] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {addTaskPending ? "Adding…" : "Add Task"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddTaskOpen(false);
+                    setAddTaskError(null);
+                  }}
+                  className="text-sm font-bold text-[#5c5752] transition hover:text-[#2a2622]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <TasksEaseTaskDrawer
         task={activeTask}
         canEdit={data.canEdit}
@@ -732,7 +973,6 @@ export function TasksEaseShell({
           preferredEventId={eventFilter}
           onClose={() => setAskAiOpen(false)}
           onTasksAdded={() => {
-            // AI add is rare — one soft refresh is fine so new rows appear.
             router.refresh();
           }}
         />

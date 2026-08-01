@@ -47,9 +47,11 @@ describe("tasks ease UI contracts", () => {
     assert.match(customBoard, /DashboardWidgetColorPicker/);
   });
 
-  it("lists each event in its own box with an event-scoped Tasks tab link", () => {
+  it("lists tasks in a Pilot table with event links and color stripe", () => {
     assert.match(list, /group\.eventHref/);
     assert.match(list, /borderLeft: `4px solid \$\{stripeColor\}`/);
+    assert.match(list, /<table/);
+    assert.match(list, /Due Date/);
   });
 
   it("mutes completed tasks with line-through title styling", () => {

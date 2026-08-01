@@ -59,6 +59,7 @@ test.describe("Tasks workspace (Ease)", () => {
     await expect(
       main
         .getByText(/nothing assigned to you|no tasks yet/i)
+        .or(main.locator("table"))
         .or(main.locator("article"))
         .first(),
     ).toBeVisible({ timeout: 20_000 });
@@ -106,7 +107,10 @@ test.describe("Tasks workspace (Ease)", () => {
     await gotoTasks(page);
     const main = mainContent(page);
 
-    const taskTitle = main.locator("article button strong").first();
+    const taskTitle = main
+      .locator("table button strong")
+      .or(main.locator("article button strong"))
+      .first();
     if ((await taskTitle.count()) === 0) {
       test.skip(true, "No tasks available to open in this environment.");
       return;

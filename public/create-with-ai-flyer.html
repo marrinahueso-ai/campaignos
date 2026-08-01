@@ -1431,6 +1431,27 @@
     .compare-toggle input:checked + .compare-switch { background: var(--forest); }
     .compare-toggle input:checked + .compare-switch::after { transform: translateX(16px); }
     .compare-toggle input:disabled + .compare-switch { opacity: 0.45; }
+    .compare-hint {
+      margin: 0 0 10px; font-size: 11px; line-height: 1.35; color: var(--muted);
+    }
+    .compare-hint[hidden] { display: none !important; }
+    .version-thumb.is-compare-a {
+      border-color: #a8a29c; background: #faf8f5;
+    }
+    .version-thumb.is-compare-b {
+      border-color: var(--forest); background: #f3f6f3;
+    }
+    .version-thumb-badge {
+      display: inline-block; margin-left: 6px; padding: 1px 5px;
+      border-radius: 999px; font-size: 9px; font-weight: 800;
+      letter-spacing: 0.04em; text-transform: uppercase; vertical-align: middle;
+    }
+    .version-thumb.is-compare-a .version-thumb-badge {
+      background: #e8e2d9; color: var(--ink-soft);
+    }
+    .version-thumb.is-compare-b .version-thumb-badge {
+      background: rgba(47, 74, 60, 0.12); color: var(--forest);
+    }
     .approval-to-label {
       display: block; margin: 0 0 6px 2px;
       font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
@@ -2538,6 +2559,7 @@
             </div>
             <div class="preview-versions" id="previewVersions" hidden>
               <p class="preview-versions-label">Versions</p>
+              <p class="compare-hint" id="compareHint" hidden>Next tap sets Previous (left).</p>
               <div class="preview-versions-strip" id="previewVersionsStrip" role="list"></div>
             </div>
             <p id="versionsEmptyHint" class="insp-peer-note">Generate to start a version history.</p>
@@ -2975,6 +2997,11 @@
       generatedImageUrl: null,
       versions: [],
       activeVersionId: null,
+      /** Compare mode: left = Previous pane, right = Current pane */
+      compareLeftId: null,
+      compareRightId: null,
+      /** Next strip click assigns this compare slot while Compare is on */
+      comparePickNext: "left",
       autoGenerateOnEnter: false,
       generateTimer: null,
       generateStageTimer: null,
@@ -3125,6 +3152,85 @@
       state.activeVersionId = version.id;
       state.previewGenerated = true;
       return true;
+    }
+
+    function isCompareModeOn() {
+      const toggle = document.getElementById("compareVersionsToggle");
+      return !!(toggle && toggle.checked && !toggle.disabled);
+    }
+
+    /** Keep stage image aligned with the selected Versions entry. */
+    function syncSelectedVersionToStage() {
+      const active = getActiveFlyerVersion();
+      if (!active || !isPersistableFlyerImageUrl(active.imageUrl)) return false;
+      state.generatedImageUrl = active.imageUrl;
+      state.activeVersionId = active.id;
+      state.previewGenerated = true;
+      return true;
+    }
+
+    function resolveCompareSlots(versions) {
+      const list = versions || normalizeFlyerVersions(state.versions);
+      let current = findFlyerVersion(list, state.compareRightId);
+      if (!current) {
+        current =
+          findFlyerVersion(list, state.activeVersionId) || list[0] || null;
+        state.compareRightId = current?.id || null;
+      }
+      let previous = findFlyerVersion(list, state.compareLeftId);
+      if (!previous || previous.id === current?.id) {
+        const currIdx = current
+          ? list.findIndex((v) => v.id === current.id)
+          : -1;
+        previous =
+          (currIdx >= 0 ? list[currIdx + 1] : null) ||
+          list.find((v) => v.id !== current?.id) ||
+          null;
+        state.compareLeftId = previous?.id || null;
+      }
+      return { previous, current, versions: list };
+    }
+
+    function ensureCompareDefaults() {
+      const versions = normalizeFlyerVersions(state.versions);
+      if (versions.length < 2) {
+        state.compareLeftId = null;
+        state.compareRightId = versions[0]?.id || null;
+        state.comparePickNext = "left";
+        return;
+      }
+      const activeIdx = Math.max(
+        0,
+        versions.findIndex((v) => v.id === state.activeVersionId),
+      );
+      const right = versions[activeIdx] || versions[0];
+      const left =
+        versions[activeIdx + 1] ||
+        versions.find((v) => v.id !== right.id) ||
+        null;
+      state.compareRightId = right?.id || null;
+      state.compareLeftId = left?.id || null;
+      state.comparePickNext = "left";
+    }
+
+    /**
+     * Compare ON: first click → Previous (left), second → Current (right),
+     * then alternate. Keeps activeVersionId on the Current pane.
+     */
+    function assignCompareVersion(version) {
+      if (!version?.id) return;
+      const id = version.id;
+      const slot = state.comparePickNext === "right" ? "right" : "left";
+      if (slot === "left") {
+        state.compareLeftId = id;
+        if (state.compareRightId === id) state.compareRightId = null;
+        state.comparePickNext = "right";
+      } else {
+        state.compareRightId = id;
+        if (state.compareLeftId === id) state.compareLeftId = null;
+        state.comparePickNext = "left";
+        restoreGeneratedFromVersion(version);
+      }
     }
 
     const panels = [...document.querySelectorAll("[data-panel]")];
@@ -4848,17 +4954,19 @@
 
     function renderResultFlyer(filled = true) {
       const wrap = document.getElementById("resultFlyer");
-      if (!wrap || !state.templateId) return;
-      const tpl = getTpl(state.templateId);
-      wrap.dataset.ratio = tpl.ratio;
+      if (!wrap) return;
+      const tpl = state.templateId ? getTpl(state.templateId) : null;
+      wrap.dataset.ratio = tpl?.ratio || "3/4";
       wrap.hidden = false;
 
       if (state.generatedImageUrl) {
+        const alt = tpl?.name ? `${tpl.name} flyer` : "Flyer";
         wrap.classList.add("is-generated-image");
-        wrap.innerHTML = `<img class="generated-flyer-img" id="generatedFlyerImg" src="${escapeHtml(state.generatedImageUrl)}" alt="${escapeHtml(tpl.name)} flyer" />`;
+        wrap.innerHTML = `<img class="generated-flyer-img" id="generatedFlyerImg" src="${escapeHtml(state.generatedImageUrl)}" alt="${escapeHtml(alt)}" />`;
         return;
       }
 
+      if (!state.templateId || !tpl) return;
       wrap.classList.remove("is-generated-image");
       wrap.innerHTML = flyerHTML(tpl.id, {
         imageUrl: hasExplicitInspirationPhoto() ? state.imageUrl : null,
@@ -4922,6 +5030,7 @@
       const single = document.getElementById("previewSingleView");
       const compare = document.getElementById("previewCompareView");
       const toggle = document.getElementById("compareVersionsToggle");
+      const hint = document.getElementById("compareHint");
       const prevFrame = document.getElementById("comparePrevFrame");
       const currFrame = document.getElementById("compareCurrFrame");
       const prevLabel = document.getElementById("comparePrevLabel");
@@ -4938,21 +5047,36 @@
       stage.classList.toggle("is-compare", on);
       compare.hidden = !on;
       single.hidden = on;
+      if (hint) {
+        hint.hidden = !on;
+        if (on) {
+          hint.textContent =
+            state.comparePickNext === "right"
+              ? "Next tap sets Current (right)."
+              : "Next tap sets Previous (left).";
+        }
+      }
       if (!on || !prevFrame || !currFrame) return;
 
-      const activeIdx = Math.max(
-        0,
-        versions.findIndex((v) => v.id === state.activeVersionId),
-      );
-      const current = versions[activeIdx] || versions[0];
-      const previous = versions[activeIdx + 1] || versions[1] || null;
-      const total = versions.length;
-      const currN = total - activeIdx;
-      const prevN = previous ? total - (activeIdx + 1) : null;
+      const { previous, current } = resolveCompareSlots(versions);
 
-      if (currLabel) currLabel.textContent = `V${currN} (Current)`;
+      const total = versions.length;
+      const currIdx = current
+        ? versions.findIndex((v) => v.id === current.id)
+        : -1;
+      const prevIdx = previous
+        ? versions.findIndex((v) => v.id === previous.id)
+        : -1;
+      const currN = currIdx >= 0 ? total - currIdx : null;
+      const prevN = prevIdx >= 0 ? total - prevIdx : null;
+
+      if (currLabel) {
+        currLabel.textContent =
+          currN != null ? `V${currN} (Current)` : "Current";
+      }
       if (prevLabel) {
-        prevLabel.textContent = previous ? `V${prevN} (Previous)` : "Previous";
+        prevLabel.textContent =
+          prevN != null ? `V${prevN} (Previous)` : "Previous";
       }
 
       if (current?.imageUrl) {
@@ -4967,7 +5091,7 @@
         prevFrame.innerHTML = `<img src="${escapeHtml(previous.imageUrl)}" alt="Previous version" />`;
       } else {
         prevFrame.classList.add("is-empty");
-        prevFrame.textContent = "No earlier version";
+        prevFrame.textContent = "Tap a version for Previous";
       }
     }
 
@@ -4983,28 +5107,59 @@
         panel.hidden = true;
         strip.innerHTML = "";
         if (emptyHint) emptyHint.hidden = false;
+        const hint = document.getElementById("compareHint");
+        if (hint) hint.hidden = true;
         renderCompareView();
         return;
       }
       panel.hidden = false;
       if (emptyHint) emptyHint.hidden = true;
+
+      const comparing = isCompareModeOn();
+      if (comparing) resolveCompareSlots(versions);
       strip.innerHTML = versions
         .map((version, index) => {
-          const pressed =
-            state.previewGenerated && version.id === state.activeVersionId
+          const isLeft = comparing && version.id === state.compareLeftId;
+          const isRight = comparing && version.id === state.compareRightId;
+          const isActive =
+            state.previewGenerated && version.id === state.activeVersionId;
+          const pressed = comparing
+            ? isLeft || isRight
+              ? "true"
+              : "false"
+            : isActive
               ? "true"
               : "false";
           const title = formatVersionLabel(version, index, versions.length);
           const time = formatRelativeTime(version.createdAt);
+          const badge = isLeft
+            ? '<span class="version-thumb-badge">Prev</span>'
+            : isRight
+              ? '<span class="version-thumb-badge">Curr</span>'
+              : "";
+          const compareClass = isLeft
+            ? " is-compare-a"
+            : isRight
+              ? " is-compare-b"
+              : "";
           const label = time ? `${title}, ${time}` : title;
-          return `<button type="button" class="version-thumb" role="listitem" data-version-id="${escapeHtml(version.id)}" aria-pressed="${pressed}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><span class="version-thumb-art"><img src="${escapeHtml(version.imageUrl)}" alt="" loading="lazy" /></span><span class="version-thumb-meta"><p class="version-thumb-title">${escapeHtml(title)}</p><p class="version-thumb-time">${escapeHtml(time)}</p></span></button>`;
+          return `<button type="button" class="version-thumb${compareClass}" role="listitem" data-version-id="${escapeHtml(version.id)}" aria-pressed="${pressed}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><span class="version-thumb-art"><img src="${escapeHtml(version.imageUrl)}" alt="" loading="lazy" /></span><span class="version-thumb-meta"><p class="version-thumb-title">${escapeHtml(title)}${badge}</p><p class="version-thumb-time">${escapeHtml(time)}</p></span></button>`;
         })
         .join("");
       strip.querySelectorAll("[data-version-id]").forEach((btn) => {
         btn.addEventListener("click", () => {
           if (state.generating) return;
           const version = findFlyerVersion(state.versions, btn.dataset.versionId);
-          if (!version || version.id === state.activeVersionId) return;
+          if (!version) return;
+
+          if (isCompareModeOn()) {
+            assignCompareVersion(version);
+            renderVersionsStrip();
+            scheduleSave();
+            return;
+          }
+
+          if (version.id === state.activeVersionId) return;
           if (!restoreGeneratedFromVersion(version)) return;
           renderPreviewState();
           scheduleSave();
@@ -5020,11 +5175,15 @@
       const stage = document.getElementById("previewStage");
       if (!idle || !genState || !wrap) return;
 
+      // Prefer the selected Versions entry so the stage never drifts blank.
+      if (!state.generating) syncSelectedVersionToStage();
+
       renderPreviewIdleFlyer();
 
       if (stage) {
         stage.classList.toggle("is-building", state.generating);
         stage.classList.toggle("is-done", state.previewGenerated && !state.generating);
+        if (!isCompareModeOn()) stage.classList.remove("is-compare");
       }
 
       if (state.generating) {
@@ -6233,7 +6392,17 @@
     });
 
     document.getElementById("compareVersionsToggle")?.addEventListener("change", () => {
-      renderCompareView();
+      const toggle = document.getElementById("compareVersionsToggle");
+      if (toggle?.checked) {
+        ensureCompareDefaults();
+        renderVersionsStrip();
+        return;
+      }
+      const right =
+        findFlyerVersion(state.versions, state.compareRightId) ||
+        getActiveFlyerVersion();
+      if (right) restoreGeneratedFromVersion(right);
+      renderPreviewState();
     });
     document.getElementById("editCloseBtn")?.addEventListener("click", () => {
       setView("result");
