@@ -252,7 +252,7 @@ interface SidebarProps {
   aiCredits?: AiCreditsWidgetData | null;
 }
 
-type NavBadgeVariant = "approval" | "changeRequest";
+type NavBadgeVariant = "approval" | "changeRequest" | "inbox";
 
 function NavNotificationBadge({
   count,
@@ -269,16 +269,18 @@ function NavNotificationBadge({
   const ariaLabel =
     variant === "approval"
       ? `${count} approval${count === 1 ? "" : "s"} waiting`
-      : `${count} change request${count === 1 ? "" : "s"} for you`;
+      : variant === "inbox"
+        ? `${count} open conversation${count === 1 ? "" : "s"} in Communications Hub`
+        : `${count} change request${count === 1 ? "" : "s"} for you`;
 
   return (
     <span
       aria-label={ariaLabel}
       className={cn(
         "flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full px-1 text-xs font-semibold tabular-nums",
-        variant === "approval"
-          ? "bg-red-500 text-white"
-          : "bg-cos-change-request text-cos-text",
+        variant === "changeRequest"
+          ? "bg-cos-change-request text-cos-text"
+          : "bg-red-500 text-white",
       )}
     >
       {label}
@@ -475,7 +477,7 @@ export function Sidebar({
                 )}
                 {!showLabels && showInboxBadge && (
                   <span className="absolute -top-2 -right-3">
-                    <NavNotificationBadge count={inboxUnreadCount} variant="approval" />
+                    <NavNotificationBadge count={inboxUnreadCount} variant="inbox" />
                   </span>
                 )}
               </span>
@@ -496,8 +498,8 @@ export function Sidebar({
                     </span>
                   )}
                   {showInboxBadge && (
-                    <span className="ml-auto">
-                      <NavNotificationBadge count={inboxUnreadCount} variant="approval" />
+                    <span className="ml-auto shrink-0">
+                      <NavNotificationBadge count={inboxUnreadCount} variant="inbox" />
                     </span>
                   )}
                 </span>

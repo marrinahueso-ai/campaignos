@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 31, 2026 — Approval emails: app HTML via sendEmail (Resend 2k template-var limit)
+**Last updated:** July 31, 2026 — Outstanding fixes: IG DM ingest, hub unread badge, Social Composer iPhone, checklist titles
 
 ---
 
@@ -36,7 +36,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Org bootstrap glue only when no membership (`/onboarding` quiet name → continue); restart / replay → `/events/create?onboarding=1` (not a separate Welcome step UI)
   - After first-event save: routes to `/onboarding/essentials` (not the old calendar-only overlay); legacy `?onboarding=calendar|brand|invite|meta` on the event redirects to essentials/connect
   - Legacy `/onboarding/invite` and `/onboarding/meta` redirect to `/onboarding/connect`
-  - Helpful next steps on **home/dashboard** until done: **Set up now** + **Later**; Settings → Get started shows the same simple cards (no wizard); checklist invite/meta “Set up now” → `/onboarding/connect`
+  - Helpful next steps on **home/dashboard** until done: compact title-only cards (**Connect to your calendar**, brand, invite, Meta) with **Set up now** + **Later**; Settings → Get started shows the same cards (no wizard); checklist invite/meta “Set up now” → `/onboarding/connect`
   - Progress on `organizations.onboarding_state` (incl. meta completed/skipped/checklist-dismissed)
   - Creating an onboarding event clears stale flags so Calendar → Brand → Team → Meta can replay
   - Organization settings: **no** boarding steppers; Brand CTA → `/onboarding/brand?standalone=1` (no Event/Calendar/Team/Meta chrome); Edit profile stays on org settings (never `?view=wizard`); founding with no membership → `/onboarding` (no SchoolSetupWizard)
@@ -117,6 +117,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Reject generated artwork: subtle thumbs-down icon on Preview (and Edit regenerated preview) discards that feed/story slot so you can regenerate — **shipped**
 - Artwork Apply hydrate: regenerated artwork sticks after Apply (local backup + hydrate merge so remount / Preview hydrate does not orphan richer in-memory art) — **shipped**
 - 4-step flow (Creative Setup → Milestones → Preview → Review & Approve) — **shipped**
+- Social Media Composer mobile layout (iPhone): vertical STEPS list, tighter milestone rows, safe-area clearance for Report a Problem — **shipped**
 - Review tabs (All / Needs review / Approved / Changes requested) with Pending Review · Approved · Changes requested pills — **shipped**
 - Review Approval workflow sidebar shows org default approver from Team Access (same resolution as send-for-approval); unassigned when none — **shipped**
 - Review footer shows one primary CTA: **Send for approval** when Team Access has a distinct reviewer; **Approve all & schedule** when the approver is missing, unassigned, or yourself — **shipped**
@@ -194,8 +195,9 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Communications Hub (inbox)
 - **Communications Connect Meta Ease** — **shipped** (exact empty from [`communications-hub-ease-mockup.html?view=connect`](../../public/communications-hub-ease-mockup.html): page head + four why cards — Why we connect / What AI does / What we don’t do / Privacy — Connect with Facebook + Meta settings OAuth/`returnTo=/communications`, “Why we ask for Page messaging permissions”; live on `/communications` when Meta is not connected; shared empty also used by Inbox hub chrome; `/inbox` redirects to `/communications`; customer copy uses organization / Page / team language — not school-only PTA)
 - **Communications Hub Ease mockup** — **in progress (Meta review)** (soft cream/Fraunces shell; view pills **Inbox · Compose focus · Connect Meta**; thread list + conversation + AI draft assist + DM stickers/GIF affordances; honest organic Page Inbox / Instagram DM purpose, approve-then-send, no spam/broadcast theater; fictional Riverside Elementary PTA only; HTML at [`public/communications-hub-ease-mockup.html`](../../public/communications-hub-ease-mockup.html) — Connect Meta empty shipped above; full hub chrome still mockup-only until GO)
-- Unified Meta inbox (DMs, comments, mentions) — **shipped**
-- Inbox SSR soft caps (50 threads, 40 messages/thread, head-count channel tallies, unread badge ≤500 threads) — **shipped** (perf; see [performance-budget.md](../qa/performance-budget.md))
+- Unified Meta inbox (DMs, comments, mentions) — **shipped** (IG DM ingest: refresh linked IG id before webhook subscribe; re-subscribe Instagram `messages` when the IG id changes; Conversations API also tries `/{ig-user-id}/conversations`; webhook JSON preserves large IG/Page ids; Development/Standard Access still only delivers DMs from Meta app role / tester Instagram accounts until Advanced Access)
+- Inbox SSR soft caps (50 threads, 40 messages/thread, head-count channel tallies) — **shipped** (perf; see [performance-budget.md](../qa/performance-budget.md))
+- Left-rail **Communications Hub** badge — **shipped** (red count of Unread-queue threads: not Deleted, not Done; capped at 500; matches hub Unread home, not message-level `unread_count` that clears on open)
 - Thread workspace, reply, mark read — **shipped**
 - Inbox AI drafts + approve-then-send — **shipped**
 - Comment/tag detail panel shows original parent post (caption + artwork); clutter placeholders (similar questions, take-action list, related campaign) removed — **shipped**

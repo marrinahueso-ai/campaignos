@@ -32,7 +32,8 @@ function buildInstagramDmEmptyWarning(input: {
 
   const parts = [
     "Meta returned 0 Instagram conversations.",
-    "Verify the IG Professional account is linked to this Page, Connected tools → Allow Access to Messages is enabled in the Instagram app, and the app has Advanced Access for instagram_manage_messages (Development mode only returns DMs from app admins/testers).",
+    "Verify the IG Professional account is linked to this Page, Connected tools → Allow Access to Messages is enabled in the Instagram app, and Instagram webhooks (messages) are subscribed for this IG account.",
+    "Development / Standard Access only delivers DMs from Instagram accounts tied to Meta app roles (Admin/Developer/Tester via Accounts Center) — a personal IG that is not a tester will not appear until Advanced Access is approved or that sender is added as a tester.",
     `Checked: ${input.attemptedEndpoints.join(", ")} (page ${input.pageId}, IG ${input.instagramAccountId}).`,
   ];
 
@@ -45,6 +46,7 @@ function buildInstagramDmEmptyWarning(input: {
 
 async function fetchInstagramConversationRecords(input: {
   pageId: string;
+  instagramAccountId: string;
   pageAccessToken: string;
 }): Promise<{
   conversations: Record<string, unknown>[];
@@ -55,6 +57,13 @@ async function fetchInstagramConversationRecords(input: {
     { path: `/${input.pageId}/conversations`, label: `/${input.pageId}/conversations` },
     { path: "/me/conversations", label: "/me/conversations" },
   ];
+
+  if (input.instagramAccountId) {
+    attempts.push({
+      path: `/${input.instagramAccountId}/conversations`,
+      label: `/${input.instagramAccountId}/conversations`,
+    });
+  }
 
   const attemptedEndpoints: string[] = [];
   let lastGraphError: string | null = null;
@@ -144,6 +153,7 @@ export async function fetchInstagramDirectMessages(input: {
   const { conversations, attemptedEndpoints, graphError } =
     await fetchInstagramConversationRecords({
       pageId: input.pageId,
+      instagramAccountId,
       pageAccessToken: input.pageAccessToken,
     });
 
