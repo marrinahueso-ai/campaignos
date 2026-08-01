@@ -172,6 +172,8 @@ describe("approvals ease pulse contracts", () => {
     assert.match(ease, /ApprovalsQueueRow[\s\S]*ArtTile/);
     assert.match(ease, /ApprovalsQueueTable/);
     assert.match(ease, /Open full view/);
+    assert.match(ease, /<table className="w-full min-w-\[760px\]/);
+    assert.match(ease, /queuePostName/);
     assert.match(table, /height: 128,[\s\S]*resize: "cover"/);
     assert.match(table, /className="object-cover object-center"/);
     assert.match(table, /sizes="48px"/);

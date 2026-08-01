@@ -1,4 +1,3 @@
-import { channelLabel } from "@/lib/ai/content";
 import {
   deriveClassicWorkflowStatus,
   derivePlanningWorkflowStatus,
@@ -99,7 +98,11 @@ export function mapClassicApprovalItem(
     eventId: item.eventId,
     eventTitle: item.eventTitle,
     campaignName: item.eventTitle,
-    milestoneName: item.preview.milestoneTitle ?? channelLabel(item.channel),
+    // Never use the channel ("Facebook") as the post name — that belongs under Channels.
+    milestoneName:
+      item.preview.milestoneTitle?.trim() ||
+      item.preview.captionText?.trim()?.slice(0, 48) ||
+      "Social post",
     thumbnailUrl: item.preview.artworkThumbnailUrl,
     workflowStatus,
     statusDetail: statusDetailForItem(

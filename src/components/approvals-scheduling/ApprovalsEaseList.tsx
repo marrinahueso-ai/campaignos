@@ -187,9 +187,23 @@ export function ApprovalsFocusCard({
   );
 }
 
-/** Shared by header + rows so columns stay locked. */
-const QUEUE_GRID_CLASS =
-  "grid grid-cols-[56px_minmax(0,1.35fr)_minmax(0,1fr)_9.5rem_9rem_2.75rem] items-center gap-x-4";
+/** Channel labels that must never appear as the Post name cell. */
+const CHANNEL_AS_POST_NAME = new Set([
+  "facebook",
+  "instagram",
+  "email",
+  "flyer",
+  "social",
+  "newsletter",
+]);
+
+function queuePostName(item: UnifiedApprovalItem): string {
+  const raw = item.milestoneName?.trim() || "";
+  if (!raw || CHANNEL_AS_POST_NAME.has(raw.toLowerCase())) {
+    return "Social post";
+  }
+  return raw;
+}
 
 export function ApprovalsQueueTable({
   items,
@@ -204,21 +218,45 @@ export function ApprovalsQueueTable({
 }) {
   return (
     <div className="overflow-x-auto rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
-      <div className="min-w-[720px]">
-        <div
-          className={cn(
-            QUEUE_GRID_CLASS,
-            "border-b border-cos-border px-4 py-3 text-[10px] font-extrabold tracking-[0.08em] text-cos-muted uppercase",
-          )}
-        >
-          <span>Thumb</span>
-          <span>Event / Campaign</span>
-          <span>Post name</span>
-          <span>Status</span>
-          <span>Assignee</span>
-          <span className="text-right">Actions</span>
-        </div>
-        <ul className="divide-y divide-cos-border">
+      <table className="w-full min-w-[760px] border-collapse text-left">
+        <thead>
+          <tr className="border-b border-cos-border text-[10px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+            <th scope="col" className="w-14 px-4 py-3 font-extrabold">
+              Thumb
+            </th>
+            <th
+              scope="col"
+              className="w-[28%] min-w-[9rem] px-2 py-3 font-extrabold"
+            >
+              Event / Campaign
+            </th>
+            <th
+              scope="col"
+              className="w-[22%] min-w-[7.5rem] px-2 py-3 font-extrabold"
+            >
+              Post name
+            </th>
+            <th
+              scope="col"
+              className="w-[8.75rem] whitespace-nowrap px-2 py-3 font-extrabold"
+            >
+              Status
+            </th>
+            <th
+              scope="col"
+              className="w-[18%] min-w-[8rem] px-2 py-3 font-extrabold"
+            >
+              Assignee
+            </th>
+            <th
+              scope="col"
+              className="w-12 px-4 py-3 text-right font-extrabold"
+            >
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody>
           {items.map((item) => (
             <ApprovalsQueueRow
               key={item.id}
@@ -228,8 +266,8 @@ export function ApprovalsQueueTable({
               isRetrying={retryingId === item.id}
             />
           ))}
-        </ul>
-      </div>
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -252,6 +290,7 @@ export function ApprovalsQueueRow({
       ? item.assigneeName
       : "Unassigned";
   const initials = item.assigneeInitials?.trim() || "—";
+  const postName = queuePostName(item);
 
   const preview = getUnifiedApprovalPreview(item);
   const platformLine =
@@ -260,24 +299,28 @@ export function ApprovalsQueueRow({
       : platformLabel(item);
 
   return (
-    <li className={cn(QUEUE_GRID_CLASS, "px-4 py-3.5")}>
-      <ArtTile
-        item={item}
-        className="relative h-14 w-14 shrink-0 rounded-xl"
-        width={128}
-      />
-      <div className="min-w-0">
+    <tr className="align-middle border-b border-cos-border last:border-b-0">
+      <td className="px-4 py-3.5">
+        <ArtTile
+          item={item}
+          className="relative h-14 w-14 shrink-0 rounded-xl"
+          width={128}
+        />
+      </td>
+      <td className="max-w-0 px-2 py-3.5">
         <p className="truncate text-sm font-bold text-cos-text">
           {item.campaignName}
         </p>
         <p className="truncate text-xs font-semibold text-cos-muted">
           {platformLine}
         </p>
-      </div>
-      <p className="min-w-0 truncate text-sm text-cos-text italic">
-        {item.milestoneName}
-      </p>
-      <div className="min-w-0">
+      </td>
+      <td className="max-w-0 px-2 py-3.5">
+        <p className="truncate text-sm font-semibold text-cos-text">
+          {postName}
+        </p>
+      </td>
+      <td className="px-2 py-3.5">
         <span
           className={cn(
             "inline-flex max-w-full truncate rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.06em] uppercase",
@@ -286,40 +329,44 @@ export function ApprovalsQueueRow({
         >
           {chip.label}
         </span>
-      </div>
-      <div className="flex min-w-0 items-center gap-2">
-        <span
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ebe4d9] text-[11px] font-extrabold text-cos-text"
-          aria-hidden
-        >
-          {initials.slice(0, 2)}
-        </span>
-        <span className="truncate text-sm font-semibold text-cos-text">
-          {assignee}
-        </span>
-      </div>
-      <div className="flex items-center justify-end gap-1.5">
-        {showRetry ? (
+      </td>
+      <td className="max-w-0 px-2 py-3.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ebe4d9] text-[11px] font-extrabold text-cos-text"
+            aria-hidden
+          >
+            {initials.slice(0, 2)}
+          </span>
+          <span className="truncate text-sm font-semibold text-cos-text">
+            {assignee}
+          </span>
+        </div>
+      </td>
+      <td className="px-4 py-3.5 text-right">
+        <div className="inline-flex items-center justify-end gap-1.5">
+          {showRetry ? (
+            <button
+              type="button"
+              disabled={isRetrying}
+              onClick={() => onRetry?.(item)}
+              className="rounded-full bg-[#2a2622] px-3 py-2 text-[12px] font-bold text-[#fffcf7] transition hover:-translate-y-px disabled:opacity-50"
+            >
+              {isRetrying ? "…" : "Retry"}
+            </button>
+          ) : null}
           <button
             type="button"
-            disabled={isRetrying}
-            onClick={() => onRetry?.(item)}
-            className="rounded-full bg-[#2a2622] px-3 py-2 text-[12px] font-bold text-[#fffcf7] transition hover:-translate-y-px disabled:opacity-50"
+            onClick={() => onReview(item)}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-muted transition hover:border-[#6b8171] hover:text-cos-text"
+            aria-label={`View ${postName}`}
+            title="View"
           >
-            {isRetrying ? "…" : "Retry"}
+            <Eye className="h-4 w-4" strokeWidth={1.75} />
           </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => onReview(item)}
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-muted transition hover:border-[#6b8171] hover:text-cos-text"
-          aria-label={`View ${item.milestoneName}`}
-          title="View"
-        >
-          <Eye className="h-4 w-4" strokeWidth={1.75} />
-        </button>
-      </div>
-    </li>
+        </div>
+      </td>
+    </tr>
   );
 }
 
