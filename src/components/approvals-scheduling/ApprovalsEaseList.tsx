@@ -7,6 +7,7 @@ import {
   approvalOutcomeChip,
   canRetryFailedApproval,
 } from "@/lib/approvals-scheduling/outcome-display";
+import { displayApprovalPostName } from "@/lib/approvals-scheduling/milestone-display-names";
 import {
   getUnifiedApprovalPreview,
   type UnifiedApprovalItem,
@@ -187,24 +188,6 @@ export function ApprovalsFocusCard({
   );
 }
 
-/** Channel labels that must never appear as the Post name cell. */
-const CHANNEL_AS_POST_NAME = new Set([
-  "facebook",
-  "instagram",
-  "email",
-  "flyer",
-  "social",
-  "newsletter",
-]);
-
-function queuePostName(item: UnifiedApprovalItem): string {
-  const raw = item.milestoneName?.trim() || "";
-  if (!raw || CHANNEL_AS_POST_NAME.has(raw.toLowerCase())) {
-    return "Social post";
-  }
-  return raw;
-}
-
 export function ApprovalsQueueTable({
   items,
   onReview,
@@ -218,40 +201,33 @@ export function ApprovalsQueueTable({
 }) {
   return (
     <div className="overflow-x-auto rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
-      <table className="w-full min-w-[760px] border-collapse text-left">
+      <table className="w-full min-w-[680px] table-fixed border-collapse text-left">
+        <colgroup>
+          <col className="w-[4.5rem]" />
+          <col />
+          <col className="w-[11.5rem]" />
+          <col className="w-[8.25rem]" />
+          <col className="w-[9.25rem]" />
+          <col className="w-[3.25rem]" />
+        </colgroup>
         <thead>
           <tr className="border-b border-cos-border text-[10px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-            <th scope="col" className="w-14 px-4 py-3 font-extrabold">
+            <th scope="col" className="px-3 py-3 font-extrabold">
               Thumb
             </th>
-            <th
-              scope="col"
-              className="w-[28%] min-w-[9rem] px-2 py-3 font-extrabold"
-            >
+            <th scope="col" className="px-2 py-3 font-extrabold">
               Event / Campaign
             </th>
-            <th
-              scope="col"
-              className="w-[22%] min-w-[7.5rem] px-2 py-3 font-extrabold"
-            >
+            <th scope="col" className="px-2 py-3 font-extrabold">
               Post name
             </th>
-            <th
-              scope="col"
-              className="w-[8.75rem] whitespace-nowrap px-2 py-3 font-extrabold"
-            >
+            <th scope="col" className="px-2 py-3 font-extrabold">
               Status
             </th>
-            <th
-              scope="col"
-              className="w-[18%] min-w-[8rem] px-2 py-3 font-extrabold"
-            >
+            <th scope="col" className="px-2 py-3 font-extrabold">
               Assignee
             </th>
-            <th
-              scope="col"
-              className="w-12 px-4 py-3 text-right font-extrabold"
-            >
+            <th scope="col" className="px-2 py-3 text-right font-extrabold">
               Actions
             </th>
           </tr>
@@ -290,7 +266,7 @@ export function ApprovalsQueueRow({
       ? item.assigneeName
       : "Unassigned";
   const initials = item.assigneeInitials?.trim() || "—";
-  const postName = queuePostName(item);
+  const postName = displayApprovalPostName(item.milestoneName);
 
   const preview = getUnifiedApprovalPreview(item);
   const platformLine =
@@ -300,14 +276,14 @@ export function ApprovalsQueueRow({
 
   return (
     <tr className="align-middle border-b border-cos-border last:border-b-0">
-      <td className="px-4 py-3.5">
+      <td className="px-3 py-3">
         <ArtTile
           item={item}
-          className="relative h-14 w-14 shrink-0 rounded-xl"
+          className="relative h-12 w-12 shrink-0 rounded-[10px]"
           width={128}
         />
       </td>
-      <td className="max-w-0 px-2 py-3.5">
+      <td className="overflow-hidden px-2 py-3">
         <p className="truncate text-sm font-bold text-cos-text">
           {item.campaignName}
         </p>
@@ -315,12 +291,10 @@ export function ApprovalsQueueRow({
           {platformLine}
         </p>
       </td>
-      <td className="max-w-0 px-2 py-3.5">
-        <p className="truncate text-sm font-semibold text-cos-text">
-          {postName}
-        </p>
+      <td className="overflow-hidden px-2 py-3">
+        <p className="truncate text-sm text-cos-muted italic">{postName}</p>
       </td>
-      <td className="px-2 py-3.5">
+      <td className="px-2 py-3">
         <span
           className={cn(
             "inline-flex max-w-full truncate rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.06em] uppercase",
@@ -330,10 +304,10 @@ export function ApprovalsQueueRow({
           {chip.label}
         </span>
       </td>
-      <td className="max-w-0 px-2 py-3.5">
+      <td className="overflow-hidden px-2 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <span
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ebe4d9] text-[11px] font-extrabold text-cos-text"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ebe4d9] text-[10px] font-extrabold text-cos-text"
             aria-hidden
           >
             {initials.slice(0, 2)}
@@ -343,14 +317,14 @@ export function ApprovalsQueueRow({
           </span>
         </div>
       </td>
-      <td className="px-4 py-3.5 text-right">
+      <td className="px-2 py-3 text-right">
         <div className="inline-flex items-center justify-end gap-1.5">
           {showRetry ? (
             <button
               type="button"
               disabled={isRetrying}
               onClick={() => onRetry?.(item)}
-              className="rounded-full bg-[#2a2622] px-3 py-2 text-[12px] font-bold text-[#fffcf7] transition hover:-translate-y-px disabled:opacity-50"
+              className="rounded-[10px] bg-[#2a2622] px-2.5 py-1.5 text-[11px] font-bold text-[#fffcf7] transition hover:brightness-110 disabled:opacity-50"
             >
               {isRetrying ? "…" : "Retry"}
             </button>
@@ -358,7 +332,7 @@ export function ApprovalsQueueRow({
           <button
             type="button"
             onClick={() => onReview(item)}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-muted transition hover:border-[#6b8171] hover:text-cos-text"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-cos-border bg-cos-card text-cos-muted transition hover:border-[#6b8171] hover:text-cos-text"
             aria-label={`View ${postName}`}
             title="View"
           >

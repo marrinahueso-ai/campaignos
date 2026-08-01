@@ -161,7 +161,7 @@ describe("approvals ease pulse contracts", () => {
       "../../../components/approvals-scheduling/ApprovalsTable.tsx",
     );
 
-    assert.match(ease, /relative h-14 w-14 shrink-0 rounded-xl/);
+    assert.match(ease, /relative h-12 w-12 shrink-0 rounded-\[10px\]/);
     assert.match(ease, /grid overflow-hidden[\s\S]*minmax\(240px,300px\)_1fr/);
     assert.match(ease, /min-h-\[220px\] w-full self-stretch/);
     assert.match(ease, /resize: "cover"/);
@@ -172,8 +172,8 @@ describe("approvals ease pulse contracts", () => {
     assert.match(ease, /ApprovalsQueueRow[\s\S]*ArtTile/);
     assert.match(ease, /ApprovalsQueueTable/);
     assert.match(ease, /Open full view/);
-    assert.match(ease, /<table className="w-full min-w-\[760px\]/);
-    assert.match(ease, /queuePostName/);
+    assert.match(ease, /table-fixed/);
+    assert.match(ease, /displayApprovalPostName/);
     assert.match(table, /height: 128,[\s\S]*resize: "cover"/);
     assert.match(table, /className="object-cover object-center"/);
     assert.match(table, /sizes="48px"/);

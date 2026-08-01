@@ -46,5 +46,11 @@ export async function saveCampaignBuilderSessionAction(
     };
   }
 
+  // Keep Approvals Post name in sync when Social renames a post.
+  const { syncSchedulingMilestoneNamesFromSession } = await import(
+    "@/lib/approvals-scheduling/live-milestone-names"
+  );
+  await syncSchedulingMilestoneNamesFromSession(protectedSession);
+
   return { success: true, message: "Session saved." };
 }

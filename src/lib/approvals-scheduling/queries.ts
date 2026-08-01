@@ -10,6 +10,10 @@ import {
   isSchedulingRowAssignedToActor,
 } from "@/lib/approvals-scheduling/approval-visibility";
 import {
+  applyLiveMilestoneNames,
+  loadLiveMilestoneNamesById,
+} from "@/lib/approvals-scheduling/live-milestone-names";
+import {
   applyMetaSlotOutcomesToApprovalItem,
   loadMetaSlotOutcomesForEvents,
 } from "@/lib/approvals-scheduling/publish-outcome-sync";
@@ -393,11 +397,18 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
     ...cb2Items,
   ]);
 
-  // Lean Meta slot overlay so Failed / Posted show without full bundle sync.
-  const slotOutcomes = await loadMetaSlotOutcomesForEvents(
+  // Social post names are authoritative in Create with AI sessions — overlay
+  // so Approvals Post name stays in sync after renames (Day Before, etc.).
+  const liveNames = await loadLiveMilestoneNamesById(
     deduped.map((item) => item.eventId),
   );
-  const items = deduped
+  const named = applyLiveMilestoneNames(deduped, liveNames);
+
+  // Lean Meta slot overlay so Failed / Posted show without full bundle sync.
+  const slotOutcomes = await loadMetaSlotOutcomesForEvents(
+    named.map((item) => item.eventId),
+  );
+  const items = named
     .map((item) => applyMetaSlotOutcomesToApprovalItem(item, slotOutcomes))
     .sort((left, right) => right.requestedAt.localeCompare(left.requestedAt));
 
@@ -737,8 +748,13 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
   }
 
   const slotOutcomes = await loadMetaSlotOutcomesForEvents([eventId]);
+  const liveNames = await loadLiveMilestoneNamesById([eventId]);
+  const named = applyLiveMilestoneNames(
+    dedupeUnifiedApprovalItems([...classicItems, ...cb2Items]),
+    liveNames,
+  );
 
-  const items = dedupeUnifiedApprovalItems([...classicItems, ...cb2Items])
+  const items = named
     .map((item) => applyMetaSlotOutcomesToApprovalItem(item, slotOutcomes))
     .sort((left, right) => right.requestedAt.localeCompare(left.requestedAt));
 

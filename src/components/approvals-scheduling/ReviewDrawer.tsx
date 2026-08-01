@@ -32,6 +32,7 @@ import {
 } from "@/lib/campaign-builder-v2/navigation";
 import { Button } from "@/components/ui/Button";
 import { formatDateTime } from "@/lib/utils/dates";
+import { displayApprovalPostName } from "@/lib/approvals-scheduling/milestone-display-names";
 import type {
   UnifiedApprovalHistoryEntry,
   UnifiedApprovalItem,
@@ -241,7 +242,7 @@ export function ReviewDrawer({
               <p className="mt-1 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
                 Post title:{" "}
                 <span className="text-cos-text">
-                  &lsquo;{item.milestoneName}&rsquo;
+                  &lsquo;{displayApprovalPostName(item.milestoneName)}&rsquo;
                 </span>
               </p>
               <p className="mt-1.5 text-sm text-cos-muted">
