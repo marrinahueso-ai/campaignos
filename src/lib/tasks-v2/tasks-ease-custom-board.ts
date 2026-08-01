@@ -3,8 +3,12 @@
  * map. Per-person, per-browser (v1): boards don't invent new tasks, they
  * just rearrange the same event-linked tasks into buckets that match how a
  * PTO actually works.
+ *
+ * Keys are org (+ user) scoped via setTasksEaseStorageScope.
  */
-const CUSTOM_BOARD_KEY = "heyralli:tasks-ease:custom-board:v1";
+import { tasksEaseStorageKey } from "@/lib/tasks-v2/tasks-ease-storage-scope";
+
+const CUSTOM_BOARD_BASE = "heyralli:tasks-ease:custom-board:v1";
 
 export interface TasksEaseCustomColumn {
   id: string;
@@ -50,8 +54,10 @@ function isValidColumn(value: unknown): value is TasksEaseCustomColumn {
 
 export function loadTasksEaseCustomBoard(): TasksEaseCustomBoardState {
   if (!hasStorage()) return defaultState();
+  const key = tasksEaseStorageKey(CUSTOM_BOARD_BASE);
+  if (!key) return defaultState();
   try {
-    const raw = window.localStorage.getItem(CUSTOM_BOARD_KEY);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw) as Partial<TasksEaseCustomBoardState>;
     const columns = Array.isArray(parsed.columns)
@@ -76,8 +82,10 @@ export function loadTasksEaseCustomBoard(): TasksEaseCustomBoardState {
 
 export function saveTasksEaseCustomBoard(state: TasksEaseCustomBoardState): void {
   if (!hasStorage()) return;
+  const key = tasksEaseStorageKey(CUSTOM_BOARD_BASE);
+  if (!key) return;
   try {
-    window.localStorage.setItem(CUSTOM_BOARD_KEY, JSON.stringify(state));
+    window.localStorage.setItem(key, JSON.stringify(state));
   } catch {
     // Best-effort only.
   }

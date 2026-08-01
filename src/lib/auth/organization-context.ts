@@ -39,6 +39,12 @@ export const getCurrentOrganization = cache(async (): Promise<Organization | nul
     return null;
   }
 
+  // Legacy latest-org fallback is local-dev only. In production (and preview),
+  // never serve a random org when nobody is signed in — fail closed.
+  if (process.env.NODE_ENV === "production") {
+    return null;
+  }
+
   const membershipTableAvailable = await isOrganizationUsersAvailable();
   if (membershipTableAvailable) {
     return null;

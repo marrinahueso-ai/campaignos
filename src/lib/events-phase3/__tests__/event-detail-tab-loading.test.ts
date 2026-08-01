@@ -186,10 +186,16 @@ describe("event-scoped tab loaders (source contract)", () => {
   it("SSR deep links preload only the selected event-scoped tab", () => {
     assert.match(render, /loadEventDetailTabData\(/);
     assert.match(render, /lazyInitial/);
+    assert.match(
+      render,
+      /initialTab == null \|\| initialTab === ""\s*\n\s*\? "approvals"/,
+    );
     assert.doesNotMatch(render, /getUnifiedApprovalsSchedulingData\(\)/);
     assert.doesNotMatch(render, /getTasksV2PageData\(\)/);
     assert.doesNotMatch(render, /getEventPlaybookHubData/);
     assert.doesNotMatch(render, /getVendorDirectoryPageData/);
+    assert.doesNotMatch(render, /listCommitteeAssignmentsByOrg/);
+    assert.match(render, /listCommitteeAssignmentsForCommittee/);
   });
 
   it("does not alter create/edit vendor mutation action wiring", () => {

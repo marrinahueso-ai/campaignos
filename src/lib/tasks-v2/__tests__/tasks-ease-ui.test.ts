@@ -86,10 +86,14 @@ describe("tasks ease UI contracts", () => {
   });
 
   it("offers Ask AI for tasks + Add task actions in the header", () => {
+    const addModal = readSrc(
+      "../../../components/tasks-v2/TasksEaseAddTaskModal.tsx",
+    );
     assert.match(shell, /Ask AI for tasks/);
     assert.match(shell, /Add task/);
-    assert.match(shell, /createTaskHubTaskAction/);
+    assert.match(shell, /TasksEaseAddTaskModal/);
     assert.match(shell, /openAddTask/);
+    assert.match(addModal, /createTaskHubTaskAction/);
   });
 
   it("Ask AI modal matches Pilot input + recommendation cards", () => {

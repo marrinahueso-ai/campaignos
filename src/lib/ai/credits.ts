@@ -366,15 +366,56 @@ async function resolveOrganizationIdFromEvent(
   }
 }
 
+/**
+ * Resolve which org to bill for AI credits.
+ * - eventId path: require app-layer event access before admin event→org lookup
+ * - organizationId path: never trust a bare client id without membership assert
+ * - otherwise: active membership org
+ */
 async function resolveOrganizationIdForCredits(input: {
   organizationId?: string | null;
   eventId?: string | null;
 }): Promise<string | null> {
-  if (input.organizationId?.trim()) return input.organizationId.trim();
-
   if (input.eventId?.trim()) {
+    try {
+      const { getEventById } = await import("@/lib/events/queries");
+      const event = await getEventById(input.eventId.trim());
+      if (!event) {
+        return null;
+      }
+    } catch (error) {
+      console.error("[ai-credits] event access check failed:", error);
+      return null;
+    }
+
     const fromEvent = await resolveOrganizationIdFromEvent(input.eventId.trim());
-    if (fromEvent) return fromEvent;
+    if (fromEvent) {
+      // Optional client organizationId must match the event's org when both given.
+      const claimed = input.organizationId?.trim();
+      if (claimed && claimed !== fromEvent) {
+        return null;
+      }
+      return fromEvent;
+    }
+    return null;
+  }
+
+  if (input.organizationId?.trim()) {
+    try {
+      const { assertActiveMembershipInOrganization } = await import(
+        "@/lib/auth/membership-queries"
+      );
+      const allowed = await assertActiveMembershipInOrganization(
+        input.organizationId.trim(),
+      );
+      if (!allowed) {
+        return null;
+      }
+      return input.organizationId.trim();
+    } catch (error) {
+      console.error("[ai-credits] membership assert failed:", error);
+      return null;
+    }
   }
 
   // Last resort: bill the caller's active membership org.

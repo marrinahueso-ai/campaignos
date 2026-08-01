@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { clearLocalCampaignBuilderStorageOnSignOut } from "@/lib/campaign-builder-v2/clear-on-signout";
+import { clearTasksEaseLocalStorageOnSignOut } from "@/lib/tasks-v2/tasks-ease-storage-scope";
 
 interface SignOutFormProps {
   children: ReactNode;
@@ -20,7 +21,10 @@ export function SignOutForm({ children, className }: SignOutFormProps) {
       action="/auth/signout"
       method="POST"
       className={className}
-      onSubmit={() => clearLocalCampaignBuilderStorageOnSignOut()}
+      onSubmit={() => {
+        clearLocalCampaignBuilderStorageOnSignOut();
+        clearTasksEaseLocalStorageOnSignOut();
+      }}
     >
       {children}
     </form>

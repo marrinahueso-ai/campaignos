@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { memo, useEffect, useMemo, useState, useTransition } from "react";
 import {
   ArrowUp,
   Calendar,
@@ -112,7 +112,7 @@ function PriorityIcon({ priority }: { priority: TasksV2Priority }) {
   return <Minus className="h-3 w-3 shrink-0" aria-hidden />;
 }
 
-export function TasksEaseList({
+export const TasksEaseList = memo(function TasksEaseList({
   eventGroups,
   canEdit,
   orgMembers,
@@ -335,13 +335,16 @@ export function TasksEaseList({
               Boolean(viewerUserId) &&
               task.assigneeUserId === viewerUserId &&
               !isDone;
-            const hasNotes = Boolean(task.notes?.trim());
+            const hasNotes =
+              Boolean(task.hasNotes) || Boolean(task.notes?.trim());
             const highlightBlocked = task.status === "blocked" && !isDone;
             const notePreview = task.notes?.trim()
               ? task.notes.trim().length > 48
                 ? `${task.notes.trim().slice(0, 48)}…`
                 : task.notes.trim()
-              : null;
+              : hasNotes
+                ? "Has notes"
+                : null;
 
             return (
               <tr
@@ -636,4 +639,4 @@ export function TasksEaseList({
       </div>
     </div>
   );
-}
+});

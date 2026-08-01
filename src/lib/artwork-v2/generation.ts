@@ -101,7 +101,11 @@ export async function runArtworkV2Generation(input: {
       conceptIndex: index,
     });
     const bytes = Buffer.from(result.imageBase64, "base64");
-    const uploaded = await uploadArtworkBytes({ storagePath, bytes });
+    const uploaded = await uploadArtworkBytes({
+      storagePath,
+      bytes,
+      eventId: input.eventId,
+    });
 
     if (!uploaded.success || !uploaded.publicUrl) {
       uploadFailureCount += 1;

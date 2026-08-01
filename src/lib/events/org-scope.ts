@@ -1,3 +1,4 @@
+import { assertActiveMembershipInOrganization } from "@/lib/auth/membership-queries";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { createClient } from "@/lib/supabase/server";
 import { cache } from "react";
@@ -20,6 +21,12 @@ export const getOrganizationSchoolYearIds = cache(
   },
 );
 
+/**
+ * Resolve the org id used for event/school-year scoping.
+ * Explicit client/org ids are never trusted without an active membership assert.
+ * Pass `undefined` to use the caller's current (cookie-active) organization.
+ * Pass `null` to fail closed with no scope.
+ */
 export async function resolveScopedOrganizationId(
   organizationId?: string | null,
 ): Promise<string | null> {
@@ -28,6 +35,10 @@ export async function resolveScopedOrganizationId(
   }
 
   if (organizationId) {
+    const allowed = await assertActiveMembershipInOrganization(organizationId);
+    if (!allowed) {
+      return null;
+    }
     return organizationId;
   }
 

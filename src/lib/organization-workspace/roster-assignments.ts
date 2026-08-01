@@ -47,6 +47,41 @@ export async function listCommitteeAssignmentsByOrg(
   }));
 }
 
+/** Assignments for one committee — Event Detail Team / Manage Assignments. */
+export async function listCommitteeAssignmentsForCommittee(
+  committeeId: string,
+): Promise<CommitteeAssignmentRecord[]> {
+  if (!committeeId) {
+    return [];
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("organization_committee_assignments")
+    .select("*")
+    .eq("committee_id", committeeId);
+
+  if (error) {
+    if (error.code === "42P01") {
+      return [];
+    }
+    console.error(
+      "Failed to load committee assignments for committee:",
+      error.message,
+    );
+    return [];
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    organizationId: row.organization_id as string,
+    organizationMemberId: row.organization_member_id as string,
+    committeeId: row.committee_id as string,
+    role: row.role as CommitteeAssignmentRole,
+    createdAt: row.created_at as string,
+  }));
+}
+
 export async function listCommitteeAssignmentsForMember(
   organizationMemberId: string,
 ): Promise<CommitteeAssignmentRecord[]> {

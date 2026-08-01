@@ -129,6 +129,87 @@ export async function refreshEventDetailHeroStatsAction(
   }
 }
 
+/** Lazy Team roster for Manage Assignments — not shipped on Event Detail SSR. */
+export async function loadEventManageAssignmentsAction(
+  eventId: string,
+): Promise<
+  | {
+      success: true;
+      members: Array<{
+        id: string;
+        name: string;
+        assignedEventIds: string[];
+      }>;
+      currentAssignments: Array<{
+        organizationMemberId: string;
+        role: import("@/lib/organization-workspace/roster-first").CommitteeAssignmentRole;
+      }>;
+      committeeId: string | null;
+      committeeName: string | null;
+    }
+  | { success: false; error: string }
+> {
+  const user = await getAuthUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated." };
+  }
+
+  const membership = await getActiveMembership();
+  if (!membership) {
+    return { success: false, error: "No active organization membership." };
+  }
+
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { success: false, error: "Event not found." };
+  }
+
+  try {
+    const { getOrganizationWorkspaceData } = await import(
+      "@/lib/organization-workspace/queries"
+    );
+    const { listCommitteeAssignmentsForCommittee } = await import(
+      "@/lib/organization-workspace/roster-assignments"
+    );
+
+    const workspace = await getOrganizationWorkspaceData(
+      membership.organizationId,
+    );
+    const linkedCommittee =
+      workspace?.committees.find(
+        (committee) => committee.assignedEventId === event.id,
+      ) ?? null;
+
+    const assignments = linkedCommittee
+      ? await listCommitteeAssignmentsForCommittee(linkedCommittee.id)
+      : [];
+
+    return {
+      success: true,
+      members: (workspace?.members ?? []).map((member) => ({
+        id: member.id,
+        name: member.name,
+        assignedEventIds: member.assignedEventIds,
+      })),
+      currentAssignments: assignments.map((row) => ({
+        organizationMemberId: row.organizationMemberId,
+        role: row.role,
+      })),
+      committeeId: linkedCommittee?.id ?? null,
+      committeeName: linkedCommittee?.name ?? null,
+    };
+  } catch (error) {
+    console.error("Failed to load event manage assignments:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to load team assignments.",
+    };
+  }
+}
+
 /** Lazy vendor directory for Event Detail Add Existing / Create New. */
 export async function loadEventVendorDirectoryAction(): Promise<
   | {

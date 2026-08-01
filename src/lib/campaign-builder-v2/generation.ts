@@ -18,7 +18,7 @@ import {
 } from "@/lib/artwork-v2/orchestrator";
 import { resolveArtworkGenerationProfile } from "@/lib/artwork-v2/generation-mode";
 import { resolveMetaCaptionModel } from "@/lib/meta-captions/constants";
-import { getEventById } from "@/lib/events/queries";
+import { getEventById, requireEventAccess } from "@/lib/events/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { sanitizeEventAssetFilename } from "@/lib/event-workspace/storage";
 import { buildCampaignBuilderArtworkPrompt } from "@/lib/campaign-builder-v2/artwork-prompts";
@@ -129,7 +129,11 @@ async function generateArtworkVariations(input: {
       index,
     });
     const bytes = Buffer.from(result.imageBase64, "base64");
-    const uploaded = await uploadArtworkBytes({ storagePath, bytes });
+    const uploaded = await uploadArtworkBytes({
+      storagePath,
+      bytes,
+      eventId: input.eventId,
+    });
 
     if (!uploaded.success || !uploaded.publicUrl) {
       if (urls.length === 0) {
@@ -171,6 +175,15 @@ export async function generateCampaignBuilderArtwork(input: {
       success: false,
       variationUrls: [],
       message: "You do not have permission to generate artwork.",
+    };
+  }
+
+  const eventAccess = await requireEventAccess(input.eventId);
+  if ("error" in eventAccess) {
+    return {
+      success: false,
+      variationUrls: [],
+      message: eventAccess.error,
     };
   }
 

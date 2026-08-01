@@ -42,6 +42,8 @@ export interface TasksV2PageData extends TaskHubPageData {
   aiAvailable: boolean;
   aiUnavailableReason: string | null;
   viewer: TasksV2Viewer;
+  /** Active org id — scopes Tasks Ease localStorage prefs. */
+  organizationId: string | null;
 }
 
 export interface TasksV2AiInsight {

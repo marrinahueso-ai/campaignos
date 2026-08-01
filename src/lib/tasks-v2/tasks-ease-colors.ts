@@ -3,11 +3,14 @@
  * board column headers). Mirrors the calendar Show-chip color picker
  * pattern, but scoped to Tasks and stored client-side only (v1 — no
  * server persistence needed for a personal color preference).
+ *
+ * Keys are org (+ user) scoped via setTasksEaseStorageScope.
  */
 import { normalizeDashboardCardColor } from "@/lib/today/dashboard-widget-colors";
+import { tasksEaseStorageKey } from "@/lib/tasks-v2/tasks-ease-storage-scope";
 
-const EVENT_COLORS_KEY = "heyralli:tasks-ease:event-colors:v1";
-const COLUMN_COLORS_KEY = "heyralli:tasks-ease:column-colors:v1";
+const EVENT_COLORS_BASE = "heyralli:tasks-ease:event-colors:v1";
+const COLUMN_COLORS_BASE = "heyralli:tasks-ease:column-colors:v1";
 
 export interface TasksEaseColorMaps {
   events: Record<string, string>;
@@ -15,6 +18,7 @@ export interface TasksEaseColorMaps {
 }
 
 let cache: TasksEaseColorMaps | null = null;
+let cacheScopeKey: string | null = null;
 
 function hasStorage(): boolean {
   try {
@@ -24,8 +28,10 @@ function hasStorage(): boolean {
   }
 }
 
-function readColorMap(key: string): Record<string, string> {
+function readColorMap(baseKey: string): Record<string, string> {
   if (!hasStorage()) return {};
+  const key = tasksEaseStorageKey(baseKey);
+  if (!key) return {};
   try {
     const raw = window.localStorage.getItem(key);
     if (!raw) return {};
@@ -42,8 +48,10 @@ function readColorMap(key: string): Record<string, string> {
   }
 }
 
-function writeColorMap(key: string, map: Record<string, string>): void {
+function writeColorMap(baseKey: string, map: Record<string, string>): void {
   if (!hasStorage()) return;
+  const key = tasksEaseStorageKey(baseKey);
+  if (!key) return;
   try {
     window.localStorage.setItem(key, JSON.stringify(map));
   } catch {
@@ -52,11 +60,13 @@ function writeColorMap(key: string, map: Record<string, string>): void {
 }
 
 function ensureCache(): TasksEaseColorMaps {
-  if (!cache) {
+  const scopeKey = tasksEaseStorageKey(EVENT_COLORS_BASE);
+  if (!cache || cacheScopeKey !== scopeKey) {
     cache = {
-      events: readColorMap(EVENT_COLORS_KEY),
-      columns: readColorMap(COLUMN_COLORS_KEY),
+      events: readColorMap(EVENT_COLORS_BASE),
+      columns: readColorMap(COLUMN_COLORS_BASE),
     };
+    cacheScopeKey = scopeKey;
   }
   return cache;
 }
@@ -64,9 +74,10 @@ function ensureCache(): TasksEaseColorMaps {
 /** Re-read localStorage (call once on client mount to hydrate after SSR). */
 export function loadTasksEaseColors(): TasksEaseColorMaps {
   cache = {
-    events: readColorMap(EVENT_COLORS_KEY),
-    columns: readColorMap(COLUMN_COLORS_KEY),
+    events: readColorMap(EVENT_COLORS_BASE),
+    columns: readColorMap(COLUMN_COLORS_BASE),
   };
+  cacheScopeKey = tasksEaseStorageKey(EVENT_COLORS_BASE);
   return cache;
 }
 
@@ -83,7 +94,7 @@ export function saveEventColor(
     delete next[eventId];
   }
   cache = { ...current, events: next };
-  writeColorMap(EVENT_COLORS_KEY, next);
+  writeColorMap(EVENT_COLORS_BASE, next);
   return cache;
 }
 
@@ -100,7 +111,7 @@ export function saveColumnColor(
     delete next[columnKey];
   }
   cache = { ...current, columns: next };
-  writeColorMap(COLUMN_COLORS_KEY, next);
+  writeColorMap(COLUMN_COLORS_BASE, next);
   return cache;
 }
 

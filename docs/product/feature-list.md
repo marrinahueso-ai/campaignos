@@ -60,6 +60,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Invite / resend / cancel invite; deactivate / remove members — **shipped**
 - Event assignments — **shipped**
 - Permission gates (artwork, approve, publish, people, integrations, etc.) — **shipped**
+- Multi-tenant / IDOR app-layer gates on event-scoped mutations (CB2 upload/generate/session, event details, approvals scheduling, AI credit billing, org scope resolution) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#multi-tenant--idor-hardening-august-2026))
 - Dashboard layout membership fan-out collapsed (one cached `organization_users` load for switcher + active seat; org-by-id / users / playbooks / people workload request-cached) — **shipped** (perf)
 - Role simulator (dev/test, gated) — **shipped**
 
@@ -84,6 +85,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Events Home ease filters (soft pills: **Upcoming** default · **Next month** · **All**; Upcoming shows next-60-days focus/queue; counts scoped to school-year filter + search; status badges on cards only — not filter tabs) — **shipped**
 - Events list filtered PDF export (All Events header download; current list filters only — not upcoming carousel) — **shipped**
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Insights, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
+- Event detail tab chrome uses local state + `history.replaceState` (no full RSC refetch on tab click); bare `/events/[id]` SSR-preloads Approvals; Team Manage Assignments lazy-loads the org roster — **shipped** (perf)
 - Event detail Insights tab — see **Insights** below (living: [event-insights.md](./event-insights.md))
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
 - Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from communication plan tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**
@@ -227,7 +229,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - **Team | Mine** scope toggle (`?scope=`) — Team = all org-accessible event tasks; Mine = assigned to the signed-in user (`assignee_user_id`) — **shipped**
 - **List | Status | Focus | Custom** views (`?view=`) with short labels; List is the default — **shipped**
 - Pulse row as quiet text links with live counts — Needs you / This week / Overdue / Done (`?pulse=`, toggles off on repeat click) — **shipped**
-- Events chip row for soft filtering (`?event=`), each chip with a `DashboardWidgetColorPicker` dot for a personal, localStorage-persisted event color — **shipped**
+- Events chip row for soft filtering (`?event=`), each chip with a `DashboardWidgetColorPicker` dot for a personal, localStorage-persisted event color (org + user scoped; cleared on sign-out) — **shipped**
 - List view: Pilot flat table (Priority dropdown, Event, Status, Due date picker, Assignee; overdue Escalate; Needs Review / Review; bottom padding so last-row date picker isn’t clipped) — **shipped**
 - Status board: Pilot kanban To Do · In Progress · Needs Review · Done; drag-and-drop; event color stripe + avatar cards; column **+** opens Add task with Board prefilled — **shipped**
 - Focus / Custom view tabs on org Tasks hub — **removed**
@@ -241,6 +243,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Ease task detail (`TasksEaseTaskDrawer`): same two-pane Pilot modal as Add task (ivory aside + form); editable title, Board/status, due, assignee, derived priority badge, Description/notes (+ dictate), autosave, event deep link, Done — **shipped**
 - Add task: event options from events + groups, optimistic row, Mine auto-assigns to you, clears pulse so new tasks stay visible — **shipped**
 - Chrome feel: Team/Mine, views, pulse, event chips use local state + `history.replaceState` (no `router.replace` refetch); drawer/list saves stay optimistic without full page refresh — **shipped** (perf)
+- Org Tasks list omits note bodies (`hasNotes` flag; drawer loads notes on open); Add Task / Ask AI form state is isolated so keystrokes don’t re-render all rows; list/board are `React.memo` — **shipped** (perf)
+- Flyer local drafts never persist `data:image` blobs; old `hr-flyer-composer-draft:*` keys are GC’d; QR data-URL cache is LRU-capped — **shipped** (perf)
 - Calendar / Timeline / Workload tabs — **deferred** (hidden from Tasks UI)
 - Files tab on Tasks — **removed** (use sidebar Files → `/files`)
 - Monday.com sync — **partial** (optional org integration; not required for Tasks)

@@ -42,6 +42,11 @@ export interface TaskHubTaskItem extends EventPlaybookTask {
   event: TaskHubEventContext;
   /** Read-only overlay from Monday when linked and sync enabled. */
   monday?: MondayTaskOverlay | null;
+  /**
+   * Org Tasks list may omit note bodies (`notes: null`) while still marking
+   * that notes exist — full text loads in the task drawer.
+   */
+  hasNotes?: boolean;
 }
 
 export interface TaskHubSecondaryGroup {

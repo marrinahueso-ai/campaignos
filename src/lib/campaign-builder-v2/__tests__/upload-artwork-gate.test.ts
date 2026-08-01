@@ -61,4 +61,17 @@ describe("Create with AI upload_artwork gate wiring", () => {
       /You do not have permission to upload artwork/,
     );
   });
+
+  it("upload and generate actions require event access before persist/upload", () => {
+    assert.match(actions, /requireEventAccess\(eventId\)/);
+    assert.match(actions, /requireEventAccess\(input\.eventId\)/);
+    const inspirationStorage = readFileSync(
+      join(root, "lib/campaign-builder-v2/inspiration-storage.ts"),
+      "utf8",
+    );
+    assert.match(inspirationStorage, /requireEventAccess\(eventId\)/);
+    const storage = readFileSync(join(root, "lib/ai-artwork/storage.ts"), "utf8");
+    assert.match(storage, /requireEventAccess\(input\.eventId\)/);
+    assert.match(storage, /eventId\?: string/);
+  });
 });

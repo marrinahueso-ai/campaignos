@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
 import {
   Suspense,
   useCallback,
@@ -35,6 +34,7 @@ import {
 import {
   eventTabCacheKey,
   invalidateEventTabCacheEntry,
+  setEventTabCacheEntry,
   tabAffectsHeroStats,
 } from "@/lib/events-phase3/tab-cache";
 import type {
@@ -347,32 +347,32 @@ function seedTabCache(
   cache: Map<string, EventDetailTabData>,
 ) {
   if (workspace.approvalsData) {
-    cache.set(eventTabCacheKey(eventId, "approvals"), {
+    setEventTabCacheEntry(cache, eventTabCacheKey(eventId, "approvals"), {
       tab: "approvals",
       approvalsData: workspace.approvalsData,
     });
   }
   if (workspace.tasksV2Data) {
-    cache.set(eventTabCacheKey(eventId, "tasks"), {
+    setEventTabCacheEntry(cache, eventTabCacheKey(eventId, "tasks"), {
       tab: "tasks",
       tasksV2Data: workspace.tasksV2Data,
     });
   }
   if (workspace.filesPageData) {
-    cache.set(eventTabCacheKey(eventId, "files"), {
+    setEventTabCacheEntry(cache, eventTabCacheKey(eventId, "files"), {
       tab: "files",
       filesPageData: workspace.filesPageData,
     });
   }
   if (workspace.notes !== undefined) {
-    cache.set(eventTabCacheKey(eventId, "notes"), {
+    setEventTabCacheEntry(cache, eventTabCacheKey(eventId, "notes"), {
       tab: "notes",
       notes: workspace.notes,
       tablesAvailable: workspace.tablesAvailable ?? false,
     });
   }
   if (workspace.eventVendorsData !== undefined) {
-    cache.set(eventTabCacheKey(eventId, "vendors"), {
+    setEventTabCacheEntry(cache, eventTabCacheKey(eventId, "vendors"), {
       tab: "vendors",
       eventVendorsData: workspace.eventVendorsData,
       vendorDirectory: workspace.vendorDirectory ?? {
@@ -386,14 +386,14 @@ function seedTabCache(
     workspace.playbookActivity !== undefined ||
     workspace.workspaceTimeline !== undefined
   ) {
-    cache.set(eventTabCacheKey(eventId, "activity"), {
+    setEventTabCacheEntry(cache, eventTabCacheKey(eventId, "activity"), {
       tab: "activity",
       playbookActivity: workspace.playbookActivity ?? [],
       workspaceTimeline: workspace.workspaceTimeline ?? [],
     });
   }
   if (workspace.insightsData) {
-    cache.set(eventTabCacheKey(eventId, "insights"), {
+    setEventTabCacheEntry(cache, eventTabCacheKey(eventId, "insights"), {
       tab: "insights",
       insightsData: workspace.insightsData,
     });
@@ -413,7 +413,6 @@ export function EventDetailShell({
   initialTab = null,
   showYoureSet = false,
 }: EventDetailShellProps) {
-  const router = useRouter();
   const [tab, setTab] = useState<EventDetailTab>(() => {
     if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
       return initialTab as EventDetailTab;
@@ -433,6 +432,25 @@ export function EventDetailShell({
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const tabCacheRef = useRef<Map<string, EventDetailTabData>>(new Map());
   const cacheEventIdRef = useRef(event.id);
+  const tabLoadAbortRef = useRef<AbortController | null>(null);
+
+  const syncTabUrl = useCallback(
+    (nextTab: EventDetailTab) => {
+      if (typeof window === "undefined") return;
+      const params = new URLSearchParams(window.location.search);
+      if (nextTab === "approvals") {
+        params.delete("tab");
+      } else {
+        params.set("tab", nextTab);
+      }
+      const query = params.toString();
+      const href = query
+        ? `/events/${encodeURIComponent(event.id)}?${query}`
+        : `/events/${encodeURIComponent(event.id)}`;
+      window.history.replaceState(window.history.state, "", href);
+    },
+    [event.id],
+  );
 
   useEffect(() => {
     setLiveHeroStats(heroStats);
@@ -519,11 +537,9 @@ export function EventDetailShell({
   const selectHeroJumpTab = useCallback(
     (nextTab: EaseJumpTab) => {
       setTab(nextTab);
-      router.replace(`/events/${encodeURIComponent(event.id)}?tab=${nextTab}`, {
-        scroll: false,
-      });
+      syncTabUrl(nextTab);
     },
-    [event.id, router],
+    [syncTabUrl],
   );
 
   const ensureTabLoaded = useCallback(
@@ -555,15 +571,22 @@ export function EventDetailShell({
       }
       fetchInFlightRef.current.add(cacheKey);
 
+      tabLoadAbortRef.current?.abort();
+      const abort = new AbortController();
+      tabLoadAbortRef.current = abort;
+
       setTabError(null);
       startTransition(async () => {
         try {
           const result = await loadEventDetailTabAction(event.id, nextTab);
+          if (abort.signal.aborted) {
+            return;
+          }
           if (!result.success) {
             setTabError(result.error);
             return;
           }
-          tabCacheRef.current.set(cacheKey, result.data);
+          setEventTabCacheEntry(tabCacheRef.current, cacheKey, result.data);
           applyTabData(result.data);
           setLoadedTabs((prev) => {
             if (prev.has(nextTab)) {
@@ -578,6 +601,12 @@ export function EventDetailShell({
     },
     [event.id, applyTabData],
   );
+
+  useEffect(() => {
+    return () => {
+      tabLoadAbortRef.current?.abort();
+    };
+  }, [event.id]);
 
   useEffect(() => {
     ensureTabLoaded(tab);
@@ -603,7 +632,7 @@ export function EventDetailShell({
           return { success: false as const, error: result.error };
         }
 
-        tabCacheRef.current.set(cacheKey, result.data);
+        setEventTabCacheEntry(tabCacheRef.current, cacheKey, result.data);
         applyTabData(result.data);
         setLoadedTabs((prev) => new Set(prev).add(tabToRefresh));
 
@@ -744,10 +773,7 @@ export function EventDetailShell({
               aria-current={isActive ? "page" : undefined}
               onClick={() => {
                 setTab(entry.id);
-                router.replace(
-                  `/events/${encodeURIComponent(event.id)}?tab=${entry.id}`,
-                  { scroll: false },
-                );
+                syncTabUrl(entry.id);
               }}
               className={cn(
                 "rounded-full px-3.5 py-2 text-[13px] font-bold transition",

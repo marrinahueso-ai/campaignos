@@ -16,7 +16,7 @@ import {
   getEventOrganizationDefaults,
   getOrganizationWorkspaceData,
 } from "@/lib/organization-workspace/queries";
-import { listCommitteeAssignmentsByOrg } from "@/lib/organization-workspace/roster-assignments";
+import { listCommitteeAssignmentsForCommittee } from "@/lib/organization-workspace/roster-assignments";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 import { areEventPlaybookTablesAvailable } from "@/lib/event-playbooks/queries";
 import { getEventDetailHeroStats } from "@/lib/events-phase3/hero-stats";
@@ -38,7 +38,6 @@ export async function renderEventsPhase3Detail(
     access,
     artwork,
     orgWorkspace,
-    committeeAssignments,
     playbookName,
     heroStats,
     approvalAssignee,
@@ -50,9 +49,6 @@ export async function renderEventsPhase3Detail(
     organization
       ? getOrganizationWorkspaceData(organization.id)
       : Promise.resolve(null),
-    organization
-      ? listCommitteeAssignmentsByOrg(organization.id)
-      : Promise.resolve([]),
     getEventPlaybookName(event.id),
     getEventDetailHeroStats(event.id),
     organization
@@ -75,6 +71,15 @@ export async function renderEventsPhase3Detail(
       ? publishingDefault.roleName
       : null;
 
+  const linkedCommittee =
+    orgWorkspace?.committees.find(
+      (committee) => committee.assignedEventId === event.id,
+    ) ?? null;
+
+  // Event-scoped roster only — full org assignment list loads with Manage Assignments.
+  const committeeAssignments = linkedCommittee
+    ? await listCommitteeAssignmentsForCommittee(linkedCommittee.id)
+    : [];
   const assignmentInputs: CommitteeAssignmentInput[] = committeeAssignments.map(
     (row) => ({
       organizationMemberId: row.organizationMemberId,
@@ -82,11 +87,6 @@ export async function renderEventsPhase3Detail(
       role: row.role,
     }),
   );
-
-  const linkedCommittee =
-    orgWorkspace?.committees.find(
-      (committee) => committee.assignedEventId === event.id,
-    ) ?? null;
 
   const responsibilities = resolveEventResponsibilities({
     eventId: event.id,
@@ -125,16 +125,8 @@ export async function renderEventsPhase3Detail(
     { label: "Publishing", value: publisher },
   ];
 
-  const currentAssignments = assignmentInputs
-    .filter((row) =>
-      linkedCommittee ? row.committeeId === linkedCommittee.id : false,
-    )
-    .map((row) => ({
-      organizationMemberId: row.organizationMemberId,
-      role: row.role,
-    }));
-
-  // Deep-link: preload only the requested lazy tab (not all tabs).
+  // Deep-link: preload the requested lazy tab. Default Approvals so bare
+  // `/events/[id]` doesn’t waterfall the default panel after hydration.
   const lazyInitial =
     initialTab === "approvals" ||
     initialTab === "tasks" ||
@@ -144,7 +136,9 @@ export async function renderEventsPhase3Detail(
     initialTab === "activity" ||
     initialTab === "insights"
       ? initialTab
-      : null;
+      : initialTab == null || initialTab === ""
+        ? "approvals"
+        : null;
 
   let initialWorkspace: import("@/components/events-phase3/EventDetailShell").EventDetailWorkspacePanels =
     {};
@@ -220,12 +214,6 @@ export async function renderEventsPhase3Detail(
       showYoureSet={Boolean(options?.showYoureSet)}
       committeeId={linkedCommittee?.id ?? null}
       committeeName={linkedCommittee?.name ?? null}
-      members={(orgWorkspace?.members ?? []).map((member) => ({
-        id: member.id,
-        name: member.name,
-        assignedEventIds: member.assignedEventIds,
-      }))}
-      currentAssignments={currentAssignments}
     />
   );
 }

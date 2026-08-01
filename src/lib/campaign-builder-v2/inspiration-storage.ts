@@ -2,6 +2,7 @@ import "server-only";
 
 import { createConceptBatchId } from "@/lib/ai-artwork/mutations";
 import { uploadArtworkBytes } from "@/lib/ai-artwork/storage";
+import { requireEventAccess } from "@/lib/events/queries";
 import {
   resolveAssetImageUrl,
   sanitizeEventAssetFilename,
@@ -64,6 +65,7 @@ async function uploadDataUrlImage(input: {
     storagePath,
     bytes,
     contentType,
+    eventId: input.eventId,
   });
 
   if (!uploaded.success || !uploaded.publicUrl) {
@@ -102,6 +104,15 @@ export async function persistInspirationImages(
   updatedImages: InspirationImage[];
   error?: string;
 }> {
+  const access = await requireEventAccess(eventId);
+  if ("error" in access) {
+    return {
+      urls: [],
+      updatedImages: [],
+      error: access.error,
+    };
+  }
+
   if (images.length > ARTWORK_V2_MAX_INSPIRATION_IMAGES) {
     return {
       urls: [],

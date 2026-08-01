@@ -2,8 +2,8 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 25, 2026  
-**Related:** [Access & multi-tenant onboarding](./access-and-onboarding.md) · [Access control](../engineering/access-control.md) · [Storage RLS](../engineering/storage-rls.md) · [Security](./README.md)
+**Last updated:** August 1, 2026  
+**Related:** [Access & multi-tenant onboarding](./access-and-onboarding.md) · [Access control](../engineering/access-control.md) · [Storage RLS](../engineering/storage-rls.md) · [Security](./README.md) · [Audit remediation](./audit-remediation.md)
 
 ## Purpose
 
@@ -31,3 +31,5 @@ Distinct from cross-tenant data isolation above: does anything leak between two 
 |------|--------|
 | Back button after sign-out shows cached authenticated page (bfcache) | ✅ Verified clean on Chromium, Firefox, WebKit — server re-validates and redirects to `/login`, no client-only cache restore |
 | `localStorage` Campaign Builder drafts/artwork backups survive sign-out | ✅ Fixed (2026-07) — sign-out now clears `campaign-builder-v2:*` / `campaign-builder-v2-artwork:*` keys, see [`clear-on-signout.ts`](../../src/lib/campaign-builder-v2/clear-on-signout.ts); regression-tested in `22-shared-device-signout-cleanup` |
+| `localStorage` Tasks Ease prefs (event colors, priorities, custom board) survive sign-out / cross-org bleed | ✅ Fixed (2026-08) — keys scoped by org (+ user); sign-out clears `heyralli:tasks-ease:*` via [`tasks-ease-storage-scope.ts`](../../src/lib/tasks-v2/tasks-ease-storage-scope.ts) |
+| Service-role artwork upload / CB2 session / approvals IDOR | ✅ Fixed (2026-08) — `requireEventAccess` / `getEventById` on mutations + event-scoped `uploadArtworkBytes`; see [audit-remediation.md](./audit-remediation.md#multi-tenant--idor-hardening-august-2026) |

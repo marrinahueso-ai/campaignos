@@ -2,18 +2,31 @@
 
 import { protectSessionFromRichnessDowngrade } from "@/lib/campaign-builder-v2/normalize-session";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
+import { requireEventAccess } from "@/lib/events/queries";
 import { createClient } from "@/lib/supabase/server";
 import type { CampaignBuilderSession } from "@/lib/campaign-builder-v2/types";
 
 export async function loadCampaignBuilderSessionAction(
   eventId: string,
 ): Promise<CampaignBuilderSession | null> {
+  const access = await requireEventAccess(eventId);
+  if ("error" in access) {
+    return null;
+  }
   return loadCampaignBuilderSession(eventId);
 }
 
 export async function saveCampaignBuilderSessionAction(
   session: CampaignBuilderSession,
 ): Promise<{ success: boolean; message: string }> {
+  const access = await requireEventAccess(session.eventId);
+  if ("error" in access) {
+    return {
+      success: false,
+      message: access.error,
+    };
+  }
+
   const supabase = await createClient();
 
   // Never let an empty/failed client snapshot erase richer server artwork.

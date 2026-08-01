@@ -25,23 +25,46 @@ async function resolveTasksV2Viewer(): Promise<TasksV2Viewer> {
   };
 }
 
+/** Org list DTO — keep presence, drop note bodies from the RSC payload. */
+function slimTaskNotesForOrgList<T extends { notes: string | null; hasNotes?: boolean }>(
+  task: T,
+): T {
+  const hasNotes = Boolean(task.notes?.trim());
+  if (!hasNotes && task.notes == null && task.hasNotes !== true) {
+    return task;
+  }
+  return {
+    ...task,
+    notes: null,
+    hasNotes,
+  };
+}
+
 export async function getTasksV2PageData(): Promise<TasksV2PageData> {
-  const [hubData, viewer] = await Promise.all([
+  const [hubData, viewer, membership] = await Promise.all([
     getTaskHubPageData({ includeMonday: false }),
     resolveTasksV2Viewer(),
+    getActiveMembership(),
   ]);
-  const allTasks = flattenCommitteeTasks(hubData.committees);
+  const allTasks = flattenCommitteeTasks(hubData.committees).map(
+    slimTaskNotesForOrgList,
+  );
   const eventGroups = groupTasksByEvent(allTasks);
   const summary = computeTasksV2SummaryStats(allTasks);
   const aiStatus = getAiAssistantStatus();
 
   return {
     ...hubData,
+    committees: hubData.committees.map((group) => ({
+      ...group,
+      tasks: group.tasks.map(slimTaskNotesForOrgList),
+    })),
     eventGroups,
     summary,
     aiAvailable: aiStatus.available,
     aiUnavailableReason: aiStatus.reason,
     viewer,
+    organizationId: membership?.organizationId ?? null,
   };
 }
 
@@ -51,9 +74,10 @@ export async function getTasksV2PageDataForEvent(
   eventMeta: { title: string; date: string },
   context?: import("@/lib/task-hub/queries").EventTaskHubContext,
 ): Promise<TasksV2PageData> {
-  const [hubData, viewer] = await Promise.all([
+  const [hubData, viewer, membership] = await Promise.all([
     getTaskHubPageDataForEvent(eventId, eventMeta, context),
     resolveTasksV2Viewer(),
+    getActiveMembership(),
   ]);
   const allTasks = flattenCommitteeTasks(hubData.committees);
   const eventGroups = groupTasksByEvent(allTasks);
@@ -67,5 +91,6 @@ export async function getTasksV2PageDataForEvent(
     aiAvailable: aiStatus.available,
     aiUnavailableReason: aiStatus.reason,
     viewer,
+    organizationId: membership?.organizationId ?? null,
   };
 }

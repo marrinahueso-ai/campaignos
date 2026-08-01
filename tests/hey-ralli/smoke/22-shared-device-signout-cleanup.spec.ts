@@ -3,17 +3,18 @@ import { hasTestCredentials, loginWithTestUser } from "../helpers/auth";
 
 /**
  * Shared/kiosk-computer regression guard: sign-out must clear locally
- * cached Campaign Builder drafts + artwork backups from this browser
- * (localStorage), so the next person to sign in on the same device can't
- * read a teammate's unsaved draft artwork/captions. Unrelated preference
- * keys must survive. See src/lib/campaign-builder-v2/clear-on-signout.ts.
+ * cached Campaign Builder drafts + artwork backups and Tasks Ease prefs
+ * from this browser (localStorage), so the next person to sign in on the
+ * same device can't read a teammate's unsaved drafts / event colors.
+ * Unrelated preference keys must survive.
+ * See clear-on-signout.ts and tasks-ease-storage-scope.ts.
  */
 test.describe("Shared-device sign-out cleanup", () => {
   test.beforeEach(async ({ page }) => {
     test.skip(!hasTestCredentials(), "Needs HEY_RALLI_TEST_EMAIL/PASSWORD");
   });
 
-  test("sign-out clears campaign-builder localStorage, leaves other keys alone", async ({
+  test("sign-out clears campaign-builder and tasks-ease localStorage, leaves other keys alone", async ({
     page,
   }) => {
     await loginWithTestUser(page);
@@ -25,6 +26,10 @@ test.describe("Shared-device sign-out cleanup", () => {
         JSON.stringify({ eventId: "evt-fake" }),
       );
       localStorage.setItem("campaign-builder-v2-artwork:evt-fake", JSON.stringify({}));
+      localStorage.setItem(
+        "heyralli:tasks-ease:event-colors:v1:org-fake:user-fake",
+        JSON.stringify({ "evt-fake": "#a65a3a" }),
+      );
       localStorage.setItem("cos-unrelated-preference", "keep-me");
     });
 
@@ -36,11 +41,15 @@ test.describe("Shared-device sign-out cleanup", () => {
     const after = await page.evaluate(() => ({
       session: localStorage.getItem("campaign-builder-v2:evt-fake"),
       artwork: localStorage.getItem("campaign-builder-v2-artwork:evt-fake"),
+      tasksEase: localStorage.getItem(
+        "heyralli:tasks-ease:event-colors:v1:org-fake:user-fake",
+      ),
       unrelated: localStorage.getItem("cos-unrelated-preference"),
     }));
 
     expect(after.session).toBeNull();
     expect(after.artwork).toBeNull();
+    expect(after.tasksEase).toBeNull();
     expect(after.unrelated).toBe("keep-me");
   });
 });

@@ -272,11 +272,31 @@ describe("Approval Routing — queue visibility", () => {
     assert.match(queriesSource, /fetchCampaignBuilderSchedulingItems/);
     assert.match(queriesSource, /SCHEDULING_LIST_SELECT/);
     assert.match(queriesSource, /fetchSchedulingItemPreviewFields/);
+    assert.match(
+      queriesSource,
+      /export async function fetchSchedulingItemPreviewFields\(\s*schedulingItemId: string,\s*eventId: string,/s,
+    );
+    assert.match(queriesSource, /row\.event_id !== eventId/);
+    assert.match(queriesSource, /getEventById\(eventId\)/);
     assert.match(queriesSource, /enrichPreviews:\s*false/);
     assert.match(
       queriesSource,
       /Org-scoped scheduling rows for Approvals hub list/,
     );
+  });
+
+  it("5c. unified approval mutations gate on requireEventAccess", () => {
+    const actionsSource = readFileSync(
+      new URL("../actions.ts", import.meta.url),
+      "utf8",
+    );
+    assert.match(actionsSource, /requireEventAccess\(input\.eventId\)/);
+    assert.match(actionsSource, /requireEventAccess\(row\.event_id\)/);
+    assert.match(
+      actionsSource,
+      /That person isn’t on your active organization roster/,
+    );
+    assert.match(actionsSource, /getOrganizationUsers\(organization\.id\)/);
   });
 
   it("5b. classic approval sidebar counts use lean selects, not full queue", () => {

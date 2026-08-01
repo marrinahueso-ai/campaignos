@@ -66,6 +66,11 @@ export async function updateEventDetailsAction(
   eventId: string,
   input: EventDetailsInput,
 ): Promise<WorkspaceActionState> {
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { error: "Event not found.", success: false };
+  }
+
   if (!input.title.trim()) {
     return { error: "Event title is required.", success: false };
   }

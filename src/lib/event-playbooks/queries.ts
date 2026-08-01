@@ -115,6 +115,9 @@ export async function getEventPlaybookTasksForEvents(
   return (data ?? []) as unknown as EventPlaybookTaskRow[];
 }
 
+/** Soft cap for Event Detail Notes tab — newest first. */
+const EVENT_NOTES_FETCH_CAP = 100;
+
 /** Exact-event notes only — Event Detail Notes tab. */
 export async function getEventPlaybookNotesForEvent(
   eventId: string,
@@ -128,7 +131,8 @@ export async function getEventPlaybookNotesForEvent(
     .from("event_playbook_notes")
     .select(PLAYBOOK_NOTE_SELECT)
     .eq("event_id", eventId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(EVENT_NOTES_FETCH_CAP);
 
   if (error) {
     if (!isMissingSchemaError(error)) {

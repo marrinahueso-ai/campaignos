@@ -36,6 +36,7 @@ export const SCHEDULING_LIST_SELECT = [
 /** Rich preview fields loaded on demand for the opened review item. */
 export const SCHEDULING_PREVIEW_SELECT = [
   "id",
+  "event_id",
   "caption_text",
   "story_caption",
   "feed_artwork_url",

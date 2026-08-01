@@ -2727,8 +2727,27 @@
     /** Keep in sync with src/lib/flyer-composer/version-history.ts */
     const MAX_FLYER_VERSIONS = 10;
     let saveTimer = null;
-    /** Client-side QR data-URL cache (url|size → data:image/png;…). */
+    /** Client-side QR data-URL cache (url|size → data:image/png;…) with LRU cap. */
+    const QR_CACHE_MAX = 24;
     const qrDataUrlCache = new Map();
+
+    function qrCacheGet(key) {
+      if (!qrDataUrlCache.has(key)) return undefined;
+      const value = qrDataUrlCache.get(key);
+      qrDataUrlCache.delete(key);
+      qrDataUrlCache.set(key, value);
+      return value;
+    }
+
+    function qrCacheSet(key, value) {
+      if (qrDataUrlCache.has(key)) qrDataUrlCache.delete(key);
+      qrDataUrlCache.set(key, value);
+      while (qrDataUrlCache.size > QR_CACHE_MAX) {
+        const oldest = qrDataUrlCache.keys().next().value;
+        if (oldest === undefined) break;
+        qrDataUrlCache.delete(oldest);
+      }
+    }
 
     const SAMPLE_CUSTOM_TEMPLATE =
       "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900&q=80&auto=format&fit=crop";
@@ -3084,11 +3103,55 @@
       if (typeof url !== "string") return false;
       const trimmed = url.trim();
       if (!trimmed) return false;
-      return (
-        trimmed.startsWith("https://") ||
-        trimmed.startsWith("http://") ||
-        trimmed.startsWith("data:image/")
-      );
+      // Never persist in-memory data: URLs — they blow localStorage quotas.
+      return trimmed.startsWith("https://") || trimmed.startsWith("http://");
+    }
+
+    function isEphemeralFlyerImageUrl(url) {
+      return typeof url === "string" && url.trim().startsWith("data:image/");
+    }
+
+    function gcFlyerComposerDrafts(activeKey) {
+      try {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i += 1) {
+          const key = localStorage.key(i);
+          if (
+            key &&
+            (key === STORAGE_KEY_BASE || key.startsWith(`${STORAGE_KEY_BASE}:`))
+          ) {
+            keys.push(key);
+          }
+        }
+        const MAX_DRAFT_KEYS = 8;
+        if (keys.length <= MAX_DRAFT_KEYS) return;
+        const ranked = keys
+          .map((key) => {
+            let touched = 0;
+            try {
+              const raw = localStorage.getItem(key);
+              const parsed = raw ? JSON.parse(raw) : null;
+              touched =
+                typeof parsed?.savedAt === "number"
+                  ? parsed.savedAt
+                  : typeof parsed?.updatedAt === "number"
+                    ? parsed.updatedAt
+                    : 0;
+            } catch {
+              touched = 0;
+            }
+            return { key, touched, active: key === activeKey };
+          })
+          .sort((a, b) => {
+            if (a.active !== b.active) return a.active ? -1 : 1;
+            return b.touched - a.touched;
+          });
+        for (const entry of ranked.slice(MAX_DRAFT_KEYS)) {
+          localStorage.removeItem(entry.key);
+        }
+      } catch {
+        /* ignore quota / private mode */
+      }
     }
 
     function normalizeFlyerVersions(raw, max = MAX_FLYER_VERSIONS) {
@@ -3687,8 +3750,9 @@
         return Promise.reject(new Error("QR library missing"));
       }
       const key = qrCacheKey(target, px);
-      if (qrDataUrlCache.has(key)) {
-        return Promise.resolve(qrDataUrlCache.get(key));
+      const hit = qrCacheGet(key);
+      if (hit) {
+        return Promise.resolve(hit);
       }
       return QRCode.toDataURL(target, {
         width: px,
@@ -3696,7 +3760,7 @@
         errorCorrectionLevel: "M",
         color: { dark: "#000000", light: "#FFFFFF" },
       }).then((dataUrl) => {
-        qrDataUrlCache.set(key, dataUrl);
+        qrCacheSet(key, dataUrl);
         return dataUrl;
       });
     }
@@ -3704,7 +3768,7 @@
     function qrImgHtml(url, size) {
       if (!url) return `<div class="qr" aria-hidden="true"></div>`;
       const px = Math.max(48, Math.min(512, Math.round(Number(size) || 120)));
-      const cached = qrDataUrlCache.get(qrCacheKey(url, px)) || "";
+      const cached = qrCacheGet(qrCacheKey(url, px)) || "";
       return `<img class="qr-img" data-qr-url="${escapeHtml(url)}" data-qr-size="${px}" src="${cached}" alt="QR code" width="${px}" height="${px}"${cached ? "" : " hidden"} />`;
     }
 
@@ -4162,24 +4226,38 @@
     function buildDraftPayload(versionsOverride) {
       const versions = normalizeFlyerVersions(
         versionsOverride != null ? versionsOverride : state.versions
-      );
+      ).filter((v) => !isEphemeralFlyerImageUrl(v.imageUrl));
+      const generatedImageUrl = isPersistableFlyerImageUrl(state.generatedImageUrl)
+        ? state.generatedImageUrl
+        : null;
+      const imageUrl = isPersistableFlyerImageUrl(state.imageUrl)
+        ? state.imageUrl
+        : isEphemeralFlyerImageUrl(state.imageUrl)
+          ? ""
+          : state.imageUrl;
+      const customTemplateUrl = isPersistableFlyerImageUrl(state.customTemplateUrl)
+        ? state.customTemplateUrl
+        : isEphemeralFlyerImageUrl(state.customTemplateUrl)
+          ? ""
+          : state.customTemplateUrl;
       return {
         templateId: state.templateId,
         startPath: state.startPath,
         printSize: state.printSize,
         provenLayoutChosen: state.provenLayoutChosen,
-        imageUrl: state.imageUrl,
+        imageUrl,
         inspirationPhotoSource: state.inspirationPhotoSource,
         inspirationPhotoLabel: state.inspirationPhotoLabel,
         inspirationPhotoExplicit: state.inspirationPhotoExplicit,
-        customTemplateUrl: state.customTemplateUrl,
+        customTemplateUrl,
         customTemplateFileName: state.customTemplateFileName,
         customTemplateFileType: state.customTemplateFileType,
         brand: state.brand,
-        generatedImageUrl: state.generatedImageUrl,
-        previewGenerated: state.previewGenerated === true && !!state.generatedImageUrl,
+        generatedImageUrl,
+        previewGenerated: state.previewGenerated === true && !!generatedImageUrl,
         activeVersionId: state.activeVersionId,
         versions,
+        savedAt: Date.now(),
         approvalSubmissionKey: ensureApprovalSubmissionKey(),
         approvalEventId: state.approvalEventId,
         approvalSchedulingItemId: state.approvalSchedulingItemId,
@@ -4192,6 +4270,7 @@
 
     function persistDraft() {
       const key = draftStorageKey(state.approvalEventId);
+      gcFlyerComposerDrafts(key);
       try {
         localStorage.setItem(key, JSON.stringify(buildDraftPayload()));
       } catch (_) {
@@ -6616,6 +6695,11 @@
         btn.setAttribute("aria-pressed", "false");
         if (hint) hint.hidden = true;
       };
+
+      window.addEventListener("pagehide", stop);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") stop();
+      });
 
       btn.addEventListener("click", () => {
         if (listening) {

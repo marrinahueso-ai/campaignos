@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { memo, useEffect, useMemo, useState, useTransition } from "react";
 import { Calendar, Check, MoreHorizontal, Paperclip, Plus } from "lucide-react";
 import {
   readTaskHubDragPayload,
@@ -71,7 +71,7 @@ function cardDueLabel(task: TaskHubTaskItem, today: string): {
   };
 }
 
-export function TasksEaseBoard({
+export const TasksEaseBoard = memo(function TasksEaseBoard({
   eventGroups,
   canEdit,
   eventColors,
@@ -192,7 +192,7 @@ export function TasksEaseBoard({
       Boolean(viewerUserId) &&
       task.assigneeUserId === viewerUserId &&
       !isDone;
-    const hasNotes = Boolean(task.notes?.trim());
+    const hasNotes = Boolean(task.hasNotes) || Boolean(task.notes?.trim());
 
     return (
       <div
@@ -206,6 +206,7 @@ export function TasksEaseBoard({
             sourceStatus: status,
           });
         }}
+        onDragEnd={() => setDragOverColumn(null)}
         onClick={() => onOpenTask(task)}
         className={cn(
           "cursor-grab rounded-2xl border border-[#e8e2d9] bg-white p-4 text-left transition hover:border-[#2f4a3c] hover:shadow-[0_4px_12px_rgba(47,74,60,0.05)] active:cursor-grabbing",
@@ -334,6 +335,7 @@ export function TasksEaseBoard({
                 current === columnKey ? null : current,
               )
             }
+            onDragEnd={() => setDragOverColumn(null)}
             onDrop={(event) => handleDrop(event, column.key)}
             className={cn(
               "flex w-[320px] shrink-0 flex-col gap-4",
@@ -393,4 +395,4 @@ export function TasksEaseBoard({
       })}
     </div>
   );
-}
+});

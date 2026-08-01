@@ -29,6 +29,7 @@ import {
   requestCommunicationChangesAction,
 } from "@/lib/event-workspace/actions";
 import { logEventActivity } from "@/lib/event-workspace/activity-log";
+import { requireEventAccess } from "@/lib/events/queries";
 import { publishMetaMilestoneBundle } from "@/lib/meta-publishing/publish-milestone";
 import { retryFailedMetaBundleAction } from "@/lib/meta-publishing/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -462,6 +463,11 @@ export async function approveUnifiedItemAction(input: {
   milestoneName?: string | null;
   recipientEmail?: string | null;
 }): Promise<UnifiedApprovalActionResult> {
+  const eventAccess = await requireEventAccess(input.eventId);
+  if ("error" in eventAccess) {
+    return { success: false, error: eventAccess.error };
+  }
+
   if (input.communicationItemId) {
     const result = await approveCommunicationAction(
       input.eventId,
@@ -556,6 +562,11 @@ export async function requestUnifiedChangesAction(input: {
   campaignName?: string | null;
   milestoneName?: string | null;
 }): Promise<UnifiedApprovalActionResult> {
+  const eventAccess = await requireEventAccess(input.eventId);
+  if ("error" in eventAccess) {
+    return { success: false, error: eventAccess.error };
+  }
+
   const comment = input.comment.trim();
   if (!comment) {
     return {
@@ -603,6 +614,19 @@ export async function requestUnifiedChangesAction(input: {
     schedulingRow = (await loadSchedulingItem(
       input.schedulingItemId,
     )) as ApprovalSchedulingItemRow | null;
+    if (!schedulingRow) {
+      return {
+        success: false,
+        error: "We couldn’t find this approval. Refresh and try again.",
+      };
+    }
+    // Tenant guard: never mutate a row from another event.
+    if (schedulingRow.event_id !== input.eventId) {
+      return {
+        success: false,
+        error: "That approval doesn’t match this event.",
+      };
+    }
     const updated = await updateSchedulingItemStatus(
       input.schedulingItemId,
       "changes_requested",
@@ -675,6 +699,11 @@ export async function resubmitUnifiedApprovalAction(input: {
   storyCaption?: string | null;
   scheduleAt?: string | null;
 }): Promise<UnifiedApprovalActionResult> {
+  const eventAccess = await requireEventAccess(input.eventId);
+  if ("error" in eventAccess) {
+    return { success: false, error: eventAccess.error };
+  }
+
   const schedulingRow = (await loadSchedulingItem(
     input.schedulingItemId,
   )) as ApprovalSchedulingItemRow | null;
@@ -839,6 +868,43 @@ export async function reassignUnifiedItemAction(input: {
     };
   }
 
+  const row = (await loadSchedulingItem(
+    input.schedulingItemId,
+  )) as ApprovalSchedulingItemRow | null;
+  if (!row) {
+    return {
+      success: false,
+      error: "We couldn’t find this approval. Refresh and try again.",
+    };
+  }
+
+  const eventAccess = await requireEventAccess(row.event_id);
+  if ("error" in eventAccess) {
+    return { success: false, error: eventAccess.error };
+  }
+
+  const { getCurrentOrganization } = await import(
+    "@/lib/auth/organization-context"
+  );
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return {
+      success: false,
+      error: "Couldn’t verify your organization. Sign in and try again.",
+    };
+  }
+
+  const users = await getOrganizationUsers(organization.id);
+  const assignee = users.find(
+    (user) => user.id === input.assignedUserId && user.status === "active",
+  );
+  if (!assignee) {
+    return {
+      success: false,
+      error: "That person isn’t on your active organization roster.",
+    };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("approval_scheduling_items")
@@ -847,7 +913,8 @@ export async function reassignUnifiedItemAction(input: {
       workflow_status: "assigned_to_me",
       updated_at: new Date().toISOString(),
     })
-    .eq("id", input.schedulingItemId);
+    .eq("id", input.schedulingItemId)
+    .eq("event_id", row.event_id);
 
   if (error) {
     return {
@@ -994,10 +1061,21 @@ export async function enrichUnifiedApprovalItemPreviewAction(
   item = { ...item, preview: getUnifiedApprovalPreview(item) };
 
   if (item.schedulingItemId) {
+    if (!item.eventId) {
+      return item;
+    }
+    const eventAccess = await requireEventAccess(item.eventId);
+    if ("error" in eventAccess) {
+      return item;
+    }
+
     const { fetchSchedulingItemPreviewFields } = await import(
       "@/lib/approvals-scheduling/queries"
     );
-    const preview = await fetchSchedulingItemPreviewFields(item.schedulingItemId);
+    const preview = await fetchSchedulingItemPreviewFields(
+      item.schedulingItemId,
+      item.eventId,
+    );
     if (!preview) {
       return item;
     }

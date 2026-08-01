@@ -369,6 +369,7 @@ async function resolveReferenceImageUrls(input: {
       storagePath,
       bytes,
       contentType,
+      eventId: input.eventId,
     });
 
     if (!uploaded.success || !uploaded.publicUrl) {
@@ -1136,6 +1137,7 @@ export async function approveInspirationAsArtworkV2Action(
       storagePath,
       bytes,
       contentType,
+      eventId,
     });
 
     if (!uploaded.success || !uploaded.publicUrl) {
@@ -1238,6 +1240,7 @@ export async function importCanvaDesignAsInspirationV2Action(
     storagePath: inspirationStoragePath,
     bytes: exported.bytes,
     contentType: "image/png",
+    eventId,
   });
 
   if (!uploaded.success || !uploaded.publicUrl) {

@@ -260,3 +260,34 @@ export async function deleteTaskHubTaskAction(
   revalidateTaskHubPaths([eventId]);
   return { success: true, error: null };
 }
+
+/** Load note body when org list DTO omitted it (`hasNotes` + `notes: null`). */
+export async function getTaskHubTaskNotesAction(
+  eventId: string,
+  taskId: string,
+): Promise<
+  { success: true; notes: string | null } | { success: false; error: string }
+> {
+  const access = await assertTaskHubEventAccess(eventId);
+  if (!access.ok) {
+    return { success: false, error: access.error };
+  }
+
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("event_playbook_tasks")
+    .select("notes")
+    .eq("id", taskId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return {
+    success: true,
+    notes: ((data?.notes as string | null | undefined) ?? null)?.trim() || null,
+  };
+}

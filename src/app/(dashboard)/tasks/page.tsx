@@ -10,17 +10,28 @@ interface TasksPageProps {
   searchParams: Promise<{ event?: string }>;
 }
 
+async function TasksEaseShellLoader({
+  eventFilter,
+}: {
+  eventFilter: string | null;
+}) {
+  const data = await getTasksV2PageData();
+  return (
+    <TasksEaseShell data={data} initialEventFilter={eventFilter} />
+  );
+}
+
 export default async function TasksPage({ searchParams }: TasksPageProps) {
   const params = await searchParams;
-  const data = await getTasksV2PageData();
 
   return (
     <div className="studio-page pb-12">
-      <Suspense fallback={<div className="min-h-[16rem] animate-pulse bg-cos-bg/60" />}>
-        <TasksEaseShell
-          data={data}
-          initialEventFilter={params.event ?? null}
-        />
+      <Suspense
+        fallback={
+          <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
+        }
+      >
+        <TasksEaseShellLoader eventFilter={params.event ?? null} />
       </Suspense>
     </div>
   );

@@ -338,6 +338,7 @@ export function ArtworkV2Shell({
 
   const [prompt, setPrompt] = useState("");
   const [references, setReferences] = useState<ArtworkV2Reference[]>([]);
+  const referencesRef = useRef<ArtworkV2Reference[]>([]);
   const [approvedArtwork, setApprovedArtwork] = useState<{
     imageUrl: string;
     downloadFilename: string;
@@ -375,6 +376,10 @@ export function ArtworkV2Shell({
   }, [selectedItem]);
 
   useEffect(() => {
+    referencesRef.current = references;
+  }, [references]);
+
+  useEffect(() => {
     if (selectedVersionId && !reviewVersions.some((version) => version.id === selectedVersionId)) {
       setSelectedVersionId(null);
     }
@@ -382,6 +387,13 @@ export function ArtworkV2Shell({
 
   useEffect(() => {
     void getCanvaConnectionStatusAction().then(setCanvaStatus);
+  }, []);
+
+  // Revoke blob: previews on unmount so inspiration uploads don’t leak.
+  useEffect(() => {
+    return () => {
+      revokeReferencePreviews(referencesRef.current);
+    };
   }, []);
 
   const canImportFromCanva = canvaStatus.configured && canvaStatus.connected;

@@ -2,7 +2,7 @@
 
 **Status:** Living
 **Owner:** Engineering
-**Last updated:** July 29, 2026 (all 25 findings, including Low/Info cleanup, fixed); Jul 30 2026 OWASP ZAP soft-launch pass — [owasp-zap.md](./owasp-zap.md)
+**Last updated:** August 1, 2026 (multi-tenant / IDOR hardening pass); July 29, 2026 (all 25 findings, including Low/Info cleanup, fixed); Jul 30 2026 OWASP ZAP soft-launch pass — [owasp-zap.md](./owasp-zap.md)
 **Related:** [Security](./README.md) · [OWASP ZAP soft-launch pass](./owasp-zap.md) · [Access & onboarding](./access-and-onboarding.md) · [Multi-tenant isolation](./multi-tenant-isolation.md) · [Access control](../engineering/access-control.md) · [Feature list](../product/feature-list.md)
 
 Tracks findings from the July 2026 full-app security audit (Authentication, Authorization/RBAC/RLS, injection/XSS/CSRF, API security & architecture) and their remediation status. Read this before re-auditing so prior findings aren't rediscovered as new.
@@ -53,6 +53,26 @@ Tracks findings from the July 2026 full-app security audit (Authentication, Auth
 | 23 | OAuth provider tokens (Meta page tokens, Canva/Google Calendar/Monday access + refresh tokens) stored as plaintext `text` columns — a DB dump or backup leak would hand out live tokens for every connected integration. | Added [`token-encryption.ts`](../../src/lib/security/token-encryption.ts): AES-256-GCM keyed by `OAUTH_TOKEN_ENCRYPTION_KEY` (see [env-and-secrets.md](../ops/env-and-secrets.md)). Wired into the read/write choke points for all four providers (`meta-publishing/connection.ts` + `connection-token-health.ts` + `connection-actions.ts`, `canva/connection.ts`, `google-calendar/connection.ts`, `monday/connection.ts` + `mappers.ts`). Backward compatible by design — `decryptOAuthToken` returns any unprefixed value unchanged, so existing plaintext rows keep working and are transparently re-encrypted the next time that connection refreshes/reconnects; no bulk migration needed. Optional: if the key isn't set, tokens are stored unencrypted (previous behavior) with a logged warning rather than breaking OAuth connect flows. | ✅ Fixed |
 | 24 | Verbose OAuth token-exchange logging: Monday's token-exchange diagnostics logged the client secret's first/last character codes on every attempt, and Monday/Google/Canva all logged the full raw provider response body on a failed exchange. | Removed the character-code fingerprint from `describeMondayClientSecretForLogging`/`getMondayOAuthConfigDiagnostics` entirely (kept only length + "had surrounding quotes", which is all the quoting-bug diagnostic needs) in [`monday/config.ts`](../../src/lib/monday/config.ts). Truncated the logged response body to 300 chars on failure in `monday/connection.ts`, `google-calendar/connection.ts`, and `canva/connection.ts`. | ✅ Fixed |
 | 25 | Rich HTML exports accepted active URL schemes from composer state: `javascript:` or `data:` could be emitted directly into a homepage or volunteer-page `href`, turning a compromised editor/draft into a click-triggered XSS payload. Meta publishing also had no shared throttle at the Graph API publish choke point. | [`normalizeHref`](../../src/lib/homepage-composer/urls.ts) now permits only `http:`, `https:`, `mailto:`, anchors, and relative paths, so homepage and volunteer exports render active schemes as `#`; regression coverage is in [`card-fields.test.ts`](../../src/lib/homepage-composer/__tests__/card-fields.test.ts). [`publishMetaMilestoneBundle`](../../src/lib/meta-publishing/publish-milestone.ts) now applies a 30-per-5-minute per-org rate limit before reaching the Graph API, covering interactive and cron publish paths. | ✅ Fixed |
+
+## Multi-tenant / IDOR hardening (August 2026)
+
+App-layer gates on event-scoped mutations and service-role storage uploads. RLS remains the baseline; these close IDOR paths where the service role or missing `getEventById` / `requireEventAccess` checks previously left gaps.
+
+| # | Finding | Fix | Status |
+|---|---------|-----|--------|
+| M1 | Artwork upload via service role without event gate (`uploadArtworkBytes`, CB2 inspiration persist / generate) | `uploadArtworkBytes` accepts optional `eventId` and calls `requireEventAccess` + path-prefix check; `persistInspirationImages` and CB2 generate/upload/Canva import actions gate with `requireEventAccess` before any storage write | ✅ Fixed |
+| M2 | CB2 session load/save accepted arbitrary `eventId` | [`session.ts`](../../src/lib/campaign-builder-v2/session.ts) load/save call `requireEventAccess` first | ✅ Fixed |
+| M3 | `updateEventDetailsAction` mutated without event access | Mirrors overview: `getEventById` before mutate in [`event-workspace/actions.ts`](../../src/lib/event-workspace/actions.ts) | ✅ Fixed |
+| M4 | Approvals scheduling mutations (approve / resubmit / reassign / request changes) incomplete tenant guards | `requireEventAccess(eventId)` on mutations; reassign loads row, gates on `row.event_id`, verifies assignee is an active org roster member via `getOrganizationUsers` | ✅ Fixed |
+| M5 | Preview enrichment by scheduling id could return captions/URLs cross-event | `fetchSchedulingItemPreviewFields(schedulingItemId, eventId)` requires `getEventById` + `row.event_id` match | ✅ Fixed |
+| M6 | AI credits trusted bare client `organizationId`; admin event→org lookup without access check | [`credits.ts`](../../src/lib/ai/credits.ts) `resolveOrganizationIdForCredits`: event path requires `getEventById` first; org path requires `assertActiveMembershipInOrganization` | ✅ Fixed |
+| M7 | `resolveScopedOrganizationId` returned client org ids as-is | Asserts active membership for explicit ids; `undefined` still resolves to current org ([`org-scope.ts`](../../src/lib/events/org-scope.ts)) | ✅ Fixed |
+| M8 | Tasks Ease localStorage keys unscoped; not cleared on sign-out | Org (+ user) scoped keys via [`tasks-ease-storage-scope.ts`](../../src/lib/tasks-v2/tasks-ease-storage-scope.ts); cleared in `SignOutForm` alongside CB2 | ✅ Fixed |
+| M9 | Legacy unauthenticated latest-org fallback when membership table missing | Fail closed in `NODE_ENV === "production"` in [`organization-context.ts`](../../src/lib/auth/organization-context.ts); local-dev fallback retained | ✅ Fixed |
+
+### Known follow-up (not in this pass)
+
+- **Public bucket → signed URLs migration:** event-assets (and related) still serve public URLs after upload. Migrating to signed/private URLs is a larger storage + client change; app-layer event/org gates above are the primary control for this pass. Track under storage hardening when scheduled.
 
 ## Already solid — no action needed
 

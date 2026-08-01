@@ -82,7 +82,9 @@ describe("mutation refresh wiring (source contract)", () => {
   const approvalsTable = readSrc(
     "../../../components/approvals-scheduling/ApprovalsTable.tsx",
   );
-  const tasksGroup = readSrc("../../../components/tasks-v2/TasksV2EventGroup.tsx");
+  const tasksEasePanel = readSrc(
+    "../../../components/events-phase3/EventDetailTasksEasePanel.tsx",
+  );
   const tasksSidebar = readSrc("../../../components/tasks-v2/TasksV2Sidebar.tsx");
   const vendors = readSrc(
     "../../../components/vendors/EventVendorsSection.tsx",
@@ -117,11 +119,11 @@ describe("mutation refresh wiring (source contract)", () => {
   });
 
   it("Tasks create/complete/reorder/add-generated refresh the tasks tab", () => {
-    assert.match(tasksGroup, /useEventTabMutationRefresh\("tasks"\)/);
-    assert.match(tasksGroup, /await refreshTasksTab\(\)/);
+    assert.match(tasksEasePanel, /useEventTabMutationRefresh\("tasks"\)/);
+    assert.match(tasksEasePanel, /await refresh\(\)/);
     assert.match(tasksSidebar, /useEventTabMutationRefresh\("tasks"\)/);
     assert.match(tasksSidebar, /await refreshTasksTab\(\)/);
-    assert.doesNotMatch(tasksGroup, /router\.refresh\(\)/);
+    assert.doesNotMatch(tasksEasePanel, /router\.refresh\(\)/);
     assert.doesNotMatch(tasksSidebar, /router\.refresh\(\)/);
   });
 

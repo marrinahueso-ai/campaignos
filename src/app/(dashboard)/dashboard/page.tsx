@@ -187,23 +187,32 @@ function buildWidgetNodes(
         weekEntries={todayData.thisWeek as TodayWeekEntry[]}
       />
     ),
-    // Phase 3 list widgets share one cached fetch with Attention.
-    approvals: (
+  };
+
+  // Phase 3 list widgets share one cached fetch — only mount when on the board.
+  if (layoutContainsWidget(layout, "approvals")) {
+    widgets.approvals = (
       <Suspense fallback={<ApprovalsWidget items={[]} />}>
         <ApprovalsWidgetBlock />
       </Suspense>
-    ),
-    tasks_week: (
+    );
+  }
+
+  if (layoutContainsWidget(layout, "tasks_week")) {
+    widgets.tasks_week = (
       <Suspense fallback={<TasksWeekWidget items={[]} />}>
         <TasksWeekWidgetBlock />
       </Suspense>
-    ),
-    volunteers: (
+    );
+  }
+
+  if (layoutContainsWidget(layout, "volunteers")) {
+    widgets.volunteers = (
       <Suspense fallback={<VolunteersWidget items={[]} />}>
         <VolunteersWidgetBlock />
       </Suspense>
-    ),
-  };
+    );
+  }
 
   // Insights is heavier — only mount when on the board (refresh after Add).
   if (layoutContainsWidget(layout, "insights")) {

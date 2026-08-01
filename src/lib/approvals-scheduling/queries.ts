@@ -181,12 +181,19 @@ const fetchCampaignBuilderSchedulingItems = cache(
 
 export async function fetchSchedulingItemPreviewFields(
   schedulingItemId: string,
+  eventId: string,
 ): Promise<{
   captionText: string | null;
   storyCaptionSnippet: string | null;
   feedArtworkUrl: string | null;
   storyArtworkUrl: string | null;
 } | null> {
+  const { getEventById } = await import("@/lib/events/queries");
+  const event = await getEventById(eventId);
+  if (!event) {
+    return null;
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("approval_scheduling_items")
@@ -199,11 +206,17 @@ export async function fetchSchedulingItemPreviewFields(
   }
 
   const row = data as unknown as {
+    event_id: string;
     caption_text: string | null;
     story_caption: string | null;
     feed_artwork_url: string | null;
     story_artwork_url: string | null;
   };
+
+  // Tenant guard: never return captions/artwork URLs for another event's row.
+  if (row.event_id !== eventId) {
+    return null;
+  }
 
   return {
     captionText: row.caption_text,

@@ -91,6 +91,14 @@ describe("targeted event tab speed contracts", () => {
     );
   });
 
+  it("keeps event tab switches instant via local state + history.replaceState", () => {
+    assert.match(shell, /history\.replaceState/);
+    assert.match(shell, /syncTabUrl/);
+    assert.doesNotMatch(shell, /router\.replace\(/);
+    assert.match(shell, /AbortController/);
+    assert.match(shell, /setEventTabCacheEntry/);
+  });
+
   it("Create with AI tab uses a doorway panel and hard-navigates into Social", () => {
     assert.match(shell, /EventDetailCreateWithAiPanel/);
     assert.match(shell, /EventDetailEaseHero/);

@@ -6,6 +6,29 @@ export function eventTabCacheKey(eventId: string, tab: string): string {
   return `${eventId}::${tab}`;
 }
 
+/** Soft cap so long Event Detail sessions don’t retain every tab payload. */
+export const EVENT_TAB_CACHE_MAX_ENTRIES = 6;
+
+/** Insert/refresh a cache entry and evict the oldest when over the soft cap. */
+export function setEventTabCacheEntry<T>(
+  cache: Map<string, T>,
+  key: string,
+  value: T,
+  maxEntries = EVENT_TAB_CACHE_MAX_ENTRIES,
+): void {
+  if (cache.has(key)) {
+    cache.delete(key);
+  }
+  cache.set(key, value);
+  while (cache.size > maxEntries) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) {
+      break;
+    }
+    cache.delete(oldest);
+  }
+}
+
 export function parseEventTabCacheKey(
   key: string,
 ): { eventId: string; tab: string } | null {

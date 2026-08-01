@@ -13,7 +13,10 @@ import {
 } from "lucide-react";
 import { eventTasksHref } from "@/lib/events/event-responsibility";
 import { useSpeechToText } from "@/lib/speech/use-speech-to-text";
-import { updateTaskHubTaskAction } from "@/lib/task-hub/actions";
+import {
+  getTaskHubTaskNotesAction,
+  updateTaskHubTaskAction,
+} from "@/lib/task-hub/actions";
 import { deriveTaskPriority } from "@/lib/tasks-v2/derive-priority";
 import {
   TASKS_V2_STATUS_OPTIONS,
@@ -116,6 +119,21 @@ export function TasksEaseTaskDrawer({
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
       debounceRef.current = null;
+    }
+
+    // Org list DTO may omit note bodies — fetch when the indicator says they exist.
+    if (!task.notes?.trim() && task.hasNotes) {
+      let cancelled = false;
+      void getTaskHubTaskNotesAction(task.eventId, task.id).then((result) => {
+        if (cancelled || !result.success) return;
+        if (taskIdRef.current !== task.id) return;
+        const loaded = result.notes ?? "";
+        setNotes(loaded);
+        lastSavedNotesRef.current = loaded;
+      });
+      return () => {
+        cancelled = true;
+      };
     }
   }, [task, clearVoiceError, stopListening]);
 

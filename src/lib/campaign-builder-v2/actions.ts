@@ -47,6 +47,7 @@ import { exportCanvaDesignAsPngBytes } from "@/lib/canva/import-design";
 import { persistInspirationImages } from "@/lib/campaign-builder-v2/inspiration-storage";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { saveCampaignBuilderSessionAction } from "@/lib/campaign-builder-v2/session";
+import { requireEventAccess } from "@/lib/events/queries";
 import type {
   ArtworkView,
   CampaignBuilderInspiration,
@@ -307,6 +308,15 @@ export interface GenerateMilestoneArtworkResult {
 export async function generateMilestoneArtworkAction(
   input: GenerateMilestoneArtworkInput,
 ): Promise<GenerateMilestoneArtworkResult> {
+  const eventAccess = await requireEventAccess(input.eventId);
+  if ("error" in eventAccess) {
+    return {
+      success: false,
+      artwork: input.previewContent.artwork,
+      message: eventAccess.error,
+    };
+  }
+
   const resolved = await resolveInspirationForGeneration(
     input.eventId,
     input.inspiration,
@@ -351,6 +361,15 @@ export async function generateMilestoneArtworkAction(
 export async function regenerateArtworkAction(
   input: RegenerateArtworkInput,
 ): Promise<RegenerateArtworkResult> {
+  const eventAccess = await requireEventAccess(input.eventId);
+  if ("error" in eventAccess) {
+    return {
+      success: false,
+      variationUrls: [],
+      message: eventAccess.error,
+    };
+  }
+
   const resolved = await resolveInspirationForGeneration(
     input.eventId,
     input.inspiration,
@@ -481,6 +500,23 @@ export async function regenerateCaptionAction(
 export async function generateAllContentAction(
   input: GenerateAllContentInput,
 ): Promise<GenerateAllContentResult> {
+  const eventAccess = await requireEventAccess(input.eventId);
+  if ("error" in eventAccess) {
+    return {
+      success: false,
+      results: [],
+      message: eventAccess.error,
+    };
+  }
+
+  if (!(await hasPermission("upload_artwork"))) {
+    return {
+      success: false,
+      results: [],
+      message: "You do not have permission to generate artwork.",
+    };
+  }
+
   const milestones = ensurePurposesForGeneration(
     input.milestones,
     input.inspiration.eventDate,
@@ -810,6 +846,14 @@ export async function uploadInspirationImageAction(
   image?: InspirationImagePayload;
   message: string;
 }> {
+  const eventAccess = await requireEventAccess(eventId);
+  if ("error" in eventAccess) {
+    return {
+      success: false,
+      message: eventAccess.error,
+    };
+  }
+
   if (!(await hasPermission("upload_artwork"))) {
     return {
       success: false,
@@ -862,6 +906,14 @@ export async function importCanvaDesignAsCampaignInspirationAction(
   image?: InspirationImagePayload;
   message: string;
 }> {
+  const eventAccess = await requireEventAccess(eventId);
+  if ("error" in eventAccess) {
+    return {
+      success: false,
+      message: eventAccess.error,
+    };
+  }
+
   if (!(await hasPermission("upload_artwork"))) {
     return {
       success: false,
@@ -1086,6 +1138,14 @@ export async function saveDraftAction(eventId: string): Promise<{
   success: boolean;
   message: string;
 }> {
+  const eventAccess = await requireEventAccess(eventId);
+  if ("error" in eventAccess) {
+    return {
+      success: false,
+      message: eventAccess.error,
+    };
+  }
+
   const { loadCampaignBuilderSessionAction, saveCampaignBuilderSessionAction } =
     await import("@/lib/campaign-builder-v2/session");
   const session = await loadCampaignBuilderSessionAction(eventId);
