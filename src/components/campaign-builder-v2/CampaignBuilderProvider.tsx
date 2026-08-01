@@ -794,12 +794,12 @@ export function CampaignBuilderProvider({
 
     const next: CampaignBuilderSession = {
       ...sessionRef.current,
-      currentStep: "milestones",
+      currentStep: "preview",
     };
     sessionRef.current = next;
     setSession(next);
-    setLocationHash("milestones");
-    setCurrentStep("milestones");
+    setLocationHash("preview");
+    setCurrentStep("preview");
     await persistSession(next);
     return { success: true };
   }, [persistSession, syncMilestonesToSelectedPlaybook]);
@@ -1036,9 +1036,11 @@ export function CampaignBuilderProvider({
   const goToStep = useCallback(
     (step: CampaignBuilderStepId) => {
       void (async () => {
+        // Legacy Posts step (#milestones) lives inside Preview now.
+        const targetStep = step === "milestones" ? "preview" : step;
         const leavingInspiration = currentStepRef.current === "inspiration";
         // Only reconcile when leaving Creative Setup. Auto-syncing on every
-        // Preview/Milestones hop when communication plan ids drift rebuilt milestones
+        // Preview hop when communication plan ids drift rebuilt milestones
         // mid-generation and erased artwork the user just created.
         let syncChanged = false;
         if (leavingInspiration) {
@@ -1076,12 +1078,12 @@ export function CampaignBuilderProvider({
         } else {
           await flushSave();
         }
-        if (step !== "preview" && step !== "review") {
+        if (targetStep !== "preview" && targetStep !== "review") {
           setGenerationProgress(null);
         }
-        setLocationHash(step);
-        setCurrentStep(step);
-        updateSession((prev) => ({ ...prev, currentStep: step }));
+        setLocationHash(targetStep);
+        setCurrentStep(targetStep);
+        updateSession((prev) => ({ ...prev, currentStep: targetStep }));
       })();
     },
     [flushSave, persistSession, syncMilestonesToSelectedPlaybook, updateSession],

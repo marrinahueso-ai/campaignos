@@ -2,13 +2,16 @@ import type { CampaignBuilderStepId } from "@/lib/campaign-builder-v2/types";
 
 /** Numbered progress steps (excludes the post-submit confirmation view). */
 export const CAMPAIGN_BUILDER_STEPS: Array<{
-  id: Exclude<CampaignBuilderStepId, "published">;
+  id: Exclude<CampaignBuilderStepId, "published" | "milestones">;
   label: string;
   subtitle?: string;
 }> = [
   { id: "inspiration", label: "Your Creative Setup" },
-  { id: "milestones", label: "Posts" },
-  { id: "preview", label: "Preview Campaign", subtitle: "Create content one milestone at a time" },
+  {
+    id: "preview",
+    label: "Preview Campaign",
+    subtitle: "Edit posts, artwork, and how they go out",
+  },
   { id: "review", label: "Review & Approve" },
 ];
 
@@ -17,10 +20,11 @@ export type CampaignBuilderStepperStepId =
 
 export const DEFAULT_CAMPAIGN_BUILDER_STEP: CampaignBuilderStepId = "inspiration";
 
-/** Stepper steps plus the Sent-for-approval confirmation hash/view. */
+/** Stepper steps plus confirmation + legacy Posts hash (redirects to Preview). */
 const VALID_STEPS = new Set<string>([
   ...CAMPAIGN_BUILDER_STEPS.map((step) => step.id),
   "published",
+  "milestones",
 ]);
 
 export function isValidCampaignBuilderStep(
@@ -29,8 +33,21 @@ export function isValidCampaignBuilderStep(
   return VALID_STEPS.has(step);
 }
 
+/** Normalize legacy `#milestones` (Posts step) onto Preview. */
+export function normalizeCampaignBuilderStep(
+  step: CampaignBuilderStepId,
+): Exclude<CampaignBuilderStepId, "milestones"> {
+  if (step === "milestones") {
+    return "preview";
+  }
+  return step;
+}
+
 export function stepFromHash(hash: string): CampaignBuilderStepId {
   const normalized = hash.replace(/^#/, "");
+  if (normalized === "milestones") {
+    return "preview";
+  }
   if (VALID_STEPS.has(normalized)) {
     return normalized as CampaignBuilderStepId;
   }

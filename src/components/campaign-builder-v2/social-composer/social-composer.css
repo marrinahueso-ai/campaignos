@@ -834,13 +834,41 @@
   padding: 14px;
   box-shadow: var(--shadow);
 }
+.smc .campaign-posts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
 .smc .campaign-posts h4 {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--muted);
+}
+.smc .post-add {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--tan);
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+.smc .post-add:hover {
+  border-color: var(--forest);
+  background: var(--white);
+  color: var(--forest);
 }
 .smc .post-card {
   width: 100%;
@@ -861,6 +889,29 @@
   border-color: var(--forest);
   background: #fff;
   box-shadow: var(--shadow);
+}
+.smc .post-card.drag-over {
+  border-color: var(--mustard);
+  background: rgba(247, 201, 72, .12);
+}
+.smc .post-title-edit {
+  cursor: text;
+}
+.smc .post-title-edit:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.smc .post-rename {
+  width: 100%;
+  border: 1.5px solid var(--forest);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  background: #fff;
+  margin-bottom: 4px;
 }
 .smc .post-thumb {
   width: 52px; height: 52px;

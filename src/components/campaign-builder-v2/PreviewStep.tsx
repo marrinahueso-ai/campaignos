@@ -727,7 +727,7 @@ export function PreviewStep() {
       )}
 
       <CampaignBuilderFooter
-        onBack={() => goToStep("milestones")}
+        onBack={() => goToStep("inspiration")}
         backLabel="Back to Posts"
         showContinue={false}
         showBack

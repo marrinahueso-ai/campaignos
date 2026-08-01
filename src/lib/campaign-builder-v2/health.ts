@@ -69,9 +69,6 @@ export function computeStepperStates(
   const draftCount = previewContents.filter(
     (c) => derivedPreviewStatus(c) === "draft",
   ).length;
-  const configuredCount = previewContents.filter(
-    (c) => derivedPreviewStatus(c) !== "draft",
-  ).length;
 
   const { complete: generatedComplete, total: milestoneTotal } =
     countCompleteMilestones(milestones, previewContents);
@@ -81,10 +78,6 @@ export function computeStepperStates(
     Boolean(inspiration.campaignName) &&
     Boolean(inspiration.eventDate) &&
     Boolean(inspiration.playbookId);
-
-  const milestonesComplete =
-    milestones.length > 0 &&
-    milestones.every((m) => m.name.trim() && m.purpose.trim());
 
   const previewComplete =
     previewContents.length > 0 && needsReviewCount === 0 && draftCount === 0;
@@ -97,15 +90,16 @@ export function computeStepperStates(
 
   const stepOrder: CampaignBuilderStepperStepId[] = [
     "inspiration",
-    "milestones",
     "preview",
     "review",
   ];
+  const normalizedStep =
+    currentStep === "milestones" ? "preview" : currentStep;
   // Confirmation view sits after Review — treat as past the last stepper step.
   const currentIndex =
-    currentStep === "published"
+    normalizedStep === "published"
       ? stepOrder.length
-      : stepOrder.indexOf(currentStep as CampaignBuilderStepperStepId);
+      : stepOrder.indexOf(normalizedStep as CampaignBuilderStepperStepId);
 
   function statusForStep(
     step: CampaignBuilderStepperStepId,
@@ -153,33 +147,24 @@ export function computeStepperStates(
     inspiration: statusForStep(
       "inspiration",
       inspirationComplete,
-      currentStep === "inspiration",
+      normalizedStep === "inspiration",
       false,
       inspirationComplete ? "Complete" : "Optional — guide AI or skip",
-    ),
-    milestones: statusForStep(
-      "milestones",
-      milestonesComplete && configuredCount === milestones.length,
-      currentStep === "milestones",
-      false,
-      milestones.length > 0
-        ? `${configuredCount} of ${milestones.length} complete`
-        : "0 milestones",
     ),
     preview: statusForStep(
       "preview",
       previewComplete,
-      currentStep === "preview",
+      normalizedStep === "preview",
       needsReviewCount > 0,
       generatedComplete > 0
-        ? `${generatedComplete} of ${milestoneTotal} milestones complete`
-        : (previewStepMeta?.subtitle ?? "Create content one milestone at a time"),
+        ? `${generatedComplete} of ${milestoneTotal} posts ready`
+        : (previewStepMeta?.subtitle ?? "Edit posts, artwork, and how they go out"),
     ),
     review: statusForStep(
       "review",
       (!reviewPending && readyCount === milestones.length) ||
         currentStep === "published",
-      currentStep === "review",
+      normalizedStep === "review",
       reviewPending && currentStep !== "published",
       reviewPending ? "Pending" : "Ready to publish",
     ),

@@ -12,14 +12,12 @@ import type { StepWarning } from "@/lib/campaign-builder-v2/types";
 
 const STEP_HINTS: Record<CampaignBuilderStepperStepId, string> = {
   inspiration: "Logos · inspiration · communication plan",
-  milestones: "Dates · drag · edit",
-  preview: "Artwork · formats · reapprove",
+  preview: "Artwork · caption · how posts go out",
   review: "Approve · send",
 };
 
 const STEP_SHORT_LABELS: Record<CampaignBuilderStepperStepId, string> = {
   inspiration: "Creative Setup",
-  milestones: "Posts",
   preview: "Preview",
   review: "Review",
 };
@@ -76,7 +74,9 @@ export function CampaignBuilderStepper({
         <ol className="space-y-1">
           {CAMPAIGN_BUILDER_STEPS.map((step, index) => {
             const state = stepStates[step.id];
-            const isCurrent = step.id === currentStep;
+            const isCurrent =
+              step.id === currentStep ||
+              (step.id === "preview" && currentStep === "milestones");
             const isComplete =
               state?.statusLabel === "Complete" && !isCurrent;
 
@@ -157,7 +157,9 @@ export function CampaignBuilderStepper({
       <ol className="flex flex-wrap items-start gap-x-2 gap-y-3 lg:gap-x-0">
         {CAMPAIGN_BUILDER_STEPS.map((step, index) => {
           const state = stepStates[step.id];
-          const isCurrent = step.id === currentStep;
+          const isCurrent =
+            step.id === currentStep ||
+            (step.id === "preview" && currentStep === "milestones");
           const isComplete =
             state?.statusLabel === "Complete" && !isCurrent;
 

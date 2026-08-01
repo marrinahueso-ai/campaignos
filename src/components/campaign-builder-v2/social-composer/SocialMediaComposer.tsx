@@ -49,7 +49,6 @@ import type { SetupLogoOption } from "@/lib/artwork-v2/setup-logos";
 import type {
   CampaignBuilderMilestone,
   MilestoneArtwork,
-  MilestoneGenerationStatus,
   MilestonePreviewContent,
   PlatformFormat,
 } from "@/lib/campaign-builder-v2/types";
@@ -169,34 +168,6 @@ const FORMAT_OPTION_DESC: Partial<Record<PlatformFormat, string>> = {
     "Email kit at send time — add music, stickers, link stickers yourself",
 };
 
-function statusPill(status: MilestoneGenerationStatus): { cls: string; label: string } {
-  switch (status) {
-    case "generated":
-      return { cls: "pill-ready", label: "Ready" };
-    case "approved":
-      return { cls: "pill-ready", label: "Approved" };
-    case "scheduled":
-      return { cls: "pill-ready", label: "Scheduled" };
-    case "published":
-      return { cls: "pill-ready", label: "Published" };
-    case "changes_requested":
-      return { cls: "pill-changes", label: "Changes requested" };
-    case "awaiting_approval":
-      return { cls: "pill-gen", label: "In review" };
-    case "needs_review":
-      return { cls: "pill-draft", label: "Needs review" };
-    case "generating":
-      return { cls: "pill-gen", label: "Generating…" };
-    case "queued":
-      return { cls: "pill-gen", label: "Queued" };
-    case "failed":
-      return { cls: "pill-changes", label: "Failed" };
-    case "ready_to_generate":
-    default:
-      return { cls: "pill-gen", label: "To generate" };
-  }
-}
-
 type PreviewSettingsHighlight =
   | "formats"
   | "caption"
@@ -313,17 +284,17 @@ export function SocialMediaComposer({
     toastTimer.current = setTimeout(() => setToast(null), 2200);
   }
 
-  const activeNav: "setup" | "milestones" | "preview" | "review" =
-    currentStep === "milestones"
-      ? "milestones"
-      : currentStep === "preview"
-        ? "preview"
-        : currentStep === "review" || currentStep === "published"
-          ? "review"
-          : "setup";
+  const activeNav: "setup" | "preview" | "review" =
+    currentStep === "preview" || currentStep === "milestones"
+      ? "preview"
+      : currentStep === "review" || currentStep === "published"
+        ? "review"
+        : "setup";
 
   // Preview uses full-bleed studio chrome; Review keeps the step rail.
-  const focusCanvas = currentStep === "preview";
+  // Derive from currentStep so TS does not narrow activeNav inside !focusCanvas.
+  const focusCanvas =
+    currentStep === "preview" || currentStep === "milestones";
 
   return (
     <div
@@ -366,18 +337,10 @@ export function SocialMediaComposer({
                   </button>
                   <button
                     type="button"
-                    className={`step-btn${activeNav === "milestones" ? " active" : ""}`}
-                    onClick={() => goToStep("milestones")}
-                  >
-                    <span className="label">2 · Posts</span>
-                    <span className="hint">Reorder, dates &amp; notes</span>
-                  </button>
-                  <button
-                    type="button"
                     className={`step-btn${activeNav === "preview" ? " active" : ""}`}
                     onClick={() => goToStep("preview")}
                   >
-                    <span className="label">3 · Preview</span>
+                    <span className="label">2 · Preview</span>
                     <span className="hint">Edit posts &amp; how they go out</span>
                   </button>
                   <button
@@ -385,21 +348,19 @@ export function SocialMediaComposer({
                     className={`step-btn${activeNav === "review" ? " active" : ""}`}
                     onClick={() => goToStep("review")}
                   >
-                    <span className="label">4 · Review</span>
+                    <span className="label">3 · Review</span>
                     <span className="hint">Approve &amp; send</span>
                   </button>
                 </nav>
               ) : null}
 
               <div className="panel">
-                {currentStep === "milestones" ? (
-                  <MilestonesPanel onToast={showToast} />
-                ) : currentStep === "preview" ? (
+                {activeNav === "preview" ? (
                   <PreviewPanel onToast={showToast} />
-                ) : currentStep === "review" ? (
-                  <ReviewPanel onToast={showToast} />
                 ) : currentStep === "published" ? (
                   <PublishedPanel />
+                ) : currentStep === "review" ? (
+                  <ReviewPanel onToast={showToast} />
                 ) : (
                   <SetupPanel onToast={showToast} />
                 )}
@@ -528,7 +489,7 @@ function SetupPanel({
             onClick={() => void handleSave()}
             disabled={isContinuing || isSaving}
           >
-            {isContinuing ? "Saving…" : "Save → Posts"}
+            {isContinuing ? "Saving…" : "Save → Preview"}
           </button>
         </div>
       </div>
@@ -836,211 +797,6 @@ function SetupPanel({
   );
 }
 
-function MilestonesPanel({ onToast }: { onToast: (message: string) => void }) {
-  const { session, addMilestone, reorderMilestones, updateMilestone, goToStep } =
-    useCampaignBuilder();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const dragIdRef = useRef<string | null>(null);
-  const [dragOverId, setDragOverId] = useState<string | null>(null);
-
-  const milestones = useMemo(
-    () => [...session.milestones].sort((a, b) => a.sortOrder - b.sortOrder),
-    [session.milestones],
-  );
-  const previewById = useMemo(
-    () => new Map(session.previewContents.map((content) => [content.milestoneId, content])),
-    [session.previewContents],
-  );
-
-  function handleDrop(targetId: string) {
-    const sourceId = dragIdRef.current;
-    dragIdRef.current = null;
-    setDragOverId(null);
-    if (!sourceId || sourceId === targetId) {
-      return;
-    }
-    const fromIndex = milestones.findIndex((m) => m.id === sourceId);
-    const toIndex = milestones.findIndex((m) => m.id === targetId);
-    if (fromIndex < 0 || toIndex < 0) {
-      return;
-    }
-    reorderMilestones(fromIndex, toIndex);
-    onToast("Posts reordered");
-  }
-
-  return (
-    <section>
-      <div className="panel-head">
-        <div>
-          <h2>Posts</h2>
-          <p>Drag to reorder. Click a row to expand &amp; edit — collapse when you’re done.</p>
-        </div>
-        <div className="actions">
-          <button type="button" className="btn btn-secondary" onClick={() => goToStep("inspiration")}>
-            ← Setup
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => goToStep("preview")}
-            disabled={milestones.length === 0}
-          >
-            Save → Preview
-          </button>
-        </div>
-      </div>
-
-      <div className="box">
-        <div className="dnd-hint">⠿ Drag cards to reorder</div>
-        <div className="ms-list">
-          {milestones.map((milestone) => {
-            const preview = previewById.get(milestone.id) ?? null;
-            const status = resolveMilestoneGenerationStatus(preview, milestone.platformFormats);
-            const pill = statusPill(status);
-            const { mo, dy } = monthDay(milestone.suggestedDate);
-            const isOpen = expandedId === milestone.id;
-            return (
-              <div
-                key={milestone.id}
-                className={`ms-card${isOpen ? " open" : ""}${dragOverId === milestone.id ? " drag-over" : ""}`}
-                draggable
-                onDragStart={() => {
-                  dragIdRef.current = milestone.id;
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragOverId(milestone.id);
-                }}
-                onDragLeave={() =>
-                  setDragOverId((current) => (current === milestone.id ? null : current))
-                }
-                onDrop={(event) => {
-                  event.preventDefault();
-                  handleDrop(milestone.id);
-                }}
-                onDragEnd={() => {
-                  dragIdRef.current = null;
-                  setDragOverId(null);
-                }}
-              >
-                <button
-                  type="button"
-                  className="ms-head"
-                  onClick={() => setExpandedId(isOpen ? null : milestone.id)}
-                >
-                  <span className="ms-grip" title="Drag to reorder">
-                    ⠿
-                  </span>
-                  <div className="m-date">
-                    <div className="mo">{mo}</div>
-                    <div className="dy">{dy}</div>
-                  </div>
-                  <div>
-                    <p className="m-title">{milestone.name}</p>
-                    <p className="m-meta">{formatsSummaryFromPlatforms(milestone.platformFormats)}</p>
-                  </div>
-                  <span className={`pill ${pill.cls}`}>{pill.label}</span>
-                  <span className="chev">▼</span>
-                </button>
-                {isOpen ? (
-                  <MilestoneEditBody
-                    key={milestone.id}
-                    milestone={milestone}
-                    onSave={(patch) => {
-                      updateMilestone(milestone.id, patch);
-                      setExpandedId(null);
-                      onToast("Post saved");
-                    }}
-                    onCollapse={() => setExpandedId(null)}
-                  />
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          style={{ marginTop: 10 }}
-          onClick={() => {
-            addMilestone();
-            onToast("Post added");
-          }}
-        >
-          + Add post
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function MilestoneEditBody({
-  milestone,
-  onSave,
-  onCollapse,
-}: {
-  milestone: CampaignBuilderMilestone;
-  onSave: (patch: Partial<CampaignBuilderMilestone>) => void;
-  onCollapse: () => void;
-}) {
-  const [title, setTitle] = useState(milestone.name);
-  const [date, setDate] = useState(milestone.suggestedDate);
-  const [notes, setNotes] = useState(milestone.purpose || milestone.artworkNotes || "");
-  const formatsLabel = formatsSummaryFromPlatforms(milestone.platformFormats);
-
-  return (
-    <div className="ms-body">
-      <div className="grid-2">
-        <div>
-          <label className="field-label">Title</label>
-          <input className="field" value={title} onChange={(event) => setTitle(event.target.value)} />
-        </div>
-        <div>
-          <label className="field-label">Date</label>
-          <input
-            className="field"
-            type="date"
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
-          />
-        </div>
-      </div>
-      <div style={{ marginTop: 10 }}>
-        <label className="field-label">Formats</label>
-        <input className="field" value={formatsLabel} readOnly />
-      </div>
-      <div style={{ marginTop: 10 }}>
-        <label className="field-label">Notes</label>
-        <textarea
-          className="field"
-          rows={2}
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-        />
-      </div>
-      <div className="actions" style={{ marginTop: 12 }}>
-        <button
-          type="button"
-          className="btn btn-sm btn-primary"
-          onClick={() =>
-            onSave({
-              name: title,
-              suggestedDate: date,
-              purpose: notes,
-              artworkNotes: notes,
-            })
-          }
-        >
-          Save post
-        </button>
-        <button type="button" className="btn btn-sm btn-secondary" onClick={onCollapse}>
-          Collapse
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
   const {
     session,
@@ -1048,6 +804,9 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     goToStep,
     setSelectedMilestoneId,
     updatePreviewContent,
+    updateMilestone,
+    addMilestone,
+    reorderMilestones,
     generateMilestoneContent,
     generatingMilestoneId,
   } = useCampaignBuilder();
@@ -1058,6 +817,10 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
   const [manualOpen, setManualOpen] = useState(false);
   const [settingsHighlight, setSettingsHighlight] =
     useState<PreviewSettingsHighlight>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const dragIdRef = useRef<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{
     title: string;
     imageUrl: string | null;
@@ -1164,6 +927,29 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     }
     setSettingsHighlight(null);
     goToStep("review");
+  }
+
+  function commitRename(milestoneId: string) {
+    const nextName = renameDraft.trim();
+    if (nextName) {
+      updateMilestone(milestoneId, { name: nextName });
+    }
+    setRenamingId(null);
+  }
+
+  function handlePostDrop(targetId: string) {
+    const sourceId = dragIdRef.current;
+    dragIdRef.current = null;
+    setDragOverId(null);
+    if (!sourceId || sourceId === targetId) {
+      return;
+    }
+    const fromIndex = milestones.findIndex((m) => m.id === sourceId);
+    const toIndex = milestones.findIndex((m) => m.id === targetId);
+    if (fromIndex < 0 || toIndex < 0) {
+      return;
+    }
+    reorderMilestones(fromIndex, toIndex);
   }
 
   async function resend(artwork?: MilestoneArtwork) {
@@ -1322,7 +1108,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
           {(
             [
               { id: "setup", label: "Setup", step: "inspiration" as const },
-              { id: "milestones", label: "Posts", step: "milestones" as const },
               { id: "preview", label: "Preview", step: "preview" as const },
               { id: "review", label: "Review", step: "review" as const },
             ] as const
@@ -1332,7 +1117,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                 ? currentStep === "inspiration"
                 : item.step === "review"
                   ? currentStep === "review" || currentStep === "published"
-                  : currentStep === item.step;
+                  : currentStep === item.step || currentStep === "milestones";
             return (
               <button
                 key={item.id}
@@ -1370,7 +1155,21 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
 
       <div className="preview-layout preview-layout-v2">
         <aside className="campaign-posts">
-          <h4>Campaign posts</h4>
+          <div className="campaign-posts-head">
+            <h4>Campaign posts</h4>
+            <button
+              type="button"
+              className="post-add"
+              aria-label="Add post"
+              title="Add post"
+              onClick={() => {
+                addMilestone();
+                setSettingsHighlight(null);
+              }}
+            >
+              +
+            </button>
+          </div>
           {milestones.map((milestone, index) => {
             const preview =
               session.previewContents.find((c) => c.milestoneId === milestone.id) ?? null;
@@ -1381,15 +1180,45 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                 : preview?.artwork.storyUrl && !isPlaceholderArtworkUrl(preview.artwork.storyUrl)
                   ? preview.artwork.storyUrl
                   : null;
+            const isRenaming = renamingId === milestone.id;
             return (
-              <button
+              <div
                 key={milestone.id}
-                type="button"
-                className={`post-card${milestone.id === selectedId ? " active" : ""}`}
+                className={`post-card${milestone.id === selectedId ? " active" : ""}${dragOverId === milestone.id ? " drag-over" : ""}`}
+                draggable={!isRenaming}
+                onDragStart={() => {
+                  dragIdRef.current = milestone.id;
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDragOverId(milestone.id);
+                }}
+                onDragLeave={() =>
+                  setDragOverId((current) => (current === milestone.id ? null : current))
+                }
+                onDrop={(event) => {
+                  event.preventDefault();
+                  handlePostDrop(milestone.id);
+                }}
+                onDragEnd={() => {
+                  dragIdRef.current = null;
+                  setDragOverId(null);
+                }}
                 onClick={() => {
+                  if (isRenaming) return;
                   setSelectedMilestoneId(milestone.id);
                   setSettingsHighlight(null);
                 }}
+                onKeyDown={(event) => {
+                  if (isRenaming) return;
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedMilestoneId(milestone.id);
+                    setSettingsHighlight(null);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
               >
                 <div
                   className="post-thumb"
@@ -1404,13 +1233,54 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                   }
                 />
                 <div className="post-card-body">
-                  <strong>{milestone.name}</strong>
+                  {isRenaming ? (
+                    <input
+                      className="post-rename"
+                      value={renameDraft}
+                      autoFocus
+                      aria-label="Post title"
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={(event) => setRenameDraft(event.target.value)}
+                      onBlur={() => commitRename(milestone.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          commitRename(milestone.id);
+                        }
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          setRenamingId(null);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <strong
+                      className="post-title-edit"
+                      title="Click to rename"
+                      onDoubleClick={(event) => {
+                        event.stopPropagation();
+                        setRenamingId(milestone.id);
+                        setRenameDraft(milestone.name);
+                      }}
+                      onClick={(event) => {
+                        // Single click selects; second path for rename is double-click.
+                        // Also allow rename when already selected via a quiet click on title.
+                        if (milestone.id === selectedId) {
+                          event.stopPropagation();
+                          setRenamingId(milestone.id);
+                          setRenameDraft(milestone.name);
+                        }
+                      }}
+                    >
+                      {milestone.name}
+                    </strong>
+                  )}
                   <span className={`status-chip ${meta.cls}`}>
                     {meta.label === "Ready" ? "✓ Ready" : meta.label}
                   </span>
                   {meta.hint ? <span className="post-card-hint">{meta.hint}</span> : null}
                 </div>
-              </button>
+              </div>
             );
           })}
         </aside>

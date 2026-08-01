@@ -70,10 +70,10 @@ describe("social composer ease contracts", () => {
     );
 
     assert.match(composer, /SocialComposerEventPicker/);
-    assert.match(composer, /When to publish/);
     assert.match(composer, /Publish now/);
     assert.match(composer, /Schedule for later/);
-    assert.match(composer, /Goes out right after approval/);
+    assert.match(composer, /Right after approval/);
+    assert.match(composer, /Save → Preview/);
     assert.match(composer, /selectCampaign/);
     assert.match(picker, /filterCampaignOptionsBySearch/);
     assert.match(picker, /SOCIAL_COMPOSER_EVENT_SEARCH_PLACEHOLDER/);

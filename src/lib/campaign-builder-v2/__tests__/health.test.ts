@@ -88,10 +88,9 @@ describe("computeStepperStates", () => {
     );
 
     assert.equal(states.inspiration.statusLabel, "Complete");
-    assert.equal(states.milestones.statusLabel, "Complete");
     assert.equal(states.preview.statusLabel, "Complete");
-    assert.equal(states.milestones.subtitle, "Complete");
     assert.equal(states.preview.subtitle, "Complete");
+    assert.equal(states.review.statusLabel, "Complete");
   });
 
   it("still shows Not started for incomplete future steps", () => {
