@@ -360,8 +360,16 @@ export function Sidebar({
     });
   }
 
-  const showLabels = forceExpanded || expanded;
-  const showToggle = !forceExpanded && ready;
+  // Preview / Review need horizontal room — keep icons, hide labels.
+  const focusComposerCanvas =
+    !forceExpanded &&
+    extractCampaignBuilderEventId(pathname) !== null &&
+    ["preview", "review", "published"].includes(
+      locationHash.replace(/^#/, "").toLowerCase(),
+    );
+
+  const showLabels = forceExpanded || (expanded && !focusComposerCanvas);
+  const showToggle = !forceExpanded && ready && !focusComposerCanvas;
 
   return (
     <aside

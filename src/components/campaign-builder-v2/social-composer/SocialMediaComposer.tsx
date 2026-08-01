@@ -32,8 +32,10 @@ import {
   canResendMilestoneForApproval,
   captionPlatformsForFormats,
   countCompleteMilestones,
+  derivedPreviewStatus,
   describeApprovalSubmitBlockers,
   isMilestoneEligibleForApprovalSubmit,
+  listMilestoneContentGaps,
   preserveApprovalWorkflowStatus,
   previewAfterResendForApproval,
   resolveMilestoneGenerationStatus,
@@ -208,6 +210,104 @@ function statusPill(status: MilestoneGenerationStatus): { cls: string; label: st
   }
 }
 
+type PreviewSettingsHighlight =
+  | "formats"
+  | "caption"
+  | "schedule"
+  | "manual"
+  | null;
+
+/** Delivery gaps that block a calm Save → Review handoff (not approval submit). */
+function listPreviewDeliveryGaps(preview: MilestonePreviewContent): string[] {
+  const gaps: string[] = [];
+  if (!isPublishNowDelivery(preview.deliveryMethod)) {
+    if (!preview.scheduleDate.trim()) {
+      gaps.push("publish date");
+    } else if (!preview.scheduleTime.trim()) {
+      gaps.push("publish time");
+    }
+  }
+  if (preview.enabledFormats.includes("instagram-story-manual")) {
+    if (!preview.manualEmailTo.trim()) {
+      gaps.push("kit email");
+    } else if (!preview.emailSendDate.trim()) {
+      gaps.push("email send date");
+    }
+  }
+  return gaps;
+}
+
+function listPreviewHandoffGaps(preview: MilestonePreviewContent | null): string[] {
+  if (!preview) {
+    return ["artwork & caption"];
+  }
+  return [
+    ...listMilestoneContentGaps(preview),
+    ...listPreviewDeliveryGaps(preview),
+  ];
+}
+
+function highlightForGap(gap: string): PreviewSettingsHighlight {
+  if (gap.includes("format")) return "formats";
+  if (gap.includes("caption")) return null; // opens Edit modal
+  if (gap.includes("image") || gap.includes("artwork")) return null;
+  if (gap.includes("publish") || gap.includes("schedule")) return "schedule";
+  if (gap.includes("email") || gap.includes("kit")) return "manual";
+  return "formats";
+}
+
+function previewListMeta(
+  preview: MilestonePreviewContent | null,
+  fallbackFormats: PlatformFormat[],
+): { cls: string; label: string; hint: string | null } {
+  const status = resolveMilestoneGenerationStatus(preview, fallbackFormats);
+  if (status === "generating" || status === "queued") {
+    return { cls: "pill-gen", label: "Generating…", hint: null };
+  }
+  if (status === "failed") {
+    return { cls: "pill-changes", label: "Needs work", hint: "Generation failed" };
+  }
+  if (status === "changes_requested") {
+    return { cls: "pill-changes", label: "Needs work", hint: "Changes requested" };
+  }
+  if (
+    status === "awaiting_approval" ||
+    status === "approved" ||
+    status === "scheduled" ||
+    status === "published" ||
+    status === "generated"
+  ) {
+    const deliveryGaps = preview ? listPreviewDeliveryGaps(preview) : [];
+    if (deliveryGaps.length > 0) {
+      return {
+        cls: "pill-draft",
+        label: "Needs work",
+        hint: `Missing ${deliveryGaps[0]}`,
+      };
+    }
+    return { cls: "pill-ready", label: "Ready", hint: null };
+  }
+
+  const gaps = listPreviewHandoffGaps(preview);
+  if (gaps.length === 0) {
+    return { cls: "pill-ready", label: "Ready", hint: null };
+  }
+
+  const derived = preview ? derivedPreviewStatus(preview) : "draft";
+  if (derived === "draft" && status === "ready_to_generate") {
+    return {
+      cls: "pill-draft",
+      label: "Draft",
+      hint: `Missing ${gaps[0]}`,
+    };
+  }
+  return {
+    cls: "pill-draft",
+    label: "Needs work",
+    hint: `Missing ${gaps[0]}`,
+  };
+}
+
 export function SocialMediaComposer({
   eventTitle: _eventTitle,
 }: {
@@ -235,9 +335,12 @@ export function SocialMediaComposer({
           ? "review"
           : "setup";
 
+  const focusCanvas =
+    activeNav === "preview" || activeNav === "review";
+
   return (
     <div
-      className={`smc ${smcSans.variable} ${smcSerif.variable} ${smcSans.className}`}
+      className={`smc ${smcSans.variable} ${smcSerif.variable} ${smcSans.className}${focusCanvas ? " focus-canvas" : ""}`}
       style={
         {
           ["--sans" as string]: "var(--smc-sans), system-ui, sans-serif",
@@ -958,6 +1061,9 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
 
   const [mode, setMode] = useState<"feed" | "story">("feed");
   const [fmtOpen, setFmtOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [settingsHighlight, setSettingsHighlight] =
+    useState<PreviewSettingsHighlight>(null);
   const [lightbox, setLightbox] = useState<{
     title: string;
     imageUrl: string | null;
@@ -1011,6 +1117,18 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     : true;
   const hasManual = enabledFormats.includes("instagram-story-manual");
   const handle = handleize(session.inspiration.campaignName);
+  const progress = useMemo(() => {
+    let complete = 0;
+    for (const milestone of milestones) {
+      const preview =
+        session.previewContents.find((c) => c.milestoneId === milestone.id) ?? null;
+      if (listPreviewHandoffGaps(preview).length === 0) {
+        complete += 1;
+      }
+    }
+    return { complete, total: milestones.length };
+  }, [milestones, session.previewContents]);
+  const hasGeneratedArt = Boolean(feedUrl || storyUrl);
 
   async function handleGenerate() {
     if (!selectedId) {
@@ -1023,6 +1141,35 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     } else {
       onToast("Artwork generated");
     }
+  }
+
+  function handleSaveToReview() {
+    for (const milestone of milestones) {
+      const preview =
+        session.previewContents.find((c) => c.milestoneId === milestone.id) ?? null;
+      const gaps = listPreviewHandoffGaps(preview);
+      if (gaps.length === 0) {
+        continue;
+      }
+      setSelectedMilestoneId(milestone.id);
+      const highlight = highlightForGap(gaps[0]);
+      setSettingsHighlight(highlight);
+      if (gaps[0].includes("image") || gaps[0].includes("artwork")) {
+        openEdit("artwork");
+      } else if (gaps[0].includes("caption")) {
+        openEdit("captions");
+      }
+      if (highlight === "manual") {
+        setManualOpen(true);
+        setFmtOpen(true);
+      } else if (highlight === "formats") {
+        setFmtOpen(true);
+      }
+      onToast(`${milestone.name}: missing ${gaps[0]}`);
+      return;
+    }
+    setSettingsHighlight(null);
+    goToStep("review");
   }
 
   async function resend(artwork?: MilestoneArtwork) {
@@ -1145,25 +1292,19 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     <section>
       <div className="panel-head">
         <div>
-          <h2>Preview Campaign</h2>
+          <h2>
+            {progress.complete} of {progress.total} posts ready
+          </h2>
           <p>
-            Generate, then <strong>edit in place</strong> — change requests route
-            here, then send for re-approval.
+            Phone shows the live post. Edit artwork &amp; caption together, then
+            set how each post goes out.
           </p>
         </div>
         <div className="actions">
           <button type="button" className="btn btn-secondary" onClick={() => goToStep("milestones")}>
             ← Posts
           </button>
-          <button
-            type="button"
-            className="btn btn-gold"
-            onClick={() => void handleGenerate()}
-            disabled={isGenerating || !selectedId}
-          >
-            {isGenerating ? "Generating…" : "Generate artwork"}
-          </button>
-          <button type="button" className="btn btn-primary" onClick={() => goToStep("review")}>
+          <button type="button" className="btn btn-primary" onClick={handleSaveToReview}>
             Save → Review
           </button>
         </div>
@@ -1177,25 +1318,29 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
           {milestones.map((milestone) => {
             const preview =
               session.previewContents.find((c) => c.milestoneId === milestone.id) ?? null;
-            const st = resolveMilestoneGenerationStatus(preview, milestone.platformFormats);
+            const meta = previewListMeta(preview, milestone.platformFormats);
             const { mo, dy } = monthDay(milestone.suggestedDate);
             return (
               <button
                 key={milestone.id}
                 type="button"
                 className={`m-mini${milestone.id === selectedId ? " active" : ""}`}
-                onClick={() => setSelectedMilestoneId(milestone.id)}
+                onClick={() => {
+                  setSelectedMilestoneId(milestone.id);
+                  setSettingsHighlight(null);
+                }}
               >
                 <strong>{milestone.name}</strong>
                 <span>
-                  {mo} {dy} · {statusPill(st).label}
+                  {mo} {dy} · <span className={`pill ${meta.cls}`}>{meta.label}</span>
                 </span>
+                {meta.hint ? <span className="m-mini-hint">{meta.hint}</span> : null}
               </button>
             );
           })}
         </aside>
 
-        <div className="box" style={{ margin: 0 }}>
+        <div className="box preview-phone-col" style={{ margin: 0 }}>
           {isChangesRequested ? (
             <div className="alert alert-changes">
               <strong>Changes requested</strong>
@@ -1209,7 +1354,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                   className="btn btn-sm btn-secondary"
                   onClick={() => openEdit("artwork")}
                 >
-                  Edit
+                  Edit artwork &amp; caption
                 </button>
                 <button
                   type="button"
@@ -1285,31 +1430,19 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                               }
                         }
                       >
-                        <span className="badge">Feed</span>
-                        <div className="title">{selectedMilestone?.name ?? "Post"}</div>
-                        <button
-                          type="button"
-                          className="art-dl"
-                          title="Download artwork"
-                          aria-label="Download artwork"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleDownload(feedUrl, "feed");
-                          }}
-                        >
-                          <svg viewBox="0 0 24 24">
-                            <path d="M12 3v12" />
-                            <path d="m7 11 5 5 5-5" />
-                            <path d="M5 21h14" />
-                          </svg>
-                        </button>
+                        {!feedUrl ? (
+                          <>
+                            <span className="badge">Feed</span>
+                            <div className="title">{selectedMilestone?.name ?? "Post"}</div>
+                          </>
+                        ) : null}
                       </div>
                     </WarmBreathFrame>
                     <div className="ig-meta">
                       <div className="likes">♡ Liked by your community</div>
                       <div className="cap">
                         <strong>{handle}</strong>{" "}
-                        {sharedCaption.split("\n")[0] || "Add a caption below."}
+                        {sharedCaption.trim() || "Caption appears here after you edit."}
                       </div>
                     </div>
                   </div>
@@ -1341,24 +1474,12 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             : { background: `linear-gradient(160deg, ${gradient})` }
                         }
                       >
-                        <div className="st">{selectedMilestone?.name ?? "Post"}</div>
-                        <div className="sub">{formatLongDate(selectedMilestone?.suggestedDate)}</div>
-                        <button
-                          type="button"
-                          className="art-dl"
-                          title="Download artwork"
-                          aria-label="Download artwork"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleDownload(storyUrl, "story");
-                          }}
-                        >
-                          <svg viewBox="0 0 24 24">
-                            <path d="M12 3v12" />
-                            <path d="m7 11 5 5 5-5" />
-                            <path d="M5 21h14" />
-                          </svg>
-                        </button>
+                        {!storyUrl ? (
+                          <>
+                            <div className="st">{selectedMilestone?.name ?? "Post"}</div>
+                            <div className="sub">{formatLongDate(selectedMilestone?.suggestedDate)}</div>
+                          </>
+                        ) : null}
                       </div>
                     </WarmBreathFrame>
                   </div>
@@ -1367,162 +1488,175 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
             </div>
           </div>
 
-          <div className="edit-tools">
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: ".05em",
-                textTransform: "uppercase",
-                color: "var(--muted)",
-                width: "100%",
-              }}
-            >
-              After generate — edit artwork &amp; captions together
-            </span>
+          <div className="phone-actions">
             <button
               type="button"
-              className="btn btn-sm btn-secondary"
+              className="btn btn-secondary"
               onClick={() => openEdit("artwork")}
               disabled={!selectedPreview}
             >
-              Edit
+              Edit artwork &amp; caption
+            </button>
+            <button
+              type="button"
+              className="btn-quiet"
+              onClick={() => void handleGenerate()}
+              disabled={isGenerating || !selectedId}
+            >
+              {isGenerating
+                ? "Generating…"
+                : hasGeneratedArt
+                  ? "Regenerate"
+                  : "Generate artwork"}
             </button>
           </div>
         </div>
 
-        <div className="box" style={{ margin: 0 }}>
-          <h3>Post settings</h3>
+        <div
+          className={`box preview-settings-col${settingsHighlight ? " has-highlight" : ""}`}
+          style={{ margin: 0 }}
+        >
+          <h3>How this post goes out</h3>
           <p className="desc">
-            Formats as a dropdown — click to pick platforms. Instagram Story
-            Manual emails you the kit so you can add music &amp; stickers.
+            Choose platforms and when it publishes. Artwork and caption stay in
+            the phone — edit them with the button under the preview.
           </p>
 
-          <label className="field-label">Platforms &amp; formats</label>
-          <p style={{ margin: "0 0 8px", fontSize: 11, color: "var(--muted)" }}>
-            Facebook and Instagram posts go out automatically after approval.
-          </p>
-          <div className={`fmt-drop${fmtOpen ? " open" : ""}`}>
-            <button
-              type="button"
-              className="fmt-trigger"
-              aria-expanded={fmtOpen}
-              onClick={() => setFmtOpen((value) => !value)}
-            >
-              <div className="fmt-summary">
-                {fmtSummaryHeadline(enabledFormats)}
-                <span>
-                  {enabledFormats.length} format{enabledFormats.length === 1 ? "" : "s"} selected
-                  {hasManual ? " · includes Story Manual email kit" : ""} · click to change
-                </span>
-              </div>
-              <span className="chev">▼</span>
-            </button>
-            <div className="fmt-menu" role="listbox">
-              {PLATFORM_FORMAT_OPTIONS.map((option) => {
-                const on = enabledFormats.includes(option.id);
-                const isManual = option.id === "instagram-story-manual";
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className={`fmt-opt${on ? " on" : ""}${isManual ? " manual-opt" : ""}`}
-                    onClick={() => toggleFormat(option.id)}
-                  >
-                    <span className="fmt-check">✓</span>
-                    <div>
-                      <div className="w-title">{option.label}</div>
-                      <div className="w-desc">
-                        {FORMAT_OPTION_DESC[option.id] ?? option.aspect}
+          <div
+            className={`settings-block${settingsHighlight === "formats" ? " highlight" : ""}`}
+          >
+            <label className="field-label">Platforms &amp; formats</label>
+            <p style={{ margin: "0 0 8px", fontSize: 11, color: "var(--muted)" }}>
+              Facebook and Instagram posts go out automatically after approval.
+            </p>
+            <div className={`fmt-drop${fmtOpen ? " open" : ""}`}>
+              <button
+                type="button"
+                className="fmt-trigger"
+                aria-expanded={fmtOpen}
+                onClick={() => {
+                  setFmtOpen((value) => !value);
+                  setSettingsHighlight(null);
+                }}
+              >
+                <div className="fmt-summary">
+                  {fmtSummaryHeadline(enabledFormats)}
+                  <span>
+                    {enabledFormats.length} format{enabledFormats.length === 1 ? "" : "s"} selected
+                    {hasManual ? " · includes Story Manual email kit" : ""} · click to change
+                  </span>
+                </div>
+                <span className="chev">▼</span>
+              </button>
+              <div className="fmt-menu" role="listbox">
+                {PLATFORM_FORMAT_OPTIONS.map((option) => {
+                  const on = enabledFormats.includes(option.id);
+                  const isManual = option.id === "instagram-story-manual";
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={`fmt-opt${on ? " on" : ""}${isManual ? " manual-opt" : ""}`}
+                      onClick={() => toggleFormat(option.id)}
+                    >
+                      <span className="fmt-check">✓</span>
+                      <div>
+                        <div className="w-title">{option.label}</div>
+                        <div className="w-desc">
+                          {FORMAT_OPTION_DESC[option.id] ?? option.aspect}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           {hasManual && selectedPreview ? (
-            <div className="manual-email-panel show">
-              <div className="wow">★ Story kit email — music &amp; stickers workflow</div>
-              <p className="desc" style={{ marginBottom: 12 }}>
-                After approval, the story kit (image link, caption, and Instagram
-                link) arrives by email at this send time so you can manually
-                upload and add music, stickers, etc.
-              </p>
-              <div className="grid-2">
-                <div>
-                  <label className="field-label">Email send date</label>
-                  <input
-                    className="field"
-                    type="date"
-                    value={selectedPreview.emailSendDate}
-                    onChange={(event) =>
-                      updatePreviewContent(selectedPreview.milestoneId, {
-                        emailSendDate: event.target.value,
-                      })
-                    }
-                  />
+            <div
+              className={`settings-block${settingsHighlight === "manual" ? " highlight" : ""}`}
+            >
+              <button
+                type="button"
+                className="advanced-toggle"
+                aria-expanded={manualOpen}
+                onClick={() => setManualOpen((value) => !value)}
+              >
+                <span>Story kit email (advanced)</span>
+                <span className="chev">{manualOpen ? "▲" : "▼"}</span>
+              </button>
+              {manualOpen ? (
+                <div className="manual-email-panel show">
+                  <p className="desc" style={{ marginBottom: 12 }}>
+                    After approval, the story kit arrives by email so you can
+                    upload and add music, stickers, etc.
+                  </p>
+                  <div className="grid-2">
+                    <div>
+                      <label className="field-label">Email send date</label>
+                      <input
+                        className="field"
+                        type="date"
+                        value={selectedPreview.emailSendDate}
+                        onChange={(event) =>
+                          updatePreviewContent(selectedPreview.milestoneId, {
+                            emailSendDate: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="field-label">Email send time</label>
+                      <input
+                        className="field"
+                        type="time"
+                        value={selectedPreview.emailSendTime}
+                        onChange={(event) =>
+                          updatePreviewContent(selectedPreview.milestoneId, {
+                            emailSendTime: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 10 }}>
+                    <label className="field-label">Send to</label>
+                    <input
+                      className="field"
+                      type="email"
+                      placeholder="you@yourorg.org"
+                      value={selectedPreview.manualEmailTo}
+                      onChange={(event) =>
+                        updatePreviewContent(selectedPreview.milestoneId, {
+                          manualEmailTo: event.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div style={{ marginTop: 10 }}>
+                    <label className="field-label">Link for Instagram</label>
+                    <input
+                      className="field"
+                      type="url"
+                      placeholder="https://…"
+                      value={selectedPreview.manualUploadLink}
+                      onChange={(event) =>
+                        updatePreviewContent(selectedPreview.milestoneId, {
+                          manualUploadLink: event.target.value,
+                        })
+                      }
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="field-label">Email send time</label>
-                  <input
-                    className="field"
-                    type="time"
-                    value={selectedPreview.emailSendTime}
-                    onChange={(event) =>
-                      updatePreviewContent(selectedPreview.milestoneId, {
-                        emailSendTime: event.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <label className="field-label">Send to</label>
-                <input
-                  className="field"
-                  type="email"
-                  placeholder="you@yourorg.org"
-                  value={selectedPreview.manualEmailTo}
-                  onChange={(event) =>
-                    updatePreviewContent(selectedPreview.milestoneId, {
-                      manualEmailTo: event.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <label className="field-label">Link for Instagram</label>
-                <input
-                  className="field"
-                  type="url"
-                  placeholder="https://…"
-                  value={selectedPreview.manualUploadLink}
-                  onChange={(event) =>
-                    updatePreviewContent(selectedPreview.milestoneId, {
-                      manualUploadLink: event.target.value,
-                    })
-                  }
-                />
-                <p style={{ margin: "6px 0 0", fontSize: 11, color: "var(--muted)" }}>
-                  Optional. Included in the manual-upload email for link stickers.
-                </p>
-              </div>
+              ) : null}
             </div>
           ) : null}
 
-          <div style={{ marginTop: 14 }}>
-            <label className="field-label">Caption</label>
-            <textarea
-              className="field"
-              style={{ minHeight: 100 }}
-              value={sharedCaption}
-              onChange={(event) => handleCaptionChange(event.target.value)}
-              disabled={!selectedPreview}
-            />
-          </div>
-          <div style={{ marginTop: 12 }}>
+          <div
+            className={`settings-block${settingsHighlight === "schedule" || settingsHighlight === "caption" ? " highlight" : ""}`}
+            style={{ marginTop: 4 }}
+          >
             <label className="field-label">When to publish</label>
             <div
               className="mode-toggle"
@@ -1533,12 +1667,13 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                 type="button"
                 className={publishNowSelected ? "active" : ""}
                 disabled={!selectedPreview}
-                onClick={() =>
-                  selectedPreview &&
+                onClick={() => {
+                  if (!selectedPreview) return;
                   updatePreviewContent(selectedPreview.milestoneId, {
                     deliveryMethod: "publish-now",
-                  })
-                }
+                  });
+                  setSettingsHighlight(null);
+                }}
               >
                 Publish now
               </button>
@@ -1546,14 +1681,15 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                 type="button"
                 className={!publishNowSelected ? "active" : ""}
                 disabled={!selectedPreview}
-                onClick={() =>
-                  selectedPreview &&
+                onClick={() => {
+                  if (!selectedPreview) return;
                   updatePreviewContent(selectedPreview.milestoneId, {
                     deliveryMethod: "schedule",
-                  })
-                }
+                  });
+                  setSettingsHighlight(null);
+                }}
               >
-                Schedule for later
+                Schedule
               </button>
             </div>
             {publishNowSelected ? (
@@ -1569,11 +1705,12 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                       className="field"
                       type="date"
                       value={selectedPreview.scheduleDate}
-                      onChange={(event) =>
+                      onChange={(event) => {
                         updatePreviewContent(selectedPreview.milestoneId, {
                           scheduleDate: event.target.value,
-                        })
-                      }
+                        });
+                        setSettingsHighlight(null);
+                      }}
                     />
                   </div>
                   <div>
@@ -1582,11 +1719,12 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                       className="field"
                       type="time"
                       value={selectedPreview.scheduleTime}
-                      onChange={(event) =>
+                      onChange={(event) => {
                         updatePreviewContent(selectedPreview.milestoneId, {
                           scheduleTime: event.target.value,
-                        })
-                      }
+                        });
+                        setSettingsHighlight(null);
+                      }}
                     />
                   </div>
                 </div>
