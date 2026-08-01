@@ -7,12 +7,15 @@ interface ChangeRequestBannerProps {
   comment?: string | null;
   /** When true, show awaiting-approval copy instead of changes-requested. */
   awaitingApproval?: boolean;
+  /** Unified Edit (Artwork | Captions). Preferred over separate artwork/caption handlers. */
+  onEdit?: () => void;
   onEditArtwork?: () => void;
   onEditCaption?: () => void;
   onEditSchedule?: () => void;
   onResendForApproval?: () => void;
   isResending?: boolean;
   /** Optional link-style edit paths (Review step). */
+  editHref?: string | null;
   editArtworkHref?: string | null;
   editCaptionHref?: string | null;
   /** Preview Campaign deep link for changing the post schedule. */
@@ -24,17 +27,21 @@ interface ChangeRequestBannerProps {
 export function ChangeRequestBanner({
   comment,
   awaitingApproval = false,
+  onEdit,
   onEditArtwork,
   onEditCaption,
   onEditSchedule,
   onResendForApproval,
   isResending = false,
+  editHref,
   editArtworkHref,
   editCaptionHref,
   changeDateHref,
   message,
   messageIsError = false,
 }: ChangeRequestBannerProps) {
+  const editHandler = onEdit ?? onEditArtwork ?? onEditCaption;
+  const editLink = editHref ?? editArtworkHref ?? editCaptionHref;
   const displayComment = changeRequestDisplayComment(comment);
 
   return (
@@ -62,34 +69,34 @@ export function ChangeRequestBanner({
           </p>
         ) : (
           <p className="mt-2 text-sm leading-relaxed text-red-800">
-            An approver requested changes. Edit caption, schedule, or artwork on
-            this milestone, then send for re-approval — regenerating artwork is
+            An approver requested changes. Edit artwork or captions, update the
+            schedule if needed, then send for re-approval — regenerating is
             optional.
           </p>
         )
       ) : (
         <p className="mt-2 text-sm leading-relaxed text-cos-muted">
-          You can update caption, schedule, or artwork on this milestone and
+          You can update artwork, captions, or schedule on this milestone and
           resend without regenerating other posts.
         </p>
       )}
 
       <div className="mt-3 flex flex-wrap gap-2">
-        {onEditArtwork ? (
+        {editHandler ? (
           <Button
             variant={awaitingApproval ? "secondary" : "primary"}
             size="sm"
-            onClick={onEditArtwork}
+            onClick={editHandler}
           >
-            Edit Artwork
+            Edit
           </Button>
-        ) : editArtworkHref ? (
+        ) : editLink ? (
           <Button
-            href={editArtworkHref}
+            href={editLink}
             variant={awaitingApproval ? "secondary" : "primary"}
             size="sm"
           >
-            Edit Artwork
+            Edit
           </Button>
         ) : null}
         {onEditSchedule ? (
@@ -101,19 +108,10 @@ export function ChangeRequestBanner({
             Change Date
           </Button>
         ) : null}
-        {onEditCaption ? (
-          <Button variant="secondary" size="sm" onClick={onEditCaption}>
-            Edit caption
-          </Button>
-        ) : editCaptionHref ? (
-          <Button href={editCaptionHref} variant="secondary" size="sm">
-            Edit caption
-          </Button>
-        ) : null}
         {onResendForApproval ? (
           <Button
             variant={
-              awaitingApproval || (!onEditArtwork && !editArtworkHref)
+              awaitingApproval || (!editHandler && !editLink)
                 ? "primary"
                 : "secondary"
             }

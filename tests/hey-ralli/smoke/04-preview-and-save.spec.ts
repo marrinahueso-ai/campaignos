@@ -61,24 +61,25 @@ test.describe("Preview generation and captions", () => {
     await expectCreateWithAiLoaded(page);
 
     const main = mainContent(page);
-    const editCaption = main.getByRole("button", { name: /edit caption/i });
+    const editBtn = main.getByRole("button", { name: /^edit$/i });
     test.skip(
-      (await editCaption.count()) === 0,
-      "No Edit caption control found on Preview for this event.",
+      (await editBtn.count()) === 0,
+      "No Edit control found on Preview for this event.",
     );
 
-    await editCaption.first().click();
+    await editBtn.first().click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByRole("heading", { name: /edit caption/i })).toBeVisible();
-    const previewCaption = dialog.getByLabel(/preview new caption/i);
+    await expect(dialog.getByRole("heading", { name: /^edit$/i })).toBeVisible();
+    await dialog.getByRole("tab", { name: /^captions$/i }).click();
+    const previewCaption = dialog.getByLabel(/preview caption/i);
     test.skip(
       (await previewCaption.count()) === 0,
-      "Edit caption modal did not expose a Preview new caption field.",
+      "Edit modal Captions tab did not expose a Preview caption field.",
     );
 
     const marker = `Caption smoke ${Date.now()}`;
     await previewCaption.fill(marker);
-    await dialog.getByRole("button", { name: /save caption|apply caption/i }).click();
+    await dialog.getByRole("button", { name: /apply & close|apply and close/i }).click();
     await expect(dialog).toHaveCount(0);
 
     // Caption applies into session; debounced server save starts ~800ms later.

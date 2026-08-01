@@ -112,8 +112,9 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Inspiration / creative setup, logos, posts — **shipped**
 - Artwork guidance from Creative Setup: Overall inspiration comment + per-image comments (not legacy Notes to AI); logo / brand colors / voice toggles are explicit opt-in only (org brand kit is not auto-surfaced or auto-applied) — see [create-with-ai-artwork-inputs.md](../qa/create-with-ai-artwork-inputs.md) — **shipped** (QA matrix + Playwright wiring)
 - Generate artwork + captions per post — **shipped**
-- Social artwork waiting motion: **Warm breath** (subtle scale + cream/amber/teal wash) while feed/story generate or regenerate in Create with AI Preview / Edit Artwork / Social composer and Approvals Revision; honors `prefers-reduced-motion` — **shipped** (mockup: [`public/approvals-celebration-motions-mockup.html`](../../public/approvals-celebration-motions-mockup.html))
-- Reject generated artwork: subtle thumbs-down icon on Preview (and Edit Artwork regenerated preview) discards that feed/story slot so you can regenerate — **shipped**
+- Social **Edit** (Preview / change-request): one sheet with **Artwork | Captions** tabs (Flyer-style) — current feed/story left; notes + chips + style/tone right; one regenerate runs only sides with instructions (blank skips that side; both blank disables regenerate); Apply & close persists artwork + caption — **shipped**
+- Social artwork waiting motion: **Warm breath** (subtle scale + cream/amber/teal wash) while feed/story generate or regenerate in Create with AI Preview / Edit / Social composer and Approvals Revision; honors `prefers-reduced-motion` — **shipped** (mockup: [`public/approvals-celebration-motions-mockup.html`](../../public/approvals-celebration-motions-mockup.html))
+- Reject generated artwork: subtle thumbs-down icon on Preview (and Edit regenerated preview) discards that feed/story slot so you can regenerate — **shipped**
 - Artwork Apply hydrate: regenerated artwork sticks after Apply (local backup + hydrate merge so remount / Preview hydrate does not orphan richer in-memory art) — **shipped**
 - 4-step flow (Creative Setup → Milestones → Preview → Review & Approve) — **shipped**
 - Review tabs (All / Needs review / Approved / Changes requested) with Pending Review · Approved · Changes requested pills — **shipped**

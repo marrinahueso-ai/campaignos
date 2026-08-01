@@ -129,7 +129,7 @@ async function triggerGenerateOrRegenerate(
     await generateNext.first().click();
     return "started";
   }
-  const editArtwork = main.getByRole("button", { name: /edit artwork/i });
+  const editArtwork = main.getByRole("button", { name: /^edit$/i });
   if ((await editArtwork.count()) > 0) {
     await editArtwork.first().click();
     const regenerate = page.getByRole("button", {
@@ -236,27 +236,29 @@ test.describe("Create with AI artwork inputs (Layer C generation)", () => {
       "Artwork generation should succeed for Layer C golden path",
     ).toBe("success");
 
-    // Edit Artwork regenerate with instructions (second golden path).
+    // Unified Edit — Artwork tab regenerate with instructions (second golden path).
     const main = mainContent(page);
-    const editArtwork = main.getByRole("button", { name: /edit artwork/i });
+    const editBtn = main.getByRole("button", { name: /^edit$/i });
     test.skip(
-      (await editArtwork.count()) === 0,
-      "Edit Artwork not available after generation.",
+      (await editBtn.count()) === 0,
+      "Edit not available after generation.",
     );
-    await editArtwork.first().click();
-    const instructions = page.getByLabel(/add instructions for ai/i);
+    await editBtn.first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: /^edit$/i })).toBeVisible({
+      timeout: 15_000,
+    });
+    const instructions = dialog.getByLabel(/what should change/i);
     await expect(instructions).toBeVisible({ timeout: 15_000 });
     await instructions.fill(
       "Increase contrast and keep the same color palette; soft headline emphasis.",
     );
-    const regenerate = page.getByRole("button", {
+    const regenerate = dialog.getByRole("button", {
       name: /regenerate artwork/i,
     });
     await expect(regenerate).toBeVisible({ timeout: 15_000 });
     await regenerate.click();
     const regenOutcome = await waitForGenerationOutcome(page);
-    expect(regenOutcome, "Edit Artwork regenerate should succeed").toBe(
-      "success",
-    );
+    expect(regenOutcome, "Edit regenerate should succeed").toBe("success");
   });
 });

@@ -32,7 +32,7 @@ export async function openCreateWithAiPreview(
   await expect(
     main
       .getByText(
-        /milestones complete|generate next milestone|generate this milestone|no content yet|retry generation|edit artwork|select a milestone to preview/i,
+        /milestones complete|generate next milestone|generate this milestone|no content yet|retry generation|\bedit\b|select a milestone to preview/i,
       )
       .first(),
   ).toBeVisible({ timeout: 60_000 });
@@ -86,11 +86,16 @@ export async function triggerArtworkGeneration(
     return "started";
   }
 
-  const editArtwork = main.getByRole("button", { name: /edit artwork/i });
-  if ((await editArtwork.count()) > 0) {
-    await editArtwork.first().click();
-    const regenerate = page.getByRole("button", {
-      name: /regenerate artwork/i,
+  const editBtn = main.getByRole("button", { name: /^edit$/i });
+  if ((await editBtn.count()) > 0) {
+    await editBtn.first().click();
+    const dialog = page.getByRole("dialog");
+    const instructions = dialog.getByLabel(/what should change/i);
+    if ((await instructions.count()) > 0) {
+      await instructions.first().fill("Slightly warmer tones; keep layout.");
+    }
+    const regenerate = dialog.getByRole("button", {
+      name: /regenerate( artwork| both)?/i,
     });
     await expect(regenerate).toBeVisible({ timeout: 15_000 });
     await regenerate.click();
@@ -176,7 +181,7 @@ export async function waitForGenerationOutcome(
     }
 
     const hasImage = (await main.locator("img[src*='http']").count()) > 0;
-    const hasEdit = (await main.getByRole("button", { name: /edit artwork/i }).count()) > 0;
+    const hasEdit = (await main.getByRole("button", { name: /^edit$/i }).count()) > 0;
     if ((hasImage || hasEdit) && (sawGenerating || hasImage)) {
       return "success";
     }

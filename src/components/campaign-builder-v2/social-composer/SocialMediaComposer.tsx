@@ -54,19 +54,13 @@ import type {
 import "./social-composer.css";
 import { SocialComposerEventPicker } from "./SocialComposerEventPicker";
 
-const EditArtworkModal = dynamic(
+const EditMilestoneModal = dynamic(
   () =>
-    import("@/components/campaign-builder-v2/EditArtworkModal").then((module) => ({
-      default: module.EditArtworkModal,
-    })),
-  { ssr: false },
-);
-
-const EditCaptionModal = dynamic(
-  () =>
-    import("@/components/campaign-builder-v2/EditCaptionModal").then((module) => ({
-      default: module.EditCaptionModal,
-    })),
+    import("@/components/campaign-builder-v2/EditMilestoneModal").then(
+      (module) => ({
+        default: module.EditMilestoneModal,
+      }),
+    ),
   { ssr: false },
 );
 
@@ -969,8 +963,15 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     imageUrl: string | null;
     gradient: string;
   } | null>(null);
-  const [artworkModalOpen, setArtworkModalOpen] = useState(false);
-  const [captionModalOpen, setCaptionModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editInitialTab, setEditInitialTab] = useState<"artwork" | "captions">(
+    "artwork",
+  );
+
+  function openEdit(tab: "artwork" | "captions" = "artwork") {
+    setEditInitialTab(tab);
+    setEditModalOpen(true);
+  }
   const [isResending, setIsResending] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
@@ -1056,7 +1057,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
         artwork: artworkToSubmit,
         ...previewAfterResendForApproval(previewForSubmit),
       });
-      setArtworkModalOpen(false);
+      setEditModalOpen(false);
       onToast(result.message || "Sent for re-approval");
       router.refresh();
     } catch (error) {
@@ -1080,7 +1081,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
       status: "needs-review",
       generationStatus: preserveApprovalWorkflowStatus(currentStatus, "needs_review"),
     });
-    setArtworkModalOpen(false);
+    setEditModalOpen(false);
     try {
       await syncAppliedMilestoneArtworkAction({
         eventId: session.eventId,
@@ -1204,16 +1205,9 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                 <button
                   type="button"
                   className="btn btn-sm btn-secondary"
-                  onClick={() => setArtworkModalOpen(true)}
+                  onClick={() => openEdit("artwork")}
                 >
-                  Edit artwork
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => setCaptionModalOpen(true)}
-                >
-                  Edit caption
+                  Edit
                 </button>
                 <button
                   type="button"
@@ -1382,23 +1376,15 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                 width: "100%",
               }}
             >
-              After generate — edit without regenerating
+              After generate — edit artwork &amp; captions together
             </span>
             <button
               type="button"
               className="btn btn-sm btn-secondary"
-              onClick={() => setArtworkModalOpen(true)}
+              onClick={() => openEdit("artwork")}
               disabled={!selectedPreview}
             >
-              Edit artwork
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-secondary"
-              onClick={() => setCaptionModalOpen(true)}
-              disabled={!selectedPreview}
-            >
-              Edit caption
+              Edit
             </button>
           </div>
         </div>
@@ -1655,9 +1641,9 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
         </div>
       ) : null}
 
-      {artworkModalOpen && selectedPreview && selectedMilestone ? (
-        <EditArtworkModal
-          key={selectedPreview.milestoneId}
+      {editModalOpen && selectedPreview && selectedMilestone ? (
+        <EditMilestoneModal
+          key={`${selectedPreview.milestoneId}-${editInitialTab}`}
           eventId={session.eventId}
           milestoneId={selectedPreview.milestoneId}
           brandKitId={brandKitIdForAi(session.inspiration.brandKitId)}
@@ -1665,32 +1651,22 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
           milestone={selectedMilestone}
           previewContent={selectedPreview}
           milestones={session.milestones}
-          artworkNotes={selectedMilestone.artworkNotes}
-          generationStatus={status}
-          onClose={() => setArtworkModalOpen(false)}
-          onApply={(artwork) => void handleApplyArtwork(artwork)}
-          onResendForApproval={(artwork) => resend(artwork)}
-        />
-      ) : null}
-
-      {captionModalOpen && selectedPreview && selectedMilestone ? (
-        <EditCaptionModal
-          key={selectedPreview.milestoneId}
-          eventId={session.eventId}
-          milestoneId={selectedPreview.milestoneId}
-          inspiration={session.inspiration}
-          milestone={selectedMilestone}
           currentCaption={sharedCaption}
+          artworkNotes={selectedMilestone.artworkNotes}
           captionNotes={selectedMilestone.captionNotes}
           voiceTone={session.inspiration.voiceTone}
           artworkImageUrl={feedUrl ?? storyUrl}
-          onClose={() => setCaptionModalOpen(false)}
-          onApply={(text, options) => {
+          generationStatus={status}
+          initialTab={editInitialTab}
+          onClose={() => setEditModalOpen(false)}
+          onApplyArtwork={(artwork) => void handleApplyArtwork(artwork)}
+          onApplyCaption={(text, options) => {
             handleCaptionChange(text);
             if (options?.close !== false) {
-              setCaptionModalOpen(false);
+              setEditModalOpen(false);
             }
           }}
+          onResendForApproval={(artwork) => resend(artwork)}
         />
       ) : null}
     </section>

@@ -60,19 +60,13 @@ import type {
   PreviewTabId,
 } from "@/lib/campaign-builder-v2/types";
 
-const EditArtworkModal = dynamic(
+const EditMilestoneModal = dynamic(
   () =>
-    import("@/components/campaign-builder-v2/EditArtworkModal").then((module) => ({
-      default: module.EditArtworkModal,
-    })),
-  { ssr: false },
-);
-
-const EditCaptionModal = dynamic(
-  () =>
-    import("@/components/campaign-builder-v2/EditCaptionModal").then((module) => ({
-      default: module.EditCaptionModal,
-    })),
+    import("@/components/campaign-builder-v2/EditMilestoneModal").then(
+      (module) => ({
+        default: module.EditMilestoneModal,
+      }),
+    ),
   { ssr: false },
 );
 
@@ -125,8 +119,15 @@ export function PreviewStep() {
   }, [reconcilePreviewStatuses]);
 
   const router = useRouter();
-  const [artworkModalOpen, setArtworkModalOpen] = useState(false);
-  const [captionModalOpen, setCaptionModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editInitialTab, setEditInitialTab] = useState<"artwork" | "captions">(
+    "artwork",
+  );
+
+  function openEdit(tab: "artwork" | "captions" = "artwork") {
+    setEditInitialTab(tab);
+    setEditModalOpen(true);
+  }
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [resendIsError, setResendIsError] = useState(false);
@@ -243,7 +244,8 @@ export function PreviewStep() {
     if (session.milestones.some((milestone) => milestone.id === milestoneId)) {
       setSelectedMilestoneId(milestoneId);
       if (editArtwork === "1") {
-        setArtworkModalOpen(true);
+        setEditInitialTab("artwork");
+        setEditModalOpen(true);
       }
     }
 
@@ -380,7 +382,7 @@ export function PreviewStep() {
         "needs_review",
       ),
     });
-    setArtworkModalOpen(false);
+    setEditModalOpen(false);
 
     // Flush session to server before sync/revalidate. Apply used to only update
     // client state + debounce the upsert; router.refresh() then remounted with a
@@ -452,7 +454,7 @@ export function PreviewStep() {
         artwork: artworkToSubmit,
         ...previewAfterResendForApproval(previewForSubmit),
       });
-      setArtworkModalOpen(false);
+      setEditModalOpen(false);
       setResendIsError(false);
       setResendMessage(result.message || "Sent for approval.");
       router.refresh();
@@ -573,9 +575,8 @@ export function PreviewStep() {
                   <ChangeRequestBanner
                     comment={selectedPreview.changeRequestComment}
                     awaitingApproval={selectedIsAwaitingApproval}
-                    onEditCaption={() => setCaptionModalOpen(true)}
+                    onEdit={() => openEdit("artwork")}
                     onEditSchedule={() => setPreviewTab("schedule")}
-                    onEditArtwork={() => setArtworkModalOpen(true)}
                     onResendForApproval={() => {
                       void resendSelectedMilestone().catch(() => {
                         // Error message set inside resendSelectedMilestone.
@@ -660,9 +661,9 @@ export function PreviewStep() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => setArtworkModalOpen(true)}
+                      onClick={() => openEdit("artwork")}
                     >
-                      Edit artwork
+                      Edit
                     </Button>
                   </section>
                 )}
@@ -682,16 +683,16 @@ export function PreviewStep() {
                       <p className="rounded border border-cos-border bg-cos-bg/50 p-4 text-sm leading-relaxed text-cos-text">
                         {sharedCaptionText || (
                           <span className="text-cos-muted">
-                            No caption yet — click Edit caption to generate
+                            No caption yet — click Edit to generate
                           </span>
                         )}
                       </p>
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => setCaptionModalOpen(true)}
+                        onClick={() => openEdit("captions")}
                       >
-                        Edit caption
+                        Edit
                       </Button>
                     </div>
                   </section>
@@ -760,12 +761,9 @@ export function PreviewStep() {
         </p>
       ) : null}
 
-      {artworkModalOpen && selectedPreview && selectedMilestone && (
-        <EditArtworkModal
-          // Remount per post — instructions/preview state is local to
-          // the modal (useState from milestone-specific props), so it must
-          // not persist across a different selectedMilestoneId.
-          key={selectedPreview.milestoneId}
+      {editModalOpen && selectedPreview && selectedMilestone && (
+        <EditMilestoneModal
+          key={`${selectedPreview.milestoneId}-${editInitialTab}`}
           eventId={session.eventId}
           milestoneId={selectedPreview.milestoneId}
           brandKitId={brandKitIdForAi(session.inspiration.brandKitId)}
@@ -773,25 +771,8 @@ export function PreviewStep() {
           milestone={selectedMilestone}
           previewContent={selectedPreview}
           milestones={session.milestones}
-          artworkNotes={selectedMilestone.artworkNotes}
-          generationStatus={resolveMilestoneGenerationStatus(
-            selectedPreview,
-            selectedMilestone.platformFormats,
-          )}
-          onClose={() => setArtworkModalOpen(false)}
-          onApply={(artwork) => void handleApplyArtwork(artwork)}
-          onResendForApproval={handleResendForApproval}
-        />
-      )}
-
-      {captionModalOpen && selectedPreview && selectedMilestone && (
-        <EditCaptionModal
-          key={selectedPreview.milestoneId}
-          eventId={session.eventId}
-          milestoneId={selectedPreview.milestoneId}
-          inspiration={session.inspiration}
-          milestone={selectedMilestone}
           currentCaption={sharedCaptionText}
+          artworkNotes={selectedMilestone.artworkNotes}
           captionNotes={selectedMilestone.captionNotes}
           voiceTone={session.inspiration.voiceTone}
           playbookName={
@@ -802,8 +783,14 @@ export function PreviewStep() {
           artworkImageUrl={
             selectedPreview.artwork.feedUrl ?? selectedPreview.artwork.storyUrl
           }
-          onClose={() => setCaptionModalOpen(false)}
-          onApply={(text, options) => {
+          generationStatus={resolveMilestoneGenerationStatus(
+            selectedPreview,
+            selectedMilestone.platformFormats,
+          )}
+          initialTab={editInitialTab}
+          onClose={() => setEditModalOpen(false)}
+          onApplyArtwork={(artwork) => void handleApplyArtwork(artwork)}
+          onApplyCaption={(text, options) => {
             const captionPlatforms = (() => {
               const fromFormats = captionPlatformsForFormats(
                 selectedPreview.enabledFormats,
@@ -833,9 +820,10 @@ export function PreviewStep() {
               ),
             });
             if (options?.close !== false) {
-              setCaptionModalOpen(false);
+              setEditModalOpen(false);
             }
           }}
+          onResendForApproval={handleResendForApproval}
         />
       )}
 

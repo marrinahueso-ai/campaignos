@@ -106,7 +106,7 @@ async function triggerArtworkGeneration(
   }
 
   // Content already present: regenerate via Edit artwork modal (real AI run).
-  const editArtwork = main.getByRole("button", { name: /edit artwork/i });
+  const editArtwork = main.getByRole("button", { name: /^edit$/i });
   if ((await editArtwork.count()) > 0) {
     await editArtwork.first().click();
     const regenerate = page.getByRole("button", {
