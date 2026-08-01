@@ -1,5 +1,3 @@
-import "server-only";
-
 import sharp from "sharp";
 
 import { generateFlyerQrPng, isFlyerQrTarget } from "@/lib/flyer-composer/qr-code";
@@ -23,32 +21,33 @@ export async function compositeFlyerQrCode(input: {
     const width = meta.width ?? 1024;
     const height = meta.height ?? 1792;
 
-    const qrSize = Math.round(Math.min(width, height) * 0.12);
-    const margin = Math.round(Math.min(width, height) * 0.04);
+    // Match prompt: ~10–12% width square in the footer CTA, bottom-right.
+    const qrSize = Math.round(Math.min(width, height) * 0.11);
+    const margin = Math.round(Math.min(width, height) * 0.035);
+    const pad = Math.max(3, Math.round(qrSize * 0.04));
 
     const qrPng = await generateFlyerQrPng(qrUrl, qrSize);
     if (!qrPng) return null;
 
-    const left = width - qrSize - margin;
-    const top = height - qrSize - margin;
+    const stamp = await sharp(qrPng)
+      .extend({
+        top: pad,
+        bottom: pad,
+        left: pad,
+        right: pad,
+        background: { r: 255, g: 255, b: 255, alpha: 1 },
+      })
+      .png()
+      .toBuffer();
+
+    const stampMeta = await sharp(stamp).metadata();
+    const stampW = stampMeta.width ?? qrSize + pad * 2;
+    const stampH = stampMeta.height ?? qrSize + pad * 2;
+    const left = Math.max(0, width - stampW - margin);
+    const top = Math.max(0, height - stampH - margin);
 
     const composited = await sharp(flyerBytes)
-      .composite([
-        {
-          input: await sharp(qrPng)
-            .extend({
-              top: 4,
-              bottom: 4,
-              left: 4,
-              right: 4,
-              background: { r: 255, g: 255, b: 255, alpha: 1 },
-            })
-            .png()
-            .toBuffer(),
-          left,
-          top,
-        },
-      ])
+      .composite([{ input: stamp, left, top }])
       .png()
       .toBuffer();
 

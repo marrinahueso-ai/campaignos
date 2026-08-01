@@ -157,13 +157,17 @@ export function buildFlyerComposerImagePrompt(
   }
 
   const qrUrl = input.fields.qrUrl?.trim() || input.fields.ctaUrl?.trim();
-  if (qrUrl) {
+  if (qrUrl && /^https?:\/\//i.test(qrUrl)) {
     lines.push(
       "",
-      "Leave a clean white square (~10% width) for a QR code overlay; do not draw a fake QR pattern.",
+      "QR CODE SLOT (critical — the app stamps a real scannable QR after generation):",
+      "- Leave ONE empty solid white rounded square (~10–12% of flyer width) in the footer / CTA bar, bottom-right.",
+      "- Do NOT draw QR modules, fake barcodes, pixel grids, finder patterns, or any stand-in code.",
+      "- Do NOT put the URL text inside that white square — caption text may sit beside it.",
+      "- Keep that white square clear of icons, gradients, and texture so a QR overlay can sit on it.",
     );
     const caption = input.fields.qrCaption?.trim();
-    if (caption) lines.push(`QR caption: ${caption}`);
+    if (caption) lines.push(`QR caption beside the square: ${caption}`);
   }
 
   if (input.fields.datesEvents?.trim()) {

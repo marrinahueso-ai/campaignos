@@ -181,6 +181,8 @@ describe("flyer composer image prompt", () => {
 
     assert.match(prompt, /QR/i);
     assert.match(prompt, /white square|overlay/i);
+    assert.match(prompt, /Do NOT draw QR/i);
+    assert.match(prompt, /stamps a real scannable QR/i);
     assert.match(prompt, /Scan to add dates/);
   });
 });

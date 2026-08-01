@@ -2157,7 +2157,7 @@
       name: "Last year’s flyer",
       ratio: "3/4",
       cls: "custom",
-      hasQr: false,
+      hasQr: true,
       isCustom: true,
       defaults: {
         orgName: "",
@@ -2258,7 +2258,7 @@
         name: "Event flyer",
         ratio: "3/4",
         cls: "festival",
-        hasQr: false,
+        hasQr: true,
         defaults: {
           orgName: "",
           headline: "",
@@ -2279,7 +2279,7 @@
         name: "Simple flyer · Letter",
         ratio: "3/4",
         cls: "festival",
-        hasQr: false,
+        hasQr: true,
         defaults: {
           orgName: "",
           headline: "",
@@ -2300,7 +2300,7 @@
         name: "Simple flyer · Half page",
         ratio: "3/2",
         cls: "festival",
-        hasQr: false,
+        hasQr: true,
         defaults: {
           orgName: "",
           headline: "",
@@ -3953,6 +3953,8 @@
       ].join("\n\n");
 
       fields.aiDirection = reviseBlock;
+      const qrTarget = (fields.qrUrl || fields.ctaUrl || "").trim();
+      const wantsQr = Boolean(tpl.hasQr) || /^https?:\/\//i.test(qrTarget);
 
       return {
         start: buildStartPayload(),
@@ -3961,7 +3963,7 @@
           templateName: tpl.name,
           isCustom: Boolean(tpl.isCustom),
           ratio: tpl.ratio || null,
-          hasQr: Boolean(tpl.hasQr),
+          hasQr: wantsQr,
         },
         assets: {
           inspirationPhotoPresent: true,
@@ -4929,6 +4931,9 @@
     }
 
     function buildGeneratePayload(tpl) {
+      const fields = readDraftFields();
+      const qrTarget = (fields.qrUrl || fields.ctaUrl || "").trim();
+      const wantsQr = Boolean(tpl.hasQr) || /^https?:\/\//i.test(qrTarget);
       return {
         start: buildStartPayload(),
         template: {
@@ -4936,7 +4941,7 @@
           templateName: tpl.name,
           isCustom: Boolean(tpl.isCustom),
           ratio: tpl.ratio || null,
-          hasQr: Boolean(tpl.hasQr),
+          hasQr: wantsQr,
         },
         assets: {
           ...resolveInspirationMeta(),
@@ -4944,7 +4949,7 @@
         },
         brandEnabled: Boolean(state.brand),
         brandKit: buildBrandKitPayload(),
-        fields: readDraftFields(),
+        fields,
       };
     }
 

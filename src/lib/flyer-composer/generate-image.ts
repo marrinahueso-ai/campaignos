@@ -11,6 +11,7 @@ import {
   resolveFlyerComposerImageSize,
 } from "@/lib/flyer-composer/generate-image-prompt";
 import { resolveFlyerComposerReferenceImageUrls } from "@/lib/flyer-composer/reference-images";
+import { resolveFlyerComposerQrUrl } from "@/lib/flyer-composer/qr-code";
 import { compositeFlyerQrCode } from "@/lib/flyer-composer/qr-composite";
 import type {
   FlyerComposerGenerateInput,
@@ -19,14 +20,6 @@ import type {
 
 function resolveInspirationUrls(input: FlyerComposerGenerateInput): string[] {
   return resolveFlyerComposerReferenceImageUrls(input.assets);
-}
-
-function resolveQrUrl(input: FlyerComposerGenerateInput): string | null {
-  const qr = input.fields.qrUrl?.trim();
-  if (qr && /^https?:\/\//i.test(qr)) return qr;
-  const cta = input.fields.ctaUrl?.trim();
-  if (cta && /^https?:\/\//i.test(cta) && input.template.hasQr) return cta;
-  return null;
 }
 
 function buildFlyerStoragePath(organizationId: string): string {
@@ -81,8 +74,10 @@ export async function generateFlyerComposerImage(
   }
 
   let imageBase64 = result.imageBase64;
-  const qrUrl = resolveQrUrl(input);
-  if (qrUrl && input.template.hasQr) {
+  // Always stamp a real QR when a target URL exists — do not gate on
+  // template.hasQr (Event / Letter / custom layouts still leave a blank square).
+  const qrUrl = resolveFlyerComposerQrUrl(input);
+  if (qrUrl) {
     const composited = await compositeFlyerQrCode({ imageBase64, qrUrl });
     if (composited) {
       imageBase64 = composited;
