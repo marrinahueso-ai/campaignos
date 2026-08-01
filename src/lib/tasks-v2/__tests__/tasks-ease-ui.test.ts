@@ -54,6 +54,10 @@ describe("tasks ease UI contracts", () => {
     assert.match(list, /Due Date/);
     assert.match(list, /Priority/);
     assert.match(list, /deriveTaskPriority/);
+    assert.match(list, /handlePriorityChange/);
+    assert.match(list, /type="date"/);
+    assert.match(list, /handleDueDateChange/);
+    assert.match(list, /overflow-y-visible/);
     assert.match(list, /Escalate/);
   });
 

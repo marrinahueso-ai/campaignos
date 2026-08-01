@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   ArrowUp,
   ChevronsUp,
@@ -20,12 +20,24 @@ import {
   updateTaskHubTaskStatusAction,
 } from "@/lib/task-hub/actions";
 import { deriveTaskPriority } from "@/lib/tasks-v2/derive-priority";
+import {
+  loadTasksEasePriorities,
+  saveTaskPriority,
+} from "@/lib/tasks-v2/tasks-ease-priorities";
 import { tasksV2PriorityLabel } from "@/lib/tasks-v2/status-labels";
 import { formatLocalDate, getTodayDateString } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 import type { TaskHubOrgMember, TaskHubTaskItem } from "@/types/task-hub";
 import type { TasksV2EventGroup, TasksV2Priority } from "@/types/tasks-v2";
+
+const PRIORITY_OPTIONS: TasksV2Priority[] = ["high", "medium", "low"];
+
+const PRIORITY_SELECT_STYLE: Record<TasksV2Priority, string> = {
+  high: "text-red-600",
+  medium: "text-amber-600",
+  low: "text-[#a8a29c]",
+};
 
 interface TasksEaseListProps {
   eventGroups: TasksV2EventGroup[];
@@ -56,7 +68,8 @@ const PRIORITY_RANK: Record<TasksV2Priority, number> = {
 };
 
 function effectiveDue(task: TaskHubTaskItem): string | null {
-  return task.monday?.mondayDueDate ?? task.dueDate ?? null;
+  // Prefer playbook dueDate so list edits win over Monday sync display.
+  return task.dueDate ?? task.monday?.mondayDueDate ?? null;
 }
 
 function formatDueCell(task: TaskHubTaskItem, today: string): {
@@ -87,30 +100,14 @@ function formatDueCell(task: TaskHubTaskItem, today: string): {
   return { label: dateLabel, dateLabel, overdue: false };
 }
 
-function PriorityMark({ priority }: { priority: TasksV2Priority }) {
-  const label = tasksV2PriorityLabel(priority);
+function PriorityIcon({ priority }: { priority: TasksV2Priority }) {
   if (priority === "high") {
-    return (
-      <span className="flex items-center gap-1.5 text-[10px] font-bold text-red-600 uppercase">
-        <ChevronsUp className="h-3 w-3" aria-hidden />
-        {label}
-      </span>
-    );
+    return <ChevronsUp className="h-3 w-3 shrink-0" aria-hidden />;
   }
   if (priority === "medium") {
-    return (
-      <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 uppercase">
-        <ArrowUp className="h-3 w-3" aria-hidden />
-        {label}
-      </span>
-    );
+    return <ArrowUp className="h-3 w-3 shrink-0" aria-hidden />;
   }
-  return (
-    <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#a8a29c] uppercase">
-      <Minus className="h-3 w-3" aria-hidden />
-      {label}
-    </span>
-  );
+  return <Minus className="h-3 w-3 shrink-0" aria-hidden />;
 }
 
 export function TasksEaseList({
@@ -128,7 +125,18 @@ export function TasksEaseList({
   const [overrides, setOverrides] = useState<Record<string, TaskOverride>>({});
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
   const [prioritySort, setPrioritySort] = useState<PrioritySort>("none");
+  const [priorityOverrides, setPriorityOverrides] = useState<
+    Record<string, TasksV2Priority>
+  >({});
   const today = getTodayDateString();
+
+  useEffect(() => {
+    setPriorityOverrides(loadTasksEasePriorities());
+  }, []);
+
+  function resolvePriority(task: TaskHubTaskItem): TasksV2Priority {
+    return priorityOverrides[task.id] ?? deriveTaskPriority(task, today);
+  }
 
   const flatRows = useMemo(() => {
     const rows: { group: TasksV2EventGroup; task: TaskHubTaskItem }[] = [];
@@ -138,12 +146,15 @@ export function TasksEaseList({
       }
     }
     if (prioritySort === "none") return rows;
+    const rankFor = (task: TaskHubTaskItem) =>
+      PRIORITY_RANK[
+        priorityOverrides[task.id] ?? deriveTaskPriority(task, today)
+      ];
     return [...rows].sort((a, b) => {
-      const pa = PRIORITY_RANK[deriveTaskPriority(a.task, today)];
-      const pb = PRIORITY_RANK[deriveTaskPriority(b.task, today)];
-      return prioritySort === "asc" ? pa - pb : pb - pa;
+      const delta = rankFor(a.task) - rankFor(b.task);
+      return prioritySort === "asc" ? delta : -delta;
     });
-  }, [eventGroups, prioritySort, today]);
+  }, [eventGroups, prioritySort, today, priorityOverrides]);
 
   function resolveTask(task: TaskHubTaskItem): TaskHubTaskItem {
     const override = overrides[task.id];
@@ -223,6 +234,34 @@ export function TasksEaseList({
     });
   }
 
+  function handleDueDateChange(task: TaskHubTaskItem, nextDue: string) {
+    if (pendingIds.has(task.id)) return;
+    const dueDate = nextDue.trim() || null;
+    setOverrides((current) => ({
+      ...current,
+      [task.id]: { ...current[task.id], dueDate },
+    }));
+    setPending(task.id, true);
+    startTransition(async () => {
+      const result = await updateTaskHubTaskAction(
+        task.eventId,
+        task.id,
+        { dueDate },
+        task.title,
+      );
+      setPending(task.id, false);
+      if (!result.success) clearOverride(task.id);
+    });
+  }
+
+  function handlePriorityChange(
+    task: TaskHubTaskItem,
+    priority: TasksV2Priority,
+  ) {
+    saveTaskPriority(task.id, priority);
+    setPriorityOverrides((current) => ({ ...current, [task.id]: priority }));
+  }
+
   function cyclePrioritySort() {
     setPrioritySort((current) =>
       current === "none" ? "asc" : current === "asc" ? "desc" : "none",
@@ -245,8 +284,11 @@ export function TasksEaseList({
     );
   }
 
+  const rowCount = flatRows.length;
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#e8e2d9] bg-white shadow-[0_4px_20px_-4px_rgba(47,74,60,0.08)]">
+    <div className="rounded-2xl border border-[#e8e2d9] bg-white pb-28 shadow-[0_4px_20px_-4px_rgba(47,74,60,0.08)]">
+      <div className="overflow-x-auto overflow-y-visible">
       <table className="w-full border-collapse text-left">
         <thead>
           <tr className="border-b border-[#e8e2d9] bg-[#faf8f5]/50 text-[11px] font-bold tracking-widest text-[#a8a29c] uppercase">
@@ -279,13 +321,14 @@ export function TasksEaseList({
           </tr>
         </thead>
         <tbody className="divide-y divide-[#e8e2d9]">
-          {flatRows.map(({ group, task: rawTask }) => {
+          {flatRows.map(({ group, task: rawTask }, rowIndex) => {
             const task = resolveTask(rawTask);
             const isPending = pendingIds.has(rawTask.id);
             const isDone = task.status === "done";
             const stripeColor = eventColors[group.eventId] ?? group.accentColor;
             const due = formatDueCell(task, today);
-            const priority = deriveTaskPriority(task, today);
+            const priority = resolvePriority(task);
+            const isNearBottom = rowIndex >= rowCount - 2;
             const needsYou =
               Boolean(viewerUserId) &&
               task.assigneeUserId === viewerUserId &&
@@ -378,7 +421,51 @@ export function TasksEaseList({
                   </button>
                 </td>
                 <td className="px-6 py-4">
-                  <PriorityMark priority={priority} />
+                  {canEdit ? (
+                    <label className="relative inline-flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "pointer-events-none absolute left-0",
+                          PRIORITY_SELECT_STYLE[priority],
+                        )}
+                      >
+                        <PriorityIcon priority={priority} />
+                      </span>
+                      <select
+                        value={priority}
+                        disabled={isPending}
+                        aria-label={`Priority for ${task.title}`}
+                        onChange={(event) =>
+                          handlePriorityChange(
+                            rawTask,
+                            event.target.value as TasksV2Priority,
+                          )
+                        }
+                        className={cn(
+                          "cursor-pointer appearance-none border-0 bg-transparent py-0.5 pl-4 pr-1 text-[10px] font-bold uppercase outline-none",
+                          "focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-[#c4922e]/40",
+                          PRIORITY_SELECT_STYLE[priority],
+                          isPending && "opacity-60",
+                        )}
+                      >
+                        {PRIORITY_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {tasksV2PriorityLabel(option)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1.5 text-[10px] font-bold uppercase",
+                        PRIORITY_SELECT_STYLE[priority],
+                      )}
+                    >
+                      <PriorityIcon priority={priority} />
+                      {tasksV2PriorityLabel(priority)}
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
@@ -417,27 +504,51 @@ export function TasksEaseList({
                     }
                   />
                 </td>
-                <td className="px-6 py-4">
-                  {due.overdue ? (
-                    <div className="flex flex-col">
-                      <span className="text-[12px] font-bold text-[#a67b27]">
-                        {due.dateLabel}{" "}
-                        <span className="ml-1 text-[10px] font-normal uppercase">
-                          (Overdue)
-                        </span>
+                <td
+                  className={cn(
+                    "relative px-6 py-4",
+                    isNearBottom && "z-20",
+                  )}
+                >
+                  <div className="flex flex-col gap-1">
+                    {canEdit ? (
+                      <input
+                        type="date"
+                        value={effectiveDue(task) ?? ""}
+                        disabled={isPending}
+                        aria-label={`Due date for ${task.title}`}
+                        onChange={(event) =>
+                          handleDueDateChange(rawTask, event.target.value)
+                        }
+                        className={cn(
+                          "max-w-[10.5rem] rounded-lg border border-[#e8e2d9] bg-white px-2 py-1 text-[12px] text-[#5c5752]",
+                          "outline-none focus-visible:border-[#c4922e] focus-visible:ring-2 focus-visible:ring-[#c4922e]/25",
+                          due.overdue &&
+                            "border-[#e8d5a8] font-bold text-[#a67b27]",
+                          isPending && "opacity-60",
+                        )}
+                      />
+                    ) : (
+                      <span
+                        className={cn(
+                          "text-[12px] text-[#5c5752]",
+                          due.overdue && "font-bold text-[#a67b27]",
+                        )}
+                      >
+                        {due.label}
                       </span>
+                    )}
+                    {due.overdue ? (
                       <button
                         type="button"
                         onClick={() => onOpenTask(rawTask)}
-                        className="mt-1 flex items-center gap-1 text-[9px] font-bold text-[#c4922e] uppercase hover:text-[#a67b27]"
+                        className="flex items-center gap-1 text-[9px] font-bold text-[#c4922e] uppercase hover:text-[#a67b27]"
                       >
                         <Flag className="h-2.5 w-2.5" aria-hidden />
                         Escalate
                       </button>
-                    </div>
-                  ) : (
-                    <span className="text-[12px] text-[#5c5752]">{due.label}</span>
-                  )}
+                    ) : null}
+                  </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
@@ -505,6 +616,7 @@ export function TasksEaseList({
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

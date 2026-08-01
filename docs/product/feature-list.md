@@ -228,7 +228,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - **List | Status | Focus | Custom** views (`?view=`) with short labels; List is the default — **shipped**
 - Pulse row as quiet text links with live counts — Needs you / This week / Overdue / Done (`?pulse=`, toggles off on repeat click) — **shipped**
 - Events chip row for soft filtering (`?event=`), each chip with a `DashboardWidgetColorPicker` dot for a personal, localStorage-persisted event color — **shipped**
-- List view: Pilot flat table (Priority, Event, Status, Due, Assignee; overdue Escalate; Needs Review / Review) — **shipped**
+- List view: Pilot flat table (Priority dropdown, Event, Status, Due date picker, Assignee; overdue Escalate; Needs Review / Review; bottom padding so last-row date picker isn’t clipped) — **shipped**
 - Status board: Pilot kanban To Do · In Progress · Needs Review · Done; drag-and-drop; event color stripe + avatar cards; column **+** opens Add task with Board prefilled — **shipped**
 - Focus / Custom view tabs on org Tasks hub — **removed**
 - Ask AI for tasks (`TasksEaseAskAi` modal) + Add task (Pilot two-pane modal) in the header — **shipped**
