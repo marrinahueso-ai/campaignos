@@ -60,14 +60,25 @@ const LEVEL_META: Record<
 
 const LEVEL_ORDER: SuggestionLevel[] = ["essential", "recommended", "extra"];
 
+export type TasksEaseAskAiAddedPayload = {
+  eventId: string;
+  created: Array<{ id: string; title: string; dueDate: string | null }>;
+};
+
 interface TasksEaseAskAiProps {
   events: TaskHubEventOption[];
   canEdit: boolean;
   aiAvailable: boolean;
   aiUnavailableReason: string | null;
   preferredEventId?: string | null;
+  /** When set (Mine scope), assign created tasks so they stay visible. */
+  assignTo?: {
+    userId: string;
+    name: string;
+    initials: string;
+  } | null;
   onClose: () => void;
-  onTasksAdded: () => void;
+  onTasksAdded: (payload: TasksEaseAskAiAddedPayload) => void;
 }
 
 function inferCategory(title: string, preferred: string): string {
@@ -132,6 +143,7 @@ export function TasksEaseAskAi({
   canEdit,
   aiAvailable,
   preferredEventId = null,
+  assignTo = null,
   onClose,
   onTasksAdded,
 }: TasksEaseAskAiProps) {
@@ -225,6 +237,9 @@ export function TasksEaseAskAi({
           title: s.title,
           dueDate: s.dueDate.trim() || null,
         })),
+        assigneeUserId: assignTo?.userId ?? null,
+        assigneeName: assignTo?.name ?? null,
+        assigneeInitials: assignTo?.initials ?? null,
       });
       if (!result.success) {
         setErrorMessage(result.error ?? "Could not add tasks.");
@@ -247,13 +262,22 @@ export function TasksEaseAskAi({
             : ""
         }.`,
       );
+
+      if (result.addedCount === 0) {
+        // All selected titles already existed — stay open with a clear message.
+        return;
+      }
+
       const addedTitles = new Set(
         result.created.map((c) => c.title.trim().toLowerCase()),
       );
       setSuggestions((prev) =>
         prev.filter((s) => !addedTitles.has(s.title.trim().toLowerCase())),
       );
-      onTasksAdded();
+      onTasksAdded({
+        eventId,
+        created: result.created,
+      });
     } finally {
       setIsAdding(false);
     }

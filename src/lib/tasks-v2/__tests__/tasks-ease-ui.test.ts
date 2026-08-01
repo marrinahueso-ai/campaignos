@@ -59,6 +59,17 @@ describe("tasks ease UI contracts", () => {
     assert.match(list, /handleDueDateChange/);
     assert.match(list, /overflow-y-visible/);
     assert.match(list, /Escalate/);
+    // Priority/due must look interactive (not camouflaged as static labels).
+    assert.match(list, /ChevronDown/);
+    assert.match(list, /Calendar/);
+    assert.match(
+      list,
+      /appearance-none rounded-lg border border-\[#e8e2d9\] bg-\[#faf8f5\]/,
+    );
+    assert.doesNotMatch(
+      list,
+      /appearance-none border-0 bg-transparent/,
+    );
   });
 
   it("renders Pilot status columns with Needs Review and quick-add", () => {
@@ -99,6 +110,19 @@ describe("tasks ease UI contracts", () => {
     assert.match(askAi, /overflow-visible/);
     assert.match(askAi, /pb-28/);
     assert.match(askAi, /addGeneratedTasksV2Action/);
+    assert.match(askAi, /assignTo/);
+    assert.match(askAi, /assigneeUserId/);
+    assert.match(askAi, /onTasksAdded\(\{/);
+  });
+
+  it("lands Ask AI adds on List with optimistic rows + Mine assign", () => {
+    assert.match(shell, /handleAskAiTasksAdded/);
+    assert.match(shell, /askAiAssignTo/);
+    assert.match(shell, /setView\("list"\)/);
+    assert.match(shell, /setAskAiOpen\(false\)/);
+    assert.match(shell, /setPendingCreated/);
+    assert.match(shell, /assignTo=\{askAiAssignTo\}/);
+    assert.match(shell, /onTasksAdded=\{handleAskAiTasksAdded\}/);
   });
 
   it("uses Ease task drawer with due date, assignee, priority, and notes", () => {

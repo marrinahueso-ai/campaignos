@@ -77,12 +77,16 @@ export async function addGeneratedTasksV2Action(input: {
   /** @deprecated Prefer `tasks` when due dates are needed. */
   titles?: string[];
   tasks?: Array<{ title: string; dueDate?: string | null }>;
+  /** When set (e.g. Mine scope), assign created tasks so they stay visible. */
+  assigneeUserId?: string | null;
+  assigneeName?: string | null;
+  assigneeInitials?: string | null;
 }): Promise<{
   success: boolean;
   error: string | null;
   addedCount: number;
   skippedDuplicates: number;
-  created: Array<{ id: string; title: string }>;
+  created: Array<{ id: string; title: string; dueDate: string | null }>;
 }> {
   const access = await assertTaskHubEventAccess(input.eventId);
   if (!access.ok) {
@@ -109,7 +113,8 @@ export async function addGeneratedTasksV2Action(input: {
 
   let addedCount = 0;
   let skippedDuplicates = 0;
-  const created: Array<{ id: string; title: string }> = [];
+  const created: Array<{ id: string; title: string; dueDate: string | null }> =
+    [];
 
   for (const item of items) {
     const title = item.title.trim();
@@ -125,6 +130,9 @@ export async function addGeneratedTasksV2Action(input: {
     const createdResult = await createTaskHubTaskAction(input.eventId, {
       title,
       dueDate,
+      assigneeUserId: input.assigneeUserId ?? null,
+      assigneeName: input.assigneeName ?? null,
+      assigneeInitials: input.assigneeInitials ?? null,
     });
     if (!createdResult.success || !createdResult.taskId) {
       return {
@@ -137,7 +145,7 @@ export async function addGeneratedTasksV2Action(input: {
     }
 
     existing.add(title.toLowerCase());
-    created.push({ id: createdResult.taskId, title });
+    created.push({ id: createdResult.taskId, title, dueDate });
     addedCount += 1;
   }
 

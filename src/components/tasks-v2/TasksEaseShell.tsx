@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter, useSearchParams } from "next/navigation";
 import { Calendar, CheckSquare, Shield, Sparkles, X } from "lucide-react";
 import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
-import { TasksEaseAskAi } from "@/components/tasks-v2/TasksEaseAskAi";
+import {
+  TasksEaseAskAi,
+  type TasksEaseAskAiAddedPayload,
+} from "@/components/tasks-v2/TasksEaseAskAi";
 import { TasksEaseBoard } from "@/components/tasks-v2/TasksEaseBoard";
 import { TasksEaseList } from "@/components/tasks-v2/TasksEaseList";
 import { TasksEaseTaskDrawer } from "@/components/tasks-v2/TasksEaseTaskDrawer";
@@ -467,6 +470,92 @@ export function TasksEaseShell({
       syncUrl({ scope, view, pulse: null, event: eventFilter });
     });
   }
+
+  function handleAskAiTasksAdded(payload: TasksEaseAskAiAddedPayload) {
+    const eventOption =
+      addTaskEventOptions.find((event) => event.eventId === payload.eventId) ??
+      data.events.find((event) => event.eventId === payload.eventId);
+    if (!eventOption || payload.created.length === 0) {
+      setAskAiOpen(false);
+      setView("list");
+      setPulse(null);
+      syncUrl({ scope, view: "list", pulse: null, event: eventFilter });
+      router.refresh();
+      return;
+    }
+
+    // Mine scope only shows assigned tasks — match Add task assign-to-self.
+    const assignToSelf = scope === "mine" && Boolean(data.viewer.userId);
+    const selfMember = data.orgMembers.find(
+      (member) => member.userId && member.userId === data.viewer.userId,
+    );
+    const assigneeUserId = assignToSelf ? data.viewer.userId : null;
+    const assigneeName = assignToSelf
+      ? (selfMember?.displayName ?? data.viewer.displayName ?? "You")
+      : null;
+    const assigneeInitials = assignToSelf
+      ? (selfMember?.initials ??
+        (assigneeName ? deriveInitials(assigneeName) : null))
+      : null;
+
+    const optimisticRows: TaskHubTaskItem[] = payload.created.map((created) => ({
+      id: created.id,
+      eventId: payload.eventId,
+      title: created.title,
+      status: "todo" as const,
+      sortOrder: 0,
+      dueDate: created.dueDate,
+      assigneeName,
+      assigneeInitials,
+      assigneeUserId,
+      groupId: null,
+      notes: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      event: {
+        eventId: eventOption.eventId,
+        eventTitle: eventOption.eventTitle,
+        eventDate: eventOption.eventDate,
+        eventHref: eventTasksHref(eventOption.eventId),
+      },
+    }));
+
+    setPendingCreated((current) => [...optimisticRows, ...current]);
+    setTaskPatches((current) => {
+      const next = { ...current };
+      for (const row of optimisticRows) {
+        next[row.id] = row;
+      }
+      return next;
+    });
+
+    setAskAiOpen(false);
+    // Land on List so new tasks are visible; clear pulse / align event chip.
+    setView("list");
+    setPulse(null);
+    setEventFilter(payload.eventId);
+    syncUrl({
+      scope,
+      view: "list",
+      pulse: null,
+      event: payload.eventId,
+    });
+    router.refresh();
+  }
+
+  const askAiAssignTo = (() => {
+    if (scope !== "mine" || !data.viewer.userId) return null;
+    const selfMember = data.orgMembers.find(
+      (member) => member.userId && member.userId === data.viewer.userId,
+    );
+    const name =
+      selfMember?.displayName ?? data.viewer.displayName ?? "You";
+    return {
+      userId: data.viewer.userId,
+      name,
+      initials: selfMember?.initials ?? deriveInitials(name),
+    };
+  })();
 
   const subtitle =
     scope === "mine"
@@ -1035,10 +1124,9 @@ export function TasksEaseShell({
           aiAvailable={data.aiAvailable}
           aiUnavailableReason={data.aiUnavailableReason}
           preferredEventId={addTaskEventId || eventFilter}
+          assignTo={askAiAssignTo}
           onClose={() => setAskAiOpen(false)}
-          onTasksAdded={() => {
-            router.refresh();
-          }}
+          onTasksAdded={handleAskAiTasksAdded}
         />
       ) : null}
     </div>

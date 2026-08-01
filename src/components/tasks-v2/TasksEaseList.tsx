@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   ArrowUp,
+  Calendar,
+  ChevronDown,
   ChevronsUp,
   Check,
   Flag,
@@ -422,10 +424,10 @@ export function TasksEaseList({
                 </td>
                 <td className="px-6 py-4">
                   {canEdit ? (
-                    <label className="relative inline-flex items-center gap-1.5">
+                    <div className="relative inline-flex min-w-[7.25rem] items-center">
                       <span
                         className={cn(
-                          "pointer-events-none absolute left-0",
+                          "pointer-events-none absolute left-2 z-10",
                           PRIORITY_SELECT_STYLE[priority],
                         )}
                       >
@@ -442,8 +444,8 @@ export function TasksEaseList({
                           )
                         }
                         className={cn(
-                          "cursor-pointer appearance-none border-0 bg-transparent py-0.5 pl-4 pr-1 text-[10px] font-bold uppercase outline-none",
-                          "focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-[#c4922e]/40",
+                          "w-full cursor-pointer appearance-none rounded-lg border border-[#e8e2d9] bg-[#faf8f5] py-1 pl-7 pr-7 text-[10px] font-bold uppercase",
+                          "outline-none focus-visible:border-[#c4922e] focus-visible:ring-2 focus-visible:ring-[#c4922e]/25",
                           PRIORITY_SELECT_STYLE[priority],
                           isPending && "opacity-60",
                         )}
@@ -454,7 +456,11 @@ export function TasksEaseList({
                           </option>
                         ))}
                       </select>
-                    </label>
+                      <ChevronDown
+                        className="pointer-events-none absolute right-1.5 h-3 w-3 text-[#a8a29c]"
+                        aria-hidden
+                      />
+                    </div>
                   ) : (
                     <span
                       className={cn(
@@ -506,28 +512,39 @@ export function TasksEaseList({
                 </td>
                 <td
                   className={cn(
-                    "relative px-6 py-4",
+                    "relative overflow-visible px-6 py-4",
                     isNearBottom && "z-20",
                   )}
                 >
-                  <div className="flex flex-col gap-1">
+                  <div
+                    className={cn(
+                      "flex flex-col gap-1 overflow-visible",
+                      isNearBottom && "relative z-20",
+                    )}
+                  >
                     {canEdit ? (
-                      <input
-                        type="date"
-                        value={effectiveDue(task) ?? ""}
-                        disabled={isPending}
-                        aria-label={`Due date for ${task.title}`}
-                        onChange={(event) =>
-                          handleDueDateChange(rawTask, event.target.value)
-                        }
-                        className={cn(
-                          "max-w-[10.5rem] rounded-lg border border-[#e8e2d9] bg-white px-2 py-1 text-[12px] text-[#5c5752]",
-                          "outline-none focus-visible:border-[#c4922e] focus-visible:ring-2 focus-visible:ring-[#c4922e]/25",
-                          due.overdue &&
-                            "border-[#e8d5a8] font-bold text-[#a67b27]",
-                          isPending && "opacity-60",
-                        )}
-                      />
+                      <div className="relative inline-block max-w-[11rem]">
+                        <input
+                          type="date"
+                          value={effectiveDue(task) ?? ""}
+                          disabled={isPending}
+                          aria-label={`Due date for ${task.title}`}
+                          onChange={(event) =>
+                            handleDueDateChange(rawTask, event.target.value)
+                          }
+                          className={cn(
+                            "w-full rounded-lg border border-[#e8e2d9] bg-[#faf8f5] py-1 pr-8 pl-2 text-[12px] text-[#5c5752] [color-scheme:light]",
+                            "outline-none focus-visible:border-[#c4922e] focus-visible:ring-2 focus-visible:ring-[#c4922e]/25",
+                            due.overdue &&
+                              "border-[#e8d5a8] font-bold text-[#a67b27]",
+                            isPending && "opacity-60",
+                          )}
+                        />
+                        <Calendar
+                          className="pointer-events-none absolute top-1/2 right-2 h-3.5 w-3.5 -translate-y-1/2 text-[#a8a29c]"
+                          aria-hidden
+                        />
+                      </div>
                     ) : (
                       <span
                         className={cn(
