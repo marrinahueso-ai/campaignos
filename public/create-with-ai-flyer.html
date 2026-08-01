@@ -2911,9 +2911,13 @@
       };
     }
 
+    function flyerQrSrc(url, size) {
+      return `/api/flyer-composer/qr?data=${encodeURIComponent(url)}&size=${size}`;
+    }
+
     function qrImgHtml(url, size) {
       if (!url) return `<div class="qr" aria-hidden="true"></div>`;
-      const src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
+      const src = flyerQrSrc(url, size);
       return `<img class="qr-img" src="${src}" alt="QR code" width="${size}" height="${size}" loading="lazy" />`;
     }
 
@@ -3271,7 +3275,7 @@
       const cap = document.getElementById("qrPreviewCap");
       if (!panel || !img) return;
       if (url && /^https?:\/\//i.test(url)) {
-        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(url)}`;
+        img.src = flyerQrSrc(url, 120);
         img.hidden = false;
         if (placeholder) placeholder.hidden = true;
         panel.classList.remove("empty");

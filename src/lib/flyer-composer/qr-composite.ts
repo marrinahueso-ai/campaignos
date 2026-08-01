@@ -2,18 +2,7 @@ import "server-only";
 
 import sharp from "sharp";
 
-const QR_API = "https://api.qrserver.com/v1/create-qr-code/";
-
-async function fetchQrPng(url: string, size: number): Promise<Buffer | null> {
-  try {
-    const qrTarget = `${QR_API}?size=${size}x${size}&data=${encodeURIComponent(url)}`;
-    const response = await fetch(qrTarget);
-    if (!response.ok) return null;
-    return Buffer.from(await response.arrayBuffer());
-  } catch {
-    return null;
-  }
-}
+import { generateFlyerQrPng, isFlyerQrTarget } from "@/lib/flyer-composer/qr-code";
 
 /**
  * Overlay a scannable QR code on the bottom-right of a generated flyer.
@@ -24,7 +13,7 @@ export async function compositeFlyerQrCode(input: {
   qrUrl: string;
 }): Promise<string | null> {
   const qrUrl = input.qrUrl.trim();
-  if (!qrUrl || !/^https?:\/\//i.test(qrUrl)) {
+  if (!isFlyerQrTarget(qrUrl)) {
     return null;
   }
 
@@ -37,7 +26,7 @@ export async function compositeFlyerQrCode(input: {
     const qrSize = Math.round(Math.min(width, height) * 0.12);
     const margin = Math.round(Math.min(width, height) * 0.04);
 
-    const qrPng = await fetchQrPng(qrUrl, qrSize);
+    const qrPng = await generateFlyerQrPng(qrUrl, qrSize);
     if (!qrPng) return null;
 
     const left = width - qrSize - margin;
