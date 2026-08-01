@@ -223,13 +223,14 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Tasks — Ease redesign **shipped**
 - Customer-facing Tasks copy uses organization/team/event language (not school-only, migration, or wiring jargon); calm empties on List/boards/event tab — **shipped**
 - `TasksEaseShell` replaces the dense Main Table / My Tasks / Board chrome at `/tasks` — soft cream shell, Fraunces heading, quiet pills throughout (`src/components/tasks-v2/TasksEaseShell.tsx`) — **shipped**
-- **Pilot Status board (Aug 2026):** Fraunces title + team subtitle; Team/Mine; Status-only view (List/Focus/Custom removed from hub); KPI pulse; moss event chips; kanban To Do · In Progress · Needs Review · Done with Pilot cards; column **+** / header Add task open the two-pane Add task modal (Board status prefilled from column) — **shipped**
+- **Pilot Tasks chrome (Aug 2026):** Fraunces title + team subtitle; Team/Mine; **List** + **Status** tabs (Focus/Custom removed); KPI pulse; moss event chips; Pilot list table + Status kanban; column **+** / header Add task open the two-pane Add task modal — **shipped**
 - **Team | Mine** scope toggle (`?scope=`) — Team = all org-accessible event tasks; Mine = assigned to the signed-in user (`assignee_user_id`) — **shipped**
 - **List | Status | Focus | Custom** views (`?view=`) with short labels; List is the default — **shipped**
 - Pulse row as quiet text links with live counts — Needs you / This week / Overdue / Done (`?pulse=`, toggles off on repeat click) — **shipped**
 - Events chip row for soft filtering (`?event=`), each chip with a `DashboardWidgetColorPicker` dot for a personal, localStorage-persisted event color — **shipped**
-- Status board (hub default): Pilot kanban To Do · In Progress · Needs Review · Done; drag-and-drop; event color stripe + avatar cards; column **+** opens Add task with Board prefilled — **shipped**
-- List / Focus / Custom view tabs on org Tasks hub — **removed** (Status board only; list/custom components kept in repo unused)
+- List view: Pilot flat table (Priority, Event, Status, Due, Assignee; overdue Escalate; Needs Review / Review) — **shipped**
+- Status board: Pilot kanban To Do · In Progress · Needs Review · Done; drag-and-drop; event color stripe + avatar cards; column **+** opens Add task with Board prefilled — **shipped**
+- Focus / Custom view tabs on org Tasks hub — **removed**
 - Ask AI for tasks (`TasksEaseAskAi` modal) + Add task (Pilot two-pane modal) in the header — **shipped**
 - Org Tasks hub SSR soft-capped at 1000 tasks (event Tasks tab uncapped; notice when truncated) — **shipped** (perf)
 - Task status/reorder + caption save/generate keep optimistic UI without full `router.refresh` — **shipped** (perf)
