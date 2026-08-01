@@ -1597,11 +1597,11 @@ export function HomepageComposer({
                     No announcements yet — add one to highlight dates or news.
                   </p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2 overflow-visible">
                     {state.header.announcements.map((announcement) => (
                       <div
                         key={announcement.id}
-                        className="flex flex-nowrap items-end gap-1.5 overflow-x-auto"
+                        className="flex flex-wrap items-end gap-1.5 overflow-visible focus-within:pb-[min(20rem,50vh)]"
                       >
                         <div className="shrink-0">
                           <EmojiPicker
@@ -1621,7 +1621,7 @@ export function HomepageComposer({
                             }
                           />
                         </div>
-                        <label className="mb-0.5 flex shrink-0 flex-col gap-1">
+                        <label className="relative z-20 mb-0.5 flex shrink-0 flex-col gap-1">
                           <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-cos-muted">
                             On
                           </span>
@@ -1630,6 +1630,12 @@ export function HomepageComposer({
                             className="w-[8.5rem] rounded-xl border border-cos-border bg-cos-card px-2 py-2 text-sm text-cos-text disabled:opacity-50"
                             disabled={announcement.alwaysOn}
                             value={announcement.startsOn ?? ""}
+                            onFocus={(e) => {
+                              e.currentTarget.scrollIntoView({
+                                block: "center",
+                                inline: "nearest",
+                              });
+                            }}
                             onChange={(e) =>
                               updateAnnouncement(announcement.id, {
                                 startsOn: e.target.value || null,
@@ -1638,7 +1644,7 @@ export function HomepageComposer({
                             }
                           />
                         </label>
-                        <label className="mb-0.5 flex shrink-0 flex-col gap-1">
+                        <label className="relative z-20 mb-0.5 flex shrink-0 flex-col gap-1">
                           <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-cos-muted">
                             Off
                           </span>
@@ -1647,6 +1653,12 @@ export function HomepageComposer({
                             className="w-[8.5rem] rounded-xl border border-cos-border bg-cos-card px-2 py-2 text-sm text-cos-text disabled:opacity-50"
                             disabled={announcement.alwaysOn}
                             value={announcement.expiresOn ?? ""}
+                            onFocus={(e) => {
+                              e.currentTarget.scrollIntoView({
+                                block: "center",
+                                inline: "nearest",
+                              });
+                            }}
                             onChange={(e) =>
                               updateAnnouncement(announcement.id, {
                                 expiresOn: e.target.value || null,
