@@ -5,10 +5,11 @@ import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { revisionPath } from "@/components/approvals-revision/map-item";
+import { ApprovalFlowGuide } from "@/components/approvals-scheduling/ApprovalFlowGuide";
 import {
   ApprovalsEmptyEase,
   ApprovalsFocusCard,
-  ApprovalsQueueRow,
+  ApprovalsQueueTable,
 } from "@/components/approvals-scheduling/ApprovalsEaseList";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
@@ -331,21 +332,13 @@ export function ApprovalsSchedulingHub({
                     className={cn(
                       "shrink-0 rounded-full px-3.5 py-2 text-[13px] font-bold transition",
                       active
-                        ? "bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)] ring-1 ring-cos-border"
-                        : "text-cos-muted hover:bg-[rgba(255,252,247,0.7)] hover:text-cos-text",
-                      active && tab.id === "needs"
-                        ? "shadow-[0_0_0_3px_rgba(47,74,60,0.12)]"
-                        : null,
+                        ? "bg-[#2f4a3c] text-[#fffcf7] shadow-[0_8px_20px_rgba(47,74,60,0.22)]"
+                        : "border border-transparent bg-[rgba(255,252,247,0.65)] text-cos-muted hover:border-cos-border hover:text-cos-text",
                     )}
                   >
-                    {tab.label}
-                    <span
-                      className={cn(
-                        "ml-1.5 inline-block min-w-[1.25em] tabular-nums",
-                        active ? "text-[#2f4a3c]" : "text-cos-muted",
-                      )}
-                    >
-                      {tab.count}
+                    {tab.label}{" "}
+                    <span className="tabular-nums opacity-90">
+                      ({tab.count})
                     </span>
                   </button>
                 );
@@ -359,7 +352,7 @@ export function ApprovalsSchedulingHub({
                   onChange={(event) =>
                     setViewScope(event.target.value as UnifiedViewScope)
                   }
-                  className="min-w-[150px] rounded-full border border-cos-border bg-cos-card px-3.5 py-2 text-[13px] text-cos-text"
+                  className="min-w-[150px] rounded-full border border-cos-border bg-cos-card px-3.5 py-2 text-[13px] font-semibold text-cos-text"
                   aria-label="Show"
                 >
                   <option value="assigned_to_me">Assigned to me</option>
@@ -461,36 +454,37 @@ export function ApprovalsSchedulingHub({
             ) : null}
 
             {queueItems.length > 0 ? (
-              <div className="flex flex-col gap-2">
+              <div className="space-y-3 pt-2">
                 {activeFilter === "needs" && focusItem ? (
-                  <p className="pt-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+                  <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
                     Also waiting
                   </p>
                 ) : null}
                 {activeFilter === "failed" && focusItem ? (
-                  <p className="pt-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+                  <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
                     Also failed
                   </p>
                 ) : null}
                 {activeFilter === "changes" && focusItem ? (
-                  <p className="pt-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+                  <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
                     Also needs edits
                   </p>
                 ) : null}
-                {queueItems.map((item) => (
-                  <ApprovalsQueueRow
-                    key={item.id}
-                    item={item}
-                    onReview={openReview}
-                    onRetry={handleRetry}
-                    isRetrying={retryingId === item.id}
-                  />
-                ))}
+                <ApprovalsQueueTable
+                  items={queueItems}
+                  onReview={
+                    activeFilter === "changes" ? openRevisionCreator : openReview
+                  }
+                  onRetry={handleRetry}
+                  retryingId={retryingId}
+                />
               </div>
             ) : null}
           </>
         )}
       </section>
+
+      {!embedded ? <ApprovalFlowGuide /> : null}
 
       <ReviewDrawer
         item={reviewItem}

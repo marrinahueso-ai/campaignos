@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   approvalOutcomeChip,
@@ -22,7 +23,7 @@ function artBackground(item: UnifiedApprovalItem): string {
   return url?.trim() || "";
 }
 
-function platformLabel(item: UnifiedApprovalItem): string {
+export function platformLabel(item: UnifiedApprovalItem): string {
   if (
     item.channel === "flyer" ||
     item.campaignMilestoneId?.startsWith("flyer-composer:")
@@ -41,6 +42,10 @@ function platformLabel(item: UnifiedApprovalItem): string {
           : "Email",
     )
     .join(" · ");
+}
+
+function formatWhen(item: UnifiedApprovalItem): string {
+  return item.scheduleLabel || item.nextActionTime || "Timing TBD";
 }
 
 function ArtTile({
@@ -68,12 +73,7 @@ function ArtTile({
     setImageSrc(imageUrl);
   }, [imageUrl]);
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden bg-cos-bg",
-        className,
-      )}
-    >
+    <div className={cn("relative overflow-hidden bg-cos-bg", className)}>
       {imageSrc ? (
         <Image
           src={imageSrc}
@@ -87,7 +87,7 @@ function ArtTile({
         />
       ) : null}
       {label ? (
-        <span className="absolute top-3 left-3 rounded-full bg-[rgba(255,252,247,0.92)] px-2.5 py-1 text-[11px] font-extrabold text-cos-text">
+        <span className="absolute top-3 left-3 rounded-full bg-[rgba(255,252,247,0.92)] px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] text-cos-text uppercase">
           {label}
         </span>
       ) : null}
@@ -109,16 +109,12 @@ export function ApprovalsFocusCard({
   const chip = approvalOutcomeChip(item);
   const showRetry = canRetryFailedApproval(item) && Boolean(onRetry);
   const preview = getUnifiedApprovalPreview(item);
-  const caption =
-    preview.captionText?.trim() ||
-    preview.storyCaptionSnippet?.trim() ||
-    null;
 
   return (
-    <article className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(220px,280px)_1fr]">
+    <article className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(240px,300px)_1fr]">
       <ArtTile
         item={item}
-        className="min-h-[240px] w-full self-stretch"
+        className="aspect-square min-h-[220px] w-full self-stretch md:aspect-auto md:min-h-[260px]"
         width={800}
         priority
         label={
@@ -126,32 +122,37 @@ export function ApprovalsFocusCard({
             ? "Feed"
             : preview.storyArtworkUrl
               ? "Story"
-              : undefined
+              : item.channel === "flyer" ||
+                  item.campaignMilestoneId?.startsWith("flyer-composer:")
+                ? "Flyer"
+                : undefined
         }
       />
-      <div className="flex flex-col gap-3.5 p-6 sm:p-7">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-cos-muted">
+      <div className="flex flex-col gap-3.5 p-6 sm:p-8">
+        <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold text-cos-muted">
           <span
             className={cn(
-              "inline-flex rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] uppercase",
+              "inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.06em] uppercase",
               chip.className,
             )}
           >
             {chip.label}
           </span>
-          <span>{platformLabel(item)}</span>
-          {item.scheduleLabel ? (
-            <>
-              <span aria-hidden>·</span>
-              <span>{item.scheduleLabel}</span>
-            </>
-          ) : null}
+          <span>
+            {platformLabel(item)}
+            {item.scheduleLabel || item.nextActionTime ? (
+              <>
+                {" "}
+                · {formatWhen(item)}
+              </>
+            ) : null}
+          </span>
         </div>
         <div>
-          <h2 className="font-display text-2xl tracking-[-0.02em] text-cos-text sm:text-[28px]">
+          <h2 className="font-display text-[28px] leading-tight tracking-[-0.02em] text-cos-text sm:text-[32px]">
             {item.campaignName}
           </h2>
-          <p className="mt-1 text-sm font-semibold text-cos-muted">
+          <p className="mt-1.5 text-[15px] font-medium text-cos-muted italic">
             {item.milestoneName}
           </p>
         </div>
@@ -159,42 +160,66 @@ export function ApprovalsFocusCard({
           <p className="line-clamp-3 text-sm leading-relaxed text-cos-muted">
             {item.publishError}
           </p>
-        ) : caption ? (
-          <p className="line-clamp-3 text-sm leading-relaxed text-cos-muted">
-            {caption}
-          </p>
         ) : null}
-        <div className="mt-auto flex flex-wrap gap-2 pt-2">
+        <div className="mt-auto flex flex-wrap gap-2 pt-3">
           {showRetry ? (
             <button
               type="button"
               disabled={isRetrying}
               onClick={() => onRetry?.(item)}
-              className="rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card transition hover:-translate-y-px hover:bg-[#1a1714] disabled:opacity-50"
+              className="rounded-full bg-[#2f4a3c] px-5 py-2.5 text-[13px] font-bold text-[#fffcf7] transition hover:-translate-y-px hover:brightness-110 disabled:opacity-50"
             >
               {isRetrying ? "Retrying…" : "Retry"}
             </button>
           ) : null}
-          {item.workflowStatus === "changes_requested" ? (
-            <button
-              type="button"
-              onClick={() => onReview(item)}
-              className="rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card transition hover:-translate-y-px hover:bg-[#1a1714]"
-            >
-              Open revision
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onReview(item)}
-              className="rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card transition hover:-translate-y-px hover:bg-[#1a1714]"
-            >
-              Open full view
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => onReview(item)}
+            className="rounded-full bg-[#2a2622] px-5 py-2.5 text-[13px] font-bold text-[#fffcf7] transition hover:-translate-y-px hover:bg-[#1a1714]"
+          >
+            {item.workflowStatus === "changes_requested"
+              ? "Open revision"
+              : "Open full view"}
+          </button>
         </div>
       </div>
     </article>
+  );
+}
+
+export function ApprovalsQueueTable({
+  items,
+  onReview,
+  onRetry,
+  retryingId,
+}: {
+  items: UnifiedApprovalItem[];
+  onReview: (item: UnifiedApprovalItem) => void;
+  onRetry?: (item: UnifiedApprovalItem) => void;
+  retryingId?: string | null;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+      <div className="hidden grid-cols-[56px_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] items-center gap-3 border-b border-cos-border px-4 py-3 text-[10px] font-extrabold tracking-[0.08em] text-cos-muted uppercase sm:grid">
+        <span>Thumb</span>
+        <span>Event / Campaign</span>
+        <span>Post name</span>
+        <span>Status</span>
+        <span>Assignee</span>
+        <span className="text-right">Actions</span>
+      </div>
+      <ul className="divide-y divide-cos-border">
+        {items.map((item) => (
+          <ApprovalsQueueRow
+            key={item.id}
+            item={item}
+            onReview={onReview}
+            onRetry={onRetry}
+            isRetrying={retryingId === item.id}
+          />
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -211,66 +236,88 @@ export function ApprovalsQueueRow({
 }) {
   const chip = approvalOutcomeChip(item);
   const showRetry = canRetryFailedApproval(item) && Boolean(onRetry);
+  const assignee =
+    item.assigneeName?.trim() && item.assigneeName !== "Board"
+      ? item.assigneeName
+      : "Unassigned";
+  const initials = item.assigneeInitials?.trim() || "—";
+
+  const preview = getUnifiedApprovalPreview(item);
+  const platformLine =
+    preview.storyArtworkUrl && !preview.feedArtworkUrl
+      ? `${platformLabel(item)} · Story`
+      : platformLabel(item);
 
   return (
-    <div
-      className={cn(
-        "grid w-full items-center gap-3.5 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.55)] px-3.5 py-3 transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)]",
-        showRetry
-          ? "grid-cols-[56px_1fr_auto_auto] sm:grid-cols-[56px_1fr_auto_auto_auto_auto]"
-          : "grid-cols-[56px_1fr_auto] sm:grid-cols-[56px_1fr_auto_auto_auto]",
-      )}
-    >
-      <div className="col-span-2 grid min-w-0 grid-cols-[56px_1fr] items-center gap-3.5 sm:col-span-3 sm:grid-cols-[56px_1fr_auto_auto] sm:gap-3.5">
-        <ArtTile
-          item={item}
-          className="relative h-14 w-14 shrink-0 rounded-xl"
-          width={128}
-        />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-cos-text">
-            {item.campaignName}
-          </p>
-          <p className="truncate text-xs text-cos-muted">
-            {item.milestoneName}
-            {item.platforms.length > 0 ? ` · ${platformLabel(item)}` : ""}
-          </p>
-        </div>
+    <li className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-3 px-3.5 py-3.5 sm:grid-cols-[56px_minmax(0,1.4fr)_minmax(0,1fr)_auto_minmax(7rem,auto)_auto] sm:gap-3 sm:px-4">
+      <ArtTile
+        item={item}
+        className="relative h-14 w-14 shrink-0 rounded-xl"
+        width={128}
+      />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-bold text-cos-text">
+          {item.campaignName}
+        </p>
+        <p className="truncate text-xs font-semibold text-cos-muted">
+          {platformLine}
+        </p>
+        <p className="mt-0.5 truncate text-sm text-cos-muted italic sm:hidden">
+          {item.milestoneName}
+        </p>
         <span
           className={cn(
-            "hidden rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] uppercase sm:inline-flex",
+            "mt-1.5 inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.06em] uppercase sm:hidden",
             chip.className,
           )}
         >
           {chip.label}
         </span>
-        <div className="hidden text-right text-xs font-bold whitespace-nowrap text-cos-muted sm:block">
-          {item.scheduleLabel || item.nextActionTime || "—"}
-          {item.nextAction ? (
-            <span className="mt-0.5 block font-semibold text-cos-muted/80">
-              {item.nextAction}
-            </span>
-          ) : null}
-        </div>
       </div>
-      <button
-        type="button"
-        onClick={() => onReview(item)}
-        className="rounded-full border border-cos-border bg-cos-card px-3 py-2 text-[12px] font-bold text-cos-text transition hover:border-[#6b8171] hover:-translate-y-px"
+      <p className="hidden min-w-0 truncate text-sm text-cos-text italic sm:block">
+        {item.milestoneName}
+      </p>
+      <span
+        className={cn(
+          "hidden rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.06em] uppercase sm:inline-flex",
+          chip.className,
+        )}
       >
-        View
-      </button>
-      {showRetry ? (
+        {chip.label}
+      </span>
+      <div className="hidden items-center gap-2 sm:flex">
+        <span
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ebe4d9] text-[11px] font-extrabold text-cos-text"
+          aria-hidden
+        >
+          {initials.slice(0, 2)}
+        </span>
+        <span className="truncate text-sm font-semibold text-cos-text">
+          {assignee}
+        </span>
+      </div>
+      <div className="flex items-center justify-end gap-1.5">
+        {showRetry ? (
+          <button
+            type="button"
+            disabled={isRetrying}
+            onClick={() => onRetry?.(item)}
+            className="rounded-full bg-[#2a2622] px-3 py-2 text-[12px] font-bold text-[#fffcf7] transition hover:-translate-y-px disabled:opacity-50"
+          >
+            {isRetrying ? "…" : "Retry"}
+          </button>
+        ) : null}
         <button
           type="button"
-          disabled={isRetrying}
-          onClick={() => onRetry?.(item)}
-          className="rounded-full bg-cos-text px-3 py-2 text-[12px] font-bold text-cos-card transition hover:-translate-y-px disabled:opacity-50"
+          onClick={() => onReview(item)}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-muted transition hover:border-[#6b8171] hover:text-cos-text"
+          aria-label={`View ${item.milestoneName}`}
+          title="View"
         >
-          {isRetrying ? "…" : "Retry"}
+          <Eye className="h-4 w-4" strokeWidth={1.75} />
         </button>
-      ) : null}
-    </div>
+      </div>
+    </li>
   );
 }
 

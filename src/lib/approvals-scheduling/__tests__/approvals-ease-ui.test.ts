@@ -162,14 +162,16 @@ describe("approvals ease pulse contracts", () => {
     );
 
     assert.match(ease, /relative h-14 w-14 shrink-0 rounded-xl/);
-    assert.match(ease, /grid overflow-hidden[\s\S]*minmax\(220px,280px\)_1fr/);
-    assert.match(ease, /min-h-\[240px\] w-full self-stretch/);
+    assert.match(ease, /grid overflow-hidden[\s\S]*minmax\(240px,300px\)_1fr/);
+    assert.match(ease, /min-h-\[220px\] w-full self-stretch/);
     assert.match(ease, /resize: "cover"/);
     assert.match(ease, /className="object-cover object-center"/);
     assert.match(ease, /bg-cos-bg/);
     assert.match(ease, /sizes=\{width > 200 \?[\s\S]*: "56px"\}/);
     assert.match(ease, /loading=\{priority \? "eager" : "lazy"\}/);
     assert.match(ease, /ApprovalsQueueRow[\s\S]*ArtTile/);
+    assert.match(ease, /ApprovalsQueueTable/);
+    assert.match(ease, /Open full view/);
     assert.match(table, /height: 128,[\s\S]*resize: "cover"/);
     assert.match(table, /className="object-cover object-center"/);
     assert.match(table, /sizes="48px"/);

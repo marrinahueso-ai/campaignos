@@ -24,7 +24,7 @@ export const APPROVALS_EASE_PULSE_OPTIONS: {
   { id: "scheduled", label: "Scheduled" },
   { id: "posted", label: "Posted" },
   { id: "failed", label: "Failed" },
-  { id: "changes", label: "Changes" },
+  { id: "changes", label: "Changes requested" },
 ];
 
 export function parseApprovalsEasePulse(
