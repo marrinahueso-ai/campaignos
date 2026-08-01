@@ -806,6 +806,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     updatePreviewContent,
     updateMilestone,
     addMilestone,
+    removeMilestone,
     reorderMilestones,
     generateMilestoneContent,
     generatingMilestoneId,
@@ -1280,6 +1281,22 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                   </span>
                   {meta.hint ? <span className="post-card-hint">{meta.hint}</span> : null}
                 </div>
+                <button
+                  type="button"
+                  className="post-delete"
+                  aria-label={`Delete ${milestone.name}`}
+                  title="Delete post"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (milestones.length <= 1) {
+                      onToast("Keep at least one post");
+                      return;
+                    }
+                    removeMilestone(milestone.id);
+                  }}
+                >
+                  ×
+                </button>
               </div>
             );
           })}
@@ -1337,9 +1354,9 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
           <div className="live-well live-well-v2">
             <div className="phone">
               <div className="phone-notch" />
-              <div className="phone-screen">
+              <div className={`phone-screen${mode === "story" ? " is-story" : ""}`}>
                 {mode === "feed" ? (
-                  <div>
+                  <div className="feed-post">
                     <div className="ig-bar">
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <div className="ig-avatar" />
