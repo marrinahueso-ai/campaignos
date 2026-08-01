@@ -1199,12 +1199,31 @@
       display: flex; flex-direction: column;
     }
     .preview-toolbar {
-      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-      gap: 12px; padding: 14px 20px 0; position: relative; z-index: 5;
+      position: absolute; top: 20px; left: 20px; right: 20px; z-index: 6;
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-start;
+      gap: 12px; padding: 0; pointer-events: none;
     }
     .preview-toolbar-tools {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
+      pointer-events: auto;
     }
+    .preview-steps-overlay {
+      position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
+      z-index: 5; pointer-events: none;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 0;
+    }
+    .preview-steps-overlay .step-btn {
+      pointer-events: auto; font-size: 10px; padding: 6px 14px;
+      box-shadow: 0 4px 12px rgba(47, 74, 60, 0.08);
+    }
+    .preview-steps-overlay .step-btn.done {
+      background: rgba(47, 74, 60, 0.12); color: var(--forest);
+    }
+    .preview-steps-overlay .step-btn.done .step-num[data-n]::before {
+      content: none;
+    }
+    .preview-steps-overlay .step-conn { width: 16px; background: rgba(47, 74, 60, 0.18); }
     .preview-tool-btn {
       display: inline-flex; align-items: center; gap: 8px;
       border: none; background: transparent; color: var(--ink-soft);
@@ -1228,18 +1247,12 @@
       padding: 10px 16px; font: inherit; font-size: 0.88rem; color: var(--ink); cursor: pointer;
     }
     .preview-download-menu button:hover { background: #faf8f5; }
-    .preview-steps-overlay {
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      padding: 8px 12px; pointer-events: none;
-    }
-    .preview-steps-overlay .step-btn { pointer-events: auto; font-size: 10px; padding: 6px 12px; }
-    .preview-steps-overlay .step-conn { width: 16px; }
     .flyer-stage,
     .preview-stage {
       position: relative; border-radius: 0; overflow: auto; min-width: 0; flex: 1;
       background: radial-gradient(circle at center, #fdfcfb 0%, #f6f2eb 100%);
       min-height: 420px; display: flex; align-items: center; justify-content: center;
-      padding: 48px 24px 32px;
+      padding: 72px 24px 40px;
       box-shadow: none;
     }
     .flyer-stage.is-building,
@@ -1289,6 +1302,9 @@
       background: var(--ink); color: #fff; font-weight: 800; font-size: 0.95rem;
       box-shadow: 0 12px 28px rgba(42, 38, 34, 0.18); cursor: pointer;
     }
+    #btnEdit .edit-ai-icon {
+      width: 18px; height: 18px; flex-shrink: 0;
+    }
     #btnEdit:hover:not(:disabled) { background: #253a2f; }
     #btnEdit:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
     /* Soft one-line status — not a fat banner stealing focus from the art */
@@ -1336,8 +1352,15 @@
     @media (min-width: 900px) {
       .preview-sidebar {
         width: 320px; border-top: none; border-left: 1px solid var(--line);
-        padding: 32px 28px;
+        padding: 32px 28px; min-height: calc(100dvh - 5rem);
       }
+    }
+    .preview-sidebar-footer {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding-top: 8px;
     }
     .sidebar-box {
       padding: 0; border-radius: 0; border: none; background: transparent;
@@ -2429,13 +2452,13 @@
                 </div>
               </div>
             </div>
-            <div class="preview-steps-overlay" aria-hidden="true">
-              <span class="step-btn done"><span class="step-num" data-n="1">1</span></span>
-              <span class="step-conn"></span>
-              <span class="step-btn done"><span class="step-num" data-n="2">2</span></span>
-              <span class="step-conn"></span>
-              <span class="step-btn active">3 Preview</span>
-            </div>
+          </div>
+          <div class="preview-steps-overlay no-print" aria-hidden="true">
+            <span class="step-btn done"><span class="step-num" data-n="1">✓ 1</span></span>
+            <span class="step-conn"></span>
+            <span class="step-btn done"><span class="step-num" data-n="2">✓ 2</span></span>
+            <span class="step-conn"></span>
+            <span class="step-btn active">3 Preview</span>
           </div>
 
           <div class="flyer-stage preview-stage" id="previewStage">
@@ -2454,7 +2477,20 @@
               <div class="big-flyer" id="resultFlyer" hidden></div>
               <div class="preview-under no-print">
                 <div class="sidebar-edit-row">
-                  <button type="button" id="btnEdit">Edit with AI</button>
+                  <button type="button" id="btnEdit">
+                    <svg class="edit-ai-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                      <path d="M15 4V2" stroke-linecap="round"/>
+                      <path d="M15 16v-2" stroke-linecap="round"/>
+                      <path d="M8 9h2" stroke-linecap="round"/>
+                      <path d="M20 9h2" stroke-linecap="round"/>
+                      <path d="M17.8 11.8 19 13" stroke-linecap="round"/>
+                      <path d="M15 9h0" stroke-linecap="round"/>
+                      <path d="M17.8 6.2 19 5" stroke-linecap="round"/>
+                      <path d="m3 21 9-9" stroke-linecap="round"/>
+                      <path d="M12.2 6.2 11 5" stroke-linecap="round"/>
+                    </svg>
+                    Edit with AI
+                  </button>
                 </div>
                 <div class="saved-status" id="savedBanner" hidden>
                   <span class="saved-copy" id="savedBannerCopy"></span>
@@ -2503,26 +2539,28 @@
             <p id="versionsEmptyHint" class="insp-peer-note">Generate to start a version history.</p>
           </div>
 
-          <div class="sidebar-box" id="filesPanel">
-            <p id="filesAsideHint">Save this flyer to the campaign’s Files tab.</p>
-            <button type="button" id="btnSaveToFiles" disabled>Save to Files</button>
-            <button type="button" class="btn btn-secondary" id="btnCreateNextFlyer" hidden>
-              Create next flyer
-            </button>
-          </div>
+          <div class="preview-sidebar-footer">
+            <div class="sidebar-box" id="filesPanel">
+              <p id="filesAsideHint">Save this flyer to the campaign’s Files tab.</p>
+              <button type="button" id="btnSaveToFiles" disabled>Save to Files</button>
+              <button type="button" class="btn btn-secondary" id="btnCreateNextFlyer" hidden>
+                Create next flyer
+              </button>
+            </div>
 
-          <div class="sidebar-box approval-panel" id="approvalPanel" hidden>
-            <label class="approval-to-label" for="approvalAssigneeSelect">To:</label>
-            <select id="approvalAssigneeSelect" aria-label="Send approval to">
-              <option value="">Choose reviewer…</option>
-              <option>Principal</option>
-              <option>PTO Board President</option>
-              <option>Communications Director</option>
-              <option>School Secretary</option>
-            </select>
-            <p id="approvalAsideHint">Send this version for approval.</p>
-            <p class="approval-status" id="approvalStatus" hidden></p>
-            <button type="button" id="btnSendForApproval" disabled>Send for approval</button>
+            <div class="sidebar-box approval-panel" id="approvalPanel" hidden>
+              <label class="approval-to-label" for="approvalAssigneeSelect">To:</label>
+              <select id="approvalAssigneeSelect" aria-label="Send approval to">
+                <option value="">Choose reviewer…</option>
+                <option>Principal</option>
+                <option>PTO Board President</option>
+                <option>Communications Director</option>
+                <option>School Secretary</option>
+              </select>
+              <p id="approvalAsideHint">Send this version for approval.</p>
+              <p class="approval-status" id="approvalStatus" hidden></p>
+              <button type="button" id="btnSendForApproval" disabled>Send for approval</button>
+            </div>
           </div>
         </aside>
       </div>
@@ -5008,7 +5046,6 @@
       if (editBtn) {
         editBtn.disabled =
           state.generating || !state.previewGenerated || !state.generatedImageUrl;
-        editBtn.textContent = "Edit with AI";
       }
       renderVersionsStrip();
       renderPreviewCampaignChrome();
