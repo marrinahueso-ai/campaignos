@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Shield, Sparkles } from "lucide-react";
+import { Calendar, CheckSquare, Shield, Sparkles, X } from "lucide-react";
 import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
 import { TasksEaseAskAi } from "@/components/tasks-v2/TasksEaseAskAi";
 import { TasksEaseBoard } from "@/components/tasks-v2/TasksEaseBoard";
@@ -33,14 +33,9 @@ import {
   taskMatchesTasksEasePulse,
   type TasksEasePulse,
 } from "@/lib/tasks-v2/tasks-ease-pulse";
-import { addDaysToDateOnly, getTodayDateString } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 import type { TaskHubEventOption, TaskHubTaskItem } from "@/types/task-hub";
-import type {
-  TasksV2EventGroup,
-  TasksV2PageData,
-  TasksV2Priority,
-} from "@/types/tasks-v2";
+import type { TasksV2EventGroup, TasksV2PageData } from "@/types/tasks-v2";
 
 export type TasksEaseScope = "team" | "mine";
 export type TasksEaseView = "list" | "board" | "focus" | "custom";
@@ -140,8 +135,6 @@ export function TasksEaseShell({
   const [addTaskAssigneeUserId, setAddTaskAssigneeUserId] = useState("");
   const [addTaskStatus, setAddTaskStatus] =
     useState<EventPlaybookTaskStatus>("todo");
-  const [addTaskPriority, setAddTaskPriority] =
-    useState<TasksV2Priority>("medium");
   const [addTaskPending, setAddTaskPending] = useState(false);
   const [addTaskError, setAddTaskError] = useState<string | null>(null);
   const [addTaskSuccess, setAddTaskSuccess] = useState<string | null>(null);
@@ -351,21 +344,7 @@ export function TasksEaseShell({
     setAddTaskDueDate("");
     setAddTaskAssigneeUserId("");
     setAddTaskStatus("todo");
-    setAddTaskPriority("medium");
     setAddTaskError(null);
-  }
-
-  /** When no due date is set, priority suggests one so the list Priority column stays meaningful. */
-  function dueDateFromPriority(
-    due: string,
-    priority: TasksV2Priority,
-  ): string | null {
-    const trimmed = due.trim();
-    if (trimmed) return trimmed;
-    const today = getTodayDateString();
-    if (priority === "high") return today;
-    if (priority === "medium") return addDaysToDateOnly(today, 7);
-    return addDaysToDateOnly(today, 21);
   }
 
   function handleAddTaskSubmit() {
@@ -411,7 +390,7 @@ export function TasksEaseShell({
       : assigneeName
         ? deriveInitials(assigneeName)
         : null;
-    const dueDate = dueDateFromPriority(addTaskDueDate, addTaskPriority);
+    const dueDate = addTaskDueDate.trim() || null;
     const notes = addTaskNotes.trim() || null;
     const status = addTaskStatus;
 
@@ -810,11 +789,11 @@ export function TasksEaseShell({
       </div>
 
       {addTaskOpen ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
           <button
             type="button"
             aria-label="Close add task"
-            className="absolute inset-0 bg-[#2a2622]/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#2a2622]/40 backdrop-blur-[4px]"
             onClick={() => {
               setAddTaskOpen(false);
               setAddTaskError(null);
@@ -824,186 +803,227 @@ export function TasksEaseShell({
             role="dialog"
             aria-modal="true"
             aria-labelledby="tasks-ease-add-task-title"
-            className="relative w-full max-w-xl overflow-hidden rounded-[32px] border border-[#e8e2d9] bg-white shadow-2xl"
+            className="relative flex w-full max-w-2xl flex-col overflow-hidden rounded-[32px] border border-[#e8e2d9] bg-white shadow-2xl md:flex-row"
           >
-            <div className="flex items-center justify-between px-10 pt-10 pb-6">
-              <h2
-                id="tasks-ease-add-task-title"
-                className="text-[28px] text-[#2a2622] italic"
-                style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
-              >
-                Add a task
-              </h2>
+            {/* Left context pane */}
+            <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-[#e8e2d9] bg-[#faf8f5] p-8 md:flex">
+              <div>
+                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f0f3f1] text-[#2f4a3c]">
+                  <CheckSquare className="h-5 w-5" aria-hidden />
+                </div>
+                <h3
+                  className="mb-2 text-xl leading-tight text-[#2a2622] italic"
+                  style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+                >
+                  A new task for the team.
+                </h3>
+                <p className="text-[12px] leading-relaxed text-[#5c5752]">
+                  Assign people, set a due date, and tie it to an event to keep
+                  the hub organized.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e8e2d9] bg-white text-[10px] text-[#6e6a64]">
+                  <Sparkles className="h-3 w-3" aria-hidden />
+                </div>
+                <p className="text-[10px] font-bold tracking-widest text-[#6e6a64] uppercase leading-tight">
+                  AI can help you draft a checklist
+                </p>
+              </div>
+            </aside>
+
+            {/* Right form pane */}
+            <div className="relative flex-1 p-8 md:p-10">
               <button
                 type="button"
                 onClick={() => {
                   setAddTaskOpen(false);
                   setAddTaskError(null);
                 }}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-[#5c5752] transition hover:bg-[#faf8f5]"
+                className="absolute top-6 right-6 flex h-8 w-8 items-center justify-center rounded-full text-[#6e6a64] transition hover:bg-[#faf8f5] hover:text-[#2a2622]"
                 aria-label="Close"
               >
-                ×
+                <X className="h-4 w-4" aria-hidden />
               </button>
-            </div>
 
-            <div className="space-y-8 px-10 pb-10">
-              <label className="block space-y-2">
-                <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
-                  Task Title
-                </span>
-                <input
-                  value={addTaskTitle}
-                  onChange={(event) => setAddTaskTitle(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      handleAddTaskSubmit();
-                    }
-                  }}
-                  placeholder="e.g. Call the rental company..."
-                  autoFocus
-                  className="w-full rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-5 py-4 text-sm font-medium text-[#2a2622] outline-none transition focus:border-[#2f4a3c] focus:ring-2 focus:ring-[#2f4a3c]/10"
-                />
-              </label>
+              <div className="mb-8 pr-8">
+                <h2
+                  id="tasks-ease-add-task-title"
+                  className="mb-1 text-3xl text-[#2a2622]"
+                  style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+                >
+                  Add a task
+                </h2>
+                <p className="text-sm text-[#5c5752]">
+                  Tell your team what needs doing.
+                </p>
+              </div>
 
-              <label className="block space-y-2">
-                <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
-                  Context/Notes
-                </span>
-                <textarea
-                  value={addTaskNotes}
-                  onChange={(event) => setAddTaskNotes(event.target.value)}
-                  rows={3}
-                  placeholder="Provide links, specific requirements, or background context to help the assignee..."
-                  className="w-full resize-none rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-5 py-4 text-sm text-[#2a2622] outline-none transition focus:border-[#2f4a3c] focus:ring-2 focus:ring-[#2f4a3c]/10"
-                />
-              </label>
-
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <form
+                className="space-y-6"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  handleAddTaskSubmit();
+                }}
+              >
                 <label className="block space-y-2">
-                  <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
-                    Tied to Event
-                  </span>
-                  <select
-                    value={addTaskEventId}
-                    onChange={(event) => setAddTaskEventId(event.target.value)}
-                    disabled={addTaskEventOptions.length === 0}
-                    className="w-full appearance-none rounded-xl border border-[#e8e2d9] bg-[#faf8f5] py-3.5 pr-10 pl-5 text-sm font-medium text-[#2a2622] outline-none focus:ring-2 focus:ring-[#2f4a3c]/10"
-                  >
-                    {addTaskEventOptions.length === 0 ? (
-                      <option value="">No events available</option>
-                    ) : (
-                      addTaskEventOptions.map((event) => (
-                        <option key={event.eventId} value={event.eventId}>
-                          {event.eventTitle}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </label>
-
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
-                    Priority
-                  </span>
-                  <select
-                    value={addTaskPriority}
-                    onChange={(event) =>
-                      setAddTaskPriority(event.target.value as TasksV2Priority)
-                    }
-                    className="w-full appearance-none rounded-xl border border-[#e8e2d9] bg-[#faf8f5] py-3.5 pr-10 pl-5 text-sm font-medium text-[#2a2622] outline-none focus:ring-2 focus:ring-[#2f4a3c]/10"
-                  >
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="low">Low</option>
-                  </select>
-                </label>
-
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
-                    Assignee
-                  </span>
-                  <select
-                    value={addTaskAssigneeUserId}
-                    onChange={(event) =>
-                      setAddTaskAssigneeUserId(event.target.value)
-                    }
-                    className="w-full appearance-none rounded-xl border border-[#e8e2d9] bg-[#faf8f5] py-3.5 pr-10 pl-5 text-sm font-medium text-[#2a2622] outline-none focus:ring-2 focus:ring-[#2f4a3c]/10"
-                  >
-                    <option value="">Unassigned</option>
-                    {data.orgMembers
-                      .filter((member) => member.userId)
-                      .map((member) => (
-                        <option key={member.id} value={member.userId!}>
-                          {member.userId === data.viewer.userId
-                            ? `${member.displayName} (You)`
-                            : member.displayName}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
-                    Due Date
+                  <span className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase">
+                    Task Title
                   </span>
                   <input
-                    type="date"
-                    value={addTaskDueDate}
-                    onChange={(event) => setAddTaskDueDate(event.target.value)}
-                    className="w-full rounded-xl border border-[#e8e2d9] bg-[#faf8f5] py-3.5 pr-4 pl-5 text-sm font-medium text-[#2a2622] outline-none focus:ring-2 focus:ring-[#2f4a3c]/10"
+                    value={addTaskTitle}
+                    onChange={(event) => setAddTaskTitle(event.target.value)}
+                    placeholder="e.g. Call the bounce house rental..."
+                    autoFocus
+                    className="w-full rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-4 py-3 text-sm font-medium text-[#2a2622] outline-none transition placeholder:text-[#6e6a64] focus:border-[#2f4a3c] focus:shadow-[0_0_0_4px_rgba(47,74,60,0.05)]"
                   />
                 </label>
 
-                <label className="block space-y-2 sm:col-span-2">
-                  <span className="text-[10px] font-bold tracking-widest text-[#a8a29c] uppercase">
-                    Board Status
-                  </span>
-                  <select
-                    value={addTaskStatus}
-                    onChange={(event) =>
-                      setAddTaskStatus(
-                        event.target.value as EventPlaybookTaskStatus,
-                      )
+                <div className="space-y-2">
+                  <div className="flex items-end justify-between gap-2">
+                    <label
+                      htmlFor="tasks-ease-add-notes"
+                      className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase"
+                    >
+                      Description
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddTaskOpen(false);
+                        setAskAiOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#f0f3f1] px-2 py-1 text-[11px] font-bold text-[#2f4a3c] transition hover:bg-[#e1e7e4] hover:text-[#253a2f]"
+                    >
+                      <Sparkles className="h-3 w-3" aria-hidden />
+                      Draft with AI
+                    </button>
+                  </div>
+                  <textarea
+                    id="tasks-ease-add-notes"
+                    value={addTaskNotes}
+                    onChange={(event) => setAddTaskNotes(event.target.value)}
+                    rows={3}
+                    placeholder="Add some details or a checklist..."
+                    className="w-full resize-none rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-4 py-3 text-sm text-[#2a2622] outline-none transition placeholder:text-[#6e6a64] focus:border-[#2f4a3c] focus:shadow-[0_0_0_4px_rgba(47,74,60,0.05)]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="block space-y-2">
+                    <span className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase">
+                      Tied to Event
+                    </span>
+                    <select
+                      value={addTaskEventId}
+                      onChange={(event) => setAddTaskEventId(event.target.value)}
+                      disabled={addTaskEventOptions.length === 0}
+                      className="w-full appearance-none rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-4 py-3 pr-10 text-sm font-medium text-[#2a2622] outline-none focus:border-[#2f4a3c] focus:shadow-[0_0_0_4px_rgba(47,74,60,0.05)]"
+                    >
+                      {addTaskEventOptions.length === 0 ? (
+                        <option value="">No events available</option>
+                      ) : (
+                        addTaskEventOptions.map((event) => (
+                          <option key={event.eventId} value={event.eventId}>
+                            {event.eventTitle}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </label>
+
+                  <label className="block space-y-2">
+                    <span className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase">
+                      Assignee
+                    </span>
+                    <select
+                      value={addTaskAssigneeUserId}
+                      onChange={(event) =>
+                        setAddTaskAssigneeUserId(event.target.value)
+                      }
+                      className="w-full appearance-none rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-4 py-3 pr-10 text-sm font-medium text-[#2a2622] outline-none focus:border-[#2f4a3c] focus:shadow-[0_0_0_4px_rgba(47,74,60,0.05)]"
+                    >
+                      <option value="">Unassigned</option>
+                      {data.orgMembers
+                        .filter((member) => member.userId)
+                        .map((member) => (
+                          <option key={member.id} value={member.userId!}>
+                            {member.userId === data.viewer.userId
+                              ? `${member.displayName} (You)`
+                              : member.displayName}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+
+                  <label className="block space-y-2">
+                    <span className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase">
+                      Due Date
+                    </span>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        value={addTaskDueDate}
+                        onChange={(event) =>
+                          setAddTaskDueDate(event.target.value)
+                        }
+                        className="w-full rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-4 py-3 pr-10 text-sm font-medium text-[#2a2622] outline-none focus:border-[#2f4a3c] focus:shadow-[0_0_0_4px_rgba(47,74,60,0.05)]"
+                      />
+                      <Calendar
+                        className="pointer-events-none absolute top-1/2 right-4 h-3.5 w-3.5 -translate-y-1/2 text-[#6e6a64]"
+                        aria-hidden
+                      />
+                    </div>
+                  </label>
+
+                  <label className="block space-y-2">
+                    <span className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase">
+                      Board
+                    </span>
+                    <select
+                      value={addTaskStatus}
+                      onChange={(event) =>
+                        setAddTaskStatus(
+                          event.target.value as EventPlaybookTaskStatus,
+                        )
+                      }
+                      className="w-full appearance-none rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-4 py-3 pr-10 text-sm font-medium text-[#2a2622] outline-none focus:border-[#2f4a3c] focus:shadow-[0_0_0_4px_rgba(47,74,60,0.05)]"
+                    >
+                      <option value="todo">To Do</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="blocked">Needs Review</option>
+                    </select>
+                  </label>
+                </div>
+
+                {addTaskError ? (
+                  <p className="text-sm text-red-700" role="alert">
+                    {addTaskError}
+                  </p>
+                ) : null}
+
+                <div className="flex flex-col gap-3 pt-6">
+                  <button
+                    type="submit"
+                    disabled={
+                      addTaskPending || !addTaskTitle.trim() || !addTaskEventId
                     }
-                    className="w-full appearance-none rounded-xl border border-[#e8e2d9] bg-[#faf8f5] py-3.5 pr-10 pl-5 text-sm font-medium text-[#2a2622] outline-none focus:ring-2 focus:ring-[#2f4a3c]/10"
+                    className="w-full rounded-2xl bg-[#2f4a3c] py-4 text-lg font-bold text-white shadow-xl shadow-[#2f4a3c]/10 transition hover:bg-[#253a2f] disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <option value="todo">To Do</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="blocked">Needs Review</option>
-                  </select>
-                </label>
-              </div>
-
-              {addTaskError ? (
-                <p className="text-sm text-red-700" role="alert">
-                  {addTaskError}
-                </p>
-              ) : null}
-
-              <div className="flex flex-col gap-4 pt-2">
-                <button
-                  type="button"
-                  onClick={handleAddTaskSubmit}
-                  disabled={
-                    addTaskPending || !addTaskTitle.trim() || !addTaskEventId
-                  }
-                  className="w-full rounded-2xl bg-[#2f4a3c] py-4 text-lg font-bold text-white shadow-xl shadow-[#2f4a3c]/10 transition hover:bg-[#253a2f] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {addTaskPending ? "Adding…" : "Add Task"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAddTaskOpen(false);
-                    setAddTaskError(null);
-                  }}
-                  className="text-sm font-bold text-[#5c5752] transition hover:text-[#2a2622]"
-                >
-                  Cancel
-                </button>
-              </div>
+                    {addTaskPending ? "Adding…" : "Add Task"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddTaskOpen(false);
+                      setAddTaskError(null);
+                    }}
+                    className="w-full rounded-xl border border-[#e8e2d9] py-3 text-center text-sm font-bold text-[#5c5752] transition hover:bg-[#faf8f5] hover:text-[#2a2622]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -1023,7 +1043,7 @@ export function TasksEaseShell({
           canEdit={data.canEdit}
           aiAvailable={data.aiAvailable}
           aiUnavailableReason={data.aiUnavailableReason}
-          preferredEventId={eventFilter}
+          preferredEventId={addTaskEventId || eventFilter}
           onClose={() => setAskAiOpen(false)}
           onTasksAdded={() => {
             router.refresh();
