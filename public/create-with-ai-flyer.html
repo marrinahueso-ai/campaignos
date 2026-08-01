@@ -2136,6 +2136,7 @@
     </div>
   </div>
 
+  <script src="/vendor/qrcode.min.js"></script>
   <script>
     const STORAGE_KEY = "hr-flyer-composer-draft";
     const FLYER_GENERATE_API = "/api/flyer-composer/generate";
@@ -2145,6 +2146,8 @@
     /** Keep in sync with src/lib/flyer-composer/version-history.ts */
     const MAX_FLYER_VERSIONS = 10;
     let saveTimer = null;
+    /** Client-side QR data-URL cache (url|size → data:image/png;…). */
+    const qrDataUrlCache = new Map();
 
     const SAMPLE_CUSTOM_TEMPLATE =
       "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900&q=80&auto=format&fit=crop";
@@ -2986,14 +2989,56 @@
       };
     }
 
-    function flyerQrSrc(url, size) {
-      return `/api/flyer-composer/qr?data=${encodeURIComponent(url)}&size=${size}`;
+    function qrCacheKey(url, size) {
+      return `${size}|${url}`;
+    }
+
+    function ensureQrDataUrl(url, size) {
+      const target = String(url || "").trim();
+      const px = Math.max(48, Math.min(512, Math.round(Number(size) || 120)));
+      if (!/^https?:\/\//i.test(target)) return Promise.resolve(null);
+      if (typeof QRCode === "undefined" || typeof QRCode.toDataURL !== "function") {
+        return Promise.reject(new Error("QR library missing"));
+      }
+      const key = qrCacheKey(target, px);
+      if (qrDataUrlCache.has(key)) {
+        return Promise.resolve(qrDataUrlCache.get(key));
+      }
+      return QRCode.toDataURL(target, {
+        width: px,
+        margin: 1,
+        errorCorrectionLevel: "M",
+        color: { dark: "#000000", light: "#FFFFFF" },
+      }).then((dataUrl) => {
+        qrDataUrlCache.set(key, dataUrl);
+        return dataUrl;
+      });
     }
 
     function qrImgHtml(url, size) {
       if (!url) return `<div class="qr" aria-hidden="true"></div>`;
-      const src = flyerQrSrc(url, size);
-      return `<img class="qr-img" src="${src}" alt="QR code" width="${size}" height="${size}" loading="lazy" />`;
+      const px = Math.max(48, Math.min(512, Math.round(Number(size) || 120)));
+      const cached = qrDataUrlCache.get(qrCacheKey(url, px)) || "";
+      return `<img class="qr-img" data-qr-url="${escapeHtml(url)}" data-qr-size="${px}" src="${cached}" alt="QR code" width="${px}" height="${px}"${cached ? "" : " hidden"} />`;
+    }
+
+    function hydrateQrImages(root) {
+      const scope = root || document;
+      const imgs = scope.querySelectorAll?.("img[data-qr-url]") || [];
+      return Promise.all(
+        Array.from(imgs).map(async (img) => {
+          const url = img.getAttribute("data-qr-url") || "";
+          const size = Number(img.getAttribute("data-qr-size") || 120);
+          try {
+            const dataUrl = await ensureQrDataUrl(url, size);
+            if (!dataUrl) return;
+            img.src = dataUrl;
+            img.hidden = false;
+          } catch {
+            /* leave placeholder */
+          }
+        }),
+      );
     }
 
     function formatDateLines(text) {
@@ -3352,7 +3397,7 @@
       else status.removeAttribute("data-tone");
     }
 
-    function renderQrPreviewNow() {
+    async function renderQrPreviewNow() {
       const qrField = document.getElementById("qrUrl");
       const ctaField = document.getElementById("ctaUrl");
       const url = (qrField?.value.trim() || ctaField?.value.trim() || "");
@@ -3363,24 +3408,6 @@
       if (!panel || !img) return;
 
       const requestId = ++qrPreviewRequest;
-      img.onload = () => {
-        if (requestId !== qrPreviewRequest) return;
-        panel.classList.remove("is-loading", "empty");
-        img.hidden = false;
-        if (placeholder) placeholder.hidden = true;
-        setQrPreviewStatus("Ready to print on your flyer");
-      };
-      img.onerror = () => {
-        if (requestId !== qrPreviewRequest) return;
-        panel.classList.remove("is-loading");
-        panel.classList.add("empty");
-        img.hidden = true;
-        if (placeholder) {
-          placeholder.hidden = false;
-          placeholder.innerHTML = "<strong>Couldn’t load</strong>Sign in and try again";
-        }
-        setQrPreviewStatus("QR preview needs a signed-in session", "error");
-      };
 
       if (url && /^https?:\/\//i.test(url)) {
         panel.classList.add("is-loading");
@@ -3391,11 +3418,30 @@
           placeholder.hidden = false;
           placeholder.innerHTML = "<strong>Generating</strong>QR code…";
         }
-        img.src = `${flyerQrSrc(url, 160)}&t=${Date.now()}`;
-        const caption = document.getElementById("qrCaption").value.trim();
+        const caption = document.getElementById("qrCaption")?.value.trim() || "";
         if (cap) {
-          cap.textContent = caption || "";
+          cap.textContent = caption;
           cap.hidden = !caption;
+        }
+        try {
+          const dataUrl = await ensureQrDataUrl(url, 160);
+          if (requestId !== qrPreviewRequest) return;
+          if (!dataUrl) throw new Error("empty");
+          img.src = dataUrl;
+          img.hidden = false;
+          if (placeholder) placeholder.hidden = true;
+          panel.classList.remove("is-loading", "empty");
+          setQrPreviewStatus("Ready to print on your flyer");
+        } catch {
+          if (requestId !== qrPreviewRequest) return;
+          panel.classList.remove("is-loading");
+          panel.classList.add("empty");
+          img.hidden = true;
+          if (placeholder) {
+            placeholder.hidden = false;
+            placeholder.innerHTML = "<strong>Couldn’t generate</strong>Try the link again";
+          }
+          setQrPreviewStatus("Unable to generate QR preview", "error");
         }
       } else {
         panel.classList.remove("is-loading");
@@ -3637,9 +3683,16 @@
       state.inspirationPhotoExplicit = false;
     }
 
-    function exportFlyerHtml() {
+    async function exportFlyerHtml() {
       const tpl = getTpl(state.templateId);
       const slots = resolveSlots({}, tpl);
+      if (slots.qrUrl) {
+        await Promise.all([
+          ensureQrDataUrl(slots.qrUrl, 48),
+          ensureQrDataUrl(slots.qrUrl, 120),
+          ensureQrDataUrl(slots.qrUrl, 160),
+        ]);
+      }
       const flyerInner = flyerHTML(tpl.id, {
         imageUrl: hasExplicitInspirationPhoto() ? state.imageUrl : null,
         templateUrl: state.customTemplateUrl,
@@ -4059,6 +4112,7 @@
             <span class="proven-name">${escapeHtml(t.name)}</span>
           </button>`;
       }).join("");
+      hydrateQrImages(provenGrid);
 
       provenGrid.querySelectorAll(".proven-tpl").forEach((btn) => {
         btn.addEventListener("click", (e) => {
@@ -4156,6 +4210,7 @@
         templateUrl: state.customTemplateUrl,
         fields: readDraftFields(),
       });
+      hydrateQrImages(idleFlyer);
     }
 
     function renderResultFlyer(filled = true) {
@@ -4178,6 +4233,7 @@
         fields: readDraftFields(),
         filled,
       });
+      hydrateQrImages(wrap);
     }
 
     function setPreviewActions(mode) {
@@ -5244,7 +5300,7 @@
         }
         return;
       }
-      const html = exportFlyerHtml();
+      const html = await exportFlyerHtml();
       const blob = new Blob([html], { type: "text/html;charset=utf-8" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
