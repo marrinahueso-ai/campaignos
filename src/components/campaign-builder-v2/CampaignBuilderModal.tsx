@@ -10,6 +10,8 @@ interface CampaignBuilderModalProps {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  /** Extra controls in the header (e.g. Apply & close), left of the X. */
+  headerActions?: ReactNode;
   className?: string;
   size?: "md" | "lg" | "xl";
 }
@@ -26,6 +28,7 @@ export function CampaignBuilderModal({
   onClose,
   children,
   footer,
+  headerActions,
   className,
   size = "lg",
 }: CampaignBuilderModalProps) {
@@ -46,13 +49,13 @@ export function CampaignBuilderModal({
         aria-modal="true"
         aria-labelledby="campaign-builder-modal-title"
         className={cn(
-          "flex max-h-[90vh] w-full flex-col border border-cos-border bg-cos-card shadow-xl",
+          "flex max-h-[90vh] w-full flex-col overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-xl",
           sizeClasses[size],
           className,
         )}
       >
-        <div className="flex items-start justify-between border-b border-cos-border px-6 py-5">
-          <div>
+        <div className="flex items-start justify-between gap-4 border-b border-cos-border px-6 py-5">
+          <div className="min-w-0">
             <h2
               id="campaign-builder-modal-title"
               className="font-display text-2xl text-cos-text"
@@ -63,14 +66,17 @@ export function CampaignBuilderModal({
               <p className="mt-1 text-sm text-cos-muted">{subtitle}</p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="p-1 text-cos-muted transition-colors hover:text-cos-text"
-          >
-            <X className="h-5 w-5" strokeWidth={1.5} />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {headerActions}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="rounded-full p-1.5 text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text"
+            >
+              <X className="h-5 w-5" strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>

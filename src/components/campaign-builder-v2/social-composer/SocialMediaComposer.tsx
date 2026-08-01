@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { DM_Sans, Fraunces } from "next/font/google";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { WarmBreathFrame } from "@/components/motion/WarmBreathFrame";
 
@@ -48,6 +48,7 @@ import {
 import type { SetupLogoOption } from "@/lib/artwork-v2/setup-logos";
 import type {
   CampaignBuilderMilestone,
+  CampaignBuilderStepId,
   MilestoneArtwork,
   MilestonePreviewContent,
   PlatformFormat,
@@ -266,13 +267,85 @@ function previewListMeta(
   };
 }
 
+type ComposerNavId = "setup" | "preview" | "review";
+
+function composerNavFromStep(step: CampaignBuilderStepId): ComposerNavId {
+  if (step === "preview" || step === "milestones") return "preview";
+  if (step === "review" || step === "published") return "review";
+  return "setup";
+}
+
+function ComposerTopChrome({
+  currentStep,
+  goToStep,
+  progress,
+  cta,
+  ctaHint,
+}: {
+  currentStep: CampaignBuilderStepId;
+  goToStep: (step: CampaignBuilderStepId) => void;
+  progress?: { complete: number; total: number } | null;
+  cta: ReactNode;
+  ctaHint?: string | null;
+}) {
+  const progressPct =
+    !progress || progress.total === 0
+      ? 0
+      : Math.round((progress.complete / progress.total) * 100);
+
+  return (
+    <header className="composer-topbar">
+      <nav className="preview-steps" aria-label="Composer steps">
+        {(
+          [
+            { id: "setup" as const, label: "Setup", step: "inspiration" as const },
+            { id: "preview" as const, label: "Preview", step: "preview" as const },
+            { id: "review" as const, label: "Review", step: "review" as const },
+          ] as const
+        ).map((item, index) => {
+          const active = composerNavFromStep(currentStep) === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`preview-step${active ? " active" : ""}`}
+              onClick={() => goToStep(item.step)}
+            >
+              <span className="preview-step-num">{index + 1}</span>
+              <span className="preview-step-label">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {progress ? (
+        <div className="preview-progress">
+          <div className="preview-progress-label">
+            {progress.complete} of {progress.total} posts ready
+          </div>
+          <div className="preview-progress-track" aria-hidden="true">
+            <div className="preview-progress-fill" style={{ width: `${progressPct}%` }} />
+          </div>
+        </div>
+      ) : (
+        <div className="preview-progress preview-progress-spacer" aria-hidden="true" />
+      )}
+
+      <div className="preview-top-cta">
+        {cta}
+        {ctaHint ? <span className="preview-top-cta-hint">{ctaHint}</span> : null}
+      </div>
+    </header>
+  );
+}
+
 export function SocialMediaComposer({
   eventTitle: _eventTitle,
 }: {
   eventId: string;
   eventTitle: string;
 }) {
-  const { currentStep, goToStep } = useCampaignBuilder();
+  const { currentStep } = useCampaignBuilder();
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -284,21 +357,11 @@ export function SocialMediaComposer({
     toastTimer.current = setTimeout(() => setToast(null), 2200);
   }
 
-  const activeNav: "setup" | "preview" | "review" =
-    currentStep === "preview" || currentStep === "milestones"
-      ? "preview"
-      : currentStep === "review" || currentStep === "published"
-        ? "review"
-        : "setup";
-
-  // Preview uses full-bleed studio chrome; Review keeps the step rail.
-  // Derive from currentStep so TS does not narrow activeNav inside !focusCanvas.
-  const focusCanvas =
-    currentStep === "preview" || currentStep === "milestones";
+  const activeNav = composerNavFromStep(currentStep);
 
   return (
     <div
-      className={`smc ${smcSans.variable} ${smcSerif.variable} ${smcSans.className}${focusCanvas ? " focus-canvas" : ""}`}
+      className={`smc ${smcSans.variable} ${smcSerif.variable} ${smcSans.className} composer-flow`}
       style={
         {
           ["--sans" as string]: "var(--smc-sans), system-ui, sans-serif",
@@ -308,52 +371,12 @@ export function SocialMediaComposer({
     >
       <div className="app">
         <div className="main-col">
-          <div className={`content${focusCanvas ? " content-focus" : ""}`}>
+          <div className="content content-focus">
             <Link href="/create-with-ai" className="back">
               ← Create with AI
             </Link>
-            {!focusCanvas ? (
-              <>
-                <h1 className="serif">Social Media Composer</h1>
-                <p className="lede">
-                  Same studio feel as Homepage &amp; Newsletter — logos from Setup,
-                  drag-and-drop inspiration, communication plans that map posts, then
-                  edit &amp; re-approve after generate.
-                </p>
-              </>
-            ) : null}
 
-            <div className={`layout${focusCanvas ? " layout-focus" : ""}`}>
-              {!focusCanvas ? (
-                <nav className="steps" aria-label="Composer steps">
-                  <p className="steps-heading">Steps</p>
-                  <button
-                    type="button"
-                    className={`step-btn${activeNav === "setup" ? " active" : ""}`}
-                    onClick={() => goToStep("inspiration")}
-                  >
-                    <span className="label">1 · Setup</span>
-                    <span className="hint">Logos, inspiration &amp; communication plan</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`step-btn${activeNav === "preview" ? " active" : ""}`}
-                    onClick={() => goToStep("preview")}
-                  >
-                    <span className="label">2 · Preview</span>
-                    <span className="hint">Edit posts &amp; how they go out</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`step-btn${activeNav === "review" ? " active" : ""}`}
-                    onClick={() => goToStep("review")}
-                  >
-                    <span className="label">3 · Review</span>
-                    <span className="hint">Approve &amp; send</span>
-                  </button>
-                </nav>
-              ) : null}
-
+            <div className="layout layout-focus">
               <div className="panel">
                 {activeNav === "preview" ? (
                   <PreviewPanel onToast={showToast} />
@@ -382,6 +405,8 @@ function SetupPanel({
 }) {
   const {
     session,
+    currentStep,
+    goToStep,
     updateInspiration,
     setPlaybookId,
     selectCampaign,
@@ -474,23 +499,28 @@ function SetupPanel({
 
   return (
     <section>
-      <div className="panel-head">
-        <div>
-          <h2>Creative Setup</h2>
-          <p>
-            Brand logos from Setup, drag inspiration into order, pick a
-            communication plan that maps your post plan.
-          </p>
-        </div>
-        <div className="actions">
+      <ComposerTopChrome
+        currentStep={currentStep}
+        goToStep={goToStep}
+        cta={
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn btn-forest"
             onClick={() => void handleSave()}
             disabled={isContinuing || isSaving}
           >
             {isContinuing ? "Saving…" : "Save → Preview"}
           </button>
+        }
+        ctaHint="Maps your plan, then opens Preview"
+      />
+
+      <div className="panel-head panel-head-quiet">
+        <div>
+          <h2>Creative Setup</h2>
+          <p>
+            Logos, inspiration, and a communication plan that maps your posts.
+          </p>
         </div>
       </div>
 
@@ -1099,58 +1129,19 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     updatePreviewContent(selectedPreview.milestoneId, { captions });
   }
 
-  const progressPct =
-    progress.total === 0 ? 0 : Math.round((progress.complete / progress.total) * 100);
-
   return (
     <section className="preview-studio">
-      <header className="preview-topbar">
-        <nav className="preview-steps" aria-label="Composer steps">
-          {(
-            [
-              { id: "setup", label: "Setup", step: "inspiration" as const },
-              { id: "preview", label: "Preview", step: "preview" as const },
-              { id: "review", label: "Review", step: "review" as const },
-            ] as const
-          ).map((item, index) => {
-            const active =
-              item.step === "inspiration"
-                ? currentStep === "inspiration"
-                : item.step === "review"
-                  ? currentStep === "review" || currentStep === "published"
-                  : currentStep === item.step || currentStep === "milestones";
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className={`preview-step${active ? " active" : ""}`}
-                onClick={() => goToStep(item.step)}
-              >
-                <span className="preview-step-num">{index + 1}</span>
-                <span className="preview-step-label">{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="preview-progress">
-          <div className="preview-progress-label">
-            {progress.complete} of {progress.total} posts ready
-          </div>
-          <div className="preview-progress-track" aria-hidden="true">
-            <div className="preview-progress-fill" style={{ width: `${progressPct}%` }} />
-          </div>
-        </div>
-
-        <div className="preview-top-cta">
+      <ComposerTopChrome
+        currentStep={currentStep}
+        goToStep={goToStep}
+        progress={progress}
+        cta={
           <button type="button" className="btn btn-forest" onClick={handleSaveToReview}>
             Save → Review
           </button>
-          <span className="preview-top-cta-hint">
-            Moves all {progress.total} posts to review
-          </span>
-        </div>
-      </header>
+        }
+        ctaHint={`Moves all ${progress.total} posts to review`}
+      />
 
       {generateError ? <div className="alert alert-changes">{generateError}</div> : null}
 
@@ -1808,7 +1799,8 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
 }
 
 function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
-  const { session, goToStep, updatePreviewContent, flushSave } = useCampaignBuilder();
+  const { session, currentStep, goToStep, updatePreviewContent, flushSave } =
+    useCampaignBuilder();
   const [isSending, setIsSending] = useState(false);
 
   const milestones = useMemo(
@@ -1956,23 +1948,35 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
 
   return (
     <section>
-      <div className="panel-head">
+      <ComposerTopChrome
+        currentStep={currentStep}
+        goToStep={goToStep}
+        progress={progress}
+        cta={
+          <div className="composer-cta-stack">
+            <button
+              type="button"
+              className="btn btn-forest"
+              onClick={() => void handleSendForApproval()}
+              disabled={isSending}
+            >
+              {isSending ? "Sending…" : "Send for approval"}
+            </button>
+            <button
+              type="button"
+              className="btn-quiet"
+              onClick={() => goToStep("preview")}
+            >
+              ← Preview
+            </button>
+          </div>
+        }
+      />
+
+      <div className="panel-head panel-head-quiet">
         <div>
           <h2>Review &amp; Approve</h2>
-          <p>One last pass — change requests bounce back to Preview edits, then re-approval.</p>
-        </div>
-        <div className="actions">
-          <button type="button" className="btn btn-secondary" onClick={() => goToStep("preview")}>
-            ← Preview
-          </button>
-          <button
-            type="button"
-            className="btn btn-gold"
-            onClick={() => void handleSendForApproval()}
-            disabled={isSending}
-          >
-            {isSending ? "Sending…" : "Send for approval"}
-          </button>
+          <p>One last pass — change requests bounce back to Preview, then re-approval.</p>
         </div>
       </div>
 
