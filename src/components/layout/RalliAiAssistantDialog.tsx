@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { askRalliAssistantAction } from "@/lib/ralli-assistant/actions";
@@ -36,19 +43,19 @@ function assistantEyebrow(source: AskRalliSource | null): string {
   if (source === "ops" || source === "org") return "Your next steps";
   if (source === "pto") return "PTO tips";
   if (source === "faq" || source === "ai") return "Product how-tos";
-  return "Next steps & how-tos";
+  return "Help";
 }
 
-/** Curated chips across ops/org, volunteers/comms, drafts, insights, how-to. */
+/** Starter chips — how-to / Help Center first (ops coach can still be asked freely). */
 const ASK_RALLI_SUGGESTIONS = [
-  "What should I work on today?",
-  "Catch me up",
   "I'm new. Where do I start?",
-  "What needs my approval?",
-  "How do I get more volunteers?",
-  "What's my biggest risk?",
-  "What should I send this week?",
-  "Write tomorrow's reminder",
+  "How do I invite my team?",
+  "How do I connect Facebook and Instagram?",
+  "How do I create social posts with AI?",
+  "Where do approvals live?",
+  "How do I bring in our school calendar?",
+  "How do plans and AI credits work?",
+  "Where do volunteers live?",
 ] as const;
 
 function newId(): string {
@@ -123,6 +130,7 @@ function AnswerBody({ text }: { text: string }) {
 
 export function RalliAiAssistantDialog({ onClose }: RalliAiAssistantDialogProps) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -131,11 +139,28 @@ export function RalliAiAssistantDialog({ onClose }: RalliAiAssistantDialogProps)
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     listRef.current?.scrollTo({
       top: listRef.current.scrollHeight,
       behavior: "smooth",
     });
   }, [messages, pending]);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onClose]);
 
   function ask(nextQuestion: string, eventId?: string | null) {
     const trimmed = nextQuestion.trim();
@@ -185,21 +210,28 @@ export function RalliAiAssistantDialog({ onClose }: RalliAiAssistantDialogProps)
     ask(sourceQuestion, option.eventId);
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-cos-text/20 backdrop-blur-sm">
+  if (!mounted || typeof document === "undefined") return null;
+
+  // Portaled to document.body — sticky header backdrop-filter otherwise traps
+  // position:fixed and the drawer collapses into a glitchy strip.
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[200] isolate"
+      data-ralli-assistant-root="true"
+    >
       <button
         type="button"
         aria-label="Close Hey Ralli Assistant"
-        className="flex-1"
+        className="absolute inset-0 bg-[rgba(42,38,34,0.35)] backdrop-blur-[2px]"
         onClick={onClose}
       />
       <aside
-        className="flex h-full w-full max-w-md flex-col border-l border-cos-border bg-cos-card shadow-2xl"
+        className="absolute inset-y-0 right-0 flex h-full w-full max-w-md flex-col border-l border-cos-border bg-[#fffcf7] shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="ralli-ask-title"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-cos-border px-5 py-4">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-cos-border px-5 py-4">
           <div>
             <p className="text-[11px] font-medium tracking-wide text-cos-muted uppercase">
               {assistantEyebrow(lastSource)}
@@ -211,8 +243,8 @@ export function RalliAiAssistantDialog({ onClose }: RalliAiAssistantDialogProps)
               Hey Ralli Assistant
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-cos-muted">
-              Org briefings, what’s next for an event, draft reminders &amp;
-              caption rewrites — plus product how-tos.
+              Ask how to set up your school, create posts, run approvals, or
+              find a feature — or browse the Help Center.
             </p>
             <Link
               href="/help"
@@ -233,10 +265,15 @@ export function RalliAiAssistantDialog({ onClose }: RalliAiAssistantDialogProps)
           </Button>
         </div>
 
-        <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+        <div
+          ref={listRef}
+          className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4"
+        >
           {messages.length === 0 ? (
             <div className="space-y-3">
-              <p className="text-sm text-cos-muted">Try a question to get started:</p>
+              <p className="text-sm text-cos-muted">
+                Try a help question to get started:
+              </p>
               <div className="flex flex-col gap-2">
                 {ASK_RALLI_SUGGESTIONS.map((suggestion) => (
                   <button
@@ -305,7 +342,7 @@ export function RalliAiAssistantDialog({ onClose }: RalliAiAssistantDialogProps)
 
         <form
           onSubmit={handleSubmit}
-          className="border-t border-cos-border px-5 py-4"
+          className="shrink-0 border-t border-cos-border px-5 py-4"
         >
           <label htmlFor="ralli-ask-input" className="sr-only">
             Ask Ralli a question
@@ -315,7 +352,7 @@ export function RalliAiAssistantDialog({ onClose }: RalliAiAssistantDialogProps)
               id="ralli-ask-input"
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
-              placeholder="What's next… Write a reminder… or How do I…?"
+              placeholder="How do I…?"
               disabled={pending}
               className="h-10 flex-1 rounded-[10px] border border-cos-border bg-cos-bg px-3 text-sm text-cos-text outline-none placeholder:text-cos-muted focus:border-cos-text disabled:opacity-60"
             />
@@ -324,18 +361,19 @@ export function RalliAiAssistantDialog({ onClose }: RalliAiAssistantDialogProps)
             </Button>
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-cos-muted">
-            For brand voice &amp; training content, use{" "}
+            Prefer a full page of how-tos?{" "}
             <Link
-              href="/settings/ai-brain"
+              href="/help"
               onClick={onClose}
               className="underline underline-offset-2 hover:text-cos-text"
             >
-              Settings → AI Brain
+              Browse Help Center
             </Link>
             .
           </p>
         </form>
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }
