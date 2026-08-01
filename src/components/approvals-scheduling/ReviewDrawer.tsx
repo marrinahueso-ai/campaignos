@@ -217,29 +217,37 @@ export function ReviewDrawer({
         onClick={onClose}
       />
       <div
-        className="relative z-10 flex max-h-[min(94vh,900px)] w-full max-w-[1100px] flex-col overflow-hidden rounded-t-[22px] border border-cos-border bg-[#fffcf7] shadow-[0_28px_80px_rgba(28,36,48,0.32)] sm:rounded-[22px]"
+        className="relative z-10 flex max-h-[min(94vh,900px)] w-full max-w-[1100px] flex-col overflow-hidden rounded-t-[22px] border border-[rgba(47,74,60,0.28)] bg-[#fffcf7] shadow-[0_28px_80px_rgba(47,74,60,0.22)] sm:rounded-[22px]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="review-drawer-title"
       >
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-cos-border bg-white px-4 py-4 sm:px-6">
+        {/* Forest identity strip — open review */}
+        <div
+          className="h-1.5 shrink-0 bg-gradient-to-r from-[#2f4a3c] via-[#6b8171] to-[#2f4a3c]"
+          aria-hidden
+        />
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[rgba(47,74,60,0.14)] bg-gradient-to-br from-[#e8eee9] via-[#f4f7f3] to-white px-4 py-4 sm:px-6">
           <div className="flex min-w-0 items-start gap-3">
             <button
               type="button"
               onClick={onClose}
               aria-label="Back"
-              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cos-border bg-white text-cos-text transition hover:border-[#6b8171]"
+              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(47,74,60,0.22)] bg-white text-[#2f4a3c] transition hover:border-[#2f4a3c] hover:bg-[#e8eee9]"
             >
               <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
             </button>
             <div className="min-w-0">
+              <p className="mb-1.5 inline-flex rounded-full bg-[#2f4a3c] px-2.5 py-0.5 text-[10px] font-extrabold tracking-[0.08em] text-[#fffcf7] uppercase">
+                Open review
+              </p>
               <h2
                 id="review-drawer-title"
-                className="font-display text-[1.55rem] leading-tight tracking-[-0.02em] text-cos-text italic sm:text-[1.85rem]"
+                className="font-display text-[1.55rem] leading-tight tracking-[-0.02em] text-[#2f4a3c] italic sm:text-[1.85rem]"
               >
                 {item.campaignName}
               </h2>
-              <p className="mt-1 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+              <p className="mt-1 text-[11px] font-extrabold tracking-[0.08em] text-[#6b8171] uppercase">
                 Post title:{" "}
                 <span className="text-cos-text">
                   &lsquo;{displayApprovalPostName(item.milestoneName)}&rsquo;
