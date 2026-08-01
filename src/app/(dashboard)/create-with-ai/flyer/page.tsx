@@ -9,12 +9,25 @@ export const metadata = {
 };
 
 type FlyerComposerPageProps = {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{
+    view?: string;
+    eventId?: string;
+    event?: string;
+    fresh?: string;
+  }>;
 };
 
 export default async function FlyerComposerPage({
   searchParams,
 }: FlyerComposerPageProps) {
   const params = await searchParams;
-  return <FlyerComposerHost view={params.view ?? null} />;
+  const eventId = (params.eventId || params.event || "").trim() || null;
+  const fresh = params.fresh === "1" || params.fresh === "true";
+  return (
+    <FlyerComposerHost
+      view={params.view ?? null}
+      eventId={eventId}
+      fresh={fresh}
+    />
+  );
 }

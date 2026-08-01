@@ -19,6 +19,15 @@ const TILES = [
     art: "from-[#c4922e] via-[#e0b65a] to-[#f5e6c2]",
   },
   {
+    id: "flyer",
+    title: "Flyer",
+    body: "Print flyer for this event — save to Files when ready.",
+    href: (eventId: string) =>
+      `/create-with-ai/flyer?eventId=${encodeURIComponent(eventId)}&view=start&fresh=1`,
+    hardNavigate: true,
+    art: "from-[#5c4033] via-[#8b6f47] to-[#e8d9c0]",
+  },
+  {
     id: "homepage",
     title: "Homepage",
     body: "Add this event to your Homepage.",
@@ -49,12 +58,12 @@ export function EventDetailCreateWithAiPanel({
           Create with AI for this event
         </h2>
         <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-cos-muted">
-          Same studio suite — Social, Homepage, Newsletter — pointed at{" "}
+          Same studio suite — Social, Flyer, Homepage, Newsletter — pointed at{" "}
           <span className="font-semibold text-cos-text">{eventTitle}</span>.
           Pick a surface to start.
         </p>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {TILES.map((tile) => {
             const href = tile.href(eventId);
             return (

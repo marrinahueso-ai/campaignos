@@ -997,6 +997,16 @@
     }
     .saved-status .saved-link:hover { text-decoration: underline; }
     .saved-status[hidden] { display: none !important; }
+    .saved-status.is-saved { color: var(--forest); }
+    #filesPanel {
+      border-color: var(--line);
+      background: rgba(255, 252, 247, 0.55);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #filesPanel .btn { width: 100%; }
+    #filesAsideHint { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
 
     .preview-sidebar { display: flex; flex-direction: column; gap: 10px; }
     .sidebar-box {
@@ -2004,6 +2014,16 @@
               <button type="button" class="btn btn-ghost" id="previewChangeCampaign">Change</button>
             </div>
           </div>
+          <div class="sidebar-box" id="filesPanel">
+            <p class="label">Files</p>
+            <p id="filesAsideHint">Save this flyer to the campaign’s Files tab.</p>
+            <button type="button" class="btn btn-primary" id="btnSaveToFiles" disabled>
+              Save to Files
+            </button>
+            <button type="button" class="btn btn-secondary" id="btnCreateNextFlyer" hidden>
+              Create next flyer
+            </button>
+          </div>
           <div class="sidebar-box approval-panel" id="approvalPanel" hidden>
             <p class="label">Approvals</p>
             <p id="approvalAsideHint">Send this version for approval.</p>
@@ -2138,11 +2158,17 @@
 
   <script src="/vendor/qrcode.min.js"></script>
   <script>
-    const STORAGE_KEY = "hr-flyer-composer-draft";
+    const STORAGE_KEY_BASE = "hr-flyer-composer-draft";
     const FLYER_GENERATE_API = "/api/flyer-composer/generate";
     const FLYER_EVENTS_API = "/api/flyer-composer/events";
     const FLYER_SEND_APPROVAL_API = "/api/flyer-composer/send-for-approval";
     const FLYER_APPROVAL_STATUS_API = "/api/flyer-composer/approval-status";
+    const FLYER_SAVE_API = "/api/flyer-composer/save";
+
+    function draftStorageKey(eventId) {
+      const id = typeof eventId === "string" ? eventId.trim() : "";
+      return id ? `${STORAGE_KEY_BASE}:${id}` : STORAGE_KEY_BASE;
+    }
     /** Keep in sync with src/lib/flyer-composer/version-history.ts */
     const MAX_FLYER_VERSIONS = 10;
     let saveTimer = null;
@@ -2433,6 +2459,9 @@
       approvalEvents: [],
       approvalEventsLoaded: false,
       tiedMode: "pick",
+      savedFileId: null,
+      savedFileName: null,
+      filesSaving: false,
     };
 
     function ensureApprovalSubmissionKey() {
@@ -3495,13 +3524,16 @@
         approvalEventId: state.approvalEventId,
         approvalSchedulingItemId: state.approvalSchedulingItemId,
         approvalWorkflowStatus: state.approvalWorkflowStatus,
+        savedFileId: state.savedFileId,
+        savedFileName: state.savedFileName,
         ...readDraftFields(),
       };
     }
 
     function persistDraft() {
+      const key = draftStorageKey(state.approvalEventId);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(buildDraftPayload()));
+        localStorage.setItem(key, JSON.stringify(buildDraftPayload()));
       } catch (_) {
         try {
           const slimVersions = slimFlyerVersionsForQuota(
@@ -3509,7 +3541,7 @@
             state.generatedImageUrl
           );
           localStorage.setItem(
-            STORAGE_KEY,
+            key,
             JSON.stringify(buildDraftPayload(slimVersions))
           );
           state.versions = slimVersions;
@@ -3546,7 +3578,27 @@
 
     function loadDraft() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const scopedKey = draftStorageKey(state.approvalEventId);
+        let raw = localStorage.getItem(scopedKey);
+        /* Migrate one-time from the legacy global draft when scoped is empty. */
+        if (!raw && state.approvalEventId) {
+          const legacy = localStorage.getItem(STORAGE_KEY_BASE);
+          if (legacy) {
+            try {
+              const legacyDraft = JSON.parse(legacy);
+              if (
+                !legacyDraft.approvalEventId ||
+                legacyDraft.approvalEventId === state.approvalEventId
+              ) {
+                raw = legacy;
+              }
+            } catch {
+              /* ignore */
+            }
+          }
+        } else if (!raw) {
+          raw = localStorage.getItem(STORAGE_KEY_BASE);
+        }
         if (!raw) return;
         const d = JSON.parse(raw);
         const savedProven =
@@ -3619,7 +3671,11 @@
         ) {
           state.approvalSubmissionKey = d.approvalSubmissionKey.trim();
         }
-        if (typeof d.approvalEventId === "string" && d.approvalEventId.trim()) {
+        if (
+          !state.approvalEventId &&
+          typeof d.approvalEventId === "string" &&
+          d.approvalEventId.trim()
+        ) {
           state.approvalEventId = d.approvalEventId.trim();
         }
         if (
@@ -3633,6 +3689,12 @@
           d.approvalWorkflowStatus.trim()
         ) {
           state.approvalWorkflowStatus = d.approvalWorkflowStatus.trim();
+        }
+        if (typeof d.savedFileId === "string" && d.savedFileId.trim()) {
+          state.savedFileId = d.savedFileId.trim();
+        }
+        if (typeof d.savedFileName === "string" && d.savedFileName.trim()) {
+          state.savedFileName = d.savedFileName.trim();
         }
         SLOT_IDS.forEach((id) => {
           if (d[id] != null && document.getElementById(id)) {
@@ -4062,6 +4124,8 @@
         state.generatedImageUrl = newest?.imageUrl || imageSrc;
         state.activeVersionId = newest?.id || null;
         state.previewGenerated = true;
+        state.savedFileId = null;
+        state.savedFileName = null;
         state.editDirection = "";
         const cleared = document.getElementById("editDirection");
         if (cleared) cleared.value = "";
@@ -4410,8 +4474,15 @@
       const bannerCopy = document.getElementById("savedBannerCopy");
       const bannerAction = document.getElementById("savedBannerAction");
       const previewSub = document.getElementById("previewSub");
+      const filesHint = document.getElementById("filesAsideHint");
+      const btnSave = document.getElementById("btnSaveToFiles");
+      const btnNext = document.getElementById("btnCreateNextFlyer");
       const hasArt =
         state.previewGenerated && !!getActiveFlyerVersion()?.imageUrl;
+      const savedHere =
+        Boolean(state.savedFileId) &&
+        Boolean(event) &&
+        state.approvalEventId === event.id;
 
       if (chip && chipLabel) {
         if (event) {
@@ -4424,8 +4495,10 @@
       }
 
       if (previewSub) {
-        if (hasArt && event) {
-          previewSub.textContent = "Versions ready.";
+        if (savedHere) {
+          previewSub.textContent = "Saved to Files. Create another when ready.";
+        } else if (hasArt && event) {
+          previewSub.textContent = "Versions ready — save to Files when you like one.";
         } else if (hasArt) {
           previewSub.textContent = "Pick a campaign to save to Files.";
         } else {
@@ -4435,18 +4508,27 @@
 
       if (banner && bannerCopy && bannerAction) {
         banner.hidden = !hasArt;
+        banner.classList.remove("is-draft", "is-saved");
         if (hasArt) {
-          if (event) {
-            banner.classList.remove("is-draft");
+          if (savedHere) {
+            banner.classList.add("is-saved");
             bannerCopy.innerHTML =
               `Saved to <strong>${escapeHtml(event.title)}</strong> · Files`;
             bannerAction.hidden = false;
             bannerAction.textContent = "Open Files";
             bannerAction.href = eventFilesHref(event.id);
             bannerAction.className = "saved-link";
+          } else if (event) {
+            banner.classList.add("is-draft");
+            bannerCopy.innerHTML =
+              `Tied to <strong>${escapeHtml(event.title)}</strong> — not saved to Files yet.`;
+            bannerAction.hidden = false;
+            bannerAction.textContent = "Save to Files";
+            bannerAction.href = "#";
+            bannerAction.className = "saved-link";
           } else {
             banner.classList.add("is-draft");
-            bannerCopy.innerHTML = `Saved on this device only.`;
+            bannerCopy.innerHTML = `Draft on this device only.`;
             bannerAction.hidden = false;
             bannerAction.textContent = "Choose campaign";
             bannerAction.href = "#";
@@ -4455,10 +4537,36 @@
         }
       }
 
-      if (bannerAction && event && document.body.classList.contains("is-embed")) {
+      if (bannerAction && savedHere && document.body.classList.contains("is-embed")) {
         bannerAction.setAttribute("target", "_top");
       } else if (bannerAction) {
         bannerAction.removeAttribute("target");
+      }
+
+      if (filesHint) {
+        if (savedHere) {
+          filesHint.textContent = state.savedFileName
+            ? `Saved as ${state.savedFileName}. Start a fresh flyer for this or another event.`
+            : "Saved to Files. Start a fresh flyer when you’re ready.";
+        } else if (!event) {
+          filesHint.textContent = "Choose a campaign first, then save to its Files tab.";
+        } else if (!hasArt) {
+          filesHint.textContent = "Generate a flyer, then save it to this campaign’s Files.";
+        } else {
+          filesHint.textContent = "Save this flyer to the campaign’s Files tab.";
+        }
+      }
+      if (btnSave) {
+        btnSave.disabled =
+          !hasArt || !event || state.filesSaving || state.generating;
+        btnSave.textContent = state.filesSaving
+          ? "Saving…"
+          : savedHere
+            ? "Save again to Files"
+            : "Save to Files";
+      }
+      if (btnNext) {
+        btnNext.hidden = !savedHere;
       }
     }
 
@@ -4656,12 +4764,115 @@
       }
     }
 
+    async function saveSelectedVersionToFiles() {
+      const version = getActiveFlyerVersion();
+      const eventId = state.approvalEventId || "";
+      const imageUrl = version?.imageUrl || state.generatedImageUrl || "";
+      if (!eventId) {
+        openTiedCampaignPicker();
+        return;
+      }
+      if (!isPersistableFlyerImageUrl(imageUrl)) {
+        setApprovalStatusMessage("Generate a flyer before saving to Files.", "error");
+        return;
+      }
+      if (state.filesSaving) return;
+
+      state.filesSaving = true;
+      renderPreviewCampaignChrome();
+      try {
+        const fields = readDraftFields();
+        const response = await fetch(FLYER_SAVE_API, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventId,
+            imageUrl,
+            versionId: version?.id || null,
+            headline: fields.headline || fields.orgName || null,
+          }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) {
+          const err =
+            payload?.error ||
+            payload?.message ||
+            (response.status === 401
+              ? "Sign in to save."
+              : response.status === 403
+                ? "You do not have permission to save flyers."
+                : "Could not save to Files.");
+          throw new Error(err);
+        }
+        state.savedFileId = payload.fileId || "saved";
+        state.savedFileName = payload.fileName || null;
+        persistDraft();
+        renderPreviewCampaignChrome();
+      } catch (error) {
+        const msg = error?.message || "Could not save to Files.";
+        const filesHint = document.getElementById("filesAsideHint");
+        if (filesHint) filesHint.textContent = msg;
+      } finally {
+        state.filesSaving = false;
+        renderPreviewCampaignChrome();
+      }
+    }
+
+    function clearFlyerSessionForNext(options = {}) {
+      const keepEvent = options.keepEvent !== false;
+      const eventId = keepEvent ? state.approvalEventId : null;
+      state.previewGenerated = false;
+      state.generatedImageUrl = null;
+      state.versions = [];
+      state.activeVersionId = null;
+      state.approvalSubmissionKey = null;
+      state.approvalSchedulingItemId = null;
+      state.approvalWorkflowStatus = null;
+      state.savedFileId = null;
+      state.savedFileName = null;
+      state.autoGenerateOnEnter = false;
+      state.startPath = null;
+      state.templateId = null;
+      state.provenLayoutChosen = false;
+      state.imageUrl = null;
+      state.inspirationPhotoSource = null;
+      state.inspirationPhotoLabel = null;
+      state.inspirationPhotoExplicit = false;
+      state.customTemplateUrl = null;
+      state.customTemplateFileName = null;
+      state.customTemplateFileType = null;
+      state.approvalEventId = eventId;
+      ensureApprovalSubmissionKey();
+      SLOT_IDS.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el || id === "orgName") return;
+        el.value = "";
+      });
+      setFieldIfEmpty("orgName", brandOrgName());
+      persistDraft();
+      renderStartStep();
+      renderThumbs();
+      updateInspUI();
+      syncCustomModeUI();
+      syncStartPathUI();
+      renderTiedPanel();
+      renderPreviewCampaignChrome();
+      renderApprovalPanel();
+    }
+
+    function startNextFlyer() {
+      clearFlyerSessionForNext({ keepEvent: true });
+      setView("start");
+    }
+
     async function loadApprovalEvents() {
       if (!canCallGenerateApi()) {
         state.approvalEventsLoaded = true;
         state.approvalEvents = [];
         renderTiedPanel();
         renderApprovalPanel();
+        renderPreviewCampaignChrome();
         return;
       }
       try {
@@ -5047,6 +5258,8 @@
         state.generatedImageUrl = newest?.imageUrl || imageSrc;
         state.activeVersionId = newest?.id || null;
         state.previewGenerated = true;
+        state.savedFileId = null;
+        state.savedFileName = null;
         if (payload.slots) {
           applyGeneratedSlots(payload.slots);
         }
@@ -5109,21 +5322,43 @@
       .getElementById("btnSendForApproval")
       ?.addEventListener("click", onSendForApprovalClick);
     document
+      .getElementById("btnSaveToFiles")
+      ?.addEventListener("click", () => {
+        void saveSelectedVersionToFiles();
+      });
+    document
+      .getElementById("btnCreateNextFlyer")
+      ?.addEventListener("click", startNextFlyer);
+    document
       .getElementById("previewChangeCampaign")
       ?.addEventListener("click", openTiedCampaignPicker);
     document
       .getElementById("savedBannerAction")
       ?.addEventListener("click", (e) => {
         const event = selectedApprovalEvent();
-        if (event) return; /* follow href → Files */
+        const savedHere =
+          Boolean(state.savedFileId) &&
+          Boolean(event) &&
+          state.approvalEventId === event.id;
+        if (savedHere) return; /* follow href → Files */
+        e.preventDefault();
+        if (event) {
+          void saveSelectedVersionToFiles();
+          return;
+        }
         openTiedCampaignPicker(e);
       });
     document
       .getElementById("approvalEventSelect")
       ?.addEventListener("change", (event) => {
-        state.approvalEventId = event.target.value || null;
-        state.approvalWorkflowStatus = null;
-        state.approvalSchedulingItemId = null;
+        const nextId = event.target.value || null;
+        if (nextId !== state.approvalEventId) {
+          state.savedFileId = null;
+          state.savedFileName = null;
+          state.approvalWorkflowStatus = null;
+          state.approvalSchedulingItemId = null;
+        }
+        state.approvalEventId = nextId;
         scheduleSave();
         renderTiedPanel();
         renderPreviewCampaignChrome();
@@ -5561,7 +5796,25 @@
       );
     }
 
-    loadDraft();
+    const bootParams = new URLSearchParams(location.search);
+    const urlEventId = (
+      bootParams.get("eventId") ||
+      bootParams.get("event") ||
+      ""
+    ).trim();
+    const freshStart =
+      bootParams.get("fresh") === "1" || bootParams.get("fresh") === "true";
+    if (urlEventId) {
+      state.approvalEventId = urlEventId;
+    }
+    if (freshStart) {
+      clearFlyerSessionForNext({ keepEvent: Boolean(urlEventId) });
+      const cleaned = new URL(location.href);
+      cleaned.searchParams.delete("fresh");
+      history.replaceState(null, "", cleaned);
+    } else {
+      loadDraft();
+    }
     clearPlaceholderFields();
     syncBrandKit();
     if (state.templateId) {
@@ -5597,9 +5850,26 @@
       setFieldIfEmpty("orgName", brandOrgName());
       renderStartStep();
       renderTiedPanel();
+      renderPreviewCampaignChrome();
     });
     ensureApprovalSubmissionKey();
-    void loadApprovalEvents();
+    void loadApprovalEvents().then(() => {
+      const event = selectedApprovalEvent();
+      if (event && freshStart) {
+        const headlineEl = document.getElementById("headline");
+        if (headlineEl && !String(headlineEl.value || "").trim()) {
+          headlineEl.value = event.title || "";
+        }
+        if (event.date) {
+          const datesEl = document.getElementById("datesEvents");
+          if (datesEl && !String(datesEl.value || "").trim()) {
+            datesEl.value = event.date;
+          }
+        }
+        scheduleSave();
+      }
+      renderPreviewCampaignChrome();
+    });
   </script>
 </body>
 </html>

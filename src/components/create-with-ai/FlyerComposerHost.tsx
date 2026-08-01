@@ -1,11 +1,17 @@
 type FlyerComposerHostProps = {
   view?: string | null;
+  eventId?: string | null;
+  fresh?: boolean;
 };
 
 const VALID_VIEWS = new Set(["start", "inputs", "result", "edit"]);
 
 /** Hosts the static Flyer composer inside dashboard Sidebar + header chrome. */
-export function FlyerComposerHost({ view }: FlyerComposerHostProps) {
+export function FlyerComposerHost({
+  view,
+  eventId,
+  fresh = false,
+}: FlyerComposerHostProps) {
   const resolved =
     view && VALID_VIEWS.has(view)
       ? view
@@ -16,6 +22,13 @@ export function FlyerComposerHost({ view }: FlyerComposerHostProps) {
           : "start";
 
   const params = new URLSearchParams({ embed: "1", view: resolved });
+  const trimmedEventId = eventId?.trim();
+  if (trimmedEventId) {
+    params.set("eventId", trimmedEventId);
+  }
+  if (fresh) {
+    params.set("fresh", "1");
+  }
 
   return (
     <div className="-mx-4 -my-8 flex h-[calc(100dvh-3.75rem)] min-h-[560px] flex-col overflow-hidden bg-[#f6f2eb] lg:-mx-8 lg:-my-10">
