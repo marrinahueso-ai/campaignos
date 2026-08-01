@@ -28,10 +28,8 @@ import {
   syncCaptionsToPlatforms,
 } from "@/lib/campaign-builder-v2/caption-utils";
 import {
-  allMilestonesGenerated,
   canResendMilestoneForApproval,
   captionPlatformsForFormats,
-  countCompleteMilestones,
   derivedPreviewStatus,
   describeApprovalSubmitBlockers,
   isMilestoneEligibleForApprovalSubmit,
@@ -1798,27 +1796,88 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
   );
 }
 
+function reviewPostDateLabel(
+  milestone: CampaignBuilderMilestone,
+  preview: MilestonePreviewContent | null,
+): string {
+  if (!preview) {
+    return milestone.suggestedDate
+      ? formatShortDate(milestone.suggestedDate)
+      : "Timing needed";
+  }
+  if (isPublishNowDelivery(preview.deliveryMethod)) {
+    return "Publish now";
+  }
+  if (preview.scheduleDate.trim()) {
+    return formatScheduleLabel(preview.scheduleDate, preview.scheduleTime);
+  }
+  if (milestone.suggestedDate) {
+    return formatShortDate(milestone.suggestedDate);
+  }
+  return "Timing needed";
+}
+
 function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
-  const { session, currentStep, goToStep, updatePreviewContent, flushSave } =
-    useCampaignBuilder();
+  const {
+    session,
+    currentStep,
+    goToStep,
+    setSelectedMilestoneId,
+    updatePreviewContent,
+    flushSave,
+  } = useCampaignBuilder();
   const [isSending, setIsSending] = useState(false);
+  const [peekMode, setPeekMode] = useState<"feed" | "story">("feed");
 
   const milestones = useMemo(
     () => [...session.milestones].sort((a, b) => a.sortOrder - b.sortOrder),
     [session.milestones],
   );
 
-  const progress = countCompleteMilestones(milestones, session.previewContents);
-  const contentComplete = allMilestonesGenerated(milestones, session.previewContents);
-  const anyChangesRequested = session.previewContents.some(
-    (content) => resolveMilestoneGenerationStatus(content) === "changes_requested",
-  );
-  const selectedLogoLabel = session.inspiration.uploadedLogoLabel || session.inspiration.selectedLogoId;
+  const progress = useMemo(() => {
+    let complete = 0;
+    for (const milestone of milestones) {
+      const preview =
+        session.previewContents.find((c) => c.milestoneId === milestone.id) ?? null;
+      if (listPreviewHandoffGaps(preview).length === 0) {
+        complete += 1;
+      }
+    }
+    return { complete, total: milestones.length };
+  }, [milestones, session.previewContents]);
 
   const approverStep =
     session.approvalWorkflow.find((step) => step.role !== "Creator" && step.assigneeName) ??
     session.approvalWorkflow.find((step) => step.role !== "Creator") ??
     null;
+
+  const selectedId = session.selectedMilestoneId ?? milestones[0]?.id ?? null;
+  const selectedMilestone = milestones.find((m) => m.id === selectedId) ?? null;
+  const selectedPreview =
+    session.previewContents.find((c) => c.milestoneId === selectedId) ?? null;
+  const selectedIndex = milestones.findIndex((m) => m.id === selectedId);
+
+  const blockers = useMemo(() => {
+    const items: Array<{ milestoneId: string; name: string; gap: string }> = [];
+    for (const milestone of milestones) {
+      const preview =
+        session.previewContents.find((c) => c.milestoneId === milestone.id) ?? null;
+      const gaps = listPreviewHandoffGaps(preview);
+      if (gaps.length > 0) {
+        items.push({
+          milestoneId: milestone.id,
+          name: milestone.name,
+          gap: gaps[0],
+        });
+      }
+    }
+    return items;
+  }, [milestones, session.previewContents]);
+
+  const canSend =
+    progress.total > 0 &&
+    progress.complete === progress.total &&
+    blockers.length === 0;
 
   const eligibleMilestones = milestones.filter((milestone) => {
     const preview = session.previewContents.find((c) => c.milestoneId === milestone.id);
@@ -1828,73 +1887,41 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
     .map((milestone) => session.previewContents.find((c) => c.milestoneId === milestone.id))
     .filter((preview): preview is MilestonePreviewContent => Boolean(preview));
 
-  const blockReason =
-    eligibleMilestones.length === 0
-      ? describeApprovalSubmitBlockers(milestones, session.previewContents)
+  const feedUrl =
+    selectedPreview?.artwork.feedUrl &&
+    !isPlaceholderArtworkUrl(selectedPreview.artwork.feedUrl)
+      ? selectedPreview.artwork.feedUrl
       : null;
+  const storyUrl =
+    selectedPreview?.artwork.storyUrl &&
+    !isPlaceholderArtworkUrl(selectedPreview.artwork.storyUrl)
+      ? selectedPreview.artwork.storyUrl
+      : null;
+  const sharedCaption = selectedPreview
+    ? getSharedCaptionText(selectedPreview.captions)
+    : "";
+  const handle = handleize(session.inspiration.campaignName);
+  const gradient = gradientForIndex(selectedIndex);
 
-  /** Prefer the Preview selection, then first milestone with real artwork. */
-  const peek = useMemo(() => {
-    const preferredIds = [
-      session.selectedMilestoneId,
-      ...eligibleMilestones.map((m) => m.id),
-      ...milestones.map((m) => m.id),
-    ].filter((id): id is string => Boolean(id));
-
-    for (const milestoneId of preferredIds) {
-      const milestone = milestones.find((m) => m.id === milestoneId);
-      const preview = session.previewContents.find((c) => c.milestoneId === milestoneId);
-      if (!milestone || !preview) continue;
-      const feedUrl =
-        preview.artwork.feedUrl && !isPlaceholderArtworkUrl(preview.artwork.feedUrl)
-          ? preview.artwork.feedUrl
-          : null;
-      const storyUrl =
-        preview.artwork.storyUrl && !isPlaceholderArtworkUrl(preview.artwork.storyUrl)
-          ? preview.artwork.storyUrl
-          : null;
-      if (!feedUrl && !storyUrl) continue;
-      return {
-        milestone,
-        preview,
-        feedUrl,
-        storyUrl,
-        caption: getSharedCaptionText(preview.captions).trim(),
-        index: milestones.findIndex((m) => m.id === milestoneId),
-      };
-    }
-    return null;
-  }, [
-    eligibleMilestones,
-    milestones,
-    session.previewContents,
-    session.selectedMilestoneId,
-  ]);
-
-  const peekImageUrl = peek?.feedUrl ?? peek?.storyUrl ?? null;
-  const peekHandle = handleize(session.inspiration.campaignName);
-  const peekFormats = peek?.preview.enabledFormats ?? [];
-  const peekFormatLabel = [
-    peekFormats.some((f) => f.includes("feed") || f.includes("instagram-post"))
-      ? "Feed"
-      : null,
-    peekFormats.some((f) => f.includes("story")) ? "Story" : null,
-  ]
-    .filter(Boolean)
-    .join(" · ") || "Feed · Story";
-  const peekCaption =
-    peek?.caption ||
-    (peek
-      ? "Caption ready in Preview."
-      : "Generate in Preview to see your post here.");
-  const peekTitle =
-    peek?.milestone.name || session.inspiration.campaignName || "Your campaign";
-  const peekGradient = gradientForIndex(peek?.index ?? 0);
+  function openInPreview(milestoneId: string) {
+    setSelectedMilestoneId(milestoneId);
+    goToStep("preview");
+  }
 
   async function handleSendForApproval() {
-    if (eligibleMilestones.length === 0) {
-      if (blockReason) {
-        onToast(blockReason);
+    if (!canSend || eligibleMilestones.length === 0) {
+      const first = blockers[0];
+      if (first) {
+        onToast(`${first.name}: missing ${first.gap}`);
+        openInPreview(first.milestoneId);
+        return;
+      }
+      const contentBlock = describeApprovalSubmitBlockers(
+        milestones,
+        session.previewContents,
+      );
+      if (contentBlock) {
+        onToast(contentBlock);
       } else {
         await flushSave();
         onToast("Saved. Nothing new to send for approval.");
@@ -1921,33 +1948,8 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
     }
   }
 
-  const checklist = [
-    {
-      done: Boolean(session.inspiration.selectedLogoId || session.inspiration.uploadedLogoUrl),
-      title: "Logos from Setup",
-      desc: selectedLogoLabel ? `${selectedLogoLabel} applied` : "No logo selected — artwork only",
-    },
-    {
-      done: milestones.length > 0,
-      title: "Communication Plan posts mapped",
-      desc: `${milestones.length} post${milestones.length === 1 ? "" : "s"} in this campaign`,
-    },
-    {
-      done: contentComplete,
-      title: "Content generated + editable",
-      desc: `${progress.complete} of ${progress.total} posts ready`,
-    },
-    {
-      done: !anyChangesRequested,
-      title: "Change-request loop",
-      desc: anyChangesRequested
-        ? "Preview → edit → Send for re-approval"
-        : "No open change requests",
-    },
-  ];
-
   return (
-    <section>
+    <section className="review-studio">
       <ComposerTopChrome
         currentStep={currentStep}
         goToStep={goToStep}
@@ -1958,7 +1960,7 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
               type="button"
               className="btn btn-forest"
               onClick={() => void handleSendForApproval()}
-              disabled={isSending}
+              disabled={isSending || !canSend}
             >
               {isSending ? "Sending…" : "Send for approval"}
             </button>
@@ -1973,75 +1975,187 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
         }
       />
 
-      <div className="panel-head panel-head-quiet">
-        <div>
-          <h2>Review &amp; Approve</h2>
-          <p>One last pass — change requests bounce back to Preview, then re-approval.</p>
-        </div>
-      </div>
-
-      <div className="split">
-        <div>
-          <div className="box">
-            <h3>Checklist</h3>
-            <p className="desc">Same soft-card language as Newsletter Must-dos.</p>
-            {checklist.map((item) => (
-              <div key={item.title} className="check-row">
-                <div className={`check${item.done ? "" : " empty"}`}>{item.done ? "✓" : " "}</div>
-                <div>
-                  <strong style={{ fontSize: 14 }}>{item.title}</strong>
-                  <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--muted)" }}>
-                    {item.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="box">
-            <h3>Approver</h3>
-            <p className="desc">From Team Access.</p>
-            <input className="field" value={approverStep?.assigneeName || "Unassigned"} readOnly />
-          </div>
-        </div>
-        <aside className="live-pane">
-          <div className="live-label">Ready to ship peek</div>
-          <div className="live-well">
-            <div className="phone">
-              <div className="phone-notch" />
-              <div className="phone-screen">
-                <div className="ig-bar">
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div className="ig-avatar" />
-                    {peekHandle}
-                  </div>
-                  ···
-                </div>
+      <div className="preview-layout preview-layout-v2 review-layout">
+        <aside className="campaign-posts">
+          <h4>Review &amp; approve</h4>
+          {milestones.map((milestone, index) => {
+            const preview =
+              session.previewContents.find((c) => c.milestoneId === milestone.id) ?? null;
+            const meta = previewListMeta(preview, milestone.platformFormats);
+            const dateLabel = reviewPostDateLabel(milestone, preview);
+            const thumb =
+              preview?.artwork.feedUrl && !isPlaceholderArtworkUrl(preview.artwork.feedUrl)
+                ? preview.artwork.feedUrl
+                : preview?.artwork.storyUrl && !isPlaceholderArtworkUrl(preview.artwork.storyUrl)
+                  ? preview.artwork.storyUrl
+                  : null;
+            return (
+              <button
+                key={milestone.id}
+                type="button"
+                className={`post-card${milestone.id === selectedId ? " active" : ""}`}
+                onClick={() => setSelectedMilestoneId(milestone.id)}
+                onDoubleClick={() => openInPreview(milestone.id)}
+                title="Double-click to fix in Preview"
+              >
                 <div
-                  className="feed-art"
+                  className="post-thumb"
                   style={
-                    peekImageUrl
+                    thumb
                       ? {
-                          backgroundImage: `url(${peekImageUrl})`,
+                          backgroundImage: `url(${thumb})`,
                           backgroundSize: "cover",
                           backgroundPosition: "center",
                         }
-                      : {
-                          background: `radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%), ${peekGradient}`,
-                        }
+                      : { background: gradientForIndex(index) }
                   }
-                >
-                  <span className="badge">{peek ? "Queue" : "Draft"}</span>
-                  <div className="title">{peekTitle}</div>
+                />
+                <div className="post-card-body">
+                  <strong>{milestone.name}</strong>
+                  <span
+                    className={`post-date-line${dateLabel === "Timing needed" ? " is-missing" : ""}`}
+                  >
+                    {dateLabel}
+                  </span>
+                  <span className={`status-chip ${meta.cls}`}>
+                    {meta.label === "Ready" ? "✓ Ready" : meta.label}
+                  </span>
+                  {meta.hint ? <span className="post-card-hint">{meta.hint}</span> : null}
                 </div>
-                <div className="ig-meta">
-                  <div className="likes">Post ways: {peekFormatLabel}</div>
-                  <div className="cap">
-                    <strong>{peekHandle}</strong>{" "}
-                    {peekCaption.split("\n")[0]}
+              </button>
+            );
+          })}
+        </aside>
+
+        <div className="preview-phone-col">
+          <div className="mode-toggle mode-toggle-center">
+            <button
+              type="button"
+              className={peekMode === "feed" ? "active" : ""}
+              onClick={() => setPeekMode("feed")}
+            >
+              Feed
+            </button>
+            <button
+              type="button"
+              className={peekMode === "story" ? "active" : ""}
+              onClick={() => setPeekMode("story")}
+            >
+              Story
+            </button>
+          </div>
+
+          <div className="live-well live-well-v2">
+            <div className="phone">
+              <div className="phone-notch" />
+              <div className={`phone-screen${peekMode === "story" ? " is-story" : ""}`}>
+                {peekMode === "feed" ? (
+                  <div className="feed-post">
+                    <div className="ig-bar">
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div className="ig-avatar" />
+                        {handle}
+                      </div>
+                      ···
+                    </div>
+                    <div
+                      className="feed-art"
+                      style={
+                        feedUrl
+                          ? {
+                              backgroundImage: `url(${feedUrl})`,
+                              backgroundSize: "cover",
+                              backgroundPosition: "center",
+                            }
+                          : {
+                              background: `radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%), ${gradient}`,
+                            }
+                      }
+                    >
+                      {!feedUrl ? (
+                        <>
+                          <span className="badge">Feed</span>
+                          <div className="title">{selectedMilestone?.name ?? "Post"}</div>
+                        </>
+                      ) : null}
+                    </div>
+                    <div className="ig-meta">
+                      <div className="ig-actions" aria-hidden="true">
+                        <span>♡</span>
+                      </div>
+                      <div className="cap">
+                        <strong>{handle}</strong>{" "}
+                        {sharedCaption.trim() || "Add a caption in Preview."}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div
+                    className="story-frame"
+                    style={
+                      storyUrl
+                        ? {
+                            backgroundImage: `url(${storyUrl})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                          }
+                        : { background: `linear-gradient(160deg, ${gradient})` }
+                    }
+                  >
+                    {!storyUrl ? (
+                      <>
+                        <div className="st">{selectedMilestone?.name ?? "Post"}</div>
+                        <div className="sub">
+                          {selectedMilestone
+                            ? reviewPostDateLabel(selectedMilestone, selectedPreview)
+                            : "—"}
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                )}
               </div>
             </div>
+          </div>
+        </div>
+
+        <aside className="review-summary">
+          <h3>Campaign summary</h3>
+          <p className="review-ready-line">
+            {progress.complete} of {progress.total} posts fully ready
+          </p>
+
+          {blockers.length > 0 ? (
+            <button
+              type="button"
+              className="review-blocker"
+              onClick={() => openInPreview(blockers[0].milestoneId)}
+            >
+              <strong>
+                {blockers.length} blocker{blockers.length === 1 ? "" : "s"} remain
+                {blockers.length === 1 ? "s" : ""}
+              </strong>
+              <span>
+                {blockers[0].name} is missing {blockers[0].gap}. Click to fix in
+                Preview.
+              </span>
+            </button>
+          ) : (
+            <div className="review-clear">
+              <strong>Ready to send</strong>
+              <span>All posts have artwork, caption, and timing.</span>
+            </div>
+          )}
+
+          <div className="review-reviewer">
+            <label className="field-label">Reviewer</label>
+            <p className="review-reviewer-name">
+              {approverStep?.assigneeName?.trim() || "Unassigned"}
+            </p>
+            <p className="review-reviewer-meta">
+              {approverStep?.role ? `${approverStep.role} · ` : ""}
+              From Team Access
+            </p>
           </div>
         </aside>
       </div>

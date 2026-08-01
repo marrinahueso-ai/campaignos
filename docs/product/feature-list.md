@@ -119,10 +119,11 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Artwork Apply hydrate: regenerated artwork sticks after Apply (local backup + hydrate merge so remount / Preview hydrate does not orphan richer in-memory art) — **shipped**
 - 3-step Social flow (Setup → Preview → Review); Posts step removed — plan maps posts in Setup; reorder/add/rename/schedule live on Preview (`#milestones` redirects to Preview) — **shipped**
 - Social composer chrome: shared top step pills (Setup · Preview · Review) + primary CTA on every step; left STEPS rail removed so Setup/Review flow into Preview’s gold-star surface — **shipped**
-- Review tabs (All / Needs review / Approved / Changes requested) with Pending Review · Approved · Changes requested pills — **shipped**
+- Social **Review** studio (Preview sibling): post cards with thumb + **date/timing line** + Ready/Needs work/Draft · phone Feed/Story peek · Campaign summary (ready count · blocker → fix in Preview · read-only reviewer from Team Access — no routing UI) · **Send for approval** disabled until posts are handoff-ready — **shipped**
+- Review tabs (All / Needs review / Approved / Changes requested) with Pending Review · Approved · Changes requested pills — **shipped** (legacy ReviewStep path)
 - Review Approval workflow sidebar shows org default approver from Team Access (same resolution as send-for-approval); unassigned when none — **shipped**
 - Review footer shows one primary CTA: **Send for approval** when Team Access has a distinct reviewer; **Approve all & schedule** when the approver is missing, unassigned, or yourself — **shipped**
-- Review **Send for approval** stays disabled until artwork + captions are complete; shows inline **Missing: …** (not schedule) when blocked — **shipped**
+- Review **Send for approval** stays disabled until posts are ready; blocker callout + Missing … on cards; fix in Preview — **shipped**
 - Sent for approval confirmation notice (not a stepper step); returns to Review — **shipped**
 - Full Meta slot sync after approval — **stub** / incomplete
 
