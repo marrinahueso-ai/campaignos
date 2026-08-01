@@ -187,6 +187,10 @@ export function ApprovalsFocusCard({
   );
 }
 
+/** Shared by header + rows so columns stay locked. */
+const QUEUE_GRID_CLASS =
+  "grid grid-cols-[56px_minmax(0,1.35fr)_minmax(0,1fr)_9.5rem_9rem_2.75rem] items-center gap-x-4";
+
 export function ApprovalsQueueTable({
   items,
   onReview,
@@ -199,26 +203,33 @@ export function ApprovalsQueueTable({
   retryingId?: string | null;
 }) {
   return (
-    <div className="overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
-      <div className="hidden grid-cols-[56px_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_auto] items-center gap-3 border-b border-cos-border px-4 py-3 text-[10px] font-extrabold tracking-[0.08em] text-cos-muted uppercase sm:grid">
-        <span>Thumb</span>
-        <span>Event / Campaign</span>
-        <span>Post name</span>
-        <span>Status</span>
-        <span>Assignee</span>
-        <span className="text-right">Actions</span>
+    <div className="overflow-x-auto rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+      <div className="min-w-[720px]">
+        <div
+          className={cn(
+            QUEUE_GRID_CLASS,
+            "border-b border-cos-border px-4 py-3 text-[10px] font-extrabold tracking-[0.08em] text-cos-muted uppercase",
+          )}
+        >
+          <span>Thumb</span>
+          <span>Event / Campaign</span>
+          <span>Post name</span>
+          <span>Status</span>
+          <span>Assignee</span>
+          <span className="text-right">Actions</span>
+        </div>
+        <ul className="divide-y divide-cos-border">
+          {items.map((item) => (
+            <ApprovalsQueueRow
+              key={item.id}
+              item={item}
+              onReview={onReview}
+              onRetry={onRetry}
+              isRetrying={retryingId === item.id}
+            />
+          ))}
+        </ul>
       </div>
-      <ul className="divide-y divide-cos-border">
-        {items.map((item) => (
-          <ApprovalsQueueRow
-            key={item.id}
-            item={item}
-            onReview={onReview}
-            onRetry={onRetry}
-            isRetrying={retryingId === item.id}
-          />
-        ))}
-      </ul>
     </div>
   );
 }
@@ -249,7 +260,7 @@ export function ApprovalsQueueRow({
       : platformLabel(item);
 
   return (
-    <li className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-3 px-3.5 py-3.5 sm:grid-cols-[56px_minmax(0,1.4fr)_minmax(0,1fr)_auto_minmax(7rem,auto)_auto] sm:gap-3 sm:px-4">
+    <li className={cn(QUEUE_GRID_CLASS, "px-4 py-3.5")}>
       <ArtTile
         item={item}
         className="relative h-14 w-14 shrink-0 rounded-xl"
@@ -262,30 +273,21 @@ export function ApprovalsQueueRow({
         <p className="truncate text-xs font-semibold text-cos-muted">
           {platformLine}
         </p>
-        <p className="mt-0.5 truncate text-sm text-cos-muted italic sm:hidden">
-          {item.milestoneName}
-        </p>
+      </div>
+      <p className="min-w-0 truncate text-sm text-cos-text italic">
+        {item.milestoneName}
+      </p>
+      <div className="min-w-0">
         <span
           className={cn(
-            "mt-1.5 inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.06em] uppercase sm:hidden",
+            "inline-flex max-w-full truncate rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.06em] uppercase",
             chip.className,
           )}
         >
           {chip.label}
         </span>
       </div>
-      <p className="hidden min-w-0 truncate text-sm text-cos-text italic sm:block">
-        {item.milestoneName}
-      </p>
-      <span
-        className={cn(
-          "hidden rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.06em] uppercase sm:inline-flex",
-          chip.className,
-        )}
-      >
-        {chip.label}
-      </span>
-      <div className="hidden items-center gap-2 sm:flex">
+      <div className="flex min-w-0 items-center gap-2">
         <span
           className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ebe4d9] text-[11px] font-extrabold text-cos-text"
           aria-hidden
@@ -310,7 +312,7 @@ export function ApprovalsQueueRow({
         <button
           type="button"
           onClick={() => onReview(item)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-muted transition hover:border-[#6b8171] hover:text-cos-text"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-muted transition hover:border-[#6b8171] hover:text-cos-text"
           aria-label={`View ${item.milestoneName}`}
           title="View"
         >
