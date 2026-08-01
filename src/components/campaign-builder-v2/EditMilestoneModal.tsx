@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Info, Sparkles } from "lucide-react";
+import { Copy, Info, Sparkles } from "lucide-react";
 import { CampaignBuilderModal } from "@/components/campaign-builder-v2/CampaignBuilderModal";
 import { WarmBreathFrame } from "@/components/motion/WarmBreathFrame";
 import { Button } from "@/components/ui/Button";
@@ -129,7 +129,26 @@ export function EditMilestoneModal({
     previewArtwork.storyUrl && !isPlaceholderArtworkUrl(previewArtwork.storyUrl)
       ? previewArtwork.storyUrl
       : null;
+  const hasExistingArtwork = Boolean(feedUrl || storyUrl);
+  const hasExistingCaption = previewCaption.trim().length > 0;
+  const hasExistingContent = hasExistingArtwork || hasExistingCaption;
+  const primaryCtaLabel = hasExistingContent
+    ? "Regenerate with AI"
+    : "Generate with AI";
   const busy = isGenerating || isResending;
+
+  function copyArtworkNotesToCaptions() {
+    const text = artworkInstructions.trim();
+    if (!text) {
+      setErrorMessage("Add Artwork notes first.");
+      setSuccessMessage(null);
+      return;
+    }
+    setCaptionInstructions(text);
+    setErrorMessage(null);
+    setSuccessMessage("Copied Artwork notes to Captions.");
+    setTab("captions");
+  }
 
   async function handleRegenerate() {
     if (!canRegenerate) {
@@ -255,18 +274,23 @@ export function EditMilestoneModal({
   }
 
   const regenerateHint = useMemo(() => {
+    const verb = hasExistingContent ? "Updates" : "Generates";
     if (willRegenerateArtwork && willRegenerateCaption) {
-      return "Updates artwork and caption";
+      return `${verb} artwork and caption`;
     }
-    if (willRegenerateArtwork) return "Updates artwork only";
-    if (willRegenerateCaption) return "Updates caption only";
+    if (willRegenerateArtwork) return `${verb} artwork only`;
+    if (willRegenerateCaption) return `${verb} caption only`;
     return "Add notes on Artwork and/or Captions";
-  }, [willRegenerateArtwork, willRegenerateCaption]);
+  }, [hasExistingContent, willRegenerateArtwork, willRegenerateCaption]);
 
   return (
     <CampaignBuilderModal
       title="Edit Post"
-      subtitle="Adjust artwork or captions, then regenerate once."
+      subtitle={
+        hasExistingContent
+          ? "Adjust artwork or captions, then regenerate once."
+          : "Add notes for artwork or captions, then generate once."
+      }
       onClose={onClose}
       size="xl"
       headerActions={
@@ -334,7 +358,7 @@ export function EditMilestoneModal({
               className="min-w-[11rem]"
             >
               <Sparkles className="h-4 w-4" strokeWidth={1.5} />
-              {isGenerating ? "Generating…" : "Regenerate with AI"}
+              {isGenerating ? "Generating…" : primaryCtaLabel}
             </Button>
           </div>
         </div>
@@ -473,8 +497,9 @@ export function EditMilestoneModal({
           <div className="flex gap-3 rounded-2xl border border-[rgba(107,129,113,0.35)] bg-[rgba(107,129,113,0.1)] px-4 py-3 text-sm text-[#2f4a3c]">
             <Info className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
             <p>
-              Both Artwork notes and Captions apply when you regenerate. Leave a
-              side blank if you don&apos;t want it to change.
+              Both Artwork notes and Captions apply when you{" "}
+              {hasExistingContent ? "regenerate" : "generate"}. Leave a side
+              blank if you don&apos;t want it to change.
             </p>
           </div>
 
@@ -521,6 +546,17 @@ export function EditMilestoneModal({
                 placeholder="e.g. More green accents, add playful community elements…"
                 disabled={busy}
               />
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  disabled={busy || !artworkInstructions.trim()}
+                  onClick={copyArtworkNotesToCaptions}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-cos-muted transition-colors hover:text-cos-text disabled:opacity-40"
+                >
+                  <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Copy notes to Captions
+                </button>
+              </div>
               <div>
                 <p className="text-xs font-bold tracking-[0.08em] text-cos-muted uppercase">
                   Quick suggestions
@@ -550,6 +586,17 @@ export function EditMilestoneModal({
                 placeholder="e.g. Make it shorter and more excited…"
                 disabled={busy}
               />
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  disabled={busy || !artworkInstructions.trim()}
+                  onClick={copyArtworkNotesToCaptions}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-cos-muted transition-colors hover:text-cos-text disabled:opacity-40"
+                >
+                  <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Copy notes from Artwork
+                </button>
+              </div>
               <Select
                 label="Tone"
                 value={tone}

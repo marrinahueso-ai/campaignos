@@ -836,7 +836,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     addMilestone,
     removeMilestone,
     reorderMilestones,
-    generateMilestoneContent,
     generatingMilestoneId,
   } = useCampaignBuilder();
   const router = useRouter();
@@ -866,7 +865,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     setEditModalOpen(true);
   }
   const [isResending, setIsResending] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const milestones = useMemo(
     () => [...session.milestones].sort((a, b) => a.sortOrder - b.sortOrder),
@@ -914,21 +912,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     }
     return { complete, total: milestones.length };
   }, [milestones, session.previewContents]);
-  const hasGeneratedArt = Boolean(feedUrl || storyUrl);
-
-  async function handleGenerate() {
-    if (!selectedId) {
-      return;
-    }
-    setGenerateError(null);
-    const result = await generateMilestoneContent(selectedId);
-    if (!result.success) {
-      setGenerateError(result.message);
-    } else {
-      onToast("Artwork generated");
-    }
-  }
-
   function handleSaveToReview() {
     for (const milestone of milestones) {
       const preview =
@@ -1140,8 +1123,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
         }
         ctaHint={`Moves all ${progress.total} posts to review`}
       />
-
-      {generateError ? <div className="alert alert-changes">{generateError}</div> : null}
 
       <div className="preview-layout preview-layout-v2">
         <aside className="campaign-posts">
@@ -1475,20 +1456,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
             </div>
           </div>
 
-          <div className="phone-links">
-            <button
-              type="button"
-              className="link-action"
-              onClick={() => void handleGenerate()}
-              disabled={isGenerating || !selectedId}
-            >
-              {isGenerating
-                ? "Generating…"
-                : hasGeneratedArt
-                  ? "↻ Regenerate AI"
-                  : "↻ Generate artwork"}
-            </button>
-          </div>
         </div>
 
         <div className="preview-settings-col">
