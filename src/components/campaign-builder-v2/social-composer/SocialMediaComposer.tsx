@@ -493,6 +493,7 @@ function SetupPanel({
     addInspirationImage,
     removeInspirationImage,
     saveCreativeSetupAndContinue,
+    flushSave,
     playbookOptions,
     campaignOptions,
     logoOptions,
@@ -502,6 +503,7 @@ function SetupPanel({
   const { inspiration } = session;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isContinuing, setIsContinuing] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [playbookError, setPlaybookError] = useState<string | null>(null);
   const [inspDragOver, setInspDragOver] = useState(false);
@@ -546,6 +548,16 @@ function SetupPanel({
     }
   }
 
+  async function handleSaveDraft() {
+    setIsSavingDraft(true);
+    try {
+      await flushSave();
+      onToast("Draft saved");
+    } finally {
+      setIsSavingDraft(false);
+    }
+  }
+
   async function handlePlaybookChange(nextId: string) {
     setPlaybookError(null);
     const result = await setPlaybookId(nextId);
@@ -577,8 +589,21 @@ function SetupPanel({
     onToast("Logo from Setup applied");
   }
 
+  function openReportProblem() {
+    const hostBtn = document.querySelector<HTMLButtonElement>(
+      '[data-report-problem="true"]',
+    );
+    if (hostBtn) {
+      hostBtn.click();
+      return;
+    }
+    window.location.href = "mailto:hello@heyralli.com?subject=Report%20a%20Problem";
+  }
+
+  const busy = isContinuing || isSaving;
+
   return (
-    <section>
+    <section className="setup-panel">
       <ComposerTopChrome
         currentStep={currentStep}
         goToStep={goToStep}
@@ -587,7 +612,7 @@ function SetupPanel({
             type="button"
             className="btn btn-forest"
             onClick={() => void handleSave()}
-            disabled={isContinuing || isSaving}
+            disabled={busy}
           >
             {isContinuing ? "Saving…" : "Save → Preview"}
           </button>
@@ -595,25 +620,38 @@ function SetupPanel({
         ctaHint="Maps your plan, then opens Preview"
       />
 
-      <div className="panel-head panel-head-quiet">
+      <div className="panel-head panel-head-quiet setup-hero">
         <div>
           <h2>Creative Setup</h2>
-          <p>
-            Logos, inspiration, and a communication plan that maps your posts.
-          </p>
+          <p>Logos, inspiration, and a communication plan that maps your posts.</p>
         </div>
       </div>
 
       {error ? <div className="alert alert-changes">{error}</div> : null}
 
-      <div className="split">
-        <div>
-          <div className="box">
-            <h3>Campaign</h3>
-            <p className="desc">
-              Tied to your event — same spirit as Newsletter issue header.
-            </p>
-            <div className="grid-2">
+      <div className="split setup-split">
+        <div className="setup-form-col">
+          {/* 1 · Campaign & Plan */}
+          <div className="setup-card">
+            <div className="setup-card-head">
+              <div className="setup-card-title">
+                <span className="setup-step-num" aria-hidden="true">
+                  1
+                </span>
+                <h3>Campaign &amp; Plan</h3>
+              </div>
+              <button
+                type="button"
+                className="setup-last-year-btn"
+                onClick={() =>
+                  onToast("Last year’s plan reuse is coming soon — pick a plan below for now.")
+                }
+              >
+                Use Last Year&apos;s Plan
+              </button>
+            </div>
+
+            <div className="grid-2 setup-campaign-grid">
               <div>
                 <label className="field-label" htmlFor="social-composer-event-search">
                   Event
@@ -625,7 +663,7 @@ function SetupPanel({
                 />
               </div>
               <div>
-                <label className="field-label">Campaign date</label>
+                <label className="field-label">Campaign Date</label>
                 <input
                   className="field"
                   value={formatLongDate(inspiration.eventDate)}
@@ -633,224 +671,274 @@ function SetupPanel({
                 />
               </div>
             </div>
-          </div>
 
-          <div className="box">
-            <h3>Brand logos</h3>
-            <p className="desc">
-              Pulled from <strong>Setup → Brand</strong>. Same
-              logos Homepage &amp; Social share.
-            </p>
-            <div className="logo-grid">
-              {logoOptions.map((logo) => (
-                <button
-                  key={logo.id}
-                  type="button"
-                  className={`logo-card${inspiration.selectedLogoId === logo.id ? " selected" : ""}`}
-                  onClick={() => selectLogo(logo)}
-                >
-                  <div className="preview">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={logo.url} alt={logo.label} />
-                  </div>
-                  <div className="name">{logo.label}</div>
-                  <div className="src">From Setup</div>
-                </button>
-              ))}
-              <button
-                type="button"
-                className={`logo-card${!inspiration.selectedLogoId ? " selected" : ""}`}
-                onClick={() => selectLogo(null)}
+            <div className="setup-plan-block">
+              <div className="setup-plan-label-row">
+                <label className="field-label" htmlFor="setup-playbook-select">
+                  Communication Plan
+                </label>
+                {sortedMilestones.length > 0 ? (
+                  <span className="setup-maps-count">
+                    Maps to {sortedMilestones.length} posts
+                  </span>
+                ) : null}
+              </div>
+              <select
+                id="setup-playbook-select"
+                className="field setup-playbook-select"
+                value={inspiration.playbookId}
+                onChange={(event) => void handlePlaybookChange(event.target.value)}
               >
-                <div className="preview none">None</div>
-                <div className="name">No logo</div>
-                <div className="src">Artwork only</div>
-              </button>
+                {playbookOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+              {playbookError ? (
+                <p className="desc" style={{ color: "var(--danger)" }}>
+                  {playbookError}
+                </p>
+              ) : null}
+              {sortedMilestones.length > 0 ? (
+                <div className="setup-milestone-list" role="list">
+                  {sortedMilestones.map((milestone) => {
+                    const { mo, dy } = monthDay(milestone.suggestedDate);
+                    return (
+                      <div
+                        key={milestone.id}
+                        className="setup-milestone-row"
+                        role="listitem"
+                      >
+                        <div className="setup-milestone-date" aria-hidden="true">
+                          <span>{mo}</span>
+                          {dy}
+                        </div>
+                        <div className="setup-milestone-copy">
+                          <p className="setup-milestone-name">{milestone.name}</p>
+                          <p className="setup-milestone-meta">
+                            {formatsSummaryFromPlatforms(milestone.platformFormats)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
-            {logoOptions.length === 0 ? (
-              <p className="desc" style={{ marginTop: 10, marginBottom: 0 }}>
-                No organization logos yet — add them in your brand kit.
-              </p>
-            ) : null}
           </div>
 
-          <div className="box">
-            <h3>Inspiration</h3>
-            <p className="desc">
-              Upload images to guide the look &amp; feel of generated artwork.
-            </p>
-            <div className="dnd-hint">✦ Drag images here or click + to upload</div>
-            <label className="field-label">Inspiration images</label>
-            <div
-              className={`insp-drop${inspDragOver ? " drag-over" : ""}`}
-              onDragEnter={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                setInspDragOver(true);
-              }}
-              onDragOver={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                event.dataTransfer.dropEffect = "copy";
-                setInspDragOver(true);
-              }}
-              onDragLeave={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                const next = event.relatedTarget as Node | null;
-                if (next && event.currentTarget.contains(next)) {
-                  return;
-                }
-                setInspDragOver(false);
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                setInspDragOver(false);
-                addInspirationFiles(event.dataTransfer.files);
-              }}
-            >
-              {inspiration.inspirationImages.map((image) => (
-                <div
-                  key={image.id}
-                  className="insp-tile"
-                  style={{
-                    backgroundImage: `url(${image.previewUrl || image.url || ""})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                >
+          {/* 2 · Look & Feel */}
+          <div className="setup-card">
+            <div className="setup-card-head">
+              <div className="setup-card-title">
+                <span className="setup-step-num" aria-hidden="true">
+                  2
+                </span>
+                <h3>Look &amp; Feel</h3>
+              </div>
+            </div>
+
+            <div className="setup-logos-block">
+              <label className="field-label">
+                Brand Logos{" "}
+                <span className="setup-label-hint">Pulled from Setup</span>
+              </label>
+              <div className="logo-grid">
+                {logoOptions.map((logo) => (
                   <button
+                    key={logo.id}
                     type="button"
-                    onClick={() => removeInspirationImage(image.id)}
-                    aria-label={`Remove ${image.label}`}
-                    style={{
-                      position: "absolute",
-                      right: 6,
-                      top: 6,
-                      width: 20,
-                      height: 20,
-                      borderRadius: "50%",
-                      border: "none",
-                      background: "rgba(28,36,48,.72)",
-                      color: "#fff",
-                      fontSize: 11,
-                      lineHeight: "20px",
-                      cursor: "pointer",
-                    }}
+                    className={`logo-card${inspiration.selectedLogoId === logo.id ? " selected" : ""}`}
+                    onClick={() => selectLogo(logo)}
                   >
-                    ×
+                    <div className="preview">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={logo.url} alt={logo.label} />
+                    </div>
+                    <div className="name">{logo.label}</div>
                   </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="insp-tile"
-                aria-label="Add inspiration image"
-                style={{
-                  display: "grid",
-                  placeItems: "center",
-                  background: "rgba(107,129,113,.08)",
-                  border: "1.5px dashed rgba(107,129,113,.45)",
-                  color: "var(--sage)",
-                  fontSize: 20,
-                  fontWeight: 800,
-                  cursor: "pointer",
+                ))}
+                <button
+                  type="button"
+                  className={`logo-card${!inspiration.selectedLogoId ? " selected" : ""}`}
+                  onClick={() => selectLogo(null)}
+                >
+                  <div className="preview none" aria-hidden="true">
+                    ⌀
+                  </div>
+                  <div className="name">No Logo</div>
+                </button>
+              </div>
+              {logoOptions.length === 0 ? (
+                <p className="desc" style={{ marginTop: 10, marginBottom: 0 }}>
+                  No organization logos yet — add them in your brand kit.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="setup-insp-block">
+              <div className="setup-plan-label-row">
+                <label className="field-label">Inspiration Images</label>
+                <button
+                  type="button"
+                  className="setup-add-images"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  + Add Images
+                </button>
+              </div>
+              <div
+                className={`insp-drop setup-insp-drop${inspDragOver ? " drag-over" : ""}`}
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setInspDragOver(true);
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  event.dataTransfer.dropEffect = "copy";
+                  setInspDragOver(true);
+                }}
+                onDragLeave={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const next = event.relatedTarget as Node | null;
+                  if (next && event.currentTarget.contains(next)) {
+                    return;
+                  }
+                  setInspDragOver(false);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setInspDragOver(false);
+                  addInspirationFiles(event.dataTransfer.files);
                 }}
               >
-                +
-              </button>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(event) => {
-                addInspirationFiles(event.target.files);
-                event.target.value = "";
-              }}
-            />
-          </div>
-
-          <div className="box">
-            <h3>Communication Plan</h3>
-            <p className="desc">
-              Choosing a communication plan <strong>maps real posts</strong> into
-              your campaign plan — not just a label.
-            </p>
-            <label className="field-label">Communication Plan</label>
-            <select
-              className="field"
-              value={inspiration.playbookId}
-              onChange={(event) => void handlePlaybookChange(event.target.value)}
-            >
-              {playbookOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-            {playbookError ? (
-              <p className="desc" style={{ color: "var(--danger)" }}>
-                {playbookError}
-              </p>
-            ) : null}
-            {sortedMilestones.length > 0 ? (
-              <div className="playbook-map">
-                <h4>Maps to {sortedMilestones.length} posts</h4>
-                {sortedMilestones.map((milestone) => {
-                  const { mo, dy } = monthDay(milestone.suggestedDate);
-                  return (
-                    <div key={milestone.id} className="map-row">
-                      <span className="map-chip">
-                        {mo} {dy}
-                      </span>
-                      <span className="map-arrow">→</span>
-                      <strong>{milestone.name}</strong>
-                      <span style={{ marginLeft: "auto", color: "var(--muted)" }}>
-                        {formatsSummaryFromPlatforms(milestone.platformFormats)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="box">
-            <h3>Brand colors &amp; voice</h3>
-            <p className="desc">Brand colors + a short voice note for captions.</p>
-            <div className="color-row" style={{ marginBottom: 14 }}>
-              {colors.length > 0 ? (
-                colors.map((color, index) => (
+                {inspiration.inspirationImages.map((image) => (
                   <div
-                    key={`${color}-${index}`}
-                    className="swatch"
-                    style={{ background: color }}
-                  />
-                ))
-              ) : (
-                <p className="desc" style={{ margin: 0 }}>
-                  No colors selected yet.
-                </p>
-              )}
+                    key={image.id}
+                    className="insp-tile"
+                    style={{
+                      backgroundImage: `url(${image.previewUrl || image.url || ""})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="insp-tile-remove"
+                      onClick={() => removeInspirationImage(image.id)}
+                      aria-label={`Remove ${image.label}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="insp-tile insp-tile-upload"
+                  aria-label="Add inspiration image"
+                >
+                  <span aria-hidden="true">+</span>
+                  <span className="insp-tile-upload-label">Upload</span>
+                </button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(event) => {
+                  addInspirationFiles(event.target.files);
+                  event.target.value = "";
+                }}
+              />
             </div>
-            <label className="field-label">Caption voice</label>
-            <textarea
-              className="field"
-              rows={3}
-              value={inspiration.voiceTone}
-              onChange={(event) => updateInspiration({ voiceTone: event.target.value })}
-              placeholder="Warm, clear, short. Celebrate people and the event…"
-            />
+          </div>
+
+          {/* 3 · Voice & Colors */}
+          <div className="setup-card">
+            <div className="setup-card-head">
+              <div className="setup-card-title">
+                <span className="setup-step-num" aria-hidden="true">
+                  3
+                </span>
+                <h3>Voice &amp; Colors</h3>
+              </div>
+            </div>
+
+            <div className="setup-voice-row">
+              <div className="setup-colors-block">
+                <label className="field-label">Brand Colors</label>
+                <div className="color-row">
+                  {colors.length > 0 ? (
+                    colors.map((color, index) => (
+                      <div
+                        key={`${color}-${index}`}
+                        className="swatch"
+                        style={{ background: color }}
+                        title={color}
+                      />
+                    ))
+                  ) : (
+                    <p className="desc" style={{ margin: 0 }}>
+                      No colors yet — set them in your brand kit.
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="setup-voice-block">
+                <label className="field-label" htmlFor="setup-caption-voice">
+                  Caption Voice
+                </label>
+                <textarea
+                  id="setup-caption-voice"
+                  className="field"
+                  rows={3}
+                  value={inspiration.voiceTone}
+                  onChange={(event) =>
+                    updateInspiration({ voiceTone: event.target.value })
+                  }
+                  placeholder="e.g. Warm, clear, short. Celebrate people and the event..."
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="setup-footer-actions">
+            <button
+              type="button"
+              className="btn btn-forest setup-create-btn"
+              onClick={() => void handleSave()}
+              disabled={busy}
+            >
+              {isContinuing ? "Saving…" : "Create with AI"}
+            </button>
+            <button
+              type="button"
+              className="setup-save-draft"
+              onClick={() => void handleSaveDraft()}
+              disabled={isSavingDraft || busy}
+            >
+              {isSavingDraft ? "Saving…" : "Save Draft"}
+            </button>
+            <button
+              type="button"
+              className="setup-report-link"
+              onClick={openReportProblem}
+            >
+              Report a Problem
+            </button>
           </div>
         </div>
 
         <aside className="live-pane">
-          <div className="live-label">Live vibe preview</div>
+          <div className="live-label">Live Vibe Preview</div>
           <div className="live-well">
             <div className="phone">
               <div className="phone-notch" />
@@ -892,14 +980,17 @@ function SetupPanel({
                   <div className="title">{campaignTitle}</div>
                 </div>
                 <div className="ig-meta">
-                  <div className="likes">♡ 128 likes</div>
+                  <div className="likes">♡ ♡ ♡</div>
                   <div className="cap">
-                    <strong>{handle}</strong>{" "}
-                    {inspiration.voiceTone || "Save the date — details coming soon."}
+                    <strong>{handle}</strong> Save the date — details coming soon.
                   </div>
                 </div>
               </div>
             </div>
+            <p className="live-footnote">
+              This preview updates as you tweak your setup. It helps the AI understand
+              the visual balance before you generate real posts.
+            </p>
           </div>
         </aside>
       </div>
