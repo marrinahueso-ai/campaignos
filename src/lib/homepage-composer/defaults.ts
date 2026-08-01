@@ -206,7 +206,30 @@ function normalizeMonthSnapshot(
       ? parsed.selectedEventIds.filter((id): id is string => typeof id === "string")
       : [],
     cards: parsed.cards.map((card, i) => normalizeCard(card, i)),
+    announcements: Array.isArray(parsed.announcements)
+      ? parsed.announcements.map((row, i) =>
+          normalizeAnnouncement(
+            (row && typeof row === "object"
+              ? row
+              : {}) as Partial<HomepageAnnouncement>,
+            i,
+          ),
+        )
+      : [],
   };
+}
+
+/** True when any month snapshot in the raw draft already stored announcements. */
+function monthMapRawHasAnnouncementsField(raw: unknown): boolean {
+  if (!raw || typeof raw !== "object") return false;
+  return Object.values(raw as Record<string, unknown>).some(
+    (value) =>
+      Boolean(value) &&
+      typeof value === "object" &&
+      Array.isArray(
+        (value as Partial<HomepageMonthCardsSnapshot>).announcements,
+      ),
+  );
 }
 
 function normalizeCard(card: HomepageCard, i: number): HomepageCard {
@@ -260,13 +283,15 @@ export function buildInitialState(
   const workingMonth = currentMonthYyyyMm();
   const cards = [...evergreen.slice(0, 1), ...eventCards, ...evergreen.slice(1)];
   const selectedEventIds = upcoming.map((e) => e.id);
+  const header = defaultHeader(organizationName);
   const monthSnapshot: HomepageMonthCardsSnapshot = {
     cards: cards.map((card) => ({ ...card })),
     selectedEventIds: [...selectedEventIds],
+    announcements: header.announcements.map((row) => ({ ...row })),
   };
 
   return {
-    header: defaultHeader(organizationName),
+    header,
     footer: defaultFooter(),
     cardsSectionTitle: defaultCardsSectionTitle(),
     resources: defaultResources(),
@@ -404,6 +429,38 @@ export function normalizeComposerState(
     normalized.monthDrafts = {
       ...normalized.monthDrafts,
       [normalized.workingMonth]: snapshotFromState(normalized),
+    };
+  }
+
+  // Pre-month-announcements drafts: announcements lived only on header.
+  const hadMonthAnnouncements =
+    monthMapRawHasAnnouncementsField(parsed.monthDrafts) ||
+    monthMapRawHasAnnouncementsField(parsed.monthSaved);
+  if (!hadMonthAnnouncements) {
+    const seeded = normalized.header.announcements.map((row) => ({ ...row }));
+    const wm = normalized.workingMonth;
+    const draft = normalized.monthDrafts[wm];
+    if (draft) {
+      normalized.monthDrafts = {
+        ...normalized.monthDrafts,
+        [wm]: { ...draft, announcements: seeded },
+      };
+    }
+    const saved = normalized.monthSaved[wm];
+    if (saved) {
+      normalized.monthSaved = {
+        ...normalized.monthSaved,
+        [wm]: { ...saved, announcements: seeded.map((row) => ({ ...row })) },
+      };
+    }
+  }
+
+  // Active header announcements always mirror the working month snapshot.
+  const activeMonth = normalized.monthDrafts[normalized.workingMonth];
+  if (activeMonth) {
+    normalized.header = {
+      ...normalized.header,
+      announcements: activeMonth.announcements.map((row) => ({ ...row })),
     };
   }
 

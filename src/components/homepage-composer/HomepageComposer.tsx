@@ -84,7 +84,7 @@ import {
 
 const STEPS: Array<{ id: HomepageComposerStep; label: string; hint: string }> =
   [
-    { id: "header", label: "Header", hint: "Design once" },
+    { id: "header", label: "Header", hint: "Hero + monthly bars" },
     { id: "footer", label: "Footer", hint: "Design once" },
     { id: "cards", label: "Cards", hint: "Change monthly" },
     { id: "preview", label: "Preview", hint: "Full page" },
@@ -1018,12 +1018,11 @@ export function HomepageComposer({
                 "shrink-0 text-[11px] font-semibold sm:text-xs",
                 saveStatus.kind === "error"
                   ? "text-cos-error"
-                  : step === "cards" && monthStatus === "unsaved"
+                  : monthStatus === "unsaved"
                     ? "text-cos-brand-mustard"
-                    : step === "cards" && monthStatus === "empty"
+                    : monthStatus === "empty"
                       ? "text-cos-muted"
-                      : saveStatus.kind === "saved" ||
-                          (step === "cards" && monthStatus === "saved")
+                      : saveStatus.kind === "saved" || monthStatus === "saved"
                         ? "text-cos-brand-sage"
                         : "text-cos-muted",
               )}
@@ -1031,13 +1030,11 @@ export function HomepageComposer({
             >
               {saveStatus.kind === "error"
                 ? formatSaveStatus(saveStatus)
-                : step === "cards"
-                  ? monthStatus === "saved"
-                    ? `${workingMonthShort} saved`
-                    : monthStatus === "empty"
-                      ? `${workingMonthShort} · empty`
-                      : `${workingMonthShort} · unsaved`
-                  : formatSaveStatus(saveStatus)}
+                : monthStatus === "saved"
+                  ? `${workingMonthShort} saved`
+                  : monthStatus === "empty"
+                    ? `${workingMonthShort} · empty`
+                    : `${workingMonthShort} · unsaved`}
             </p>
           </div>
         </div>
@@ -1069,11 +1066,96 @@ export function HomepageComposer({
         </aside>
 
         <div className="min-w-0 space-y-3">
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[12px] bg-cos-bg-alt/70 px-2.5 py-1.5",
+              monthBarPulse &&
+                "ring-2 ring-[rgba(42,122,134,0.22)] ring-offset-2 ring-offset-cos-bg",
+            )}
+          >
+            <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-2.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-cos-muted">
+                Working on
+              </span>
+              <div className="inline-flex items-center gap-0.5 rounded-full border border-cos-border/80 bg-cos-card p-0.5">
+                <button
+                  type="button"
+                  className="inline-grid h-7 w-7 place-items-center rounded-full text-cos-muted transition hover:bg-cos-bg-alt hover:text-cos-text disabled:opacity-35"
+                  aria-label="Previous month"
+                  disabled={workingMonthIndex <= 0}
+                  onClick={() => {
+                    const prev = workingMonthKeys[workingMonthIndex - 1];
+                    if (prev) goToWorkingMonth(prev);
+                  }}
+                >
+                  <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+                </button>
+                <select
+                  className="max-w-[10.5rem] appearance-none border-none bg-transparent py-0.5 pl-1.5 pr-6 text-sm font-semibold text-cos-text focus:outline-none"
+                  style={{
+                    backgroundImage:
+                      "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%237a7166' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E\")",
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 6px center",
+                  }}
+                  aria-label="Working on month"
+                  value={state.workingMonth}
+                  onChange={(e) => goToWorkingMonth(e.target.value)}
+                >
+                  {workingMonthKeys.map((month) => (
+                    <option key={month} value={month}>
+                      {formatMonthLabel(month)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="inline-grid h-7 w-7 place-items-center rounded-full text-cos-muted transition hover:bg-cos-bg-alt hover:text-cos-text disabled:opacity-35"
+                  aria-label="Next month"
+                  disabled={
+                    workingMonthIndex < 0 ||
+                    workingMonthIndex >= workingMonthKeys.length - 1
+                  }
+                  onClick={() => {
+                    const next = workingMonthKeys[workingMonthIndex + 1];
+                    if (next) goToWorkingMonth(next);
+                  }}
+                >
+                  <ChevronRight className="h-4 w-4" strokeWidth={2} />
+                </button>
+              </div>
+              <span
+                className={cn(
+                  "text-[11px] leading-snug",
+                  monthStatus === "unsaved"
+                    ? "font-medium text-cos-brand-mustard"
+                    : "text-cos-muted",
+                )}
+              >
+                {monthStatus === "unsaved"
+                  ? "Unsaved"
+                  : monthStatus === "empty"
+                    ? "Empty"
+                    : "Saved"}
+              </span>
+            </div>
+            <div className="ml-auto">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleSaveThisMonth}
+              >
+                Save this month
+              </Button>
+            </div>
+          </div>
+
           {step === "header" && (
             <section className="space-y-3">
               <PanelHead
                 title="Design your header"
-                body="Colors, welcome copy, buttons, cards section title, and announcements."
+                body="Hero colors and welcome copy are shared. Announcement bar lines follow the Working on month above."
                 actions={
                   <Button type="button" onClick={() => setStep("footer")}>
                     Save → Footer
@@ -1902,91 +1984,6 @@ export function HomepageComposer({
                 >
                   Preview →
                 </Button>
-              </div>
-
-              <div
-                className={cn(
-                  "flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[12px] bg-cos-bg-alt/70 px-2.5 py-1.5",
-                  monthBarPulse &&
-                    "ring-2 ring-[rgba(42,122,134,0.22)] ring-offset-2 ring-offset-cos-bg",
-                )}
-              >
-                <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-2.5">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-cos-muted">
-                    Working on
-                  </span>
-                  <div className="inline-flex items-center gap-0.5 rounded-full border border-cos-border/80 bg-cos-card p-0.5">
-                    <button
-                      type="button"
-                      className="inline-grid h-7 w-7 place-items-center rounded-full text-cos-muted transition hover:bg-cos-bg-alt hover:text-cos-text disabled:opacity-35"
-                      aria-label="Previous month"
-                      disabled={workingMonthIndex <= 0}
-                      onClick={() => {
-                        const prev = workingMonthKeys[workingMonthIndex - 1];
-                        if (prev) goToWorkingMonth(prev);
-                      }}
-                    >
-                      <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-                    </button>
-                    <select
-                      className="max-w-[10.5rem] appearance-none border-none bg-transparent py-0.5 pl-1.5 pr-6 text-sm font-semibold text-cos-text focus:outline-none"
-                      style={{
-                        backgroundImage:
-                          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%237a7166' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E\")",
-                        backgroundRepeat: "no-repeat",
-                        backgroundPosition: "right 6px center",
-                      }}
-                      aria-label="Working on month"
-                      value={state.workingMonth}
-                      onChange={(e) => goToWorkingMonth(e.target.value)}
-                    >
-                      {workingMonthKeys.map((month) => (
-                        <option key={month} value={month}>
-                          {formatMonthLabel(month)}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      className="inline-grid h-7 w-7 place-items-center rounded-full text-cos-muted transition hover:bg-cos-bg-alt hover:text-cos-text disabled:opacity-35"
-                      aria-label="Next month"
-                      disabled={
-                        workingMonthIndex < 0 ||
-                        workingMonthIndex >= workingMonthKeys.length - 1
-                      }
-                      onClick={() => {
-                        const next = workingMonthKeys[workingMonthIndex + 1];
-                        if (next) goToWorkingMonth(next);
-                      }}
-                    >
-                      <ChevronRight className="h-4 w-4" strokeWidth={2} />
-                    </button>
-                  </div>
-                  <span
-                    className={cn(
-                      "text-[11px] leading-snug",
-                      monthStatus === "unsaved"
-                        ? "font-medium text-cos-brand-mustard"
-                        : "text-cos-muted",
-                    )}
-                  >
-                    {monthStatus === "unsaved"
-                      ? "Unsaved"
-                      : monthStatus === "empty"
-                        ? "Empty"
-                        : "Saved"}
-                  </span>
-                </div>
-                <div className="ml-auto">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleSaveThisMonth}
-                  >
-                    Save this month
-                  </Button>
-                </div>
               </div>
 
               <div className="grid gap-3 xl:grid-cols-[260px_minmax(0,1fr)]">

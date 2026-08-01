@@ -55,7 +55,22 @@ describe("homepage announcement on/off dates", () => {
       selectedEventIds: [],
       cards: [],
       workingMonth,
-      monthDrafts: { [workingMonth]: { cards: [], selectedEventIds: [] } },
+      monthDrafts: {
+        [workingMonth]: {
+          cards: [],
+          selectedEventIds: [],
+          announcements: [
+            normalizeAnnouncement({
+              id: "ann-window",
+              emoji: "📅",
+              text: "Windowed line",
+              startsOn: "2026-08-01",
+              expiresOn: "2026-08-15",
+              alwaysOn: false,
+            }),
+          ],
+        },
+      },
       monthSaved: {},
     };
 

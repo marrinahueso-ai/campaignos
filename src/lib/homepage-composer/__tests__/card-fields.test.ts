@@ -26,6 +26,7 @@ function withMonthFields(
   const snapshot = {
     cards: state.cards,
     selectedEventIds: state.selectedEventIds,
+    announcements: state.header.announcements.map((row) => ({ ...row })),
   };
   return {
     ...state,

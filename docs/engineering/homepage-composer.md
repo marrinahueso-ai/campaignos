@@ -75,16 +75,17 @@ Drafts are **not** stored in Postgres.
 
 ### Save by month
 
-Header, footer, `cardsSectionTitle`, and resources are **shared** across months. Cards + `selectedEventIds` are scoped to `workingMonth` (YYYY-MM):
+Hero/footer colors, `cardsSectionTitle`, and resources are **shared** across months. Cards, `selectedEventIds`, and announcement bar lines are scoped to `workingMonth` (YYYY-MM). The composer shows a persistent **Working on** strip on every step; `header.announcements` mirrors the active month.
 
 | Field | Role |
 |-------|------|
-| `workingMonth` | Active Cards-step workspace |
-| `cards` / `selectedEventIds` | Live editors for `workingMonth` |
-| `monthDrafts` | Working snapshots per month (autosave stashes active month here) |
+| `workingMonth` | Active month workspace (all steps) |
+| `cards` / `selectedEventIds` | Live card editors for `workingMonth` |
+| `header.announcements` | Live announcement editors for `workingMonth` |
+| `monthDrafts` | Working snapshots per month (cards + picks + announcements; autosave stashes here) |
 | `monthSaved` | Explicit **Save this month** snapshots — sources for **Copy from…** |
 
-Legacy drafts without month maps migrate into `monthDrafts` + `monthSaved` for the current calendar month.
+Legacy drafts without month maps migrate into `monthDrafts` + `monthSaved` for the current calendar month. Drafts that predate month-scoped announcements seed the working month from `header.announcements`.
 
 ---
 

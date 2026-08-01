@@ -96,10 +96,15 @@ export type HomepageFooterConfig = {
   colors: HomepageFooterColors;
 };
 
-/** Cards + event picks for one calendar month (YYYY-MM). */
+/**
+ * Month-scoped homepage content (YYYY-MM): cards, event picks, and
+ * announcement bar lines. Header/footer chrome (colors, hero copy, resources)
+ * stay shared across months; `header.announcements` mirrors the working month.
+ */
 export type HomepageMonthCardsSnapshot = {
   cards: HomepageCard[];
   selectedEventIds: string[];
+  announcements: HomepageAnnouncement[];
 };
 
 export type HomepageComposerState = {
@@ -110,8 +115,9 @@ export type HomepageComposerState = {
   /** Helpful Resources quick links (emoji + label + url) */
   resources: HomepageResourceLink[];
   /**
-   * Active “Working on” month (YYYY-MM). `cards` / `selectedEventIds` are for
-   * this month; header/footer/resources stay shared across months.
+   * Active “Working on” month (YYYY-MM). Cards, event picks, and announcement
+   * lines are for this month; hero/footer colors, section title, and resources
+   * stay shared across months.
    */
   workingMonth: string;
   /** Selected event ids for the active working month */

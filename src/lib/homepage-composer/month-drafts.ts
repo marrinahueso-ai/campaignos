@@ -1,4 +1,5 @@
 import type {
+  HomepageAnnouncement,
   HomepageCard,
   HomepageComposerEvent,
   HomepageComposerState,
@@ -30,8 +31,14 @@ export function shiftMonth(yyyyMm: string, delta: number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function cloneAnnouncements(
+  announcements: HomepageAnnouncement[],
+): HomepageAnnouncement[] {
+  return announcements.map((row) => ({ ...row }));
+}
+
 export function emptyMonthCards(): HomepageMonthCardsSnapshot {
-  return { cards: [], selectedEventIds: [] };
+  return { cards: [], selectedEventIds: [], announcements: [] };
 }
 
 export function cloneMonthSnapshot(
@@ -40,15 +47,20 @@ export function cloneMonthSnapshot(
   return {
     selectedEventIds: [...snapshot.selectedEventIds],
     cards: snapshot.cards.map((card) => ({ ...card })),
+    announcements: cloneAnnouncements(snapshot.announcements ?? []),
   };
 }
 
 export function snapshotFromState(
-  state: Pick<HomepageComposerState, "cards" | "selectedEventIds">,
+  state: Pick<
+    HomepageComposerState,
+    "cards" | "selectedEventIds" | "header"
+  >,
 ): HomepageMonthCardsSnapshot {
   return {
     cards: state.cards.map((card) => ({ ...card })),
     selectedEventIds: [...state.selectedEventIds],
+    announcements: cloneAnnouncements(state.header.announcements ?? []),
   };
 }
 
@@ -70,6 +82,17 @@ function stableCardKey(card: HomepageCard): string {
   ].join("\u0001");
 }
 
+function stableAnnouncementKey(row: HomepageAnnouncement): string {
+  return [
+    row.id,
+    row.emoji,
+    row.text,
+    row.startsOn ?? "",
+    row.expiresOn ?? "",
+    row.alwaysOn ? "1" : "0",
+  ].join("\u0001");
+}
+
 export function monthSnapshotsEqual(
   a: HomepageMonthCardsSnapshot | null | undefined,
   b: HomepageMonthCardsSnapshot | null | undefined,
@@ -78,16 +101,24 @@ export function monthSnapshotsEqual(
   if (!a || !b) return false;
   if (a.selectedEventIds.length !== b.selectedEventIds.length) return false;
   if (a.cards.length !== b.cards.length) return false;
+  const aAnns = a.announcements ?? [];
+  const bAnns = b.announcements ?? [];
+  if (aAnns.length !== bAnns.length) return false;
   for (let i = 0; i < a.selectedEventIds.length; i += 1) {
     if (a.selectedEventIds[i] !== b.selectedEventIds[i]) return false;
   }
   for (let i = 0; i < a.cards.length; i += 1) {
     if (stableCardKey(a.cards[i]!) !== stableCardKey(b.cards[i]!)) return false;
   }
+  for (let i = 0; i < aAnns.length; i += 1) {
+    if (stableAnnouncementKey(aAnns[i]!) !== stableAnnouncementKey(bAnns[i]!)) {
+      return false;
+    }
+  }
   return true;
 }
 
-/** Write active cards into monthDrafts[workingMonth]. */
+/** Write active cards + announcements into monthDrafts[workingMonth]. */
 export function stashWorkingMonth(
   state: HomepageComposerState,
 ): HomepageComposerState {
@@ -118,6 +149,10 @@ export function switchWorkingMonth(
     workingMonth: nextMonth,
     cards: loaded.cards,
     selectedEventIds: loaded.selectedEventIds,
+    header: {
+      ...stashed.header,
+      announcements: cloneAnnouncements(loaded.announcements),
+    },
     monthDrafts: {
       ...stashed.monthDrafts,
       [nextMonth]: loaded,
@@ -158,11 +193,22 @@ export function copyMonthCardsFrom(
     ...state,
     cards: copied.cards,
     selectedEventIds: copied.selectedEventIds,
+    header: {
+      ...state.header,
+      announcements: cloneAnnouncements(copied.announcements),
+    },
     monthDrafts: {
       ...state.monthDrafts,
       [state.workingMonth]: cloneMonthSnapshot(copied),
     },
   };
+}
+
+function isMonthContentEmpty(state: HomepageComposerState): boolean {
+  return (
+    state.cards.length === 0 &&
+    (state.header.announcements?.length ?? 0) === 0
+  );
 }
 
 export function isWorkingMonthDirty(state: HomepageComposerState): boolean {
@@ -177,7 +223,7 @@ export function isWorkingMonthSaved(state: HomepageComposerState): boolean {
 export function workingMonthStatus(
   state: HomepageComposerState,
 ): "saved" | "unsaved" | "empty" {
-  const empty = state.cards.length === 0;
+  const empty = isMonthContentEmpty(state);
   if (isWorkingMonthDirty(state)) {
     return empty && !isWorkingMonthSaved(state) ? "empty" : "unsaved";
   }
@@ -191,7 +237,13 @@ export function savedMonthsForCopy(
 ): Array<{ key: string; cardCount: number }> {
   return Object.keys(state.monthSaved)
     .filter((key) => key !== state.workingMonth)
-    .filter((key) => (state.monthSaved[key]?.cards.length ?? 0) > 0)
+    .filter((key) => {
+      const snap = state.monthSaved[key];
+      if (!snap) return false;
+      return (
+        snap.cards.length > 0 || (snap.announcements?.length ?? 0) > 0
+      );
+    })
     .sort()
     .map((key) => ({
       key,
@@ -244,6 +296,7 @@ export function slimMonthMap(
     next[key] = {
       selectedEventIds: [...snapshot.selectedEventIds],
       cards: slimMonthCards(snapshot.cards),
+      announcements: cloneAnnouncements(snapshot.announcements ?? []),
     };
   }
   return next;

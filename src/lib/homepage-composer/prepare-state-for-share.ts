@@ -39,6 +39,9 @@ export async function prepareHomepageStateForShare(
   const nextSnapshot = {
     cards: nextCards,
     selectedEventIds: [...state.selectedEventIds],
+    announcements: (state.header.announcements ?? []).map((row) => ({
+      ...row,
+    })),
   };
 
   return {

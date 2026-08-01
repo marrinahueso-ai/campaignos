@@ -27,9 +27,14 @@ function sampleState(): HomepageComposerState {
     },
   ];
   const workingMonth = "2026-04";
-  const snapshot = { cards, selectedEventIds: ["evt-1"] };
+  const header = defaultHeader("Test School");
+  const snapshot = {
+    cards,
+    selectedEventIds: ["evt-1"],
+    announcements: header.announcements.map((row) => ({ ...row })),
+  };
   return {
-    header: defaultHeader("Test School"),
+    header,
     footer: defaultFooter(),
     cardsSectionTitle: "Back-to-School Essentials",
     resources: [],
