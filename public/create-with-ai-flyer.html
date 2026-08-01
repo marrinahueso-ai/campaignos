@@ -119,52 +119,39 @@
     .back-link:hover { color: var(--ink); }
 
     .composer-layout {
-      display: grid; grid-template-columns: 1fr; gap: 12px;
+      display: flex; flex-direction: column; gap: 0;
       animation: rise 0.55s var(--ease) 0.05s both;
     }
-    @media (min-width: 900px) {
-      .composer-layout { grid-template-columns: 200px minmax(0, 1fr); align-items: start; gap: 16px; }
-    }
     .steps-rail {
-      position: sticky; top: 12px;
-      background: var(--cream-deep); border: none;
-      border-radius: 18px; padding: 10px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+      margin-bottom: 28px; padding: 0; background: transparent; border: none;
     }
-    .steps-label {
-      margin: 0 0 6px; padding: 0 8px;
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.08em; color: var(--muted);
+    .steps-label { display: none; }
+    .steps-rail .step-conn {
+      width: 28px; height: 1px; background: var(--line); flex-shrink: 0;
     }
     .step-btn {
-      width: 100%; text-align: left; border: none; background: transparent;
-      border-radius: 12px; padding: 10px 10px; cursor: pointer;
-      color: var(--ink); font-size: 14px; font-weight: 600;
-      transition: background 0.2s, box-shadow 0.2s, color 0.2s;
-      margin-bottom: 2px;
+      border: none; cursor: pointer;
+      border-radius: 999px; padding: 7px 16px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--muted);
+      background: rgba(42, 38, 34, 0.06);
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
     }
-    .step-btn:hover { background: rgba(255, 252, 247, 0.45); }
-    .step-btn:not(.active) { color: var(--muted); }
-    .step-btn:not(.active):hover { color: var(--ink-soft); }
+    .step-btn:hover { color: var(--ink-soft); }
     .step-btn.active {
-      background: var(--white); color: var(--ink); box-shadow: var(--shadow);
+      background: var(--forest); color: #fffcf7;
+      box-shadow: 0 6px 16px rgba(47, 74, 60, 0.18);
     }
     .step-btn .step-row {
-      display: flex; align-items: center; gap: 8px;
+      display: inline-flex; align-items: center; gap: 6px;
     }
     .step-btn .step-num {
-      flex-shrink: 0; width: 20px; height: 20px; border-radius: 999px;
-      display: grid; place-items: center;
-      font-size: 10px; font-weight: 700;
-      background: rgba(42, 38, 34, 0.1); color: var(--muted);
+      font-size: inherit; font-weight: inherit; letter-spacing: inherit;
+      background: none; color: inherit; width: auto; height: auto;
     }
-    .step-btn.active .step-num {
-      background: var(--ink); color: var(--cream);
-    }
-    .step-btn .hint {
-      display: block; margin-top: 4px; padding-left: 28px;
-      font-size: 11px; font-weight: 500; line-height: 1.35; color: var(--muted);
-    }
-    .composer-main { min-width: 0; }
+    .step-btn .hint { display: none; }
+    .composer-main { min-width: 0; width: 100%; }
 
     .panel {
       background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
@@ -188,56 +175,136 @@
       margin: -8px 0 16px; font-size: 0.82rem; font-weight: 600; color: var(--forest);
     }
 
-    /* Start step — path chooser */
-    .start-paths {
-      display: grid; gap: 14px; margin-bottom: 4px;
+    /* Start step — UX Pilot path chooser (3 equal cards) */
+    .panel[data-panel="start"] {
+      background: transparent; border: none; box-shadow: none; padding: 0;
     }
-    @media (min-width: 760px) {
-      .start-paths { grid-template-columns: 1fr 1fr; }
-      .start-path-tertiary { grid-column: 1 / -1; }
+    .panel[data-panel="start"] h2 {
+      font-size: clamp(2rem, 5vw, 3.25rem); letter-spacing: -0.02em;
+      margin-bottom: 10px; line-height: 1.1;
+    }
+    .panel[data-panel="start"] .sub {
+      font-size: 1.05rem; margin-bottom: 28px; color: var(--ink-soft);
+    }
+    .start-paths {
+      display: grid; gap: 18px; margin-bottom: 28px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 820px) {
+      .start-paths { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     .start-path {
-      border: 1.5px solid var(--line); border-radius: 18px;
-      background: var(--cream); padding: 18px 18px 16px;
-      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      display: flex; flex-direction: column;
+      border: 1.5px solid var(--line); border-radius: 32px;
+      background: rgba(255, 252, 247, 0.55); padding: 28px 26px 22px;
+      cursor: pointer;
+      transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+    }
+    .start-path:hover {
+      border-color: var(--forest); background: var(--white);
     }
     .start-path.is-active {
-      border-color: color-mix(in srgb, var(--brand-primary) 45%, transparent);
-      background: var(--white); box-shadow: var(--shadow);
+      border-width: 2px; border-color: var(--forest);
+      background: var(--white);
+      box-shadow: 0 4px 20px -5px rgba(47, 74, 60, 0.15);
     }
-    .start-path-primary {
-      border-color: color-mix(in srgb, var(--brand-primary) 28%, transparent);
-      background: linear-gradient(180deg, rgba(47, 74, 60, 0.05), rgba(255, 252, 247, 0.98));
+    .start-path-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 10px; margin-bottom: 22px;
     }
-    .start-path-primary.is-active {
-      border-color: var(--brand-primary);
+    .start-path-icon {
+      width: 48px; height: 48px; border-radius: 16px;
+      display: grid; place-items: center;
+      background: rgba(47, 74, 60, 0.07);
+      border: 1px solid rgba(47, 74, 60, 0.12);
+      color: var(--forest); font-size: 1.05rem;
     }
     .path-badge {
-      display: inline-block; margin-bottom: 8px; padding: 3px 8px; border-radius: 999px;
-      background: rgba(47, 74, 60, 0.1); color: var(--forest);
-      font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.12); color: #a67b27;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
     }
     .start-path h3 {
-      margin: 0 0 4px; font-family: var(--serif); font-size: 1.15rem; font-weight: 600;
+      margin: 0 0 8px; font-family: var(--serif); font-size: 1.45rem; font-weight: 600;
+      letter-spacing: -0.01em; line-height: 1.2;
     }
     .path-hint {
-      margin: 0 0 14px; font-size: 0.86rem; line-height: 1.4; color: var(--muted);
+      margin: 0 0 22px; font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft);
+    }
+    .start-path-preview {
+      margin-top: auto; aspect-ratio: 4/3; border-radius: 14px;
+      border: 1px solid var(--line); background: #faf8f5;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      overflow: hidden; padding: 14px;
+    }
+    .start-mini-page {
+      width: 72px; height: 96px; background: #fff;
+      border: 1px solid var(--line); border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(28, 36, 48, 0.08);
+      display: flex; flex-direction: column; gap: 4px; padding: 8px;
+    }
+    .start-mini-page .bar { height: 6px; border-radius: 3px; background: rgba(42, 38, 34, 0.1); }
+    .start-mini-page .bar.short { width: 65%; }
+    .start-mini-page .block {
+      margin-top: 6px; flex: 1; border-radius: 4px;
+      background: rgba(47, 74, 60, 0.08);
+    }
+    .start-mini-half {
+      width: 56px; height: 80px; background: #fff;
+      border: 1px solid var(--line); border-radius: 3px;
+      box-shadow: 0 3px 10px rgba(28, 36, 48, 0.08);
     }
     .start-upload {
-      border: 1.5px dashed rgba(42, 38, 34, 0.22); border-radius: 14px;
-      background: rgba(255, 252, 247, 0.85); padding: 22px 16px; text-align: center;
+      width: 100%; height: 100%; min-height: 120px;
+      border: 1.5px dashed rgba(42, 38, 34, 0.2); border-radius: 12px;
+      background: transparent; padding: 16px; text-align: center;
       cursor: pointer; transition: border-color 0.2s, background 0.2s;
+      display: flex; align-items: center; justify-content: center;
     }
-    .start-upload:hover { border-color: rgba(47, 74, 60, 0.4); background: var(--white); }
+    .start-upload:hover { border-color: rgba(47, 74, 60, 0.4); background: rgba(255,252,247,0.8); }
     .start-upload.has {
       padding: 0; border-style: solid; overflow: hidden;
-      aspect-ratio: 3/4; max-height: 200px;
+      aspect-ratio: auto; max-height: none; min-height: 120px;
       background-size: cover; background-position: center;
     }
-    .start-upload-wrap { margin-top: 4px; }
+    .start-upload-wrap { width: 100%; height: 100%; }
     .start-upload-wrap .asset-actions { margin-top: 8px; }
-    .start-upload strong { display: block; font-size: 0.92rem; color: var(--ink); }
-    .start-upload .hint { font-size: 0.8rem; color: var(--muted); margin: 6px 0 0; }
+    .start-upload strong { display: block; font-size: 0.85rem; color: var(--ink); }
+    .start-upload .hint { font-size: 0.78rem; color: var(--muted); margin: 6px 0 0; }
+    .start-upload-plus {
+      font-size: 1.35rem; color: var(--muted); line-height: 1;
+    }
+    .start-actions {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+      margin-top: 8px; padding-top: 28px; border-top: 1px solid var(--line);
+    }
+    .start-actions .btn-primary {
+      background: var(--forest); color: #fffcf7;
+      border-radius: 16px; padding: 14px 36px; font-size: 1.05rem;
+      box-shadow: 0 10px 24px rgba(47, 74, 60, 0.14);
+    }
+    .start-actions .btn-primary:hover:not(:disabled) {
+      background: #253a2f; filter: none;
+    }
+    .start-actions .btn-cancel {
+      background: transparent; border: none; color: var(--muted);
+      font-weight: 600; font-size: 0.95rem; padding: 14px 18px; cursor: pointer;
+    }
+    .start-actions .btn-cancel:hover { color: var(--ink); }
+    .start-templates-toggle {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin: 8px 0 0; padding: 0; border: none; background: none;
+      font: inherit; font-size: 0.9rem; font-weight: 600; color: var(--ink-soft);
+      cursor: pointer;
+    }
+    .start-templates-toggle:hover { color: var(--ink); }
+    .start-templates-toggle .chev {
+      display: inline-block; font-size: 10px;
+      transition: transform 0.2s;
+    }
+    details.proven-optional[open] .start-templates-toggle .chev {
+      transform: rotate(90deg);
+    }
     .proven-row {
       display: grid; gap: 10px;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -264,37 +331,31 @@
       color: var(--ink); overflow-wrap: anywhere;
     }
     .proven-optional {
-      margin-top: 16px; border: 1px solid var(--line); border-radius: 16px;
-      background: rgba(255, 252, 247, 0.55); overflow: hidden;
+      margin: 4px 0 8px; border: none; background: transparent;
     }
     .proven-optional summary {
-      padding: 12px 16px; font-size: 0.88rem; font-weight: 600; color: var(--muted);
+      padding: 0; font-size: 0.9rem; font-weight: 600; color: var(--ink-soft);
       cursor: pointer; list-style: none;
+      display: inline-flex; align-items: center; gap: 8px;
     }
     .proven-optional summary::-webkit-details-marker { display: none; }
     .proven-optional summary::before {
-      content: "▸"; display: inline-block; margin-right: 8px;
+      content: "▸"; display: inline-block; font-size: 10px;
       transition: transform 0.2s var(--ease);
     }
     .proven-optional[open] summary::before { transform: rotate(90deg); }
-    .proven-optional[open] summary { color: var(--ink-soft); border-bottom: 1px solid var(--line); }
+    .proven-optional[open] summary { color: var(--ink); }
     .proven-optional .start-path {
-      border: none; border-radius: 0; background: transparent; padding: 14px 16px 16px;
+      margin-top: 14px; cursor: default;
+      border: 1px solid var(--line); border-radius: 20px;
+      background: rgba(255, 252, 247, 0.7); padding: 18px;
     }
-    .size-row {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+    .proven-optional .start-path:hover {
+      border-color: var(--line); background: rgba(255, 252, 247, 0.7);
     }
-    .size-btn {
-      flex: 1; min-width: 120px; padding: 10px 12px; border-radius: 12px;
-      border: 1.5px solid var(--line); background: var(--white);
-      font-size: 0.86rem; font-weight: 600; text-align: center;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .size-btn[aria-pressed="true"] {
-      border-color: var(--brand-primary); box-shadow: var(--shadow);
-    }
-    .size-btn span {
-      display: block; font-size: 0.72rem; font-weight: 500; color: var(--muted); margin-top: 2px;
+    .proven-optional .start-path.is-active {
+      border-color: color-mix(in srgb, var(--forest) 40%, var(--line));
+      box-shadow: none;
     }
     .custom-upload {
       border: 1.5px dashed rgba(42, 38, 34, 0.22); border-radius: 16px;
@@ -1057,34 +1118,45 @@
     .approval-status[data-kind="error"] { color: #8b3f3f; }
     .approval-status a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 
-    /* Start — quiet campaign chip (UX concepts live in event-files mockup) */
+    /* Start — optional event link chip (UX Pilot) */
     .tied-quiet {
-      margin: 16px 0 4px; border-radius: 14px; border: 1px solid var(--line);
-      background: rgba(255, 252, 247, 0.65);
+      margin: 0 0 20px; border-radius: 18px; border: 1px solid var(--line);
+      background: var(--white); max-width: 420px;
+      transition: background 0.2s;
     }
+    .tied-quiet:hover { background: #faf8f5; }
     .tied-quiet > summary {
-      list-style: none; cursor: pointer; display: flex; flex-wrap: wrap;
-      align-items: center; gap: 8px 12px; padding: 10px 12px;
+      list-style: none; cursor: pointer; display: flex;
+      align-items: center; gap: 12px; padding: 12px 16px;
       font-size: 13px; color: var(--muted);
     }
     .tied-quiet > summary::-webkit-details-marker { display: none; }
     .tied-quiet > summary::after {
-      content: "▸"; margin-left: auto; font-size: 11px; color: var(--muted);
+      content: "›"; margin-left: auto; font-size: 16px; color: var(--muted);
       transition: transform 0.15s;
     }
-    .tied-quiet[open] > summary::after { transform: rotate(90deg); }
+    .tied-quiet[open] > summary::after { transform: translateX(3px); }
+    .tied-chip-icon {
+      width: 32px; height: 32px; border-radius: 999px; flex-shrink: 0;
+      display: grid; place-items: center;
+      background: rgba(47, 74, 60, 0.07); color: var(--forest); font-size: 12px;
+    }
     .tied-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 10px; border-radius: 999px;
-      border: 1px solid var(--line); background: var(--white);
-      font-size: 12px; font-weight: 700; color: var(--ink-soft);
+      display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+      padding: 0; border: none; background: transparent;
+      font-size: inherit; font-weight: inherit; color: inherit;
     }
-    .tied-chip .dot {
-      width: 7px; height: 7px; border-radius: 999px; background: var(--mustard);
+    .tied-chip .dot { display: none; }
+    .tied-chip-kicker {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--muted);
     }
-    .tied-chip.is-bound .dot { background: var(--teal); }
-    .tied-summary-hint { font-size: 12px; font-weight: 500; }
-    .tied-quiet-body { padding: 0 12px 12px; }
+    .tied-chip-label {
+      font-size: 14px; font-weight: 600; color: var(--ink);
+    }
+    .tied-chip.is-bound .tied-chip-label { color: var(--forest); }
+    .tied-summary-hint { display: none; }
+    .tied-quiet-body { padding: 0 16px 14px; }
     .tied-modes {
       display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px;
     }
@@ -1592,12 +1664,14 @@
             <span>Start</span>
           </span>
         </button>
+        <span class="step-conn" aria-hidden="true"></span>
         <button type="button" class="step-btn" data-view="inputs">
           <span class="step-row">
             <span class="step-num" aria-hidden="true">2</span>
             <span>Inspiration</span>
           </span>
         </button>
+        <span class="step-conn" aria-hidden="true"></span>
         <button type="button" class="step-btn" data-view="result">
           <span class="step-row">
             <span class="step-num" aria-hidden="true">3</span>
@@ -1609,58 +1683,76 @@
       <div class="composer-main">
     <!-- START -->
     <section class="panel" data-panel="start">
-      <h2>How do you want to start?</h2>
+      <h2>Choose your flyer size</h2>
+      <p class="sub">Make a print-ready flyer for your event.</p>
 
       <div class="start-paths">
-        <div class="start-path start-path-primary" data-path="update">
-          <span class="path-badge">Recommended</span>
-          <h3>Update last year’s flyer</h3>
-          <p class="path-hint">Upload last year’s file, then refresh the details.</p>
-          <div class="start-upload-wrap">
-            <div class="start-upload" id="startUpload" role="button" tabindex="0">
-              <div id="startUploadEmpty">
-                <strong>Upload PDF or image</strong>
-                <p class="hint">Last year’s print file or a photo</p>
-              </div>
+        <div class="start-path" data-path="update" role="button" tabindex="0">
+          <div class="start-path-head">
+            <div class="start-path-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
             </div>
-            <div class="asset-actions" id="startUploadActions" hidden>
-              <button type="button" class="asset-action-btn" id="startUploadReplace">Replace</button>
-              <button type="button" class="asset-action-btn asset-action-remove" id="startUploadRemove" aria-label="Remove template file">Remove file</button>
+            <span class="path-badge">Fastest</span>
+          </div>
+          <h3>Update last year’s flyer</h3>
+          <p class="path-hint">Upload a previous file and we’ll copy the layout and style for your new event.</p>
+          <div class="start-path-preview">
+            <div class="start-upload-wrap">
+              <div class="start-upload" id="startUpload" role="button" tabindex="0">
+                <div id="startUploadEmpty">
+                  <span class="start-upload-plus" aria-hidden="true">+</span>
+                </div>
+              </div>
+              <div class="asset-actions" id="startUploadActions" hidden>
+                <button type="button" class="asset-action-btn" id="startUploadReplace">Replace</button>
+                <button type="button" class="asset-action-btn asset-action-remove" id="startUploadRemove" aria-label="Remove template file">Remove file</button>
+              </div>
             </div>
           </div>
           <input type="file" id="startFile" accept="image/*,.pdf" hidden />
         </div>
 
-        <div class="start-path start-path-primary" data-path="new">
-          <h3>New flyer</h3>
-          <p class="path-hint">Letter or half page.</p>
-          <div class="size-row">
-            <button type="button" class="size-btn" data-print-size="letter" aria-pressed="false">
-              Letter
-              <span>8.5 × 11 in</span>
-            </button>
-            <button type="button" class="size-btn" data-print-size="half" aria-pressed="false">
-              Half page
-              <span>8.5 × 5.5 in</span>
-            </button>
+        <div class="start-path size-btn" data-path="new" data-print-size="letter" role="button" tabindex="0" aria-pressed="false">
+          <div class="start-path-head">
+            <div class="start-path-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+            </div>
+          </div>
+          <h3>Start fresh — Letter</h3>
+          <p class="path-hint">US Letter (8.5 × 11 in). The classic choice for posters and bulletins.</p>
+          <div class="start-path-preview" aria-hidden="true">
+            <div class="start-mini-page">
+              <div class="bar"></div>
+              <div class="bar short"></div>
+              <div class="block"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="start-path size-btn" data-path="new" data-print-size="half" role="button" tabindex="0" aria-pressed="false">
+          <div class="start-path-head">
+            <div class="start-path-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
+            </div>
+          </div>
+          <h3>Start fresh — Half-page</h3>
+          <p class="path-hint">Two per sheet (5.5 × 8.5 in). Perfect for flyers and handouts.</p>
+          <div class="start-path-preview" aria-hidden="true">
+            <div class="start-mini-half"></div>
+            <div class="start-mini-half"></div>
           </div>
         </div>
       </div>
-      <!-- Proven layouts de-emphasized — optional later; not part of primary Start flow -->
-      <details class="proven-optional" id="provenOptional">
-        <summary>Or start from a layout</summary>
-        <div class="start-path" data-path="proven">
-          <h3>Use a layout</h3>
-          <p class="path-hint">Semester calendar, donor tiers, or event poster.</p>
-          <div class="proven-row" id="provenGrid"></div>
-        </div>
-      </details>
 
       <details class="tied-quiet no-print" id="startTiedCard">
         <summary>
+          <span class="tied-chip-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+          </span>
           <span class="tied-chip" id="tiedChipSummary">
             <span class="dot" aria-hidden="true"></span>
-            <span id="tiedChipLabel">Campaign (optional)</span>
+            <span class="tied-chip-kicker">Link to an Event (e.g., Spring Bake Sale) (Optional)</span>
+            <span class="tied-chip-label" id="tiedChipLabel">Choose an event...</span>
           </span>
           <span class="tied-summary-hint">For Files &amp; Approvals</span>
         </summary>
@@ -1695,14 +1787,22 @@
             <p>Create a campaign in Events, then return and pick it here.</p>
             <a href="/events/create" id="tiedCreateLink">Create campaign →</a>
           </div>
-          <p class="tied-mock-link">
-            <a href="/flyer-event-files-ease-mockup.html">UX reference: Flyer ↔ Event ↔ Files</a>
-          </p>
         </div>
       </details>
 
-      <div class="actions">
+      <!-- Proven layouts de-emphasized — optional later; not part of primary Start flow -->
+      <details class="proven-optional" id="provenOptional">
+        <summary>Browse pre-made templates</summary>
+        <div class="start-path" data-path="proven">
+          <h3>Use a layout</h3>
+          <p class="path-hint">Semester calendar, donor tiers, or event poster.</p>
+          <div class="proven-row" id="provenGrid"></div>
+        </div>
+      </details>
+
+      <div class="actions start-actions">
         <button type="button" class="btn btn-primary" id="toInputs" disabled>Continue</button>
+        <a class="btn-cancel" id="startCancel" href="/create-with-ai">Cancel</a>
       </div>
     </section>
 
@@ -2628,7 +2728,14 @@
 
     function syncStartPathUI() {
       document.querySelectorAll(".start-path").forEach((el) => {
-        el.classList.toggle("is-active", el.dataset.path === state.startPath);
+        const path = el.dataset.path;
+        let active = path === state.startPath;
+        if (path === "new" && el.dataset.printSize) {
+          active = state.startPath === "new" && el.dataset.printSize === state.printSize;
+        } else if (path === "new" && !el.dataset.printSize) {
+          active = false;
+        }
+        el.classList.toggle("is-active", active);
       });
       document.querySelectorAll("[data-print-size]").forEach((btn) => {
         btn.setAttribute(
@@ -4664,7 +4771,7 @@
       const event = selectedApprovalEvent();
       if (!event) {
         chip.classList.remove("is-bound");
-        label.textContent = "Campaign (optional)";
+        label.textContent = "Choose an event...";
         return;
       }
       chip.classList.add("is-bound");
@@ -5675,14 +5782,37 @@
     document.querySelectorAll(".start-path[data-path]").forEach((card) => {
       card.addEventListener("click", (e) => {
         const path = card.dataset.path;
-        if (path === "update" && e.target.closest("#startUpload")) return;
+        if (path === "update" && e.target.closest("#startUpload, #startUploadActions, #startUploadReplace, #startUploadRemove")) {
+          return;
+        }
         if (path === "proven" && e.target.closest(".proven-tpl")) return;
-        if (path === "new" && e.target.closest("[data-print-size]")) return;
-        if (path === "update" || path === "new") selectStartPath(path);
+        if (card.dataset.printSize) {
+          state.printSize = card.dataset.printSize;
+          state.startPath = "new";
+          state.provenLayoutChosen = false;
+          state.templateId = NEW_SIZE_IDS[state.printSize];
+          applyTemplateDefaults(getTpl(state.templateId));
+          state.previewGenerated = false;
+          state.generatedImageUrl = null;
+          syncCustomModeUI();
+          syncStartPathUI();
+          syncStartContinue();
+          renderStartStep();
+          scheduleSave();
+          return;
+        }
+        if (path === "update") selectStartPath(path);
+      });
+      card.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        if (e.target !== card) return;
+        e.preventDefault();
+        card.click();
       });
     });
 
     document.querySelectorAll("[data-print-size]").forEach((btn) => {
+      if (btn.classList.contains("start-path")) return;
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         state.printSize = btn.dataset.printSize;
@@ -5691,7 +5821,7 @@
         state.templateId = NEW_SIZE_IDS[state.printSize];
         applyTemplateDefaults(getTpl(state.templateId));
         state.previewGenerated = false;
-      state.generatedImageUrl = null;
+        state.generatedImageUrl = null;
         syncStartPathUI();
         syncStartContinue();
         renderStartStep();

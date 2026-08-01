@@ -37,7 +37,8 @@ test.describe("Flyer composer AI direction smoke", () => {
   }) => {
     // Primary paths visible; proven layouts collapsed by default
     await expect(page.locator('.start-path[data-path="update"]')).toBeVisible();
-    await expect(page.locator('.start-path[data-path="new"]')).toBeVisible();
+    await expect(page.locator('.start-path[data-print-size="letter"]')).toBeVisible();
+    await expect(page.locator('.start-path[data-print-size="half"]')).toBeVisible();
     await expect(page.locator("#provenOptional")).not.toHaveAttribute("open", "");
 
     // Update last year: upload, replace, remove, continue
