@@ -95,31 +95,31 @@ export function RequestChangesModal({
         onClick={onClose}
       />
       <div
-        className="relative z-10 flex max-h-[min(92vh,720px)] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[22px] border border-[rgba(208,102,80,0.35)] bg-[#fffcf7] shadow-[0_24px_64px_rgba(143,74,56,0.2)] sm:rounded-[22px]"
+        className="relative z-10 flex max-h-[min(92vh,720px)] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[22px] border border-cos-border bg-[#fffcf7] shadow-[0_24px_64px_rgba(28,36,48,0.28)] sm:rounded-[22px]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="request-changes-title"
       >
-        {/* Terracotta identity strip — change request (not forest open review) */}
+        {/* Quiet warm hero only — body stays cream so color doesn’t scream. */}
         <div
-          className="h-1.5 shrink-0 bg-gradient-to-r from-[#d06650] via-[#c4922e] to-[#d06650]"
+          className="h-1 shrink-0 bg-gradient-to-r from-[#c4922e]/70% via-[#d06650]/55% to-[#c4922e]/70%"
           aria-hidden
         />
-        <div className="flex items-start justify-between gap-3 border-b border-[rgba(208,102,80,0.18)] bg-gradient-to-br from-[#f6e8e4] via-[#faf3ef] to-white px-5 py-4 sm:px-6">
+        <div className="flex items-start justify-between gap-3 border-b border-cos-border bg-gradient-to-br from-[#f7efe6] via-[#faf6f0] to-white px-5 py-4 sm:px-6">
           <div className="min-w-0">
             <button
               type="button"
               onClick={onBackToReview}
-              className="mb-2 text-xs font-bold text-[#8f4a38] transition hover:text-[#2a2622]"
+              className="mb-2 text-xs font-bold text-cos-muted transition hover:text-cos-text"
             >
               ← Back to review
             </button>
-            <p className="mb-1.5 inline-flex rounded-full bg-[#d06650] px-2.5 py-0.5 text-[10px] font-extrabold tracking-[0.08em] text-[#fffcf7] uppercase">
+            <p className="mb-1.5 inline-flex rounded-full border border-[rgba(196,146,46,0.35)] bg-[rgba(196,146,46,0.12)] px-2.5 py-0.5 text-[10px] font-extrabold tracking-[0.08em] text-[#7a5a12] uppercase">
               Change request
             </p>
             <h2
               id="request-changes-title"
-              className="font-display text-2xl tracking-[-0.02em] text-[#8f4a38] italic sm:text-[1.75rem]"
+              className="font-display text-2xl tracking-[-0.02em] text-cos-text italic sm:text-[1.75rem]"
             >
               Request changes
             </h2>
@@ -133,13 +133,13 @@ export function RequestChangesModal({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(208,102,80,0.28)] bg-white text-[#8f4a38] transition hover:border-[#d06650] hover:bg-[#f6e8e4]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cos-border bg-white text-cos-muted transition hover:text-cos-text"
           >
             <X className="h-4 w-4" strokeWidth={1.75} />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[rgba(246,232,228,0.35)] px-5 py-5 sm:px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
           <p className="mb-3 text-sm font-bold text-cos-text">
             {item.campaignName}
             <span className="font-semibold text-cos-muted">
@@ -195,10 +195,10 @@ export function RequestChangesModal({
             rows={4}
             disabled={pending}
             placeholder="e.g. Warm up the headline, make the logo bigger, move the date…"
-            className="w-full rounded-[14px] border border-[rgba(208,102,80,0.28)] bg-white px-4 py-3 text-sm leading-relaxed text-cos-text placeholder:text-cos-muted focus:border-[#d06650] focus:outline-none focus:ring-2 focus:ring-[rgba(208,102,80,0.2)]"
+            className="w-full rounded-[14px] border border-cos-border bg-white px-4 py-3 text-sm leading-relaxed text-cos-text placeholder:text-cos-muted focus:border-[#6b8171] focus:outline-none"
           />
 
-          <p className="mt-4 mb-2 text-[11px] font-extrabold tracking-[0.08em] text-[#8f4a38] uppercase">
+          <p className="mt-4 mb-2 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
             Tag what needs work
           </p>
           <div className="flex flex-wrap gap-2">
@@ -214,8 +214,8 @@ export function RequestChangesModal({
                   className={cn(
                     "rounded-full px-3 py-1.5 text-xs font-bold transition",
                     on
-                      ? "bg-[#d06650] text-[#fffcf7]"
-                      : "border border-[rgba(208,102,80,0.28)] bg-white text-cos-text hover:border-[#d06650]",
+                      ? "bg-[#2f4a3c] text-[#fffcf7]"
+                      : "border border-cos-border bg-white text-cos-text hover:border-[#6b8171]",
                   )}
                 >
                   {tag}
@@ -225,18 +225,18 @@ export function RequestChangesModal({
           </div>
 
           {error ? (
-            <p className="mt-3 text-sm text-[#8f4a38]" role="alert">
+            <p className="mt-3 text-sm text-[#a65a3a]" role="alert">
               {error}
             </p>
           ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[rgba(208,102,80,0.18)] bg-[#f6e8e4] px-5 py-4 sm:px-6">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-cos-border bg-[rgba(246,242,235,0.55)] px-5 py-4 sm:px-6">
           <button
             type="button"
             disabled={pending}
             onClick={onBackToReview}
-            className="rounded-[12px] border border-[rgba(208,102,80,0.28)] bg-white px-4 py-2.5 text-[13px] font-bold text-cos-text transition hover:border-[#d06650] disabled:opacity-50"
+            className="rounded-[12px] border border-cos-border bg-white px-4 py-2.5 text-[13px] font-bold text-cos-text transition hover:border-[#6b8171] disabled:opacity-50"
           >
             Cancel
           </button>
@@ -244,7 +244,7 @@ export function RequestChangesModal({
             type="button"
             disabled={pending || !note.trim()}
             onClick={onSend}
-            className="rounded-[12px] bg-[#d06650] px-5 py-2.5 text-[13px] font-bold text-[#fffcf7] transition hover:brightness-110 disabled:opacity-50"
+            className="rounded-[12px] bg-[#2f4a3c] px-5 py-2.5 text-[13px] font-bold text-[#fffcf7] transition hover:brightness-110 disabled:opacity-50"
           >
             {pending ? "Sending…" : "Send change request"}
           </button>
