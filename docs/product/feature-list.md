@@ -237,7 +237,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Access aligned with event access (`canAccessEvent` / EffectiveAccess) — **shipped**
 - No auto-seeded demo/default task rows on event open — **shipped** (empty until user creates)
 - Due date picker wired to task update — **shipped**
-- Ease task detail drawer (`TasksEaseTaskDrawer`): editable title, status, due date, assignee, derived priority, notes (+ mic), autosave, event deep link — **shipped**
+- Ease task detail (`TasksEaseTaskDrawer`): same two-pane Pilot modal as Add task (ivory aside + form); editable title, Board/status, due, assignee, derived priority badge, Description/notes (+ dictate), autosave, event deep link, Done — **shipped**
 - Add task: event options from events + groups, optimistic row, Mine auto-assigns to you, clears pulse so new tasks stay visible — **shipped**
 - Chrome feel: Team/Mine, views, pulse, event chips use local state + `history.replaceState` (no `router.replace` refetch); drawer/list saves stay optimistic without full page refresh — **shipped** (perf)
 - Calendar / Timeline / Workload tabs — **deferred** (hidden from Tasks UI)

@@ -84,12 +84,13 @@ describe("tasks ease UI contracts", () => {
     const drawer = readSrc("../../../components/tasks-v2/TasksEaseTaskDrawer.tsx");
     assert.match(shell, /TasksEaseTaskDrawer/);
     assert.doesNotMatch(shell, /TasksV2TaskDetailDrawer/);
-    assert.match(drawer, /Due date/);
-    assert.match(drawer, /Assigned to/);
+    assert.match(drawer, /Due Date/);
+    assert.match(drawer, /Assignee/);
     assert.match(drawer, /Priority/);
     assert.match(drawer, /Notes/);
     assert.match(drawer, /deriveTaskPriority/);
-    assert.match(drawer, /appearance-none rounded-full/);
+    assert.match(drawer, /appearance-none rounded-2xl/);
+    assert.match(drawer, /max-w-2xl/);
     assert.doesNotMatch(drawer, /TasksV2AssigneeSelect/);
   });
 

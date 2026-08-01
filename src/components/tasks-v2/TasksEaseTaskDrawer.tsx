@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ExternalLink, Mic, MicOff, X } from "lucide-react";
+import {
+  Calendar,
+  CheckSquare,
+  ExternalLink,
+  Mic,
+  MicOff,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { eventTasksHref } from "@/lib/events/event-responsibility";
 import { useSpeechToText } from "@/lib/speech/use-speech-to-text";
 import { updateTaskHubTaskAction } from "@/lib/task-hub/actions";
@@ -33,12 +41,8 @@ const PRIORITY_STYLE: Record<TasksV2Priority, string> = {
   low: "bg-[rgba(107,129,113,0.14)] text-[#2f4a3c]",
 };
 
-const STATUS_STYLE: Record<EventPlaybookTaskStatus, string> = {
-  todo: "bg-[rgba(166,90,58,0.12)] text-[#a65a3a]",
-  in_progress: "bg-[rgba(196,146,46,0.16)] text-[#7a5a12]",
-  blocked: "bg-[rgba(122,113,102,0.16)] text-[#5c554c]",
-  done: "bg-[rgba(42,122,134,0.12)] text-[#2a7a86]",
-};
+const fieldClass =
+  "w-full appearance-none rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-4 py-3 text-sm font-medium text-[#2a2622] outline-none transition focus:border-[#2f4a3c] focus:shadow-[0_0_0_4px_rgba(47,74,60,0.05)] disabled:opacity-60";
 
 export function TasksEaseTaskDrawer({
   task,
@@ -260,216 +264,164 @@ export function TasksEaseTaskDrawer({
                 : "View only";
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[rgba(42,38,34,0.28)] backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
       <button
         type="button"
         aria-label="Close task details"
-        className="flex-1"
+        className="absolute inset-0 bg-[#2a2622]/40 backdrop-blur-[4px]"
         onClick={handleClose}
       />
-      <aside
+      <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="tasks-ease-detail-title"
-        className="relative flex h-full w-full max-w-[26rem] flex-col overflow-hidden border-l border-[rgba(42,38,34,0.1)] bg-[#fffcf7] shadow-[0_20px_48px_rgba(42,38,34,0.16)] before:pointer-events-none before:absolute before:top-0 before:right-0 before:h-48 before:w-48 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:bottom-20 after:left-0 after:h-40 after:w-40 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']"
+        className="relative flex max-h-[min(90dvh,44rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[32px] border border-[#e8e2d9] bg-white shadow-2xl md:flex-row"
       >
-        <div className="relative flex items-start justify-between gap-3 px-6 pt-6 pb-4">
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-extrabold tracking-[0.1em] text-[#7a7166] uppercase">
-              Task
+        {/* Left context pane — matches Add task modal */}
+        <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-[#e8e2d9] bg-[#faf8f5] p-8 md:flex">
+          <div>
+            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f0f3f1] text-[#2f4a3c]">
+              <CheckSquare className="h-5 w-5" aria-hidden />
+            </div>
+            <h3
+              className="mb-2 text-xl leading-tight text-[#2a2622] italic"
+              style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+            >
+              Keep the team aligned.
+            </h3>
+            <p className="text-[12px] leading-relaxed text-[#5c5752]">
+              Update status, due date, and notes so everyone knows what’s next
+              for this event.
             </p>
-            {canEdit ? (
-              <input
-                id="tasks-ease-detail-title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                onBlur={() => {
-                  const next = title.trim();
-                    if (!next) {
-                    setTitle(current.title);
-                    return;
-                  }
-                  if (next !== current.title) {
-                    patchTask({ title: next });
-                  }
-                }}
-                className="mt-1.5 w-full border-0 bg-transparent font-display text-[1.65rem] leading-tight font-semibold tracking-[-0.02em] text-[#2a2622] outline-none placeholder:text-[#7a7166]"
-              />
-            ) : (
-              <h2
-                id="tasks-ease-detail-title"
-                className="mt-1.5 font-display text-[1.65rem] leading-tight font-semibold tracking-[-0.02em] text-[#2a2622]"
-              >
-                {current.title}
-              </h2>
-            )}
             <Link
               href={eventHref}
-              className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-[#5c554c] transition hover:text-[#2a2622]"
+              className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-[#2f4a3c] transition hover:underline"
             >
               {current.event.eventTitle}
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              <ExternalLink className="h-3 w-3" aria-hidden />
             </Link>
-          </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Close"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(42,38,34,0.1)] bg-white text-[#5c554c] transition hover:text-[#2a2622]"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="relative flex flex-1 flex-col gap-5 overflow-y-auto px-6 pb-8">
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block space-y-1.5">
-              <span className="text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase">
-                Status
-              </span>
-              <select
-                value={status}
-                disabled={!canEdit}
-                onChange={(event) => {
-                  const next = event.target.value as EventPlaybookTaskStatus;
-                  setStatus(next);
-                  patchTask({ status: next });
-                }}
-                className={cn(
-                  "w-full appearance-none rounded-full border-0 px-3 py-2 text-xs font-bold outline-none disabled:opacity-60",
-                  STATUS_STYLE[status],
-                )}
-              >
-                {TASKS_V2_STATUS_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {tasksV2StatusLabel(option)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block space-y-1.5">
-              <span className="text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase">
-                Priority
-              </span>
+            <p className="mt-4">
               <span
                 className={cn(
-                  "inline-flex w-full items-center justify-center rounded-full px-3 py-2 text-xs font-bold",
+                  "inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-tighter",
                   PRIORITY_STYLE[priority],
                 )}
                 title="Based on due date and status"
               >
-                {tasksV2PriorityLabel(priority)}
+                Priority · {tasksV2PriorityLabel(priority)}
               </span>
-            </label>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e8e2d9] bg-white text-[10px] text-[#6e6a64]">
+              <Sparkles className="h-3 w-3" aria-hidden />
+            </div>
+            <p className="text-[10px] font-bold tracking-widest text-[#6e6a64] uppercase leading-tight">
+              {canEdit ? "Changes save automatically" : "View only"}
+            </p>
+          </div>
+        </aside>
 
-            <label className="col-span-2 block space-y-1.5 sm:col-span-1">
-              <span className="text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase">
-                Due date
-              </span>
-              <input
-                type="date"
-                value={dueDate}
-                disabled={!canEdit}
-                onChange={(event) => {
-                  const next = event.target.value;
-                  setDueDate(next);
-                  patchTask({ dueDate: next || null });
-                }}
-                className={cn(
-                  "w-full appearance-none rounded-full border-0 px-3 py-2 text-xs font-bold outline-none disabled:opacity-60",
-                  "[color-scheme:light]",
-                  dueDate
-                    ? "bg-[rgba(196,146,46,0.16)] text-[#7a5a12]"
-                    : "bg-[rgba(122,113,102,0.12)] text-[#5c554c]",
-                )}
-              />
-            </label>
+        {/* Right form pane — same chrome as Add task */}
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto p-8 md:p-10">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="absolute top-6 right-6 flex h-8 w-8 items-center justify-center rounded-full text-[#6e6a64] transition hover:bg-[#faf8f5] hover:text-[#2a2622]"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
 
-            <label className="col-span-2 block space-y-1.5 sm:col-span-1">
-              <span className="text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase">
-                Assigned to
-              </span>
-              {canEdit ? (
-                <select
-                  value={
-                    assigneeUserId &&
-                    orgMembers.some((member) => member.userId === assigneeUserId)
-                      ? assigneeUserId
-                      : ""
-                  }
-                  aria-label="Assign task"
-                  onChange={(event) => {
-                    const userId = event.target.value || null;
-                    if (!userId) {
-                      setAssigneeUserId(null);
-                      setAssigneeName(null);
-                      setAssigneeInitials(null);
-                      patchTask({
-                        assigneeUserId: null,
-                        assigneeName: null,
-                        assigneeInitials: null,
-                      });
-                      return;
-                    }
-                    const member = orgMembers.find(
-                      (entry) => entry.userId === userId,
-                    );
-                    const next = {
-                      assigneeUserId: userId,
-                      assigneeName: member?.displayName ?? null,
-                      assigneeInitials: member?.initials ?? null,
-                    };
-                    setAssigneeUserId(next.assigneeUserId);
-                    setAssigneeName(next.assigneeName);
-                    setAssigneeInitials(next.assigneeInitials);
-                    patchTask(next);
-                  }}
-                  className={cn(
-                    "w-full appearance-none rounded-full border-0 px-3 py-2 text-xs font-bold outline-none disabled:opacity-60",
-                    assigneeUserId
-                      ? "bg-[rgba(47,74,60,0.12)] text-[#2f4a3c]"
-                      : "bg-[rgba(122,113,102,0.12)] text-[#5c554c]",
-                  )}
-                >
-                  <option value="">Unassigned</option>
-                  {orgMembers
-                    .filter((member) => member.userId)
-                    .map((member) => (
-                      <option key={member.id} value={member.userId!}>
-                        {member.displayName}
-                      </option>
-                    ))}
-                </select>
-              ) : (
-                <span
-                  className={cn(
-                    "inline-flex w-full items-center rounded-full px-3 py-2 text-xs font-bold",
-                    assigneeUserId
-                      ? "bg-[rgba(47,74,60,0.12)] text-[#2f4a3c]"
-                      : "bg-[rgba(122,113,102,0.12)] text-[#5c554c]",
-                  )}
-                >
-                  {assigneeName ?? "Unassigned"}
-                </span>
-              )}
-            </label>
+          <div className="mb-8 pr-8">
+            <p className="mb-1 text-[10px] font-bold tracking-widest text-[#6e6a64] uppercase">
+              Task
+            </p>
+            <h2
+              className="mb-1 text-3xl text-[#2a2622]"
+              style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+            >
+              Edit task
+            </h2>
+            <p className="text-sm text-[#5c5752]">
+              Tell your team what needs doing.
+            </p>
           </div>
 
-          <div className="space-y-1.5">
-            <label
-              htmlFor="tasks-ease-detail-notes"
-              className="block text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase"
-            >
-              Notes
+          <div className="space-y-6">
+            <label className="block space-y-2">
+              <span className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase">
+                Task Title
+              </span>
+              {canEdit ? (
+                <input
+                  id="tasks-ease-detail-title"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  onBlur={() => {
+                    const next = title.trim();
+                    if (!next) {
+                      setTitle(current.title);
+                      return;
+                    }
+                    if (next !== current.title) {
+                      patchTask({ title: next });
+                    }
+                  }}
+                  className={fieldClass}
+                />
+              ) : (
+                <p
+                  id="tasks-ease-detail-title"
+                  className="rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-4 py-3 text-sm font-medium text-[#2a2622]"
+                >
+                  {current.title}
+                </p>
+              )}
             </label>
-            <div className="flex gap-2">
+
+            <div className="space-y-2">
+              <div className="flex items-end justify-between gap-2">
+                <label
+                  htmlFor="tasks-ease-detail-notes"
+                  className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase"
+                >
+                  Description
+                </label>
+                {canEdit && voiceSupported ? (
+                  <button
+                    type="button"
+                    aria-label={
+                      isListening ? "Stop voice input" : "Start voice input"
+                    }
+                    aria-pressed={isListening}
+                    title={isListening ? "Stop voice input" : "Dictate notes"}
+                    onClick={toggleVoice}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-bold transition",
+                      isListening
+                        ? "bg-[#2a2622] text-white"
+                        : "bg-[#f0f3f1] text-[#2f4a3c] hover:bg-[#e1e7e4]",
+                    )}
+                  >
+                    {isListening ? (
+                      <MicOff className="h-3 w-3" aria-hidden />
+                    ) : (
+                      <Mic className="h-3 w-3" aria-hidden />
+                    )}
+                    {isListening ? "Listening…" : "Dictate"}
+                  </button>
+                ) : (
+                  <span className="sr-only">Notes</span>
+                )}
+              </div>
               <textarea
                 id="tasks-ease-detail-notes"
                 value={notes}
                 disabled={!canEdit}
-                rows={8}
-                placeholder="Add notes for this task…"
+                rows={3}
+                placeholder="Add some details or a checklist..."
+                aria-label="Notes"
                 onChange={(event) => {
                   const value = event.target.value;
                   setNotes(value);
@@ -478,45 +430,170 @@ export function TasksEaseTaskDrawer({
                   scheduleNotesSave(value);
                 }}
                 onBlur={flushNotes}
-                className="min-h-40 w-full flex-1 resize-y rounded-[18px] border border-[rgba(42,38,34,0.1)] bg-white px-3.5 py-3 text-sm leading-relaxed text-[#2a2622] outline-none placeholder:text-[#7a7166] focus:border-[#6b8171] disabled:opacity-60"
+                className="w-full resize-none rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-4 py-3 text-sm text-[#2a2622] outline-none transition placeholder:text-[#6e6a64] focus:border-[#2f4a3c] focus:shadow-[0_0_0_4px_rgba(47,74,60,0.05)] disabled:opacity-60"
               />
-              {canEdit && voiceSupported ? (
-                <button
-                  type="button"
-                  aria-label={isListening ? "Stop voice input" : "Start voice input"}
-                  aria-pressed={isListening}
-                  title={isListening ? "Stop voice input" : "Dictate notes"}
-                  onClick={toggleVoice}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="block space-y-2">
+                <span className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase">
+                  Tied to Event
+                </span>
+                <Link
+                  href={eventHref}
                   className={cn(
-                    "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition",
-                    isListening
-                      ? "border-[#2a2622] bg-[#2a2622] text-[#f6f2eb]"
-                      : "border-[rgba(42,38,34,0.1)] bg-white text-[#5c554c] hover:text-[#2a2622]",
+                    fieldClass,
+                    "flex items-center justify-between gap-2 hover:border-[#2f4a3c]",
                   )}
                 >
-                  {isListening ? (
-                    <MicOff className="h-4 w-4" strokeWidth={1.75} />
-                  ) : (
-                    <Mic className="h-4 w-4" strokeWidth={1.75} />
-                  )}
-                </button>
-              ) : null}
+                  <span className="truncate">{current.event.eventTitle}</span>
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0 text-[#6e6a64]" aria-hidden />
+                </Link>
+              </div>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase">
+                  Assignee
+                </span>
+                {canEdit ? (
+                  <select
+                    value={
+                      assigneeUserId &&
+                      orgMembers.some(
+                        (member) => member.userId === assigneeUserId,
+                      )
+                        ? assigneeUserId
+                        : ""
+                    }
+                    aria-label="Assign task"
+                    onChange={(event) => {
+                      const userId = event.target.value || null;
+                      if (!userId) {
+                        setAssigneeUserId(null);
+                        setAssigneeName(null);
+                        setAssigneeInitials(null);
+                        patchTask({
+                          assigneeUserId: null,
+                          assigneeName: null,
+                          assigneeInitials: null,
+                        });
+                        return;
+                      }
+                      const member = orgMembers.find(
+                        (entry) => entry.userId === userId,
+                      );
+                      const next = {
+                        assigneeUserId: userId,
+                        assigneeName: member?.displayName ?? null,
+                        assigneeInitials: member?.initials ?? null,
+                      };
+                      setAssigneeUserId(next.assigneeUserId);
+                      setAssigneeName(next.assigneeName);
+                      setAssigneeInitials(next.assigneeInitials);
+                      patchTask(next);
+                    }}
+                    className={fieldClass}
+                  >
+                    <option value="">Unassigned</option>
+                    {orgMembers
+                      .filter((member) => member.userId)
+                      .map((member) => (
+                        <option key={member.id} value={member.userId!}>
+                          {member.displayName}
+                        </option>
+                      ))}
+                  </select>
+                ) : (
+                  <span className={cn(fieldClass, "block")}>
+                    {assigneeName ?? "Unassigned"}
+                    {assigneeInitials ? (
+                      <span className="sr-only"> ({assigneeInitials})</span>
+                    ) : null}
+                  </span>
+                )}
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase">
+                  Due Date
+                </span>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={dueDate}
+                    disabled={!canEdit}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      setDueDate(next);
+                      patchTask({ dueDate: next || null });
+                    }}
+                    className={cn(fieldClass, "pr-10 [color-scheme:light]")}
+                  />
+                  <Calendar
+                    className="pointer-events-none absolute top-1/2 right-4 h-3.5 w-3.5 -translate-y-1/2 text-[#6e6a64]"
+                    aria-hidden
+                  />
+                </div>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-bold tracking-widest text-[#6e6a64] uppercase">
+                  Board
+                </span>
+                <select
+                  value={status}
+                  disabled={!canEdit}
+                  onChange={(event) => {
+                    const next = event.target.value as EventPlaybookTaskStatus;
+                    setStatus(next);
+                    patchTask({ status: next });
+                  }}
+                  className={fieldClass}
+                >
+                  {TASKS_V2_STATUS_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {tasksV2StatusLabel(option)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <p
+              className={cn(
+                "text-xs font-semibold md:hidden",
+                saveState === "error" || voiceError
+                  ? "text-[#a65a3a]"
+                  : "text-[#6e6a64]",
+              )}
+              aria-live="polite"
+            >
+              {statusHint}
+            </p>
+
+            <div className="flex flex-col gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="w-full rounded-2xl bg-[#2f4a3c] py-4 text-lg font-bold text-white shadow-xl shadow-[#2f4a3c]/10 transition hover:bg-[#253a2f]"
+              >
+                Done
+              </button>
+              <p
+                className={cn(
+                  "hidden text-center text-xs font-semibold md:block",
+                  saveState === "error" || voiceError
+                    ? "text-[#a65a3a]"
+                    : "text-[#6e6a64]",
+                )}
+                aria-live="polite"
+              >
+                {statusHint}
+              </p>
             </div>
           </div>
-
-          <p
-            className={cn(
-              "text-xs font-semibold",
-              saveState === "error" || voiceError
-                ? "text-[#a65a3a]"
-                : "text-[#7a7166]",
-            )}
-            aria-live="polite"
-          >
-            {statusHint}
-          </p>
         </div>
-      </aside>
+      </div>
     </div>
   );
 }
