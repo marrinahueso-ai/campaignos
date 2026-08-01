@@ -231,7 +231,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - List view: Pilot flat table (Priority dropdown, Event, Status, Due date picker, Assignee; overdue Escalate; Needs Review / Review; bottom padding so last-row date picker isn’t clipped) — **shipped**
 - Status board: Pilot kanban To Do · In Progress · Needs Review · Done; drag-and-drop; event color stripe + avatar cards; column **+** opens Add task with Board prefilled — **shipped**
 - Focus / Custom view tabs on org Tasks hub — **removed**
-- Ask AI for tasks (`TasksEaseAskAi` modal) + Add task (Pilot two-pane modal) in the header — **shipped**
+- Ask AI for tasks (`TasksEaseAskAi` modal): Pilot paper/ink/gold card (Event + optional Category, “What are you working on?”, Generate); AI Recommendations in Essential / Recommended / Extra Touch columns with level-cards (checkbox, description, category tag, priority dropdown, due date — picker not clipped via overflow-visible + bottom padding); Add Selected Tasks writes due dates via create API and priority via localStorage overrides — **shipped**
+- Add task (Pilot two-pane modal) in the header — **shipped**
 - Org Tasks hub SSR soft-capped at 1000 tasks (event Tasks tab uncapped; notice when truncated) — **shipped** (perf)
 - Task status/reorder + caption save/generate keep optimistic UI without full `router.refresh` — **shipped** (perf)
 - Access aligned with event access (`canAccessEvent` / EffectiveAccess) — **shipped**

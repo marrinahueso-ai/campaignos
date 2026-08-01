@@ -81,6 +81,26 @@ describe("tasks ease UI contracts", () => {
     assert.match(shell, /openAddTask/);
   });
 
+  it("Ask AI modal matches Pilot input + recommendation cards", () => {
+    const askAi = readSrc("../../../components/tasks-v2/TasksEaseAskAi.tsx");
+    assert.match(askAi, /Ask AI for tasks/);
+    assert.match(askAi, /What are you working on\?/);
+    assert.match(askAi, /Generate tasks/);
+    assert.match(askAi, /Category \(Optional\)/);
+    assert.match(askAi, /AI Recommendations/);
+    assert.match(askAi, /Essential/);
+    assert.match(askAi, /Recommended/);
+    assert.match(askAi, /Extra Touch/);
+    assert.match(askAi, /Add Selected Tasks/);
+    assert.match(askAi, /rounded-\[32px\]/);
+    assert.match(askAi, /type="date"/);
+    assert.match(askAi, /Priority/);
+    assert.match(askAi, /saveTaskPriority/);
+    assert.match(askAi, /overflow-visible/);
+    assert.match(askAi, /pb-28/);
+    assert.match(askAi, /addGeneratedTasksV2Action/);
+  });
+
   it("uses Ease task drawer with due date, assignee, priority, and notes", () => {
     const drawer = readSrc("../../../components/tasks-v2/TasksEaseTaskDrawer.tsx");
     assert.match(shell, /TasksEaseTaskDrawer/);

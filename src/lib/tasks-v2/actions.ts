@@ -74,12 +74,15 @@ export async function generateTasksV2Action(input: {
 
 export async function addGeneratedTasksV2Action(input: {
   eventId: string;
-  titles: string[];
+  /** @deprecated Prefer `tasks` when due dates are needed. */
+  titles?: string[];
+  tasks?: Array<{ title: string; dueDate?: string | null }>;
 }): Promise<{
   success: boolean;
   error: string | null;
   addedCount: number;
   skippedDuplicates: number;
+  created: Array<{ id: string; title: string }>;
 }> {
   const access = await assertTaskHubEventAccess(input.eventId);
   if (!access.ok) {
@@ -88,6 +91,7 @@ export async function addGeneratedTasksV2Action(input: {
       error: access.error,
       addedCount: 0,
       skippedDuplicates: 0,
+      created: [],
     };
   }
 
@@ -96,11 +100,19 @@ export async function addGeneratedTasksV2Action(input: {
     hubData.tasks.map((task) => task.title.trim().toLowerCase()),
   );
 
+  const items =
+    input.tasks ??
+    (input.titles ?? []).map((title) => ({
+      title,
+      dueDate: null as string | null,
+    }));
+
   let addedCount = 0;
   let skippedDuplicates = 0;
+  const created: Array<{ id: string; title: string }> = [];
 
-  for (const rawTitle of input.titles) {
-    const title = rawTitle.trim();
+  for (const item of items) {
+    const title = item.title.trim();
     if (!title) {
       continue;
     }
@@ -109,21 +121,33 @@ export async function addGeneratedTasksV2Action(input: {
       continue;
     }
 
-    const created = await createTaskHubTaskAction(input.eventId, { title });
-    if (!created.success) {
+    const dueDate = item.dueDate?.trim() || null;
+    const createdResult = await createTaskHubTaskAction(input.eventId, {
+      title,
+      dueDate,
+    });
+    if (!createdResult.success || !createdResult.taskId) {
       return {
         success: false,
-        error: created.error ?? "Could not create task.",
+        error: createdResult.error ?? "Could not create task.",
         addedCount,
         skippedDuplicates,
+        created,
       };
     }
 
     existing.add(title.toLowerCase());
+    created.push({ id: createdResult.taskId, title });
     addedCount += 1;
   }
 
   revalidatePath("/tasks");
   revalidatePath(`/events/${input.eventId}`);
-  return { success: true, error: null, addedCount, skippedDuplicates };
+  return {
+    success: true,
+    error: null,
+    addedCount,
+    skippedDuplicates,
+    created,
+  };
 }
