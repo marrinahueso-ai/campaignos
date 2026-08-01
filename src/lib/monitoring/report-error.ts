@@ -4,7 +4,10 @@
  */
 
 import * as Sentry from "@sentry/nextjs";
+import { extractErrorMessage } from "@/lib/monitoring/error-message";
 import { isSentryEnabled } from "@/lib/monitoring/sentry-privacy";
+
+export { extractErrorMessage } from "@/lib/monitoring/error-message";
 
 export type IntegrationArea =
   | "ai"
@@ -60,28 +63,6 @@ export function addActionBreadcrumb(
       organizationId: context?.organizationId ?? undefined,
     },
   });
-}
-
-function extractErrorMessage(
-  error: unknown,
-  fallback?: string | null,
-): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-  if (typeof error === "string" && error.trim()) {
-    return error;
-  }
-  if (error && typeof error === "object") {
-    const record = error as Record<string, unknown>;
-    if (typeof record.message === "string" && record.message.trim()) {
-      return record.message;
-    }
-    if (typeof record.error === "string" && record.error.trim()) {
-      return record.error;
-    }
-  }
-  return fallback?.trim() || "Unknown integration error";
 }
 
 export function reportIntegrationError(

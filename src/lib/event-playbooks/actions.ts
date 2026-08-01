@@ -233,7 +233,14 @@ export async function createEventPlaybookNoteAction(
     return { success: false, error: "Invalid note type." };
   }
 
-  const result = await createEventPlaybookNote(eventId, {
+  // App-layer event gate before insert — do not trust client eventId alone.
+  // RLS `can_access_event` still applies on the write.
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { success: false, error: "Event not found." };
+  }
+
+  const result = await createEventPlaybookNote(event.id, {
     content: trimmed,
     noteType,
   });
@@ -244,7 +251,7 @@ export async function createEventPlaybookNoteAction(
     };
   }
 
-  revalidatePlaybookPaths(eventId);
+  revalidatePlaybookPaths(event.id);
   return { success: true, error: null };
 }
 

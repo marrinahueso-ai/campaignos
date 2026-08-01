@@ -14,6 +14,7 @@ import {
 } from "react";
 import {
   ArrowLeft,
+  ChevronDown,
 } from "lucide-react";
 import {
   EventDetailEaseHero,
@@ -165,17 +166,27 @@ export type EventDetailTab =
   | "vendors"
   | "activity";
 
-const TABS: { id: EventDetailTab; label: string }[] = [
-  { id: "approvals", label: "Approvals" },
-  { id: "tasks", label: "Tasks" },
-  { id: "create-with-ai", label: "Create with AI" },
-  { id: "volunteers", label: "Volunteers" },
-  { id: "insights", label: "Insights" },
-  { id: "responsibilities", label: "Team" },
-  { id: "notes", label: "Notes" },
-  { id: "files", label: "Files" },
-  { id: "vendors", label: "Vendors" },
-  { id: "activity", label: "Activity" },
+/** Flat labels for deep links / tests — Create with AI stays deep-linkable via hero CTA. */
+const TAB_LABELS: Record<EventDetailTab, string> = {
+  approvals: "Approvals",
+  tasks: "Tasks",
+  "create-with-ai": "Create with AI",
+  volunteers: "Volunteers",
+  insights: "Insights",
+  responsibilities: "Team",
+  notes: "Notes",
+  files: "Files",
+  vendors: "Vendors",
+  activity: "Activity",
+};
+
+const PLANNING_TABS: EventDetailTab[] = ["tasks", "notes", "files"];
+const COMMUNITY_TABS: EventDetailTab[] = ["responsibilities", "vendors"];
+const TOP_LEVEL_TABS: EventDetailTab[] = [
+  "approvals",
+  "volunteers",
+  "insights",
+  "activity",
 ];
 
 const TAB_COUNTS: Partial<
@@ -186,7 +197,9 @@ const TAB_COUNTS: Partial<
   volunteers: (stats) => stats.filledSpots,
 };
 
-const VALID_TABS = new Set<EventDetailTab>(TABS.map((tab) => tab.id));
+const VALID_TABS = new Set<EventDetailTab>(
+  Object.keys(TAB_LABELS) as EventDetailTab[],
+);
 
 const LAZY_TABS = new Set<EventDetailTab>([
   "approvals",
@@ -430,6 +443,9 @@ export function EventDetailShell({
   const [tabError, setTabError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [liveHeroStats, setLiveHeroStats] = useState(heroStats);
+  const [openTabGroup, setOpenTabGroup] = useState<"planning" | "community" | null>(
+    null,
+  );
   const [refreshingTab, setRefreshingTab] = useState<EventDetailLazyTab | null>(
     null,
   );
@@ -767,50 +783,202 @@ export function EventDetailShell({
       />
 
       <nav
-        className="flex flex-wrap items-center gap-2"
+        className="relative flex flex-wrap items-center gap-1 border-b border-[#e8e3da] sm:gap-2"
         aria-label="Event sections"
         role="tablist"
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setOpenTabGroup(null);
+          }
+        }}
       >
-        {TABS.map((entry) => {
-          const isActive = tab === entry.id;
-          const countFn = TAB_COUNTS[entry.id];
+        <div className="relative">
+          <button
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={openTabGroup === "planning"}
+            data-testid="event-detail-tab-group-planning"
+            onClick={() =>
+              setOpenTabGroup((current) =>
+                current === "planning" ? null : "planning",
+              )
+            }
+            className={cn(
+              "inline-flex items-center gap-1.5 border-b-2 px-3 py-3 text-sm font-medium transition",
+              PLANNING_TABS.includes(tab)
+                ? "border-[#c4922e] text-[#2f4a3c]"
+                : "border-transparent text-[#6b8171] hover:text-[#2f4a3c]",
+            )}
+          >
+            Planning
+            <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+          </button>
+          {openTabGroup === "planning" ? (
+            <div
+              role="menu"
+              className="absolute top-full left-0 z-50 mt-1 w-48 rounded-xl border border-[#e8e3da] bg-white p-2 shadow-xl"
+            >
+              {PLANNING_TABS.map((id) => {
+                const isActive = tab === id;
+                const countFn = TAB_COUNTS[id];
+                const count = countFn ? countFn(liveHeroStats) : null;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="menuitem"
+                    data-testid={`event-detail-tab-${id}`}
+                    aria-current={isActive ? "page" : undefined}
+                    onClick={() => {
+                      setTab(id);
+                      syncTabUrl(id);
+                      setOpenTabGroup(null);
+                    }}
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-lg px-4 py-2 text-left text-sm transition",
+                      isActive
+                        ? "bg-[#f6f2eb] font-semibold text-[#2f4a3c]"
+                        : "text-[#2f4a3c] hover:bg-[#f6f2eb]",
+                    )}
+                  >
+                    <span>{TAB_LABELS[id]}</span>
+                    {count !== null ? (
+                      <span className="tabular-nums text-[#6b8171]">{count}</span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+
+        {TOP_LEVEL_TABS.slice(0, 2).map((id) => {
+          const isActive = tab === id;
+          const countFn = TAB_COUNTS[id];
           const count = countFn ? countFn(liveHeroStats) : null;
           return (
             <button
-              key={entry.id}
+              key={id}
               type="button"
               role="tab"
-              data-testid={`event-detail-tab-${entry.id}`}
+              data-testid={`event-detail-tab-${id}`}
               aria-selected={isActive}
               aria-current={isActive ? "page" : undefined}
               onClick={() => {
-                setTab(entry.id);
-                syncTabUrl(entry.id);
+                setTab(id);
+                syncTabUrl(id);
+                setOpenTabGroup(null);
               }}
               className={cn(
-                "rounded-full px-3.5 py-2 text-[13px] font-bold transition",
+                "inline-flex items-center gap-1.5 border-b-2 px-3 py-3 text-sm font-medium transition",
                 isActive
-                  ? "bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)] ring-1 ring-cos-border"
-                  : "text-cos-muted hover:bg-[rgba(255,252,247,0.7)] hover:text-cos-text",
-                isActive && entry.id === "create-with-ai"
-                  ? "shadow-[0_0_0_3px_rgba(47,74,60,0.12)]"
-                  : null,
+                  ? "border-[#c4922e] text-[#2f4a3c]"
+                  : "border-transparent text-[#6b8171] hover:text-[#2f4a3c]",
               )}
             >
-              {entry.label}
+              {TAB_LABELS[id]}
               {count !== null ? (
-                <span
-                  className={cn(
-                    "ml-1.5 inline-block min-w-[1.25em] tabular-nums",
-                    isActive ? "text-[#2f4a3c]" : "text-cos-muted",
-                  )}
-                >
-                  {count}
-                </span>
+                <span className="tabular-nums text-[#6b8171]">{count}</span>
               ) : null}
             </button>
           );
         })}
+
+        <div className="relative">
+          <button
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={openTabGroup === "community"}
+            data-testid="event-detail-tab-group-community"
+            onClick={() =>
+              setOpenTabGroup((current) =>
+                current === "community" ? null : "community",
+              )
+            }
+            className={cn(
+              "inline-flex items-center gap-1.5 border-b-2 px-3 py-3 text-sm font-medium transition",
+              COMMUNITY_TABS.includes(tab)
+                ? "border-[#c4922e] text-[#2f4a3c]"
+                : "border-transparent text-[#6b8171] hover:text-[#2f4a3c]",
+            )}
+          >
+            Community
+            <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+          </button>
+          {openTabGroup === "community" ? (
+            <div
+              role="menu"
+              className="absolute top-full left-0 z-50 mt-1 w-48 rounded-xl border border-[#e8e3da] bg-white p-2 shadow-xl"
+            >
+              {COMMUNITY_TABS.map((id) => {
+                const isActive = tab === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="menuitem"
+                    data-testid={`event-detail-tab-${id}`}
+                    aria-current={isActive ? "page" : undefined}
+                    onClick={() => {
+                      setTab(id);
+                      syncTabUrl(id);
+                      setOpenTabGroup(null);
+                    }}
+                    className={cn(
+                      "block w-full rounded-lg px-4 py-2 text-left text-sm transition",
+                      isActive
+                        ? "bg-[#f6f2eb] font-semibold text-[#2f4a3c]"
+                        : "text-[#2f4a3c] hover:bg-[#f6f2eb]",
+                    )}
+                  >
+                    {TAB_LABELS[id]}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+
+        {TOP_LEVEL_TABS.slice(2).map((id) => {
+          const isActive = tab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              data-testid={`event-detail-tab-${id}`}
+              aria-selected={isActive}
+              aria-current={isActive ? "page" : undefined}
+              onClick={() => {
+                setTab(id);
+                syncTabUrl(id);
+                setOpenTabGroup(null);
+              }}
+              className={cn(
+                "inline-flex items-center border-b-2 px-3 py-3 text-sm font-medium transition",
+                isActive
+                  ? "border-[#c4922e] text-[#2f4a3c]"
+                  : "border-transparent text-[#6b8171] hover:text-[#2f4a3c]",
+              )}
+            >
+              {TAB_LABELS[id]}
+            </button>
+          );
+        })}
+
+        {/* Deep-link only — Create with AI lives on Generate Event Plan in the hero */}
+        {tab === "create-with-ai" ? (
+          <button
+            type="button"
+            role="tab"
+            data-testid="event-detail-tab-create-with-ai"
+            aria-selected
+            aria-current="page"
+            className="ml-auto inline-flex items-center border-b-2 border-[#c4922e] px-3 py-3 text-sm font-semibold text-[#2f4a3c]"
+          >
+            Create with AI
+          </button>
+        ) : null}
       </nav>
 
       <div>

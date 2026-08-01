@@ -32,6 +32,9 @@ interface CampaignBuilderPageProps {
   params: Promise<{ id: string }>;
 }
 
+/** Allow long feed+story AI generation without Vercel gateway 504s on server actions. */
+export const maxDuration = 300;
+
 export async function generateMetadata({ params }: CampaignBuilderPageProps) {
   const { id } = await params;
   const event = await getEventById(id);

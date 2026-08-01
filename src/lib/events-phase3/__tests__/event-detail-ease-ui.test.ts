@@ -14,10 +14,14 @@ describe("event detail ease UI contracts", () => {
     "../../../app/(dashboard)/events/[id]/render-planning-hub.tsx",
   );
 
-  it("uses ease hero and soft tab pills", () => {
+  it("uses ease hero and grouped Planning/Community tabs", () => {
     assert.match(shell, /EventDetailEaseHero/);
     assert.match(shell, /role="tablist"/);
-    assert.match(shell, /label: "Team"/);
+    assert.match(shell, /Planning/);
+    assert.match(shell, /Community/);
+    assert.match(shell, /responsibilities: "Team"/);
+    assert.match(shell, /PLANNING_TABS/);
+    assert.match(shell, /COMMUNITY_TABS/);
     assert.doesNotMatch(shell, /<EventDetailHero[\s>]/);
   });
 
@@ -80,23 +84,32 @@ describe("event detail ease UI contracts", () => {
     const manageMenu = readSrc(
       "../../../components/event-workspace/EventManageMenu.tsx",
     );
+    const notes = readSrc(
+      "../../../components/events-phase3/EventDetailNotesEasePanel.tsx",
+    );
 
     assert.doesNotMatch(
       hero,
       /Tasks, approvals, volunteers, and Create with AI/,
     );
     assert.doesNotMatch(hero, /EditEventDetailsButton/);
-    assert.match(hero, /Create with AI/);
+    assert.match(hero, /Generate Event Plan/);
+    assert.match(hero, /createWithAiHref/);
     assert.match(hero, /includeEditDetails/);
     assert.match(hero, /iconOnly/);
     assert.match(manageMenu, /Edit details/);
     assert.match(hero, /Needs approval/);
-    assert.match(hero, /Open tasks/);
-    assert.match(hero, /Volunteers/);
+    assert.match(hero, /Quick Tasks/);
+    assert.match(hero, /Volunteer Staffing/);
     assert.doesNotMatch(hero, /label: "Posts"/);
-    assert.match(hero, /text-\[32px\]/);
-    assert.match(hero, /bg-\[rgba\(255,252,247,0\.94\)\]/);
+    assert.match(hero, /h-32/);
     assert.doesNotMatch(hero, /formatEventTime/);
     assert.doesNotMatch(hero, /eventTypeLabel/);
+
+    assert.match(notes, /Shared Notes/);
+    assert.match(notes, /Recent Scratchpads/);
+    assert.match(notes, /New Note/);
+    assert.match(notes, /note-paper|repeating-linear-gradient/);
+    assert.doesNotMatch(notes, /localStorage/);
   });
 });

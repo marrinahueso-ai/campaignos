@@ -33,9 +33,10 @@ import {
 import { Button } from "@/components/ui/Button";
 import { formatDateTime } from "@/lib/utils/dates";
 import { displayApprovalPostName } from "@/lib/approvals-scheduling/milestone-display-names";
-import type {
-  UnifiedApprovalHistoryEntry,
-  UnifiedApprovalItem,
+import {
+  getUnifiedApprovalPreview,
+  type UnifiedApprovalHistoryEntry,
+  type UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -178,13 +179,14 @@ export function ReviewDrawer({
       : null;
 
   const showRetry = canRetryFailedApproval(item) && Boolean(onRetry);
+  const preview = getUnifiedApprovalPreview(item);
   const caption =
-    item.preview.captionText?.trim() ||
-    item.preview.storyCaptionSnippet?.trim() ||
+    preview.captionText?.trim() ||
+    preview.storyCaptionSnippet?.trim() ||
     null;
   const hasCaption = Boolean(caption);
-  const feedUrl = item.preview.feedArtworkUrl;
-  const storyUrl = isFlyer ? null : item.preview.storyArtworkUrl;
+  const feedUrl = preview.feedArtworkUrl;
+  const storyUrl = isFlyer ? null : preview.storyArtworkUrl;
   const channelPills = isFlyer
     ? ["Flyer"]
     : item.platforms.length > 0

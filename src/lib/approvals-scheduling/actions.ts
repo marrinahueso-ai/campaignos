@@ -1086,12 +1086,16 @@ export async function enrichUnifiedApprovalItemPreviewAction(
         preview.storyArtworkUrl ??
         item.thumbnailUrl,
       preview: {
-        captionText: preview.captionText ?? item.preview.captionText,
+        captionText:
+          preview.captionText ??
+          (item.preview?.captionText ?? null),
         storyCaptionSnippet:
-          preview.storyCaptionSnippet ?? item.preview.storyCaptionSnippet,
-        feedArtworkUrl: preview.feedArtworkUrl ?? item.preview.feedArtworkUrl,
+          preview.storyCaptionSnippet ??
+          (item.preview?.storyCaptionSnippet ?? null),
+        feedArtworkUrl:
+          preview.feedArtworkUrl ?? (item.preview?.feedArtworkUrl ?? null),
         storyArtworkUrl:
-          preview.storyArtworkUrl ?? item.preview.storyArtworkUrl,
+          preview.storyArtworkUrl ?? (item.preview?.storyArtworkUrl ?? null),
       },
     };
   }

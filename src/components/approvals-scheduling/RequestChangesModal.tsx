@@ -10,7 +10,10 @@ import {
 } from "@/lib/approvals-revision/revision-notes";
 import { requestUnifiedChangesAction } from "@/lib/approvals-scheduling/actions";
 import { isFlyerComposerMilestoneId } from "@/lib/flyer-composer/approval";
-import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
+import {
+  getUnifiedApprovalPreview,
+  type UnifiedApprovalItem,
+} from "@/lib/approvals-scheduling/types";
 import { cn } from "@/lib/utils/cn";
 
 function isFlyerItem(item: UnifiedApprovalItem): boolean {
@@ -83,8 +86,9 @@ export function RequestChangesModal({
     });
   }
 
-  const feedUrl = item.preview.feedArtworkUrl;
-  const storyUrl = isFlyer ? null : item.preview.storyArtworkUrl;
+  const preview = getUnifiedApprovalPreview(item);
+  const feedUrl = preview.feedArtworkUrl;
+  const storyUrl = isFlyer ? null : preview.storyArtworkUrl;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-5">

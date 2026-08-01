@@ -16,10 +16,11 @@ import {
   nextApprovalSortState,
   sortApprovalItems,
 } from "@/lib/approvals-scheduling/status";
-import type {
-  ApprovalSortDirection,
-  ApprovalSortField,
-  UnifiedApprovalItem,
+import {
+  getUnifiedApprovalPreview,
+  type ApprovalSortDirection,
+  type ApprovalSortField,
+  type UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
 import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
 import { toSupabaseThumbnailUrl } from "@/lib/images/supabase-thumbnail";
@@ -64,9 +65,10 @@ function SortIcon({
 }
 
 function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
+  const preview = getUnifiedApprovalPreview(item);
   const source =
-    item.preview.feedArtworkUrl ||
-    item.preview.storyArtworkUrl ||
+    preview.feedArtworkUrl ||
+    preview.storyArtworkUrl ||
     item.thumbnailUrl ||
     "";
   const imageUrl = toSupabaseThumbnailUrl(source, {

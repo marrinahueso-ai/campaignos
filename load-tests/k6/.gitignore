@@ -1,0 +1,8 @@
+# Local session exports — never commit
+cookies.env
+*.cookies
+*.session
+.env
+.env.*
+!.env.example
+!cookies.env.example

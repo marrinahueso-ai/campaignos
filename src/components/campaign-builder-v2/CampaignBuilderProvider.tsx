@@ -90,6 +90,7 @@ import {
   stepFromHash,
 } from "@/lib/campaign-builder-v2/navigation";
 import { shouldRetainInMemorySessionOnHydrate } from "@/lib/campaign-builder-v2/session-identity";
+import { isServerActionTransportError } from "@/lib/next/server-action-transport";
 import type {
   BrandKitOption,
   CampaignBuilderInspiration,
@@ -1809,18 +1810,11 @@ export function CampaignBuilderProvider({
             ? error.message
             : "Could not generate artwork and captions.";
 
-        // Navigation / Safari "Load failed" aborts the client fetch while the
-        // server action often still finishes. Do not clobber session as failed
-        // — server persists successful artwork into campaign_builder_sessions.
-        const interrupted =
-          (typeof DOMException !== "undefined" &&
-            error instanceof DOMException &&
-            error.name === "AbortError") ||
-          (error instanceof Error &&
-            (error.name === "AbortError" ||
-              /failed to fetch|networkerror|load failed|aborted/i.test(
-                error.message,
-              )));
+        // Navigation, Safari "Load failed", or gateway 502/504 HTML (Next:
+        // "unexpected response was received from the server") abort the client
+        // fetch while the server action often still finishes. Do not clobber
+        // session as failed — server persists artwork into campaign_builder_sessions.
+        const interrupted = isServerActionTransportError(error);
 
         const recovered = await recoverSessionFromServerIfRicher(
           sessionRef.current,
