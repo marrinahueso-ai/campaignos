@@ -196,29 +196,8 @@ test.describe("Ask Ralli Assistant", () => {
 });
 
 async function openAskRalliDialog(page: Page): Promise<Locator> {
-  // Demoted: Ask Ralli lives on Help Center (not sidebar-pinned).
-  const openLabeled = page.getByRole("button", { name: /^ask ralli/i });
-  if (!(await openLabeled.isVisible().catch(() => false))) {
-    await page.goto("/help");
-    await expect(page.getByRole("heading", { name: /help center/i })).toBeVisible({
-      timeout: 15_000,
-    });
-  }
-
-  const openLabeledReady = page.getByRole("button", { name: /^ask ralli/i });
-  const openCompact = page.getByRole("button", {
-    name: /^hey ralli assistant$/i,
-  });
-
-  if (await openLabeledReady.isVisible().catch(() => false)) {
-    await openLabeledReady.click();
-  } else if (await openCompact.isVisible().catch(() => false)) {
-    await openCompact.click();
-  } else {
-    // Card title is visible even if CTA copy drifts — click Ask control nearby.
-    await page.getByText("Hey Ralli Assistant", { exact: true }).first().click();
-  }
-
+  // Top-rail ? opens Ask Ralli (not sidebar-pinned).
+  await page.getByRole("button", { name: /^ask ralli$/i }).click();
   const dialog = page.getByRole("dialog", { name: /hey ralli assistant/i });
   await expect(dialog).toBeVisible({ timeout: 15_000 });
   return dialog;

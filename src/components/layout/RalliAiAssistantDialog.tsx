@@ -214,6 +214,13 @@ export function RalliAiAssistantDialog({ onClose }: RalliAiAssistantDialogProps)
               Org briefings, what’s next for an event, draft reminders &amp;
               caption rewrites — plus product how-tos.
             </p>
+            <Link
+              href="/help"
+              onClick={onClose}
+              className="mt-2 inline-block text-sm font-medium text-cos-text underline decoration-cos-border underline-offset-2 hover:decoration-cos-text"
+            >
+              Browse Help Center →
+            </Link>
           </div>
           <Button
             type="button"

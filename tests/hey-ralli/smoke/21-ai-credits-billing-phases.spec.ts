@@ -330,27 +330,10 @@ test.describe("AI credits & billing — Phases 1–6", () => {
     await expect(page).not.toHaveURL(/\/login/);
     await expectNoBlankScreen(page);
 
-    // Same open path as smoke/12 — Help Center (demoted from sidebar).
-    await page.goto("/help");
-    await expect(page.getByRole("heading", { name: /help center/i })).toBeVisible({
-      timeout: 15_000,
-    });
-    const openLabeled = page.getByRole("button", { name: /^ask ralli/i });
-    const openCompact = page.getByRole("button", {
-      name: /^hey ralli assistant$/i,
-    });
-    if (await openLabeled.isVisible().catch(() => false)) {
-      await openLabeled.click();
-    } else if (await openCompact.isVisible().catch(() => false)) {
-      await openCompact.click();
-    } else if (
-      await page
-        .getByText("Hey Ralli Assistant", { exact: true })
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
-      await page.getByText("Hey Ralli Assistant", { exact: true }).first().click();
+    // Same open path as smoke/12 — top-rail ? (Ask Ralli).
+    const openAsk = page.getByRole("button", { name: /^ask ralli$/i });
+    if (await openAsk.isVisible().catch(() => false)) {
+      await openAsk.click();
     } else {
       test.info().annotations.push({
         type: "note",

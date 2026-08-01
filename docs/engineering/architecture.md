@@ -79,7 +79,7 @@ CampignOS/
 
 **Marketing WOW (shipped public funnel):** live React surfaces under `src/components/marketing-wow` + `src/lib/marketing-wow` — cinematic home (`/`), auth/legal chrome, floating bottom nav, cookie consent. Feature explorer at `/features` documents Create with AI modules (Home Page · Social · Newsletter) plus Motion demos. Product/calendar cinematic HTML mockups + `public/demos/calendar-demo.webm` exist as assets; a “Watch product demo” CTA on live `/` stays **in progress** until GO (see feature list).
 
-**Primary product nav:** `/dashboard`, `/calendar`, `/events`, `/volunteers`, `/create-with-ai` (chooser), `/approvals`, `/tasks`, `/communications` (Communications Hub / inbox), `/files`, `/vendors`, `/insights`, plus Settings Ease subtree. **Top rail:** Home · Help (`/help`) · Settings. Ask Ralli is demoted to Help Center (not sidebar-pinned).
+**Primary product nav:** `/dashboard`, `/calendar`, `/events`, `/volunteers`, `/create-with-ai` (chooser), `/approvals`, `/tasks`, `/communications` (Communications Hub / inbox), `/files`, `/vendors`, `/insights`, plus Settings Ease subtree. **Top rail:** Home · Ask Ralli (**?**) · Settings. Help Center at `/help` (browse from Ask Ralli dialog). Ask Ralli is not sidebar-pinned.
 
 **Create with AI routes (not separate sidebar items for composers):**
 

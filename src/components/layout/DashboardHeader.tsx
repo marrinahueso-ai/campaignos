@@ -1,9 +1,10 @@
 "use client";
 
-import { CircleHelp, Home, Menu, Settings, X } from "lucide-react";
+import { Home, Menu, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutForm } from "@/components/auth/SignOutForm";
+import { HeaderAskRalliButton } from "@/components/layout/HeaderAskRalliButton";
 import { OrganizationSwitcher } from "@/components/layout/OrganizationSwitcher";
 import type { ActiveOrganizationOption } from "@/lib/auth/active-organization";
 import { cn } from "@/lib/utils/cn";
@@ -83,13 +84,7 @@ export function DashboardHeader({
           >
             <Home className="h-4 w-4" strokeWidth={1.5} />
           </UtilityIconLink>
-          <UtilityIconLink
-            href="/help"
-            label="Help"
-            active={pathname.startsWith("/help")}
-          >
-            <CircleHelp className="h-4 w-4" strokeWidth={1.5} />
-          </UtilityIconLink>
+          <HeaderAskRalliButton />
           <UtilityIconLink
             href="/settings"
             label="Settings"

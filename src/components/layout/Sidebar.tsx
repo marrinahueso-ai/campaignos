@@ -408,7 +408,7 @@ export function Sidebar({
         </div>
       )}
 
-      {/* Scrollable primary nav. Help lives in the top rail (?). Ask Ralli parked. */}
+      {/* Scrollable primary nav. Ask Ralli opens from top-rail ? (not pinned here). */}
       <nav
         className={cn(
           "min-h-0 flex-1 space-y-0.5 overflow-y-auto",
