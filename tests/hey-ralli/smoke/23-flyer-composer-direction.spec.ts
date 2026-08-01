@@ -149,7 +149,7 @@ test.describe("Flyer composer AI direction smoke", () => {
 
     await expect(page.locator(".preview-sidebar")).toBeVisible();
     await expect(page.locator("#btnEdit")).toBeVisible();
-    await expect(page.locator("#btnEdit")).toHaveText("Edit");
+    await expect(page.locator("#btnEdit")).toHaveText("Edit with AI");
     await expect(page.locator("#editDetailsLink")).toHaveCount(0);
     await expect(page.locator(".preview-sidebar")).not.toContainText("Directions to AI");
     await expect(page.locator(".preview-sidebar")).not.toContainText("Slot summary");

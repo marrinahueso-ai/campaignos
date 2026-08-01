@@ -97,6 +97,26 @@
     body.is-embed .top h1 { font-size: clamp(1.65rem, 3vw, 2.2rem); }
     body.is-embed .composer-layout { min-height: calc(100dvh - 7.5rem); }
 
+    /* Preview / Edit — full-bleed stage (UX Pilot) */
+    body.view-result .shell,
+    body.view-edit .shell {
+      max-width: none; padding: 0; min-height: 100%;
+    }
+    body.view-result .top,
+    body.view-edit .top,
+    body.view-result .steps-rail,
+    body.view-edit .steps-rail {
+      display: none !important;
+    }
+    body.view-result .composer-layout,
+    body.view-edit .composer-layout {
+      min-height: calc(100dvh - 1rem);
+    }
+    body.is-embed.view-result .composer-layout,
+    body.is-embed.view-edit .composer-layout {
+      min-height: calc(100dvh - 4.5rem);
+    }
+
     .top {
       display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
       gap: 16px; margin-bottom: 28px; animation: rise 0.5s var(--ease) both;
@@ -1160,22 +1180,67 @@
     .btn-tool svg {
       width: 18px; height: 18px; display: block;
     }
+    .panel[data-panel="result"] {
+      background: transparent; border: none; box-shadow: none; padding: 0; border-radius: 0;
+    }
     .preview-workspace {
-      display: grid; grid-template-columns: 1fr; gap: 16px; min-width: 0;
+      display: flex; flex-direction: column; min-width: 0; min-height: 70vh;
       animation: soft-in 0.45s var(--ease) 0.04s both;
+      background: var(--cream);
     }
-    @media (min-width: 800px) {
-      .preview-workspace { grid-template-columns: minmax(0, 1fr) 220px; align-items: start; }
+    @media (min-width: 900px) {
+      .preview-workspace {
+        flex-direction: row; align-items: stretch;
+        min-height: calc(100dvh - 5rem);
+      }
     }
-    .preview-main-col { min-width: 0; display: flex; flex-direction: column; gap: 0; }
+    .preview-main-col {
+      position: relative; flex: 1; min-width: 0;
+      display: flex; flex-direction: column;
+    }
+    .preview-toolbar {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 14px 20px 0; position: relative; z-index: 5;
+    }
+    .preview-toolbar-tools {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+    }
+    .preview-tool-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      border: none; background: transparent; color: var(--ink-soft);
+      font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 6px 0;
+    }
+    .preview-tool-btn:hover { color: var(--ink); }
+    .preview-tool-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .preview-tool-btn svg { width: 16px; height: 16px; }
+    .preview-download {
+      position: relative;
+    }
+    .preview-download-menu {
+      display: none; position: absolute; left: 0; top: calc(100% + 4px); z-index: 20;
+      min-width: 200px; padding: 8px 0; border-radius: 14px;
+      border: 1px solid var(--line); background: var(--white);
+      box-shadow: 0 16px 40px rgba(28, 36, 48, 0.12);
+    }
+    .preview-download.is-open .preview-download-menu { display: block; }
+    .preview-download-menu button {
+      display: block; width: 100%; text-align: left; border: none; background: none;
+      padding: 10px 16px; font: inherit; font-size: 0.88rem; color: var(--ink); cursor: pointer;
+    }
+    .preview-download-menu button:hover { background: #faf8f5; }
+    .preview-steps-overlay {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 8px 12px; pointer-events: none;
+    }
+    .preview-steps-overlay .step-btn { pointer-events: auto; font-size: 10px; padding: 6px 12px; }
+    .preview-steps-overlay .step-conn { width: 16px; }
     .flyer-stage,
     .preview-stage {
-      position: relative; border-radius: 18px; overflow: hidden; min-width: 0;
-      /* Neutral cream well — one shade deeper than page cream, no green */
-      background:
-        linear-gradient(160deg, #f0ebe3 0%, var(--cream-deep) 48%, #e5ddd0 100%);
-      min-height: 380px; display: grid; place-items: center; padding: 28px 24px;
-      box-shadow: var(--shadow-lg);
+      position: relative; border-radius: 0; overflow: auto; min-width: 0; flex: 1;
+      background: radial-gradient(circle at center, #fdfcfb 0%, #f6f2eb 100%);
+      min-height: 420px; display: flex; align-items: center; justify-content: center;
+      padding: 48px 24px 32px;
+      box-shadow: none;
     }
     .flyer-stage.is-building,
     .flyer-stage.is-done,
@@ -1183,13 +1248,49 @@
     .preview-stage.is-done {
       place-items: center;
     }
+    .preview-single,
+    .preview-compare {
+      display: none; width: 100%; max-width: none; margin: 0 auto; gap: 28px;
+      align-items: flex-start; justify-content: center; flex-wrap: wrap;
+    }
+    .preview-stage.is-compare .preview-single { display: none !important; }
+    .preview-stage.is-compare .preview-compare {
+      display: flex !important;
+    }
+    .preview-compare-pane { flex: 1 1 240px; max-width: 400px; }
+    .preview-compare-label {
+      text-align: center; margin: 0 0 12px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #a8a29c;
+    }
+    .preview-compare-label.is-current { color: var(--forest); }
+    .preview-compare-frame {
+      aspect-ratio: 8.5 / 11; background: #fff; border-radius: 2px;
+      border: 1px solid var(--line); overflow: hidden;
+      box-shadow: 0 30px 60px -12px rgba(47, 74, 60, 0.1), 0 18px 36px -18px rgba(0, 0, 0, 0.15);
+    }
+    .preview-compare-frame img {
+      display: block; width: 100%; height: 100%; object-fit: cover;
+    }
+    .preview-compare-frame.is-empty {
+      display: grid; place-items: center; background: #f1f1f1; color: #c4c4c4;
+      font-size: 0.85rem; font-weight: 600;
+    }
     .preview-under {
-      margin-top: 12px;
-      display: flex; flex-direction: column; align-items: stretch; gap: 10px;
+      margin-top: 0; padding: 0 0 8px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
     }
     .preview-under .sidebar-edit-row {
-      display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center;
     }
+    #btnEdit {
+      display: inline-flex; align-items: center; gap: 10px;
+      border: none; border-radius: 16px; padding: 12px 28px;
+      background: var(--ink); color: #fff; font-weight: 800; font-size: 0.95rem;
+      box-shadow: 0 12px 28px rgba(42, 38, 34, 0.18); cursor: pointer;
+    }
+    #btnEdit:hover:not(:disabled) { background: #253a2f; }
+    #btnEdit:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
     /* Soft one-line status — not a fat banner stealing focus from the art */
     .saved-status {
       display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px;
@@ -1206,51 +1307,113 @@
     .saved-status[hidden] { display: none !important; }
     .saved-status.is-saved { color: var(--forest); }
     #filesPanel {
-      border-color: var(--line);
-      background: rgba(255, 252, 247, 0.55);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      border: none; background: transparent; padding: 0;
+      display: flex; flex-direction: column; gap: 10px; margin-top: auto;
     }
     #filesPanel .btn { width: 100%; }
-    #filesAsideHint { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+    #filesAsideHint { margin: 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
+    #btnSaveToFiles {
+      width: 100%; padding: 12px 14px; border-radius: 12px;
+      border: 1px solid var(--line); background: var(--white);
+      color: var(--ink-soft); font-weight: 800; font-size: 0.9rem;
+    }
+    #btnSaveToFiles:hover:not(:disabled) { background: #faf8f5; color: var(--ink); }
+    #btnSaveToFiles:disabled { opacity: 0.5; cursor: not-allowed; }
+    #btnSendForApproval {
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: none;
+      background: var(--forest); color: #fff; font-weight: 800; font-size: 0.9rem;
+      box-shadow: 0 6px 16px rgba(47, 74, 60, 0.14);
+    }
+    #btnSendForApproval:hover:not(:disabled) { background: #253a2f; }
+    #btnSendForApproval:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
-    .preview-sidebar { display: flex; flex-direction: column; gap: 10px; }
+    .preview-sidebar {
+      width: 100%; flex-shrink: 0;
+      display: flex; flex-direction: column; gap: 28px;
+      padding: 28px 24px; background: var(--white);
+      border-top: 1px solid var(--line);
+    }
+    @media (min-width: 900px) {
+      .preview-sidebar {
+        width: 320px; border-top: none; border-left: 1px solid var(--line);
+        padding: 32px 28px;
+      }
+    }
     .sidebar-box {
-      padding: 12px 12px 10px; border-radius: 14px; border: 1px solid transparent;
-      background: transparent;
+      padding: 0; border-radius: 0; border: none; background: transparent;
     }
     .panel .sidebar-box { background: transparent; }
     .sidebar-box.approval-panel {
-      border-color: var(--line);
-      background: rgba(255, 252, 247, 0.55);
+      border: none; background: transparent; padding: 0;
     }
     .sidebar-box .label {
-      margin: 0 0 6px; font-size: 10px; font-weight: 750; text-transform: uppercase;
-      letter-spacing: 0.08em; color: var(--muted);
+      margin: 0 0 12px; font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #a8a29c;
     }
     .sidebar-campaign-row {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
     }
-    .sidebar-box .btn { width: 100%; margin-top: 8px; }
+    .sidebar-box .btn { width: 100%; margin-top: 0; }
     .sidebar-box .btn-ghost {
       width: auto; margin-top: 0; padding: 4px 6px; font-size: 12px; font-weight: 600;
+      color: var(--forest);
     }
     .sidebar-box > p:not(.label):not(.approval-status) {
       margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4;
     }
     .preview-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 650;
-      background: rgba(42, 122, 134, 0.08); color: var(--teal);
-      border: 1px solid rgba(42, 122, 134, 0.14);
+      display: inline-flex; align-items: center; gap: 10px; flex: 1;
+      padding: 10px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;
+      background: #faf8f5; color: var(--ink);
+      border: 1px solid var(--line);
     }
-    .preview-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+    .preview-chip .dot {
+      width: 24px; height: 24px; border-radius: 999px;
+      background: rgba(47, 74, 60, 0.08); color: var(--forest);
+      display: grid; place-items: center; flex-shrink: 0;
+    }
+    .preview-chip .dot::before {
+      content: ""; width: 8px; height: 8px; border-radius: 2px;
+      background: currentColor;
+      clip-path: polygon(0 35%, 70% 0, 100% 20%, 40% 100%, 0 70%);
+    }
     .preview-chip.is-draft {
-      background: rgba(196, 146, 46, 0.1); color: #7a5a12;
-      border-color: rgba(196, 146, 46, 0.22);
+      background: #faf8f5; color: var(--ink-soft);
+      border-color: var(--line);
     }
-    .preview-chip.is-draft .dot { background: var(--mustard); }
+    .preview-chip.is-draft .dot { background: rgba(42, 38, 34, 0.06); color: var(--muted); }
+    .versions-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      margin-bottom: 12px;
+    }
+    .versions-head .label { margin: 0; }
+    .compare-toggle {
+      display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+      font-size: 10px; font-weight: 800; color: var(--ink-soft); user-select: none;
+    }
+    .compare-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .compare-switch {
+      width: 32px; height: 16px; border-radius: 999px; background: #e8e2d9;
+      position: relative; transition: background 0.2s;
+    }
+    .compare-switch::after {
+      content: ""; position: absolute; top: 2px; left: 2px;
+      width: 12px; height: 12px; border-radius: 50%; background: #fff;
+      transition: transform 0.2s;
+    }
+    .compare-toggle input:checked + .compare-switch { background: var(--forest); }
+    .compare-toggle input:checked + .compare-switch::after { transform: translateX(16px); }
+    .compare-toggle input:disabled + .compare-switch { opacity: 0.45; }
+    .approval-to-label {
+      display: block; margin: 0 0 6px 2px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #a8a29c;
+    }
+    #approvalAssigneeSelect {
+      width: 100%; margin-bottom: 10px; padding: 10px 12px;
+      border-radius: 12px; border: 1px solid var(--line);
+      background: var(--white); font: inherit; font-size: 0.9rem; color: var(--ink);
+    }
 
     /* Approvals — single primary CTA in aside (not also in header) */
     .approval-panel { display: block; }
@@ -1365,39 +1528,46 @@
       position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
       overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
     }
-    /* Versions sit under Edit — secondary focus after the letter hero */
+    /* Versions list in Preview aside */
     .preview-versions {
-      margin-top: 2px;
-      padding-top: 2px;
-      animation: soft-in 0.4s var(--ease) both;
+      margin: 0; padding: 0; animation: soft-in 0.4s var(--ease) both;
     }
     .preview-versions[hidden] { display: none !important; }
-    .preview-versions-label {
-      margin: 0 0 6px; font-size: 10px; font-weight: 750;
-      letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
-    }
+    .preview-versions-label { display: none; }
     .preview-versions-strip {
-      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;
-      -webkit-overflow-scrolling: touch;
+      display: flex; flex-direction: column; gap: 10px;
     }
     .version-thumb {
-      flex: 0 0 auto; width: 56px; padding: 3px; border: 2px solid transparent;
-      border-radius: 10px; background: var(--cream-deep); cursor: pointer;
-      overflow: hidden; aspect-ratio: 2 / 3;
-      transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+      display: flex; align-items: center; gap: 12px; width: 100%;
+      padding: 10px 12px; border: 1px solid var(--line);
+      border-radius: 12px; background: var(--white); cursor: pointer;
+      text-align: left; transition: border-color 0.15s, background 0.15s;
     }
-    .version-thumb:hover { border-color: rgba(42, 122, 134, 0.3); }
+    .version-thumb:hover { background: #faf8f5; }
     .version-thumb[aria-pressed="true"] {
-      border-color: var(--teal);
-      box-shadow: 0 0 0 2px rgba(42, 122, 134, 0.12);
+      border-color: var(--forest); background: #faf8f5;
+    }
+    .version-thumb-art {
+      width: 40px; height: 56px; flex-shrink: 0; border-radius: 3px;
+      border: 1px solid var(--line); overflow: hidden; background: #fff;
     }
     .version-thumb img {
-      display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;
+      display: block; width: 100%; height: 100%; object-fit: cover;
+    }
+    .version-thumb-meta { min-width: 0; }
+    .version-thumb-title {
+      margin: 0 0 4px; font-size: 12px; font-weight: 800; color: var(--ink); line-height: 1.2;
+    }
+    .version-thumb[aria-pressed="false"] .version-thumb-title {
+      font-weight: 600; color: var(--ink-soft);
+    }
+    .version-thumb-time {
+      margin: 0; font-size: 10px; color: #a8a29c;
     }
     .version-thumb-fallback {
       display: flex; align-items: center; justify-content: center;
       width: 100%; height: 100%; font-size: 10px; font-weight: 800;
-      color: var(--muted); background: #eee; border-radius: 8px;
+      color: var(--muted); background: #eee;
     }
     .preview-idle {
       width: min(100%, 280px); text-align: center;
@@ -1430,29 +1600,29 @@
       margin: 0; max-width: 16rem; color: var(--ink-soft);
       font-size: 0.85rem; line-height: 1.45;
     }
-    /* Letter stage card — AI portrait is 1024×1536 (2:3); keep true letter, no square crop */
+    /* Letter stage card — US Letter feel on Preview stage */
     .big-flyer {
-      border-radius: 10px; overflow: hidden;
-      border: 1px solid rgba(42, 38, 34, 0.12);
-      box-shadow: 0 14px 36px rgba(42, 38, 34, 0.14);
-      aspect-ratio: 2 / 3;
-      width: min(100%, 320px);
-      max-width: 320px;
+      border-radius: 2px; overflow: hidden;
+      border: 1px solid rgba(42, 38, 34, 0.1);
+      box-shadow: 0 30px 60px -12px rgba(47, 74, 60, 0.1), 0 18px 36px -18px rgba(0, 0, 0, 0.15);
+      aspect-ratio: 8.5 / 11;
+      width: min(100%, 500px);
+      max-width: 500px;
       margin: 0 auto;
       animation: soft-in 0.5s var(--ease) both;
       background: var(--brand-paper, #faf8f4);
     }
     .big-flyer.is-generated-image {
       background: #fff; display: flex; align-items: center; justify-content: center;
-      aspect-ratio: 2 / 3;
-      width: min(100%, 320px);
-      max-width: 320px;
+      aspect-ratio: 8.5 / 11;
+      width: min(100%, 500px);
+      max-width: 500px;
     }
     .big-flyer.is-generated-image[data-ratio="3/4"],
     .big-flyer.is-generated-image[data-ratio="9/16"] {
-      aspect-ratio: 2 / 3;
-      width: min(100%, 320px);
-      max-width: 320px;
+      aspect-ratio: 8.5 / 11;
+      width: min(100%, 500px);
+      max-width: 500px;
     }
     .generated-flyer-img {
       display: block; width: 100%; height: 100%; object-fit: contain;
@@ -1635,72 +1805,112 @@
     }
     .save-hint.unsaved { color: var(--mustard); }
 
-    /* Edit — revise from selected Preview version (Artwork | Details) */
-    .edit-artwork-grid {
-      display: grid; gap: 22px; align-items: start;
+    /* Edit — slide-over drawer (UX Pilot) */
+    .panel[data-panel="edit"] {
+      position: fixed; inset: 0 0 0 auto; z-index: 120;
+      width: min(600px, 100%); max-width: 100%;
+      height: 100dvh; margin: 0; padding: 0;
+      border-radius: 0; border: none; border-left: 1px solid var(--line);
+      background: var(--white);
+      box-shadow: -20px 0 60px rgba(28, 36, 48, 0.14);
+      transform: translateX(100%);
+      transition: transform 0.45s var(--ease);
+      display: none; flex-direction: column;
+      overflow: hidden;
     }
-    @media (min-width: 860px) {
-      .edit-artwork-grid { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: 28px; }
+    body.view-edit .panel[data-panel="edit"] {
+      display: flex;
+      transform: translateX(0);
+    }
+    .edit-drawer-head {
+      height: 64px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px; border-bottom: 1px solid var(--line);
+    }
+    .edit-drawer-head h2 {
+      margin: 0; font-family: var(--serif); font-size: 1.5rem; font-weight: 600;
+      font-style: italic; color: var(--ink);
+    }
+    .edit-drawer-close {
+      width: 32px; height: 32px; border-radius: 999px; border: none;
+      background: transparent; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center; font-size: 1.1rem;
+    }
+    .edit-drawer-close:hover { background: #faf8f5; color: var(--ink); }
+    .edit-artwork-grid {
+      flex: 1; min-height: 0; display: grid; gap: 0;
+      grid-template-columns: 1fr;
+      overflow: hidden;
+    }
+    @media (min-width: 560px) {
+      .edit-artwork-grid { grid-template-columns: 200px minmax(0, 1fr); }
     }
     .edit-base-card {
-      border-radius: 18px; border: 1px solid var(--line);
-      background: var(--cream); padding: 14px 14px 16px;
+      border-radius: 0; border: none; border-right: 1px solid var(--line);
+      background: rgba(250, 248, 245, 0.65); padding: 22px 20px;
+      display: flex; flex-direction: column; align-items: center;
     }
     .edit-base-eyebrow {
       margin: 0 0 8px; font-size: 10px; font-weight: 800;
-      letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+      letter-spacing: 0.1em; text-transform: uppercase; color: #a8a29c;
+      order: 2;
     }
     .edit-base-frame {
-      border-radius: 14px; overflow: hidden; border: 1px solid var(--line);
-      background: #eee; box-shadow: var(--shadow);
-      aspect-ratio: 2 / 3; max-width: 320px; margin: 0 auto;
-      position: relative;
+      border-radius: 4px; overflow: hidden; border: 1px solid var(--line);
+      background: #fff; box-shadow: var(--shadow);
+      aspect-ratio: 8.5 / 11; width: 100%; max-width: 160px; margin: 0 0 12px;
+      position: relative; order: 1;
     }
     .edit-base-frame img {
       display: block; width: 100%; height: 100%; object-fit: cover;
     }
     .edit-base-empty {
-      display: grid; place-items: center; height: 100%; min-height: 220px;
-      padding: 20px; text-align: center; color: var(--muted); font-size: 0.88rem; line-height: 1.4;
+      display: grid; place-items: center; height: 100%; min-height: 140px;
+      padding: 16px; text-align: center; color: var(--muted); font-size: 0.8rem; line-height: 1.4;
     }
     .edit-base-meta {
-      margin: 10px 0 0; font-size: 0.78rem; color: var(--ink-soft); line-height: 1.4; text-align: center;
+      margin: 0; font-size: 0.72rem; color: var(--ink-soft); line-height: 1.4; text-align: center;
+      order: 3;
     }
     .edit-base-meta strong { color: var(--forest); font-weight: 700; }
+    .edit-form-col {
+      min-width: 0; overflow-y: auto; padding: 28px 28px 20px;
+    }
     .edit-mode-toggle {
-      display: inline-flex; gap: 2px; padding: 3px; margin: 0 0 16px;
-      border-radius: 999px; border: 1px solid var(--line);
-      background: rgba(42, 38, 34, 0.05);
+      display: flex; gap: 22px; margin: 0 0 28px; padding: 0;
+      border: none; border-bottom: 1px solid var(--line); border-radius: 0;
+      background: transparent;
     }
     .edit-mode-toggle [role="tab"] {
-      border: none; background: transparent; color: var(--muted);
-      border-radius: 999px; padding: 8px 16px;
-      font-size: 13px; font-weight: 650; line-height: 1.2;
-      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+      border: none; background: transparent; color: #a8a29c;
+      border-radius: 0; padding: 0 0 12px; margin-bottom: -1px;
+      border-bottom: 2px solid transparent;
+      font-size: 0.9rem; font-weight: 600; line-height: 1.2;
     }
-    .edit-mode-toggle [role="tab"]:hover { color: var(--ink); }
+    .edit-mode-toggle [role="tab"]:hover { color: var(--ink-soft); }
     .edit-mode-toggle [role="tab"][aria-selected="true"] {
-      background: var(--white); color: var(--ink);
-      box-shadow: 0 1px 2px rgba(42, 38, 34, 0.08);
+      background: transparent; color: var(--ink); font-weight: 800;
+      border-bottom-color: var(--forest); box-shadow: none;
     }
     .edit-mode-toggle [role="tab"]:disabled { opacity: 0.45; cursor: not-allowed; }
     .edit-pane[hidden] { display: none !important; }
-    .edit-details-fields { display: flex; flex-direction: column; gap: 12px; }
+    .edit-details-fields { display: flex; flex-direction: column; gap: 18px; }
     .edit-details-fields .field { margin: 0; }
     .edit-details-fields textarea { min-height: 72px; }
     .edit-chip-row {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;
     }
     .edit-chip {
-      border: 1px solid var(--line); background: var(--cream);
-      border-radius: 999px; padding: 7px 12px;
-      font-size: 12px; font-weight: 600; color: var(--ink);
+      border: 1px solid var(--line); background: var(--white);
+      border-radius: 12px; padding: 14px 14px;
+      font-size: 12px; font-weight: 700; color: var(--ink-soft); text-align: left;
       transition: background 0.15s, border-color 0.15s;
     }
-    .edit-chip:hover { border-color: rgba(47, 74, 60, 0.35); background: rgba(47, 74, 60, 0.06); }
-    .edit-style-row {
-      margin-top: 4px;
+    .edit-chip:hover { border-color: rgba(47, 74, 60, 0.4); color: var(--ink); }
+    .edit-chip.is-active {
+      border-color: var(--forest); background: rgba(47, 74, 60, 0.06); color: #253a2f;
     }
+    .edit-style-row { margin-top: 4px; }
     .edit-style-labels {
       display: flex; justify-content: space-between; gap: 8px;
       font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 6px;
@@ -1710,22 +1920,26 @@
       width: 100%; accent-color: var(--forest);
     }
     .edit-actions {
-      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-      margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line);
+      display: flex; flex-direction: column; gap: 12px; align-items: stretch;
+      margin: 0; padding: 24px 28px; border-top: 1px solid var(--line);
+      background: rgba(250, 248, 245, 0.45); flex-shrink: 0;
     }
-    .edit-actions .btn { min-height: 42px; }
+    .edit-actions .btn { min-height: 48px; width: 100%; border-radius: 16px; }
+    #editApplyBtn {
+      background: var(--forest); color: #fff; font-size: 1.05rem; font-weight: 800;
+      box-shadow: 0 10px 24px rgba(47, 74, 60, 0.14);
+    }
+    #editApplyBtn:hover { background: #253a2f; filter: none; }
+    #editCancelBtn {
+      background: transparent; border: none; color: var(--ink-soft);
+      font-weight: 800; font-size: 0.9rem; box-shadow: none; min-height: auto;
+    }
+    #editCancelBtn:hover { color: var(--ink); background: transparent; }
     .edit-error {
       margin: 0; flex: 1 1 100%; font-size: 0.86rem; color: #a33;
-      line-height: 1.4;
+      line-height: 1.4; text-align: center;
     }
-    .edit-hint-banner {
-      display: flex; gap: 12px; align-items: flex-start;
-      padding: 12px 14px; margin-bottom: 18px;
-      border-radius: 14px; background: rgba(47, 74, 60, 0.07);
-      border: 1px solid rgba(47, 74, 60, 0.12);
-      font-size: 0.88rem; line-height: 1.45; color: var(--ink-soft);
-    }
-    .edit-hint-banner strong { color: var(--forest); }
+    .edit-hint-banner { display: none !important; }
     .edit-gen-overlay {
       position: absolute; inset: 0; display: grid; place-items: center;
       background: rgba(246, 242, 235, 0.72); backdrop-filter: blur(2px);
@@ -2180,66 +2394,90 @@
       </div>
     </section>
 
-    <!-- PREVIEW — hero letter · Edit · Versions · soft Saved line · slim aside -->
+    <!-- PREVIEW — stage + aside (UX Pilot) -->
     <section class="panel" data-panel="result" hidden>
-      <div class="preview-header no-print">
-        <div>
-          <h2>Preview</h2>
-          <p class="sub" id="previewSub">Generate and review versions.</p>
-        </div>
-        <div class="preview-header-actions">
-          <button type="button" class="btn btn-gold" id="generateBtn">Generate flyer</button>
-          <div class="preview-done-actions" id="previewDoneActions" hidden>
-            <button type="button" class="btn btn-tool" id="btnPrint" aria-label="Print" title="Print">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M6 9V3h12v6" stroke-linecap="round" stroke-linejoin="round"/>
-                <rect x="6" y="14" width="12" height="8" rx="1" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <button type="button" class="btn btn-tool" id="btnDownload" aria-label="Download" title="Download">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                <path d="M12 3v12" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="m7 11 5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M5 21h14" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
+      <p class="sr-only" id="previewSub">Generate and review versions.</p>
       <div class="preview-workspace">
         <div class="preview-main-col">
-          <div class="flyer-stage preview-stage" id="previewStage">
-            <div class="preview-idle" id="previewIdle">
-              <span class="preview-ready-badge">Ready</span>
-              <div class="preview-idle-flyer" id="previewIdleFlyer" data-ratio="3/4"></div>
-              <p class="preview-idle-hint" id="previewIdleHint">Tap <strong>Generate flyer</strong> to begin.</p>
+          <div class="preview-toolbar no-print">
+            <div class="preview-toolbar-tools">
+              <button type="button" class="btn btn-gold" id="generateBtn">Generate flyer</button>
+              <div class="preview-done-actions" id="previewDoneActions" hidden>
+                <button type="button" class="preview-tool-btn" id="btnPrint">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M6 9V3h12v6" stroke-linecap="round" stroke-linejoin="round"/>
+                    <rect x="6" y="14" width="12" height="8" rx="1" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Print
+                </button>
+                <div class="preview-download" id="previewDownloadWrap">
+                  <button type="button" class="preview-tool-btn" id="btnDownload" aria-haspopup="true" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                      <path d="M12 3v12" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="m7 11 5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M5 21h14" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Download
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <div class="preview-download-menu" id="downloadMenu" role="menu">
+                    <button type="button" role="menuitem" data-download="print">PDF for Print</button>
+                    <button type="button" role="menuitem" data-download="png">PNG for Social Media</button>
+                    <button type="button" role="menuitem" data-download="newsletter">Image for Newsletter</button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="gen-state" id="genState" hidden>
-              <span class="gen-title">Designing your flyer…</span>
-              <span class="gen-detail" id="genDetail">Sending full direction to OpenAI…</span>
-              <div class="gen-bar" role="progressbar" aria-label="Generating flyer"></div>
-              <span class="gen-elapsed" id="genElapsed" hidden></span>
+            <div class="preview-steps-overlay" aria-hidden="true">
+              <span class="step-btn done"><span class="step-num" data-n="1">1</span></span>
+              <span class="step-conn"></span>
+              <span class="step-btn done"><span class="step-num" data-n="2">2</span></span>
+              <span class="step-conn"></span>
+              <span class="step-btn active">3 Preview</span>
             </div>
-            <div class="big-flyer" id="resultFlyer" hidden></div>
           </div>
-          <div class="preview-under no-print">
-            <div class="sidebar-edit-row">
-              <button type="button" class="btn btn-secondary" id="btnEdit">Edit</button>
+
+          <div class="flyer-stage preview-stage" id="previewStage">
+            <div class="preview-single" id="previewSingleView">
+              <div class="preview-idle" id="previewIdle">
+                <span class="preview-ready-badge">Ready</span>
+                <div class="preview-idle-flyer" id="previewIdleFlyer" data-ratio="3/4"></div>
+                <p class="preview-idle-hint" id="previewIdleHint">Tap <strong>Generate flyer</strong> to begin.</p>
+              </div>
+              <div class="gen-state" id="genState" hidden>
+                <span class="gen-title">Designing your flyer…</span>
+                <span class="gen-detail" id="genDetail">Sending full direction to OpenAI…</span>
+                <div class="gen-bar" role="progressbar" aria-label="Generating flyer"></div>
+                <span class="gen-elapsed" id="genElapsed" hidden></span>
+              </div>
+              <div class="big-flyer" id="resultFlyer" hidden></div>
+              <div class="preview-under no-print">
+                <div class="sidebar-edit-row">
+                  <button type="button" id="btnEdit">Edit with AI</button>
+                </div>
+                <div class="saved-status" id="savedBanner" hidden>
+                  <span class="saved-copy" id="savedBannerCopy"></span>
+                  <a class="saved-link" id="savedBannerAction" href="#">Open Files</a>
+                </div>
+              </div>
             </div>
-            <div class="preview-versions" id="previewVersions" hidden>
-              <p class="preview-versions-label">Versions</p>
-              <div class="preview-versions-strip" id="previewVersionsStrip" role="list"></div>
-            </div>
-            <div class="saved-status" id="savedBanner" hidden>
-              <span class="saved-copy" id="savedBannerCopy"></span>
-              <a class="saved-link" id="savedBannerAction" href="#">Open Files</a>
+            <div class="preview-compare" id="previewCompareView" hidden>
+              <div class="preview-compare-pane">
+                <p class="preview-compare-label" id="comparePrevLabel">Previous</p>
+                <div class="preview-compare-frame is-empty" id="comparePrevFrame">No earlier version</div>
+              </div>
+              <div class="preview-compare-pane">
+                <p class="preview-compare-label is-current" id="compareCurrLabel">Current</p>
+                <div class="preview-compare-frame is-empty" id="compareCurrFrame">—</div>
+              </div>
             </div>
           </div>
         </div>
+
         <aside class="preview-sidebar no-print" aria-label="Preview campaign and approvals">
           <div class="sidebar-box">
-            <p class="label">Campaign</p>
+            <p class="label">Tied to</p>
             <div class="sidebar-campaign-row">
               <span class="preview-chip is-draft" id="previewCampaignChip">
                 <span class="dot" aria-hidden="true"></span>
@@ -2248,33 +2486,53 @@
               <button type="button" class="btn btn-ghost" id="previewChangeCampaign">Change</button>
             </div>
           </div>
+
+          <div class="sidebar-box">
+            <div class="versions-head">
+              <p class="label">Versions</p>
+              <label class="compare-toggle">
+                <span>Compare</span>
+                <input type="checkbox" id="compareVersionsToggle" disabled />
+                <span class="compare-switch" aria-hidden="true"></span>
+              </label>
+            </div>
+            <div class="preview-versions" id="previewVersions" hidden>
+              <p class="preview-versions-label">Versions</p>
+              <div class="preview-versions-strip" id="previewVersionsStrip" role="list"></div>
+            </div>
+            <p id="versionsEmptyHint" class="insp-peer-note">Generate to start a version history.</p>
+          </div>
+
           <div class="sidebar-box" id="filesPanel">
-            <p class="label">Files</p>
             <p id="filesAsideHint">Save this flyer to the campaign’s Files tab.</p>
-            <button type="button" class="btn btn-primary" id="btnSaveToFiles" disabled>
-              Save to Files
-            </button>
+            <button type="button" id="btnSaveToFiles" disabled>Save to Files</button>
             <button type="button" class="btn btn-secondary" id="btnCreateNextFlyer" hidden>
               Create next flyer
             </button>
           </div>
+
           <div class="sidebar-box approval-panel" id="approvalPanel" hidden>
-            <p class="label">Approvals</p>
+            <label class="approval-to-label" for="approvalAssigneeSelect">To:</label>
+            <select id="approvalAssigneeSelect" aria-label="Send approval to">
+              <option value="">Choose reviewer…</option>
+              <option>Principal</option>
+              <option>PTO Board President</option>
+              <option>Communications Director</option>
+              <option>School Secretary</option>
+            </select>
             <p id="approvalAsideHint">Send this version for approval.</p>
             <p class="approval-status" id="approvalStatus" hidden></p>
-            <button type="button" class="btn btn-primary" id="btnSendForApproval" disabled>
-              Send for approval
-            </button>
+            <button type="button" id="btnSendForApproval" disabled>Send for approval</button>
           </div>
         </aside>
       </div>
     </section>
 
-    <!-- EDIT — Artwork | Details; one regenerate from selected version -->
+    <!-- EDIT — slide-over drawer (UX Pilot) -->
     <section class="panel" data-panel="edit" hidden>
-      <div class="step-head">
-        <h2>Edit</h2>
-        <p class="sub">Adjust artwork or flyer details, then regenerate once.</p>
+      <div class="edit-drawer-head">
+        <h2>Edit Flyer</h2>
+        <button type="button" class="edit-drawer-close" id="editCloseBtn" aria-label="Close edit">×</button>
       </div>
       <div class="edit-hint-banner">
         <div>
@@ -2283,7 +2541,6 @@
       </div>
       <div class="edit-artwork-grid">
         <div class="edit-base-card">
-          <p class="edit-base-eyebrow">Selected version</p>
           <div class="edit-base-frame" id="editBaseFrame">
             <div class="edit-base-empty" id="editBaseEmpty">Generate a flyer in Preview first.</div>
             <img id="editBaseImg" alt="Selected flyer version to revise" hidden />
@@ -2291,9 +2548,10 @@
               <span id="editGenLabel">Generating…</span>
             </div>
           </div>
+          <p class="edit-base-eyebrow">Selected version</p>
           <p class="edit-base-meta" id="editBaseMeta">No version selected yet.</p>
         </div>
-        <div>
+        <div class="edit-form-col">
           <div class="edit-mode-toggle" role="tablist" aria-label="Edit mode">
             <button type="button" role="tab" id="editTabArtwork" data-edit-pane="artwork" aria-controls="editPaneArtwork" aria-selected="true">Artwork</button>
             <button type="button" role="tab" id="editTabDetails" data-edit-pane="details" aria-controls="editPaneDetails" aria-selected="false">Details</button>
@@ -2302,7 +2560,7 @@
           <div class="edit-pane" id="editPaneArtwork" role="tabpanel" aria-labelledby="editTabArtwork">
             <div class="field">
               <div class="field-label-row">
-                <label for="editDirection">What should change?</label>
+                <label for="editDirection">Refine the artwork</label>
                 <button
                   type="button"
                   class="voice-btn"
@@ -2319,13 +2577,13 @@
               </div>
               <textarea
                 id="editDirection"
-                rows="5"
-                placeholder="e.g. Bigger headline, warmer stadium lights, make the date banner easier to read…"
+                rows="4"
+                placeholder="e.g. Make the colors warmer, focus more on the food trucks, add a 'Day of' badge..."
               ></textarea>
               <p class="hint-inline" id="editDirectionVoiceHint" hidden>Listening… tap the mic to stop.</p>
             </div>
             <div>
-              <p class="edit-base-eyebrow" style="margin-bottom: 0;">Quick suggestions</p>
+              <p class="insp-block-label" style="margin-bottom:12px">Try a different style</p>
               <div class="edit-chip-row" id="editChips"></div>
             </div>
             <div class="edit-style-row" style="margin-top: 18px;">
@@ -2345,16 +2603,16 @@
                 <input type="text" id="editOrgName" data-sync-slot="orgName" placeholder="e.g. Your organization" />
               </div>
               <div class="field">
-                <label for="editHeadline">Headline</label>
+                <label for="editHeadline">Event Title</label>
                 <input type="text" id="editHeadline" data-sync-slot="headline" placeholder="e.g. Friday Night Lights" />
               </div>
               <div class="field">
-                <label for="editDatesEvents">When</label>
-                <textarea id="editDatesEvents" data-sync-slot="datesEvents" rows="3" placeholder="e.g. Fri Oct 10 · 6–8 PM"></textarea>
+                <label for="editDatesEvents">Date/Time</label>
+                <textarea id="editDatesEvents" data-sync-slot="datesEvents" rows="2" placeholder="e.g. Aug 29 · 6PM-9PM"></textarea>
               </div>
               <div class="field">
                 <label for="editLocation">Location</label>
-                <input type="text" id="editLocation" data-sync-slot="location" placeholder="e.g. School lawn · South lot" />
+                <input type="text" id="editLocation" data-sync-slot="location" placeholder="e.g. School Field" />
               </div>
               <div class="field-row-2">
                 <div class="field">
@@ -2377,13 +2635,12 @@
               </div>
             </div>
           </div>
-
-          <div class="edit-actions">
-            <button type="button" class="btn btn-secondary" id="editCancelBtn">Back to Preview</button>
-            <button type="button" class="btn btn-gold" id="editApplyBtn">Regenerate artwork</button>
-            <p class="edit-error" id="editError" hidden></p>
-          </div>
         </div>
+      </div>
+      <div class="edit-actions">
+        <button type="button" class="btn btn-gold" id="editApplyBtn">Update Flyer</button>
+        <button type="button" class="btn btn-secondary" id="editCancelBtn">Apply &amp; Back to Preview</button>
+        <p class="edit-error" id="editError" hidden></p>
       </div>
     </section>
       </div>
@@ -4054,8 +4311,16 @@
 
     function setView(view) {
       state.view = view;
-      panels.forEach((p) => { p.hidden = p.dataset.panel !== view; });
-      // Edit is a Preview sub-step — keep Preview highlighted in the rail.
+      // Edit is a slide-over on top of Preview — keep the stage mounted underneath.
+      panels.forEach((p) => {
+        if (view === "edit") {
+          p.hidden = p.dataset.panel !== "result" && p.dataset.panel !== "edit";
+        } else {
+          p.hidden = p.dataset.panel !== view;
+        }
+      });
+      document.body.classList.toggle("view-result", view === "result" || view === "edit");
+      document.body.classList.toggle("view-edit", view === "edit");
       const railView = view === "edit" ? "result" : view;
       const stepOrder = ["start", "inputs", "result"];
       const activeIdx = stepOrder.indexOf(railView);
@@ -4592,42 +4857,105 @@
 
     function formatVersionLabel(version, index, total) {
       const n = total - index;
-      try {
-        const d = new Date(version.createdAt);
-        if (!Number.isNaN(d.getTime())) {
-          return `Version ${n}, ${d.toLocaleString(undefined, {
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          })}`;
-        }
-      } catch {
-        /* ignore */
+      const current =
+        state.previewGenerated && version.id === state.activeVersionId;
+      return current ? `V${n} (Current)` : `V${n}`;
+    }
+
+    function formatRelativeTime(ts) {
+      const t = Number(ts);
+      if (!t || Number.isNaN(t)) return "";
+      const diff = Math.max(0, Date.now() - t);
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return "Just now";
+      if (mins < 60) return `${mins} min${mins === 1 ? "" : "s"} ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+      const days = Math.floor(hours / 24);
+      return `${days} day${days === 1 ? "" : "s"} ago`;
+    }
+
+    function renderCompareView() {
+      const stage = document.getElementById("previewStage");
+      const single = document.getElementById("previewSingleView");
+      const compare = document.getElementById("previewCompareView");
+      const toggle = document.getElementById("compareVersionsToggle");
+      const prevFrame = document.getElementById("comparePrevFrame");
+      const currFrame = document.getElementById("compareCurrFrame");
+      const prevLabel = document.getElementById("comparePrevLabel");
+      const currLabel = document.getElementById("compareCurrLabel");
+      if (!stage || !single || !compare || !toggle) return;
+
+      const versions = normalizeFlyerVersions(state.versions);
+      const canCompare =
+        versions.length >= 2 && state.previewGenerated && !state.generating;
+      toggle.disabled = !canCompare;
+      if (!canCompare && toggle.checked) toggle.checked = false;
+
+      const on = canCompare && toggle.checked;
+      stage.classList.toggle("is-compare", on);
+      compare.hidden = !on;
+      single.hidden = on;
+      if (!on || !prevFrame || !currFrame) return;
+
+      const activeIdx = Math.max(
+        0,
+        versions.findIndex((v) => v.id === state.activeVersionId),
+      );
+      const current = versions[activeIdx] || versions[0];
+      const previous = versions[activeIdx + 1] || versions[1] || null;
+      const total = versions.length;
+      const currN = total - activeIdx;
+      const prevN = previous ? total - (activeIdx + 1) : null;
+
+      if (currLabel) currLabel.textContent = `V${currN} (Current)`;
+      if (prevLabel) {
+        prevLabel.textContent = previous ? `V${prevN} (Previous)` : "Previous";
       }
-      return `Version ${n}`;
+
+      if (current?.imageUrl) {
+        currFrame.classList.remove("is-empty");
+        currFrame.innerHTML = `<img src="${escapeHtml(current.imageUrl)}" alt="Current version" />`;
+      } else {
+        currFrame.classList.add("is-empty");
+        currFrame.textContent = "—";
+      }
+      if (previous?.imageUrl) {
+        prevFrame.classList.remove("is-empty");
+        prevFrame.innerHTML = `<img src="${escapeHtml(previous.imageUrl)}" alt="Previous version" />`;
+      } else {
+        prevFrame.classList.add("is-empty");
+        prevFrame.textContent = "No earlier version";
+      }
     }
 
     function renderVersionsStrip() {
       const panel = document.getElementById("previewVersions");
       const strip = document.getElementById("previewVersionsStrip");
+      const emptyHint = document.getElementById("versionsEmptyHint");
       if (!panel || !strip) return;
       const versions = normalizeFlyerVersions(state.versions);
       state.versions = versions;
-      if (!versions.length || state.view !== "result") {
+      const onPreview = state.view === "result" || state.view === "edit";
+      if (!versions.length || !onPreview) {
         panel.hidden = true;
         strip.innerHTML = "";
+        if (emptyHint) emptyHint.hidden = false;
+        renderCompareView();
         return;
       }
       panel.hidden = false;
+      if (emptyHint) emptyHint.hidden = true;
       strip.innerHTML = versions
         .map((version, index) => {
           const pressed =
             state.previewGenerated && version.id === state.activeVersionId
               ? "true"
               : "false";
-          const label = formatVersionLabel(version, index, versions.length);
-          return `<button type="button" class="version-thumb" role="listitem" data-version-id="${escapeHtml(version.id)}" aria-pressed="${pressed}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><img src="${escapeHtml(version.imageUrl)}" alt="" loading="lazy" /></button>`;
+          const title = formatVersionLabel(version, index, versions.length);
+          const time = formatRelativeTime(version.createdAt);
+          const label = time ? `${title}, ${time}` : title;
+          return `<button type="button" class="version-thumb" role="listitem" data-version-id="${escapeHtml(version.id)}" aria-pressed="${pressed}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><span class="version-thumb-art"><img src="${escapeHtml(version.imageUrl)}" alt="" loading="lazy" /></span><span class="version-thumb-meta"><p class="version-thumb-title">${escapeHtml(title)}</p><p class="version-thumb-time">${escapeHtml(time)}</p></span></button>`;
         })
         .join("");
       strip.querySelectorAll("[data-version-id]").forEach((btn) => {
@@ -4640,6 +4968,7 @@
           scheduleSave();
         });
       });
+      renderCompareView();
     }
 
     function renderPreviewState() {
@@ -4679,6 +5008,7 @@
       if (editBtn) {
         editBtn.disabled =
           state.generating || !state.previewGenerated || !state.generatedImageUrl;
+        editBtn.textContent = "Edit with AI";
       }
       renderVersionsStrip();
       renderPreviewCampaignChrome();
@@ -4963,7 +5293,7 @@
       const hasArt =
         state.previewGenerated &&
         !!getActiveFlyerVersion()?.imageUrl &&
-        state.view === "result";
+        (state.view === "result" || state.view === "edit");
       panel.hidden = !hasArt;
       renderPreviewCampaignChrome();
       if (!hasArt) return;
@@ -5805,21 +6135,28 @@
     }
 
     document.getElementById("btnPrint").addEventListener("click", () => printFlyer());
-    document.getElementById("btnDownload").addEventListener("click", async () => {
+
+    async function downloadFlyerAsset(kind) {
       const title = flyerFileStem();
+      if (kind === "print") {
+        printFlyer();
+        return;
+      }
+      const suffix =
+        kind === "newsletter" ? "-newsletter.png" : "-flyer.png";
       if (state.generatedImageUrl) {
         try {
           const response = await fetch(state.generatedImageUrl);
           const blob = await response.blob();
           const a = document.createElement("a");
           a.href = URL.createObjectURL(blob);
-          a.download = title + "-flyer.png";
+          a.download = title + suffix;
           a.click();
           URL.revokeObjectURL(a.href);
         } catch {
           const a = document.createElement("a");
           a.href = state.generatedImageUrl;
-          a.download = title + "-flyer.png";
+          a.download = title + suffix;
           a.click();
         }
         return;
@@ -5831,6 +6168,34 @@
       a.download = title + "-flyer.html";
       a.click();
       URL.revokeObjectURL(a.href);
+    }
+
+    const downloadWrap = document.getElementById("previewDownloadWrap");
+    const downloadBtn = document.getElementById("btnDownload");
+    const downloadMenu = document.getElementById("downloadMenu");
+    downloadBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = downloadWrap?.classList.toggle("is-open");
+      downloadBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    downloadMenu?.querySelectorAll("[data-download]").forEach((item) => {
+      item.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        downloadWrap?.classList.remove("is-open");
+        downloadBtn?.setAttribute("aria-expanded", "false");
+        await downloadFlyerAsset(item.dataset.download);
+      });
+    });
+    document.addEventListener("click", () => {
+      downloadWrap?.classList.remove("is-open");
+      downloadBtn?.setAttribute("aria-expanded", "false");
+    });
+
+    document.getElementById("compareVersionsToggle")?.addEventListener("change", () => {
+      renderCompareView();
+    });
+    document.getElementById("editCloseBtn")?.addEventListener("click", () => {
+      setView("result");
     });
 
     const brandToggle = document.getElementById("brandToggle");
