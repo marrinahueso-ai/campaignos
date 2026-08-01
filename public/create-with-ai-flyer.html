@@ -633,26 +633,90 @@
     @media (min-width: 520px) {
       .field-row-2 { grid-template-columns: 1fr 1fr; }
     }
-    .qr-url-row { display: grid; gap: 12px; align-items: start; }
-    @media (min-width: 520px) {
-      .qr-url-row { grid-template-columns: minmax(0, 1fr) auto; }
+    .qr-url-row {
+      display: grid;
+      gap: 14px;
+      align-items: stretch;
+    }
+    @media (min-width: 560px) {
+      .qr-url-row { grid-template-columns: minmax(0, 1fr) 148px; }
     }
     .qr-preview-panel {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 6px; padding: 8px; min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      padding: 12px 10px;
+      min-width: 0;
+      border-radius: 14px;
+      border: 1px solid rgba(42, 38, 34, 0.12);
+      background: rgba(255, 252, 247, 0.9);
     }
-    .qr-preview-panel img { width: 72px; height: 72px; border-radius: 6px; }
+    .qr-preview-panel .qr-preview-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .qr-preview-panel .qr-preview-frame {
+      width: 120px;
+      height: 120px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid rgba(42, 38, 34, 0.1);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+    .qr-preview-panel img {
+      width: 112px;
+      height: 112px;
+      border-radius: 6px;
+      display: block;
+    }
     .qr-preview-panel .cap {
-      font-size: 0.68rem; color: var(--muted); text-align: center;
-      line-height: 1.35; max-width: 96px; word-break: break-word;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.35;
+      max-width: 128px;
+      word-break: break-word;
     }
-    .qr-preview-panel.empty { opacity: 0.65; }
+    .qr-preview-panel.empty { opacity: 1; }
     .qr-preview-panel .qr-placeholder {
-      width: 64px; height: 64px; border-radius: 8px;
-      border: 1px dashed rgba(42, 38, 34, 0.22);
-      display: grid; place-items: center;
-      font-size: 0.62rem; font-weight: 600; color: var(--muted);
-      text-align: center; padding: 4px; line-height: 1.25;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      gap: 4px;
+      padding: 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.3;
+      background:
+        linear-gradient(90deg, rgba(42,38,34,0.06) 1px, transparent 1px) 0 0 / 12px 12px,
+        linear-gradient(rgba(42,38,34,0.06) 1px, transparent 1px) 0 0 / 12px 12px;
+    }
+    .qr-preview-panel .qr-placeholder strong {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--ink, #2a2622);
+    }
+    .qr-preview-panel .qr-preview-status {
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-align: center;
+      min-height: 1em;
+    }
+    .qr-preview-panel .qr-preview-status[data-tone="error"] {
+      color: #9b3b2f;
+    }
+    .qr-preview-panel.is-loading .qr-preview-frame {
+      opacity: 0.7;
     }
     .field-highlight label { color: var(--forest); }
 
@@ -1770,6 +1834,7 @@
 
         <div class="section-card" id="ctaQrCard">
           <h3>CTA &amp; QR</h3>
+          <p class="section-desc">Paste a link to generate a live QR preview — it overlays on the flyer when you generate artwork.</p>
           <div class="field-row-2">
             <div class="field">
               <label for="ctaLabel">Button label</label>
@@ -1783,13 +1848,23 @@
           <div class="qr-url-row">
             <div class="field" id="qrField">
               <label for="qrUrl">QR link</label>
-              <input type="url" id="qrUrl" placeholder="https://…" />
-              <p class="hint-inline">Signup, calendar, or donate link</p>
+              <input type="url" id="qrUrl" placeholder="https://…" autocomplete="url" />
+              <p class="hint-inline">Signup, calendar, or donate link — preview updates as you type</p>
+              <button type="button" class="btn btn-ghost" id="qrUseCtaLink" style="margin-top:8px;padding:0">
+                Use button link for QR
+              </button>
             </div>
-            <div class="qr-preview-panel empty" id="qrPreviewPanel">
-              <img id="qrPreviewImg" alt="QR preview" width="72" height="72" hidden />
-              <div class="qr-placeholder" id="qrPlaceholder">Paste URL</div>
+            <div class="qr-preview-panel empty" id="qrPreviewPanel" aria-live="polite">
+              <div class="qr-preview-label">QR preview</div>
+              <div class="qr-preview-frame">
+                <img id="qrPreviewImg" alt="Generated QR code preview" width="112" height="112" hidden />
+                <div class="qr-placeholder" id="qrPlaceholder">
+                  <strong>QR generator</strong>
+                  Add a https link
+                </div>
+              </div>
               <div class="cap" id="qrPreviewCap" hidden></div>
+              <div class="qr-preview-status" id="qrPreviewStatus"></div>
             </div>
           </div>
           <div class="field">
@@ -3266,34 +3341,82 @@
       document.getElementById("lastYearNotesField")?.classList.toggle("field-highlight", isCustom);
     }
 
-    function updateQrPreview() {
-      const url = (document.getElementById("qrUrl").value.trim()
-        || document.getElementById("ctaUrl").value.trim());
+    let qrPreviewTimer = null;
+    let qrPreviewRequest = 0;
+
+    function setQrPreviewStatus(message, tone) {
+      const status = document.getElementById("qrPreviewStatus");
+      if (!status) return;
+      status.textContent = message || "";
+      if (tone) status.setAttribute("data-tone", tone);
+      else status.removeAttribute("data-tone");
+    }
+
+    function renderQrPreviewNow() {
+      const qrField = document.getElementById("qrUrl");
+      const ctaField = document.getElementById("ctaUrl");
+      const url = (qrField?.value.trim() || ctaField?.value.trim() || "");
       const panel = document.getElementById("qrPreviewPanel");
       const img = document.getElementById("qrPreviewImg");
       const placeholder = document.getElementById("qrPlaceholder");
       const cap = document.getElementById("qrPreviewCap");
       if (!panel || !img) return;
-      if (url && /^https?:\/\//i.test(url)) {
-        img.src = flyerQrSrc(url, 120);
+
+      const requestId = ++qrPreviewRequest;
+      img.onload = () => {
+        if (requestId !== qrPreviewRequest) return;
+        panel.classList.remove("is-loading", "empty");
         img.hidden = false;
         if (placeholder) placeholder.hidden = true;
+        setQrPreviewStatus("Ready to print on your flyer");
+      };
+      img.onerror = () => {
+        if (requestId !== qrPreviewRequest) return;
+        panel.classList.remove("is-loading");
+        panel.classList.add("empty");
+        img.hidden = true;
+        if (placeholder) {
+          placeholder.hidden = false;
+          placeholder.innerHTML = "<strong>Couldn’t load</strong>Sign in and try again";
+        }
+        setQrPreviewStatus("QR preview needs a signed-in session", "error");
+      };
+
+      if (url && /^https?:\/\//i.test(url)) {
+        panel.classList.add("is-loading");
         panel.classList.remove("empty");
+        setQrPreviewStatus("Generating…");
+        img.hidden = true;
+        if (placeholder) {
+          placeholder.hidden = false;
+          placeholder.innerHTML = "<strong>Generating</strong>QR code…";
+        }
+        img.src = `${flyerQrSrc(url, 160)}&t=${Date.now()}`;
         const caption = document.getElementById("qrCaption").value.trim();
         if (cap) {
           cap.textContent = caption || "";
           cap.hidden = !caption;
         }
       } else {
+        panel.classList.remove("is-loading");
+        panel.classList.add("empty");
         img.hidden = true;
         img.removeAttribute("src");
-        if (placeholder) placeholder.hidden = false;
-        panel.classList.add("empty");
+        if (placeholder) {
+          placeholder.hidden = false;
+          placeholder.innerHTML = "<strong>QR generator</strong>Add a https link";
+        }
         if (cap) {
           cap.textContent = "";
           cap.hidden = true;
         }
+        setQrPreviewStatus(url ? "Use a full https:// link" : "");
       }
+    }
+
+    function updateQrPreview() {
+      if (qrPreviewTimer) clearTimeout(qrPreviewTimer);
+      qrPreviewTimer = setTimeout(renderQrPreviewNow, 220);
     }
 
     function updateQrFieldVisibility() {
@@ -5153,6 +5276,19 @@
         }
         scheduleSave();
       });
+    });
+
+    document.getElementById("qrUseCtaLink")?.addEventListener("click", () => {
+      const cta = document.getElementById("ctaUrl")?.value.trim() || "";
+      const qr = document.getElementById("qrUrl");
+      if (!qr) return;
+      if (!cta) {
+        setQrPreviewStatus("Add a button link first", "error");
+        return;
+      }
+      qr.value = cta;
+      updateQrPreview();
+      scheduleSave();
     });
 
     const customUpload = document.getElementById("customUpload");
