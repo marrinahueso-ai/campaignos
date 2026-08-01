@@ -19,6 +19,7 @@ const smcSerif = Fraunces({
   variable: "--smc-serif",
 });
 import {
+  approveAllAndScheduleAction,
   sendForApprovalAction,
   syncAppliedMilestoneArtworkAction,
 } from "@/lib/campaign-builder-v2/actions";
@@ -337,6 +338,8 @@ function ComposerTopChrome({
   );
 }
 
+type ReviewHandoffOutcome = "sent" | "approved";
+
 export function SocialMediaComposer({
   eventTitle: _eventTitle,
 }: {
@@ -345,6 +348,7 @@ export function SocialMediaComposer({
 }) {
   const { currentStep } = useCampaignBuilder();
   const [toast, setToast] = useState<string | null>(null);
+  const [reviewOutcome, setReviewOutcome] = useState<ReviewHandoffOutcome>("sent");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function showToast(message: string) {
@@ -379,9 +383,12 @@ export function SocialMediaComposer({
                 {activeNav === "preview" ? (
                   <PreviewPanel onToast={showToast} />
                 ) : currentStep === "published" ? (
-                  <PublishedPanel />
+                  <PublishedPanel outcome={reviewOutcome} />
                 ) : currentStep === "review" ? (
-                  <ReviewPanel onToast={showToast} />
+                  <ReviewPanel
+                    onToast={showToast}
+                    onHandoffOutcome={setReviewOutcome}
+                  />
                 ) : (
                   <SetupPanel onToast={showToast} />
                 )}
@@ -1784,7 +1791,13 @@ function reviewPostDateLabel(
   return "Timing needed";
 }
 
-function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
+function ReviewPanel({
+  onToast,
+  onHandoffOutcome,
+}: {
+  onToast: (message: string) => void;
+  onHandoffOutcome: (outcome: ReviewHandoffOutcome) => void;
+}) {
   const {
     session,
     currentStep,
@@ -1792,6 +1805,7 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
     setSelectedMilestoneId,
     updatePreviewContent,
     flushSave,
+    hasExternalReviewer,
   } = useCampaignBuilder();
   const [isSending, setIsSending] = useState(false);
   const [peekMode, setPeekMode] = useState<"feed" | "story">("feed");
@@ -1817,6 +1831,7 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
     session.approvalWorkflow.find((step) => step.role !== "Creator" && step.assigneeName) ??
     session.approvalWorkflow.find((step) => step.role !== "Creator") ??
     null;
+  const reviewerName = approverStep?.assigneeName?.trim() || null;
 
   const selectedId = session.selectedMilestoneId ?? milestones[0]?.id ?? null;
   const selectedMilestone = milestones.find((m) => m.id === selectedId) ?? null;
@@ -1841,7 +1856,7 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
     return items;
   }, [milestones, session.previewContents]);
 
-  const canSend =
+  const canHandoff =
     progress.total > 0 &&
     progress.complete === progress.total &&
     blockers.length === 0;
@@ -1853,6 +1868,18 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
   const eligiblePreviews = eligibleMilestones
     .map((milestone) => session.previewContents.find((c) => c.milestoneId === milestone.id))
     .filter((preview): preview is MilestonePreviewContent => Boolean(preview));
+  const bulkIsReapprovalOnly =
+    eligiblePreviews.length > 0 &&
+    eligiblePreviews.every(
+      (preview) =>
+        resolveMilestoneGenerationStatus(preview) === "changes_requested",
+    );
+
+  const primaryCtaLabel = hasExternalReviewer
+    ? bulkIsReapprovalOnly
+      ? "Send for re-approval"
+      : "Send for approval"
+    : "Approve all & schedule";
 
   const feedUrl =
     selectedPreview?.artwork.feedUrl &&
@@ -1875,12 +1902,19 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
     goToStep("preview");
   }
 
+  function toastHandoffBlockers() {
+    const first = blockers[0];
+    if (first) {
+      onToast(`${first.name}: missing ${first.gap}`);
+      openInPreview(first.milestoneId);
+      return true;
+    }
+    return false;
+  }
+
   async function handleSendForApproval() {
-    if (!canSend || eligibleMilestones.length === 0) {
-      const first = blockers[0];
-      if (first) {
-        onToast(`${first.name}: missing ${first.gap}`);
-        openInPreview(first.milestoneId);
+    if (!canHandoff || eligibleMilestones.length === 0) {
+      if (toastHandoffBlockers()) {
         return;
       }
       const contentBlock = describeApprovalSubmitBlockers(
@@ -1908,6 +1942,29 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
         for (const preview of eligiblePreviews) {
           updatePreviewContent(preview.milestoneId, previewAfterResendForApproval(preview));
         }
+        onHandoffOutcome("sent");
+        goToStep("published");
+      }
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  async function handleApproveAll() {
+    if (!canHandoff) {
+      if (toastHandoffBlockers()) {
+        return;
+      }
+      onToast("Finish every post in Preview before approving.");
+      return;
+    }
+    setIsSending(true);
+    try {
+      await flushSave();
+      const result = await approveAllAndScheduleAction(session.eventId);
+      onToast(result.message);
+      if (result.success) {
+        onHandoffOutcome("approved");
         goToStep("published");
       }
     } finally {
@@ -1926,10 +1983,18 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
             <button
               type="button"
               className="btn btn-forest"
-              onClick={() => void handleSendForApproval()}
-              disabled={isSending || !canSend}
+              onClick={() =>
+                void (hasExternalReviewer
+                  ? handleSendForApproval()
+                  : handleApproveAll())
+              }
+              disabled={isSending || !canHandoff}
             >
-              {isSending ? "Sending…" : "Send for approval"}
+              {isSending
+                ? hasExternalReviewer
+                  ? "Sending…"
+                  : "Scheduling…"
+                : primaryCtaLabel}
             </button>
             <button
               type="button"
@@ -2109,7 +2174,9 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
             </button>
           ) : (
             <div className="review-clear">
-              <strong>Ready to send</strong>
+              <strong>
+                {hasExternalReviewer ? "Ready to send" : "Ready to approve"}
+              </strong>
               <span>All posts have artwork, caption, and timing.</span>
             </div>
           )}
@@ -2117,11 +2184,16 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
           <div className="review-reviewer">
             <label className="field-label">Reviewer</label>
             <p className="review-reviewer-name">
-              {approverStep?.assigneeName?.trim() || "Unassigned"}
+              {hasExternalReviewer
+                ? reviewerName || "Unassigned"
+                : reviewerName
+                  ? `${reviewerName} (you)`
+                  : "You"}
             </p>
             <p className="review-reviewer-meta">
-              {approverStep?.role ? `${approverStep.role} · ` : ""}
-              From Team Access
+              {hasExternalReviewer
+                ? `${approverStep?.role ? `${approverStep.role} · ` : ""}From Team Access · gets an approval email`
+                : "No separate reviewer in Team Access — approve & schedule here"}
             </p>
           </div>
         </aside>
@@ -2130,14 +2202,21 @@ function ReviewPanel({ onToast }: { onToast: (message: string) => void }) {
   );
 }
 
-function PublishedPanel() {
+function PublishedPanel({ outcome }: { outcome: ReviewHandoffOutcome }) {
   const { goToStep, session } = useCampaignBuilder();
+  const campaign = session.inspiration.campaignName || "Your campaign";
+  const sent = outcome === "sent";
+
   return (
     <section>
       <div className="panel-head">
         <div>
-          <h2>Sent for approval</h2>
-          <p>{session.inspiration.campaignName || "Your campaign"} is on its way to your approver.</p>
+          <h2>{sent ? "Sent for approval" : "Approved & scheduled"}</h2>
+          <p>
+            {sent
+              ? `${campaign} is on its way to your approver.`
+              : `${campaign} is approved. Meta scheduling is underway.`}
+          </p>
         </div>
         <div className="actions">
           <button type="button" className="btn btn-secondary" onClick={() => goToStep("review")}>
@@ -2148,8 +2227,9 @@ function PublishedPanel() {
       <div className="box">
         <h3>What happens next</h3>
         <p className="desc">
-          Your approver will review the submitted posts. Any changes
-          requested route back to Preview for edits, then a quick re-send.
+          {sent
+            ? "Your approver will review the submitted posts. Any changes requested route back to Preview for edits, then a quick re-send."
+            : "Check Approvals for Posted / Scheduled / Failed status. You can still open posts in Preview if you need tweaks before they go live."}
         </p>
       </div>
     </section>
