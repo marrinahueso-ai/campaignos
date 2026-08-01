@@ -29,6 +29,7 @@ import {
 } from "@/lib/homepage-composer/draft-storage";
 import { DEFAULT_HOMEPAGE_EMOJI } from "@/lib/homepage-composer/emoji";
 import { exportHomepageHtml } from "@/lib/homepage-composer/export-html";
+import { isScheduleVisibleOn } from "@/lib/homepage-composer/schedule-visibility";
 import {
   copyMonthCardsFrom,
   currentMonthYyyyMm,
@@ -169,11 +170,7 @@ function formatSaveStatus(status: DraftSaveStatus): string {
 }
 
 function isCardVisibleOn(card: HomepageCard, asOf: string): boolean {
-  if (asOf === PREVIEW_FULL_MONTH) return true;
-  if (card.alwaysOn) return true;
-  if (card.startsOn && asOf < card.startsOn) return false;
-  if (card.expiresOn && asOf > card.expiresOn) return false;
-  return true;
+  return isScheduleVisibleOn(card, asOf, PREVIEW_FULL_MONTH);
 }
 
 function formatBadgeDate(ymd: string | null): string {
@@ -225,7 +222,11 @@ function eventMonthOptions(events: HomepageComposerEvent[]): string[] {
 }
 
 /** Discrete dates for the preview scrubber (event boundaries + a few anchors). */
-function buildPreviewSliderDates(cards: HomepageCard[], today: string): string[] {
+function buildPreviewSliderDates(
+  cards: HomepageCard[],
+  today: string,
+  announcements: HomepageAnnouncement[] = [],
+): string[] {
   const set = new Set<string>([today]);
   for (const card of cards) {
     if (card.startsOn) {
@@ -237,6 +238,17 @@ function buildPreviewSliderDates(cards: HomepageCard[], today: string): string[]
       set.add(addDaysYmd(card.expiresOn, 1));
     }
     if (card.date) set.add(card.date);
+  }
+  for (const announcement of announcements) {
+    if (announcement.alwaysOn) continue;
+    if (announcement.startsOn) {
+      set.add(announcement.startsOn);
+      set.add(addDaysYmd(announcement.startsOn, -1));
+    }
+    if (announcement.expiresOn) {
+      set.add(announcement.expiresOn);
+      set.add(addDaysYmd(announcement.expiresOn, 1));
+    }
   }
   if (set.size < 4) {
     set.add(addDaysYmd(today, 7));
@@ -684,6 +696,9 @@ export function HomepageComposer({
             id: `ann-${Date.now()}`,
             emoji: DEFAULT_HOMEPAGE_EMOJI,
             text: "New announcement",
+            startsOn: null,
+            expiresOn: null,
+            alwaysOn: true,
           },
         ],
       },
@@ -701,6 +716,9 @@ export function HomepageComposer({
             id: `ann-${Date.now()}`,
             emoji: DEFAULT_HOMEPAGE_EMOJI,
             text: buildAnnouncementTextFromEvent(event),
+            startsOn: null,
+            expiresOn: event.date || null,
+            alwaysOn: !event.date,
           },
         ],
       },
@@ -815,7 +833,8 @@ export function HomepageComposer({
   };
 
   const activeResources = state.resources.filter((r) => r.label.trim());
-  const activeAnnouncements = state.header.announcements.filter((a) =>
+  /** Header editor preview: all non-empty lines (dates apply in Preview/Export). */
+  const editorAnnouncements = state.header.announcements.filter((a) =>
     a.text.trim(),
   );
   const isFullMonthPreview = previewDate === PREVIEW_FULL_MONTH;
@@ -826,8 +845,12 @@ export function HomepageComposer({
   const sliderDates = useMemo(() => {
     const d = new Date();
     const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    return buildPreviewSliderDates(state.cards, today);
-  }, [state.cards]);
+    return buildPreviewSliderDates(
+      state.cards,
+      today,
+      state.header.announcements,
+    );
+  }, [state.cards, state.header.announcements]);
 
   const sliderIndex = sliderDates.findIndex((d) => d === previewDate);
   const resolvedSliderIndex =
@@ -1108,7 +1131,7 @@ export function HomepageComposer({
                     </div>
                   )}
                 </div>
-                {activeAnnouncements.length > 0 && (
+                {editorAnnouncements.length > 0 && (
                   <div
                     className="border-t border-cos-border px-4 py-3 text-sm"
                     style={{
@@ -1116,7 +1139,7 @@ export function HomepageComposer({
                       color: hc.announcementText,
                     }}
                   >
-                    {activeAnnouncements.map((announcement) => (
+                    {editorAnnouncements.map((announcement) => (
                       <div key={announcement.id} className="flex gap-2 py-0.5">
                         <span aria-hidden>{announcement.emoji}</span>
                         <span>{announcement.text}</span>
@@ -1390,7 +1413,7 @@ export function HomepageComposer({
               <SettingsBox
                 compact
                 title="Announcements"
-                description="Emoji + text rows shown below the hero gradient."
+                description="One line each — emoji, text, optional on/off dates (same as cards)."
                 actions={
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -1496,25 +1519,79 @@ export function HomepageComposer({
                     {state.header.announcements.map((announcement) => (
                       <div
                         key={announcement.id}
-                        className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-2"
+                        className="flex flex-nowrap items-end gap-1.5 overflow-x-auto"
                       >
-                        <EmojiPicker
-                          value={announcement.emoji}
-                          onChange={(emoji) =>
-                            updateAnnouncement(announcement.id, { emoji })
-                          }
-                          label="Emoji"
-                        />
-                        <Field
-                          label="Text"
-                          value={announcement.text}
-                          onChange={(text) =>
-                            updateAnnouncement(announcement.id, { text })
-                          }
-                        />
+                        <div className="shrink-0">
+                          <EmojiPicker
+                            value={announcement.emoji}
+                            onChange={(emoji) =>
+                              updateAnnouncement(announcement.id, { emoji })
+                            }
+                            label="Emoji"
+                          />
+                        </div>
+                        <div className="min-w-[8rem] flex-1 basis-[10rem]">
+                          <Field
+                            label="Text"
+                            value={announcement.text}
+                            onChange={(text) =>
+                              updateAnnouncement(announcement.id, { text })
+                            }
+                          />
+                        </div>
+                        <label className="mb-0.5 flex shrink-0 flex-col gap-1">
+                          <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-cos-muted">
+                            On
+                          </span>
+                          <input
+                            type="date"
+                            className="w-[8.5rem] rounded-xl border border-cos-border bg-cos-card px-2 py-2 text-sm text-cos-text disabled:opacity-50"
+                            disabled={announcement.alwaysOn}
+                            value={announcement.startsOn ?? ""}
+                            onChange={(e) =>
+                              updateAnnouncement(announcement.id, {
+                                startsOn: e.target.value || null,
+                                alwaysOn: false,
+                              })
+                            }
+                          />
+                        </label>
+                        <label className="mb-0.5 flex shrink-0 flex-col gap-1">
+                          <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-cos-muted">
+                            Off
+                          </span>
+                          <input
+                            type="date"
+                            className="w-[8.5rem] rounded-xl border border-cos-border bg-cos-card px-2 py-2 text-sm text-cos-text disabled:opacity-50"
+                            disabled={announcement.alwaysOn}
+                            value={announcement.expiresOn ?? ""}
+                            onChange={(e) =>
+                              updateAnnouncement(announcement.id, {
+                                expiresOn: e.target.value || null,
+                                alwaysOn: false,
+                              })
+                            }
+                          />
+                        </label>
+                        <label className="mb-2.5 flex shrink-0 items-center gap-1.5 text-xs font-medium text-cos-muted">
+                          <input
+                            type="checkbox"
+                            className="rounded border-cos-border"
+                            checked={announcement.alwaysOn}
+                            onChange={(e) =>
+                              updateAnnouncement(announcement.id, {
+                                alwaysOn: e.target.checked,
+                                ...(e.target.checked
+                                  ? { startsOn: null, expiresOn: null }
+                                  : {}),
+                              })
+                            }
+                          />
+                          Always
+                        </label>
                         <button
                           type="button"
-                          className="mb-0.5 rounded-xl border border-cos-border px-2 py-2.5 text-cos-muted hover:text-cos-error"
+                          className="mb-0.5 shrink-0 rounded-xl border border-cos-border px-2 py-2.5 text-cos-muted hover:text-cos-error"
                           onClick={() => removeAnnouncement(announcement.id)}
                           aria-label="Remove announcement"
                         >

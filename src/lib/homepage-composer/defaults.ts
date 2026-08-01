@@ -50,18 +50,47 @@ export function defaultFooterColors(): HomepageFooterColors {
   };
 }
 
+export function normalizeAnnouncement(
+  raw: Partial<HomepageAnnouncement> & { id?: string; text?: string },
+  index = 0,
+): HomepageAnnouncement {
+  const startsOn =
+    typeof raw.startsOn === "string" && raw.startsOn.trim()
+      ? raw.startsOn.trim()
+      : null;
+  const expiresOn =
+    typeof raw.expiresOn === "string" && raw.expiresOn.trim()
+      ? raw.expiresOn.trim()
+      : null;
+  const alwaysOn =
+    typeof raw.alwaysOn === "boolean"
+      ? raw.alwaysOn
+      : !startsOn && !expiresOn;
+
+  return {
+    id: raw.id?.trim() || `ann-${index + 1}`,
+    emoji: raw.emoji?.trim() || "📅",
+    text: typeof raw.text === "string" ? raw.text : "",
+    startsOn,
+    expiresOn,
+    alwaysOn,
+  };
+}
+
 export function defaultAnnouncements(): HomepageAnnouncement[] {
   return [
-    {
+    normalizeAnnouncement({
       id: "ann-1",
       emoji: "📅",
       text: "Important Date: August 10: Season Kickoff",
-    },
-    {
+      alwaysOn: true,
+    }),
+    normalizeAnnouncement({
       id: "ann-2",
       emoji: "🎉",
       text: "Community Fair: August 5",
-    },
+      alwaysOn: true,
+    }),
   ];
 }
 
@@ -251,26 +280,39 @@ export function buildInitialState(
 
 function migrateAnnouncements(header: Record<string, unknown>): HomepageAnnouncement[] {
   if (Array.isArray(header.announcements)) {
-    return header.announcements as HomepageAnnouncement[];
+    return header.announcements.map((row, i) =>
+      normalizeAnnouncement(
+        (row && typeof row === "object"
+          ? row
+          : {}) as Partial<HomepageAnnouncement>,
+        i,
+      ),
+    );
   }
   const line1 = String(header.announcementLine1 ?? "").trim();
   const line2 = String(header.announcementLine2 ?? "").trim();
   const items: HomepageAnnouncement[] = [];
   if (line1) {
     const emojiMatch = line1.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F?)\s*/u);
-    items.push({
-      id: "ann-legacy-1",
-      emoji: emojiMatch?.[1] || "📅",
-      text: line1.replace(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F?)\s*/u, ""),
-    });
+    items.push(
+      normalizeAnnouncement({
+        id: "ann-legacy-1",
+        emoji: emojiMatch?.[1] || "📅",
+        text: line1.replace(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F?)\s*/u, ""),
+        alwaysOn: true,
+      }),
+    );
   }
   if (line2) {
     const emojiMatch = line2.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F?)\s*/u);
-    items.push({
-      id: "ann-legacy-2",
-      emoji: emojiMatch?.[1] || "🎉",
-      text: line2.replace(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F?)\s*/u, ""),
-    });
+    items.push(
+      normalizeAnnouncement({
+        id: "ann-legacy-2",
+        emoji: emojiMatch?.[1] || "🎉",
+        text: line2.replace(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F?)\s*/u, ""),
+        alwaysOn: true,
+      }),
+    );
   }
   return items.length ? items : defaultAnnouncements();
 }

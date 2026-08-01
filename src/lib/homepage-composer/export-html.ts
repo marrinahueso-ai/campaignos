@@ -171,10 +171,17 @@ ${cards
     activeAnnouncements.length > 0
       ? `<div class="ees-announcement">
 ${activeAnnouncements
-  .map(
-    (a) =>
-      `<div>${escapeHtml(`${a.emoji ? `${a.emoji} ` : ""}${a.text}`.trim())}</div>`,
-  )
+  .map((a) => {
+    const attrs: string[] = [];
+    if (!a.alwaysOn && a.startsOn) {
+      attrs.push(`data-starts="${escapeHtml(a.startsOn)}"`);
+    }
+    if (!a.alwaysOn && a.expiresOn) {
+      attrs.push(`data-expires="${escapeHtml(a.expiresOn)}"`);
+    }
+    const attrStr = attrs.length ? ` ${attrs.join(" ")}` : "";
+    return `<div class="ees-announcement-line"${attrStr}>${escapeHtml(`${a.emoji ? `${a.emoji} ` : ""}${a.text}`.trim())}</div>`;
+  })
   .join("\n")}
 </div>`
       : "";
@@ -191,7 +198,7 @@ ${activeAnnouncements
 .ees-btn{display:inline-block;background:${hc.buttonBackground};color:${hc.buttonText}!important;padding:14px 24px;border-radius:999px;font-weight:bold;text-decoration:none!important;margin:6px;transition:all .3s ease}
 .ees-btn:hover{transform:translateY(-2px)}
 .ees-announcement{background:${hc.announcementBackground};border-left:5px solid ${hc.buttonBackground};padding:12px 18px;border-radius:12px;margin:0 0 28px;font-size:15px;line-height:1.5;color:${hc.announcementText}}
-.ees-announcement div{margin:4px 0}
+.ees-announcement .ees-announcement-line{margin:4px 0}
 .ees-section-title{color:#0b2f5b;font-size:28px;margin:30px 0 16px;text-align:center}
 .ees-image-card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:stretch}
 .ees-image-card{background:#fff;border:2px solid #d9e8ec;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08);transition:all .3s ease;display:flex;flex-direction:column;height:100%}
@@ -252,9 +259,9 @@ ${resourcesBlock}
   }
   var today=${asOf ? `parseYmd(${JSON.stringify(asOf)})||new Date()` : "new Date()"};
   if(today){ today.setHours(0,0,0,0); }
-  var cards=document.querySelectorAll(".ees-image-card[data-expires],.ees-image-card[data-starts]");
-  for(var i=0;i<cards.length;i++){
-    var el=cards[i];
+  var scheduled=document.querySelectorAll(".ees-image-card[data-expires],.ees-image-card[data-starts],.ees-announcement-line[data-expires],.ees-announcement-line[data-starts]");
+  for(var i=0;i<scheduled.length;i++){
+    var el=scheduled[i];
     el.style.display="";
     var starts=el.getAttribute("data-starts");
     var expires=el.getAttribute("data-expires");
@@ -266,6 +273,15 @@ ${resourcesBlock}
       var expireDate=parseYmd(expires);
       if(expireDate && today > expireDate){ el.style.display="none"; }
     }
+  }
+  var bar=document.querySelector(".ees-announcement");
+  if(bar){
+    var lines=bar.querySelectorAll(".ees-announcement-line");
+    var any=false;
+    for(var j=0;j<lines.length;j++){
+      if(lines[j].style.display!=="none"){ any=true; break; }
+    }
+    bar.style.display=any?"":"none";
   }`
   }
 })();

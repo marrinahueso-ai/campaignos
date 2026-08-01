@@ -33,7 +33,7 @@ No separate sidebar nav item — entry is Create with AI → Home Page (or direc
 
 | Step | Label | What to do |
 |------|-------|------------|
-| 1 | **Header** | Title, message, two CTAs, **cards section title**, announcements (emoji + text), header colors |
+| 1 | **Header** | Title, message, two CTAs, **cards section title**, announcements (emoji + text + optional on/off dates on one row), header colors |
 | 2 | **Footer** | CTA title/body/button + colors; helpful resource chips (emoji, label, URL) |
 | 3 | **Cards** | Pick events (month/year filter) and/or add evergreen custom cards; edit title, blurb, link URL + **link label**, card face **date**, on/off visibility, always-on; upload artwork or deep-link to Create with AI for milestones; sort/reorder |
 | 4 | **Preview** | Full-page preview; **full month** (all cards) or date scrubber for on/off visibility; full-month **Open page** / **Save as PDF** (share page print) |

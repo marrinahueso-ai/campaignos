@@ -50,6 +50,12 @@ export type HomepageAnnouncement = {
   id: string;
   emoji: string;
   text: string;
+  /** YYYY-MM-DD — show starting this day (local midnight) */
+  startsOn: string | null;
+  /** YYYY-MM-DD — visible through this day, hide next midnight */
+  expiresOn: string | null;
+  /** When true, ignore startsOn/expiresOn (evergreen bar line). */
+  alwaysOn: boolean;
 };
 
 export type HomepageHeaderColors = {
