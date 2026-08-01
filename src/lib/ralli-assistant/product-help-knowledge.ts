@@ -9,6 +9,33 @@ export interface ProductHelpTopic {
   keywords: string[];
   answer: string;
   links: ProductHelpLink[];
+  /** Help Center article id (`/help#{id}`) when a matching how-to exists. */
+  helpArticleId?: string;
+}
+
+export const HELP_CENTER_HOME_LINK: ProductHelpLink = {
+  label: "Help Center",
+  href: "/help",
+};
+
+export function helpCenterArticleLink(articleId: string): ProductHelpLink {
+  const id = articleId.trim().replace(/^#/, "");
+  return {
+    label: "Help Center",
+    href: id ? `/help#${id}` : "/help",
+  };
+}
+
+/** Append Help Center (article when known) without duplicating /help chips. */
+export function withHelpCenterLink(
+  links: ProductHelpLink[],
+  articleId?: string | null,
+): ProductHelpLink[] {
+  const help = articleId?.trim()
+    ? helpCenterArticleLink(articleId)
+    : HELP_CENTER_HOME_LINK;
+  const withoutHelp = links.filter((link) => !link.href.startsWith("/help"));
+  return [...withoutHelp, help];
 }
 
 /**
@@ -28,16 +55,61 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
       "first time setup",
       "onboarding",
     ],
+    helpArticleId: "getting-started",
     answer: [
-      "Start in Onboarding: organization profile → branding → invite your team → connect calendar → create your first campaign.",
-      "Then use Create with AI for artwork/captions, Volunteers for signups, and Approvals before anything publishes.",
-      "Ask Ralli “What should I work on today?” anytime for live priorities.",
+      "Create your first event, then finish Essentials (calendar + brand) and Connect (team + Meta).",
+      "After that, use Create with AI for social posts, send them through Approvals, and schedule or publish when ready.",
+      "For the full walkthrough, open the Help Center article linked below.",
     ].join(" "),
     links: [
-      { label: "Onboarding", href: "/onboarding" },
-      { label: "Create Campaign", href: "/events/create" },
-      { label: "Team access", href: "/settings/team-access" },
+      { label: "Create event", href: "/events/create" },
       { label: "Calendar", href: "/calendar" },
+      { label: "Team & Access", href: "/settings/team-access" },
+    ],
+  },
+  {
+    id: "invite-team",
+    title: "How do I invite my team?",
+    keywords: [
+      "invite team",
+      "invite my team",
+      "add team",
+      "team access",
+      "invite board",
+      "add member",
+      "invite people",
+    ],
+    helpArticleId: "invite-team",
+    answer: [
+      "Open Settings (gear in the top bar) → Team & Access.",
+      "Invite by email, choose an access template, and resend if needed.",
+      "People who already use Hey Ralli at another school can join yours with the same email.",
+    ].join(" "),
+    links: [{ label: "Team & Access", href: "/settings/team-access" }],
+  },
+  {
+    id: "connect-meta",
+    title: "How do I connect Facebook and Instagram?",
+    keywords: [
+      "connect facebook",
+      "connect instagram",
+      "facebook and instagram",
+      "connect meta",
+      "link facebook",
+      "link instagram",
+      "meta connect",
+      "social media connect",
+      "connect social",
+    ],
+    helpArticleId: "connect-meta",
+    answer: [
+      "Open Settings (gear in the top bar) → Integrations, or finish Connect during onboarding.",
+      "You’ll need access to the Facebook Page (and Instagram if you use it).",
+      "If connect isn’t available yet for your school, contact support — Meta access rolls out as App Review completes.",
+    ].join(" "),
+    links: [
+      { label: "Integrations", href: "/settings/integrations" },
+      { label: "Onboarding connect", href: "/onboarding/connect" },
     ],
   },
   {
@@ -52,14 +124,15 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
       "start campaign",
       "make a campaign",
     ],
+    helpArticleId: "getting-started",
     answer: [
-      "Open Campaigns in the left nav, then click Create Campaign.",
-      "Add the event name, date, and choose a communication plan so posts are ready.",
-      "After you create it, open Create with AI on that campaign to generate artwork and captions for each post.",
+      "Open Events in the left nav, then Create event.",
+      "Add the event name, date, and details so posts and flyers have a home.",
+      "After you create it, open Create with AI on that event to generate artwork and captions.",
     ].join(" "),
     links: [
-      { label: "Create Campaign", href: "/events/create" },
-      { label: "Campaigns", href: "/events" },
+      { label: "Create event", href: "/events/create" },
+      { label: "Events", href: "/events" },
     ],
   },
   {
@@ -74,10 +147,11 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
       "approve",
       "review content",
     ],
+    helpArticleId: "approvals",
     answer: [
       "Open Approvals in the left nav.",
-      "You’ll see items waiting for you, other pending reviews, approved work, and anything with changes requested.",
-      "You can also jump into Approvals from a campaign’s planning overview.",
+      "You’ll see items waiting for you, changes requested, scheduled, posted, and failed (with Retry when Meta publish fails).",
+      "Approvers use Open full view to approve or request changes.",
     ].join(" "),
     links: [{ label: "Open Approvals", href: "/approvals" }],
   },
@@ -93,10 +167,11 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
       "publish after approve",
       "scheduled after",
     ],
+    helpArticleId: "approvals",
     answer: [
       "After approval, the content is ready for publishing or scheduling.",
       "Auto-publish posts can move into the publish/schedule flow; manual-upload items get handoff instructions (and email when due).",
-      "Track status in Approvals (Approved) and in Calendar / Communications Hub for what’s going out.",
+      "Track status in Approvals and in Calendar / Communications Hub for what’s going out.",
     ].join(" "),
     links: [
       { label: "Approvals", href: "/approvals" },
@@ -112,18 +187,24 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
       "campaign builder",
       "generate artwork",
       "generate captions",
+      "social posts with ai",
+      "create social posts",
       // Avoid bare "milestones" — status asks (“are my milestones done?”) are ops/org.
       "posts step",
       "create with ai posts",
       "inspiration step",
     ],
+    helpArticleId: "create-with-ai",
     answer: [
-      "Create with AI is the guided campaign builder for one event.",
-      "Work through Creative Setup → Posts → Preview → Review → Published.",
-      "Generate artwork and captions per post, then send them through approvals.",
-      "Open it from a campaign’s Create with AI entry (Campaigns → your event).",
+      "Create with AI builds social posts (and related surfaces) for one event.",
+      "Open Create with AI → Social, or start from an event’s Create with AI tab.",
+      "Work through Creative Setup → posts → preview → review, then send for approval.",
     ].join(" "),
-    links: [{ label: "Campaigns", href: "/events" }],
+    links: [
+      { label: "Create with AI", href: "/create-with-ai" },
+      { label: "Social", href: "/create-with-ai/social" },
+      { label: "Events", href: "/events" },
+    ],
   },
   {
     id: "communications-hub",
@@ -136,7 +217,7 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
       "messages",
     ],
     answer: [
-      "Communications Hub is in the left nav (/communications).",
+      "Communications Hub is in the left nav.",
       "Use it for inbox threads and social drafts tied to your campaigns.",
     ].join(" "),
     links: [{ label: "Communications Hub", href: "/communications" }],
@@ -146,26 +227,65 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
     title: "Where do I find volunteers?",
     keywords: [
       "find volunteers",
+      "where do volunteers",
       "volunteers tab",
       "signupgenius",
       "sign up genius",
       "volunteer shifts",
+      "volunteers live",
     ],
+    helpArticleId: "volunteers",
     answer: [
-      "Open a campaign → Volunteers tab to connect SignUpGenius and review open shifts.",
-      "Ask Ralli can also summarize volunteer coverage when SignUpGenius is connected (“Do I need more volunteers?”).",
+      "Open Volunteers in the left nav for your volunteer master view.",
+      "On an event, use the Volunteers tab to connect a SignUpGenius URL and track coverage.",
     ].join(" "),
-    links: [{ label: "Campaigns", href: "/events" }],
+    links: [
+      { label: "Volunteers", href: "/volunteers" },
+      { label: "Events", href: "/events" },
+    ],
   },
   {
     id: "calendar",
     title: "How do I use the calendar?",
-    keywords: ["calendar", "schedule", "when posting", "workload"],
+    keywords: [
+      "calendar",
+      "schedule",
+      "when posting",
+      "workload",
+      "bring in our school calendar",
+      "import calendar",
+      "school calendar",
+    ],
+    helpArticleId: "calendar",
     answer: [
       "Open Calendar in the left nav to see campaign communications across the school year.",
-      "Click an item to review details, timing, and jump back into the related campaign work.",
+      "Use Bring in calendar / Import to upload a file or connect Google, then review items before they become events.",
+      "You can also drag scheduled Meta posts on the calendar when you’re ready to adjust timing.",
     ].join(" "),
-    links: [{ label: "Open Calendar", href: "/calendar" }],
+    links: [
+      { label: "Open Calendar", href: "/calendar" },
+      { label: "Import", href: "/calendar/import" },
+    ],
+  },
+  {
+    id: "billing-credits",
+    title: "How do plans and AI credits work?",
+    keywords: [
+      "billing",
+      "ai credits",
+      "plans and ai",
+      "upgrade plan",
+      "out of credits",
+      "reserve credits",
+      "subscription",
+    ],
+    helpArticleId: "billing-credits",
+    answer: [
+      "Open Settings (gear) → Billing to see usage, plans, and payment.",
+      "Monthly AI credits reset each period; AI Reserve rolls over if you buy more.",
+      "If generation is blocked, check that you still have credits or Reserve, or upgrade your plan.",
+    ].join(" "),
+    links: [{ label: "Billing", href: "/settings/billing-plan" }],
   },
   {
     id: "ai-brain-vs-ask",
@@ -179,7 +299,7 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
       "ask vs",
     ],
     answer: [
-      "Ask Ralli AI is your in-app guide — how to navigate Hey Ralli, create campaigns, find approvals, and understand workflows.",
+      "Ask Ralli is your in-app guide — how to navigate Hey Ralli, create campaigns, find approvals, and understand workflows.",
       "AI Brain (Settings → AI Brain) is where you train brand voice, logos, and source material used when generating content.",
       "Use Ask for “how do I…?” Use AI Brain for “how should our content sound?”",
     ].join(" "),
@@ -191,7 +311,7 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
     // Avoid bare "to do" — it false-matches “what … need to do” ops questions.
     keywords: ["tasks", "todo", "to-do", "checklist", "my tasks", "my to do"],
     answer: [
-      "Open Tasks in the left nav (/tasks) for campaign work across events.",
+      "Open Tasks in the left nav for campaign work across events.",
       "Individual campaign workspaces also have planning tasks for that event.",
     ].join(" "),
     links: [{ label: "Open Tasks", href: "/tasks" }],
@@ -256,11 +376,13 @@ export function buildProductHelpSystemPrompt(pathname?: string | null): string {
     "You are Ask Ralli — a friendly product guide for Hey Ralli (CampaignOS), with the calm practical tone of an experienced PTO president.",
     "Help school PTO users navigate the product: campaigns, Create with AI, approvals, calendar, communications, tasks, and settings.",
     "You are NOT the AI Brain content generator. Do not draft social posts, captions, or artwork prompts unless the user explicitly asks how those features work.",
+    "Settings is the gear icon in the top bar (not the left nav). Integrations, Team & Access, Billing, and AI Brain live under Settings.",
     "If they ask about brand voice training, point them to Settings → AI Brain (/settings/ai-brain).",
+    "For how-to questions, mention that a Help Center article is available (chips include Help Center) and name the real destination (Integrations, Approvals, etc.).",
     "Do NOT invent that you cannot summarize today/this week. For operational asks (today’s summary, what’s next for an event, what do I have this week), point them to the suggested chips or say they can ask “today’s summary” / “what’s next for [event name]?” — never demand an exact canned phrase.",
     "Answer in 2–5 short sentences. Be concrete. Prefer real nav labels.",
-    "Do NOT write markdown links like [Approvals](/approvals). Name areas plainly (Approvals, Campaigns) — chips show destinations separately.",
-    "If you are unsure, say what you know and suggest the closest nav area — never invent screens that do not exist.",
+    "Do NOT write markdown links like [Approvals](/approvals). Name areas plainly (Approvals, Events) — chips show destinations separately including Help Center.",
+    "If you are unsure, say what you know and suggest the closest nav area plus Help Center — never invent screens that do not exist.",
     pathname ? `The user is currently on: ${pathname}` : null,
     "",
     "PRODUCT GUIDE:",

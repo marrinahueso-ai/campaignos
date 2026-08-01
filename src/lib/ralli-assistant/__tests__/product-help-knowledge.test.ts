@@ -4,13 +4,14 @@ import { describe, it } from "node:test";
 import {
   formatTopicAnswer,
   matchProductHelpTopic,
+  withHelpCenterLink,
 } from "../product-help-knowledge.ts";
 
 describe("matchProductHelpTopic", () => {
   it("matches create campaign questions", () => {
     const topic = matchProductHelpTopic("how do I create a campaign?");
     assert.equal(topic?.id, "create-campaign");
-    assert.match(formatTopicAnswer(topic!), /Create Campaign/);
+    assert.match(formatTopicAnswer(topic!), /Create event/i);
   });
 
   it("matches approvals questions", () => {
@@ -18,6 +19,18 @@ describe("matchProductHelpTopic", () => {
     assert.equal(topic?.id, "find-approvals");
     assert.match(formatTopicAnswer(topic!), /Approvals/i);
     assert.ok(topic!.links.some((link) => link.href === "/approvals"));
+    assert.equal(topic!.helpArticleId, "approvals");
+  });
+
+  it("matches Meta connect how-tos", () => {
+    const topic = matchProductHelpTopic(
+      "How do I connect Facebook and Instagram?",
+    );
+    assert.equal(topic?.id, "connect-meta");
+    assert.ok(
+      topic!.links.some((link) => link.href === "/settings/integrations"),
+    );
+    assert.equal(topic!.helpArticleId, "connect-meta");
   });
 
   it("matches after-approval questions", () => {
@@ -40,5 +53,36 @@ describe("matchProductHelpTopic", () => {
       matchProductHelpTopic("what is create with ai?")?.id,
       "create-with-ai",
     );
+  });
+});
+
+describe("withHelpCenterLink", () => {
+  it("appends Help Center home or article anchor", () => {
+    const withHome = withHelpCenterLink([{ label: "Approvals", href: "/approvals" }]);
+    assert.deepEqual(withHome.at(-1), {
+      label: "Help Center",
+      href: "/help",
+    });
+
+    const withArticle = withHelpCenterLink(
+      [{ label: "Integrations", href: "/settings/integrations" }],
+      "connect-meta",
+    );
+    assert.deepEqual(withArticle.at(-1), {
+      label: "Help Center",
+      href: "/help#connect-meta",
+    });
+  });
+
+  it("replaces an existing /help chip instead of duplicating", () => {
+    const links = withHelpCenterLink(
+      [
+        { label: "Old", href: "/help" },
+        { label: "Approvals", href: "/approvals" },
+      ],
+      "approvals",
+    );
+    assert.equal(links.filter((link) => link.href.startsWith("/help")).length, 1);
+    assert.equal(links.at(-1)?.href, "/help#approvals");
   });
 });

@@ -24,6 +24,7 @@ import {
   buildProductHelpSystemPrompt,
   formatTopicAnswer,
   matchProductHelpTopic,
+  withHelpCenterLink,
   type ProductHelpLink,
 } from "@/lib/ralli-assistant/product-help-knowledge";
 import {
@@ -53,9 +54,17 @@ function withDisplayPolish(result: {
   eventOptions?: AskRalliEventOption[];
   source: AskRalliSource | null;
   error: string | null;
+  /** Help Center article id for how-to answers. */
+  helpArticleId?: string | null;
 }): AskRalliAssistantResult {
   const eventOptions = result.eventOptions ?? emptyEventOptions();
-  const links = result.links ?? [];
+  const howToSource =
+    result.source === "faq" ||
+    result.source === "ai" ||
+    result.source === "pto";
+  const links = howToSource
+    ? withHelpCenterLink(result.links ?? [], result.helpArticleId)
+    : (result.links ?? []);
   const hasChips = links.length > 0 || eventOptions.length > 0;
   return {
     success: result.success,
@@ -207,6 +216,7 @@ export async function askRalliProductHelp(input: {
       links: matched.links,
       eventOptions: emptyEventOptions(),
       source: "faq",
+      helpArticleId: matched.helpArticleId ?? null,
       error: null,
     });
   }
@@ -218,6 +228,7 @@ export async function askRalliProductHelp(input: {
       links: matched.links,
       eventOptions: emptyEventOptions(),
       source: "faq",
+      helpArticleId: matched.helpArticleId ?? null,
       error: null,
     });
   }
@@ -228,14 +239,14 @@ export async function askRalliProductHelp(input: {
       answer: [
         "I can help with how to use Hey Ralli — creating campaigns, finding Approvals, Create with AI, Calendar, and more.",
         "I can also brief your org (“What needs my approval?”, “Do I need more volunteers?”) or answer event questions when you name an event or open an event page.",
-        "Try one of the suggested questions, or ask something like “Where do I find my approvals?”",
+        "Try one of the suggested questions, browse the Help Center, or ask something like “Where do I find my approvals?”",
         "AI Brain is separate: use Settings → AI Brain for brand voice and training content.",
       ].join(" "),
       links: [
         { label: "Approvals", href: "/approvals" },
         { label: "Today", href: "/dashboard" },
         { label: "Communications Hub", href: "/communications" },
-        { label: "Create Campaign", href: "/events/create" },
+        { label: "Create event", href: "/events/create" },
         { label: "AI Brain", href: "/settings/ai-brain" },
       ],
       eventOptions: emptyEventOptions(),
@@ -260,16 +271,19 @@ export async function askRalliProductHelp(input: {
   });
 
   if (!result.success || !result.text?.trim()) {
-    return {
+    return withDisplayPolish({
       success: false,
       answer: null,
-      links: [],
+      links: [
+        { label: "Approvals", href: "/approvals" },
+        { label: "Events", href: "/events" },
+      ],
       eventOptions: emptyEventOptions(),
-      source: null,
+      source: "faq",
       error:
         result.error ??
-        "I couldn’t answer that just now. Try rephrasing, or open Approvals / Campaigns from the left nav.",
-    };
+        "I couldn’t answer that just now. Try rephrasing, browse the Help Center, or open Approvals / Events from the left nav.",
+    });
   }
 
   return withDisplayPolish({

@@ -138,6 +138,7 @@ Unit tests: `src/lib/ralli-assistant/__tests__/*.test.ts`.
 
 - [ ] Top-rail **?** opens Ask Ralli as a full-height right drawer (portaled to `body`); dialog has Browse Help Center → `/help`; not in sidebar
 - [ ] Suggestion chips are help/how-to questions (invite team, Meta, Create with AI, Approvals, etc.)
+- [ ] How-to answers (faq / ai / pto) include a **Help Center** chip (`/help` or `/help#{article}`) plus the destination route
 - [ ] Ambiguity: dated event option chips → click regenerates with that event (same question)
 - [ ] Answer body does not show raw markdown `[Label](/path)` when chips are present
 - [ ] Close dialog / backdrop works; AI Brain note links to Settings
