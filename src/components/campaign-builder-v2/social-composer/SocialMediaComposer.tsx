@@ -280,20 +280,26 @@ function ComposerTopChrome({
   progress,
   cta,
   ctaHint,
+  variant = "default",
 }: {
   currentStep: CampaignBuilderStepId;
   goToStep: (step: CampaignBuilderStepId) => void;
   progress?: { complete: number; total: number } | null;
   cta: ReactNode;
   ctaHint?: string | null;
+  /** Confirmation screen: steps + CTAs only (no posts-ready progress). */
+  variant?: "default" | "handoff";
 }) {
   const progressPct =
     !progress || progress.total === 0
       ? 0
       : Math.round((progress.complete / progress.total) * 100);
+  const isHandoff = variant === "handoff";
 
   return (
-    <header className="composer-topbar">
+    <header
+      className={`composer-topbar${isHandoff ? " composer-topbar-handoff" : ""}`}
+    >
       <nav className="preview-steps" aria-label="Composer steps">
         {(
           [
@@ -317,7 +323,7 @@ function ComposerTopChrome({
         })}
       </nav>
 
-      {progress ? (
+      {!isHandoff && progress ? (
         <div className="preview-progress">
           <div className="preview-progress-label">
             {progress.complete} of {progress.total} posts ready
@@ -326,9 +332,10 @@ function ComposerTopChrome({
             <div className="preview-progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
         </div>
-      ) : (
+      ) : null}
+      {!isHandoff && !progress ? (
         <div className="preview-progress preview-progress-spacer" aria-hidden="true" />
-      )}
+      ) : null}
 
       <div className="preview-top-cta">
         {cta}
@@ -2282,6 +2289,19 @@ function ReviewPanel({
   );
 }
 
+function campaignIdLabel(campaignName: string, eventId: string): string {
+  const slug = campaignName
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 28);
+  if (slug) {
+    return slug;
+  }
+  return eventId.replace(/-/g, "").slice(0, 10).toUpperCase() || "CAMPAIGN";
+}
+
 function PublishedPanel({ handoff }: { handoff: ReviewHandoffDetails }) {
   const { goToStep, session } = useCampaignBuilder();
   const campaign = session.inspiration.campaignName || "Your campaign";
@@ -2292,23 +2312,25 @@ function PublishedPanel({ handoff }: { handoff: ReviewHandoffDetails }) {
       ? "your posts"
       : `${postCount} post${postCount === 1 ? "" : "s"}`;
   const reviewerLabel = handoff.reviewerName?.trim() || "your approver";
-  const approvalsHref = `/events/${session.eventId}?tab=approvals`;
+  const approvalsHref = `/approvals?event=${encodeURIComponent(session.eventId)}`;
+  const campaignId = campaignIdLabel(campaign, session.eventId);
 
   return (
     <section className="handoff-confirm">
       <ComposerTopChrome
         currentStep="published"
         goToStep={goToStep}
+        variant="handoff"
         cta={
-          <div className="composer-cta-row">
+          <div className="composer-cta-row handoff-chrome-ctas">
             <button
               type="button"
-              className="btn btn-secondary"
+              className="handoff-btn handoff-btn-secondary"
               onClick={() => goToStep("review")}
             >
               Back to Review
             </button>
-            <Link href={approvalsHref} className="btn btn-forest">
+            <Link href={approvalsHref} className="handoff-btn handoff-btn-primary">
               Open Approvals
             </Link>
           </div>
@@ -2317,11 +2339,11 @@ function PublishedPanel({ handoff }: { handoff: ReviewHandoffDetails }) {
 
       <div className="handoff-card">
         <div className="handoff-check" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
             <path
               d="M5 12.5 10 17.5 19 7.5"
               stroke="currentColor"
-              strokeWidth="2.4"
+              strokeWidth="2.6"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -2354,44 +2376,68 @@ function PublishedPanel({ handoff }: { handoff: ReviewHandoffDetails }) {
           )}
         </p>
 
-        {sent ? (
-          <div className="handoff-facts">
-            <div className="handoff-fact">
-              <span className="handoff-fact-label">Reviewer</span>
-              <strong>{reviewerLabel}</strong>
-            </div>
-            <div className="handoff-fact">
-              <span className="handoff-fact-label">Email status</span>
-              {handoff.notifiedEmail ? (
+        <div className="handoff-facts">
+          {sent ? (
+            <>
+              <div className="handoff-fact">
+                <span className="handoff-fact-label">Reviewer</span>
+                <strong>{reviewerLabel}</strong>
+              </div>
+              <div className="handoff-fact">
+                <span className="handoff-fact-label">Email status</span>
+                {handoff.notifiedEmail ? (
+                  <strong className="handoff-email-ok">
+                    <span aria-hidden="true">✓</span>
+                    Notified at {handoff.notifiedEmail}
+                  </strong>
+                ) : (
+                  <>
+                    <strong>
+                      {handoff.emailSkippedReason
+                        ? "Email not sent"
+                        : "Queued in Approvals"}
+                    </strong>
+                    {handoff.emailSkippedReason ? (
+                      <span className="handoff-fact-note">
+                        {handoff.emailSkippedReason}
+                      </span>
+                    ) : null}
+                  </>
+                )}
+              </div>
+              <div className="handoff-fact">
+                <span className="handoff-fact-label">Posts count</span>
+                <strong>
+                  {postCount != null
+                    ? `${postCount} Post${postCount === 1 ? "" : "s"}`
+                    : "—"}
+                </strong>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="handoff-fact">
+                <span className="handoff-fact-label">Approved by</span>
+                <strong>{reviewerLabel}</strong>
+              </div>
+              <div className="handoff-fact">
+                <span className="handoff-fact-label">Status</span>
                 <strong className="handoff-email-ok">
                   <span aria-hidden="true">✓</span>
-                  Notified at {handoff.notifiedEmail}
+                  Approved &amp; scheduling
                 </strong>
-              ) : (
-                <>
-                  <strong>
-                    {handoff.emailSkippedReason
-                      ? "Email not sent"
-                      : "Queued in Approvals"}
-                  </strong>
-                  {handoff.emailSkippedReason ? (
-                    <span className="handoff-fact-note">
-                      {handoff.emailSkippedReason}
-                    </span>
-                  ) : null}
-                </>
-              )}
-            </div>
-            <div className="handoff-fact">
-              <span className="handoff-fact-label">Posts count</span>
-              <strong>
-                {postCount != null
-                  ? `${postCount} Post${postCount === 1 ? "" : "s"}`
-                  : "—"}
-              </strong>
-            </div>
-          </div>
-        ) : null}
+              </div>
+              <div className="handoff-fact">
+                <span className="handoff-fact-label">Posts count</span>
+                <strong>
+                  {postCount != null
+                    ? `${postCount} Post${postCount === 1 ? "" : "s"}`
+                    : "—"}
+                </strong>
+              </div>
+            </>
+          )}
+        </div>
 
         <div className="handoff-next">
           <strong>What happens next:</strong>{" "}
@@ -2403,18 +2449,20 @@ function PublishedPanel({ handoff }: { handoff: ReviewHandoffDetails }) {
         </div>
 
         <div className="handoff-actions">
-          <Link href={approvalsHref} className="btn btn-forest">
+          <Link href={approvalsHref} className="handoff-btn handoff-btn-primary">
             Open Approvals →
           </Link>
           <button
             type="button"
-            className="btn btn-secondary"
+            className="handoff-btn handoff-btn-secondary"
             onClick={() => goToStep("review")}
           >
             Back to Review
           </button>
         </div>
       </div>
+
+      <p className="handoff-campaign-id">Campaign ID: {campaignId}</p>
     </section>
   );
 }
