@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA  
-**Last updated:** July 29, 2026 (post-deploy Lighthouse re-measure)  
+**Last updated:** August 1, 2026 (Event shell stream + lean list wins)  
 **Related:** [Testing guide](./testing-guide.md) · [Launch checklist](./launch-checklist.md)
 
 ## Target
@@ -118,11 +118,18 @@ Prefer Production: `HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ral
 ## Hot path notes (July 24, 2026)
 
 - **`getMetaPublishBundles` is read-only** — does not call `syncMetaPublicationSlots` / write slots on GET. Approvals previews, calendar item preview, and planning-hub loads stay read-only. Mutations use `syncAndGetMetaPublishBundles` (or explicit `syncMetaPublicationSlots`) when slots must be created/updated.
-- **List fetch soft caps (Priority 2)** — org Files SSR caps at `FILES_ORG_FETCH_CAP` (400; event detail `FILES_EVENT_FETCH_CAP` 200); Tasks hub org load at `TASK_HUB_ORG_FETCH_CAP` (1000; event Tasks tab uncapped); Inbox threads `INBOX_THREAD_FETCH_CAP` (50), messages `INBOX_MESSAGES_PER_THREAD_CAP` (40) / `INBOX_MESSAGES_FETCH_CAP`, unread badge sums at most `INBOX_UNREAD_BADGE_THREAD_CAP` (500) thread rows; channel sidebar counts use `head: true` exact counts (no full thread row scan).
+- **List fetch soft caps (Priority 2)** — org Files SSR caps at `FILES_ORG_FETCH_CAP` (400; event detail `FILES_EVENT_FETCH_CAP` 200); Tasks hub org load at `TASK_HUB_ORG_FETCH_CAP` (1000; event Tasks tab uncapped); Approvals scheduling org load at `SCHEDULING_ORG_FETCH_CAP` (400; event tab `SCHEDULING_EVENT_FETCH_CAP` 200); Inbox threads `INBOX_THREAD_FETCH_CAP` (50), messages `INBOX_MESSAGES_PER_THREAD_CAP` (40) / `INBOX_MESSAGES_FETCH_CAP`, unread badge sums at most `INBOX_UNREAD_BADGE_THREAD_CAP` (500) thread rows; channel sidebar counts use `head: true` exact counts (no full thread row scan).
 - **Optimistic mutations skip `router.refresh` (Priority 3)** — Task Hub list/board/calendar status + reorder, GroupedTaskChecklist status/reorder, caption field generate/save/approve/unapprove/sync, Campaign Captions generate/save, and Preview clear-milestone rely on local state (create/delete and milestone-wide approve still refresh).
 - **Insights pulse is lean (Priority 4)** — Today widget uses `getInsightsPulseData` (connection + account KPIs for 7d only). Full `/insights` still uses `getInsightsPageData` (posts, series, activity, breakdowns).
 - **Membership / hot helpers (Priority 5)** — layout `listActiveMemberships` + `getActiveMembership` share one cached `organization_users` load; `getOrganizationById`, `getOrganizationUsers`, playbook-with-steps, and team-access workload are request-`cache()`’d so metadata + page do not double-fetch.
 - **Client code-split (Priority 6)** — Ask Ralli dialog loads on open (sidebar pin stays eager); Event Detail Volunteers tab is `next/dynamic` like other heavy tabs; Create with AI Artwork stack loads via dynamic `CampaignCreativeTab` + lazy ArtworkV2 step screens (campaign workspace stays on the default path).
+
+## Hot path notes (Aug 1, 2026 — loading-speed wins)
+
+- **Event Detail streams shell first** — bare `/events/[id]` (and `?tab=approvals`) paints hero/tabs via lean `getOrganizationWorkspaceDataLean` (explicit columns, skip seed, no member↔event assignment round-trip); Approvals body streams in a Suspense child (`EventDetailApprovalsStream`) and still re-checks `getEventById`. Non-Approvals deep links keep SSR tab preload.
+- **Tasks list selects omit `notes`** — `PLAYBOOK_TASK_LIST_SELECT` + parallel id presence query for `hasNotes`; drawer still loads note bodies via `getTaskHubTaskNotesAction`.
+- **Dashboard widgets use lean helpers** — `getDashboardTaskItems` / `getUnifiedApprovalsSchedulingDataLean` (skip live-name + Meta slot overlay) instead of full Tasks V2 / Approvals hub DTOs; workspace via `getOrganizationWorkspaceDataLeanWithAssignments`.
+- **Approvals enrich parallelized** — assignees / live names / Meta slots (hub) and assignees / Meta bundles / slots / live names (event tab) run in one `Promise.all` wave; approve still defers Meta schedule + email via `after()`.
 
 ## Caching contract
 

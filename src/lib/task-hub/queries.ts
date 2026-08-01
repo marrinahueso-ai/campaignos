@@ -13,7 +13,7 @@ import {
   getEventPlaybookEvents,
   getEventPlaybookTasksForEvents,
 } from "@/lib/event-playbooks/queries";
-import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
+import { getOrganizationWorkspaceDataLean } from "@/lib/organization-workspace/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import {
   resolveTaskHubViewScope,
@@ -92,7 +92,7 @@ export async function getTaskHubPageData(
     return emptyTaskHubPage(scopeLabel, false);
   }
 
-  const workspace = await getOrganizationWorkspaceData(organization.id);
+  const workspace = await getOrganizationWorkspaceDataLean(organization.id);
   if (!workspace) {
     return emptyTaskHubPage(scopeLabel, tablesAvailable);
   }
@@ -108,7 +108,10 @@ export async function getTaskHubPageData(
   const cap = TASK_HUB_ORG_FETCH_CAP;
   const taskRowsRaw =
     eventIds.length > 0
-      ? await getEventPlaybookTasksForEvents(eventIds, { limit: cap + 1 })
+      ? await getEventPlaybookTasksForEvents(eventIds, {
+          limit: cap + 1,
+          omitNotes: true,
+        })
       : [];
   const tasksCapped = taskRowsRaw.length > cap;
   const taskRows = tasksCapped ? taskRowsRaw.slice(0, cap) : taskRowsRaw;
@@ -271,12 +274,12 @@ export async function getTaskHubPageDataForEvent(
 
   const organization = await getLatestOrganization();
   const [taskRows, orgUsers, workspace] = await Promise.all([
-    getEventPlaybookTasksForEvents([eventId]),
+    getEventPlaybookTasksForEvents([eventId], { omitNotes: true }),
     organization
       ? getOrganizationUsers(organization.id)
       : Promise.resolve([]),
     organization
-      ? getOrganizationWorkspaceData(organization.id)
+      ? getOrganizationWorkspaceDataLean(organization.id)
       : Promise.resolve(null),
   ]);
   const { mapEventPlaybookTaskRow } = await import(

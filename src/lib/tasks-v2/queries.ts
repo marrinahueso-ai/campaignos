@@ -25,12 +25,15 @@ async function resolveTasksV2Viewer(): Promise<TasksV2Viewer> {
   };
 }
 
-/** Org list DTO — keep presence, drop note bodies from the RSC payload. */
-function slimTaskNotesForOrgList<T extends { notes: string | null; hasNotes?: boolean }>(
+/**
+ * Safety net — list queries already omit note bodies at the SQL select.
+ * Keeps presence (`hasNotes`) if a caller still attached a body.
+ */
+function slimTaskNotesForList<T extends { notes: string | null; hasNotes?: boolean }>(
   task: T,
 ): T {
-  const hasNotes = Boolean(task.notes?.trim());
-  if (!hasNotes && task.notes == null && task.hasNotes !== true) {
+  const hasNotes = task.hasNotes === true || Boolean(task.notes?.trim());
+  if (!hasNotes && task.notes == null) {
     return task;
   }
   return {
@@ -47,7 +50,7 @@ export async function getTasksV2PageData(): Promise<TasksV2PageData> {
     getActiveMembership(),
   ]);
   const allTasks = flattenCommitteeTasks(hubData.committees).map(
-    slimTaskNotesForOrgList,
+    slimTaskNotesForList,
   );
   const eventGroups = groupTasksByEvent(allTasks);
   const summary = computeTasksV2SummaryStats(allTasks);
@@ -57,7 +60,7 @@ export async function getTasksV2PageData(): Promise<TasksV2PageData> {
     ...hubData,
     committees: hubData.committees.map((group) => ({
       ...group,
-      tasks: group.tasks.map(slimTaskNotesForOrgList),
+      tasks: group.tasks.map(slimTaskNotesForList),
     })),
     eventGroups,
     summary,
@@ -79,13 +82,19 @@ export async function getTasksV2PageDataForEvent(
     resolveTasksV2Viewer(),
     getActiveMembership(),
   ]);
-  const allTasks = flattenCommitteeTasks(hubData.committees);
+  const allTasks = flattenCommitteeTasks(hubData.committees).map(
+    slimTaskNotesForList,
+  );
   const eventGroups = groupTasksByEvent(allTasks);
   const summary = computeTasksV2SummaryStats(allTasks);
   const aiStatus = getAiAssistantStatus();
 
   return {
     ...hubData,
+    committees: hubData.committees.map((group) => ({
+      ...group,
+      tasks: group.tasks.map(slimTaskNotesForList),
+    })),
     eventGroups,
     summary,
     aiAvailable: aiStatus.available,

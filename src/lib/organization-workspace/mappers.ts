@@ -37,7 +37,7 @@ export function mapOrganizationMemberRow(
     organizationId: row.organization_id,
     name: row.name,
     email: row.email ?? null,
-    phone: row.phone ?? null,
+    phone: row.phone ?? null, // lean selects may omit phone
     organizationRoleId: row.organization_role_id,
     roleName,
     active: row.active,

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { EventDetailPhase3Client } from "@/components/events-phase3/EventDetailPhase3Client";
 import {
   accessHasPermission,
@@ -14,7 +15,7 @@ import { getEventArtwork } from "@/lib/event-workspace/get-event-artwork";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import {
   getEventOrganizationDefaults,
-  getOrganizationWorkspaceData,
+  getOrganizationWorkspaceDataLean,
 } from "@/lib/organization-workspace/queries";
 import { listCommitteeAssignmentsForCommittee } from "@/lib/organization-workspace/roster-assignments";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
@@ -25,6 +26,22 @@ import {
   loadEventDetailTabData,
 } from "@/lib/events-phase3/tab-loaders";
 import type { Event } from "@/types";
+import { EventDetailApprovalsStream } from "./event-detail-approvals-stream";
+
+function ApprovalsTabFallback() {
+  return (
+    <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+      <div className="flex flex-wrap gap-2">
+        <div className="h-8 w-24 animate-pulse rounded-md bg-cos-bg/70" />
+        <div className="h-8 w-28 animate-pulse rounded-md bg-cos-bg/70" />
+        <div className="h-8 w-20 animate-pulse rounded-md bg-cos-bg/70" />
+      </div>
+      <div className="h-16 w-full animate-pulse rounded-md bg-cos-bg/70" />
+      <div className="h-16 w-full animate-pulse rounded-md bg-cos-bg/70" />
+      <div className="h-16 w-3/4 animate-pulse rounded-md bg-cos-bg/70" />
+    </div>
+  );
+}
 
 export async function renderEventsPhase3Detail(
   event: Event,
@@ -34,7 +51,6 @@ export async function renderEventsPhase3Detail(
   const organization = await getLatestOrganization();
 
   const [
-    userRole,
     access,
     artwork,
     orgWorkspace,
@@ -43,11 +59,10 @@ export async function renderEventsPhase3Detail(
     approvalAssignee,
     orgDefaults,
   ] = await Promise.all([
-    getCurrentCampaignRole(),
     getEffectiveAccess(),
     getEventArtwork(event.id),
     organization
-      ? getOrganizationWorkspaceData(organization.id)
+      ? getOrganizationWorkspaceDataLean(organization.id)
       : Promise.resolve(null),
     getEventPlaybookName(event.id),
     getEventDetailHeroStats(event.id),
@@ -125,20 +140,23 @@ export async function renderEventsPhase3Detail(
     { label: "Publishing", value: publisher },
   ];
 
-  // Deep-link: preload the requested lazy tab. Default Approvals so bare
-  // `/events/[id]` doesn’t waterfall the default panel after hydration.
+  // Bare URL / Approvals: stream tab body so shell/hero paint first.
+  const streamApprovals =
+    initialTab == null ||
+    initialTab === "" ||
+    initialTab === "approvals";
+
+  // Other deep links still preload that tab (not the Approvals default path).
   const lazyInitial =
-    initialTab === "approvals" ||
-    initialTab === "tasks" ||
-    initialTab === "files" ||
-    initialTab === "notes" ||
-    initialTab === "vendors" ||
-    initialTab === "activity" ||
-    initialTab === "insights"
+    !streamApprovals &&
+    (initialTab === "tasks" ||
+      initialTab === "files" ||
+      initialTab === "notes" ||
+      initialTab === "vendors" ||
+      initialTab === "activity" ||
+      initialTab === "insights")
       ? initialTab
-      : initialTab == null || initialTab === ""
-        ? "approvals"
-        : null;
+      : null;
 
   let initialWorkspace: import("@/components/events-phase3/EventDetailShell").EventDetailWorkspacePanels =
     {};
@@ -162,9 +180,6 @@ export async function renderEventsPhase3Detail(
       });
 
       switch (data.tab) {
-        case "approvals":
-          initialWorkspace = { approvalsData: data.approvalsData };
-          break;
         case "tasks":
           initialWorkspace = { tasksV2Data: data.tasksV2Data };
           break;
@@ -198,6 +213,12 @@ export async function renderEventsPhase3Detail(
     }
   }
 
+  const approvalsSlot = streamApprovals ? (
+    <Suspense fallback={<ApprovalsTabFallback />}>
+      <EventDetailApprovalsStream eventId={event.id} />
+    </Suspense>
+  ) : undefined;
+
   return (
     <EventDetailPhase3Client
       event={event}
@@ -210,6 +231,7 @@ export async function renderEventsPhase3Detail(
         access && accessHasPermission(access, "manage_people"),
       )}
       workspace={initialWorkspace}
+      approvalsSlot={approvalsSlot}
       initialTab={initialTab}
       showYoureSet={Boolean(options?.showYoureSet)}
       committeeId={linkedCommittee?.id ?? null}
@@ -217,4 +239,3 @@ export async function renderEventsPhase3Detail(
     />
   );
 }
-

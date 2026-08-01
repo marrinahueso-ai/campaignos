@@ -18,6 +18,7 @@ import {
   PLAYBOOK_FILE_SELECT,
   PLAYBOOK_NOTE_SELECT,
   PLAYBOOK_TASK_GROUP_SELECT,
+  PLAYBOOK_TASK_LIST_SELECT,
   PLAYBOOK_TASK_SELECT,
 } from "@/lib/event-playbooks/selects";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
@@ -83,18 +84,30 @@ export async function getEventPlaybookEvents(
   return mapEventRows((data ?? []) as unknown as EventRow[]);
 }
 
+export type GetEventPlaybookTasksOptions = {
+  limit?: number;
+  /**
+   * Omit note bodies from the select; set `has_notes` via a parallel id query.
+   * Default true for Task Hub / Event Tasks list paths.
+   */
+  omitNotes?: boolean;
+};
+
 export async function getEventPlaybookTasksForEvents(
   eventIds: string[],
-  options?: { limit?: number },
+  options?: GetEventPlaybookTasksOptions,
 ): Promise<EventPlaybookTaskRow[]> {
   if (eventIds.length === 0 || !(await areEventPlaybookTablesAvailable())) {
     return [];
   }
 
+  const omitNotes = options?.omitNotes !== false;
   const supabase = await createClient();
+  const select = omitNotes ? PLAYBOOK_TASK_LIST_SELECT : PLAYBOOK_TASK_SELECT;
+
   let query = supabase
     .from("event_playbook_tasks")
-    .select(PLAYBOOK_TASK_SELECT)
+    .select(select)
     .in("event_id", eventIds)
     .order("sort_order", { ascending: true });
 
@@ -112,7 +125,38 @@ export async function getEventPlaybookTasksForEvents(
     return [];
   }
 
-  return (data ?? []) as unknown as EventPlaybookTaskRow[];
+  const rows = (data ?? []) as unknown as EventPlaybookTaskRow[];
+  if (!omitNotes || rows.length === 0) {
+    return rows;
+  }
+
+  // Presence only for rows we actually returned — ids, no note bodies.
+  const { data: presenceRows, error: presenceError } = await supabase
+    .from("event_playbook_tasks")
+    .select("id")
+    .in(
+      "id",
+      rows.map((row) => row.id),
+    )
+    .not("notes", "is", null)
+    .neq("notes", "");
+
+  if (presenceError && !isMissingSchemaError(presenceError)) {
+    console.error(
+      "Failed to fetch task notes presence:",
+      presenceError.message,
+    );
+  }
+
+  const notesIds = new Set(
+    ((presenceRows ?? []) as Array<{ id: string }>).map((row) => row.id),
+  );
+
+  return rows.map((row) => ({
+    ...row,
+    notes: null,
+    has_notes: notesIds.has(row.id),
+  }));
 }
 
 /** Soft cap for Event Detail Notes tab — newest first. */

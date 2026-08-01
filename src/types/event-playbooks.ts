@@ -26,7 +26,13 @@ export interface EventPlaybookTaskRow {
   assignee_initials: string | null;
   assignee_user_id: string | null;
   group_id: string | null;
+  /** Omitted / null on list selects — drawer loads the body on open. */
   notes: string | null;
+  /**
+   * List path sets this from a notes-presence id query (no note body transfer).
+   * Undefined when the full `notes` column was selected.
+   */
+  has_notes?: boolean;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -79,8 +85,10 @@ export interface EventPlaybookTask {
   /** auth.users id — primary key for My Tasks matching */
   assigneeUserId: string | null;
   groupId: string | null;
-  /** Freeform task notes (Tasks detail drawer) */
+  /** Freeform task notes (Tasks detail drawer). List DTOs may omit (`null` + hasNotes). */
   notes: string | null;
+  /** True when note body exists but was not shipped on the list query. */
+  hasNotes?: boolean;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;

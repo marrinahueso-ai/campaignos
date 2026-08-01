@@ -15,6 +15,15 @@ import {
   mapResponsibilityMatrixRow,
 } from "@/lib/organization-workspace/mappers";
 import { DEFAULT_ORGANIZATION_ROLE_TEMPLATE } from "@/lib/organization-workspace/role-templates";
+import {
+  COMMITTEE_DEFAULT_SELECT,
+  ORGANIZATION_COMMITTEE_LEAN_SELECT,
+  ORGANIZATION_COMMITTEE_SELECT,
+  ORGANIZATION_MEMBER_LEAN_SELECT,
+  ORGANIZATION_MEMBER_SELECT,
+  ORGANIZATION_ROLE_SELECT,
+  RESPONSIBILITY_MATRIX_SELECT,
+} from "@/lib/organization-workspace/selects";
 import { ensureOrganizationWorkspaceSeeded } from "@/lib/organization-workspace/seed";
 import type { Event } from "@/types";
 import type {
@@ -35,12 +44,42 @@ function buildRoleNameMap(roles: OrganizationRole[]): Map<string, string> {
   return new Map(roles.map((role) => [role.id, role.name]));
 }
 
+export type GetOrganizationWorkspaceOptions = {
+  /**
+   * Narrower column projection + skip seed by default.
+   * Prefer for Event shell, Tasks hub, and Dashboard widgets.
+   */
+  lean?: boolean;
+  /** Skip ensureOrganizationWorkspaceSeeded (safe on hot reads for active orgs). */
+  skipSeed?: boolean;
+  /**
+   * When false, members.assignedEventIds stays empty (Event shell uses
+   * committee assignments instead). Default true for full shape callers.
+   */
+  includeMemberEventAssignments?: boolean;
+};
+
 async function loadOrganizationWorkspaceData(
   organizationId: string,
+  options?: GetOrganizationWorkspaceOptions,
 ): Promise<OrganizationWorkspaceData | null> {
+  const lean = options?.lean === true;
+  const skipSeed = options?.skipSeed ?? lean;
+  const includeMemberEventAssignments =
+    options?.includeMemberEventAssignments ?? !lean;
+
   const supabase = await createClient();
 
-  await ensureOrganizationWorkspaceSeeded(organizationId);
+  if (!skipSeed) {
+    await ensureOrganizationWorkspaceSeeded(organizationId);
+  }
+
+  const memberSelect = lean
+    ? ORGANIZATION_MEMBER_LEAN_SELECT
+    : ORGANIZATION_MEMBER_SELECT;
+  const committeeSelect = lean
+    ? ORGANIZATION_COMMITTEE_LEAN_SELECT
+    : ORGANIZATION_COMMITTEE_SELECT;
 
   const [
     { data: roleRows, error: roleError },
@@ -51,28 +90,28 @@ async function loadOrganizationWorkspaceData(
   ] = await Promise.all([
     supabase
       .from("organization_roles")
-      .select("*")
+      .select(ORGANIZATION_ROLE_SELECT)
       .eq("organization_id", organizationId)
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true }),
     supabase
       .from("organization_members")
-      .select("*")
+      .select(memberSelect)
       .eq("organization_id", organizationId)
       .order("name", { ascending: true }),
     supabase
       .from("responsibility_matrix")
-      .select("*")
+      .select(RESPONSIBILITY_MATRIX_SELECT)
       .eq("organization_id", organizationId)
       .order("responsibility_type", { ascending: true }),
     supabase
       .from("committee_defaults")
-      .select("*")
+      .select(COMMITTEE_DEFAULT_SELECT)
       .eq("organization_id", organizationId)
       .order("committee_name", { ascending: true }),
     supabase
       .from("organization_committees")
-      .select("*")
+      .select(committeeSelect)
       .eq("organization_id", organizationId)
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true }),
@@ -105,11 +144,14 @@ async function loadOrganizationWorkspaceData(
   );
   const roleNames = buildRoleNameMap(roles);
 
-  const { listOrganizationMemberEventAssignmentsByOrg } = await import(
-    "@/lib/organization-workspace/roster-assignments"
-  );
-  const memberEventAssignments =
-    await listOrganizationMemberEventAssignmentsByOrg(organizationId);
+  const memberEventAssignments = includeMemberEventAssignments
+    ? await (async () => {
+        const { listOrganizationMemberEventAssignmentsByOrg } = await import(
+          "@/lib/organization-workspace/roster-assignments"
+        );
+        return listOrganizationMemberEventAssignmentsByOrg(organizationId);
+      })()
+    : {};
 
   const members = (memberRows ?? []).map((row) => {
     const memberRow = row as OrganizationMemberRow;
@@ -158,6 +200,10 @@ async function loadOrganizationWorkspaceData(
   };
 }
 
+/**
+ * Full organization workspace (roles, members, matrix, committees).
+ * Settings / onboarding / mutations keep this path (includes seed).
+ */
 export const getOrganizationWorkspaceData = cache(
   async function getOrganizationWorkspaceData(
     organizationId: string,
@@ -166,11 +212,43 @@ export const getOrganizationWorkspaceData = cache(
   },
 );
 
+/**
+ * Lean hot-path workspace — Event shell / Tasks hub.
+ * Explicit columns, skip seed, no member↔event assignment round-trip.
+ */
+export const getOrganizationWorkspaceDataLean = cache(
+  async function getOrganizationWorkspaceDataLean(
+    organizationId: string,
+  ): Promise<OrganizationWorkspaceData | null> {
+    return loadOrganizationWorkspaceData(organizationId, {
+      lean: true,
+      skipSeed: true,
+      includeMemberEventAssignments: false,
+    });
+  },
+);
+
+/**
+ * Lean columns + member event assignments — Dashboard event coverage.
+ */
+export const getOrganizationWorkspaceDataLeanWithAssignments = cache(
+  async function getOrganizationWorkspaceDataLeanWithAssignments(
+    organizationId: string,
+  ): Promise<OrganizationWorkspaceData | null> {
+    return loadOrganizationWorkspaceData(organizationId, {
+      lean: true,
+      skipSeed: true,
+      includeMemberEventAssignments: true,
+    });
+  },
+);
+
 export async function getEventOrganizationDefaults(
   organizationId: string,
   event: Event,
 ): Promise<EventOrganizationDefaults | null> {
-  const workspace = await getOrganizationWorkspaceData(organizationId);
+  // Lean is enough (matrix + committees + defaults); skip seed on hot Event reads.
+  const workspace = await getOrganizationWorkspaceDataLean(organizationId);
 
   if (!workspace) {
     return null;

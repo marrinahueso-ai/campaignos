@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
   useTransition,
+  type ReactNode,
 } from "react";
 import {
   ArrowLeft,
@@ -229,6 +230,8 @@ interface EventDetailShellProps {
   canManageAssignments: boolean;
   onManageAssignments?: () => void;
   workspace?: EventDetailWorkspacePanels;
+  /** Server-streamed Approvals body (Suspense) for bare URL / Approvals tab. */
+  approvalsSlot?: ReactNode;
   initialTab?: string | null;
   /** Ease page-4 finale after Team+Meta — dismissible “You’re set” toast. */
   showYoureSet?: boolean;
@@ -410,6 +413,7 @@ export function EventDetailShell({
   canManageAssignments,
   onManageAssignments,
   workspace = {},
+  approvalsSlot,
   initialTab = null,
   showYoureSet = false,
 }: EventDetailShellProps) {
@@ -548,6 +552,11 @@ export function EventDetailShell({
         return;
       }
 
+      // Server-streamed Approvals slot owns first paint for the default tab.
+      if (nextTab === "approvals" && approvalsSlot) {
+        return;
+      }
+
       if (loadedTabsRef.current.has(nextTab)) {
         return;
       }
@@ -599,7 +608,7 @@ export function EventDetailShell({
         }
       });
     },
-    [event.id, applyTabData],
+    [event.id, applyTabData, approvalsSlot],
   );
 
   useEffect(() => {
@@ -728,7 +737,10 @@ export function EventDetailShell({
   }, [panelData.playbookActivity, panelData.workspaceTimeline]);
 
   const showTabLoading =
-    LAZY_TABS.has(tab) && !loadedTabs.has(tab) && (pending || !tabError);
+    LAZY_TABS.has(tab) &&
+    !loadedTabs.has(tab) &&
+    !(tab === "approvals" && approvalsSlot) &&
+    (pending || !tabError);
 
   return (
     <EventDetailTabInvalidationProvider value={invalidationValue}>
@@ -869,6 +881,8 @@ export function EventDetailShell({
               canViewAll={panelData.approvalsData.canViewAll}
               lockedEventId={event.id}
             />
+          ) : tab === "approvals" && approvalsSlot ? (
+            approvalsSlot
           ) : null}
 
           {tab === "tasks" && loadedTabs.has("tasks") ? (

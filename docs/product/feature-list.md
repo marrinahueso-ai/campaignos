@@ -71,7 +71,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - **Add** / **Edit**: checkbox catalog + remove; Done/Apply saves optimistically — **shipped**
 - **Card colors** in Edit (palette + custom): per-user colors on Attention, Waiting on me, Good news, This week, Approvals, Tasks, Volunteers, Insights; text/surfaces auto-contrast; Weather / Up Next / Calendar excluded — **shipped**
 - **Drag-and-drop** tile rearrange anytime via card grip (saves on drop; Weather pinned; Edit still removes) — **shipped**
-- Optional richer widgets (off by default): **Approvals** (assigned to me), **Tasks this week**, **Volunteers** (underfilled events with fill-rate bar + % to the right), **Insights** (7d KPI pulse via lean `getInsightsPulseData`, not full Insights page query) — **shipped**
+- Optional richer widgets (off by default): **Approvals** (assigned to me), **Tasks this week**, **Volunteers** (underfilled events with fill-rate bar + % to the right), **Insights** (7d KPI pulse via lean `getInsightsPulseData`, not full Insights page query); library widgets use lean Approvals/Tasks list helpers (not full hub DTOs) — **shipped**
 - Optional library widgets (off by default, Add catalog phase 3): **Posts this week** (Mine/Everyone — scheduled, drafts, and needs-approval posts for the week; DB-only via unified scheduling rows), **Waiting on others** (Mine/Everyone — approvals you submitted that are blocked on teammates + org bottleneck counts), **Event coverage** (upcoming events missing an event lead or co-lead; deep links to event detail / Team & Access) — **shipped**
 - **Weather** pinned top-right with the greeting; left column stacks greeting → Add/Edit → **Up Next** (independent of weather height so no blank gap); rail stacks Weather → **Calendar**; weather tile includes next 4 hours + fun tip — **shipped**
 - **Attention** metric rows: to review → Approvals · need volunteers → Volunteers · tasks this week → Tasks (`?scope=mine&pulse=week`) — **shipped**
@@ -85,7 +85,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Events Home ease filters (soft pills: **Upcoming** default · **Next month** · **All**; Upcoming shows next-60-days focus/queue; counts scoped to school-year filter + search; status badges on cards only — not filter tabs) — **shipped**
 - Events list filtered PDF export (All Events header download; current list filters only — not upcoming carousel) — **shipped**
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Insights, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
-- Event detail tab chrome uses local state + `history.replaceState` (no full RSC refetch on tab click); bare `/events/[id]` SSR-preloads Approvals; Team Manage Assignments lazy-loads the org roster — **shipped** (perf)
+- Event detail tab chrome uses local state + `history.replaceState` (no full RSC refetch on tab click); bare `/events/[id]` streams Approvals in a Suspense child so shell/hero paint first (lean org workspace projection; other deep-linked tabs still SSR-preload); Team Manage Assignments lazy-loads the org roster — **shipped** (perf)
 - Event detail Insights tab — see **Insights** below (living: [event-insights.md](./event-insights.md))
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
 - Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from communication plan tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**
@@ -243,7 +243,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Ease task detail (`TasksEaseTaskDrawer`): same two-pane Pilot modal as Add task (ivory aside + form); editable title, Board/status, due, assignee, derived priority badge, Description/notes (+ dictate), autosave, event deep link, Done — **shipped**
 - Add task: event options from events + groups, optimistic row, Mine auto-assigns to you, clears pulse so new tasks stay visible — **shipped**
 - Chrome feel: Team/Mine, views, pulse, event chips use local state + `history.replaceState` (no `router.replace` refetch); drawer/list saves stay optimistic without full page refresh — **shipped** (perf)
-- Org Tasks list omits note bodies (`hasNotes` flag; drawer loads notes on open); Add Task / Ask AI form state is isolated so keystrokes don’t re-render all rows; list/board are `React.memo` — **shipped** (perf)
+- Org + Event Tasks lists omit note bodies at the SQL select (`hasNotes` via presence id query; drawer loads notes on open); Add Task / Ask AI form state is isolated so keystrokes don’t re-render all rows; list/board are `React.memo` — **shipped** (perf)
 - Flyer local drafts never persist `data:image` blobs; old `hr-flyer-composer-draft:*` keys are GC’d; QR data-URL cache is LRU-capped — **shipped** (perf)
 - Calendar / Timeline / Workload tabs — **deferred** (hidden from Tasks UI)
 - Files tab on Tasks — **removed** (use sidebar Files → `/files`)

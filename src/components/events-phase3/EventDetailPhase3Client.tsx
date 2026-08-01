@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState, useTransition } from "react";
 import { EventDetailShell } from "@/components/events-phase3/EventDetailShell";
 import { EventManageAssignmentsModal } from "@/components/events-phase3/EventManageAssignmentsModal";
@@ -32,6 +33,8 @@ interface EventDetailPhase3ClientProps {
   heroStats: EventDetailHeroStats;
   canManageAssignments: boolean;
   workspace?: EventDetailWorkspacePanels;
+  /** RSC Suspense slot — streams Approvals after shell/hero paint. */
+  approvalsSlot?: ReactNode;
   initialTab?: string | null;
   showYoureSet?: boolean;
   committeeId: string | null;
@@ -47,6 +50,7 @@ export function EventDetailPhase3Client({
   heroStats,
   canManageAssignments,
   workspace = {},
+  approvalsSlot,
   initialTab = null,
   showYoureSet = false,
   committeeId,
@@ -93,6 +97,7 @@ export function EventDetailPhase3Client({
         canManageAssignments={canManageAssignments}
         onManageAssignments={openManageAssignments}
         workspace={workspace}
+        approvalsSlot={approvalsSlot}
         initialTab={initialTab}
         showYoureSet={showYoureSet}
       />

@@ -90,7 +90,10 @@ describe("event-scoped tab loaders (source contract)", () => {
     assert.match(loaders, /export async function loadEventTasksTab/);
     assert.match(loaders, /getTasksV2PageDataForEvent\(/);
     assert.doesNotMatch(loaders, /getTasksV2PageData\(\)/);
-    assert.match(taskHubQueries, /getEventPlaybookTasksForEvents\(\[eventId\]\)/);
+    assert.match(
+      taskHubQueries,
+      /getEventPlaybookTasksForEvents\(\[eventId\],\s*\{\s*omitNotes:\s*true\s*\}\)/,
+    );
     assert.match(taskHubQueries, /mondayBoard: null/);
   });
 
@@ -183,13 +186,13 @@ describe("event-scoped tab loaders (source contract)", () => {
     assert.match(shell, /directoryHref="\/vendors"/);
   });
 
-  it("SSR deep links preload only the selected event-scoped tab", () => {
+  it("SSR streams Approvals and preloads only non-default deep-linked tabs", () => {
+    assert.match(render, /EventDetailApprovalsStream/);
+    assert.match(render, /streamApprovals/);
+    assert.match(render, /Suspense/);
+    assert.match(render, /getOrganizationWorkspaceDataLean/);
     assert.match(render, /loadEventDetailTabData\(/);
     assert.match(render, /lazyInitial/);
-    assert.match(
-      render,
-      /initialTab == null \|\| initialTab === ""\s*\n\s*\? "approvals"/,
-    );
     assert.doesNotMatch(render, /getUnifiedApprovalsSchedulingData\(\)/);
     assert.doesNotMatch(render, /getTasksV2PageData\(\)/);
     assert.doesNotMatch(render, /getEventPlaybookHubData/);

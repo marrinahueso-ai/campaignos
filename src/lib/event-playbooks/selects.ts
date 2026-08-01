@@ -19,6 +19,25 @@ export const PLAYBOOK_TASK_SELECT = [
   "updated_at",
 ].join(", ");
 
+/**
+ * Org / Event Tasks list — omit note bodies (drawer loads on open).
+ * Pair with a presence id query for `hasNotes`.
+ */
+export const PLAYBOOK_TASK_LIST_SELECT = [
+  "id",
+  "event_id",
+  "title",
+  "status",
+  "due_date",
+  "assignee_name",
+  "assignee_initials",
+  "assignee_user_id",
+  "group_id",
+  "sort_order",
+  "created_at",
+  "updated_at",
+].join(", ");
+
 export const PLAYBOOK_TASK_GROUP_SELECT = [
   "id",
   "event_id",

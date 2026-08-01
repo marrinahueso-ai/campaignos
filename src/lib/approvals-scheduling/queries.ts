@@ -43,6 +43,10 @@ import {
 } from "@/lib/events-phase3/tab-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
+  SCHEDULING_EVENT_FETCH_CAP,
+  SCHEDULING_ORG_FETCH_CAP,
+} from "@/lib/approvals-scheduling/constants";
+import {
   SCHEDULING_LIST_SELECT,
   SCHEDULING_PREVIEW_SELECT,
 } from "@/lib/approvals-scheduling/selects";
@@ -162,7 +166,8 @@ const fetchCampaignBuilderSchedulingItems = cache(
       .from("approval_scheduling_items")
       .select(SCHEDULING_LIST_SELECT)
       .in("event_id", eventIds)
-      .order("requested_at", { ascending: false });
+      .order("requested_at", { ascending: false })
+      .limit(SCHEDULING_ORG_FETCH_CAP);
 
     if (error?.code === "42P01") {
       return [];
@@ -348,7 +353,11 @@ function isSubmittedByActor(
   return row.requested_by_user_id === actor.organizationUserId;
 }
 
-const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovalsData(): Promise<UnifiedApprovalsPageData> {
+async function buildUnifiedApprovalsPageData(options?: {
+  /** Skip live milestone names + Meta slot overlay (Dashboard widgets). */
+  leanEnrich?: boolean;
+}): Promise<UnifiedApprovalsPageData> {
+  const leanEnrich = options?.leanEnrich === true;
   const today = getTodayDateString();
   // Critical path: classic queue + CB2 scheduling rows only.
   // Full Calendar / Meta publish bundles are too heavy for the ≤2s hub budget;
@@ -389,7 +398,27 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
     }
   }
 
-  const assigneeLookups = await loadAssigneeLookups(schedulingRows);
+  const enrichEventIds = [
+    ...new Set([
+      ...classicItems.map((item) => item.eventId),
+      ...schedulingRows.map((row) => row.event_id),
+    ]),
+  ];
+
+  // Assignees always; live names + Meta slots in the same wave on the hub.
+  // after() Meta schedule/email on approve is unchanged in actions.ts.
+  const [assigneeLookups, liveNames, slotOutcomes] = await Promise.all([
+    loadAssigneeLookups(schedulingRows),
+    leanEnrich
+      ? Promise.resolve(new Map<string, string>())
+      : loadLiveMilestoneNamesById(enrichEventIds),
+    leanEnrich
+      ? Promise.resolve([] as Awaited<
+          ReturnType<typeof loadMetaSlotOutcomesForEvents>
+        >)
+      : loadMetaSlotOutcomesForEvents(enrichEventIds),
+  ]);
+
   const cb2Items: UnifiedApprovalItem[] = [];
   for (const row of schedulingRows) {
     const assignee = resolveAssigneeFromLookups(row, assigneeLookups);
@@ -410,20 +439,17 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
     ...cb2Items,
   ]);
 
-  // Social post names are authoritative in Create with AI sessions — overlay
-  // so Approvals Post name stays in sync after renames (Day Before, etc.).
-  const liveNames = await loadLiveMilestoneNamesById(
-    deduped.map((item) => item.eventId),
-  );
-  const named = applyLiveMilestoneNames(deduped, liveNames);
+  const named = leanEnrich
+    ? deduped
+    : applyLiveMilestoneNames(deduped, liveNames);
 
-  // Lean Meta slot overlay so Failed / Posted show without full bundle sync.
-  const slotOutcomes = await loadMetaSlotOutcomesForEvents(
-    named.map((item) => item.eventId),
-  );
-  const items = named
-    .map((item) => applyMetaSlotOutcomesToApprovalItem(item, slotOutcomes))
-    .sort((left, right) => right.requestedAt.localeCompare(left.requestedAt));
+  const items = (
+    leanEnrich
+      ? named
+      : named.map((item) =>
+          applyMetaSlotOutcomesToApprovalItem(item, slotOutcomes),
+        )
+  ).sort((left, right) => right.requestedAt.localeCompare(left.requestedAt));
 
   const counts = summarizeCounts(items);
   const campaigns = [
@@ -450,10 +476,27 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
     role,
     canViewAll,
   };
-});
+}
+
+const resolveUnifiedApprovalsData = cache(
+  async function resolveUnifiedApprovalsData(): Promise<UnifiedApprovalsPageData> {
+    return buildUnifiedApprovalsPageData();
+  },
+);
+
+/** Dashboard widgets — same list rows, skip live-name + Meta slot overlay. */
+const resolveUnifiedApprovalsDataLean = cache(
+  async function resolveUnifiedApprovalsDataLean(): Promise<UnifiedApprovalsPageData> {
+    return buildUnifiedApprovalsPageData({ leanEnrich: true });
+  },
+);
 
 export async function getUnifiedApprovalsSchedulingData(): Promise<UnifiedApprovalsPageData> {
   return resolveUnifiedApprovalsData();
+}
+
+export async function getUnifiedApprovalsSchedulingDataLean(): Promise<UnifiedApprovalsPageData> {
+  return resolveUnifiedApprovalsDataLean();
 }
 
 /**
@@ -557,7 +600,8 @@ async function fetchSchedulingItemsForEvent(
     .from("approval_scheduling_items")
     .select(SCHEDULING_LIST_SELECT)
     .eq("event_id", eventId)
-    .order("requested_at", { ascending: false });
+    .order("requested_at", { ascending: false })
+    .limit(SCHEDULING_EVENT_FETCH_CAP);
 
   if (error?.code === "42P01") {
     return [];
@@ -688,15 +732,6 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
   const needsMetaPreview = schedulingRows.some(
     (row) => !row.feed_artwork_url && !row.story_artwork_url,
   );
-  let metaPreviewMs = 0;
-  let bundles: MetaPublishBundle[] = [];
-  if (needsMetaPreview) {
-    const metaStarted = startTabTimer();
-    const bundlesByEvent = await loadMetaBundlesByEvent([eventId]);
-    bundles = bundlesByEvent.get(eventId) ?? [];
-    metaPreviewMs = elapsedMs(metaStarted);
-    previewEnrichmentMs += metaPreviewMs;
-  }
 
   const eventTitleById = new Map<string, string>();
   for (const item of classicItems) {
@@ -709,8 +744,23 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
   }
 
   const assigneeStarted = startTabTimer();
-  const assigneeLookups = await loadAssigneeLookups(schedulingRows);
+  const metaStarted = needsMetaPreview ? startTabTimer() : 0;
+  const [assigneeLookups, bundlesByEvent, slotOutcomes, liveNames] =
+    await Promise.all([
+      loadAssigneeLookups(schedulingRows),
+      needsMetaPreview
+        ? loadMetaBundlesByEvent([eventId])
+        : Promise.resolve(new Map<string, MetaPublishBundle[]>()),
+      loadMetaSlotOutcomesForEvents([eventId]),
+      loadLiveMilestoneNamesById([eventId]),
+    ]);
   const assigneeEnrichmentMs = elapsedMs(assigneeStarted);
+  let metaPreviewMs = 0;
+  if (needsMetaPreview) {
+    metaPreviewMs = elapsedMs(metaStarted);
+    previewEnrichmentMs += metaPreviewMs;
+  }
+  const bundles = bundlesByEvent.get(eventId) ?? [];
 
   const dtoStarted = startTabTimer();
   const cb2Items: UnifiedApprovalItem[] = [];
@@ -760,8 +810,6 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
     });
   }
 
-  const slotOutcomes = await loadMetaSlotOutcomesForEvents([eventId]);
-  const liveNames = await loadLiveMilestoneNamesById([eventId]);
   const named = applyLiveMilestoneNames(
     dedupeUnifiedApprovalItems([...classicItems, ...cb2Items]),
     liveNames,

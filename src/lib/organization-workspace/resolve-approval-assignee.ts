@@ -1,7 +1,7 @@
 import { APPROVER_ROLES } from "@/lib/auth/campaign-roles";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import { contactNameMatchesEmail } from "@/lib/event-workspace/approval-actor-matching";
-import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
+import { getOrganizationWorkspaceDataLean } from "@/lib/organization-workspace/queries";
 import type { OrganizationRole } from "@/types/organization-workspace";
 
 export type ApprovalAssignee = {
@@ -41,7 +41,7 @@ export async function resolveApprovalAssignee(
   organizationId: string,
   eventApprovalRoleId?: string | null,
 ): Promise<ApprovalAssignee> {
-  const workspace = await getOrganizationWorkspaceData(organizationId);
+  const workspace = await getOrganizationWorkspaceDataLean(organizationId);
 
   if (!workspace) {
     return {

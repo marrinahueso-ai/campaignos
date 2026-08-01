@@ -1,15 +1,14 @@
 import "server-only";
 
 import { cache } from "react";
-import { getUnifiedApprovalsSchedulingData } from "@/lib/approvals-scheduling/queries";
+import { getUnifiedApprovalsSchedulingDataLean } from "@/lib/approvals-scheduling/queries";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getUpcomingEvents } from "@/lib/events/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { listCommitteeAssignmentsByOrg } from "@/lib/organization-workspace/roster-assignments";
-import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
-import { flattenCommitteeTasks } from "@/lib/task-hub/grouping";
-import { getTasksV2PageData } from "@/lib/tasks-v2/queries";
+import { getOrganizationWorkspaceDataLeanWithAssignments } from "@/lib/organization-workspace/queries";
 import { addDaysToDateOnly, getTodayDateString } from "@/lib/utils/dates";
+import { getDashboardTaskItems } from "@/lib/today/dashboard-task-items";
 import {
   buildEventCoverageItems,
   buildPostsWeekEveryoneCounts,
@@ -49,20 +48,20 @@ export const getDashboardLibraryWidgetData = cache(
     const organization = await getLatestOrganization();
     const membership = await getActiveMembership();
 
-    const [unified, tasksPage, upcomingEvents, workspace, committeeAssignments] =
+    const [unified, taskItems, upcomingEvents, workspace, committeeAssignments] =
       await Promise.all([
-        getUnifiedApprovalsSchedulingData(),
-        getTasksV2PageData(),
+        getUnifiedApprovalsSchedulingDataLean(),
+        getDashboardTaskItems(),
         getUpcomingEvents(24, organization?.id ?? null),
         organization
-          ? getOrganizationWorkspaceData(organization.id)
+          ? getOrganizationWorkspaceDataLeanWithAssignments(organization.id)
           : Promise.resolve(null),
         organization
           ? listCommitteeAssignmentsByOrg(organization.id)
           : Promise.resolve([]),
       ]);
 
-    const allTasks = flattenCommitteeTasks(tasksPage.committees);
+    const allTasks = taskItems.tasks;
     const actorUserId = unified.actorUserId ?? membership?.user.id ?? null;
 
     const eventCoverage =

@@ -26,7 +26,10 @@ describe("targeted event tab speed contracts", () => {
       "export async function getTaskHubPageDataForEvent",
     );
     const body = taskHub.slice(start, start + 4500);
-    assert.match(body, /getEventPlaybookTasksForEvents\(\[eventId\]\)/);
+    assert.match(
+      body,
+      /getEventPlaybookTasksForEvents\(\[eventId\],\s*\{\s*omitNotes:\s*true\s*\}\)/,
+    );
     assert.doesNotMatch(body, /groupTasksByCommittee/);
     assert.match(body, /mondayBoard: null/);
     assert.match(body, /Event tasks/);
@@ -91,6 +94,25 @@ describe("targeted event tab speed contracts", () => {
     );
   });
 
+  it("streams Approvals via Suspense slot and skips client fetch while slot is present", () => {
+    assert.match(shell, /approvalsSlot/);
+    assert.match(
+      shell,
+      /nextTab === "approvals" && approvalsSlot/,
+    );
+    assert.match(shell, /tab === "approvals" && approvalsSlot/);
+  });
+
+  it("caps scheduling list fetches and parallelizes enrich waves", () => {
+    assert.match(approvals, /SCHEDULING_ORG_FETCH_CAP/);
+    assert.match(approvals, /\.limit\(SCHEDULING_ORG_FETCH_CAP\)/);
+    assert.match(approvals, /\.limit\(SCHEDULING_EVENT_FETCH_CAP\)/);
+    assert.match(approvals, /loadAssigneeLookups\(schedulingRows\)/);
+    assert.match(approvals, /loadLiveMilestoneNamesById/);
+    assert.match(approvals, /loadMetaSlotOutcomesForEvents/);
+    assert.match(approvals, /Promise\.all\(\[\s*\n\s*loadAssigneeLookups/);
+  });
+
   it("keeps event tab switches instant via local state + history.replaceState", () => {
     assert.match(shell, /history\.replaceState/);
     assert.match(shell, /syncTabUrl/);
@@ -114,7 +136,7 @@ describe("targeted event tab speed contracts", () => {
 
   it("keeps standalone hub loaders on org-wide paths", () => {
     assert.match(taskHub, /export async function getTaskHubPageData\(/);
-    assert.match(taskHub, /getOrganizationWorkspaceData\(organization\.id\)/);
+    assert.match(taskHub, /getOrganizationWorkspaceDataLean\(organization\.id\)/);
     assert.match(
       approvals,
       /export async function getUnifiedApprovalsSchedulingData\(/,

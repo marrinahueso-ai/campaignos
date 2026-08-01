@@ -26,6 +26,9 @@ export function mapEventPlaybookTaskGroupRow(
 }
 
 export function mapEventPlaybookTaskRow(row: EventPlaybookTaskRow): EventPlaybookTask {
+  const notes = row.notes ?? null;
+  const hasNotes =
+    row.has_notes === true || Boolean(notes?.trim());
   return {
     id: row.id,
     eventId: row.event_id,
@@ -36,7 +39,8 @@ export function mapEventPlaybookTaskRow(row: EventPlaybookTaskRow): EventPlayboo
     assigneeInitials: row.assignee_initials,
     assigneeUserId: row.assignee_user_id ?? null,
     groupId: row.group_id ?? null,
-    notes: row.notes ?? null,
+    notes: hasNotes && !notes?.trim() ? null : notes,
+    hasNotes: hasNotes || undefined,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
