@@ -169,19 +169,6 @@ const FORMAT_OPTION_DESC: Partial<Record<PlatformFormat, string>> = {
     "Email kit at send time — add music, stickers, link stickers yourself",
 };
 
-function fmtSummaryHeadline(formats: PlatformFormat[]): string {
-  if (formats.length === 0) {
-    return "No formats selected";
-  }
-  const labels = formats.map(
-    (id) => PLATFORM_FORMAT_OPTIONS.find((option) => option.id === id)?.label ?? id,
-  );
-  if (labels.length <= 2) {
-    return labels.join(", ");
-  }
-  return `${labels.slice(0, 2).join(", ")} +${labels.length - 2}`;
-}
-
 function statusPill(status: MilestoneGenerationStatus): { cls: string; label: string } {
   switch (status) {
     case "generated":
@@ -335,8 +322,8 @@ export function SocialMediaComposer({
           ? "review"
           : "setup";
 
-  const focusCanvas =
-    activeNav === "preview" || activeNav === "review";
+  // Preview uses full-bleed studio chrome; Review keeps the step rail.
+  const focusCanvas = currentStep === "preview";
 
   return (
     <div
@@ -350,53 +337,59 @@ export function SocialMediaComposer({
     >
       <div className="app">
         <div className="main-col">
-          <div className="content">
+          <div className={`content${focusCanvas ? " content-focus" : ""}`}>
             <Link href="/create-with-ai" className="back">
               ← Create with AI
             </Link>
-            <h1 className="serif">Social Media Composer</h1>
-            <p className="lede">
-              Same studio feel as Homepage &amp; Newsletter — logos from Setup,
-              drag-and-drop inspiration, communication plans that map posts, then
-              edit &amp; re-approve after generate.
-            </p>
+            {!focusCanvas ? (
+              <>
+                <h1 className="serif">Social Media Composer</h1>
+                <p className="lede">
+                  Same studio feel as Homepage &amp; Newsletter — logos from Setup,
+                  drag-and-drop inspiration, communication plans that map posts, then
+                  edit &amp; re-approve after generate.
+                </p>
+              </>
+            ) : null}
 
-            <div className="layout">
-              <nav className="steps" aria-label="Composer steps">
-                <p className="steps-heading">Steps</p>
-                <button
-                  type="button"
-                  className={`step-btn${activeNav === "setup" ? " active" : ""}`}
-                  onClick={() => goToStep("inspiration")}
-                >
-                  <span className="label">1 · Setup</span>
-                  <span className="hint">Logos, inspiration &amp; communication plan</span>
-                </button>
-                <button
-                  type="button"
-                  className={`step-btn${activeNav === "milestones" ? " active" : ""}`}
-                  onClick={() => goToStep("milestones")}
-                >
-                  <span className="label">2 · Posts</span>
-                  <span className="hint">Reorder, dates &amp; notes</span>
-                </button>
-                <button
-                  type="button"
-                  className={`step-btn${activeNav === "preview" ? " active" : ""}`}
-                  onClick={() => goToStep("preview")}
-                >
-                  <span className="label">3 · Preview</span>
-                  <span className="hint">Edit posts &amp; how they go out</span>
-                </button>
-                <button
-                  type="button"
-                  className={`step-btn${activeNav === "review" ? " active" : ""}`}
-                  onClick={() => goToStep("review")}
-                >
-                  <span className="label">4 · Review</span>
-                  <span className="hint">Approve &amp; send</span>
-                </button>
-              </nav>
+            <div className={`layout${focusCanvas ? " layout-focus" : ""}`}>
+              {!focusCanvas ? (
+                <nav className="steps" aria-label="Composer steps">
+                  <p className="steps-heading">Steps</p>
+                  <button
+                    type="button"
+                    className={`step-btn${activeNav === "setup" ? " active" : ""}`}
+                    onClick={() => goToStep("inspiration")}
+                  >
+                    <span className="label">1 · Setup</span>
+                    <span className="hint">Logos, inspiration &amp; communication plan</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`step-btn${activeNav === "milestones" ? " active" : ""}`}
+                    onClick={() => goToStep("milestones")}
+                  >
+                    <span className="label">2 · Posts</span>
+                    <span className="hint">Reorder, dates &amp; notes</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`step-btn${activeNav === "preview" ? " active" : ""}`}
+                    onClick={() => goToStep("preview")}
+                  >
+                    <span className="label">3 · Preview</span>
+                    <span className="hint">Edit posts &amp; how they go out</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`step-btn${activeNav === "review" ? " active" : ""}`}
+                    onClick={() => goToStep("review")}
+                  >
+                    <span className="label">4 · Review</span>
+                    <span className="hint">Approve &amp; send</span>
+                  </button>
+                </nav>
+              ) : null}
 
               <div className="panel">
                 {currentStep === "milestones" ? (
@@ -1051,6 +1044,7 @@ function MilestoneEditBody({
 function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
   const {
     session,
+    currentStep,
     goToStep,
     setSelectedMilestoneId,
     updatePreviewContent,
@@ -1272,6 +1266,36 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     updatePreviewContent(selectedPreview.milestoneId, { enabledFormats: next });
   }
 
+  const instagramOn = enabledFormats.some((format) => format.startsWith("instagram"));
+  const facebookOn = enabledFormats.some((format) => format.startsWith("facebook"));
+  const timingNeedsAction =
+    settingsHighlight === "schedule" ||
+    Boolean(
+      selectedPreview &&
+        listPreviewDeliveryGaps(selectedPreview).some(
+          (gap) => gap.includes("publish") || gap.includes("schedule"),
+        ),
+    );
+
+  function toggleNetwork(network: "instagram" | "facebook") {
+    if (!selectedPreview) {
+      return;
+    }
+    const isOn = network === "instagram" ? instagramOn : facebookOn;
+    let next: PlatformFormat[];
+    if (isOn) {
+      next = enabledFormats.filter((format) => !format.startsWith(network));
+    } else {
+      const defaults: PlatformFormat[] =
+        network === "instagram"
+          ? ["instagram-feed", "instagram-story"]
+          : ["facebook-feed", "facebook-story"];
+      next = [...enabledFormats, ...defaults.filter((f) => !enabledFormats.includes(f))];
+    }
+    updatePreviewContent(selectedPreview.milestoneId, { enabledFormats: next });
+    setSettingsHighlight(null);
+  }
+
   function handleCaptionChange(text: string) {
     if (!selectedPreview) {
       return;
@@ -1288,59 +1312,110 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     updatePreviewContent(selectedPreview.milestoneId, { captions });
   }
 
+  const progressPct =
+    progress.total === 0 ? 0 : Math.round((progress.complete / progress.total) * 100);
+
   return (
-    <section>
-      <div className="panel-head">
-        <div>
-          <h2>
+    <section className="preview-studio">
+      <header className="preview-topbar">
+        <nav className="preview-steps" aria-label="Composer steps">
+          {(
+            [
+              { id: "setup", label: "Setup", step: "inspiration" as const },
+              { id: "milestones", label: "Posts", step: "milestones" as const },
+              { id: "preview", label: "Preview", step: "preview" as const },
+              { id: "review", label: "Review", step: "review" as const },
+            ] as const
+          ).map((item, index) => {
+            const active =
+              item.step === "inspiration"
+                ? currentStep === "inspiration"
+                : item.step === "review"
+                  ? currentStep === "review" || currentStep === "published"
+                  : currentStep === item.step;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`preview-step${active ? " active" : ""}`}
+                onClick={() => goToStep(item.step)}
+              >
+                <span className="preview-step-num">{index + 1}</span>
+                <span className="preview-step-label">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="preview-progress">
+          <div className="preview-progress-label">
             {progress.complete} of {progress.total} posts ready
-          </h2>
-          <p>
-            Phone shows the live post. Edit artwork &amp; caption together, then
-            set how each post goes out.
-          </p>
+          </div>
+          <div className="preview-progress-track" aria-hidden="true">
+            <div className="preview-progress-fill" style={{ width: `${progressPct}%` }} />
+          </div>
         </div>
-        <div className="actions">
-          <button type="button" className="btn btn-secondary" onClick={() => goToStep("milestones")}>
-            ← Posts
-          </button>
-          <button type="button" className="btn btn-primary" onClick={handleSaveToReview}>
+
+        <div className="preview-top-cta">
+          <button type="button" className="btn btn-forest" onClick={handleSaveToReview}>
             Save → Review
           </button>
+          <span className="preview-top-cta-hint">
+            Moves all {progress.total} posts to review
+          </span>
         </div>
-      </div>
+      </header>
 
       {generateError ? <div className="alert alert-changes">{generateError}</div> : null}
 
-      <div className="preview-layout">
-        <aside className="rail-mini">
-          <h4>Posts</h4>
-          {milestones.map((milestone) => {
+      <div className="preview-layout preview-layout-v2">
+        <aside className="campaign-posts">
+          <h4>Campaign posts</h4>
+          {milestones.map((milestone, index) => {
             const preview =
               session.previewContents.find((c) => c.milestoneId === milestone.id) ?? null;
             const meta = previewListMeta(preview, milestone.platformFormats);
-            const { mo, dy } = monthDay(milestone.suggestedDate);
+            const thumb =
+              preview?.artwork.feedUrl && !isPlaceholderArtworkUrl(preview.artwork.feedUrl)
+                ? preview.artwork.feedUrl
+                : preview?.artwork.storyUrl && !isPlaceholderArtworkUrl(preview.artwork.storyUrl)
+                  ? preview.artwork.storyUrl
+                  : null;
             return (
               <button
                 key={milestone.id}
                 type="button"
-                className={`m-mini${milestone.id === selectedId ? " active" : ""}`}
+                className={`post-card${milestone.id === selectedId ? " active" : ""}`}
                 onClick={() => {
                   setSelectedMilestoneId(milestone.id);
                   setSettingsHighlight(null);
                 }}
               >
-                <strong>{milestone.name}</strong>
-                <span>
-                  {mo} {dy} · <span className={`pill ${meta.cls}`}>{meta.label}</span>
-                </span>
-                {meta.hint ? <span className="m-mini-hint">{meta.hint}</span> : null}
+                <div
+                  className="post-thumb"
+                  style={
+                    thumb
+                      ? {
+                          backgroundImage: `url(${thumb})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }
+                      : { background: gradientForIndex(index) }
+                  }
+                />
+                <div className="post-card-body">
+                  <strong>{milestone.name}</strong>
+                  <span className={`status-chip ${meta.cls}`}>
+                    {meta.label === "Ready" ? "✓ Ready" : meta.label}
+                  </span>
+                  {meta.hint ? <span className="post-card-hint">{meta.hint}</span> : null}
+                </div>
               </button>
             );
           })}
         </aside>
 
-        <div className="box preview-phone-col" style={{ margin: 0 }}>
+        <div className="preview-phone-col">
           {isChangesRequested ? (
             <div className="alert alert-changes">
               <strong>Changes requested</strong>
@@ -1354,7 +1429,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                   className="btn btn-sm btn-secondary"
                   onClick={() => openEdit("artwork")}
                 >
-                  Edit artwork &amp; caption
+                  Edit
                 </button>
                 <button
                   type="button"
@@ -1372,7 +1447,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
             </div>
           ) : null}
 
-          <div className="mode-toggle">
+          <div className="mode-toggle mode-toggle-center">
             <button
               type="button"
               className={mode === "feed" ? "active" : ""}
@@ -1389,7 +1464,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
             </button>
           </div>
 
-          <div className="live-well" style={{ borderRadius: 16, padding: 20 }}>
+          <div className="live-well live-well-v2">
             <div className="phone">
               <div className="phone-notch" />
               <div className="phone-screen">
@@ -1398,7 +1473,9 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                     <div className="ig-bar">
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <div className="ig-avatar" />
-                        {handle}
+                        <div>
+                          <div>{handle}</div>
+                        </div>
                       </div>
                       ···
                     </div>
@@ -1436,13 +1513,32 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             <div className="title">{selectedMilestone?.name ?? "Post"}</div>
                           </>
                         ) : null}
+                        <button
+                          type="button"
+                          className="art-edit"
+                          title="Edit artwork & caption"
+                          aria-label="Edit artwork and caption"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEdit("artwork");
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                          </svg>
+                        </button>
                       </div>
                     </WarmBreathFrame>
                     <div className="ig-meta">
-                      <div className="likes">♡ Liked by your community</div>
+                      <div className="ig-actions" aria-hidden="true">
+                        <span>♡</span>
+                        <span>○</span>
+                        <span>➤</span>
+                      </div>
                       <div className="cap">
                         <strong>{handle}</strong>{" "}
-                        {sharedCaption.trim() || "Caption appears here after you edit."}
+                        {sharedCaption.trim() || "Add a caption on the right."}
                       </div>
                     </div>
                   </div>
@@ -1480,6 +1576,21 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             <div className="sub">{formatLongDate(selectedMilestone?.suggestedDate)}</div>
                           </>
                         ) : null}
+                        <button
+                          type="button"
+                          className="art-edit"
+                          title="Edit artwork & caption"
+                          aria-label="Edit artwork and caption"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEdit("artwork");
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                          </svg>
+                        </button>
                       </div>
                     </WarmBreathFrame>
                   </div>
@@ -1488,254 +1599,236 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
             </div>
           </div>
 
-          <div className="phone-actions">
+          <div className="phone-links">
             <button
               type="button"
-              className="btn btn-secondary"
-              onClick={() => openEdit("artwork")}
-              disabled={!selectedPreview}
-            >
-              Edit artwork &amp; caption
-            </button>
-            <button
-              type="button"
-              className="btn-quiet"
+              className="link-action"
               onClick={() => void handleGenerate()}
               disabled={isGenerating || !selectedId}
             >
               {isGenerating
                 ? "Generating…"
                 : hasGeneratedArt
-                  ? "Regenerate"
-                  : "Generate artwork"}
+                  ? "↻ Regenerate AI"
+                  : "↻ Generate artwork"}
             </button>
           </div>
         </div>
 
-        <div
-          className={`box preview-settings-col${settingsHighlight ? " has-highlight" : ""}`}
-          style={{ margin: 0 }}
-        >
-          <h3>How this post goes out</h3>
-          <p className="desc">
-            Choose platforms and when it publishes. Artwork and caption stay in
-            the phone — edit them with the button under the preview.
-          </p>
-
+        <div className="preview-settings-col">
           <div
-            className={`settings-block${settingsHighlight === "formats" ? " highlight" : ""}`}
+            className={`caption-panel${settingsHighlight === "caption" ? " highlight" : ""}`}
           >
-            <label className="field-label">Platforms &amp; formats</label>
-            <p style={{ margin: "0 0 8px", fontSize: 11, color: "var(--muted)" }}>
-              Facebook and Instagram posts go out automatically after approval.
-            </p>
-            <div className={`fmt-drop${fmtOpen ? " open" : ""}`}>
-              <button
-                type="button"
-                className="fmt-trigger"
-                aria-expanded={fmtOpen}
-                onClick={() => {
-                  setFmtOpen((value) => !value);
-                  setSettingsHighlight(null);
-                }}
-              >
-                <div className="fmt-summary">
-                  {fmtSummaryHeadline(enabledFormats)}
-                  <span>
-                    {enabledFormats.length} format{enabledFormats.length === 1 ? "" : "s"} selected
-                    {hasManual ? " · includes Story Manual email kit" : ""} · click to change
-                  </span>
-                </div>
-                <span className="chev">▼</span>
-              </button>
-              <div className="fmt-menu" role="listbox">
-                {PLATFORM_FORMAT_OPTIONS.map((option) => {
-                  const on = enabledFormats.includes(option.id);
-                  const isManual = option.id === "instagram-story-manual";
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      className={`fmt-opt${on ? " on" : ""}${isManual ? " manual-opt" : ""}`}
-                      onClick={() => toggleFormat(option.id)}
-                    >
-                      <span className="fmt-check">✓</span>
-                      <div>
-                        <div className="w-title">{option.label}</div>
-                        <div className="w-desc">
-                          {FORMAT_OPTION_DESC[option.id] ?? option.aspect}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="caption-panel-head">
+              <label className="field-label" htmlFor="preview-caption">
+                Caption
+              </label>
+              <span className="caption-count">{sharedCaption.length} characters</span>
             </div>
+            <textarea
+              id="preview-caption"
+              className="field caption-field"
+              value={sharedCaption}
+              onChange={(event) => {
+                handleCaptionChange(event.target.value);
+                setSettingsHighlight(null);
+              }}
+              disabled={!selectedPreview}
+              rows={4}
+            />
           </div>
 
-          {hasManual && selectedPreview ? (
-            <div
-              className={`settings-block${settingsHighlight === "manual" ? " highlight" : ""}`}
-            >
+          <div className="delivery-panel">
+            <div className="delivery-panel-head">
+              <h3>How this post goes out</h3>
               <button
                 type="button"
-                className="advanced-toggle"
-                aria-expanded={manualOpen}
-                onClick={() => setManualOpen((value) => !value)}
+                className="advanced-chip"
+                aria-expanded={fmtOpen || manualOpen}
+                onClick={() => {
+                  setFmtOpen((value) => !value);
+                  setManualOpen(hasManual);
+                }}
               >
-                <span>Story kit email (advanced)</span>
-                <span className="chev">{manualOpen ? "▲" : "▼"}</span>
+                Advanced post options
               </button>
-              {manualOpen ? (
-                <div className="manual-email-panel show">
-                  <p className="desc" style={{ marginBottom: 12 }}>
-                    After approval, the story kit arrives by email so you can
-                    upload and add music, stickers, etc.
+            </div>
+
+            <div
+              className={`settings-block${settingsHighlight === "formats" ? " highlight" : ""}`}
+            >
+              <label className="field-label">Platforms</label>
+              <div className="platform-pills" role="group" aria-label="Platforms">
+                <button
+                  type="button"
+                  className={`platform-pill${instagramOn ? " on" : ""}`}
+                  disabled={!selectedPreview}
+                  onClick={() => toggleNetwork("instagram")}
+                >
+                  Instagram
+                </button>
+                <button
+                  type="button"
+                  className={`platform-pill${facebookOn ? " on" : ""}`}
+                  disabled={!selectedPreview}
+                  onClick={() => toggleNetwork("facebook")}
+                >
+                  Facebook
+                </button>
+              </div>
+            </div>
+
+            {(fmtOpen || manualOpen) && selectedPreview ? (
+              <div className="advanced-drawer">
+                <div className={`fmt-drop${fmtOpen ? " open" : ""}`}>
+                  <div className="fmt-menu" role="listbox" style={{ display: "block" }}>
+                    {PLATFORM_FORMAT_OPTIONS.map((option) => {
+                      const on = enabledFormats.includes(option.id);
+                      const isManual = option.id === "instagram-story-manual";
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          className={`fmt-opt${on ? " on" : ""}${isManual ? " manual-opt" : ""}`}
+                          onClick={() => toggleFormat(option.id)}
+                        >
+                          <span className="fmt-check">✓</span>
+                          <div>
+                            <div className="w-title">{option.label}</div>
+                            <div className="w-desc">
+                              {FORMAT_OPTION_DESC[option.id] ?? option.aspect}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {hasManual ? (
+                  <div
+                    className={`manual-email-panel show${settingsHighlight === "manual" ? " highlight" : ""}`}
+                  >
+                    <p className="desc" style={{ marginBottom: 12 }}>
+                      Story kit email — after approval, send image + caption for
+                      manual upload with music &amp; stickers.
+                    </p>
+                    <div className="grid-2">
+                      <div>
+                        <label className="field-label">Email send date</label>
+                        <input
+                          className="field"
+                          type="date"
+                          value={selectedPreview.emailSendDate}
+                          onChange={(event) =>
+                            updatePreviewContent(selectedPreview.milestoneId, {
+                              emailSendDate: event.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="field-label">Email send time</label>
+                        <input
+                          className="field"
+                          type="time"
+                          value={selectedPreview.emailSendTime}
+                          onChange={(event) =>
+                            updatePreviewContent(selectedPreview.milestoneId, {
+                              emailSendTime: event.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 10 }}>
+                      <label className="field-label">Send to</label>
+                      <input
+                        className="field"
+                        type="email"
+                        placeholder="you@yourorg.org"
+                        value={selectedPreview.manualEmailTo}
+                        onChange={(event) =>
+                          updatePreviewContent(selectedPreview.milestoneId, {
+                            manualEmailTo: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className={`timing-panel${timingNeedsAction ? " action-required" : ""}`}>
+              {timingNeedsAction ? (
+                <span className="action-badge">Action required</span>
+              ) : null}
+              <label className="field-label">Timing</label>
+              <div className="timing-cards" role="group" aria-label="When to publish">
+                <button
+                  type="button"
+                  className={`timing-card${publishNowSelected ? " on" : ""}`}
+                  disabled={!selectedPreview}
+                  onClick={() => {
+                    if (!selectedPreview) return;
+                    updatePreviewContent(selectedPreview.milestoneId, {
+                      deliveryMethod: "publish-now",
+                    });
+                    setSettingsHighlight(null);
+                  }}
+                >
+                  <strong>Publish now</strong>
+                  <span>Right after approval</span>
+                </button>
+                <button
+                  type="button"
+                  className={`timing-card${!publishNowSelected ? " on" : ""}`}
+                  disabled={!selectedPreview}
+                  onClick={() => {
+                    if (!selectedPreview) return;
+                    updatePreviewContent(selectedPreview.milestoneId, {
+                      deliveryMethod: "schedule",
+                    });
+                    setSettingsHighlight(null);
+                  }}
+                >
+                  <strong>Schedule for later</strong>
+                  <span>Pick a date &amp; time</span>
+                </button>
+              </div>
+              {!publishNowSelected && selectedPreview ? (
+                <div className="timing-fields">
+                  <input
+                    className="field"
+                    type="date"
+                    value={selectedPreview.scheduleDate}
+                    onChange={(event) => {
+                      updatePreviewContent(selectedPreview.milestoneId, {
+                        scheduleDate: event.target.value,
+                      });
+                      setSettingsHighlight(null);
+                    }}
+                  />
+                  <input
+                    className="field"
+                    type="time"
+                    value={selectedPreview.scheduleTime}
+                    onChange={(event) => {
+                      updatePreviewContent(selectedPreview.milestoneId, {
+                        scheduleTime: event.target.value,
+                      });
+                      setSettingsHighlight(null);
+                    }}
+                  />
+                  <p className="timing-hint">
+                    {formatScheduleLabel(
+                      selectedPreview.scheduleDate,
+                      selectedPreview.scheduleTime,
+                    )}
                   </p>
-                  <div className="grid-2">
-                    <div>
-                      <label className="field-label">Email send date</label>
-                      <input
-                        className="field"
-                        type="date"
-                        value={selectedPreview.emailSendDate}
-                        onChange={(event) =>
-                          updatePreviewContent(selectedPreview.milestoneId, {
-                            emailSendDate: event.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="field-label">Email send time</label>
-                      <input
-                        className="field"
-                        type="time"
-                        value={selectedPreview.emailSendTime}
-                        onChange={(event) =>
-                          updatePreviewContent(selectedPreview.milestoneId, {
-                            emailSendTime: event.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div style={{ marginTop: 10 }}>
-                    <label className="field-label">Send to</label>
-                    <input
-                      className="field"
-                      type="email"
-                      placeholder="you@yourorg.org"
-                      value={selectedPreview.manualEmailTo}
-                      onChange={(event) =>
-                        updatePreviewContent(selectedPreview.milestoneId, {
-                          manualEmailTo: event.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div style={{ marginTop: 10 }}>
-                    <label className="field-label">Link for Instagram</label>
-                    <input
-                      className="field"
-                      type="url"
-                      placeholder="https://…"
-                      value={selectedPreview.manualUploadLink}
-                      onChange={(event) =>
-                        updatePreviewContent(selectedPreview.milestoneId, {
-                          manualUploadLink: event.target.value,
-                        })
-                      }
-                    />
-                  </div>
                 </div>
               ) : null}
             </div>
-          ) : null}
-
-          <div
-            className={`settings-block${settingsHighlight === "schedule" || settingsHighlight === "caption" ? " highlight" : ""}`}
-            style={{ marginTop: 4 }}
-          >
-            <label className="field-label">When to publish</label>
-            <div
-              className="mode-toggle"
-              role="group"
-              aria-label="When to publish"
-            >
-              <button
-                type="button"
-                className={publishNowSelected ? "active" : ""}
-                disabled={!selectedPreview}
-                onClick={() => {
-                  if (!selectedPreview) return;
-                  updatePreviewContent(selectedPreview.milestoneId, {
-                    deliveryMethod: "publish-now",
-                  });
-                  setSettingsHighlight(null);
-                }}
-              >
-                Publish now
-              </button>
-              <button
-                type="button"
-                className={!publishNowSelected ? "active" : ""}
-                disabled={!selectedPreview}
-                onClick={() => {
-                  if (!selectedPreview) return;
-                  updatePreviewContent(selectedPreview.milestoneId, {
-                    deliveryMethod: "schedule",
-                  });
-                  setSettingsHighlight(null);
-                }}
-              >
-                Schedule
-              </button>
-            </div>
-            {publishNowSelected ? (
-              <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--muted)" }}>
-                Goes out right after approval.
-              </p>
-            ) : selectedPreview ? (
-              <div style={{ marginTop: 10 }}>
-                <div className="grid-2">
-                  <div>
-                    <label className="field-label">Publish date</label>
-                    <input
-                      className="field"
-                      type="date"
-                      value={selectedPreview.scheduleDate}
-                      onChange={(event) => {
-                        updatePreviewContent(selectedPreview.milestoneId, {
-                          scheduleDate: event.target.value,
-                        });
-                        setSettingsHighlight(null);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="field-label">Publish time</label>
-                    <input
-                      className="field"
-                      type="time"
-                      value={selectedPreview.scheduleTime}
-                      onChange={(event) => {
-                        updatePreviewContent(selectedPreview.milestoneId, {
-                          scheduleTime: event.target.value,
-                        });
-                        setSettingsHighlight(null);
-                      }}
-                    />
-                  </div>
-                </div>
-                <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--muted)" }}>
-                  {formatScheduleLabel(
-                    selectedPreview.scheduleDate,
-                    selectedPreview.scheduleTime,
-                  )}
-                </p>
-              </div>
-            ) : null}
           </div>
         </div>
       </div>
