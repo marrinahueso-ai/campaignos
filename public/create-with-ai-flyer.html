@@ -143,12 +143,19 @@
       background: var(--forest); color: #fffcf7;
       box-shadow: 0 6px 16px rgba(47, 74, 60, 0.18);
     }
+    .step-btn.done {
+      background: rgba(47, 74, 60, 0.12); color: var(--forest);
+    }
     .step-btn .step-row {
       display: inline-flex; align-items: center; gap: 6px;
     }
     .step-btn .step-num {
       font-size: inherit; font-weight: inherit; letter-spacing: inherit;
       background: none; color: inherit; width: auto; height: auto;
+    }
+    .step-btn.done .step-num[data-n]::before {
+      content: "✓";
+      margin-right: 2px;
     }
     .step-btn .hint { display: none; }
     .composer-main { min-width: 0; width: 100%; }
@@ -651,35 +658,35 @@
     .fly.gameday .band > .txt { flex: 1; }
     .fly.gameday .cta { background: var(--brand-accent); color: var(--brand-on-primary); border-radius: 4px; margin-top: 0; }
 
-    /* Inspiration step — stacked section cards (SettingsBox / Page intro pattern) */
-    .step-head { margin-bottom: 12px; }
+    /* Inspiration step — UX Pilot “What’s the vibe?” */
+    .step-head { margin-bottom: 28px; }
     .step-head h2 {
-      margin: 0 0 4px; font-family: var(--serif); font-size: 1.55rem; font-weight: 600;
+      margin: 0 0 10px; font-family: var(--serif);
+      font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 600;
+      letter-spacing: -0.02em; line-height: 1.1;
     }
     .step-head .sub {
-      margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.45; max-width: 40rem;
+      margin: 0; color: var(--ink-soft); font-size: 1.05rem; line-height: 1.45; max-width: 40rem;
     }
     .panel-flush {
       background: transparent; border: none; box-shadow: none; padding: 0;
       animation: none;
     }
     .insp-tpl-line {
-      margin: 0 0 12px; font-size: 0.88rem; color: var(--muted); line-height: 1.4;
+      margin: 0 0 8px; font-size: 0.8rem; color: var(--muted); line-height: 1.4;
     }
-    .insp-tpl-line strong {
-      color: var(--ink); font-weight: 600;
-    }
+    .insp-tpl-line strong { color: var(--ink); font-weight: 600; }
     .insp-stack {
-      display: flex; flex-direction: column; gap: 12px; min-width: 0;
+      display: flex; flex-direction: column; gap: 36px; min-width: 0;
     }
     .section-card {
-      background: var(--white); border: 1px solid var(--line); border-radius: 22px;
-      box-shadow: var(--shadow); padding: 16px 18px 18px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 24px;
+      box-shadow: none; padding: 22px 22px 20px;
       animation: soft-in 0.4s var(--ease) both;
     }
     .section-card h3 {
-      margin: 0 0 4px; font-family: var(--serif); font-size: 1.25rem; font-weight: 600;
-      color: var(--ink);
+      margin: 0 0 4px; font-family: var(--sans); font-size: 11px; font-weight: 800;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft);
     }
     .section-card .section-desc {
       margin: 0 0 14px; font-size: 0.88rem; color: var(--muted); line-height: 1.45;
@@ -689,6 +696,138 @@
     .section-card.emphasis {
       border-color: rgba(47, 74, 60, 0.18);
       background: linear-gradient(180deg, rgba(255,252,247,0.98), var(--white));
+    }
+    .insp-peer-note {
+      margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; font-style: italic;
+    }
+    .insp-gallery-btn {
+      width: 100%; padding: 9px 12px; border-radius: 10px;
+      border: 1px solid var(--line); background: #faf8f5;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--ink-soft); cursor: not-allowed; opacity: 0.72;
+    }
+    .insp-gallery-btn:disabled { cursor: not-allowed; }
+    .brand-preview-tile {
+      aspect-ratio: 16/10; border-radius: 14px; border: 1px solid var(--line);
+      background: #faf8f5; padding: 16px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .brand-preview-swatches { display: flex; align-items: center; gap: 8px; }
+    .brand-preview-swatches .swatch {
+      width: 24px; height: 24px; border-radius: 6px; border: 1px solid rgba(42,38,34,0.08);
+    }
+    .brand-preview-bar {
+      height: 8px; border-radius: 4px; background: rgba(42, 38, 34, 0.1);
+    }
+    .brand-preview-bar.short { width: 66%; background: rgba(42, 38, 34, 0.06); }
+    .brand-manage-link {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--forest); text-decoration: none;
+    }
+    .brand-manage-link:hover { text-decoration: underline; }
+    .insp-block-label {
+      display: block; margin: 0 0 14px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--ink-soft);
+    }
+    .insp-direction-area {
+      width: 100%; min-height: 120px; padding: 16px 20px;
+      border: 1px solid var(--line); border-radius: 16px;
+      background: var(--white); color: var(--ink); font: inherit; font-size: 0.92rem;
+      line-height: 1.55; resize: vertical;
+    }
+    .insp-direction-area:focus {
+      outline: none; box-shadow: 0 0 0 3px rgba(47, 74, 60, 0.12);
+      border-color: rgba(47, 74, 60, 0.35);
+    }
+    .insp-direction-area::placeholder { color: #a8a29c; }
+    .key-facts-grid {
+      display: grid; gap: 18px; grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px) {
+      .key-facts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (min-width: 960px) {
+      .key-facts-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    .key-fact label {
+      display: block; margin-bottom: 8px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
+      text-transform: uppercase; color: #a8a29c;
+    }
+    .key-fact input,
+    .key-fact textarea {
+      width: 100%; padding: 12px 14px;
+      border: 1px solid var(--line); border-radius: 12px;
+      background: var(--white); font: inherit; font-size: 0.9rem;
+      color: var(--ink); resize: none; min-height: 0;
+    }
+    .key-fact textarea { min-height: 46px; line-height: 1.4; }
+    .qr-quiet {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 16px 20px;
+      padding: 20px 22px; border-radius: 16px;
+      border: 1.5px dashed rgba(42, 38, 34, 0.14);
+      background: rgba(250, 248, 245, 0.65);
+    }
+    .qr-quiet-icon {
+      width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0;
+      border: 1px solid var(--line); background: var(--white);
+      display: grid; place-items: center; color: var(--muted);
+    }
+    .qr-quiet-copy { flex: 1; min-width: 180px; }
+    .qr-quiet-copy strong {
+      display: block; font-size: 0.9rem; margin-bottom: 4px; color: var(--ink);
+    }
+    .qr-quiet-copy p { margin: 0; font-size: 12px; color: var(--ink-soft); line-height: 1.4; }
+    .qr-quiet-add {
+      padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line);
+      background: transparent; font-size: 12px; font-weight: 800; color: var(--ink-soft);
+      cursor: pointer;
+    }
+    .qr-quiet-add:hover { background: var(--white); color: var(--ink); }
+    .qr-quiet-fields {
+      width: 100%; display: grid; gap: 12px;
+      padding-top: 4px;
+    }
+    .qr-quiet-fields[hidden] { display: none !important; }
+    .insp-actions {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+      margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--line);
+    }
+    .insp-actions .btn-primary {
+      background: var(--forest); color: #fffcf7;
+      border-radius: 16px; padding: 14px 32px; font-size: 1.05rem;
+      box-shadow: 0 10px 24px rgba(47, 74, 60, 0.14);
+    }
+    .insp-actions .btn-primary:hover { background: #253a2f; filter: none; }
+    .insp-actions .btn-save {
+      border-radius: 16px; padding: 14px 22px; font-weight: 800;
+      background: var(--white); border: 1px solid var(--line); color: var(--ink);
+    }
+    .insp-actions .btn-save:hover { background: #faf8f5; }
+    .insp-actions .btn-back-link {
+      border: none; background: transparent; color: var(--muted);
+      font-weight: 600; font-size: 0.95rem; padding: 14px 12px; cursor: pointer;
+    }
+    .insp-actions .btn-back-link:hover { color: var(--ink); }
+    .asset-card.is-inactive .custom-upload { opacity: 0.7; }
+    .insp-optional {
+      margin: 0; border: none; background: transparent;
+    }
+    .insp-optional summary {
+      cursor: pointer; list-style: none;
+      font-size: 0.9rem; font-weight: 600; color: var(--ink-soft);
+    }
+    .insp-optional summary::-webkit-details-marker { display: none; }
+    .insp-optional summary::before {
+      content: "▸"; display: inline-block; margin-right: 8px; font-size: 10px;
+      transition: transform 0.2s;
+    }
+    .insp-optional[open] summary::before { transform: rotate(90deg); }
+    .insp-optional[open] summary { color: var(--ink); }
+    .insp-optional .optional-inner {
+      margin-top: 16px; padding: 18px 20px;
+      border: 1px solid var(--line); border-radius: 20px;
+      background: rgba(255, 252, 247, 0.7);
     }
     .field-row-2 { display: grid; gap: 12px; }
     @media (min-width: 520px) {
@@ -875,68 +1014,75 @@
     .asset-action-remove:hover { background: rgba(122, 48, 48, 0.06); border-color: rgba(122, 48, 48, 0.35); }
     .top-assets-row .asset-preview .asset-actions { margin-top: 6px; }
 
-    /* Inspiration step — balanced top assets row (photo, template, brand kit) */
+    /* Inspiration peer cards — photo · template · brand */
     .top-assets-row {
-      display: grid; gap: 12px; grid-template-columns: 1fr; min-width: 0;
+      display: grid; gap: 18px; grid-template-columns: 1fr; min-width: 0;
     }
-    @media (min-width: 520px) {
-      .top-assets-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .top-assets-row.has-custom { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    }
-    @media (min-width: 520px) and (max-width: 899px) {
-      .top-assets-row.has-custom { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (min-width: 820px) {
+      .top-assets-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     .asset-card {
-      display: flex; flex-direction: column; min-width: 0; min-height: 0;
-      padding: 14px 16px 16px;
+      display: flex; flex-direction: column; gap: 14px;
+      min-width: 0; min-height: 0; padding: 22px;
     }
     .asset-card h3 {
-      margin: 0 0 2px; font-size: 1.05rem;
+      margin: 0; font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--ink-soft); font-family: var(--sans);
     }
-    .asset-card .section-desc {
-      margin: 0 0 10px; font-size: 0.8rem; line-height: 1.4; max-width: none;
-    }
+    .asset-card .section-desc { display: none; }
     .asset-card .field.asset-field {
-      flex: 1; display: flex; flex-direction: column; margin-bottom: 0; min-height: 0;
+      flex: 1; display: flex; flex-direction: column; margin-bottom: 0; min-height: 0; gap: 12px;
     }
+    .asset-card .asset-field > label { display: none; }
     .asset-card .asset-slot {
-      flex: 1; min-height: 140px; max-height: 168px;
-      display: flex; flex-direction: column; align-items: stretch; justify-content: center;
+      flex: 0 0 auto; min-height: 0;
+      display: flex; flex-direction: column; align-items: stretch;
     }
     .top-assets-row .insp {
-      flex: 1; min-height: 140px; max-height: 168px; padding: 10px 12px;
+      aspect-ratio: 16/10; min-height: 0; max-height: none; padding: 12px;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border-radius: 14px; background: #faf8f5;
     }
     .top-assets-row .insp.has {
-      aspect-ratio: unset; height: 160px; max-height: 168px; min-height: 140px;
+      aspect-ratio: 16/10; height: auto; max-height: none; min-height: 0;
       padding: 0; background-size: cover; background-position: center;
     }
-    .top-assets-row .insp:not(.has) { overflow-y: auto; }
-    .top-assets-row .insp:not(.has) strong { font-size: 0.84rem; }
+    .top-assets-row .insp:not(.has) { overflow: hidden; }
+    .top-assets-row .insp:not(.has) strong {
+      font-size: 12px; font-weight: 600; color: #a8a29c;
+    }
     .top-assets-row .insp .hint { font-size: 0.72rem; margin: 4px 0 0; }
     .top-assets-row .insp-thumbs { margin-top: 8px; gap: 6px; }
     .top-assets-row .insp-thumbs button {
       width: 40px; height: 30px; border-radius: 6px;
     }
     .top-assets-row .custom-upload {
-      flex: 1; min-height: 140px; max-height: 168px; padding: 10px 12px;
+      aspect-ratio: 16/10; min-height: 0; max-height: none; padding: 12px;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border-radius: 14px; background: #faf8f5; border: 1px solid var(--line);
     }
     .top-assets-row .custom-upload.has {
-      aspect-ratio: unset; height: 160px; max-height: 168px; min-height: 140px;
-      padding: 0; max-height: 168px; background-size: cover; background-position: center top;
+      aspect-ratio: 16/10; height: auto; max-height: none; min-height: 0;
+      padding: 0; background-size: cover; background-position: center top;
+      border-style: solid;
     }
-    .top-assets-row .custom-upload:not(.has) strong { font-size: 0.84rem; }
+    .top-assets-row .custom-upload:not(.has) strong { font-size: 12px; color: #a8a29c; }
     .top-assets-row .custom-upload .hint { font-size: 0.72rem; margin: 4px 0 0; }
-    .asset-card .toggle-row {
-      flex: 1; min-height: 140px; max-height: 168px; margin: 0;
-      flex-direction: column; align-items: stretch; justify-content: space-between;
-      gap: 8px; padding: 12px 14px;
+    .asset-card .brand-card-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
     }
-    .asset-card .toggle-row > div:first-child { flex: 1; min-width: 0; }
-    .asset-card .toggle-row strong { font-size: 0.84rem; display: block; }
-    .asset-card .toggle-row p { font-size: 0.72rem; margin: 3px 0 0; line-height: 1.35; }
-    .asset-card .toggle-row .switch { align-self: flex-end; }
+    .asset-card .toggle-row {
+      flex: 0; min-height: 0; max-height: none; margin: 0; padding: 0;
+      border: none; background: transparent;
+      flex-direction: row; align-items: center; justify-content: space-between;
+      gap: 8px;
+    }
+    .asset-card .toggle-row > div:first-child { display: none; }
+    .asset-card .toggle-row .switch { align-self: center; width: 32px; height: 16px; }
+    .asset-card .toggle-row .switch::after {
+      width: 12px; height: 12px; top: 2px; left: 2px;
+    }
+    .asset-card .toggle-row .switch[aria-checked="true"]::after { transform: translateX(14px); }
 
     .brand-chip {
       display: inline-flex; align-items: center; gap: 8px; margin-top: 10px;
@@ -1660,21 +1806,21 @@
         <p class="steps-label">Steps</p>
         <button type="button" class="step-btn active" data-view="start" aria-current="step">
           <span class="step-row">
-            <span class="step-num" aria-hidden="true">1</span>
+            <span class="step-num" data-n="1" aria-hidden="true">1</span>
             <span>Start</span>
           </span>
         </button>
         <span class="step-conn" aria-hidden="true"></span>
         <button type="button" class="step-btn" data-view="inputs">
           <span class="step-row">
-            <span class="step-num" aria-hidden="true">2</span>
+            <span class="step-num" data-n="2" aria-hidden="true">2</span>
             <span>Inspiration</span>
           </span>
         </button>
         <span class="step-conn" aria-hidden="true"></span>
         <button type="button" class="step-btn" data-view="result">
           <span class="step-row">
-            <span class="step-num" aria-hidden="true">3</span>
+            <span class="step-num" data-n="3" aria-hidden="true">3</span>
             <span>Preview</span>
           </span>
         </button>
@@ -1809,27 +1955,22 @@
     <!-- INPUTS -->
     <section class="panel panel-flush" data-panel="inputs" hidden>
       <div class="step-head">
-        <h2 id="inputsTitle">Inspiration</h2>
-        <p class="sub" id="inputsSub" hidden></p>
+        <h2 id="inputsTitle">What’s the vibe?</h2>
+        <p class="sub" id="inputsSub">Give the AI a head start with photos, templates, or your brand kit.</p>
       </div>
-      <div class="custom-mode-note">
-        Last year’s file is a guide — refresh dates and copy.
-      </div>
-
       <p class="insp-tpl-line">Layout: <strong id="selectedTplName">Choose on Start</strong></p>
 
       <div id="slotForm" class="insp-stack">
         <div class="top-assets-row" id="topAssetsRow">
           <div class="section-card asset-card" id="inspImageCard">
-            <h3>Photo</h3>
+            <h3>Inspiration Photo</h3>
             <div class="field asset-field">
               <label id="inspFieldLabel">Hero photo</label>
               <div class="asset-slot">
                 <div class="asset-preview">
                   <div class="insp" id="inspDrop" role="button" tabindex="0" aria-label="Add inspiration photo">
                     <div id="inspEmpty">
-                      <strong>Add photo</strong>
-                      <p class="hint">Optional — drop an image or pick a sample</p>
+                      <strong>Drop photo here</strong>
                       <p class="hint samples-label" id="inspSamplesLabel" hidden>Samples</p>
                       <div class="insp-thumbs" id="inspThumbs"></div>
                     </div>
@@ -1841,11 +1982,15 @@
                 </div>
                 <input type="file" id="inspFile" accept="image/*" hidden />
               </div>
+              <button type="button" class="insp-gallery-btn" id="browseGalleryBtn" disabled title="Gallery coming soon">
+                Browse Gallery
+              </button>
+              <p class="insp-peer-note">Upload a photo to use as the hero or to set the color palette.</p>
             </div>
           </div>
 
-          <div class="section-card asset-card" id="customTemplateField" hidden>
-            <h3>Template file</h3>
+          <div class="section-card asset-card" id="customTemplateField">
+            <h3>Template File</h3>
             <div class="field asset-field">
               <label>Last year’s flyer</label>
               <div class="asset-slot">
@@ -1862,100 +2007,100 @@
                 </div>
               </div>
               <input type="file" id="customFile" accept="image/*,.pdf" hidden />
+              <p class="insp-peer-note" id="templatePeerNote">Last year’s file is a guide — refresh dates and copy.</p>
             </div>
           </div>
 
           <div class="section-card asset-card" id="brandKitCard">
-            <h3>Brand kit</h3>
-            <div class="toggle-row" id="brandToggleRow">
-              <div>
-                <strong>Use brand kit</strong>
-                <p id="brandKitSummary">Org colors and logo</p>
-                <div class="brand-chip" id="brandChip" hidden>
-                  <span class="brand-logo-mark" id="brandLogoMark" aria-hidden="true"></span>
-                  <span class="swatch" id="swatchPrimary" title="Primary color"></span>
-                  <span class="swatch" id="swatchAccent" title="Accent color"></span>
-                  <span id="brandChipName">Your organization</span>
+            <div class="brand-card-head">
+              <h3>Brand Kit</h3>
+              <div class="toggle-row" id="brandToggleRow">
+                <div>
+                  <strong>Use brand kit</strong>
+                  <p id="brandKitSummary">Org colors and logo</p>
+                  <div class="brand-chip" id="brandChip" hidden>
+                    <span class="brand-logo-mark" id="brandLogoMark" aria-hidden="true"></span>
+                    <span class="swatch" id="swatchPrimaryChip" title="Primary color"></span>
+                    <span class="swatch" id="swatchAccentChip" title="Accent color"></span>
+                    <span id="brandChipName">Your organization</span>
+                  </div>
                 </div>
-                <a href="/settings/branding?section=colors-logos" class="brand-settings-link" id="brandSettingsLink">Edit in Settings → Branding</a>
+                <button type="button" class="switch" id="brandToggle" role="switch" aria-checked="true" aria-label="Use brand kit"></button>
               </div>
-              <button type="button" class="switch" id="brandToggle" role="switch" aria-checked="true" aria-label="Use brand kit"></button>
             </div>
-          </div>
-        </div>
-
-        <div class="section-card">
-          <h3>Basics</h3>
-          <div class="field">
-            <label for="orgName">Organization</label>
-            <input type="text" id="orgName" placeholder="e.g. Your organization" />
-          </div>
-          <div class="field">
-            <label for="headline">Headline</label>
-            <input type="text" id="headline" placeholder="e.g. Semester at a Glance" />
-          </div>
-          <div class="field">
-            <label for="schoolYear">School year</label>
-            <input type="text" id="schoolYear" placeholder="e.g. 2025–2026" />
-          </div>
-        </div>
-
-        <div class="section-card">
-          <h3>When &amp; where</h3>
-          <div class="field">
-            <label for="location">Location</label>
-            <input type="text" id="location" placeholder="e.g. Community center · 1200 Main St" />
-          </div>
-          <div class="field">
-            <label for="directions">Directions (optional)</label>
-            <input type="text" id="directions" placeholder="e.g. South lot · main doors" />
-          </div>
-          <div class="field field-prominent" id="datesEventsField">
-            <label for="datesEvents">Dates &amp; events</label>
-            <textarea id="datesEvents" placeholder="One per line — e.g. Aug 15 — Back to School Night"></textarea>
-          </div>
-        </div>
-
-        <div class="section-card" id="aiDirectionCard">
-          <h3>Direction for AI</h3>
-          <p class="section-desc">Describe the look and feel. Details above stay as facts.</p>
-          <div class="field">
-            <div class="field-label-row">
-              <label for="aiDirection">Artwork direction</label>
-              <button
-                type="button"
-                class="voice-btn"
-                id="aiDirectionVoice"
-                aria-label="Speak artwork direction"
-                title="Speak artwork direction"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                  <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M5 11a7 7 0 0 0 14 0" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M12 18v3" stroke-linecap="round"/>
-                </svg>
-              </button>
+            <div class="brand-preview-tile" aria-hidden="true">
+              <div class="brand-preview-swatches">
+                <span class="swatch" id="swatchPrimary" title="Primary color"></span>
+                <span class="swatch" id="swatchAccent" title="Accent color"></span>
+                <span class="swatch" id="swatchInk" title="Ink" style="background:#2a2622"></span>
+              </div>
+              <div class="brand-preview-bar"></div>
+              <div class="brand-preview-bar short"></div>
             </div>
-            <textarea id="aiDirection" rows="5" placeholder="e.g. Friday night lights for our elementary school — food trucks, bounce houses, dunk tanks. Bring blankets and chairs. Fun, bold, easy to scan."></textarea>
-            <p class="hint-inline" id="aiDirectionVoiceHint" hidden>Listening… tap the mic to stop.</p>
+            <a href="/settings/branding?section=colors-logos" class="brand-manage-link" id="brandSettingsLink">Manage Brand Kit</a>
+            <p class="insp-peer-note">Use organization fonts, colors, and logos by default.</p>
           </div>
+        </div>
+
+        <div id="aiDirectionCard">
+          <div class="field-label-row" style="margin-bottom:14px">
+            <label class="insp-block-label" for="aiDirection" style="margin:0">What should this flyer say / feel like?</label>
+            <button
+              type="button"
+              class="voice-btn"
+              id="aiDirectionVoice"
+              aria-label="Speak artwork direction"
+              title="Speak artwork direction"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M5 11a7 7 0 0 0 14 0" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 18v3" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <textarea
+            id="aiDirection"
+            class="insp-direction-area"
+            rows="4"
+            placeholder="e.g. A Friday night lights vibe for our elementary school. Fun, energetic, lots of blues and greens..."
+          ></textarea>
+          <p class="hint-inline" id="aiDirectionVoiceHint" hidden>Listening… tap the mic to stop.</p>
           <input type="hidden" id="bodyCopy" value="" />
         </div>
 
-        <div class="section-card" id="ctaQrCard">
-          <h3>CTA &amp; QR</h3>
-          <p class="section-desc">Paste a link to generate a live QR preview — it overlays on the flyer when you generate artwork.</p>
-          <div class="field-row-2">
-            <div class="field">
-              <label for="ctaLabel">Button label</label>
-              <input type="text" id="ctaLabel" placeholder="e.g. Subscribe to calendar" />
+        <div id="datesEventsField">
+          <h3 class="insp-block-label">Key Facts</h3>
+          <div class="key-facts-grid">
+            <div class="key-fact">
+              <label for="datesEvents">Event Date</label>
+              <textarea id="datesEvents" rows="1" placeholder="Aug 29, 2026"></textarea>
             </div>
-            <div class="field">
-              <label for="ctaUrl">Button link</label>
-              <input type="url" id="ctaUrl" placeholder="https://…" />
+            <div class="key-fact">
+              <label for="directions">Time</label>
+              <input type="text" id="directions" placeholder="6:00 PM - 9:00 PM" />
+            </div>
+            <div class="key-fact">
+              <label for="location">Location</label>
+              <input type="text" id="location" placeholder="School Field" />
+            </div>
+            <div class="key-fact">
+              <label for="ctaUrl">Price / URL</label>
+              <input type="text" id="ctaUrl" placeholder="Free / ptomembership.com" />
             </div>
           </div>
-          <div class="qr-url-row">
+        </div>
+
+        <div class="qr-quiet" id="ctaQrCard">
+          <div class="qr-quiet-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v6M14 20h3"/></svg>
+          </div>
+          <div class="qr-quiet-copy">
+            <strong>Add a live QR code</strong>
+            <p>Paste a link to generate a code that overlays on the flyer.</p>
+          </div>
+          <button type="button" class="qr-quiet-add" id="qrAddLinkBtn">Add link</button>
+          <div class="qr-quiet-fields" id="qrQuietFields" hidden>
             <div class="field" id="qrField">
               <label for="qrUrl">QR link</label>
               <input type="url" id="qrUrl" placeholder="https://…" autocomplete="url" />
@@ -1964,36 +2109,50 @@
                 Use button link for QR
               </button>
             </div>
-            <div class="qr-preview-panel empty" id="qrPreviewPanel" aria-live="polite">
-              <div class="qr-preview-label">QR preview</div>
-              <div class="qr-preview-frame">
-                <img id="qrPreviewImg" alt="Generated QR code preview" width="112" height="112" hidden />
-                <div class="qr-placeholder" id="qrPlaceholder">
-                  <strong>QR generator</strong>
-                  Add a https link
+            <div class="qr-url-row">
+              <div class="qr-preview-panel empty" id="qrPreviewPanel" aria-live="polite">
+                <div class="qr-preview-label">QR preview</div>
+                <div class="qr-preview-frame">
+                  <img id="qrPreviewImg" alt="Generated QR code preview" width="112" height="112" hidden />
+                  <div class="qr-placeholder" id="qrPlaceholder">
+                    <strong>QR generator</strong>
+                    Add a https link
+                  </div>
                 </div>
+                <div class="cap" id="qrPreviewCap" hidden></div>
+                <div class="qr-preview-status" id="qrPreviewStatus"></div>
               </div>
-              <div class="cap" id="qrPreviewCap" hidden></div>
-              <div class="qr-preview-status" id="qrPreviewStatus"></div>
             </div>
-          </div>
-          <div class="field">
-            <label for="qrCaption">QR caption (optional)</label>
-            <input type="text" id="qrCaption" placeholder="e.g. Scan to add all dates" />
-          </div>
-        </div>
-
-        <div class="section-card">
-          <h3>Footer</h3>
-          <div class="field">
-            <label for="footerLine">Contact or website</label>
-            <input type="text" id="footerLine" placeholder="e.g. yourorg.org · @YourOrg" />
+            <div class="field">
+              <label for="qrCaption">QR caption (optional)</label>
+              <input type="text" id="qrCaption" placeholder="e.g. Scan to add all dates" />
+            </div>
           </div>
         </div>
 
         <details class="insp-optional" id="moreFlyerDetails">
-          <summary>Optional details</summary>
+          <summary>More flyer details</summary>
           <div class="optional-inner">
+            <div class="field">
+              <label for="orgName">Organization</label>
+              <input type="text" id="orgName" placeholder="e.g. Your organization" />
+            </div>
+            <div class="field">
+              <label for="headline">Headline</label>
+              <input type="text" id="headline" placeholder="e.g. Semester at a Glance" />
+            </div>
+            <div class="field">
+              <label for="schoolYear">School year</label>
+              <input type="text" id="schoolYear" placeholder="e.g. 2025–2026" />
+            </div>
+            <div class="field">
+              <label for="ctaLabel">Button label</label>
+              <input type="text" id="ctaLabel" placeholder="e.g. Subscribe to calendar" />
+            </div>
+            <div class="field">
+              <label for="footerLine">Contact or website</label>
+              <input type="text" id="footerLine" placeholder="e.g. yourorg.org · @YourOrg" />
+            </div>
             <div class="field field-highlight" id="donationTiersField">
               <label for="donationTiers">Donation tiers</label>
               <textarea id="donationTiers" class="tiers" placeholder="$25 — Supporter&#10;$50 — Friend of the PTA&#10;$100 — Champion + class reward"></textarea>
@@ -2003,46 +2162,21 @@
               <label for="lastYearNotes">Last year’s flyer notes</label>
               <textarea id="lastYearNotes" placeholder="Paste text from last year’s PDF or note what changed…"></textarea>
             </div>
-            <div class="field">
-              <label id="inspFieldLabel">Inspiration photo</label>
-              <div class="insp" id="inspDrop" role="button" tabindex="0">
-                <div id="inspEmpty">
-                  <strong>Add a photo</strong>
-                  <p class="hint">Upload or pick a sample for the template photo slot (optional).</p>
-                  <p class="hint samples-label" hidden>Samples</p>
-                  <div class="insp-thumbs" id="inspThumbsOptional"></div>
-                </div>
-              </div>
+            <div class="brand-chip" id="brandChipOptional" hidden>
+              <span class="brand-logo-mark" id="brandLogoMarkOptional" aria-hidden="true"></span>
+              <span class="swatch" id="swatchPrimaryOptional"></span>
+              <span class="swatch" id="swatchAccentOptional"></span>
+              <span id="brandChipNameOptional">Your organization</span>
             </div>
-            <div class="field" id="customTemplateField" hidden>
-              <label>Your template file</label>
-              <div class="custom-upload" id="customUpload" role="button" tabindex="0">
-                <div id="customUploadEmpty">
-                  <strong>Upload flyer template</strong>
-                  <p class="hint">PDF, PNG, or JPG from a past year — the layout, not the photo.</p>
-                </div>
-              </div>
-              <input type="file" id="customFile" accept="image/*,.pdf" hidden />
-            </div>
-            <div class="toggle-row" id="brandToggleRow">
-              <div>
-                <strong>Brand kit</strong>
-                <p>Logo and org colors on every preview and export</p>
-                <div class="brand-chip" id="brandChipOptional" hidden>
-                  <span class="brand-logo-mark" id="brandLogoMarkOptional" aria-hidden="true"></span>
-                  <span class="swatch" id="swatchPrimaryOptional"></span>
-                  <span class="swatch" id="swatchAccentOptional"></span>
-                  <span id="brandChipNameOptional">Your organization</span>
-                </div>
-              </div>
-              <button type="button" class="switch" id="brandToggle" role="switch" aria-checked="true" aria-label="Use brand kit"></button>
-            </div>
+            <div class="insp-thumbs" id="inspThumbsOptional" hidden></div>
           </div>
         </details>
       </div>
-      <div class="actions">
-        <button type="button" class="btn btn-secondary" data-goto="start">Back</button>
+
+      <div class="actions insp-actions">
         <button type="button" class="btn btn-primary" id="toGenerate">Continue to Preview</button>
+        <button type="button" class="btn btn-save" id="saveDraftBtn">Save Draft</button>
+        <button type="button" class="btn-back-link" data-goto="start">Back</button>
       </div>
     </section>
 
@@ -2885,15 +3019,26 @@
     function syncCustomModeUI() {
       const custom = isCustomTpl();
       document.body.classList.toggle("is-custom-flyer", custom);
-      document.getElementById("customTemplateField").hidden = !custom;
+      const tplCard = document.getElementById("customTemplateField");
+      if (tplCard) {
+        tplCard.hidden = false;
+        tplCard.classList.toggle("is-inactive", !custom);
+      }
       document.getElementById("topAssetsRow")?.classList.toggle("has-custom", custom);
-      document.getElementById("inputsTitle").textContent = custom
-        ? "Update your flyer"
-        : "Inspiration";
+      const title = document.getElementById("inputsTitle");
+      if (title) title.textContent = "What’s the vibe?";
       const inputsSub = document.getElementById("inputsSub");
       if (inputsSub) {
-        inputsSub.textContent = "";
-        inputsSub.hidden = true;
+        inputsSub.textContent = custom
+          ? "Last year’s file is a guide — refresh dates and copy, then set the vibe."
+          : "Give the AI a head start with photos, templates, or your brand kit.";
+        inputsSub.hidden = false;
+      }
+      const tplNote = document.getElementById("templatePeerNote");
+      if (tplNote) {
+        tplNote.textContent = custom
+          ? "Last year’s file is a guide — refresh dates and copy."
+          : "Optional — upload a past flyer if you want the AI to follow its layout.";
       }
       updateCustomUploadUI();
     }
@@ -3602,8 +3747,11 @@
     }
 
     function updateQrFieldVisibility() {
-      /* QR + structured slots always visible for founder slot-model testing */
-      document.getElementById("qrField").hidden = false;
+      const qrField = document.getElementById("qrField");
+      if (qrField) qrField.hidden = false;
+      const quiet = document.getElementById("qrQuietFields");
+      const qr = document.getElementById("qrUrl");
+      if (quiet && qr && qr.value.trim()) quiet.hidden = false;
     }
 
     function buildDraftPayload(versionsOverride) {
@@ -3909,9 +4057,14 @@
       panels.forEach((p) => { p.hidden = p.dataset.panel !== view; });
       // Edit is a Preview sub-step — keep Preview highlighted in the rail.
       const railView = view === "edit" ? "result" : view;
+      const stepOrder = ["start", "inputs", "result"];
+      const activeIdx = stepOrder.indexOf(railView);
       stepBtns.forEach((btn) => {
-        const active = btn.dataset.view === railView;
+        const idx = stepOrder.indexOf(btn.dataset.view);
+        const active = idx === activeIdx;
+        const done = idx > -1 && idx < activeIdx;
         btn.classList.toggle("active", active);
+        btn.classList.toggle("done", done);
         if (active) btn.setAttribute("aria-current", "step");
         else btn.removeAttribute("aria-current");
       });
@@ -5420,6 +5573,30 @@
       ensureDefaultStartPath();
       state.autoGenerateOnEnter = true;
       setView("result");
+    });
+    document.getElementById("saveDraftBtn")?.addEventListener("click", () => {
+      scheduleSave();
+      const btn = document.getElementById("saveDraftBtn");
+      if (!btn) return;
+      const prev = btn.textContent;
+      btn.textContent = "Saved";
+      btn.disabled = true;
+      window.setTimeout(() => {
+        btn.textContent = prev || "Save Draft";
+        btn.disabled = false;
+      }, 1400);
+    });
+    document.getElementById("qrAddLinkBtn")?.addEventListener("click", () => {
+      const fields = document.getElementById("qrQuietFields");
+      if (fields) fields.hidden = false;
+      const qr = document.getElementById("qrUrl");
+      if (qr) {
+        try {
+          qr.focus({ preventScroll: false });
+        } catch {
+          qr.focus();
+        }
+      }
     });
     document.getElementById("generateBtn").addEventListener("click", startGenerate);
     function onSendForApprovalClick() {
