@@ -140,7 +140,7 @@ async function loadOrganizationWorkspaceData(
   }
 
   const roles = (roleRows ?? []).map((row) =>
-    mapOrganizationRoleRow(row as OrganizationRoleRow),
+    mapOrganizationRoleRow(row as unknown as OrganizationRoleRow),
   );
   const roleNames = buildRoleNameMap(roles);
 
@@ -154,7 +154,7 @@ async function loadOrganizationWorkspaceData(
     : {};
 
   const members = (memberRows ?? []).map((row) => {
-    const memberRow = row as OrganizationMemberRow;
+    const memberRow = row as unknown as OrganizationMemberRow;
     const roleName = memberRow.organization_role_id
       ? roleNames.get(memberRow.organization_role_id) ?? null
       : null;
@@ -166,7 +166,7 @@ async function loadOrganizationWorkspaceData(
   });
 
   const responsibilityMatrix = (matrixRows ?? []).map((row) => {
-    const matrixRow = row as ResponsibilityMatrixRow;
+    const matrixRow = row as unknown as ResponsibilityMatrixRow;
     const roleName = matrixRow.default_role_id
       ? roleNames.get(matrixRow.default_role_id) ?? null
       : null;
@@ -174,7 +174,7 @@ async function loadOrganizationWorkspaceData(
   });
 
   const committeeDefaults = (committeeRows ?? []).map((row) => {
-    const committeeRow = row as CommitteeDefaultRow;
+    const committeeRow = row as unknown as CommitteeDefaultRow;
     const roleName = committeeRow.default_role_id
       ? roleNames.get(committeeRow.default_role_id) ?? null
       : null;
@@ -184,7 +184,7 @@ async function loadOrganizationWorkspaceData(
   const committees = committeesTableMissing
     ? []
     : (customCommitteeRows ?? []).map((row) => {
-        const committeeRow = row as OrganizationCommitteeRow;
+        const committeeRow = row as unknown as OrganizationCommitteeRow;
         const roleName = committeeRow.parent_role_id
           ? roleNames.get(committeeRow.parent_role_id) ?? null
           : null;

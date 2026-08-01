@@ -32,6 +32,19 @@ export async function EventDetailApprovalsStream({
     getActiveMembership(),
   ]);
 
+  if (!membership) {
+    return (
+      <div className="rounded-xl border border-cos-border bg-cos-card p-6">
+        <h3 className="font-display text-lg text-cos-text">
+          Approvals unavailable
+        </h3>
+        <p className="mt-1 text-sm text-cos-muted">
+          Sign in with an active school membership to load approvals.
+        </p>
+      </div>
+    );
+  }
+
   const approvalsData = await getUnifiedApprovalsSchedulingDataForEvent(
     event.id,
     {
