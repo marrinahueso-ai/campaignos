@@ -1,9 +1,11 @@
+import { cookies } from "next/headers";
 import { after } from "next/server";
 import { Suspense } from "react";
 import { ApprovalsSchedulingHub } from "@/components/approvals-scheduling/ApprovalsSchedulingHub";
 import { getApprovalsLayoutForCurrentUser } from "@/lib/approvals-scheduling/approvals-layout-queries";
 import { getUnifiedApprovalsSchedulingData } from "@/lib/approvals-scheduling/queries";
 import { backfillMetaApprovalRequests } from "@/lib/event-workspace/meta-approval-sync";
+import { runWithRequestCookies } from "@/lib/supabase/request-cookies";
 import ApprovalsLoading from "./loading";
 
 export const metadata = {
@@ -21,10 +23,16 @@ async function ApprovalsPageContent({ searchParams }: ApprovalsPageProps) {
     getApprovalsLayoutForCurrentUser(),
   ]);
 
+  // Server Components cannot call cookies() inside after(). Snapshot during
+  // render and reuse via runWithRequestCookies so createClient() still works.
+  const cookieSnapshot = (await cookies()).getAll();
+
   // Write-owned sync after the response — keep Approvals accurate without
   // blocking document TTFB or running on every layout navigation.
   after(() => {
-    void backfillMetaApprovalRequests(null).catch((error: unknown) => {
+    void runWithRequestCookies(cookieSnapshot, () =>
+      backfillMetaApprovalRequests(null),
+    ).catch((error: unknown) => {
       console.error(
         "Post-response meta approval backfill failed:",
         error instanceof Error ? error.message : error,

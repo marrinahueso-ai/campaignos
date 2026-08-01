@@ -6,11 +6,13 @@ import {
   activeOrganizationCookieOptions,
   normalizeOrganizationId,
 } from "@/lib/auth/active-organization";
+import { getRequestCookieStoreOverride } from "@/lib/supabase/request-cookies";
 
 const THIRTY_DAYS = 60 * 60 * 24 * 30;
 
 export async function readActiveOrganizationCookie(): Promise<string | null> {
-  const cookieStore = await cookies();
+  const override = getRequestCookieStoreOverride();
+  const cookieStore = override ?? (await cookies());
   return normalizeOrganizationId(
     cookieStore.get(ACTIVE_ORGANIZATION_COOKIE)?.value,
   );

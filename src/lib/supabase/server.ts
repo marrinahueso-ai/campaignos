@@ -1,9 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getSupabaseCookieOptions } from "@/lib/supabase/cookie-options";
+import { getRequestCookieStoreOverride } from "@/lib/supabase/request-cookies";
 
 export async function createClient() {
-  const cookieStore = await cookies();
+  // Prefer a frozen snapshot when running inside Server Component after().
+  const override = getRequestCookieStoreOverride();
+  const cookieStore = override ?? (await cookies());
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
