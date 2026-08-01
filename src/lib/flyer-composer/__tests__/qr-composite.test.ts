@@ -5,6 +5,7 @@ import sharp from "sharp";
 
 import { resolveFlyerComposerQrUrl } from "@/lib/flyer-composer/qr-code";
 import { compositeFlyerQrCode } from "@/lib/flyer-composer/qr-composite";
+import { findFlyerQrPlaceholderSlot } from "@/lib/flyer-composer/qr-slot";
 import type { FlyerComposerGenerateInput } from "@/lib/flyer-composer/types";
 
 function sampleInput(
@@ -69,20 +70,83 @@ describe("flyer QR resolve + composite", () => {
     assert.equal(url, "https://www.facebook.com/HeyRalli/");
   });
 
-  it("stamps a non-white QR onto a blank white corner", async () => {
-    const blank = await sharp({
+  it("finds a large white QR placeholder in the bottom-right", async () => {
+    const width = 512;
+    const height = 768;
+    const slotSize = 140;
+    const slotLeft = width - slotSize - 24;
+    const slotTop = height - slotSize - 28;
+
+    const flyer = await sharp({
       create: {
-        width: 512,
-        height: 768,
+        width,
+        height,
         channels: 3,
-        background: { r: 255, g: 255, b: 255 },
+        background: { r: 20, g: 40, b: 80 },
       },
     })
+      .composite([
+        {
+          input: await sharp({
+            create: {
+              width: slotSize,
+              height: slotSize,
+              channels: 3,
+              background: { r: 255, g: 255, b: 255 },
+            },
+          })
+            .png()
+            .toBuffer(),
+          left: slotLeft,
+          top: slotTop,
+        },
+      ])
+      .png()
+      .toBuffer();
+
+    const found = await findFlyerQrPlaceholderSlot(flyer);
+    assert.ok(found);
+    assert.ok(Math.abs(found!.size - slotSize) <= 8, `size ${found!.size}`);
+    assert.ok(Math.abs(found!.left - slotLeft) <= 8, `left ${found!.left}`);
+    assert.ok(Math.abs(found!.top - slotTop) <= 8, `top ${found!.top}`);
+  });
+
+  it("fills most of the detected white QR box", async () => {
+    const width = 512;
+    const height = 768;
+    const slotSize = 160;
+    const slotLeft = width - slotSize - 20;
+    const slotTop = height - slotSize - 24;
+
+    const flyer = await sharp({
+      create: {
+        width,
+        height,
+        channels: 3,
+        background: { r: 20, g: 40, b: 80 },
+      },
+    })
+      .composite([
+        {
+          input: await sharp({
+            create: {
+              width: slotSize,
+              height: slotSize,
+              channels: 3,
+              background: { r: 255, g: 255, b: 255 },
+            },
+          })
+            .png()
+            .toBuffer(),
+          left: slotLeft,
+          top: slotTop,
+        },
+      ])
       .png()
       .toBuffer();
 
     const composited = await compositeFlyerQrCode({
-      imageBase64: blank.toString("base64"),
+      imageBase64: flyer.toString("base64"),
       qrUrl: "https://www.facebook.com/HeyRalli/",
     });
     assert.ok(composited);
@@ -91,10 +155,28 @@ describe("flyer QR resolve + composite", () => {
       .raw()
       .toBuffer({ resolveWithObject: true });
 
-    let dark = 0;
-    for (let i = 0; i < data.length; i += info.channels) {
-      if (data[i]! < 40 && data[i + 1]! < 40 && data[i + 2]! < 40) dark += 1;
+    let darkInSlot = 0;
+    let whiteInSlot = 0;
+    for (let y = slotTop; y < slotTop + slotSize; y += 1) {
+      for (let x = slotLeft; x < slotLeft + slotSize; x += 1) {
+        const i = (y * info.width + x) * info.channels;
+        const r = data[i]!;
+        const g = data[i + 1]!;
+        const b = data[i + 2]!;
+        if (r < 40 && g < 40 && b < 40) darkInSlot += 1;
+        if (r > 240 && g > 240 && b > 240) whiteInSlot += 1;
+      }
     }
-    assert.ok(dark > 200, `expected QR dark modules, found ${dark}`);
+
+    const slotPixels = slotSize * slotSize;
+    assert.ok(
+      darkInSlot > slotPixels * 0.12,
+      `expected QR modules to fill the box; dark=${darkInSlot}`,
+    );
+    // Quiet zone + modules should dominate the placeholder (not a tiny corner stamp).
+    assert.ok(
+      darkInSlot + whiteInSlot > slotPixels * 0.85,
+      `expected nearly full box coverage; covered=${darkInSlot + whiteInSlot}`,
+    );
   });
 });

@@ -184,5 +184,11 @@ describe("flyer composer image prompt", () => {
     assert.match(prompt, /Do NOT draw QR/i);
     assert.match(prompt, /stamps a real scannable QR/i);
     assert.match(prompt, /Scan to add dates/);
+    assert.match(prompt, /postage-stamp|10–12%/i);
+  });
+
+  it("bans comic emphasis rays beside typography", () => {
+    const prompt = buildFlyerComposerImagePrompt(buildSampleDirectionInput());
+    assert.match(prompt, /speed lines|emphasis rays|starbursts/i);
   });
 });

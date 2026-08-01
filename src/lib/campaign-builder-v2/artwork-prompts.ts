@@ -5,6 +5,7 @@ import {
 } from "./campaign-timing.ts";
 import { isFirstCampaignMilestone } from "./first-milestone.ts";
 import {
+  CAMPAIGN_BUILDER_ANTI_CLICHE_VISUAL_RULES,
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
   CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
   CAMPAIGN_BUILDER_LOGO_RULES,
@@ -125,6 +126,7 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
     CAMPAIGN_BUILDER_LOGO_RULES,
     CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
+    CAMPAIGN_BUILDER_ANTI_CLICHE_VISUAL_RULES,
     "Only include event name and date on the graphic when it fits the design — do not add logistics you were not given.",
   );
 

@@ -105,6 +105,7 @@ export function buildFlyerComposerImagePrompt(
     "Create one polished, print-ready school / PTO event flyer as a single image.",
     formatPrintFormatInstructions(input),
     "Readable from a few feet away. Real text on the flyer — not lorem ipsum.",
+    "Typography style: clean, confident lettering — NO speed lines, sparkle bursts, comic emphasis rays, starbursts, or hash-mark accents beside words or headlines.",
   ];
 
   if (direction) {
@@ -161,10 +162,11 @@ export function buildFlyerComposerImagePrompt(
     lines.push(
       "",
       "QR CODE SLOT (critical — the app stamps a real scannable QR after generation):",
-      "- Leave ONE empty solid white rounded square (~10–12% of flyer width) in the footer / CTA bar, bottom-right.",
+      "- Leave ONE empty solid white square in the footer / CTA bar, bottom-right — about 10–12% of flyer width (postage-stamp size for the footer, not a large empty panel).",
+      "- The white square should be only slightly larger than a QR code — do not leave a huge blank box.",
       "- Do NOT draw QR modules, fake barcodes, pixel grids, finder patterns, or any stand-in code.",
       "- Do NOT put the URL text inside that white square — caption text may sit beside it.",
-      "- Keep that white square clear of icons, gradients, and texture so a QR overlay can sit on it.",
+      "- Keep that white square clear of icons, gradients, and texture so a QR overlay can fill it.",
     );
     const caption = input.fields.qrCaption?.trim();
     if (caption) lines.push(`QR caption beside the square: ${caption}`);

@@ -32,6 +32,12 @@ export const CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES = [
   "The event date may appear when it fits the design and user direction — never the internal post or milestone schedule date.",
 ].join(" ");
 
+/** Common AI cliché accents founders dislike on school / PTO artwork. */
+export const CAMPAIGN_BUILDER_ANTI_CLICHE_VISUAL_RULES = [
+  "Do not add comic speed lines, emphasis rays, sparkle bursts, starbursts, or hash-mark accents beside headlines or words.",
+  "Prefer clean typography and layout hierarchy over decorative side flourishes.",
+].join(" ");
+
 export const CAMPAIGN_BUILDER_CAPTION_ARTWORK_RULES = [
   "If artwork is attached, complement its mood and theme only.",
   "Do not import invented on-graphic text, times, locations, hashtags, or logistics from the image into the caption.",
