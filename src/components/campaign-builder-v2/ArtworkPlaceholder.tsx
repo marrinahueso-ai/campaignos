@@ -172,7 +172,10 @@ export function ArtworkPlaceholder({
             onClick={() => setLightboxOpen(false)}
           >
             <div
-              className="relative w-full max-w-xl overflow-hidden rounded-[22px] bg-cos-card shadow-[0_18px_40px_rgba(42,38,34,0.2)]"
+              className={cn(
+                "relative w-full overflow-hidden rounded-[22px] bg-cos-card shadow-[0_18px_40px_rgba(42,38,34,0.2)]",
+                aspectClassName.includes("9/16") ? "max-w-sm" : "max-w-xl",
+              )}
               onClick={(event) => event.stopPropagation()}
             >
               <button
@@ -183,7 +186,12 @@ export function ArtworkPlaceholder({
               >
                 <X className="h-4 w-4" />
               </button>
-              <div className={cn("relative w-full", aspectClassName)}>
+              <div
+                className={cn(
+                  "relative w-full max-h-[min(78vh,780px)] bg-[rgba(28,36,48,0.92)]",
+                  aspectClassName,
+                )}
+              >
                 {isOptimizableImageUrl(imageUrl) ? (
                   <Image
                     src={imageUrl}
@@ -191,14 +199,14 @@ export function ArtworkPlaceholder({
                     fill
                     sizes="90vw"
                     quality={90}
-                    className="object-cover"
+                    className="object-contain"
                   />
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={imageUrl}
                     alt={alt}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain"
                   />
                 )}
               </div>

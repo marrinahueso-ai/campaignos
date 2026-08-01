@@ -962,6 +962,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     title: string;
     imageUrl: string | null;
     gradient: string;
+    view: "feed" | "story";
   } | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editInitialTab, setEditInitialTab] = useState<"artwork" | "captions">(
@@ -1101,6 +1102,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
       title: selectedMilestone?.name ?? "Artwork",
       imageUrl,
       gradient,
+      view,
     });
   }
 
@@ -1601,8 +1603,15 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
       </div>
 
       {lightbox ? (
-        <div className="lightbox open" aria-hidden="false">
-          <div className="lightbox-card">
+        <div
+          className="lightbox open"
+          aria-hidden="false"
+          onClick={() => setLightbox(null)}
+        >
+          <div
+            className={`lightbox-card${lightbox.view === "story" ? " is-story" : " is-feed"}`}
+            onClick={(event) => event.stopPropagation()}
+          >
             <button
               type="button"
               className="lightbox-x"
@@ -1612,23 +1621,30 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
               ×
             </button>
             <div
-              className="lightbox-art"
+              className={`lightbox-art${lightbox.view === "story" ? " is-story" : " is-feed"}`}
               style={
                 lightbox.imageUrl
                   ? {
                       backgroundImage: `url(${lightbox.imageUrl})`,
-                      backgroundSize: "cover",
+                      backgroundSize: "contain",
+                      backgroundRepeat: "no-repeat",
                       backgroundPosition: "center",
+                      backgroundColor: "#1c2430",
                     }
                   : {
                       background: `radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%), ${lightbox.gradient}`,
                     }
               }
             >
-              <div className="title">{lightbox.title}</div>
+              {!lightbox.imageUrl ? (
+                <div className="title">{lightbox.title}</div>
+              ) : null}
             </div>
             <div className="lightbox-bar">
-              <p>Generated artwork · larger view</p>
+              <p>
+                Generated artwork · larger view
+                {lightbox.view === "story" ? " (9:16)" : " (1:1)"}
+              </p>
               <button
                 type="button"
                 className="btn btn-sm btn-primary"

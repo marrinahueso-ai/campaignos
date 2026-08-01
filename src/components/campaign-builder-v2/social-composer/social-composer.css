@@ -405,10 +405,23 @@
       overflow: hidden;
       position: relative;
     }
+.smc .lightbox-card.is-story {
+      width: min(400px, 72vw);
+      max-height: min(92vh, 900px);
+    }
 .smc .lightbox-art {
       aspect-ratio: 1;
       width: 100%;
       position: relative;
+    }
+.smc .lightbox-art.is-story {
+      aspect-ratio: 9 / 16;
+      max-height: min(78vh, 780px);
+      width: min(100%, calc(min(78vh, 780px) * 9 / 16));
+      margin-inline: auto;
+    }
+.smc .lightbox-art.is-feed {
+      aspect-ratio: 1;
     }
 .smc .lightbox-art .title {
       position: absolute; left: 20px; right: 20px; bottom: 22px;
