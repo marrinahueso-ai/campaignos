@@ -153,9 +153,10 @@ describe("Revision dual-format UI wiring", () => {
     );
 
     assert.match(approver, /contentType === "flyer"/);
-    assert.match(approver, /Review the print flyer artwork/);
+    assert.match(approver, /Tell the creator what to fix on the print flyer/);
     assert.match(approver, /FLYER_REVISION_TAGS/);
-    assert.match(approver, /Approve(?! & schedule)/);
+    assert.match(approver, /Send change request/);
+    assert.doesNotMatch(approver, /Approve & schedule/);
     assert.match(approver, /variant=\{isFlyer \? "flyer" : "social"\}/);
     assert.doesNotMatch(
       approver,

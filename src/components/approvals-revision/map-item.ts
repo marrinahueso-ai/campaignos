@@ -151,8 +151,8 @@ export function mapApprovalItemToRevision(
     statusChip:
       mode === "creator" ? "Changes requested" : "Needs your review",
     statusKind: mode === "creator" ? "changes" : "review",
-    contextLine: `${item.campaignName} · ${item.milestoneName}`,
-    title: mode === "creator" ? "Revision workspace" : "Request changes",
+    contextLine: `${item.campaignName} — ${item.milestoneName}`,
+    title: mode === "creator" ? "Update this post" : "Request changes",
     previewTitle: item.campaignName,
     previewSubtitle: item.scheduleLabel || item.milestoneName,
     previewImageUrl: artwork.previewImageUrl,
@@ -174,8 +174,11 @@ export function mapApprovalItemToRevision(
     timeline,
     editArtworkHref,
     changeDateHref,
-    // Reopen open review for this item (approver “Back to review”).
-    backHref: `/approvals?review=${encodeURIComponent(item.id)}`,
+    // Approver → reopen open review; creator → Approvals hub (Changes).
+    backHref:
+      mode === "approver"
+        ? `/approvals?review=${encodeURIComponent(item.id)}`
+        : "/approvals",
     eventId: item.eventId,
     campaignName: item.campaignName,
     milestoneName: item.milestoneName,
