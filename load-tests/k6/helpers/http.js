@@ -13,7 +13,16 @@ import { foreignOrganizationIds, withActiveOrganization } from "./organization.j
  * @param {{ cookie: string, organizationId: string }} session
  */
 export function sessionHeaders(session) {
-  const cookie = withActiveOrganization(session.cookie, session.organizationId);
+  let cookie = withActiveOrganization(session.cookie, session.organizationId);
+
+  // Vercel Authentication (SSO) blocks *.vercel.app deployments by default.
+  // VERCEL_JWT is the short-lived bypass cookie from a share link
+  // (see README "Vercel Preview"); harmless/no-op against non-Vercel hosts.
+  const vercelBypass = String(__ENV.VERCEL_JWT || "").trim();
+  if (vercelBypass) {
+    cookie = `${cookie}; _vercel_jwt=${vercelBypass}`;
+  }
+
   return {
     Cookie: cookie,
     Accept: "text/html,application/xhtml+xml",
@@ -45,6 +54,7 @@ export function getHtml(baseUrl, path, session, {
     expectedOrgId: session.organizationId,
     foreignOrgIds: foreignOrganizationIds(schools, session.organizationId),
     tag: route,
+    userLabel: session.email || null,
   });
 
   if (pause) {

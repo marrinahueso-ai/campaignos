@@ -6,7 +6,7 @@
  */
 
 import { prepareTestContext, warmAuth } from "./helpers/auth.js";
-import { buildThresholds } from "./config/thresholds.js";
+import { buildThresholds, SUMMARY_TREND_STATS } from "./config/thresholds.js";
 import { TWENTY_SCHOOLS_WORKLOAD } from "./config/workload.js";
 import { runWeightedIteration } from "./scenarios/run-mix.js";
 import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.4/index.js";
@@ -16,6 +16,7 @@ export const options = {
     twenty_schools: TWENTY_SCHOOLS_WORKLOAD,
   },
   thresholds: buildThresholds(),
+  summaryTrendStats: SUMMARY_TREND_STATS,
 };
 
 export function setup() {

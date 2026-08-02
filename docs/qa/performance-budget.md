@@ -146,8 +146,26 @@ Prefer Production: `HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ral
 HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ralli:perf
 ```
 
+## Multi-tenant readiness (k6)
+
+First-20-school simulation (smoke / normal / light-peak) lives under [`load-tests/k6/`](../../load-tests/k6/README.md):
+
+```bash
+npm run test:load:seed && npm run test:load:mint-sessions
+BASE_URL=https://your-staging.example TEST_RUN_ID=… npm run test:load:smoke
+```
+
+Prefer staging/preview. Production hosts are blocked unless `K6_ALLOW_PRODUCTION=true`.
+
+**Results:** 15-VU light-peak launch-readiness phase passed 3/3 runs against
+a Vercel Preview deployment on `heyralli-staging` — 0 tenant-isolation
+failures, 0 auth failures, 100% checks passed, 0% HTTP failure rate, all
+route p95s well under budget. `next dev` is confirmed unsuitable for this
+suite (produces false-positive tenant-isolation failures). Full writeup:
+[k6 load test findings](./k6-load-test-findings.md).
+
 ## Not covered here
 
 - Lighthouse CI / Core Web Vitals route and device matrix (optional follow-up)
 - Artwork generation latency
-- Full k6/Artillery soak against Production (avoid hammering prod)
+- Full k6/Artillery soak against Production (avoid hammering prod; use the guarded k6 suite on staging instead)

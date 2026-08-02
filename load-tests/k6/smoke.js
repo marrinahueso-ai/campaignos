@@ -7,7 +7,7 @@
  */
 
 import { prepareTestContext, warmAuth } from "./helpers/auth.js";
-import { buildSmokeThresholds } from "./config/thresholds.js";
+import { buildSmokeThresholds, SUMMARY_TREND_STATS } from "./config/thresholds.js";
 import { SMOKE_WORKLOAD } from "./config/workload.js";
 import { runWeightedIteration } from "./scenarios/run-mix.js";
 import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.4/index.js";
@@ -17,6 +17,7 @@ export const options = {
     smoke: SMOKE_WORKLOAD,
   },
   thresholds: buildSmokeThresholds(),
+  summaryTrendStats: SUMMARY_TREND_STATS,
 };
 
 export function setup() {

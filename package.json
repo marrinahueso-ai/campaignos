@@ -42,6 +42,7 @@
     "test:load:mint-sessions": "node --env-file=.env.staging.local load-tests/k6/scripts/mint-sessions.mjs",
     "test:load:smoke": "k6 run load-tests/k6/smoke.js",
     "test:load:20-schools": "k6 run load-tests/k6/twenty-schools.js",
+    "test:load:light-peak": "k6 run load-tests/k6/light-peak.js",
     "test:load:cleanup": "node --env-file=.env.staging.local load-tests/k6/scripts/cleanup-test-data.mjs"
   },
   "dependencies": {

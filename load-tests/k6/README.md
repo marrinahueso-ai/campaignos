@@ -2,7 +2,7 @@
 
 Safe, production-like readiness checks for early launch. **Not** a maximum-capacity stress test.
 
-Twenty schools means twenty **tenants** in the fixture — not twenty virtual users running forever. Ordinary profiles hold about **4–8 concurrent users**.
+Twenty schools means twenty **tenants** in the fixture — not twenty virtual users running forever. Ordinary profiles hold about **4–8 concurrent users** (light peak **≤ 15**).
 
 ## What this represents
 
@@ -10,8 +10,11 @@ Twenty schools means twenty **tenants** in the fixture — not twenty virtual us
 |---------|-----|----------|---------|
 | `smoke` | 2 | ~2 min | 01–02 |
 | `twenty-schools` | ramp 4→8 | ~10 min | all 20 |
+| `light-peak` | ramp 0→5→10→15, hold 5m, ramp down 2m | ~10 min | all 20 |
 
 Traffic mix (`smoke` / `twenty-schools`): ~35% dashboard, 25% calendar/events, 15% Create with AI (read), 15% approvals (read), 10% Communications Hub (read).
+
+Traffic mix (`light-peak`): 30% dashboard, 25% calendar/events, 15% Create with AI (read), 10% approvals (read), 10% Communications Hub (read), 5% team/settings (read), 5% organization switching (falls back to a dashboard view when no seeded user belongs to 2+ orgs — see "Known coverage limitations").
 
 Think time between actions: **2–8 seconds** (longer after page-level workflows). No machine-speed request loops.
 
@@ -39,8 +42,57 @@ Real PTOs are not all clicking at once. The suite rotates sessions across seeded
 | `K6_ALLOW_PRODUCTION` | no | Must be `true` to hit production-like hosts |
 | `K6_ALLOW_WRITES` | no | Opt-in write probes (still no OpenAI/Meta/Resend) |
 | `COOKIE` | optional | Legacy single-session smoke without seed |
+| `VERCEL_JWT` | Vercel Preview only | Deployment-Protection bypass cookie (see below) |
 
 See [`env.example`](./env.example).
+
+## Running against a Vercel Preview deployment (recommended for real timing)
+
+`next dev` and even `next start` on localhost do **not** produce authoritative
+response-time numbers. For real launch-readiness timing, deploy a one-off
+preview build pinned to staging Supabase **without** touching the shared
+Vercel project's saved environment variables:
+
+```bash
+set -a; source .env.staging.local; set +a
+
+npx vercel deploy \
+  --build-env NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
+  --build-env NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+  --env NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
+  --env NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+  --yes
+```
+
+`--build-env`/`--env` apply only to this one deployment and are never
+persisted to the project's Preview settings, so other developers' previews
+are unaffected. This project has team-wide **Vercel Authentication (SSO)**
+enabled on all non-custom-domain deployments, which returns a 302 to
+`vercel.com/sso-api` for every unauthenticated request — including k6's raw
+HTTP calls. Do **not** disable that project-wide setting just to run a load
+test. Instead, generate a scoped bypass cookie for this one deployment:
+
+```bash
+# Returns a shareable URL that, when fetched, sets a _vercel_jwt cookie
+# valid for ~7 days and scoped to this exact deployment.
+vercel_share_url="<get_access_to_vercel_url MCP tool output, or Vercel dashboard "Share" button>"
+curl -s -D - -o /dev/null "$vercel_share_url" | grep -i set-cookie
+# Copy the _vercel_jwt=... value (excluding attributes) into VERCEL_JWT
+```
+
+Then run the suite with `VERCEL_JWT` set; `sessionHeaders()` appends it to
+every request's Cookie header automatically (no-op against non-Vercel hosts):
+
+```bash
+BASE_URL=https://your-preview-xxxxx.vercel.app \
+TEST_RUN_ID=light-peak-15vu-001 \
+VERCEL_JWT=eyJhbGciOi... \
+npm run test:load:light-peak
+```
+
+Before running, confirm with one manual request that the deployment serves
+staging data (not production) for a seeded session — e.g. that `/dashboard`
+returns 200 and contains the expected seeded organization ID.
 
 ## Safety protections
 
@@ -54,7 +106,7 @@ See [`env.example`](./env.example).
 ## Seed test accounts
 
 ```bash
-# From repo root — uses .env.local Supabase keys
+# From repo root — uses .env.staging.local Supabase keys
 export TEST_RUN_ID=k6-$(date +%Y%m%d)-a1
 export K6_TEST_PASSWORD='your-strong-test-password'
 
@@ -104,6 +156,7 @@ export TEST_RUN_ID=k6-2026-08-01-a1
 
 npm run test:load:smoke
 npm run test:load:20-schools
+npm run test:load:light-peak
 ```
 
 Or directly:
@@ -111,6 +164,7 @@ Or directly:
 ```bash
 k6 run load-tests/k6/smoke.js
 k6 run load-tests/k6/twenty-schools.js
+k6 run load-tests/k6/light-peak.js
 ```
 
 JSON summaries write under `load-tests/k6/results/` (gitignored).
@@ -148,6 +202,7 @@ K6_CLEANUP_DELETE_USERS=true TEST_RUN_ID=… npm run test:load:cleanup
 | Comms creator | `/create-with-ai`, `/events/{id}/campaign-builder` |
 | Approvals | `/approvals`, `/approvals/revision`, event approvals tab |
 | Comms Hub | `/communications` |
+| Settings | `/settings/organization`, `/settings/team-access` |
 
 ## Known coverage limitations
 
@@ -156,15 +211,25 @@ K6_CLEANUP_DELETE_USERS=true TEST_RUN_ID=… npm run test:load:cleanup
 - Approve → Meta publish, inbox send, flyer/AI generate, Stripe, OAuth, and cron routes are **out of scope** (unsafe side effects)
 - Cookie sessions expire — re-mint when warm-up fails
 - Single `COOKIE` fallback cannot validate 20-tenant isolation
+- No seeded user currently belongs to 2+ organizations, so `light-peak`'s 5%
+  org-switch traffic slice has no eligible subject and falls back to a plain
+  dashboard view (`scenarios/org-switch.js`). To exercise real org switching,
+  extend the seed script to give a small number of users a second
+  membership (`session.organizationIds` in the fixture) — the scenario
+  already supports this shape and needs no other code changes.
+- `workflow_duration_ms` is a reported Trend, not a threshold gate — it
+  measures whole-workflow time including the intentional 2-8s think-time
+  pauses between steps, so multi-step workflows legitimately show
+  20-35s p95 even when every `http_req_duration` is sub-second.
 
 ## File layout
 
 ```text
 load-tests/k6/
-  smoke.js | twenty-schools.js
+  smoke.js | twenty-schools.js | light-peak.js
   config/   environments.js thresholds.js workload.js
   helpers/  auth http checks organization test-data metrics
-  scenarios/ dashboard calendar-events communications-* approvals run-mix
+  scenarios/ dashboard calendar-events communications-* approvals settings-viewer org-switch run-mix
   data/     schools.js accounts.example.json
   scripts/  seed-load-test-data.mjs mint-sessions.mjs cleanup-test-data.mjs
 ```
@@ -172,3 +237,4 @@ load-tests/k6/
 ## Related
 
 - Playwright wall-clock budgets: `npm run test:hey-ralli:perf` → [docs/qa/performance-budget.md](../../docs/qa/performance-budget.md)
+- Findings from recorded runs: [docs/qa/k6-load-test-findings.md](../../docs/qa/k6-load-test-findings.md)

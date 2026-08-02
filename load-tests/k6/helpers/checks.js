@@ -1,4 +1,5 @@
 import { check } from "k6";
+import crypto from "k6/crypto";
 import {
   authFailures,
   tenantIsolationFailures,
@@ -47,14 +48,24 @@ export function recordStatusMetrics(res, { expectAuth = true } = {}) {
   }
 }
 
+/** Short, non-reversible fingerprint of a response body for audit logs (never the raw body). */
+export function responseHash(body) {
+  return crypto.sha256(String(body || ""), "hex").slice(0, 16);
+}
+
 /**
  * Tenant isolation: body must not contain foreign seeded org UUIDs.
  * Also optionally require expected org id when present in HTML.
+ *
+ * On a leak, logs a structured (non-sensitive) audit record — route,
+ * expected/detected org id, VU, iteration, timestamp, and a body hash —
+ * without ever logging cookies, tokens, or full response bodies.
  */
 export function assertTenantIsolation(res, {
   expectedOrgId,
   foreignOrgIds = [],
   tag = "page",
+  userLabel,
 } = {}) {
   const body = String(res.body || "");
   let leakedOrgId = null;
@@ -66,7 +77,23 @@ export function assertTenantIsolation(res, {
     }
   }
 
-  if (leakedOrgId) tenantIsolationFailures.add(1);
+  if (leakedOrgId) {
+    tenantIsolationFailures.add(1);
+    console.error(
+      JSON.stringify({
+        event: "tenant_isolation_failure",
+        route: tag,
+        expectedOrgId: expectedOrgId || null,
+        detectedForeignOrgId: leakedOrgId,
+        vu: __VU,
+        iteration: __ITER,
+        testUser: userLabel || null,
+        timestamp: new Date().toISOString(),
+        responseHash: responseHash(body),
+        status: res.status,
+      }),
+    );
+  }
 
   const checks = {
     [`${tag} no foreign org id`]: () => !leakedOrgId,
@@ -108,7 +135,22 @@ export function assertCrossTenantDenied(res, {
     !looksLikeLoginRedirect(res);
 
   const denied = statusOk && !disclosesOrg && !disclosesTitle;
-  if (!denied) tenantIsolationFailures.add(1);
+  if (!denied) {
+    tenantIsolationFailures.add(1);
+    console.error(
+      JSON.stringify({
+        event: "tenant_isolation_failure",
+        route: tag,
+        expectedOrgId: null,
+        detectedForeignOrgId: foreignOrgId || null,
+        vu: __VU,
+        iteration: __ITER,
+        timestamp: new Date().toISOString(),
+        responseHash: responseHash(body),
+        status: res.status,
+      }),
+    );
+  }
 
   return check(res, {
     [`${tag} non-disclosing`]: () => denied,
