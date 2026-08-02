@@ -47,7 +47,15 @@
     "test:load:launch-spike": "k6 run load-tests/k6/launch-spike.js",
     "test:load:headroom-warmup": "k6 run load-tests/k6/launch-headroom-warmup.js",
     "test:load:headroom": "k6 run load-tests/k6/launch-headroom.js",
-    "test:load:cleanup": "node --env-file=.env.staging.local load-tests/k6/scripts/cleanup-test-data.mjs"
+    "test:load:cleanup": "node --env-file=.env.staging.local load-tests/k6/scripts/cleanup-test-data.mjs",
+    "test:load:seed:100-schools:dry-run": "SEED_PROFILE=100-school-architecture SEED_DRY_RUN=true node --env-file=.env.staging.local load-tests/k6/scripts/seed-architecture-dataset.mjs",
+    "test:load:seed:100-schools": "SEED_PROFILE=100-school-architecture node --env-file=.env.staging.local load-tests/k6/scripts/seed-architecture-dataset.mjs",
+    "test:load:seed:100-schools:unlock": "SEED_PROFILE=100-school-architecture SEED_FORCE_UNLOCK=true node --env-file=.env.staging.local load-tests/k6/scripts/seed-unlock.mjs",
+    "test:load:validate:100-schools": "node --env-file=.env.staging.local load-tests/k6/scripts/validate-architecture-seed.mjs",
+    "test:load:cleanup:100-schools": "SEED_PROFILE=100-school-architecture node --env-file=.env.staging.local load-tests/k6/scripts/cleanup-test-data.mjs",
+    "test:load:mint-sessions:100-schools": "SEED_PROFILE=100-school-architecture node --env-file=.env.staging.local load-tests/k6/scripts/mint-sessions.mjs",
+    "test:load:snapshot:database": "node --env-file=.env.staging.local load-tests/k6/scripts/snapshot-database.mjs",
+    "test:load:preflight:100-schools": "node --env-file=.env.staging.local load-tests/k6/scripts/preflight-100-schools.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

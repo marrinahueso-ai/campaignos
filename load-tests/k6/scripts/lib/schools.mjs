@@ -2,8 +2,8 @@
 
 export const SCHOOL_COUNT = 20;
 
-export function schoolName(index) {
-  const n = String(index).padStart(2, "0");
+export function schoolName(index, { pad = 2 } = {}) {
+  const n = String(index).padStart(pad, "0");
   return `Load Test School ${n}`;
 }
 
@@ -57,19 +57,20 @@ export function buildSchoolUsers(
   schoolIndex,
   testRunId,
   domain = "loadtest.heyralli.invalid",
+  { roleBlueprint = ROLE_BLUEPRINT, pad = 2 } = {},
 ) {
-  const n = String(schoolIndex).padStart(2, "0");
-  return ROLE_BLUEPRINT.map((role) => ({
+  const n = String(schoolIndex).padStart(pad, "0");
+  return roleBlueprint.map((role) => ({
     ...role,
     email: `loadtest+s${n}-${role.key}-${testRunId}@${domain}`.toLowerCase(),
-    displayName: `[k6][${testRunId}] ${schoolName(schoolIndex)} ${role.label}`,
+    displayName: `[k6][${testRunId}] ${schoolName(schoolIndex, { pad })} ${role.label}`,
   }));
 }
 
-export function listSchools(count = SCHOOL_COUNT) {
+export function listSchools(count = SCHOOL_COUNT, { pad = 2 } = {}) {
   return Array.from({ length: count }, (_, i) => {
     const index = i + 1;
-    return { index, name: schoolName(index) };
+    return { index, name: schoolName(index, { pad }) };
   });
 }
 

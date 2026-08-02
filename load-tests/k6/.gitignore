@@ -9,4 +9,7 @@ cookies.env
 *.session
 data/accounts.local.json
 data/sessions.local.json
+data/accounts.*.local.json
+data/sessions.*.local.json
+data/db-snapshot.*.local.json
 results/

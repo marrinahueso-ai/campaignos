@@ -47,6 +47,55 @@ export function k6Root() {
   return K6_ROOT;
 }
 
+/** Known production Supabase project refs — hard-blocked, no override. */
+const PRODUCTION_PROJECT_REFS = new Set(["zyllfqieeihshnwpakiv"]);
+
+export function projectRefFromSupabaseUrl(url) {
+  try {
+    return new URL(url).hostname.split(".")[0];
+  } catch {
+    throw new Error(`Invalid Supabase URL: ${url}`);
+  }
+}
+
+/**
+ * Prints the target Supabase project ref and unconditionally refuses to
+ * continue if it matches a known production project. There is no
+ * environment-variable override for this check — production is never a
+ * valid target for seed/validate/cleanup/snapshot tooling.
+ */
+export function assertStagingProject(supabaseUrl) {
+  const ref = projectRefFromSupabaseUrl(supabaseUrl);
+  console.log(`[safety] Supabase project ref: ${ref}`);
+  if (PRODUCTION_PROJECT_REFS.has(ref)) {
+    throw new Error(
+      `Refusing to run against production Supabase project (ref=${ref}). ` +
+        `This tool never writes to production and has no override for this check.`,
+    );
+  }
+  return ref;
+}
+
+/**
+ * Requires an explicit, profile-matching confirmation before any
+ * destructive/write operation. Dry runs should skip this check entirely.
+ */
+export function requireExplicitConfirmation(profileKey) {
+  const confirm = process.env.SEED_CONFIRM;
+  if (confirm !== profileKey) {
+    throw new Error(
+      `Refusing to write without explicit confirmation. ` +
+        `Set SEED_CONFIRM=${profileKey} to proceed, or SEED_DRY_RUN=true to preview only.`,
+    );
+  }
+}
+
+export function isDryRun() {
+  return (
+    process.argv.includes("--dry-run") || process.env.SEED_DRY_RUN === "true"
+  );
+}
+
 const PRODUCTION_HOST_PATTERNS = [
   /^heyralli\.com$/i,
   /^www\.heyralli\.com$/i,

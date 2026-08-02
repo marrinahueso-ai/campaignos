@@ -224,6 +224,53 @@ TEST_RUN_ID=… npm run test:load:cleanup
 K6_CLEANUP_DELETE_USERS=true TEST_RUN_ID=… npm run test:load:cleanup
 ```
 
+## 100-school architecture validation (separate from the 20-school k6 fixture)
+
+A one-off, larger dataset for validating schema/RLS/indexing behavior at 5x
+scale — **not** a k6 load profile, and deliberately isolated from
+`data/accounts.local.json` (used by every k6 profile above). See
+[`docs/qa/100-school-pre-seed-baseline.md`](../../docs/qa/100-school-pre-seed-baseline.md)
+and [`docs/qa/100-school-post-seed-nano-baseline.md`](../../docs/qa/100-school-post-seed-nano-baseline.md).
+
+Builds 100 orgs / 800 users / 2,500 events / 12,500 milestones
+(`approval_scheduling_items`) + representative communications, AI-asset
+metadata, inbox threads, brand-kit items, calendar imports, and an
+org-scoped communication playbook — using the real schema/FKs, no invented
+tables or columns, and no real external-provider objects (see
+`scripts/lib/architecture-profile.mjs` for exact volumes and content).
+
+```bash
+export TEST_RUN_ID=arch100
+export K6_TEST_PASSWORD='your-strong-test-password'
+
+# Preview intended inserts — no writes
+npm run test:load:seed:100-schools:dry-run
+
+# Explicit confirmation required to actually write
+SEED_CONFIRM=100-school-architecture npm run test:load:seed:100-schools
+
+# Verify counts, role coverage, no orphans/cross-tenant rows, RLS negative access
+npm run test:load:validate:100-schools
+
+# Row-count + storage-bucket snapshot (see script header for what it does NOT capture)
+npm run test:load:snapshot:database -- --profile=100-school-architecture
+
+# Cleanup (scoped to this profile's accounts file + TEST_RUN_ID name pattern)
+npm run test:load:cleanup:100-schools
+```
+
+Safety: refuses to run against the known production Supabase project ref
+(no override), always prints the target project ref, requires
+`SEED_PROFILE=100-school-architecture`, requires `SEED_CONFIRM` to match the
+profile before writing, and is idempotent (fetch-existing-then-insert-missing
+for every table; safe to re-run after an interruption). Auth-user creation
+uses bounded concurrency (6) with retry + exponential backoff on rate
+limits and progress logging.
+
+No k6 load profile has been run against this dataset yet — seeding,
+integrity validation, and the post-seed snapshot are deliberately the last
+step before any performance test at this scale.
+
 ## Routes exercised (real App Router pages)
 
 | Workflow | Paths |
@@ -283,6 +330,9 @@ load-tests/k6/
   scenarios/ dashboard calendar-events communications-* approvals settings-viewer org-switch run-mix
   data/     schools.js accounts.example.json
   scripts/  seed-load-test-data.mjs mint-sessions.mjs cleanup-test-data.mjs
+            seed-architecture-dataset.mjs validate-architecture-seed.mjs
+            snapshot-database.mjs
+            lib/ env.mjs schools.mjs architecture-profile.mjs
 ```
 
 ## Related

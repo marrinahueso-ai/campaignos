@@ -27,10 +27,19 @@ const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
 const anonKey = requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 const ACTIVE_ORG_COOKIE = "campaignos-active-organization-id";
 
-const accountsPath = resolve(k6Root(), "data/accounts.local.json");
+// SEED_PROFILE is optional. Unset → original 20-school fixture (unchanged
+// behavior). Set (e.g. 100-school-architecture) → that profile's fixture,
+// so the same session-minting tool works for future large-scale load tests
+// without touching the already-validated 20-school files.
+const seedProfile = process.env.SEED_PROFILE || "";
+const accountsFileName = seedProfile ? `accounts.${seedProfile}.local.json` : "accounts.local.json";
+const sessionsFileName = seedProfile ? `sessions.${seedProfile}.local.json` : "sessions.local.json";
+
+const accountsPath = resolve(k6Root(), "data", accountsFileName);
 if (!existsSync(accountsPath)) {
   console.error(
-    `[mint] Missing ${accountsPath}. Run npm run test:load:seed first.`,
+    `[mint] Missing ${accountsPath}. Run the matching seed script first ` +
+      `(npm run test:load:seed${seedProfile ? ":100-schools" : ""}).`,
   );
   process.exit(1);
 }
@@ -183,6 +192,7 @@ async function main() {
 
   const out = {
     testRunId: accounts.testRunId || testRunId,
+    seedProfile: seedProfile || undefined,
     mintedAt: new Date().toISOString(),
     schools: schoolsMeta,
     sessions,
@@ -191,7 +201,7 @@ async function main() {
 
   const outDir = resolve(k6Root(), "data");
   mkdirSync(outDir, { recursive: true });
-  const outPath = resolve(outDir, "sessions.local.json");
+  const outPath = resolve(outDir, sessionsFileName);
   writeFileSync(outPath, JSON.stringify(out, null, 2));
   console.log(`[mint] Wrote ${sessions.length} sessions → ${outPath}`);
 }
