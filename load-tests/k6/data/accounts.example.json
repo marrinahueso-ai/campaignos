@@ -1,0 +1,30 @@
+{
+  "testRunId": "k6-example",
+  "createdAt": "2026-08-01T00:00:00.000Z",
+  "passwordEnv": "K6_TEST_PASSWORD",
+  "schools": [
+    {
+      "index": 1,
+      "name": "Load Test School 01",
+      "organizationId": "00000000-0000-4000-8000-000000000001",
+      "schoolYearId": "00000000-0000-4000-8000-000000000011",
+      "eventIds": ["00000000-0000-4000-8000-000000000021"],
+      "eventTitles": ["[k6][k6-example] School 01 Event 1"],
+      "users": [
+        {
+          "key": "president",
+          "email": "loadtest+s01-president-k6-example@loadtest.heyralli.invalid",
+          "userId": "00000000-0000-4000-8000-000000000031",
+          "campaignRole": "president",
+          "orgRoleName": "President",
+          "label": "President"
+        }
+      ]
+    }
+  ],
+  "foreignProbe": {
+    "organizationId": "00000000-0000-4000-8000-000000000002",
+    "eventId": "00000000-0000-4000-8000-000000000022",
+    "eventTitle": "[k6][k6-example] School 02 Event 1"
+  }
+}
