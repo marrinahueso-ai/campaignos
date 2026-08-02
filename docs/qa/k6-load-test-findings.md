@@ -1,13 +1,13 @@
 # Hey Ralli k6 load test — findings (first 20 schools)
 
-**Status:** Living
+**Status:** 20-school phase closed and passed (see final summary below); 100-school phase not started
 **Owner:** Engineering / QA
 **Last updated:** August 2, 2026
 **Related:** [k6 suite README](../../load-tests/k6/README.md) · [Performance budget](./performance-budget.md)
 
 Results from the staging (`heyralli-staging`) 20-school k6 suite: the initial
-smoke/20-schools pass, the 15-VU light-peak launch-readiness phase, and the
-30-VU launch-spike phase. This is a **capacity confidence check**, not a
+smoke/20-schools pass, the 15-VU light-peak, 30-VU launch-spike, and 50-VU
+headroom phases. This is a **capacity confidence check**, not a
 breaking-point stress test.
 
 ## Environment
@@ -213,6 +213,88 @@ entire 30-VU test window by 9+ hours; zero sent to any `loadtest+` address).
 **Result: 30-VU launch-spike profile PASSED all three runs** against every
 required hard gate. Safe to proceed to a 50-VU headroom test, with the
 tail-latency pattern above tracked as a watch item.
+
+## 50-VU headroom result
+
+**Deployment:** same Vercel Preview, production Next.js build, `heyralli-staging` only
+`https://campaignos-3a0ijxpfi-campignos.vercel.app`
+**Workload:** ramp 0→15→30→50 VUs (4m), hold 50 VUs (5m), ramp down (2m) — ~11 min, max 50 concurrent VUs
+**Traffic mix / sessions:** same validated mix; pinned exclusive session per VU (Finding 4)
+**Purpose:** measure whether meaningful headroom exists above expected launch traffic
+
+| Run | Checks | Tenant isolation failures | Auth failures | HTTP failure rate | Unexpected 4xx/5xx | Dropped iterations |
+|---|---|---:|---:|---:|---:|---:|
+| `launch-headroom-50vu-001` | 22766/22766 (100%) | 0 | 0 | 0.00% | 0 | 0 |
+| `launch-headroom-50vu-002` | 22950/22950 (100%) | 0 | 0 | 0.00% | 0 | 0 |
+| `launch-headroom-50vu-003` | 23227/23227 (100%) | 0 | 0 | 0.00% | 0 | 0 |
+| **Total** | **68943/68943 (100%)** | **0** | **0** | **0.00%** | **0** | **0** |
+
+`http_req_duration` (ms), overall:
+
+| Run | p50 | p90 | p95 | p99 | max |
+|---|---:|---:|---:|---:|---:|
+| 001 | 613 | 985 | 1310 | 4606 | 10896 |
+| 002 | 606 | 891 | 1017 | 2087 | 9886 |
+| 003 | 593 | 860 | 965 | 1200 | 3584 |
+
+Route-level p95 gates (all met):
+
+| Route | 001 | 002 | 003 | Gate |
+|---|---:|---:|---:|---:|
+| `dashboard` | 1431 | 1158 | 1126 | < 2000 |
+| `calendar` | 1070 | 1039 | 959 | < 2000 |
+| overall read | 1310 | 1017 | 965 | < 1500 |
+
+Slow-request counters (observational):
+
+| Run | >3s | >5s | >10s | >3s during 50-VU hold | >5s / >10s during hold |
+|---|---:|---:|---:|---:|---:|
+| 001 | 55 (1.39%) | 34 (0.86%) | 7 (0.18%) | 4 | 0 / 0 |
+| 002 | 31 (0.78%) | 27 (0.68%) | 0 | 0 | 0 / 0 |
+| 003 | 1 (0.02%) | 0 | 0 | 1 | 0 / 0 |
+
+**Tail-latency interpretation vs 15/30 VU:** overall p95 rose modestly from
+15→50 VU (~+33% mean) but was essentially flat vs 30 VU (~+4%). p99 and max
+at 50 VU were **lower** than the 30-VU worst case (p99 mean −48% vs 30 VU).
+Most >3s requests clustered during ramp-up/ramp-down (cold-start scaling),
+not during the 50-VU hold — hold windows had ≤4 requests >3s and **zero**
+requests >5s across all three runs. Latency also improved across the three
+recorded runs (warm cache / warmed function instances), which is the opposite
+of a growing-capacity failure mode.
+
+**Result: 50-VU headroom profile PASSED all three runs.** Meaningful headroom
+exists above expected launch traffic. Safe to proceed to 100-school validation,
+still watching cold-start tails during ramp transitions.
+
+## Final summary — 20-school phase (closed)
+
+Across four staged profiles against the same `heyralli-staging` 20-school /
+160-user environment (smoke → 15-VU light-peak → 30-VU launch-spike → 50-VU
+headroom), Hey Ralli passed every required launch gate on every recorded run:
+
+| Gate | Requirement | Result across all recorded runs |
+|---|---|---|
+| Tenant isolation failures | 0 | **0** (9/9 runs) |
+| Auth failures | 0 | **0** (9/9 runs, after Finding 4 fix) |
+| HTTP failure rate | < 1% | **0.00%** (9/9 runs) |
+| Unexpected 401/403/429/500 | 0 | **0** (9/9 runs) |
+| Dropped iterations | 0 | **0** (9/9 runs) |
+| Checks passed | ≥ 99% | **100%** (130,039/130,039 checks) |
+| Dashboard / calendar p95 | < 2000ms | met on every run (max 1571ms) |
+| Ordinary read p95 | < 1500ms | met on every run (max 1310ms) |
+
+Tail latency (p99/max) rose from 15→30 VU, driven by Preview-deployment
+cold starts during ramp transitions, then **held flat-to-improved** from
+30→50 VU with near-zero >5s requests during the steady hold window —
+evidence of meaningful headroom, not a capacity ceiling being approached.
+No external-provider side effects (no Resend email, no OpenAI/Meta/Stripe
+calls) were triggered in any of the 9 recorded runs.
+
+**Status: 20-school phase is closed and PASSED.** Hey Ralli is confirmed
+launch-ready for the first 20 school organizations at up to 50 concurrent
+users with headroom to spare. The next planned phase (100-school validation)
+is intentionally **not started** — see suite README for how to scale the
+seed/session fixtures when that phase is scheduled.
 
 ## Known coverage gaps to close before a higher-VU or write-path test
 

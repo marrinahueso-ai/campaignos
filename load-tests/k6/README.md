@@ -13,15 +13,17 @@ Twenty schools means twenty **tenants** in the fixture — not twenty virtual us
 | `light-peak` | ramp 0→5→10→15, hold 5m, ramp down 2m | ~10 min | all 20 |
 | `launch-spike` | ramp 0→10→20→30 (4m), hold 5m, ramp down 2m | ~11 min | all 20 |
 | `launch-spike-warmup` | ramp 0→4, hold ~1m40s | ~2 min (discarded) | all 20 |
+| `headroom` (50 VU) | ramp 0→15→30→50 (4m), hold 5m, ramp down 2m | ~11 min | all 20 |
+| `headroom-warmup` | ramp 0→5, hold ~1m40s | ~2 min (discarded) | all 20 |
 
 Traffic mix (`smoke` / `twenty-schools`): ~35% dashboard, 25% calendar/events, 15% Create with AI (read), 15% approvals (read), 10% Communications Hub (read).
 
-Traffic mix (`light-peak` / `launch-spike`): 30% dashboard, 25% calendar/events, 15% Create with AI (read), 10% approvals (read), 10% Communications Hub (read), 5% team/settings (read), 5% organization switching (falls back to a dashboard view when no seeded user belongs to 2+ orgs — see "Known coverage limitations").
+Traffic mix (`light-peak` / `launch-spike` / `headroom`): 30% dashboard, 25% calendar/events, 15% Create with AI (read), 10% approvals (read), 10% Communications Hub (read), 5% team/settings (read), 5% organization switching (falls back to a dashboard view when no seeded user belongs to 2+ orgs — see "Known coverage limitations").
 
-`launch-spike` assigns each VU one **exclusive, pinned session** for its whole
-run (school-interleaved so VUs 1–20 cover all 20 schools) instead of the
-time-varying `(VU + ITER)` selection the other profiles use — see "Known
-coverage limitations" for why.
+`launch-spike` and `headroom` assign each VU one **exclusive, pinned session**
+for its whole run (school-interleaved so VUs 1–20 cover all 20 schools)
+instead of the time-varying `(VU + ITER)` selection the other profiles use —
+see "Known coverage limitations" for why.
 
 Think time between actions: **2–8 seconds** (longer after page-level workflows). No machine-speed request loops.
 
@@ -180,6 +182,8 @@ npm run test:load:20-schools
 npm run test:load:light-peak
 npm run test:load:launch-spike-warmup   # discardable, run before launch-spike
 npm run test:load:launch-spike
+npm run test:load:headroom-warmup       # discardable, run before headroom
+npm run test:load:headroom
 ```
 
 Or directly:
@@ -190,6 +194,8 @@ k6 run load-tests/k6/twenty-schools.js
 k6 run load-tests/k6/light-peak.js
 k6 run load-tests/k6/launch-spike-warmup.js
 k6 run load-tests/k6/launch-spike.js
+k6 run load-tests/k6/launch-headroom-warmup.js
+k6 run load-tests/k6/launch-headroom.js
 ```
 
 JSON summaries write under `load-tests/k6/results/` (gitignored).
@@ -269,7 +275,9 @@ K6_CLEANUP_DELETE_USERS=true TEST_RUN_ID=… npm run test:load:cleanup
 
 ```text
 load-tests/k6/
-  smoke.js | twenty-schools.js | light-peak.js | launch-spike.js | launch-spike-warmup.js
+  smoke.js | twenty-schools.js | light-peak.js
+  launch-spike.js | launch-spike-warmup.js
+  launch-headroom.js | launch-headroom-warmup.js
   config/   environments.js thresholds.js workload.js
   helpers/  auth http checks organization test-data metrics
   scenarios/ dashboard calendar-events communications-* approvals settings-viewer org-switch run-mix

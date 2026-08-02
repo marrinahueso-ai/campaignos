@@ -101,6 +101,46 @@ export const LAUNCH_SPIKE_WARMUP_WORKLOAD = {
 };
 
 /**
+ * Headroom (50 VU): 0→15→30→50 over 4 minutes, hold 50 for 5 minutes, ramp
+ * down over 2 minutes — ~11 minutes total. Max 50 concurrent VUs. Purpose is
+ * to measure whether meaningful headroom exists above expected launch
+ * traffic — not to find a breaking point. Uses the same traffic mix and
+ * pinned-session assignment as launch-spike.
+ */
+export const HEADROOM_50VU_WORKLOAD = {
+  executor: "ramping-vus",
+  startVUs: 0,
+  stages: [
+    { duration: "1m", target: 15 },
+    { duration: "1m", target: 30 },
+    { duration: "2m", target: 50 },
+    { duration: "5m", target: 50 },
+    { duration: "2m", target: 0 },
+  ],
+  gracefulRampDown: "60s",
+};
+
+/**
+ * Discardable warm-up ahead of recorded 50-VU headroom runs: ~5 VUs for
+ * 2 minutes to wake the Preview deployment and confirm sessions/bypass.
+ */
+export const HEADROOM_50VU_WARMUP_WORKLOAD = {
+  executor: "ramping-vus",
+  startVUs: 0,
+  stages: [
+    { duration: "20s", target: 5 },
+    { duration: "1m40s", target: 5 },
+  ],
+  gracefulRampDown: "20s",
+};
+
+/** Hold window within HEADROOM_50VU_WORKLOAD as fraction of scenario progress. */
+export const HEADROOM_50VU_HOLD_PROGRESS = {
+  start: 4 / 11, // after 4m of ramp
+  end: 9 / 11, // before 2m ramp-down
+};
+
+/**
  * Weighted random workflow key.
  * @param {() => number} [rand] returns [0,1)
  * @param {Record<string, number>} [weights] defaults to the core 20-school mix

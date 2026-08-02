@@ -112,3 +112,12 @@ export function buildLightPeakThresholds(opts = {}) {
 export function buildLaunchSpikeThresholds(opts = {}) {
   return buildLightPeakThresholds(opts);
 }
+
+/**
+ * Headroom (50-VU) thresholds — same hard launch gates as light-peak /
+ * launch-spike. Tail-latency counters (slow_req_over_*) are observational
+ * only and are not pass/fail gates.
+ */
+export function buildHeadroom50Thresholds(opts = {}) {
+  return buildLaunchSpikeThresholds(opts);
+}

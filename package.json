@@ -45,6 +45,8 @@
     "test:load:light-peak": "k6 run load-tests/k6/light-peak.js",
     "test:load:launch-spike-warmup": "k6 run load-tests/k6/launch-spike-warmup.js",
     "test:load:launch-spike": "k6 run load-tests/k6/launch-spike.js",
+    "test:load:headroom-warmup": "k6 run load-tests/k6/launch-headroom-warmup.js",
+    "test:load:headroom": "k6 run load-tests/k6/launch-headroom.js",
     "test:load:cleanup": "node --env-file=.env.staging.local load-tests/k6/scripts/cleanup-test-data.mjs"
   },
   "dependencies": {
