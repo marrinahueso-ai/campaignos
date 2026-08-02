@@ -2,7 +2,7 @@
 
 **Status:** Living
 **Owner:** Engineering
-**Last updated:** August 1, 2026 (Flyer composer localStorage tenant isolation M10; multi-tenant / IDOR hardening pass); July 29, 2026 (all 25 findings, including Low/Info cleanup, fixed); Jul 30 2026 OWASP ZAP soft-launch pass — [owasp-zap.md](./owasp-zap.md)
+**Last updated:** August 1, 2026 (Event Detail ease client tenancy M11; Flyer composer localStorage M10; multi-tenant / IDOR hardening pass); July 29, 2026 (all 25 findings, including Low/Info cleanup, fixed); Jul 30 2026 OWASP ZAP soft-launch pass — [owasp-zap.md](./owasp-zap.md)
 **Related:** [Security](./README.md) · [OWASP ZAP soft-launch pass](./owasp-zap.md) · [Access & onboarding](./access-and-onboarding.md) · [Multi-tenant isolation](./multi-tenant-isolation.md) · [Access control](../engineering/access-control.md) · [Feature list](../product/feature-list.md)
 
 Tracks findings from the July 2026 full-app security audit (Authentication, Authorization/RBAC/RLS, injection/XSS/CSRF, API security & architecture) and their remediation status. Read this before re-auditing so prior findings aren't rediscovered as new.
@@ -70,6 +70,7 @@ App-layer gates on event-scoped mutations and service-role storage uploads. RLS 
 | M8 | Tasks Ease localStorage keys unscoped; not cleared on sign-out | Org (+ user) scoped keys via [`tasks-ease-storage-scope.ts`](../../src/lib/tasks-v2/tasks-ease-storage-scope.ts); cleared in `SignOutForm` alongside CB2 | ✅ Fixed |
 | M9 | Legacy unauthenticated latest-org fallback when membership table missing | Fail closed in `NODE_ENV === "production"` in [`organization-context.ts`](../../src/lib/auth/organization-context.ts); local-dev fallback retained | ✅ Fixed |
 | M10 | Flyer composer localStorage drafts used a global / event-only key; School B Preview could restore under School A (or any no-event session) | Org + event scoped keys (`hr-flyer-composer-draft:{orgId}:{eventId\|no-event}`) via [`storage-scope.ts`](../../src/lib/flyer-composer/storage-scope.ts) + [`create-with-ai-flyer.html`](../../public/create-with-ai-flyer.html); restore requires matching `organizationId` + `approvalEventId`; iframe remounts on org/event change; cleared in `SignOutForm` | ✅ Fixed |
+| M11 | Event Detail Tasks / Approvals / Insights: client state + localStorage pull across events/orgs; stale tab invalidates could apply Event A payloads onto Event B | `EventDetailShell` keyed by `event.id`; invalidate checks `cacheEventIdRef` before `applyTabData`; Tasks panel sets Tasks Ease storage scope, locks Ask AI/Add Task to `eventId`, clears/prunes optimistic tasks; Approvals drawers + Insights carousel/sync toast reset on event change; `TasksEaseList` reloads priorities per org and prunes overrides. Source-contract: [`event-detail-ease-tenancy.test.ts`](../../src/lib/events-phase3/__tests__/event-detail-ease-tenancy.test.ts) | ✅ Fixed |
 
 ### Known follow-up (not in this pass)
 

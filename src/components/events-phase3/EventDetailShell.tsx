@@ -639,8 +639,13 @@ export function EventDetailShell({
 
   const invalidateEventTab = useCallback(
     async (tabToRefresh: EventDetailLazyTab) => {
-      const cacheKey = eventTabCacheKey(event.id, tabToRefresh);
-      invalidateEventTabCacheEntry(tabCacheRef.current, event.id, tabToRefresh);
+      const requestEventId = event.id;
+      const cacheKey = eventTabCacheKey(requestEventId, tabToRefresh);
+      invalidateEventTabCacheEntry(
+        tabCacheRef.current,
+        requestEventId,
+        tabToRefresh,
+      );
       fetchInFlightRef.current.delete(cacheKey);
 
       if (invalidateInFlightRef.current.has(cacheKey)) {
@@ -651,7 +656,14 @@ export function EventDetailShell({
       setRefreshError(null);
 
       try {
-        const result = await loadEventDetailTabAction(event.id, tabToRefresh);
+        const result = await loadEventDetailTabAction(
+          requestEventId,
+          tabToRefresh,
+        );
+        // Drop stale applies after School A → School B navigation.
+        if (cacheEventIdRef.current !== requestEventId) {
+          return { success: false as const, error: "Event changed." };
+        }
         if (!result.success) {
           setRefreshError(result.error);
           return { success: false as const, error: result.error };
@@ -662,8 +674,12 @@ export function EventDetailShell({
         setLoadedTabs((prev) => new Set(prev).add(tabToRefresh));
 
         if (tabAffectsHeroStats(tabToRefresh)) {
-          const statsResult = await refreshEventDetailHeroStatsAction(event.id);
-          if (statsResult.success) {
+          const statsResult =
+            await refreshEventDetailHeroStatsAction(requestEventId);
+          if (
+            cacheEventIdRef.current === requestEventId &&
+            statsResult.success
+          ) {
             setLiveHeroStats(statsResult.data);
           }
         }
@@ -675,13 +691,17 @@ export function EventDetailShell({
           error instanceof Error
             ? error.message
             : "Unable to refresh this tab.";
-        setRefreshError(message);
+        if (cacheEventIdRef.current === requestEventId) {
+          setRefreshError(message);
+        }
         return { success: false as const, error: message };
       } finally {
         invalidateInFlightRef.current.delete(cacheKey);
-        setRefreshingTab((current) =>
-          current === tabToRefresh ? null : current,
-        );
+        if (cacheEventIdRef.current === requestEventId) {
+          setRefreshingTab((current) =>
+            current === tabToRefresh ? null : current,
+          );
+        }
       }
     },
     [event.id, applyTabData],

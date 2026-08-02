@@ -101,6 +101,7 @@ describe("mutation refresh wiring (source contract)", () => {
     assert.match(shell, /Saved, but this tab could not refresh/);
     assert.match(shell, /refreshEventDetailHeroStatsAction/);
     assert.match(shell, /invalidateEventTabCacheEntry/);
+    assert.match(shell, /cacheEventIdRef\.current !== requestEventId/);
   });
 
   it("hook falls back to router.refresh outside Event Detail", () => {
@@ -120,7 +121,7 @@ describe("mutation refresh wiring (source contract)", () => {
 
   it("Tasks create/complete/reorder/add-generated refresh the tasks tab", () => {
     assert.match(tasksEasePanel, /useEventTabMutationRefresh\("tasks"\)/);
-    assert.match(tasksEasePanel, /await refresh\(\)/);
+    assert.match(tasksEasePanel, /void refresh\(\)/);
     assert.match(tasksSidebar, /useEventTabMutationRefresh\("tasks"\)/);
     assert.match(tasksSidebar, /await refreshTasksTab\(\)/);
     assert.doesNotMatch(tasksEasePanel, /router\.refresh\(\)/);

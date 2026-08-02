@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Sparkles, X } from "lucide-react";
 import {
   addGeneratedTasksV2Action,
@@ -69,8 +69,10 @@ interface TasksEaseAskAiProps {
   events: TaskHubEventOption[];
   canEdit: boolean;
   aiAvailable: boolean;
-  aiUnavailableReason: string | null;
+  aiUnavailableReason?: string | null;
   preferredEventId?: string | null;
+  /** When set, force creates onto this event and disable the event picker. */
+  lockEventId?: string | null;
   /** When set (Mine scope), assign created tasks so they stay visible. */
   assignTo?: {
     userId: string;
@@ -143,6 +145,7 @@ export function TasksEaseAskAi({
   canEdit,
   aiAvailable,
   preferredEventId = null,
+  lockEventId = null,
   assignTo = null,
   onClose,
   onTasksAdded,
@@ -156,12 +159,32 @@ export function TasksEaseAskAi({
       ),
     [events],
   );
+  const lockedId =
+    lockEventId &&
+    sortedEvents.some((event) => event.eventId === lockEventId)
+      ? lockEventId
+      : null;
   const [eventId, setEventId] = useState(
-    preferredEventId &&
+    lockedId ||
+      (preferredEventId &&
       sortedEvents.some((event) => event.eventId === preferredEventId)
-      ? preferredEventId
-      : (sortedEvents[0]?.eventId ?? ""),
+        ? preferredEventId
+        : (sortedEvents[0]?.eventId ?? "")),
   );
+
+  // Keep locked / preferred event pinned if the parent event changes.
+  useEffect(() => {
+    if (lockedId) {
+      setEventId(lockedId);
+      return;
+    }
+    if (
+      preferredEventId &&
+      sortedEvents.some((event) => event.eventId === preferredEventId)
+    ) {
+      setEventId(preferredEventId);
+    }
+  }, [lockedId, preferredEventId, sortedEvents]);
   const [category, setCategory] = useState<string>("All Categories");
   const [prompt, setPrompt] = useState("");
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([]);
@@ -187,7 +210,8 @@ export function TasksEaseAskAi({
   }, [suggestions]);
 
   async function handleGenerate() {
-    if (!canEdit || !eventId) {
+    const targetEventId = lockedId ?? eventId;
+    if (!canEdit || !targetEventId) {
       setErrorMessage("Select an event first.");
       return;
     }
@@ -200,7 +224,7 @@ export function TasksEaseAskAi({
         focusParts.push(`Focus category: ${category}`);
       }
       const result = await generateTasksV2Action({
-        eventId,
+        eventId: targetEventId,
         userPrompt: focusParts.filter(Boolean).join("\n"),
       });
       if (!result.success) {
@@ -222,7 +246,8 @@ export function TasksEaseAskAi({
   }
 
   async function handleAddSelected() {
-    if (!canEdit || !eventId) return;
+    const targetEventId = lockedId ?? eventId;
+    if (!canEdit || !targetEventId) return;
     const chosen = suggestions.filter((s) => s.selected);
     if (chosen.length === 0) {
       setErrorMessage("Select at least one suggestion to add.");
@@ -232,7 +257,7 @@ export function TasksEaseAskAi({
     setErrorMessage(null);
     try {
       const result = await addGeneratedTasksV2Action({
-        eventId,
+        eventId: targetEventId,
         tasks: chosen.map((s) => ({
           title: s.title,
           dueDate: s.dueDate.trim() || null,
@@ -275,7 +300,7 @@ export function TasksEaseAskAi({
         prev.filter((s) => !addedTitles.has(s.title.trim().toLowerCase())),
       );
       onTasksAdded({
-        eventId,
+        eventId: targetEventId,
         created: result.created,
       });
     } finally {
@@ -362,9 +387,9 @@ export function TasksEaseAskAi({
                   </span>
                   <div className="relative">
                     <select
-                      value={eventId}
+                      value={lockedId ?? eventId}
                       onChange={(event) => setEventId(event.target.value)}
-                      disabled={sortedEvents.length === 0}
+                      disabled={Boolean(lockedId) || sortedEvents.length === 0}
                       className={selectClass}
                     >
                       {sortedEvents.length === 0 ? (

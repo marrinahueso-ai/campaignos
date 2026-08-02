@@ -52,6 +52,8 @@ interface TasksEaseListProps {
   emptyBody: string;
   /** Current user — used for “Needs you” badge. */
   viewerUserId?: string | null;
+  /** Active org — reloads priority prefs when org/user scope changes. */
+  organizationId?: string | null;
   /** Event Detail Tasks tab — hide redundant Event column. */
   hideEventColumn?: boolean;
 }
@@ -124,6 +126,7 @@ export const TasksEaseList = memo(function TasksEaseList({
   emptyTitle,
   emptyBody,
   viewerUserId = null,
+  organizationId = null,
   hideEventColumn = false,
 }: TasksEaseListProps) {
   const [, startTransition] = useTransition();
@@ -137,7 +140,41 @@ export const TasksEaseList = memo(function TasksEaseList({
 
   useEffect(() => {
     setPriorityOverrides(loadTasksEasePriorities());
-  }, []);
+  }, [organizationId, viewerUserId]);
+
+  // Prune optimistic overrides once rows leave the payload (memory + pull).
+  useEffect(() => {
+    const known = new Set<string>();
+    for (const group of eventGroups) {
+      for (const task of group.tasks) {
+        known.add(task.id);
+      }
+    }
+    setOverrides((current) => {
+      const ids = Object.keys(current);
+      if (ids.length === 0) return current;
+      let changed = false;
+      const next: Record<string, TaskOverride> = {};
+      for (const id of ids) {
+        if (known.has(id)) {
+          next[id] = current[id]!;
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : current;
+    });
+    setPendingIds((current) => {
+      if (current.size === 0) return current;
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of current) {
+        if (known.has(id)) next.add(id);
+        else changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, [eventGroups]);
 
   function resolvePriority(task: TaskHubTaskItem): TasksV2Priority {
     return priorityOverrides[task.id] ?? deriveTaskPriority(task, today);

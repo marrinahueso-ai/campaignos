@@ -367,6 +367,7 @@ export function EventDetailInsightsEasePanel({
 
   useEffect(() => {
     setSelectedIndex(0);
+    setSyncMessage(null);
   }, [data.eventId, posts.length]);
 
   const scrollToIndex = useCallback((index: number) => {

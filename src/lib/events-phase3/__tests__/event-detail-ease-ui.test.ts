@@ -57,6 +57,8 @@ describe("event detail ease UI contracts", () => {
     assert.match(panel, /hideEventColumn/);
     assert.match(panel, /TasksEaseAskAi/);
     assert.match(panel, /TasksEaseAddTaskModal/);
+    assert.match(panel, /lockEventId=\{eventId\}/);
+    assert.match(panel, /setTasksEaseStorageScope/);
     assert.match(panel, /event-tasks-empty/);
     assert.doesNotMatch(panel, /Needs you next/);
     assert.doesNotMatch(panel, /EaseFocusCard/);

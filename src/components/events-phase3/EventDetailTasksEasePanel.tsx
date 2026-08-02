@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import {
@@ -13,6 +13,7 @@ import { TasksEaseList } from "@/components/tasks-v2/TasksEaseList";
 import { TasksEaseTaskDrawer } from "@/components/tasks-v2/TasksEaseTaskDrawer";
 import { deriveInitials } from "@/lib/task-hub/org-members";
 import { eventTasksHref } from "@/lib/events/event-responsibility";
+import { setTasksEaseStorageScope } from "@/lib/tasks-v2/tasks-ease-storage-scope";
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 import type { TaskHubEventOption, TaskHubTaskItem } from "@/types/task-hub";
 import type { TasksV2PageData } from "@/types/tasks-v2";
@@ -29,6 +30,12 @@ export function EventDetailTasksEasePanel({
 }: {
   data: TasksV2PageData;
 }) {
+  // Scope prefs before TasksEaseList / Ask AI read priorities from localStorage.
+  setTasksEaseStorageScope({
+    organizationId: data.organizationId,
+    userId: data.viewer.userId,
+  });
+
   const refresh = useEventTabMutationRefresh("tasks");
   const [askAiOpen, setAskAiOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -45,6 +52,27 @@ export function EventDetailTasksEasePanel({
     data.events[0]?.eventId ??
     null;
 
+  // Clear optimistic UI / drawers when navigating to another event (no remount).
+  useEffect(() => {
+    setOptimisticTasks([]);
+    setActiveTask(null);
+    setAskAiOpen(false);
+    setAddOpen(false);
+    setAddStatus("todo");
+  }, [eventId]);
+
+  // Drop optimistic rows once the server payload includes them (memory + pull).
+  useEffect(() => {
+    const known = new Set(
+      data.eventGroups.flatMap((group) => group.tasks.map((task) => task.id)),
+    );
+    setOptimisticTasks((current) => {
+      if (current.length === 0) return current;
+      const next = current.filter((task) => !known.has(task.id));
+      return next.length === current.length ? current : next;
+    });
+  }, [data.eventGroups]);
+
   const eventOption: TaskHubEventOption | null = useMemo(() => {
     if (!eventId) return null;
     const fromData = data.events.find((event) => event.eventId === eventId);
@@ -60,9 +88,10 @@ export function EventDetailTasksEasePanel({
     return null;
   }, [data.events, data.eventGroups, eventId]);
 
+  /** Event panel is locked to this event — never offer other org events. */
   const eventOptions = useMemo(
-    () => (eventOption ? [eventOption] : data.events),
-    [data.events, eventOption],
+    () => (eventOption ? [eventOption] : []),
+    [eventOption],
   );
 
   const listGroups = useMemo(() => {
@@ -127,15 +156,22 @@ export function EventDetailTasksEasePanel({
 
   const handleCreated = useCallback(
     (task: TaskHubTaskItem) => {
+      if (eventId && task.eventId !== eventId) {
+        return;
+      }
       setOptimisticTasks((current) => [task, ...current]);
       setAddOpen(false);
       void refresh();
     },
-    [refresh],
+    [eventId, refresh],
   );
 
   const handleAskAiAdded = useCallback(
     (payload: TasksEaseAskAiAddedPayload) => {
+      if (eventId && payload.eventId !== eventId) {
+        setAskAiOpen(false);
+        return;
+      }
       const now = new Date().toISOString();
       const created = payload.created.map((row) => {
         const stub: TaskHubTaskItem = {
@@ -167,7 +203,7 @@ export function EventDetailTasksEasePanel({
       setAskAiOpen(false);
       void refresh();
     },
-    [assignTo, eventOption, refresh],
+    [assignTo, eventId, eventOption, refresh],
   );
 
   const createWithAiTabHref = eventId
@@ -258,6 +294,7 @@ export function EventDetailTasksEasePanel({
         ) : (
           <div className="min-h-[500px] overflow-x-auto overflow-y-visible pb-8">
             <TasksEaseList
+              key={eventId ?? "none"}
               eventGroups={listGroups}
               canEdit={data.canEdit}
               orgMembers={data.orgMembers}
@@ -267,6 +304,7 @@ export function EventDetailTasksEasePanel({
               emptyTitle="No tasks yet"
               emptyBody="Ask AI or add a task manually."
               viewerUserId={data.viewer.userId}
+              organizationId={data.organizationId}
               hideEventColumn
             />
           </div>
@@ -280,6 +318,7 @@ export function EventDetailTasksEasePanel({
           aiAvailable={data.aiAvailable}
           aiUnavailableReason={data.aiUnavailableReason}
           preferredEventId={eventId}
+          lockEventId={eventId}
           assignTo={assignTo}
           onClose={() => setAskAiOpen(false)}
           onTasksAdded={handleAskAiAdded}
@@ -293,6 +332,7 @@ export function EventDetailTasksEasePanel({
           orgMembers={data.orgMembers}
           viewer={data.viewer}
           preferredEventId={eventId}
+          lockEventId={eventId}
           initialStatus={addStatus}
           onClose={() => setAddOpen(false)}
           onDraftWithAi={() => {
@@ -309,6 +349,10 @@ export function EventDetailTasksEasePanel({
         orgMembers={data.orgMembers}
         onClose={() => setActiveTask(null)}
         onTaskUpdated={(task) => {
+          if (eventId && task.eventId !== eventId) {
+            setActiveTask(null);
+            return;
+          }
           setActiveTask(task);
           setOptimisticTasks((current) =>
             current.map((row) => (row.id === task.id ? task : row)),

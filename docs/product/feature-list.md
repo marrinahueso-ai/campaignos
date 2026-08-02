@@ -61,6 +61,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Event assignments — **shipped**
 - Permission gates (artwork, approve, publish, people, integrations, etc.) — **shipped**
 - Multi-tenant / IDOR app-layer gates on event-scoped mutations (CB2 upload/generate/session, event details, approvals scheduling, AI credit billing, org scope resolution) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#multi-tenant--idor-hardening-august-2026))
+- Event Detail Tasks / Approvals / Insights client isolation (remount per event, scoped Tasks Ease prefs, locked Ask AI / Add Task, stale tab-invalidate drop) — **shipped** (security: [multi-tenant-isolation.md](../security/multi-tenant-isolation.md) · M11 in [audit-remediation.md](../security/audit-remediation.md#multi-tenant--idor-hardening-august-2026))
 - Dashboard layout membership fan-out collapsed (one cached `organization_users` load for switcher + active seat; org-by-id / users / playbooks / people workload request-cached) — **shipped** (perf)
 - Role simulator (dev/test, gated) — **shipped**
 

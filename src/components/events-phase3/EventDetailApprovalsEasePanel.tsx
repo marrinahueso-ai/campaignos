@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { revisionPath } from "@/components/approvals-revision/map-item";
 import { RequestChangesModal } from "@/components/approvals-scheduling/RequestChangesModal";
 import { ReviewDrawer } from "@/components/approvals-scheduling/ReviewDrawer";
@@ -92,6 +92,17 @@ export function EventDetailApprovalsEasePanel({
     scheduleSubline: string | null;
     pendingWarning?: string | null;
   } | null>(null);
+
+  // Clear drawers / toasts when navigating School A → School B.
+  useEffect(() => {
+    setReviewItem(null);
+    setRequestItem(null);
+    setCelebration(null);
+    setActionError(null);
+    setActionWarning(null);
+    setRetryingId(null);
+    setIsSubmitting(false);
+  }, [lockedEventId]);
 
   const scoped = useMemo(
     () => items.filter((item) => item.eventId === lockedEventId),

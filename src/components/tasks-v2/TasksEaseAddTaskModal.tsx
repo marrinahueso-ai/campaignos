@@ -23,6 +23,8 @@ interface TasksEaseAddTaskModalProps {
   orgMembers: TaskHubOrgMember[];
   viewer: TasksV2Viewer;
   preferredEventId?: string | null;
+  /** When set, force creates onto this event and disable the event picker. */
+  lockEventId?: string | null;
   initialStatus?: EventPlaybookTaskStatus;
   /** Mine scope: auto-assign new tasks to the viewer. */
   assignToSelf?: boolean;
@@ -37,6 +39,7 @@ export function TasksEaseAddTaskModal({
   orgMembers,
   viewer,
   preferredEventId = null,
+  lockEventId = null,
   initialStatus = "todo",
   assignToSelf = false,
   onClose,
@@ -48,8 +51,13 @@ export function TasksEaseAddTaskModal({
   const [notes, setNotes] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [assigneeUserId, setAssigneeUserId] = useState("");
+  const lockedId =
+    lockEventId && events.some((event) => event.eventId === lockEventId)
+      ? lockEventId
+      : null;
   const [eventId, setEventId] = useState(
     () =>
+      lockedId ||
       (preferredEventId &&
         events.some((event) => event.eventId === preferredEventId) &&
         preferredEventId) ||
@@ -61,22 +69,34 @@ export function TasksEaseAddTaskModal({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (lockedId) {
+      setEventId(lockedId);
+      return;
+    }
+    if (
+      preferredEventId &&
+      events.some((event) => event.eventId === preferredEventId)
+    ) {
+      setEventId(preferredEventId);
+      return;
+    }
     if (!eventId && events[0]?.eventId) {
       setEventId(events[0].eventId);
     }
-  }, [eventId, events]);
+  }, [eventId, events, lockedId, preferredEventId]);
 
   function handleSubmit() {
     if (!canEdit) {
       setError("You don’t have permission to add tasks.");
       return;
     }
+    const targetEventId = lockedId ?? eventId;
     const trimmedTitle = title.trim();
-    if (!trimmedTitle || !eventId) {
+    if (!trimmedTitle || !targetEventId) {
       setError("Pick an event and a task name.");
       return;
     }
-    const eventOption = events.find((event) => event.eventId === eventId);
+    const eventOption = events.find((event) => event.eventId === targetEventId);
     if (!eventOption) {
       setError("Pick a valid event.");
       return;
@@ -112,7 +132,7 @@ export function TasksEaseAddTaskModal({
     setPending(true);
     setError(null);
     startTransition(async () => {
-      const result = await createTaskHubTaskAction(eventId, {
+      const result = await createTaskHubTaskAction(targetEventId, {
         title: trimmedTitle,
         dueDate: nextDueDate,
         assigneeUserId: nextAssigneeUserId,
@@ -127,7 +147,7 @@ export function TasksEaseAddTaskModal({
 
       if (nextNotes) {
         await updateTaskHubTaskAction(
-          eventId,
+          targetEventId,
           result.taskId,
           { notes: nextNotes },
           trimmedTitle,
@@ -135,7 +155,7 @@ export function TasksEaseAddTaskModal({
       }
       if (status !== "todo") {
         await updateTaskHubTaskStatusAction(
-          eventId,
+          targetEventId,
           result.taskId,
           status,
           trimmedTitle,
@@ -145,7 +165,7 @@ export function TasksEaseAddTaskModal({
       setPending(false);
       onCreated({
         id: result.taskId,
-        eventId,
+        eventId: targetEventId,
         title: trimmedTitle,
         status,
         sortOrder: 0,
@@ -284,9 +304,9 @@ export function TasksEaseAddTaskModal({
                   Tied to Event
                 </span>
                 <select
-                  value={eventId}
+                  value={lockedId ?? eventId}
                   onChange={(event) => setEventId(event.target.value)}
-                  disabled={events.length === 0}
+                  disabled={Boolean(lockedId) || events.length === 0}
                   className="w-full appearance-none rounded-2xl border border-[#e8e2d9] bg-[#faf8f5] px-4 py-3 pr-10 text-sm font-medium text-[#2a2622] outline-none focus:border-[#2f4a3c] focus:shadow-[0_0_0_4px_rgba(47,74,60,0.05)]"
                 >
                   {events.length === 0 ? (

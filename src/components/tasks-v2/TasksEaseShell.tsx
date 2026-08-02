@@ -751,6 +751,7 @@ export function TasksEaseShell({
               onEventColorChange={handleEventColorChange}
               onOpenTask={handleOpenTask}
               viewerUserId={data.viewer.userId}
+              organizationId={data.organizationId}
               emptyTitle={
                 scope === "mine" ? "Nothing assigned to you" : "No tasks yet"
               }

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { EventDetailShell } from "@/components/events-phase3/EventDetailShell";
 import { EventManageAssignmentsModal } from "@/components/events-phase3/EventManageAssignmentsModal";
 import type { EventApprovalFlowStep } from "@/components/events-phase3/EventDetailShell";
@@ -65,6 +65,18 @@ export function EventDetailPhase3Client({
   const [liveCommitteeId, setLiveCommitteeId] = useState(committeeId);
   const [liveCommitteeName, setLiveCommitteeName] = useState(committeeName);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const eventIdRef = useRef(event.id);
+  eventIdRef.current = event.id;
+
+  // Drop roster/modal state when navigating School A → School B (same client tree).
+  useEffect(() => {
+    setManageOpen(false);
+    setMembers(null);
+    setLiveAssignments([]);
+    setLiveCommitteeId(committeeId);
+    setLiveCommitteeName(committeeName);
+    setLoadError(null);
+  }, [event.id, committeeId, committeeName]);
 
   function openManageAssignments() {
     setManageOpen(true);
@@ -72,10 +84,15 @@ export function EventDetailPhase3Client({
     if (members) {
       return;
     }
+    const requestEventId = event.id;
     startTransition(async () => {
-      const result = await loadEventManageAssignmentsAction(event.id);
+      const result = await loadEventManageAssignmentsAction(requestEventId);
       if (!result.success) {
         setLoadError(result.error);
+        return;
+      }
+      // Ignore stale responses after an event switch.
+      if (requestEventId !== eventIdRef.current) {
         return;
       }
       setMembers(result.members);
@@ -88,6 +105,7 @@ export function EventDetailPhase3Client({
   return (
     <>
       <EventDetailShell
+        key={event.id}
         event={event}
         artwork={artwork}
         playbookName={playbookName}
