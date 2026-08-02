@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   mapAssignmentRow,
+  mapParticipantRow,
   mapSnapshotRow,
   mapSourceRow,
   mapSyncAttemptRow,
@@ -48,17 +49,34 @@ export async function getVolunteerSnapshotById(
     return null;
   }
 
-  const { data: assignmentRows } = await supabase
-    .from("event_volunteer_assignments")
-    .select("*")
-    .eq("snapshot_id", snapshotId)
-    .order("source_order", { ascending: true });
+  const [{ data: assignmentRows }, { data: participantRows }] =
+    await Promise.all([
+      supabase
+        .from("event_volunteer_assignments")
+        .select("*")
+        .eq("snapshot_id", snapshotId)
+        .eq("organization_id", organizationId)
+        .order("source_order", { ascending: true }),
+      supabase
+        .from("event_volunteer_participants")
+        .select("*")
+        .eq("snapshot_id", snapshotId)
+        .eq("organization_id", organizationId)
+        .order("source_order", { ascending: true }),
+    ]);
 
   const assignments = (assignmentRows ?? []).map((row) =>
     mapAssignmentRow(row as Record<string, unknown>),
   );
+  const participants = (participantRows ?? []).map((row) =>
+    mapParticipantRow(row as Record<string, unknown>),
+  );
 
-  return mapSnapshotRow(data as Record<string, unknown>, assignments);
+  return mapSnapshotRow(
+    data as Record<string, unknown>,
+    assignments,
+    participants,
+  );
 }
 
 export async function getLatestConfirmedVolunteerSnapshot(

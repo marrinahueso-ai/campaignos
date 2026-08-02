@@ -249,6 +249,7 @@ export function summarizeAssignmentList(
 export function buildSnapshotFromAssignments(
   base: Omit<VolunteerSignupSnapshot, "totals" | "assignments" | "quantitiesComplete"> & {
     assignments: VolunteerSignupAssignment[];
+    participants?: VolunteerSignupSnapshot["participants"];
   },
 ): {
   snapshot: VolunteerSignupSnapshot;
@@ -275,6 +276,7 @@ export function buildSnapshotFromAssignments(
       openSpots: totalsResult.openSpots,
     },
     assignments: classified,
+    participants: base.participants ?? [],
     quantitiesComplete: totalsResult.quantitiesComplete,
   };
   const summary = summarizeAssignments(

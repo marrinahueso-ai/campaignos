@@ -2,10 +2,10 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 27, 2026  
+**Last updated:** August 1, 2026  
 **Related:** [Feature list](./feature-list.md) · [SignUpGenius import](../integrations/signupgenius.md) · [Access control](../engineering/access-control.md)
 
-Org-wide volunteer staffing overview at `/volunteers`. Aggregate fill rates and open spots only — **no volunteer names or contact details**.
+Org-wide volunteer staffing overview at `/volunteers`. Aggregate fill rates and open spots only — **no volunteer names or contact details** on this page. Named people (names only, no emails) live on each event’s Volunteers tab when SignUpGenius exposes public participants.
 
 ---
 
@@ -110,9 +110,10 @@ Null / incomplete quantities → no band coloring (em dash).
 
 ## Privacy
 
-- **No names or contact details** — individual signups are not shown
+- **Volunteer Master:** no names or contact details — individual signups are not shown here
 - Quantities and role names only from confirmed assignment rows
 - Connect / refresh / replace-link remain on the event Volunteers tab
+- **Event Volunteers tab** may show **names only** from public SignUpGenius participants; emails are never imported or displayed
 
 ---
 
@@ -121,11 +122,11 @@ Null / incomplete quantities → no band coloring (em dash).
 | Volunteer Master | Event Volunteers tab |
 |------------------|----------------------|
 | Org-wide scan | Single-event connect, review, confirm, refresh |
-| Reads confirmed snapshots | Writes sources + snapshots |
-| Same fill-rate color bands | Same bands on Overall Filled and per-role progress |
+| Reads confirmed snapshots (aggregates) | Writes sources + snapshots + named participants |
+| Same fill-rate color bands | List + accordion Grouped named roster + role fill KPIs |
 | Deep-links into the tab | Living import detail: [signupgenius.md](../integrations/signupgenius.md) |
 
-Ease overview on the event tab shows staffing health + **Refresh numbers**. Pending review uses the full connect/confirm Tab (date allowlist). Empty state can connect from the Ease panel.
+Ease overview on the event tab shows the Pilot named roster (List / accordion Grouped), KPIs, and **Refresh**. Grouped uses expandable role lines (not side-by-side cards). Pending review uses the full connect/confirm Tab (date allowlist). Empty state can connect from the Ease panel.
 
 ---
 
@@ -140,5 +141,5 @@ Ease overview on the event tab shows staffing health + **Refresh numbers**. Pend
 | Shared filters / bands / KPIs | `src/lib/event-volunteers/org-master-shared.ts` |
 | Nav | `src/components/layout/Sidebar.tsx` |
 | Volunteers deep link | `src/lib/events/event-responsibility.ts` (`eventVolunteersHref`) |
-| Event tab (Ease + connect / refresh) | `src/components/events-phase3/EventDetailVolunteersEasePanel.tsx` |
+| Event tab (Ease roster + connect / refresh) | `src/components/events-phase3/EventDetailVolunteersEasePanel.tsx`, `EventVolunteerRosterEase.tsx` |
 | Event tab (review / confirm / full overview) | `src/components/events-phase3/EventVolunteersTab.tsx` |

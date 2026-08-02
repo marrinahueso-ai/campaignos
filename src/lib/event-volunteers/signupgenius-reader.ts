@@ -10,7 +10,7 @@ import { recordApiCall } from "@/lib/ops/record-api-call";
 
 const FETCH_TIMEOUT_MS = 20_000;
 const USER_AGENT =
-  "HeyRalli-VolunteerStats/1.0 (+https://heyralli.com; aggregate-stats-only)";
+  "HeyRalli-VolunteerStats/1.0 (+https://heyralli.com; public-signup-import)";
 
 export type SignUpGeniusReadResult =
   | { ok: true; snapshot: VolunteerSignupSnapshot; validated: ValidatedSignUpGeniusUrl }
@@ -265,13 +265,9 @@ async function readSignUpGeniusSignupNetwork(
       };
     }
 
-    // Drop PII before any further processing.
-    const data = {
-      ...payload.DATA,
-      participants: undefined,
-    };
-
-    const normalized = normalizeSignUpGeniusPayload(data, {
+    // Pass participants through for optional name parse. Normalize keeps
+    // firstname/lastname only — emails and other PII are never persisted.
+    const normalized = normalizeSignUpGeniusPayload(payload.DATA, {
       sourceTitle: title,
       sourceUrl: validated.normalizedHref,
     });

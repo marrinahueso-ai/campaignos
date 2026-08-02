@@ -5,8 +5,10 @@ import {
   type AssignmentDateAllowlist,
 } from "@/lib/event-volunteers/assignment-list";
 import { mapSourceRow } from "@/lib/event-volunteers/mappers";
+import { filterParticipantsByDateAllowlist } from "@/lib/event-volunteers/participant-list";
 import { buildSnapshotFromAssignments } from "@/lib/event-volunteers/stats";
 import { readSignUpGeniusSignup } from "@/lib/event-volunteers/signupgenius-reader";
+import type { VolunteerSignupParticipant } from "@/lib/event-volunteers/types";
 import {
   createAdminClient,
   isSupabaseAdminConfigured,
@@ -163,9 +165,15 @@ async function syncVolunteerSourceForCron(
     return { ok: false, error: message };
   }
 
+  const scopedParticipants = filterParticipantsByDateAllowlist(
+    read.snapshot.participants ?? [],
+    source.includedAssignmentDates,
+  );
+
   const rebuilt = buildSnapshotFromAssignments({
     ...read.snapshot,
     assignments: scopedAssignments,
+    participants: scopedParticipants,
   });
 
   const persisted = await persistVolunteerSnapshotAdmin({
@@ -295,6 +303,33 @@ async function persistVolunteerSnapshotAdmin(input: {
   if (assignmentError) {
     await supabase.from("event_volunteer_snapshots").delete().eq("id", snapshotId);
     return { error: "Could not save volunteer assignments." };
+  }
+
+  const participants: VolunteerSignupParticipant[] =
+    input.snapshot.participants ?? [];
+  if (participants.length > 0) {
+    const participantRows = participants.map((participant, index) => ({
+      snapshot_id: snapshotId,
+      event_id: input.eventId,
+      organization_id: input.organizationId,
+      assignment_external_key: participant.assignmentExternalKey,
+      participant_key: participant.participantKey,
+      volunteer_name: participant.name,
+      role_name: participant.roleName,
+      assignment_date: participant.date ?? null,
+      start_time: participant.startTime ?? null,
+      end_time: participant.endTime ?? null,
+      location: participant.location ?? null,
+      status: participant.status,
+      source_order: index,
+    }));
+    const { error: participantError } = await supabase
+      .from("event_volunteer_participants")
+      .insert(participantRows);
+    if (participantError) {
+      await supabase.from("event_volunteer_snapshots").delete().eq("id", snapshotId);
+      return { error: "Could not save volunteer roster." };
+    }
   }
 
   await supabase

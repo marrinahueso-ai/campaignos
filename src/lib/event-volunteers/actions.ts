@@ -9,6 +9,7 @@ import {
   filterAssignmentsByDateAllowlist,
   normalizeDateAllowlist,
 } from "@/lib/event-volunteers/assignment-list";
+import { filterParticipantsByDateAllowlist } from "@/lib/event-volunteers/participant-list";
 import { buildSnapshotFromAssignments } from "@/lib/event-volunteers/stats";
 import { canManageVolunteerStats } from "@/lib/event-volunteers/permissions";
 import {
@@ -257,9 +258,15 @@ async function refreshVolunteerStatsInternal(input: {
     return { error: message };
   }
 
+  const scopedParticipants = filterParticipantsByDateAllowlist(
+    read.snapshot.participants ?? [],
+    allowlist,
+  );
+
   const rebuilt = buildSnapshotFromAssignments({
     ...read.snapshot,
     assignments: scopedAssignments,
+    participants: scopedParticipants,
   });
 
   const persisted = await persistVolunteerSnapshot({

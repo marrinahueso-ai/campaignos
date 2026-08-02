@@ -34,6 +34,27 @@ export type VolunteerAssignmentView = VolunteerSignupAssignment & {
   sourceOrder: number;
 };
 
+/** Person-level signup from public SignUpGenius participants (name only — no email). */
+export type VolunteerParticipantStatus = "confirmed" | "unknown";
+
+export type VolunteerSignupParticipant = {
+  /** Stable key within the assignment (SUG participant id or synthetic). */
+  participantKey: string;
+  /** Matches assignment `externalKey` (usually slotitemid). */
+  assignmentExternalKey: string;
+  name: string;
+  roleName: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  status: VolunteerParticipantStatus;
+};
+
+export type VolunteerParticipantView = VolunteerSignupParticipant & {
+  sourceOrder: number;
+};
+
 export type VolunteerSignupSnapshot = {
   sourceTitle?: string;
   sourceDescription?: string;
@@ -45,6 +66,8 @@ export type VolunteerSignupSnapshot = {
     openSpots: number | null;
   };
   assignments: Array<VolunteerSignupAssignment | VolunteerAssignmentView>;
+  /** Named people when the public API exposes them; empty when shownames is off. */
+  participants: VolunteerSignupParticipant[];
   quantitiesComplete: boolean;
   parseVersion: string;
 };
@@ -96,6 +119,7 @@ export type VolunteerSnapshotRecord = {
   signupDeadline: string | null;
   summary: VolunteerStatsSummary;
   assignments: VolunteerAssignmentView[];
+  participants: VolunteerParticipantView[];
 };
 
 export type VolunteerSyncAttemptRecord = {
@@ -107,4 +131,4 @@ export type VolunteerSyncAttemptRecord = {
   finishedAt: string;
 };
 
-export const VOLUNTEER_PARSE_VERSION = "1";
+export const VOLUNTEER_PARSE_VERSION = "2";

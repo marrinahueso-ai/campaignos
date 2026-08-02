@@ -2,10 +2,10 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 27, 2026  
-**Related:** [Feature list](../product/feature-list.md) · [Volunteer Master](../product/volunteer-master.md) · [Database](../engineering/database.md) · [Access control](../engineering/access-control.md)
+**Last updated:** August 1, 2026  
+**Related:** [Feature list](../product/feature-list.md) · [Volunteer Master](../product/volunteer-master.md) · [Database](../engineering/database.md) · [Access control](../engineering/access-control.md) · [Multi-tenant isolation](../security/multi-tenant-isolation.md)
 
-Public SignUpGenius **go** links can be connected on an event’s **Volunteers** tab. Hey Ralli imports aggregate role availability only (no names or contact details).
+Public SignUpGenius **go** links can be connected on an event’s **Volunteers** tab. Hey Ralli imports aggregate role availability and, when the public API exposes them, **named participants** (`firstname` + `lastname` only). **Emails are not stored or shown** — even if the public payload includes an email field.
 
 **Product decision (Jul 27, 2026):** URL connect is the **long-term** path. SignUpGenius **Pro** is required for their API/OAuth, and many orgs do not have Pro — so we do **not** ship Settings OAuth or tease “Coming soon.” When most customers are on Pro, we may add OAuth as a **second** option alongside URL. Until then: one clear flow.
 
@@ -33,8 +33,15 @@ Confirm is disabled when nothing is selected or the selection matches zero assig
 |----------------|------|
 | `event_volunteer_sources.included_assignment_dates` | Nullable `text[]`. Sticky allowlist of ISO start dates (`YYYY-MM-DD`) plus optional `__none__` for undated rows. **`null` = include all dates** (backward compatible with sources connected before this column). |
 | `event_volunteer_snapshots` / `event_volunteer_assignments` | Confirmed snapshot holds only the filtered assignments. |
+| `event_volunteer_participants` | Named roster rows per snapshot: `volunteer_name`, role, shift, location, status. **No email column.** Same sticky date allowlist as assignments on confirm/refresh. Org-member RLS via `organization_id`. |
 
-Migration: `071_event_volunteer_included_assignment_dates.sql`.
+Migrations: `071_event_volunteer_included_assignment_dates.sql`, `20260801200000_event_volunteer_participants.sql`.
+
+### Privacy
+
+- Persist **name only** from public `participants` when present.
+- Never invent PII; never copy email into DB or UI.
+- When `shownames` is off / participants empty: empty named roster + honest UI copy; role fill health still comes from assignment quantities.
 
 ---
 
@@ -43,10 +50,12 @@ Migration: `071_event_volunteer_included_assignment_dates.sql`.
 | Area | Path |
 |------|------|
 | Review UI | `src/components/events-phase3/EventVolunteersTab.tsx` |
+| Ease named roster (List + accordion Grouped) | `src/components/events-phase3/EventDetailVolunteersEasePanel.tsx`, `EventVolunteerRosterEase.tsx` |
 | Org Volunteer Master | `src/app/(dashboard)/volunteers/page.tsx`, `src/components/volunteers/VolunteersMasterShell.tsx`, `src/lib/event-volunteers/org-master.ts` |
 | Actions | `src/lib/event-volunteers/actions.ts` (`confirmVolunteerOverviewAction`, refresh path) |
-| Mutations | `src/lib/event-volunteers/mutations.ts` (`confirmVolunteerSnapshot`, `upsertVolunteerSource`) |
-| Allowlist helpers | `src/lib/event-volunteers/assignment-list.ts` |
+| Mutations | `src/lib/event-volunteers/mutations.ts` (`confirmVolunteerSnapshot`, `persistVolunteerSnapshot`, `upsertVolunteerSource`) |
+| Allowlist helpers | `src/lib/event-volunteers/assignment-list.ts`, `participant-list.ts` |
+| Grouped sections | `src/lib/event-volunteers/roster-groups.ts` |
 | Reader / normalize | `src/lib/event-volunteers/signupgenius-reader.ts`, `signupgenius-normalize.ts` |
 
 ---

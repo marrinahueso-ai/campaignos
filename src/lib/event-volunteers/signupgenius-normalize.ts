@@ -2,7 +2,11 @@ import {
   buildSnapshotFromAssignments,
   coerceNonNegativeInt,
 } from "@/lib/event-volunteers/stats";
-import type { VolunteerSignupSnapshot } from "@/lib/event-volunteers/types";
+import type {
+  VolunteerSignupAssignment,
+  VolunteerSignupParticipant,
+  VolunteerSignupSnapshot,
+} from "@/lib/event-volunteers/types";
 import { VOLUNTEER_PARSE_VERSION } from "@/lib/event-volunteers/types";
 
 type SugSlotItem = {
@@ -23,6 +27,19 @@ type SugSlot = {
   endtime?: unknown;
   location?: unknown;
   items?: SugSlotItem[];
+};
+
+type SugParticipantRow = {
+  firstname?: unknown;
+  lastname?: unknown;
+  firstName?: unknown;
+  lastName?: unknown;
+  /** Intentionally ignored — we do not store or surface email. */
+  email?: unknown;
+  participantid?: unknown;
+  participantId?: unknown;
+  id?: unknown;
+  myqty?: unknown;
 };
 
 export type SugSignupData = {
@@ -92,6 +109,75 @@ function formatClock(time: string | undefined): string | undefined {
   return `${hour12}:${m} ${suffix}`;
 }
 
+function participantDisplayName(row: SugParticipantRow): string | undefined {
+  const first =
+    sanitizeText(row.firstname, 80) ?? sanitizeText(row.firstName, 80);
+  const last =
+    sanitizeText(row.lastname, 80) ?? sanitizeText(row.lastName, 80);
+  const combined = [first, last].filter(Boolean).join(" ").trim();
+  return combined || undefined;
+}
+
+function participantStableKey(
+  row: SugParticipantRow,
+  assignmentExternalKey: string,
+  index: number,
+): string {
+  const raw =
+    row.participantid ?? row.participantId ?? row.id ?? undefined;
+  if (raw != null && String(raw).length > 0) {
+    return String(raw).slice(0, 120);
+  }
+  const name = participantDisplayName(row) ?? "volunteer";
+  return `${assignmentExternalKey}:${index}:${name}`.slice(0, 200);
+}
+
+/**
+ * Parse SUG `participants` map (keyed by slotitemid) into typed people.
+ * Name only — email and other PII fields are never copied into the result.
+ */
+export function parseSignUpGeniusParticipants(
+  rawParticipants: unknown,
+  assignmentsByExternalKey: Map<string, VolunteerSignupAssignment>,
+): VolunteerSignupParticipant[] {
+  if (!rawParticipants || typeof rawParticipants !== "object") {
+    return [];
+  }
+
+  const people: VolunteerSignupParticipant[] = [];
+  const entries = Object.entries(rawParticipants as Record<string, unknown>);
+  entries.sort(([a], [b]) => a.localeCompare(b));
+
+  for (const [slotKey, value] of entries) {
+    const assignment =
+      assignmentsByExternalKey.get(String(slotKey)) ??
+      assignmentsByExternalKey.get(String(coerceNonNegativeInt(slotKey) ?? slotKey));
+    const rows = Array.isArray(value) ? value : [];
+
+    rows.forEach((entry, index) => {
+      if (!entry || typeof entry !== "object") return;
+      const row = entry as SugParticipantRow;
+      const name = participantDisplayName(row);
+      if (!name) return;
+
+      const assignmentExternalKey = assignment?.externalKey ?? String(slotKey);
+      people.push({
+        participantKey: participantStableKey(row, assignmentExternalKey, index),
+        assignmentExternalKey,
+        name,
+        roleName: assignment?.name ?? "Volunteer",
+        date: assignment?.date,
+        startTime: assignment?.startTime,
+        endTime: assignment?.endTime,
+        location: assignment?.location,
+        status: "confirmed",
+      });
+    });
+  }
+
+  return people;
+}
+
 export function normalizeSignUpGeniusPayload(
   data: SugSignupData,
   meta: { sourceTitle?: string; sourceUrl: string },
@@ -101,7 +187,7 @@ export function normalizeSignUpGeniusPayload(
     return { error: "changed_markup" };
   }
 
-  const assignments = [];
+  const assignments: VolunteerSignupAssignment[] = [];
   const slotEntries = Object.entries(slots);
   slotEntries.sort(([a], [b]) => a.localeCompare(b));
 
@@ -170,6 +256,14 @@ export function normalizeSignUpGeniusPayload(
     return { error: "empty_parse" };
   }
 
+  const assignmentsByExternalKey = new Map(
+    assignments.map((assignment) => [assignment.externalKey, assignment]),
+  );
+  const participants = parseSignUpGeniusParticipants(
+    data.participants,
+    assignmentsByExternalKey,
+  );
+
   const deadline = sanitizeText(data.closedateutc, 80);
   const { snapshot } = buildSnapshotFromAssignments({
     sourceTitle: meta.sourceTitle,
@@ -178,6 +272,7 @@ export function normalizeSignUpGeniusPayload(
     signupDeadline: deadline,
     parseVersion: VOLUNTEER_PARSE_VERSION,
     assignments,
+    participants,
   });
 
   return snapshot;

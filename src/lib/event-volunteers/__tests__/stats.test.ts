@@ -207,7 +207,7 @@ describe("volunteer stats", () => {
 });
 
 describe("signupgenius normalize", () => {
-  it("normalizes multiple assignments and strips participants", () => {
+  it("normalizes multiple assignments and keeps names without email", () => {
     const result = normalizeSignUpGeniusPayload(
       {
         participants: {
@@ -255,8 +255,10 @@ describe("signupgenius normalize", () => {
     assert.equal(result.totals.openSpots, 7);
     assert.equal(result.assignments[0]?.name, "2-3pm EES fair set up");
     assert.equal(result.assignments[1]?.quantityFilled, 0);
+    assert.equal(result.participants.length, 1);
+    assert.equal(result.participants[0]?.name, "Secret Person");
     const serialized = JSON.stringify(result);
-    assert.doesNotMatch(serialized, /Secret|Person|x@y\.com/);
+    assert.doesNotMatch(serialized, /x@y\.com/);
   });
 
   it("returns empty_parse when no assignments", () => {

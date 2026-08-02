@@ -4,12 +4,37 @@ import {
   filterAssignmentsByDateAllowlist,
   normalizeDateAllowlist,
 } from "@/lib/event-volunteers/assignment-list";
+import { filterParticipantsByDateAllowlist } from "@/lib/event-volunteers/participant-list";
 import { buildSnapshotFromAssignments } from "@/lib/event-volunteers/stats";
 import type {
+  VolunteerSignupParticipant,
   VolunteerSignupSnapshot,
   VolunteerStatsSummary,
 } from "@/lib/event-volunteers/types";
 import { createClient } from "@/lib/supabase/server";
+
+function participantInsertRows(input: {
+  snapshotId: string;
+  eventId: string;
+  organizationId: string;
+  participants: VolunteerSignupParticipant[];
+}) {
+  return input.participants.map((participant, index) => ({
+    snapshot_id: input.snapshotId,
+    event_id: input.eventId,
+    organization_id: input.organizationId,
+    assignment_external_key: participant.assignmentExternalKey,
+    participant_key: participant.participantKey,
+    volunteer_name: participant.name,
+    role_name: participant.roleName,
+    assignment_date: participant.date ?? null,
+    start_time: participant.startTime ?? null,
+    end_time: participant.endTime ?? null,
+    location: participant.location ?? null,
+    status: participant.status,
+    source_order: index,
+  }));
+}
 
 function nextScheduledSyncAt(eventDate: string | null | undefined): string | null {
   if (!eventDate) {
@@ -247,6 +272,23 @@ export async function persistVolunteerSnapshot(input: {
     return { error: "Could not save volunteer assignments." };
   }
 
+  const participantRows = participantInsertRows({
+    snapshotId,
+    eventId: input.eventId,
+    organizationId: input.organizationId,
+    participants: input.snapshot.participants ?? [],
+  });
+
+  if (participantRows.length > 0) {
+    const { error: participantError } = await supabase
+      .from("event_volunteer_participants")
+      .insert(participantRows);
+    if (participantError) {
+      await supabase.from("event_volunteer_snapshots").delete().eq("id", snapshotId);
+      return { error: "Could not save volunteer roster." };
+    }
+  }
+
   const sourceUpdate: Record<string, unknown> = {
     sync_status: "success",
     last_successful_sync_at: now,
@@ -358,6 +400,28 @@ export async function confirmVolunteerSnapshot(input: {
     quantityOpen: (row.quantity_open as number | null) ?? null,
   }));
 
+  const { data: participantRows, error: participantLoadError } = await supabase
+    .from("event_volunteer_participants")
+    .select("*")
+    .eq("snapshot_id", input.snapshotId)
+    .order("source_order", { ascending: true });
+
+  if (participantLoadError) {
+    return { error: "Could not load volunteer roster." };
+  }
+
+  const pendingParticipants = (participantRows ?? []).map((row) => ({
+    participantKey: String(row.participant_key),
+    assignmentExternalKey: String(row.assignment_external_key),
+    name: String(row.volunteer_name),
+    roleName: String(row.role_name),
+    date: (row.assignment_date as string | null) ?? undefined,
+    startTime: (row.start_time as string | null) ?? undefined,
+    endTime: (row.end_time as string | null) ?? undefined,
+    location: (row.location as string | null) ?? undefined,
+    status: (row.status as "confirmed" | "unknown") ?? "confirmed",
+  }));
+
   const filtered = filterAssignmentsByDateAllowlist(
     pendingAssignments,
     normalized.dates,
@@ -369,6 +433,11 @@ export async function confirmVolunteerSnapshot(input: {
     };
   }
 
+  const filteredParticipants = filterParticipantsByDateAllowlist(
+    pendingParticipants,
+    normalized.dates,
+  );
+
   const rebuilt = buildSnapshotFromAssignments({
     sourceTitle: (snapshotRow.source_title as string | null) ?? undefined,
     sourceDescription:
@@ -377,6 +446,7 @@ export async function confirmVolunteerSnapshot(input: {
     signupDeadline: (snapshotRow.signup_deadline as string | null) ?? undefined,
     parseVersion: String(snapshotRow.parse_version ?? "1"),
     assignments: filtered,
+    participants: filteredParticipants,
   });
 
   const { error: deleteError } = await supabase
@@ -387,6 +457,11 @@ export async function confirmVolunteerSnapshot(input: {
   if (deleteError) {
     return { error: "Could not update volunteer assignments." };
   }
+
+  await supabase
+    .from("event_volunteer_participants")
+    .delete()
+    .eq("snapshot_id", input.snapshotId);
 
   const rows = rebuilt.classified.map((assignment) => ({
     snapshot_id: input.snapshotId,
@@ -413,6 +488,22 @@ export async function confirmVolunteerSnapshot(input: {
 
   if (insertError) {
     return { error: "Could not save filtered volunteer assignments." };
+  }
+
+  const confirmParticipantRows = participantInsertRows({
+    snapshotId: input.snapshotId,
+    eventId: String(snapshotRow.event_id),
+    organizationId: input.organizationId,
+    participants: rebuilt.snapshot.participants,
+  });
+
+  if (confirmParticipantRows.length > 0) {
+    const { error: participantInsertError } = await supabase
+      .from("event_volunteer_participants")
+      .insert(confirmParticipantRows);
+    if (participantInsertError) {
+      return { error: "Could not save filtered volunteer roster." };
+    }
   }
 
   const { error: snapError } = await supabase

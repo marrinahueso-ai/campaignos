@@ -1,6 +1,8 @@
 import type {
   VolunteerAssignmentView,
   VolunteerAvailabilityStatus,
+  VolunteerParticipantStatus,
+  VolunteerParticipantView,
   VolunteerSnapshotRecord,
   VolunteerSourceRecord,
   VolunteerStatsSummary,
@@ -53,9 +55,27 @@ export function mapAssignmentRow(
   };
 }
 
+export function mapParticipantRow(
+  row: Record<string, unknown>,
+): VolunteerParticipantView {
+  return {
+    participantKey: String(row.participant_key),
+    assignmentExternalKey: String(row.assignment_external_key),
+    name: String(row.volunteer_name),
+    roleName: String(row.role_name),
+    date: (row.assignment_date as string | null) ?? undefined,
+    startTime: (row.start_time as string | null) ?? undefined,
+    endTime: (row.end_time as string | null) ?? undefined,
+    location: (row.location as string | null) ?? undefined,
+    status: (row.status as VolunteerParticipantStatus) ?? "confirmed",
+    sourceOrder: Number(row.source_order ?? 0),
+  };
+}
+
 export function mapSnapshotRow(
   row: Record<string, unknown>,
   assignments: VolunteerAssignmentView[],
+  participants: VolunteerParticipantView[] = [],
 ): VolunteerSnapshotRecord {
   const summary: VolunteerStatsSummary = {
     totalSpots: (row.total_spots as number | null) ?? null,
@@ -88,6 +108,7 @@ export function mapSnapshotRow(
     signupDeadline: (row.signup_deadline as string | null) ?? null,
     summary,
     assignments,
+    participants,
   };
 }
 

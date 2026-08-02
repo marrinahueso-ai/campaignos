@@ -87,6 +87,34 @@ describe("event detail ease UI contracts", () => {
     assert.doesNotMatch(shell, /window\.location\.replace\(createWithAiUrl\)/);
   });
 
+  it("ships Pilot Event Volunteers List + accordion Grouped roster without email", () => {
+    const panel = readSrc(
+      "../../../components/events-phase3/EventDetailVolunteersEasePanel.tsx",
+    );
+    const roster = readSrc(
+      "../../../components/events-phase3/EventVolunteerRosterEase.tsx",
+    );
+    assert.match(panel, /EventVolunteerRosterEase/);
+    assert.match(roster, /List View/);
+    assert.match(roster, /Grouped View/);
+    assert.match(roster, /Overall Health/);
+    assert.match(roster, /Filled Slots/);
+    assert.match(roster, /Search by name or role/);
+    assert.match(roster, /Role breakdown/);
+    assert.match(roster, /GroupedRoleLine/);
+    assert.match(roster, /aria-expanded/);
+    assert.match(roster, /Assign Open Slot/);
+    assert.match(roster, /No volunteers assigned yet/);
+    assert.match(roster, /AvatarStack/);
+    assert.match(roster, /rosterProgressTone/);
+    assert.match(roster, /Filled/);
+    assert.match(roster, /Add \/ Import/);
+    assert.doesNotMatch(roster, /md:grid-cols-2/);
+    assert.doesNotMatch(roster, /Send Urgent Invite/);
+    assert.doesNotMatch(roster, /\b[Ee]mail\b/);
+    assert.doesNotMatch(panel, /\b[Ee]mail\b/);
+  });
+
   it("normalizes legacy publishing artwork and approval payloads", () => {
     assert.match(planningHub, /function normalizeMetaPublishBundles/);
     assert.match(planningHub, /filter\(\(bundle\).*Boolean\(bundle\)/);
