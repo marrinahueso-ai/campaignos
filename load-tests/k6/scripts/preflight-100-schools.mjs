@@ -18,6 +18,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import {
   k6Root,
   loadDefaultEnvFiles,
@@ -44,6 +45,185 @@ const EXTERNAL_PROVIDER_ENV_VARS = [
   "META_PAGE_ACCESS_TOKEN",
   "FACEBOOK_PAGE_ACCESS_TOKEN",
 ];
+
+// --- Data-scale 100-school / 20-VU profile audit -----------------------
+const DATA_SCALE_PROFILE_FILE = "data-scale-100school-20vu.js";
+const DATA_SCALE_MIN_VUS = 20;
+// Method-based, not a route-substring denylist — a read-only route whose
+// *name* contains a write-sounding word (e.g. /create-with-ai, GET-only)
+// must never be falsely flagged. See Phase 3 instructions.
+const WRITE_METHOD_RE = /\bhttp\.\s*(post|put|patch|del|delete)\s*\(/i;
+// Informational-only hint pattern (never a fail condition on its own).
+const ROUTE_HINT_RE = /\/(invite|billing|checkout)\b|generate|publish|webhook/i;
+
+/**
+ * Audits the 100-school / 20-VU data-scale profile now that it exists
+ * (previously this check only confirmed no such profile existed yet).
+ * Uses two complementary techniques:
+ *  - dynamic import() of the *pure* config modules (config/workload.js,
+ *    config/thresholds.js — plain ESM, no k6-only imports) to introspect
+ *    real structured values (VU targets, threshold keys) instead of
+ *    regex-guessing them from source text;
+ *  - regex/text scanning of the profile file itself and every file under
+ *    scenarios/ + helpers/http.js, because those import from "k6/http" /
+ *    "k6" and cannot be import()-ed by plain Node.
+ * This is intentionally a shallow source-text audit for the k6-only files
+ * (no AST parse) — adequate for this repo's small, hand-written profiles;
+ * noted as a known limitation if these files grow significantly more
+ * complex in the future.
+ */
+async function auditDataScaleProfile() {
+  const profilePath = resolve(k6Root(), DATA_SCALE_PROFILE_FILE);
+  const profileExists = existsSync(profilePath);
+  record(
+    "Data-scale 100-school/20-VU profile file exists",
+    profileExists,
+    profileExists ? profilePath : `missing: ${profilePath}`,
+  );
+  if (!profileExists) {
+    record("Profile references the 100-school session fixture", false, "skipped — profile file missing");
+    record("Profile uses pinned session assignment", false, "skipped — profile file missing");
+    record("Profile reuses the production-blocking guard (prepareTestContext)", false, "skipped — profile file missing");
+    record(`Profile workload reaches >= ${DATA_SCALE_MIN_VUS} VUs`, false, "skipped — profile file missing");
+    record("Profile references required safety threshold builder", false, "skipped — profile file missing");
+    record("workflow_duration_ms is not threshold-gated", false, "skipped — profile file missing");
+    record("No write-capable HTTP methods (post/put/patch/del/delete) in profile or its scenarios", false, "skipped — profile file missing");
+    return;
+  }
+
+  const profileText = readFileSync(profilePath, "utf8");
+
+  record(
+    "Profile references the 100-school session fixture",
+    /sessions\.100-school-architecture\.local\.json/.test(profileText) || /K6_SESSIONS_FILE/.test(profileText),
+    "checked profile header/docstring for K6_SESSIONS_FILE / sessions.100-school-architecture.local.json",
+  );
+
+  record(
+    "Profile uses pinned session assignment",
+    /pinnedSession:\s*true/.test(profileText) || /pinned:\s*true/.test(profileText),
+    "checked for pinnedSession: true / pinned: true",
+  );
+
+  record(
+    "Profile reuses the production-blocking guard (prepareTestContext)",
+    /prepareTestContext\s*\(/.test(profileText) && /from\s+["']\.\/helpers\/auth\.js["']/.test(profileText),
+    "checked for prepareTestContext() imported from ./helpers/auth.js",
+  );
+
+  // VU capacity — introspect the real workload constant via dynamic
+  // import rather than regex-guessing stage targets from source text.
+  try {
+    const workloadMod = await import(pathToFileURL(resolve(k6Root(), "config", "workload.js")).href);
+    const workload = workloadMod.DATA_SCALE_100SCHOOL_20VU_WORKLOAD;
+    const maxVus =
+      workload && Array.isArray(workload.stages)
+        ? Math.max(...workload.stages.map((s) => Number(s.target) || 0))
+        : null;
+    record(
+      `Profile workload reaches >= ${DATA_SCALE_MIN_VUS} VUs`,
+      typeof maxVus === "number" && maxVus >= DATA_SCALE_MIN_VUS,
+      maxVus === null
+        ? "DATA_SCALE_100SCHOOL_20VU_WORKLOAD not found in config/workload.js"
+        : `DATA_SCALE_100SCHOOL_20VU_WORKLOAD max stage target=${maxVus}`,
+    );
+  } catch (err) {
+    record(`Profile workload reaches >= ${DATA_SCALE_MIN_VUS} VUs`, false, `could not import config/workload.js: ${err.message}`);
+  }
+
+  // Required safety thresholds + workflow_duration_ms not gated —
+  // introspect the real threshold object via dynamic import.
+  try {
+    const thresholdsMod = await import(pathToFileURL(resolve(k6Root(), "config", "thresholds.js")).href);
+    const build = thresholdsMod.buildDataScale100School20VuThresholds;
+    if (typeof build !== "function") {
+      record(
+        "Profile references required safety threshold builder",
+        false,
+        "buildDataScale100School20VuThresholds not exported from config/thresholds.js",
+      );
+      record("workflow_duration_ms is not threshold-gated", false, "skipped — threshold builder missing");
+    } else {
+      const built = build();
+      const requiredKeys = [
+        "tenant_isolation_failures",
+        "auth_failures",
+        "unexpected_401",
+        "unexpected_403",
+        "unexpected_429",
+        "unexpected_500",
+        "dropped_iterations",
+        "checks",
+        "http_req_failed",
+      ];
+      const missing = requiredKeys.filter((k) => !(k in built));
+      record(
+        "Profile references required safety threshold builder",
+        missing.length === 0,
+        missing.length
+          ? `missing keys: ${missing.join(", ")}`
+          : `buildDataScale100School20VuThresholds() present with all ${requiredKeys.length} required keys`,
+      );
+      record(
+        "workflow_duration_ms is not threshold-gated",
+        !("workflow_duration_ms" in built),
+        "workflow_duration_ms" in built
+          ? "found a workflow_duration_ms threshold — should remain informational only"
+          : "absent, as expected (informational Trend only)",
+      );
+    }
+  } catch (err) {
+    record("Profile references required safety threshold builder", false, `could not import config/thresholds.js: ${err.message}`);
+    record("workflow_duration_ms is not threshold-gated", false, "skipped — import failed");
+  }
+
+  // Read-only method audit: the profile itself + every file under
+  // scenarios/ (simplest, most conservative — scans the whole directory
+  // rather than hand-maintaining a list of "which scenarios this profile
+  // uses") + helpers/http.js where getHtml() actually issues requests.
+  const scenariosDir = resolve(k6Root(), "scenarios");
+  const scannedFiles = [profilePath, resolve(k6Root(), "helpers", "http.js")];
+  try {
+    for (const f of readdirSync(scenariosDir)) {
+      if (f.endsWith(".js")) scannedFiles.push(resolve(scenariosDir, f));
+    }
+  } catch {
+    // scenarios/ always exists in this repo; ignore if somehow missing.
+  }
+
+  const writeMethodHits = [];
+  for (const file of scannedFiles) {
+    if (!existsSync(file)) continue;
+    if (WRITE_METHOD_RE.test(readFileSync(file, "utf8"))) {
+      writeMethodHits.push(file.replace(`${k6Root()}/`, ""));
+    }
+  }
+  record(
+    "No write-capable HTTP methods (post/put/patch/del/delete) in profile or its scenarios",
+    writeMethodHits.length === 0,
+    writeMethodHits.length ? `found in: ${writeMethodHits.join(", ")}` : `scanned ${scannedFiles.length} files, all http.get-only`,
+  );
+
+  // Informational only (never a fail condition by itself — the hard gate
+  // is the method-based check above). Surfaces write-sounding route
+  // literals for a human to spot-check. calendar-events.js's
+  // "/events/create" GET (a form-page *read*, gated behind K6_ALLOW_WRITES
+  // which this profile's run instructions never set) is a known, expected
+  // example that should NOT be treated as a failure — confirming why this
+  // stays informational rather than a denylist gate.
+  const routeHints = [];
+  for (const file of scannedFiles) {
+    if (!existsSync(file)) continue;
+    if (ROUTE_HINT_RE.test(readFileSync(file, "utf8"))) {
+      routeHints.push(file.replace(`${k6Root()}/`, ""));
+    }
+  }
+  console.log(
+    `  [INFO] Write-sounding route/keyword hints (context only, not a failure — method audit above is authoritative): ${
+      routeHints.length ? routeHints.join(", ") : "none"
+    }`,
+  );
+}
 
 const checks = [];
 function record(name, pass, detail) {
@@ -156,27 +336,16 @@ async function main() {
     }
   }
 
-  // 8. External write routes remain out of scope. Two signals:
-  //   (a) no 100-school-scoped k6 profile/scenario file exists yet to audit
-  //       (this phase hasn't built one — nothing new to check).
-  //   (b) informational: flag (don't fail on) provider keys present in this
-  //       *local* tooling shell/.env.local — normal for full-stack local
-  //       dev, and irrelevant to what k6 actually hits (the deployed Vercel
-  //       target), but worth surfacing before minting sessions.
-  let arch100ProfileFiles = [];
-  try {
-    arch100ProfileFiles = readdirSync(k6Root()).filter((f) => /100.?school/i.test(f) && f.endsWith(".js"));
-  } catch {
-    arch100ProfileFiles = [];
-  }
-  record(
-    "External write routes remain out of scope (no 100-school k6 profile to audit yet)",
-    arch100ProfileFiles.length === 0,
-    arch100ProfileFiles.length
-      ? `found ${arch100ProfileFiles.join(", ")} — manually confirm it only reuses already-reviewed read-only scenario functions`
-      : "no 100-school-specific k6 profile/scenario file exists yet (expected at this stage per Part 6)",
-  );
+  // 8. Data-scale 100-school / 20-VU profile audit — now that the profile
+  // exists, verify it for real (file presence, fixture reference, pinned
+  // sessions, VU capacity, production-guard reuse, required thresholds,
+  // workflow_duration_ms not gated, no write-capable HTTP methods).
+  await auditDataScaleProfile();
 
+  // Informational: flag (don't fail on) provider keys present in this
+  // *local* tooling shell/.env.local — normal for full-stack local dev,
+  // and irrelevant to what k6 actually hits (the deployed Vercel target),
+  // but worth surfacing before minting sessions.
   const setProviderVars = EXTERNAL_PROVIDER_ENV_VARS.filter((k) => process.env[k]);
   console.log(
     `  [INFO] Local tooling env provider keys: ${setProviderVars.length ? setProviderVars.join(", ") + " (normal for full-stack local dev; irrelevant to the deployed Vercel target k6 actually hits)" : "none set"}`,

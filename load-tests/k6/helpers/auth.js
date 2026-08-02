@@ -99,8 +99,14 @@ export function warmAuth(baseUrl, session) {
  * fixture). Used by the `pinned` VU-assignment mode so that VU 1..N map
  * to N distinct schools first, instead of clustering on the first few
  * schools in fixture order.
+ *
+ * Exported (pure function, no shared state) so a profile's setup() can
+ * pre-compute and validate the exact N sessions pinned mode will assign to
+ * VUs 1..N — e.g. data-scale-100school-20vu.js's structural + live
+ * session-allocation checks — without needing live __VU context, which
+ * setup() does not have.
  */
-function interleaveBySchool(sessions) {
+export function interleaveBySchool(sessions) {
   const bySchool = new Map();
   for (const s of sessions) {
     const key = Number(s.schoolIndex);

@@ -141,6 +141,48 @@ export const HEADROOM_50VU_HOLD_PROGRESS = {
 };
 
 /**
+ * Data-scale 100-school / 20-VU traffic mix — read-heavy, no org-switch
+ * (the 100-school fixture, like the 20-school one, has no seeded user with
+ * 2+ organization memberships). Adds `brandKit` (settings/branding, a
+ * verified read-only page) in place of org-switch's slice.
+ */
+export const DATA_SCALE_100SCHOOL_TRAFFIC_WEIGHTS = {
+  dashboard: 20,
+  calendar: 25,
+  approvals: 15,
+  communicationsHub: 15,
+  communicationsCreator: 10,
+  settings: 8,
+  brandKit: 7,
+};
+
+/**
+ * Data-scale 100-school / 20-VU: 0→5→20 VUs over 5 minutes, hold 20 for
+ * 20 minutes (3x longer than any prior 20-school profile's 5-minute hold),
+ * ramp down over 3 minutes — ~28 minutes total. Purpose is architecture
+ * validation at 100-school data scale (stability/isolation/responsiveness
+ * over a sustained window on the new Micro compute tier), not peak-VU
+ * discovery — 20 VUs is a modest, realistic concurrency level. Uses pinned
+ * per-VU session assignment (see helpers/auth.js pickSession `pinned` mode)
+ * exactly like launch-spike/headroom. gracefulRampDown/gracefulStop are
+ * both extended to 90s (vs the usual 60s) because this profile's workflows
+ * run up to 4 sequential page loads with 2-8s think-time each, so a single
+ * in-flight iteration can legitimately take 35-45s to finish cleanly.
+ */
+export const DATA_SCALE_100SCHOOL_20VU_WORKLOAD = {
+  executor: "ramping-vus",
+  startVUs: 0,
+  stages: [
+    { duration: "2m", target: 5 },
+    { duration: "3m", target: 20 },
+    { duration: "20m", target: 20 },
+    { duration: "3m", target: 0 },
+  ],
+  gracefulRampDown: "90s",
+  gracefulStop: "90s",
+};
+
+/**
  * Weighted random workflow key.
  * @param {() => number} [rand] returns [0,1)
  * @param {Record<string, number>} [weights] defaults to the core 20-school mix

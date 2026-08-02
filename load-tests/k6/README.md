@@ -15,6 +15,7 @@ Twenty schools means twenty **tenants** in the fixture — not twenty virtual us
 | `launch-spike-warmup` | ramp 0→4, hold ~1m40s | ~2 min (discarded) | all 20 |
 | `headroom` (50 VU) | ramp 0→15→30→50 (4m), hold 5m, ramp down 2m | ~11 min | all 20 |
 | `headroom-warmup` | ramp 0→5, hold ~1m40s | ~2 min (discarded) | all 20 |
+| `data-scale-100school-20vu` | ramp 0→5→20 (5m), hold 20 for **20 min**, ramp down 3m | ~28 min | 20 of 100 |
 
 Traffic mix (`smoke` / `twenty-schools`): ~35% dashboard, 25% calendar/events, 15% Create with AI (read), 15% approvals (read), 10% Communications Hub (read).
 
@@ -184,6 +185,9 @@ npm run test:load:launch-spike-warmup   # discardable, run before launch-spike
 npm run test:load:launch-spike
 npm run test:load:headroom-warmup       # discardable, run before headroom
 npm run test:load:headroom
+
+# 100-school dataset only — see "100-school architecture validation" below
+npm run test:load:data-scale:100school:20vu
 ```
 
 Or directly:
@@ -267,9 +271,58 @@ for every table; safe to re-run after an interruption). Auth-user creation
 uses bounded concurrency (6) with retry + exponential backoff on rate
 limits and progress logging.
 
-No k6 load profile has been run against this dataset yet — seeding,
-integrity validation, and the post-seed snapshot are deliberately the last
-step before any performance test at this scale.
+Before minting sessions or running a load test against the 100-school
+dataset, run the read-only environment preflight (never seeds, cleans up,
+mints sessions, or runs k6):
+
+```bash
+export TEST_RUN_ID=arch100
+npm run test:load:preflight:100-schools
+```
+
+Verifies: Supabase project ref + production block, fixture existence/shape,
+all integrity checks, Vercel Preview target + bypass token (if `BASE_URL`
+set), the `data-scale-100school-20vu` profile itself (see below), session
+freshness + exclusive-session headroom, and that no concurrent seed/cleanup
+lock is held.
+
+### 100-school / 20-VU data-scale performance profile
+
+`data-scale-100school-20vu.js` is the first k6 profile run against the
+100-school dataset — a staging-only, read-heavy architecture validation at
+data scale (100 orgs / 800 users), not a peak-VU capacity search. See
+[`docs/qa/100-school-20vu-data-scale-design.md`](../../docs/qa/100-school-20vu-data-scale-design.md)
+for the full design rationale.
+
+| | |
+|---|---|
+| VUs | ramp 0→5 (2m) → 20 (3m), hold **20 for 20 min**, ramp 20→0 (3m) — ~28 min total |
+| Sessions | `K6_SESSIONS_FILE=../data/sessions.100-school-architecture.local.json` (800-session fixture) |
+| Allocation | one **exclusive, pinned** `owner` session per VU, 20 distinct schools (VUs 1–20 via the same school-interleaved pinned assignment as `launch-spike`/`headroom`) |
+| Setup validation | structural (uniqueness of cookie/user/org/school + role) **and** a live authenticated `/dashboard` request for **all 20** pinned sessions — fails fast, before any VU ramps, if any of the 20 is broken |
+| Traffic mix | Dashboard 20%, Calendar/events 25%, Approvals 15%, Comms Hub 15%, Comms creator (read) 10%, Settings 8%, Brand kit 7% |
+| Thresholds | stricter than the 20-school suite — `checks: rate==1`, `http_req_failed: rate==0`, and `unexpected_403`/`unexpected_429`/`unexpected_500`/`auth_failures`/`tenant_isolation_failures`/`dropped_iterations` all `count==0` (see `buildDataScale100School20VuThresholds()` in `config/thresholds.js` for the documented caveat on how a legitimate-but-unexpected 403 on the cross-tenant probe would surface) |
+
+```bash
+export TEST_RUN_ID=arch100
+npm run test:load:mint-sessions:100-schools   # re-mint if sessions are >1hr old
+
+BASE_URL=https://your-preview-xxxxx.vercel.app \
+TEST_RUN_ID=data-scale-100school-20vu-001 \
+VERCEL_JWT=eyJhbGciOi... \
+K6_SESSIONS_FILE=../data/sessions.100-school-architecture.local.json \
+npm run test:load:data-scale:100school:20vu
+```
+
+Use the run-capture template
+([`docs/qa/100-school-20vu-run-capture-template.md`](../../docs/qa/100-school-20vu-run-capture-template.md))
+to record Supabase/Vercel/Sentry observations at three checkpoints (before
+load, at peak hold, 5 minutes after ramp-down) and compare against
+[`docs/qa/100-school-micro-idle-baseline.md`](../../docs/qa/100-school-micro-idle-baseline.md).
+
+No k6 load profile had been run against this dataset before this one —
+seeding, integrity validation, and the post-seed snapshot were deliberately
+the last step before any performance test at this scale.
 
 ## Routes exercised (real App Router pages)
 
@@ -281,6 +334,7 @@ step before any performance test at this scale.
 | Approvals | `/approvals`, `/approvals/revision`, event approvals tab |
 | Comms Hub | `/communications` |
 | Settings | `/settings/organization`, `/settings/team-access` |
+| Brand kit | `/settings/branding` (100-school data-scale profile only) |
 
 ## Known coverage limitations
 
@@ -325,14 +379,16 @@ load-tests/k6/
   smoke.js | twenty-schools.js | light-peak.js
   launch-spike.js | launch-spike-warmup.js
   launch-headroom.js | launch-headroom-warmup.js
+  data-scale-100school-20vu.js
   config/   environments.js thresholds.js workload.js
   helpers/  auth http checks organization test-data metrics
-  scenarios/ dashboard calendar-events communications-* approvals settings-viewer org-switch run-mix
+  scenarios/ dashboard calendar-events communications-* approvals settings-viewer
+             org-switch brand-kit run-mix
   data/     schools.js accounts.example.json
   scripts/  seed-load-test-data.mjs mint-sessions.mjs cleanup-test-data.mjs
             seed-architecture-dataset.mjs validate-architecture-seed.mjs
-            snapshot-database.mjs
-            lib/ env.mjs schools.mjs architecture-profile.mjs
+            snapshot-database.mjs preflight-100-schools.mjs
+            lib/ env.mjs schools.mjs architecture-profile.mjs seed-lock.mjs
 ```
 
 ## Related

@@ -1,6 +1,7 @@
 import { pickWorkflow, TRAFFIC_WEIGHTS } from "../config/workload.js";
 import { pickSession } from "../helpers/auth.js";
 import { runApprover, runCrossTenantProbe } from "./approvals.js";
+import { runBrandKitViewer } from "./brand-kit.js";
 import { runCalendarEventsUser } from "./calendar-events.js";
 import { runCommunicationsCreator } from "./communications-creator.js";
 import { runCommunicationsHubViewer } from "./communications-hub.js";
@@ -38,6 +39,9 @@ export function runWeightedIteration(
       break;
     case "orgSwitch":
       runOrgSwitch(data, session);
+      break;
+    case "brandKit":
+      runBrandKitViewer(data, session);
       break;
     case "dashboard":
     default:

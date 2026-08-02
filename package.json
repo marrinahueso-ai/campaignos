@@ -55,7 +55,8 @@
     "test:load:cleanup:100-schools": "SEED_PROFILE=100-school-architecture node --env-file=.env.staging.local load-tests/k6/scripts/cleanup-test-data.mjs",
     "test:load:mint-sessions:100-schools": "SEED_PROFILE=100-school-architecture node --env-file=.env.staging.local load-tests/k6/scripts/mint-sessions.mjs",
     "test:load:snapshot:database": "node --env-file=.env.staging.local load-tests/k6/scripts/snapshot-database.mjs",
-    "test:load:preflight:100-schools": "node --env-file=.env.staging.local load-tests/k6/scripts/preflight-100-schools.mjs"
+    "test:load:preflight:100-schools": "node --env-file=.env.staging.local load-tests/k6/scripts/preflight-100-schools.mjs",
+    "test:load:data-scale:100school:20vu": "k6 run load-tests/k6/data-scale-100school-20vu.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
