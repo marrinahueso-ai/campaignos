@@ -62,3 +62,6 @@ tmp-socials-email-preview.html
 tmp-*.html
 
 .local-dev-credentials.txt
+
+# Local migration scratch (never commit)
+.tmp-mig/
