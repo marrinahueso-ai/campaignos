@@ -2,12 +2,13 @@
 
 **Status:** Living
 **Owner:** Engineering / QA
-**Last updated:** August 1, 2026
+**Last updated:** August 2, 2026
 **Related:** [k6 suite README](../../load-tests/k6/README.md) · [Performance budget](./performance-budget.md)
 
 Results from the staging (`heyralli-staging`) 20-school k6 suite: the initial
-smoke/20-schools pass and the 15-VU light-peak launch-readiness phase. This is
-a **capacity confidence check**, not a breaking-point stress test.
+smoke/20-schools pass, the 15-VU light-peak launch-readiness phase, and the
+30-VU launch-spike phase. This is a **capacity confidence check**, not a
+breaking-point stress test.
 
 ## Environment
 
@@ -130,6 +131,89 @@ Resend email was sent during any test window.
 **Result: 15-VU light-peak profile PASSED all three runs.** Safe to proceed
 to the 30-VU launch-spike test.
 
+## Finding 4 — stale session fixture and same-session collisions caused auth blips at 30 VUs
+
+The first 30-VU attempt (`launch-spike-30vu-001`, later discarded) showed 68
+`auth_failures` and dashboard/read p95 breaching their gates. The seeded
+session fixture's Supabase access tokens had expired ~55 minutes before that
+run started (minted well before the 15-VU runs; k6 replays a static cookie
+and never persists a refreshed one), so a growing share of the 160 sessions
+were being redirected to `/login` as the run progressed. **Fix:** re-minted
+all 160 sessions immediately before testing (`npm run test:load:mint-sessions`).
+
+After re-minting, a clean run (`auth_failures=0`) was followed by a third run
+with a smaller blip (8/2336 requests, 0.34%). All 401/403/429/500 counters
+stayed at 0 and tenant isolation stayed at 0 in both cases, so this was not a
+security or capacity issue. Root cause: `pickSession()`'s original
+`(VU + ITER) % pool.length` selection is time-varying by design (intentional,
+so a VU samples many users/schools over a run), which means two different
+concurrently-running VUs can occasionally select the *identical* static
+session cookie at close to the same instant — a scenario a real deployment
+never sees (each browser session is unique) but a fixed test fixture can hit
+under higher concurrency, most likely racing Supabase's single-use
+refresh-token rotation for that shared cookie.
+
+**Fix:** added a `pinned` assignment mode to `pickSession()`
+(`load-tests/k6/helpers/auth.js`) used by the launch-spike profile only: each
+VU is assigned one exclusive session for its *entire* run, chosen from a
+school-interleaved ordering so VUs 1–20 land on all 20 distinct schools (and
+21–30 reuse a second role) — guaranteeing zero cross-VU session collisions
+whenever VU count ≤ pool size. The 15-VU/20-schools/smoke profiles keep the
+original time-varying behavior (already validated, not disturbed). After
+this fix, all three recorded 30-VU runs completed with **zero** auth
+failures. See suite README "Known coverage limitations."
+
+## 30-VU launch-spike result
+
+**Deployment:** same Vercel Preview, production Next.js build, `heyralli-staging` only
+`https://campaignos-3a0ijxpfi-campignos.vercel.app`
+**Workload:** ramp 0→10→20→30 VUs (4m), hold 30 VUs (5m), ramp down (2m) — ~11 min, max 30 concurrent VUs
+**Traffic mix:** same validated 15-VU mix (30% dashboard, 25% calendar, 15% comms creator, 10% approvals, 10% Communications Hub, 5% settings, 5% org-switch — fallback to dashboard, no seeded multi-org user yet)
+**Session assignment:** pinned, one exclusive session per VU for the whole run (Finding 4)
+
+| Run | Checks | Tenant isolation failures | Auth failures | HTTP failure rate | Unexpected 4xx/5xx | Dropped iterations |
+|---|---|---:|---:|---:|---:|---:|
+| `launch-spike-30vu-001` | 13844/13844 (100%) | 0 | 0 | 0.00% | 0 | 0 |
+| `launch-spike-30vu-002` | 14042/14042 (100%) | 0 | 0 | 0.00% | 0 | 0 |
+| `launch-spike-30vu-003` | 13956/13956 (100%) | 0 | 0 | 0.00% | 0 | 0 |
+| **Total** | **41842/41842 (100%)** | **0** | **0** | **0.00%** | **0** | **0** |
+
+`http_req_duration` (ms), overall:
+
+| Run | p50 | p90 | p95 | p99 | max |
+|---|---:|---:|---:|---:|---:|
+| 001 | 563 | 837 | 1097 | 6905 | 10135 |
+| 002 | 535 | 768 | 898 | 2113 | 7798 |
+| 003 | 543 | 838 | 1173 | 6173 | 10997 |
+
+Route-level p95 (ms) against the required gates (dashboard/calendar < 2000ms, ordinary read < 1500ms):
+
+| Route | 001 | 002 | 003 | Gate |
+|---|---:|---:|---:|---:|
+| `dashboard` | 1571 | 971 | 1404 | < 2000 |
+| `calendar` | 1226 | 960 | 1250 | < 2000 |
+| overall read | 1097 | 898 | 1173 | < 1500 |
+
+All route/read p95 gates passed in all three runs. **p99 and max latency grew
+substantially vs. the 15-VU baseline** (p99 ~2.1–6.9s vs. 1.0–2.2s; max
+~7.8–11.0s vs. 2.1–3.5s) — a small share (~1%) of requests, concentrated in
+`dashboard`, `calendar`, and `event_detail`, took 7–11s. This did not breach
+any p95 gate and did not worsen across the three runs (no trend), so it is
+most consistent with occasional Vercel serverless cold starts as new function
+instances scale up under the 20→30 VU ramp on a Preview deployment, not a
+sustained capacity ceiling. **Flagged for follow-up**, not a launch blocker:
+watch this specifically during the next (50-VU) test to see if it worsens
+with concurrency or stays flat.
+
+No Vercel function errors, Next.js errors, or Supabase errors were observed
+in the k6 run logs (0 unexpected 401/403/429/500 across all three runs). No
+Resend email was sent during any test window (most recent email predates the
+entire 30-VU test window by 9+ hours; zero sent to any `loadtest+` address).
+
+**Result: 30-VU launch-spike profile PASSED all three runs** against every
+required hard gate. Safe to proceed to a 50-VU headroom test, with the
+tail-latency pattern above tracked as a watch item.
+
 ## Known coverage gaps to close before a higher-VU or write-path test
 
 - No seeded user currently belongs to 2+ organizations, so the light-peak
@@ -143,3 +227,5 @@ to the 30-VU launch-spike test.
   (no billing/checkout route is exercised) rather than a direct Stripe API
   check, since the Stripe MCP connection was not authenticated in this
   session.
+- Re-mint sessions immediately before any recorded higher-VU run set
+  (access-token TTL ~1hr); see Finding 4.

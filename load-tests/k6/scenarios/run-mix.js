@@ -11,13 +11,13 @@ import { runOrgSwitch } from "./org-switch.js";
 /**
  * One VU iteration: pick school session + weighted workflow.
  * @param {object} data
- * @param {{ schoolIndexes?: number[]|null, crossTenantEvery?: number, weights?: Record<string, number> }} [opts]
+ * @param {{ schoolIndexes?: number[]|null, crossTenantEvery?: number, weights?: Record<string, number>, pinnedSession?: boolean }} [opts]
  */
 export function runWeightedIteration(
   data,
-  { schoolIndexes = null, crossTenantEvery = 0, weights = TRAFFIC_WEIGHTS } = {},
+  { schoolIndexes = null, crossTenantEvery = 0, weights = TRAFFIC_WEIGHTS, pinnedSession = false } = {},
 ) {
-  const session = pickSession(data, { schoolIndexes });
+  const session = pickSession(data, { schoolIndexes, pinned: pinnedSession });
   const workflow = pickWorkflow(Math.random, weights);
 
   switch (workflow) {

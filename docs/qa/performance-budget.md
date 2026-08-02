@@ -148,7 +148,7 @@ HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ralli:perf
 
 ## Multi-tenant readiness (k6)
 
-First-20-school simulation (smoke / normal / light-peak) lives under [`load-tests/k6/`](../../load-tests/k6/README.md):
+First-20-school simulation (smoke / normal / light-peak / launch-spike) lives under [`load-tests/k6/`](../../load-tests/k6/README.md):
 
 ```bash
 npm run test:load:seed && npm run test:load:mint-sessions
@@ -157,11 +157,15 @@ BASE_URL=https://your-staging.example TEST_RUN_ID=… npm run test:load:smoke
 
 Prefer staging/preview. Production hosts are blocked unless `K6_ALLOW_PRODUCTION=true`.
 
-**Results:** 15-VU light-peak launch-readiness phase passed 3/3 runs against
-a Vercel Preview deployment on `heyralli-staging` — 0 tenant-isolation
-failures, 0 auth failures, 100% checks passed, 0% HTTP failure rate, all
-route p95s well under budget. `next dev` is confirmed unsuitable for this
-suite (produces false-positive tenant-isolation failures). Full writeup:
+**Results:** both the 15-VU light-peak and 30-VU launch-spike profiles passed
+3/3 runs each against a Vercel Preview deployment on `heyralli-staging` — 0
+tenant-isolation failures, 0 auth failures, 100% checks passed, 0% HTTP
+failure rate, all route p95s under budget in every run. The 30-VU runs showed
+higher tail latency (p99/max) than the 15-VU baseline, consistent with
+occasional Preview-deployment serverless cold starts under the ramp, not a
+sustained capacity ceiling — flagged as a watch item for the next (50-VU)
+test. `next dev` is confirmed unsuitable for this suite (produces
+false-positive tenant-isolation failures). Full writeup:
 [k6 load test findings](./k6-load-test-findings.md).
 
 ## Not covered here

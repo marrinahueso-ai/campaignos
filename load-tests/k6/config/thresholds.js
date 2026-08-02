@@ -102,3 +102,13 @@ export function buildLightPeakThresholds(opts = {}) {
     "http_req_duration{kind:write}": ["p(95)<3000"],
   };
 }
+
+/**
+ * Launch-spike (30-VU) thresholds — identical launch gates to the validated
+ * 15-VU light-peak profile (tenant isolation, auth, error rates, dropped
+ * iterations, and route-level p95 ceilings are not relaxed for higher
+ * concurrency).
+ */
+export function buildLaunchSpikeThresholds(opts = {}) {
+  return buildLightPeakThresholds(opts);
+}

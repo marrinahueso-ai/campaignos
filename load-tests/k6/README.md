@@ -2,7 +2,7 @@
 
 Safe, production-like readiness checks for early launch. **Not** a maximum-capacity stress test.
 
-Twenty schools means twenty **tenants** in the fixture — not twenty virtual users running forever. Ordinary profiles hold about **4–8 concurrent users** (light peak **≤ 15**).
+Twenty schools means twenty **tenants** in the fixture — not twenty virtual users running forever. Ordinary profiles hold about **4–8 concurrent users** (light peak **≤ 15**, launch spike **≤ 30**).
 
 ## What this represents
 
@@ -11,10 +11,17 @@ Twenty schools means twenty **tenants** in the fixture — not twenty virtual us
 | `smoke` | 2 | ~2 min | 01–02 |
 | `twenty-schools` | ramp 4→8 | ~10 min | all 20 |
 | `light-peak` | ramp 0→5→10→15, hold 5m, ramp down 2m | ~10 min | all 20 |
+| `launch-spike` | ramp 0→10→20→30 (4m), hold 5m, ramp down 2m | ~11 min | all 20 |
+| `launch-spike-warmup` | ramp 0→4, hold ~1m40s | ~2 min (discarded) | all 20 |
 
 Traffic mix (`smoke` / `twenty-schools`): ~35% dashboard, 25% calendar/events, 15% Create with AI (read), 15% approvals (read), 10% Communications Hub (read).
 
-Traffic mix (`light-peak`): 30% dashboard, 25% calendar/events, 15% Create with AI (read), 10% approvals (read), 10% Communications Hub (read), 5% team/settings (read), 5% organization switching (falls back to a dashboard view when no seeded user belongs to 2+ orgs — see "Known coverage limitations").
+Traffic mix (`light-peak` / `launch-spike`): 30% dashboard, 25% calendar/events, 15% Create with AI (read), 10% approvals (read), 10% Communications Hub (read), 5% team/settings (read), 5% organization switching (falls back to a dashboard view when no seeded user belongs to 2+ orgs — see "Known coverage limitations").
+
+`launch-spike` assigns each VU one **exclusive, pinned session** for its whole
+run (school-interleaved so VUs 1–20 cover all 20 schools) instead of the
+time-varying `(VU + ITER)` selection the other profiles use — see "Known
+coverage limitations" for why.
 
 Think time between actions: **2–8 seconds** (longer after page-level workflows). No machine-speed request loops.
 
@@ -90,6 +97,20 @@ VERCEL_JWT=eyJhbGciOi... \
 npm run test:load:light-peak
 ```
 
+For the 30-VU profile, run a discardable warm-up first, then the recorded run:
+
+```bash
+BASE_URL=https://your-preview-xxxxx.vercel.app \
+TEST_RUN_ID=launch-spike-warmup \
+VERCEL_JWT=eyJhbGciOi... \
+npm run test:load:launch-spike-warmup   # discarded, confirms routes/sessions/bypass
+
+BASE_URL=https://your-preview-xxxxx.vercel.app \
+TEST_RUN_ID=launch-spike-30vu-001 \
+VERCEL_JWT=eyJhbGciOi... \
+npm run test:load:launch-spike
+```
+
 Before running, confirm with one manual request that the deployment serves
 staging data (not production) for a seeded session — e.g. that `/dashboard`
 returns 200 and contains the expected seeded organization ID.
@@ -157,6 +178,8 @@ export TEST_RUN_ID=k6-2026-08-01-a1
 npm run test:load:smoke
 npm run test:load:20-schools
 npm run test:load:light-peak
+npm run test:load:launch-spike-warmup   # discardable, run before launch-spike
+npm run test:load:launch-spike
 ```
 
 Or directly:
@@ -165,6 +188,8 @@ Or directly:
 k6 run load-tests/k6/smoke.js
 k6 run load-tests/k6/twenty-schools.js
 k6 run load-tests/k6/light-peak.js
+k6 run load-tests/k6/launch-spike-warmup.js
+k6 run load-tests/k6/launch-spike.js
 ```
 
 JSON summaries write under `load-tests/k6/results/` (gitignored).
@@ -221,12 +246,30 @@ K6_CLEANUP_DELETE_USERS=true TEST_RUN_ID=… npm run test:load:cleanup
   measures whole-workflow time including the intentional 2-8s think-time
   pauses between steps, so multi-step workflows legitimately show
   20-35s p95 even when every `http_req_duration` is sub-second.
+- The default `pickSession()` selection is time-varying (`(VU + ITER) %
+  pool.length`), which is intentional at ≤15 VUs (a VU samples many
+  users/schools over a run) but can very occasionally let two *different*,
+  concurrently-running VUs select the identical static session cookie at
+  close to the same instant — a race a real deployment never sees (each
+  browser session is unique), but that can trip Supabase's single-use
+  refresh-token rotation for that shared cookie under enough concurrency.
+  `launch-spike` (30 VUs) avoids this with a `pinned` assignment mode
+  (`pickSession(data, { pinned: true })`): one exclusive session per VU for
+  the whole run. If a future profile pushes VU count materially higher than
+  the 160-session pool, mint more sessions (more roles/schools) or extend
+  the pinned mode to other profiles.
+- Session cookies expire (Supabase access-token TTL, ~1hr) — a fixture
+  minted before a previous test round can look "valid" (200s) for a while
+  via server-side refresh, then start failing partway through a later,
+  longer-running test. Re-mint (`npm run test:load:mint-sessions`)
+  immediately before any recorded run set, especially higher-VU / longer
+  profiles.
 
 ## File layout
 
 ```text
 load-tests/k6/
-  smoke.js | twenty-schools.js | light-peak.js
+  smoke.js | twenty-schools.js | light-peak.js | launch-spike.js | launch-spike-warmup.js
   config/   environments.js thresholds.js workload.js
   helpers/  auth http checks organization test-data metrics
   scenarios/ dashboard calendar-events communications-* approvals settings-viewer org-switch run-mix

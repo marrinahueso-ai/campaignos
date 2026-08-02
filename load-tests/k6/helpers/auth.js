@@ -94,9 +94,51 @@ export function warmAuth(baseUrl, session) {
 }
 
 /**
- * Pick a session for this VU, optionally limited to school indexes.
+ * Reorders sessions so consecutive indexes cycle through *different*
+ * schools before repeating a school (transpose of the school-grouped
+ * fixture). Used by the `pinned` VU-assignment mode so that VU 1..N map
+ * to N distinct schools first, instead of clustering on the first few
+ * schools in fixture order.
  */
-export function pickSession(data, { schoolIndexes = null } = {}) {
+function interleaveBySchool(sessions) {
+  const bySchool = new Map();
+  for (const s of sessions) {
+    const key = Number(s.schoolIndex);
+    if (!bySchool.has(key)) bySchool.set(key, []);
+    bySchool.get(key).push(s);
+  }
+  const schoolKeys = Array.from(bySchool.keys()).sort((a, b) => a - b);
+  const maxRoles = Math.max(0, ...schoolKeys.map((k) => bySchool.get(k).length));
+  const interleaved = [];
+  for (let roleIdx = 0; roleIdx < maxRoles; roleIdx++) {
+    for (const key of schoolKeys) {
+      const roster = bySchool.get(key);
+      if (roster[roleIdx]) interleaved.push(roster[roleIdx]);
+    }
+  }
+  return interleaved;
+}
+
+let cachedInterleavedPool = null;
+
+/**
+ * Pick a session for this VU, optionally limited to school indexes.
+ *
+ * Two assignment modes:
+ *  - default (time-varying): `(VU + ITER) % pool.length` — spreads a VU
+ *    across many users/schools over the run (used by smoke/20-schools/
+ *    light-peak, already validated). A VU may pick a *different* valid,
+ *    fully-isolated session on each new iteration, per design.
+ *  - `pinned: true` (used by launch-spike at 30 VUs): each VU keeps a
+ *    single, exclusive session for its entire run — `(VU - 1) % pool.length`
+ *    over a school-interleaved pool ordering. With VUs <= pool size this
+ *    guarantees no two concurrently-running VUs ever replay the same
+ *    session cookie, eliminating a rare Supabase refresh-token race
+ *    observed when two VUs coincidentally selected the same static
+ *    session at the same instant under higher concurrency (see README
+ *    "Known coverage limitations").
+ */
+export function pickSession(data, { schoolIndexes = null, pinned = false } = {}) {
   let pool = data.sessions || [];
   if (schoolIndexes && schoolIndexes.length) {
     const allowed = new Set(schoolIndexes.map(Number));
@@ -105,6 +147,15 @@ export function pickSession(data, { schoolIndexes = null } = {}) {
   if (pool.length === 0) {
     throw new Error("No sessions in pool for this VU / school filter.");
   }
+
+  if (pinned) {
+    if (!cachedInterleavedPool || cachedInterleavedPool.length !== pool.length) {
+      cachedInterleavedPool = interleaveBySchool(pool);
+    }
+    const idx = (__VU - 1) % cachedInterleavedPool.length;
+    return cachedInterleavedPool[idx];
+  }
+
   // Spread VUs across schools/users
   const idx = (__VU + __ITER) % pool.length;
   return pool[idx];

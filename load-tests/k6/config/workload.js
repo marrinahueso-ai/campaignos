@@ -68,6 +68,39 @@ export const LIGHT_PEAK_WORKLOAD = {
 };
 
 /**
+ * Launch spike: 0→10→20→30 VUs over 4 minutes, hold 30 for 5 minutes, ramp
+ * down over 2 minutes — ~11 minutes total. Max 30 concurrent VUs; a
+ * launch-spike confidence check, not a breaking-point stress test.
+ */
+export const LAUNCH_SPIKE_WORKLOAD = {
+  executor: "ramping-vus",
+  startVUs: 0,
+  stages: [
+    { duration: "1m", target: 10 },
+    { duration: "1m", target: 20 },
+    { duration: "2m", target: 30 },
+    { duration: "5m", target: 30 },
+    { duration: "2m", target: 0 },
+  ],
+  gracefulRampDown: "60s",
+};
+
+/**
+ * Discardable warm-up ahead of a recorded launch-spike run: confirms
+ * routes/sessions/deployment-protection work at a small scale before the
+ * real ramp. Timing from this stage is never reported.
+ */
+export const LAUNCH_SPIKE_WARMUP_WORKLOAD = {
+  executor: "ramping-vus",
+  startVUs: 0,
+  stages: [
+    { duration: "20s", target: 4 },
+    { duration: "1m40s", target: 4 },
+  ],
+  gracefulRampDown: "20s",
+};
+
+/**
  * Weighted random workflow key.
  * @param {() => number} [rand] returns [0,1)
  * @param {Record<string, number>} [weights] defaults to the core 20-school mix
