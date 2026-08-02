@@ -145,35 +145,34 @@ describe("insights ease UI contracts", () => {
     assert.doesNotMatch(eventShell, /EventInsightsTab/);
   });
 
-  it("matches Event Insights Ease panel: KPIs, posts, refresh footer (no comparison banner)", () => {
-    assert.match(eventPanel, /Event Insights · organic only/);
+  it("matches Event Performance board: creative carousel rotates stats (no comparison banner)", () => {
+    assert.match(eventPanel, /Event Performance/);
+    assert.match(eventPanel, /event-insights-creative-carousel/);
     assert.match(eventPanel, /event-insights-kpi-strip/);
     assert.match(eventPanel, /Link clicks/);
-    assert.match(eventPanel, /Posts for this event/);
-    assert.match(eventPanel, /Published posts for \{eventTitle\}/);
+    assert.match(eventPanel, /selectPost/);
+    assert.match(eventPanel, /Engagement mix/);
     assert.match(eventPanel, /formatLastSyncTitle/);
     assert.match(eventPanel, /event-insights-sync-footer/);
     assert.match(eventPanel, /Open Org Insights/);
     assert.doesNotMatch(eventPanel, /Synced from Meta/);
     assert.doesNotMatch(eventPanel, /Missing scopes:/);
     assert.doesNotMatch(eventPanel, /read_insights/);
-    assert.match(eventPanel, /shadow-none/);
+    assert.doesNotMatch(eventPanel, /Donations Raised/);
+    assert.doesNotMatch(eventPanel, /Volunteer Loyalty/);
     assert.doesNotMatch(eventPanel, /event-insights-comparison/);
-    assert.doesNotMatch(eventPanel, /not an AI score/);
     assert.doesNotMatch(eventPanel, /than typical for a/);
-    assert.doesNotMatch(eventPanel, /Views Total|By post/);
     assert.doesNotMatch(eventPanel, /Age & gender/);
-    assert.doesNotMatch(eventPanel, /this campaign/);
     assert.doesNotMatch(eventPanel, /EventInsightsTab/);
+    assert.doesNotMatch(eventPanel, /plotly|Plotly/i);
   });
 
-  it("matches Event KPI strip mockup: quiet labels + large serif values", () => {
-    assert.match(eventPanel, /text-\[#7a7166\]/);
-    assert.match(eventPanel, /insights-ease-kpi-val/);
-    assert.match(eventPanel, /border-\[rgba\(42,38,34,0\.1\)\]/);
-    assert.match(eventPanel, /bg-\[#fffcf7\]/);
-    assert.match(eventPanel, /xl:grid-cols-5/);
-    assert.match(eventPanel, /cursor-default/);
+  it("keeps creative carousel + Pilot paper/ink/gold tokens", () => {
+    assert.match(eventPanel, /event-insights-creative-metrics/);
+    assert.match(eventPanel, /bg-\[#f6f2eb\]/);
+    assert.match(eventPanel, /text-\[#2f4a3c\]/);
+    assert.match(eventPanel, /border-\[#e8e3da\]/);
+    assert.match(eventPanel, /snap-x snap-mandatory/);
   });
 
   it("keeps Event Insights hub composition soft: page head + quiet picker", () => {

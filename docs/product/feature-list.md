@@ -299,7 +299,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Refresh from Meta + CSV export
   - Rule-based recommendations (“From your metrics” + details drawer); soft sync notes inline
   - Connect Meta empty state with `returnTo=/insights`
-- **Event Insights tab** (`/events/[id]?tab=insights`) — **shipped** (living: [event-insights.md](./event-insights.md))
+- **Event Insights tab** (`/events/[id]?tab=insights`) — **shipped** Pilot Event Performance: creative carousel drives rotating Reach/Interactions/Clicks + charts (living: [event-insights.md](./event-insights.md))
   - Event-scoped Meta performance for that event’s published `meta_publication_slots` + matching `social_post_insights` (org hub unchanged; same Meta connection)
   - KPI strip: Views · Reach · Interactions · Link clicks · Likes
   - Posts for this event list (artwork/caption, platform, views, likes; outbound link when URL exists)

@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 26, 2026  
+**Last updated:** August 1, 2026  
 **Related:** [Feature list](./feature-list.md) · [Meta connection](../integrations/meta.md) · [Meta App Review use cases](../ops/meta-app-review-use-cases.md) · [Ask Ralli Assistant](../engineering/ask-ralli-assistant.md)
 
 Event-scoped Meta performance on the event detail workspace. UI-focused product surface; OAuth and Graph sync details live in [meta.md](../integrations/meta.md).
@@ -25,14 +25,14 @@ Same Meta org connection as publishing and the org Insights hub (`/insights`).
 
 ## Layout (populated state)
 
-Matches the Insights Ease mockup (event panel) — not the retired dense chart wall:
+Pilot **Event Performance** board (creative-first), not the retired dense chart wall:
 
-1. **Eyebrow** — Event Insights · organic Meta metrics
-2. **KPI strip** — Views · Reach · Interactions · Link clicks · Likes
-3. **Posts for this event** — thumbnail or initials placeholder, caption, platform · date, views + likes; subtitle “Published slots linked to {event title}”; links out when an external post URL exists
-4. **Sync footer** — “Synced from Meta · Last sync: Jul 26, 11:40 AM” style timestamp, **Refresh**, ghost **Open Org Insights**
+1. **Header** — Event Performance + short organic-only subtitle
+2. **Left: creative carousel** — scroll / arrows / dots through each published post; large artwork card with Live badge; per-creative Views · Shares · Clicks; engagement read (rule-based from metrics, not an LLM)
+3. **Right: stats rotate with the selected creative** — Reach · Interactions · Link clicks; velocity chart (event `viewsSeries` when available) or performance-profile bars; engagement-mix donut (likes/comments/shares/clicks); creative snapshot
+4. **Footer** — Refresh on the snapshot card + ghost **Open Org Insights**
 
-No comparison / “vs typical” banner on this surface (product override).
+No fake donations / volunteer-loyalty charts. No comparison / “vs typical” banner.
 
 ---
 
