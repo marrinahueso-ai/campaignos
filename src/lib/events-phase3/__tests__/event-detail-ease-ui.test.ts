@@ -46,6 +46,22 @@ describe("event detail ease UI contracts", () => {
     assert.doesNotMatch(shell, /EventVendorsSection/);
   });
 
+  it("ships Pilot Event Task List with Ask AI, New Task, and shared list", () => {
+    const panel = readSrc(
+      "../../../components/events-phase3/EventDetailTasksEasePanel.tsx",
+    );
+    assert.match(panel, /Task List/);
+    assert.match(panel, /Ask AI for tasks/);
+    assert.match(panel, /\+ New Task/);
+    assert.match(panel, /TasksEaseList/);
+    assert.match(panel, /hideEventColumn/);
+    assert.match(panel, /TasksEaseAskAi/);
+    assert.match(panel, /TasksEaseAddTaskModal/);
+    assert.match(panel, /event-tasks-empty/);
+    assert.doesNotMatch(panel, /Needs you next/);
+    assert.doesNotMatch(panel, /EaseFocusCard/);
+  });
+
   it("event Approvals ease panel uses sort rail instead of pulse filters", () => {
     const panel = readSrc(
       "../../../components/events-phase3/EventDetailApprovalsEasePanel.tsx",

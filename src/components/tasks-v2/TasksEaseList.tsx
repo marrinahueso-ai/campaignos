@@ -52,6 +52,8 @@ interface TasksEaseListProps {
   emptyBody: string;
   /** Current user — used for “Needs you” badge. */
   viewerUserId?: string | null;
+  /** Event Detail Tasks tab — hide redundant Event column. */
+  hideEventColumn?: boolean;
 }
 
 type TaskOverride = Partial<
@@ -122,6 +124,7 @@ export const TasksEaseList = memo(function TasksEaseList({
   emptyTitle,
   emptyBody,
   viewerUserId = null,
+  hideEventColumn = false,
 }: TasksEaseListProps) {
   const [, startTransition] = useTransition();
   const [overrides, setOverrides] = useState<Record<string, TaskOverride>>({});
@@ -289,7 +292,14 @@ export const TasksEaseList = memo(function TasksEaseList({
   const rowCount = flatRows.length;
 
   return (
-    <div className="rounded-2xl border border-[#e8e2d9] bg-white pb-28 shadow-[0_4px_20px_-4px_rgba(47,74,60,0.08)]">
+    <div
+      className={cn(
+        "bg-white pb-28",
+        hideEventColumn
+          ? "min-h-[420px]"
+          : "rounded-2xl border border-[#e8e2d9] shadow-[0_4px_20px_-4px_rgba(47,74,60,0.08)]",
+      )}
+    >
       <div className="overflow-x-auto overflow-y-visible">
       <table className="w-full border-collapse text-left">
         <thead>
@@ -315,7 +325,7 @@ export const TasksEaseList = memo(function TasksEaseList({
                 </span>
               </button>
             </th>
-            <th className="px-6 py-4">Event</th>
+            {hideEventColumn ? null : <th className="px-6 py-4">Event</th>}
             <th className="px-6 py-4">Status</th>
             <th className="px-6 py-4">Due Date</th>
             <th className="px-6 py-4">Assignee</th>
@@ -476,42 +486,52 @@ export const TasksEaseList = memo(function TasksEaseList({
                     </span>
                   )}
                 </td>
+                {hideEventColumn ? null : (
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <DashboardWidgetColorPicker
+                        label={group.eventTitle}
+                        value={eventColors[group.eventId] ?? null}
+                        swatchColor={group.accentColor}
+                        variant="dot"
+                        onChange={(color) =>
+                          onEventColorChange(group.eventId, color)
+                        }
+                      />
+                      <Link
+                        href={group.eventHref}
+                        className="text-[12px] font-medium text-[#5c5752] hover:text-[#2a2622] hover:underline"
+                      >
+                        {group.eventTitle}
+                      </Link>
+                    </div>
+                  </td>
+                )}
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <DashboardWidgetColorPicker
-                      label={group.eventTitle}
-                      value={eventColors[group.eventId] ?? null}
-                      swatchColor={group.accentColor}
-                      variant="dot"
-                      onChange={(color) =>
-                        onEventColorChange(group.eventId, color)
+                  {due.overdue && !isDone ? (
+                    <span className="rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold tracking-tighter text-red-700 uppercase">
+                      Overdue
+                    </span>
+                  ) : (
+                    <TasksV2StatusPill
+                      status={task.status}
+                      disabled={!canEdit || isPending}
+                      onStatusChange={
+                        canEdit
+                          ? (status) => handleStatusChange(rawTask, status)
+                          : undefined
+                      }
+                      className={
+                        task.status === "blocked"
+                          ? "!bg-amber-100 !text-amber-700 uppercase tracking-tighter"
+                          : task.status === "done"
+                            ? "!bg-emerald-50 !text-emerald-700 uppercase tracking-tighter"
+                            : task.status === "in_progress"
+                              ? "!bg-[#c4922e]/10 !text-[#a87a22] uppercase tracking-tighter"
+                              : "uppercase tracking-tighter"
                       }
                     />
-                    <Link
-                      href={group.eventHref}
-                      className="text-[12px] font-medium text-[#5c5752] hover:text-[#2a2622] hover:underline"
-                    >
-                      {group.eventTitle}
-                    </Link>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <TasksV2StatusPill
-                    status={task.status}
-                    disabled={!canEdit || isPending}
-                    onStatusChange={
-                      canEdit
-                        ? (status) => handleStatusChange(rawTask, status)
-                        : undefined
-                    }
-                    className={
-                      task.status === "blocked"
-                        ? "!bg-amber-100 !text-amber-700 uppercase tracking-tighter"
-                        : task.status === "done"
-                          ? "!bg-[#f0f3f1] !text-[#2f4a3c] uppercase tracking-tighter"
-                          : "uppercase tracking-tighter"
-                    }
-                  />
+                  )}
                 </td>
                 <td
                   className={cn(
