@@ -1,10 +1,9 @@
 # Hey Ralli k6 load test — findings (first 20 schools)
 
-**Status:** 20-school phase closed and passed (see final summary below);
-100-school / 20-VU Run 1 completed with a threshold failure traced to
-middleware `getUser()` Auth rate limits — code remediation applied, see
-[auth rate-limit remediation](./100-school-20vu-auth-rate-limit-remediation.md)
-and the full [Run 1 report](./100-school-20vu-data-scale-run1.md)
+**Status:** 20-school phase closed and passed; 100-school / 20-VU Run 2
+**passed** after `getClaims` remediation — see
+[Run 2 report](./100-school-20vu-data-scale-run2.md) and
+[auth remediation](./100-school-20vu-auth-rate-limit-remediation.md)
 **Owner:** Engineering / QA
 **Last updated:** August 2, 2026
 **Related:** [k6 suite README](../../load-tests/k6/README.md) · [Performance budget](./performance-budget.md)
@@ -335,6 +334,27 @@ session the profile depends on, and a metrics counter that double-counts
 **Status: 100-school / 20-VU Run 1 complete, awaiting a decision on the
 Auth rate-limit ceiling before Run 2.** Not yet cleared for a higher-VU
 100-school profile.
+
+## 100-school / 20-VU data-scale — Run 2 (auth remediation)
+
+**Deployment:** new staging-pinned Preview
+`https://campaignos-p2ltky8cr-campignos.vercel.app`
+(`dpl_D5348dMfdWTs3rCFmtBHtL8s9zdn`) on commit `85caa0e` (`getClaims`
+middleware/RSC path). Auth allocation left at Absolute/10.
+**Full report:** [100-school-20vu-data-scale-run2.md](./100-school-20vu-data-scale-run2.md)
+
+| Metric | Run 1 | Run 2 |
+|---|---:|---:|
+| Auth failures (real) | 48 | **0** |
+| Checks | 99.79% | **100%** |
+| Auth 429s in run window | ~48 | **0** |
+| `kind:read` / dashboard / calendar / events_list p95 | 1.19s / 1.41s / 1.29s / 1.15s | **1.02s / 1.16s / 0.99s / 0.93s** |
+| Overall max | 32.4s | **3.56s** |
+| k6 exit | 99 | **0** |
+
+**Status: remediation confirmed. Safe to continue the remaining 100-school
+load-test sequence.** Absolute→Percentage Auth allocation remains optional
+capacity hygiene for higher-VU soaks, not a blocker for this profile.
 
 ## Known coverage gaps to close before a higher-VU or write-path test
 
