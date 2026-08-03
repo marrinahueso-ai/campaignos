@@ -151,6 +151,15 @@ export function buildHeadroom50Thresholds(opts = {}) {
  * explicit instruction — see the Phase 3 validation report / design doc
  * for how to interpret that specific failure mode if it occurs.
  */
+/**
+ * Same correctness + latency gates as the 20-VU data-scale profile.
+ * Kept as a named alias so the 50-VU profile's intent is explicit in
+ * call sites without loosening any gate for higher concurrency.
+ */
+export function buildDataScale100School50VuThresholds() {
+  return buildDataScale100School20VuThresholds();
+}
+
 export function buildDataScale100School20VuThresholds() {
   return {
     // Hard safety/correctness gates — literal 100%/0%, not the 99%/1%

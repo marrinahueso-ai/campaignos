@@ -204,6 +204,44 @@ async function auditDataScaleProfile() {
     writeMethodHits.length ? `found in: ${writeMethodHits.join(", ")}` : `scanned ${scannedFiles.length} files, all http.get-only`,
   );
 
+  // 50-VU headroom profile (next step after 20-VU soak) — existence +
+  // workload/threshold wiring only; the shared scenario scan above already
+  // covers write-method safety for both profiles.
+  const profile50Path = resolve(k6Root(), "data-scale-100school-50vu.js");
+  const profile50Exists = existsSync(profile50Path);
+  record(
+    "Data-scale 100-school/50-VU profile file exists",
+    profile50Exists,
+    profile50Exists ? profile50Path : `missing: ${profile50Path}`,
+  );
+  if (profile50Exists) {
+    const profile50Text = readFileSync(profile50Path, "utf8");
+    record(
+      "50-VU profile uses pinned sessions + prepareTestContext + 50-VU thresholds",
+      /pinnedSession:\s*true/.test(profile50Text) &&
+        /prepareTestContext\s*\(/.test(profile50Text) &&
+        /buildDataScale100School50VuThresholds/.test(profile50Text),
+      "checked pinnedSession, prepareTestContext, buildDataScale100School50VuThresholds",
+    );
+    try {
+      const workloadMod = await import(pathToFileURL(resolve(k6Root(), "config", "workload.js")).href);
+      const workload = workloadMod.DATA_SCALE_100SCHOOL_50VU_WORKLOAD;
+      const maxVus =
+        workload && Array.isArray(workload.stages)
+          ? Math.max(...workload.stages.map((s) => Number(s.target) || 0))
+          : null;
+      record(
+        "50-VU profile workload reaches >= 50 VUs",
+        typeof maxVus === "number" && maxVus >= 50,
+        maxVus === null
+          ? "DATA_SCALE_100SCHOOL_50VU_WORKLOAD not found"
+          : `DATA_SCALE_100SCHOOL_50VU_WORKLOAD max stage target=${maxVus}`,
+      );
+    } catch (err) {
+      record("50-VU profile workload reaches >= 50 VUs", false, err.message);
+    }
+  }
+
   // Informational only (never a fail condition by itself — the hard gate
   // is the method-based check above). Surfaces write-sounding route
   // literals for a human to spot-check. calendar-events.js's

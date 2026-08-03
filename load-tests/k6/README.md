@@ -16,6 +16,8 @@ Twenty schools means twenty **tenants** in the fixture — not twenty virtual us
 | `headroom` (50 VU) | ramp 0→15→30→50 (4m), hold 5m, ramp down 2m | ~11 min | all 20 |
 | `headroom-warmup` | ramp 0→5, hold ~1m40s | ~2 min (discarded) | all 20 |
 | `data-scale-100school-20vu` | ramp 0→5→20 (5m), hold 20 for **20 min**, ramp down 3m | ~28 min | 20 of 100 |
+| `data-scale-100school-50vu` | ramp 0→15→30→50 (4m), hold 50 for 5m, ramp down 2m | ~11 min | 50 of 100 |
+| `data-scale-100school-50vu-warmup` | ramp 0→5, hold ~1m40s | ~2 min (discarded) | 5 of 100 |
 
 Traffic mix (`smoke` / `twenty-schools`): ~35% dashboard, 25% calendar/events, 15% Create with AI (read), 15% approvals (read), 10% Communications Hub (read).
 
@@ -282,7 +284,7 @@ npm run test:load:preflight:100-schools
 
 Verifies: Supabase project ref + production block, fixture existence/shape,
 all integrity checks, Vercel Preview target + bypass token (if `BASE_URL`
-set), the `data-scale-100school-20vu` profile itself (see below), session
+set), the `data-scale-100school-20vu` and `50vu` profiles, session
 freshness + exclusive-session headroom, and that no concurrent seed/cleanup
 lock is held.
 
@@ -323,6 +325,29 @@ load, at peak hold, 5 minutes after ramp-down) and compare against
 No k6 load profile had been run against this dataset before this one —
 seeding, integrity validation, and the post-seed snapshot were deliberately
 the last step before any performance test at this scale.
+
+### 100-school / 50-VU data-scale headroom
+
+`data-scale-100school-50vu.js` keeps the 100-school traffic mix and strict
+safety gates from the 20-VU soak, but uses the **20-school headroom ramp
+shape** (0→15→30→50, 5m hold) so concurrency headroom compares directly to
+the validated 20-school / 50-VU results. Prefer a discardable warmup first.
+After full preflight, remint the 50 pinned owners before the recorded run
+(RLS negative check signs out `s001-owner`).
+
+```bash
+BASE_URL=https://your-preview-xxxxx.vercel.app \
+TEST_RUN_ID=data-scale-100school-50vu-warmup-001 \
+VERCEL_JWT=eyJhbGciOi... \
+K6_SESSIONS_FILE=../data/sessions.100-school-architecture.local.json \
+npm run test:load:data-scale:100school:50vu:warmup
+
+BASE_URL=https://your-preview-xxxxx.vercel.app \
+TEST_RUN_ID=data-scale-100school-50vu-001 \
+VERCEL_JWT=eyJhbGciOi... \
+K6_SESSIONS_FILE=../data/sessions.100-school-architecture.local.json \
+npm run test:load:data-scale:100school:50vu
+```
 
 ## Routes exercised (real App Router pages)
 

@@ -356,6 +356,55 @@ middleware/RSC path). Auth allocation left at Absolute/10.
 load-test sequence.** Absolute→Percentage Auth allocation remains optional
 capacity hygiene for higher-VU soaks, not a blocker for this profile.
 
+## 100-school / 50-VU data-scale — Run 1 (concurrency headroom)
+
+**Deployment:** same staging-pinned Preview as 20-VU Run 2
+(`campaignos-p2ltky8cr`, `85caa0e` / `getClaims`). Auth Absolute/10 unchanged.
+**Workload:** ramp 0→15→30→50 (4m), hold 50 (5m), ramp down (2m) — same shape
+as 20-school headroom; 50 pinned owners across 50 orgs; 100-school traffic mix.
+**Full report:** [100-school-50vu-data-scale-run1.md](./100-school-50vu-data-scale-run1.md)
+
+| Metric | Result | Gate |
+|---|---:|---|
+| Checks | 100% (21,240/21,240) | PASS |
+| Auth / tenant / unexpected 401·403·429·500 / dropped | all 0 | PASS |
+| `kind:read` / dashboard / calendar / events_list p95 | **1.39s / 1.57s / 1.36s / 1.27s** | PASS (read at 93% of 1.5s gate) |
+| k6 exit | **0** | PASS |
+
+**Interpretation:** first meaningful architecture stress at data scale —
+correctness intact, latency elevated ~35% vs 100-school/20-VU and above the
+20-school/50-VU band. Both logged slow requests (>3s / ~30s) were ramp-up
+cold starts, not hold-window failures. Post-run integrity 25/25; row-count
+drift 0.
+
+**Status: PASSED.** Hold-phase slow counters were later found to have been
+blind for this run ID (see Run 2); wall-clock still placed both slows in
+ramp-up. Absolute→Percentage Auth remains optional hygiene.
+
+## 100-school / 50-VU data-scale — Run 2 (stability replicate)
+
+**Deployment / Auth / dataset:** unchanged from Run 1. Harness-only fix:
+hold tracking for `50vu` run IDs + `K6_TRACK_HOLD_SLOW=true` on the npm
+scripts; observational `slow_req_over_20s`.
+**Full report:** [100-school-50vu-data-scale-run2.md](./100-school-50vu-data-scale-run2.md)
+
+| Metric | Run 1 | Run 2 |
+|---|---:|---:|
+| `kind:read` p95 | 1.39s | **1.38s** (reproduced) |
+| `dashboard` p95 | 1.57s | 1.69s |
+| Approvals max | 29.97s | **1.85s** (30s outlier isolated) |
+| >5s / >10s / >20s | 1 / 1 / 1 | **0 / 0 / 0** |
+| Hold >3s | (counters blind) | **1** (communications 3.2s) |
+| Auth / tenant / checks / k6 exit | all green / 0 | **all green / 0** |
+
+**Interpretation:** 1.38–1.39s ordinary-read p95 is a **stable 50-VU capacity
+pattern**, not a one-off. The ~30s approvals request was **isolated
+ramp/cold-start**. Correctness headroom at 50 VU is solid; latency headroom
+is tight (~92% of the 1.5s read gate).
+
+**Status: PASSED. Safe to proceed to 100-school / 75-VU** to locate the next
+concurrency cliff (expect possible read-p95 pressure).
+
 ## Known coverage gaps to close before a higher-VU or write-path test
 
 - No seeded user currently belongs to 2+ organizations, so the light-peak

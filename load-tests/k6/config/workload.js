@@ -183,6 +183,45 @@ export const DATA_SCALE_100SCHOOL_20VU_WORKLOAD = {
 };
 
 /**
+ * Data-scale 100-school / 50-VU headroom: same ramp shape as the validated
+ * 20-school HEADROOM_50VU_WORKLOAD (0→15→30→50 over 4m, hold 50 for 5m,
+ * ramp down 2m) so results compare directly, but uses the 100-school
+ * read-only traffic mix and pinned owners across 50 distinct orgs. Purpose
+ * is to find whether 5× data volume reduces concurrency headroom vs the
+ * 20-school / 50-VU pass — not to re-prove the auth fix. gracefulRampDown/
+ * Stop stay at 90s to match the longer data-scale workflows.
+ */
+export const DATA_SCALE_100SCHOOL_50VU_WORKLOAD = {
+  executor: "ramping-vus",
+  startVUs: 0,
+  stages: [
+    { duration: "1m", target: 15 },
+    { duration: "1m", target: 30 },
+    { duration: "2m", target: 50 },
+    { duration: "5m", target: 50 },
+    { duration: "2m", target: 0 },
+  ],
+  gracefulRampDown: "90s",
+  gracefulStop: "90s",
+};
+
+/**
+ * Discardable warm-up ahead of the 50-VU data-scale run: small pinned
+ * concurrency to wake the Preview and confirm sessions/bypass before the
+ * recorded ramp. Timing from this stage is never authoritative.
+ */
+export const DATA_SCALE_100SCHOOL_50VU_WARMUP_WORKLOAD = {
+  executor: "ramping-vus",
+  startVUs: 0,
+  stages: [
+    { duration: "20s", target: 5 },
+    { duration: "1m40s", target: 5 },
+  ],
+  gracefulRampDown: "20s",
+  gracefulStop: "20s",
+};
+
+/**
  * Weighted random workflow key.
  * @param {() => number} [rand] returns [0,1)
  * @param {Record<string, number>} [weights] defaults to the core 20-school mix

@@ -15,6 +15,8 @@ import {
   slowReqOver5sHold,
   slowReqOver10s,
   slowReqOver10sHold,
+  slowReqOver20s,
+  slowReqOver20sHold,
 } from "./metrics.js";
 import { foreignOrganizationIds, withActiveOrganization } from "./organization.js";
 
@@ -39,17 +41,33 @@ export function sessionHeaders(session) {
   };
 }
 
+/**
+ * Hold-window classification for the 11-minute 0→15→30→50 / hold-5m /
+ * ramp-down-2m shape (20-school headroom and 100-school data-scale 50-VU).
+ * Previously gated only on TEST_RUN_ID containing "headroom", which left
+ * data-scale 50-VU runs with inHold=false / scenarioProgress=0 always —
+ * blinding hold counters. Match scenario name, run id, or explicit env.
+ */
+function shouldTrackHold() {
+  if (__ENV.K6_TRACK_HOLD_SLOW === "true") return true;
+  const runId = String(__ENV.TEST_RUN_ID || "");
+  if (runId.includes("headroom") || runId.includes("50vu")) return true;
+  try {
+    const name = String(exec.scenario.name || "");
+    if (name.includes("headroom") || name.includes("50vu")) return true;
+  } catch {
+    // exec.scenario unavailable outside VU context
+  }
+  return false;
+}
+
 function recordSlowRequest(res, route) {
   const ms = res.timings.duration;
   if (ms < 3000) return;
 
-  const trackHold =
-    String(__ENV.TEST_RUN_ID || "").includes("headroom") ||
-    __ENV.K6_TRACK_HOLD_SLOW === "true";
-
   let progress = 0;
   let inHold = false;
-  if (trackHold) {
+  if (shouldTrackHold()) {
     try {
       progress = exec.scenario.progress;
     } catch {
@@ -60,14 +78,17 @@ function recordSlowRequest(res, route) {
       progress < HEADROOM_50VU_HOLD_PROGRESS.end;
   }
 
-  const bucket = ms >= 10000 ? "over_10s" : ms >= 5000 ? "over_5s" : "over_3s";
+  const bucket =
+    ms >= 20000 ? "over_20s" : ms >= 10000 ? "over_10s" : ms >= 5000 ? "over_5s" : "over_3s";
   slowReqOver3s.add(1, { route });
   if (ms >= 5000) slowReqOver5s.add(1, { route });
   if (ms >= 10000) slowReqOver10s.add(1, { route });
+  if (ms >= 20000) slowReqOver20s.add(1, { route });
   if (inHold) {
     slowReqOver3sHold.add(1, { route });
     if (ms >= 5000) slowReqOver5sHold.add(1, { route });
     if (ms >= 10000) slowReqOver10sHold.add(1, { route });
+    if (ms >= 20000) slowReqOver20sHold.add(1, { route });
   }
 
   // Structured, non-sensitive log for post-run tail analysis.
