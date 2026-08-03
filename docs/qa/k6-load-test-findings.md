@@ -1,6 +1,10 @@
 # Hey Ralli k6 load test — findings (first 20 schools)
 
-**Status:** 20-school phase closed and passed (see final summary below); 100-school phase not started
+**Status:** 20-school phase closed and passed (see final summary below);
+100-school / 20-VU Run 1 completed with a threshold failure traced to
+middleware `getUser()` Auth rate limits — code remediation applied, see
+[auth rate-limit remediation](./100-school-20vu-auth-rate-limit-remediation.md)
+and the full [Run 1 report](./100-school-20vu-data-scale-run1.md)
 **Owner:** Engineering / QA
 **Last updated:** August 2, 2026
 **Related:** [k6 suite README](../../load-tests/k6/README.md) · [Performance budget](./performance-budget.md)
@@ -292,9 +296,45 @@ calls) were triggered in any of the 9 recorded runs.
 
 **Status: 20-school phase is closed and PASSED.** Hey Ralli is confirmed
 launch-ready for the first 20 school organizations at up to 50 concurrent
-users with headroom to spare. The next planned phase (100-school validation)
-is intentionally **not started** — see suite README for how to scale the
-seed/session fixtures when that phase is scheduled.
+users with headroom to spare.
+
+## 100-school / 20-VU data-scale — Run 1
+
+**Deployment:** same Vercel Preview, production Next.js build,
+`heyralli-staging` Micro tier, 100-school architecture dataset (100 orgs, 800
+users, 2,500 events, 12,500 milestones)
+**Workload:** ramp 0→5→20 VUs (5m), hold 20 VUs (20m), ramp down (3m) — ~28.5
+min, 20 pinned owner sessions across 20 distinct organizations
+**Full report:** [100-school-20vu-data-scale-run1.md](./100-school-20vu-data-scale-run1.md)
+
+| Metric | Result | Gate |
+|---|---:|---|
+| Checks | 99.79% (23,949/23,997) | **FAIL** (`rate==1`) |
+| Tenant isolation failures | 0 | PASS |
+| Auth failures (real distinct events; raw counter double-counts to 96 — see report) | 48 | **FAIL** (`count==0`) |
+| HTTP failure rate | 0.00% | PASS |
+| Unexpected 401/403/429/500 | 0/0/0/0 | PASS |
+| Dropped iterations | 0 | PASS |
+| `kind:read` / `dashboard` / `calendar` / `events_list` p95 | 1.19s / 1.41s / 1.29s / 1.15s | **PASS** (all under gate) |
+
+**Root cause:** all 48 auth failures were clustered in a ~2-minute window
+near the end of the 20-minute peak hold and are directly explained by
+Supabase Auth returning `429 over_request_rate_limit` to Next.js
+middleware's session-refresh calls (confirmed via Vercel runtime logs).
+Supabase's own performance advisor confirms the Auth service's database
+connection allocation is capped at a fixed 10 absolute connections
+regardless of compute tier — an infrastructure constraint, not a
+tenant-isolation, data-integrity, or application-code defect. Post-run
+verification found zero dataset/storage drift, all 25 integrity checks
+passing, and full session/app recovery. See the full report for the
+complete finding classification (including two independently-discovered
+test-harness/observability defects: a preflight step that can poison a
+session the profile depends on, and a metrics counter that double-counts
+`auth_failures`).
+
+**Status: 100-school / 20-VU Run 1 complete, awaiting a decision on the
+Auth rate-limit ceiling before Run 2.** Not yet cleared for a higher-VU
+100-school profile.
 
 ## Known coverage gaps to close before a higher-VU or write-path test
 

@@ -2,6 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseCookieOptions } from "@/lib/supabase/cookie-options";
 import {
+  claimsToMiddlewareUser,
+  isAuthRateLimitError,
+  type MiddlewareAuthUser,
+} from "@/lib/supabase/middleware-auth";
+import {
   getPendingFoundingAccessCodeFromRequest,
   isFoundingAccessCodeRequired,
   validateFoundingAccessCode,
@@ -127,13 +132,40 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
+  // Prefer getClaims() over getUser(): with this project's asymmetric ES256
+  // signing keys, claims are verified locally against JWKS (cached) and Auth
+  // is only contacted when the access token actually needs a refresh. getUser()
+  // always hits GET /auth/v1/user and was the cause of Run 1's 429 storm under
+  // sustained concurrent page loads. RLS and Server Components still enforce
+  // authorization with the request JWT — this gate only needs a verified sub.
   const userResult = await withTimeout(
-    supabase.auth.getUser().then((result) => result.data.user),
+    (async (): Promise<MiddlewareAuthUser | null> => {
+      const { data, error } = await supabase.auth.getClaims();
+      const user = claimsToMiddlewareUser(
+        data?.claims as Record<string, unknown> | undefined,
+      );
+      if (user) return user;
+
+      if (isAuthRateLimitError(error)) {
+        // Rare with ES256 getClaims (Auth is only contacted for refresh). Log
+        // for observability; caller still treats null user as unauthenticated.
+        console.warn(
+          "[middleware] auth.getClaims rate-limited; no verified claims available",
+        );
+      } else if (error) {
+        console.warn(
+          `[middleware] auth.getClaims failed: ${error.message ?? "unknown"}`,
+        );
+      }
+      return null;
+    })(),
     AUTH_TIMEOUT_MS,
-    "auth.getUser",
+    "auth.getClaims",
   );
 
-  // Timed out talking to Auth: fail open on public paths, fail closed elsewhere.
+  // Timed out talking to Auth (or JWKS): fail open on public paths, fail closed
+  // elsewhere. With ES256 getClaims this should almost never hit Auth except
+  // near-expiry refresh.
   if (!userResult.ok) {
     if (isPublicPath(pathname)) {
       return supabaseResponse;

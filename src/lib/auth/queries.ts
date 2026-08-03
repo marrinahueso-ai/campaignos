@@ -28,16 +28,29 @@ export function resolveAuthUserDisplayName(
 
 export const getAuthUser = cache(async (): Promise<AuthUserSummary | null> => {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
+  // Local JWKS verification (ES256) — avoids a GET /auth/v1/user on every RSC
+  // render. Middleware already refreshes near-expiry tokens; mutations that
+  // need a server-confirmed user record still call auth.getUser() directly.
+  const { data, error } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  const email = typeof claims?.email === "string" ? claims.email : null;
+  const id = typeof claims?.sub === "string" ? claims.sub : null;
 
-  if (error || !data.user?.email) {
+  if (error || !id || !email) {
     return null;
   }
 
+  const userMetadata =
+    claims?.user_metadata &&
+    typeof claims.user_metadata === "object" &&
+    !Array.isArray(claims.user_metadata)
+      ? (claims.user_metadata as Record<string, unknown>)
+      : undefined;
+
   return {
-    id: data.user.id,
-    email: data.user.email,
-    displayName: resolveAuthUserDisplayName(data.user.user_metadata),
+    id,
+    email,
+    displayName: resolveAuthUserDisplayName(userMetadata),
   };
 });
 
