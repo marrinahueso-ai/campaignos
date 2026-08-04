@@ -178,3 +178,68 @@ export function rosterFillBandLabel(percent: number | null): string | null {
   const band = getVolunteerFillRateBand(percent);
   return band ? VOLUNTEER_FILL_RATE_LABELS[band] : null;
 }
+
+export type VolunteerGroupedSortField =
+  | "role"
+  | "fill"
+  | "shift"
+  | "location"
+  | "people";
+
+export type VolunteerGroupedSortDirection = "asc" | "desc";
+
+export const DEFAULT_VOLUNTEER_GROUPED_SORT_FIELD: VolunteerGroupedSortField =
+  "role";
+
+function compareText(left: string, right: string): number {
+  return left.localeCompare(right, undefined, { sensitivity: "base" });
+}
+
+function compareNullableNumber(
+  left: number | null | undefined,
+  right: number | null | undefined,
+): number {
+  const leftMissing = left == null || !Number.isFinite(left);
+  const rightMissing = right == null || !Number.isFinite(right);
+  if (leftMissing && rightMissing) return 0;
+  if (leftMissing) return 1;
+  if (rightMissing) return -1;
+  return (left as number) - (right as number);
+}
+
+/** Sort role lines within a grouped section (does not reorder sections). */
+export function sortRosterRoles(
+  roles: VolunteerRosterRoleCard[],
+  field: VolunteerGroupedSortField = DEFAULT_VOLUNTEER_GROUPED_SORT_FIELD,
+  direction: VolunteerGroupedSortDirection = "asc",
+): VolunteerRosterRoleCard[] {
+  const mul = direction === "asc" ? 1 : -1;
+  return [...roles].sort((left, right) => {
+    let cmp = 0;
+    switch (field) {
+      case "role":
+        cmp = compareText(left.assignment.name, right.assignment.name);
+        break;
+      case "fill":
+        cmp = compareNullableNumber(left.fillPercent, right.fillPercent);
+        break;
+      case "shift":
+        cmp = compareText(
+          `${left.assignment.startTime ?? ""}\0${left.assignment.endTime ?? ""}`,
+          `${right.assignment.startTime ?? ""}\0${right.assignment.endTime ?? ""}`,
+        );
+        break;
+      case "location":
+        cmp = compareText(
+          left.assignment.location ?? "",
+          right.assignment.location ?? "",
+        );
+        break;
+      case "people":
+        cmp = left.people.length - right.people.length;
+        break;
+    }
+    if (cmp !== 0) return cmp * mul;
+    return compareText(left.assignment.name, right.assignment.name) * mul;
+  });
+}

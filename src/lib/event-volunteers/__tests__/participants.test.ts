@@ -4,12 +4,15 @@ import {
   filterParticipantsByDateAllowlist,
   filterParticipantsByRole,
   filterParticipantsBySearch,
+  nextVolunteerSortState,
   paginateList,
+  sortParticipants,
   volunteerInitials,
 } from "@/lib/event-volunteers/participant-list";
 import {
   buildVolunteerRosterSections,
   rosterProgressTone,
+  sortRosterRoles,
 } from "@/lib/event-volunteers/roster-groups";
 import {
   normalizeSignUpGeniusPayload,
@@ -120,6 +123,29 @@ describe("signupgenius participant parse", () => {
     assert.equal(people.length, 1);
     assert.equal(people[0]?.name, "Only");
   });
+
+  it("uses nonmembername when first/last are empty", () => {
+    const people = parseSignUpGeniusParticipants(
+      {
+        "10": [{ nonmembername: "Guest Helper", email: "g@y.com" }],
+      },
+      new Map([
+        [
+          "10",
+          {
+            externalKey: "10",
+            name: "Lead",
+            quantityRequested: 1,
+            quantityFilled: 1,
+            quantityOpen: 0,
+          },
+        ],
+      ]),
+    );
+    assert.equal(people.length, 1);
+    assert.equal(people[0]?.name, "Guest Helper");
+    assert.doesNotMatch(JSON.stringify(people), /g@y\.com|email/i);
+  });
 });
 
 describe("participant list helpers", () => {
@@ -162,6 +188,21 @@ describe("participant list helpers", () => {
     assert.equal(page.pageItems.length, 1);
     assert.equal(page.pageCount, 2);
     assert.equal(volunteerInitials("Ada Lovelace"), "AL");
+  });
+
+  it("sorts list columns and toggles direction", () => {
+    const byName = sortParticipants(people, "volunteer", "asc");
+    assert.equal(byName[0]?.name, "Ada Lovelace");
+    const byRoleDesc = sortParticipants(people, "role", "desc");
+    assert.equal(byRoleDesc[0]?.roleName, "Lead Sorter");
+    assert.deepEqual(nextVolunteerSortState("volunteer", "asc", "volunteer"), {
+      field: "volunteer",
+      direction: "desc",
+    });
+    assert.deepEqual(nextVolunteerSortState("volunteer", "asc", "role"), {
+      field: "role",
+      direction: "asc",
+    });
   });
 });
 
@@ -256,5 +297,32 @@ describe("roster grouped sections", () => {
     assert.equal(rosterProgressTone(50), "gold");
     assert.equal(rosterProgressTone(80), "emerald");
     assert.equal(rosterProgressTone(100), "emerald");
+  });
+
+  it("sorts grouped role lines by fill and role name", () => {
+    const roles = buildVolunteerRosterSections(
+      [
+        assignment({
+          externalKey: "1",
+          name: "Zebra",
+          quantityFilled: 1,
+          quantityRequested: 4,
+          quantityOpen: 3,
+        }),
+        assignment({
+          externalKey: "2",
+          name: "Alpha",
+          quantityFilled: 4,
+          quantityRequested: 4,
+          quantityOpen: 0,
+          availabilityStatus: "full",
+        }),
+      ],
+      [],
+    )[0]!.roles;
+    const byFill = sortRosterRoles(roles, "fill", "desc");
+    assert.equal(byFill[0]?.assignment.name, "Alpha");
+    const byName = sortRosterRoles(roles, "role", "asc");
+    assert.equal(byName[0]?.assignment.name, "Alpha");
   });
 });

@@ -49,6 +49,79 @@ export function filterParticipantsByRole<
   return participants.filter((participant) => participant.roleName === roleName);
 }
 
+export type VolunteerListSortField =
+  | "volunteer"
+  | "role"
+  | "shift"
+  | "location"
+  | "status";
+
+export type VolunteerSortDirection = "asc" | "desc";
+
+export const DEFAULT_VOLUNTEER_LIST_SORT_FIELD: VolunteerListSortField =
+  "volunteer";
+export const DEFAULT_VOLUNTEER_SORT_DIRECTION: VolunteerSortDirection = "asc";
+
+function compareText(left: string, right: string): number {
+  return left.localeCompare(right, undefined, { sensitivity: "base" });
+}
+
+function shiftSortKey(startTime?: string, endTime?: string): string {
+  return `${startTime ?? ""}\0${endTime ?? ""}`;
+}
+
+export function sortParticipants<
+  T extends Pick<
+    VolunteerSignupParticipant,
+    "name" | "roleName" | "startTime" | "endTime" | "location" | "status"
+  >,
+>(
+  participants: T[],
+  field: VolunteerListSortField = DEFAULT_VOLUNTEER_LIST_SORT_FIELD,
+  direction: VolunteerSortDirection = DEFAULT_VOLUNTEER_SORT_DIRECTION,
+): T[] {
+  const mul = direction === "asc" ? 1 : -1;
+  return [...participants].sort((left, right) => {
+    let cmp = 0;
+    switch (field) {
+      case "volunteer":
+        cmp = compareText(left.name, right.name);
+        break;
+      case "role":
+        cmp = compareText(left.roleName, right.roleName);
+        break;
+      case "shift":
+        cmp = compareText(
+          shiftSortKey(left.startTime, left.endTime),
+          shiftSortKey(right.startTime, right.endTime),
+        );
+        break;
+      case "location":
+        cmp = compareText(left.location ?? "", right.location ?? "");
+        break;
+      case "status":
+        cmp = compareText(left.status, right.status);
+        break;
+    }
+    if (cmp !== 0) return cmp * mul;
+    return compareText(left.name, right.name) * mul;
+  });
+}
+
+export function nextVolunteerSortState<TField extends string>(
+  currentField: TField,
+  currentDirection: VolunteerSortDirection,
+  nextField: TField,
+): { field: TField; direction: VolunteerSortDirection } {
+  if (currentField === nextField) {
+    return {
+      field: currentField,
+      direction: currentDirection === "asc" ? "desc" : "asc",
+    };
+  }
+  return { field: nextField, direction: "asc" };
+}
+
 export function volunteerInitials(name: string): string {
   const parts = name
     .trim()

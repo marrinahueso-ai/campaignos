@@ -34,6 +34,10 @@ type SugParticipantRow = {
   lastname?: unknown;
   firstName?: unknown;
   lastName?: unknown;
+  /** Guest / non-member display name when first/last are empty. */
+  nonmembername?: unknown;
+  nonMemberName?: unknown;
+  name?: unknown;
   /** Intentionally ignored — we do not store or surface email. */
   email?: unknown;
   participantid?: unknown;
@@ -115,7 +119,12 @@ function participantDisplayName(row: SugParticipantRow): string | undefined {
   const last =
     sanitizeText(row.lastname, 80) ?? sanitizeText(row.lastName, 80);
   const combined = [first, last].filter(Boolean).join(" ").trim();
-  return combined || undefined;
+  if (combined) return combined;
+  return (
+    sanitizeText(row.nonmembername, 120) ??
+    sanitizeText(row.nonMemberName, 120) ??
+    sanitizeText(row.name, 120)
+  );
 }
 
 function participantStableKey(
