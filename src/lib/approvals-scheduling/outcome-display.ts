@@ -50,18 +50,20 @@ export function approvalOutcomeChip(item: UnifiedApprovalItem): {
   }
 }
 
-export function isPostedOutcome(item: UnifiedApprovalItem): boolean {
+type OutcomeFields = Pick<UnifiedApprovalItem, "workflowStatus" | "deliveryMethod">;
+
+export function isPostedOutcome(item: OutcomeFields): boolean {
   return (
     (item.workflowStatus === "published" || item.workflowStatus === "posted") &&
     item.deliveryMethod !== "draft-only"
   );
 }
 
-export function isFailedOutcome(item: UnifiedApprovalItem): boolean {
+export function isFailedOutcome(item: Pick<UnifiedApprovalItem, "workflowStatus">): boolean {
   return item.workflowStatus === "failed";
 }
 
-export function isDraftOutcome(item: UnifiedApprovalItem): boolean {
+export function isDraftOutcome(item: OutcomeFields): boolean {
   return (
     item.deliveryMethod === "draft-only" &&
     item.workflowStatus !== "failed" &&

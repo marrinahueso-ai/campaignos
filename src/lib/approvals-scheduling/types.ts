@@ -121,6 +121,19 @@ export interface UnifiedApprovalSummaryCounts {
 export interface UnifiedApprovalsPageData {
   items: UnifiedApprovalItem[];
   summary: UnifiedApprovalSummaryCounts;
+  /**
+   * Authoritative pulse badge counts (from a thin status index of all rows).
+   * When hub SSR defers terminal detail rows, do not recompute these from `items`.
+   */
+  pulseCounts: {
+    needs: number;
+    scheduled: number;
+    posted: number;
+    failed: number;
+    changes: number;
+  };
+  /** True when scheduled/posted/published detail rows were omitted from `items`. */
+  defersTerminalDetailRows: boolean;
   campaigns: Array<{ id: string; title: string }>;
   actorEmail: string | null;
   actorUserId: string | null;

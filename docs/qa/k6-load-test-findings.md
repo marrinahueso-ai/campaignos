@@ -5,7 +5,7 @@
 [Run 2 report](./100-school-20vu-data-scale-run2.md) and
 [auth remediation](./100-school-20vu-auth-rate-limit-remediation.md)
 **Owner:** Engineering / QA
-**Last updated:** August 3, 2026
+**Last updated:** August 4, 2026
 **Related:** [k6 suite README](../../load-tests/k6/README.md) · [Performance budget](./performance-budget.md)
 
 Results from the staging (`heyralli-staging`) 20-school k6 suite: the initial
@@ -458,6 +458,55 @@ tails remain). Do **not** proceed to 100 VU.
 
 **Status: RCA COMPLETE for this cycle — 75-VU gates still FAIL; stop
 higher-VU progression.**
+
+## 100-school / 75-VU — Run 3 (Attention lean counts)
+
+**Report:** [100-school-75vu-data-scale-run3-attn.md](./100-school-75vu-data-scale-run3-attn.md)
+
+**Change:** Attention widget counts use lean sidebar/scheduling badge APIs and
+short-circuit volunteer/task probes instead of materializing
+`getDashboardRichListData` (Volunteer Master + Task Hub + classic queue) on
+every default dashboard load.
+
+**Fixture pivot:** `arch100` has **0** classic `approval_requests`, **0**
+volunteer sources, **0** playbook tasks — classic-queue diet would be a no-op;
+Attention was paying for empty rich lists.
+
+| Metric | Run 1 | Run 3 |
+|---|---:|---:|
+| Auth / tenant / checks | 0 / 0 / 100% | **0 / 0 / 100%** |
+| `kind:read` p95 | 2.77s | **3.35s** (still **FAIL**) |
+| waiting / receiving **avg** | 630 / 838ms | **635 / 837ms** (~flat) |
+| Hold >3s | 134 | **344** |
+
+**Keep** the change (correctness-preserving; removes wasted work). Combined with
+Run 2 query-collapse, two waiting-path fixes have not cleared the gate. Next:
+approvals HTML receiving diet and/or Micro→Small A/B.
+
+**Status: 75-VU gates still FAIL after second app remediation; stop higher-VU.**
+
+## 100-school / 75-VU — Run 4 (Approvals terminal deferral)
+
+**Report:** [100-school-75vu-data-scale-run4-defer.md](./100-school-75vu-data-scale-run4-defer.md)
+**RCA (updated):** [100-school-75vu-latency-rca.md](./100-school-75vu-latency-rca.md)
+
+**Change:** Org Approvals hub SSR omits `scheduled` / `posted` / `published`
+detail rows; thin status index keeps pulse counts accurate; client lazy-loads
+terminal rows on Scheduled/Posted pulse or search. Revision uses complete fetch.
+
+| Metric | Run 1 | Run 3 | Run 4 |
+|---|---:|---:|---:|
+| Approvals HTML / detail rows | ~224 KB / 125 | ~218.5 KB / 125 | **130.6 KB / 50** |
+| Auth / tenant / checks | 0 / 0 / 100% | 0 / 0 / 100% | **0 / 0 / 100%** |
+| `kind:read` p95 | 2.77s | 3.35s | **3.35s** (still **FAIL**) |
+| receiving p95 | 1.73s | 2.00s | **1.93s** |
+| Hold >3s / >5s | 134 / 2 | 344 / 53 | **343 / 9** |
+
+**Keep** deferral (explicit, ~40% Approvals HTML cut, no correctness hit). Overall
+receiving/read p95 did **not** materially improve; stop further speculative
+app-side latency work. **Next:** controlled Micro→Small A/B under identical 75-VU.
+
+**Status: 75-VU gates still FAIL after receiving-focused remediation; Micro→Small is now the best next experiment.**
 
 ## Known coverage gaps to close before a higher-VU or write-path test
 

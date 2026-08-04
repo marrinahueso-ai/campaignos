@@ -7,7 +7,7 @@ import {
 import { mapApprovalItemToRevision } from "@/components/approvals-revision/map-item";
 import { RevisionWorkspace } from "@/components/approvals-revision/RevisionWorkspace";
 import type { RevisionMode } from "@/components/approvals-revision/types";
-import { getUnifiedApprovalsSchedulingData } from "@/lib/approvals-scheduling/queries";
+import { getUnifiedApprovalsSchedulingDataComplete } from "@/lib/approvals-scheduling/queries";
 
 export const metadata = {
   title: "Revision · Approvals",
@@ -64,7 +64,7 @@ export default async function ApprovalsRevisionPage({
     );
   }
 
-  const data = await getUnifiedApprovalsSchedulingData();
+  const data = await getUnifiedApprovalsSchedulingDataComplete();
   const item = data.items.find((row) => row.id === params.itemId);
   if (!item) {
     notFound();
