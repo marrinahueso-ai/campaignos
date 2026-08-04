@@ -508,6 +508,32 @@ app-side latency work. **Next:** controlled Micro→Small A/B under identical 75
 
 **Status: 75-VU gates still FAIL after receiving-focused remediation; Micro→Small is now the best next experiment.**
 
+## 100-school / 75-VU — Run 5 (Micro → Small compute A/B)
+
+**Report:** [100-school-75vu-data-scale-run5-small-ab.md](./100-school-75vu-data-scale-run5-small-ab.md)
+**RCA (updated):** [100-school-75vu-latency-rca.md](./100-school-75vu-latency-rca.md)
+
+**Variable:** Supabase compute only (**Small** 2 GB / 2-core). Same Preview as
+Run 4, same workload/thresholds/fixture/Auth Absolute/10.
+
+| Metric | Run 4 Micro | Run 5 Small | Δ |
+|---|---:|---:|---:|
+| Auth / tenant / checks | 0 / 0 / 100% | **0 / 0 / 100%** | flat |
+| `kind:read` p95 | 3.35s | **2.55s** | **−0.80s** (still **FAIL** vs 1.5s) |
+| waiting / receiving p95 | 1.51 / 1.93s | **1.14 / 1.56s** | **−0.37 / −0.37s** |
+| Hold >3s / >5s | 343 / 9 | **71 / 0** | **−272 / −9** |
+
+**Interpretation:** Micro was amplifying the dual wait/recv bottleneck under the
+75-VU hold. Small removes much of that amplification (especially hold tails)
+but does **not** clear the gate — residual is still dual wait+receiving on hot
+RSC routes.
+
+**Keep Small** on staging. 75 VU is correctness-stable but not latency-gate
+stable. 100 VU is exploratory-only until 75 clears. Next: one focused
+hot-route app change under Small, **or** optional Small→Medium A/B.
+
+**Status: Infra A/B COMPLETE — Small kept; 75-VU gate still FAIL; stop speculative multi-change work.**
+
 ## Known coverage gaps to close before a higher-VU or write-path test
 
 - No seeded user currently belongs to 2+ organizations, so the light-peak
