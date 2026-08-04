@@ -186,13 +186,12 @@ describe("event-scoped tab loaders (source contract)", () => {
     assert.match(shell, /directoryHref="\/vendors"/);
   });
 
-  it("SSR streams Approvals and preloads only non-default deep-linked tabs", () => {
-    assert.match(render, /EventDetailApprovalsStream/);
-    assert.match(render, /streamApprovals/);
-    assert.match(render, /Suspense/);
+  it("defers Approvals to client load and preloads only non-default deep-linked tabs", () => {
+    assert.match(render, /approvalsSlot=\{undefined\}/);
     assert.match(render, /getOrganizationWorkspaceDataLean/);
     assert.match(render, /loadEventDetailTabData\(/);
     assert.match(render, /lazyInitial/);
+    assert.doesNotMatch(render, /EventDetailApprovalsStream/);
     assert.doesNotMatch(render, /getUnifiedApprovalsSchedulingData\(\)/);
     assert.doesNotMatch(render, /getTasksV2PageData\(\)/);
     assert.doesNotMatch(render, /getEventPlaybookHubData/);
