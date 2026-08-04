@@ -2,8 +2,10 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA  
-**Last updated:** August 1, 2026 (Event shell stream + lean list wins)  
-**Related:** [Testing guide](./testing-guide.md) · [Launch checklist](./launch-checklist.md)
+**Last updated:** August 4, 2026 (Performance Engineering Phase 1 complete)  
+**Related:** [Phase 1 complete](./performance-engineering-phase1-complete.md) ·
+[k6 findings](./k6-load-test-findings.md) ·
+[Testing guide](./testing-guide.md) · [Launch checklist](./launch-checklist.md)
 
 ## Target
 
@@ -126,7 +128,7 @@ Prefer Production: `HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ral
 
 ## Hot path notes (Aug 1, 2026 — loading-speed wins)
 
-- **Event Detail streams shell first** — bare `/events/[id]` (and `?tab=approvals`) paints hero/tabs via lean `getOrganizationWorkspaceDataLean` (explicit columns, skip seed, no member↔event assignment round-trip); Approvals body streams in a Suspense child (`EventDetailApprovalsStream`) and still re-checks `getEventById`. Non-Approvals deep links keep SSR tab preload.
+- **Event Detail shell first; Approvals client-loaded** — bare `/events/[id]` paints hero/tabs via lean `getOrganizationWorkspaceDataLean` (explicit columns, skip seed, no member↔event assignment round-trip). Approvals is no longer SSR-streamed (`approvalsSlot={undefined}`); the client loads it via `loadEventDetailTabAction` like other lazy tabs so the HTML response is not blocked on the approvals query+DTO. Non-Approvals deep links keep SSR tab preload. `EventDetailApprovalsStream` remains in-tree for easy revert.
 - **Tasks list selects omit `notes`** — `PLAYBOOK_TASK_LIST_SELECT` + parallel id presence query for `hasNotes`; drawer still loads note bodies via `getTaskHubTaskNotesAction`.
 - **Dashboard widgets use lean helpers** — `getDashboardTaskItems` / `getUnifiedApprovalsSchedulingDataLean` (skip live-name + Meta slot overlay) instead of full Tasks V2 / Approvals hub DTOs; workspace via `getOrganizationWorkspaceDataLeanWithAssignments`.
 - **Approvals enrich parallelized** — assignees / live names / Meta slots (hub) and assignees / Meta bundles / slots / live names (event tab) run in one `Promise.all` wave; approve still defers Meta schedule + email via `after()`.
@@ -148,27 +150,41 @@ HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ralli:perf
 
 ## Multi-tenant readiness (k6)
 
-First-20-school simulation (smoke / normal / light-peak / launch-spike) lives under [`load-tests/k6/`](../../load-tests/k6/README.md):
+**Performance Engineering Phase 1 is COMPLETE.** Canonical handoff:
+[performance-engineering-phase1-complete.md](./performance-engineering-phase1-complete.md).
+
+Suite lives under [`load-tests/k6/`](../../load-tests/k6/README.md). Prefer
+staging Preview. Production hosts are blocked unless `K6_ALLOW_PRODUCTION=true`.
+`next dev` is unsuitable (false-positive tenant-isolation failures).
+
+### Accepted operating envelope (Phase 1)
+
+| Concurrent pinned owners | Ordinary-read p95 | Notes |
+|---|---:|---|
+| 20 VU (100-school) | Pass (post–auth remediation) | Architecture validation |
+| 50 VU (100-school) | **~1.38s — PASS** | Last fully green latency point |
+| 75 VU on **Medium** + kept app fixes | **1.55s — near-miss FAIL** | ~53ms over 1.5s; dashboard/calendar/events_list pass &lt;2s |
+
+| Environment | Recommended compute |
+|---|---|
+| Staging | **Medium** (4 GB / 2-core) |
+| Production | **Medium** preferred if ~75-VU class concurrency is in scope |
+
+Correctness (tenant/auth/checks/unexpected 4xx–5xx/dropped) held **perfect**
+from 20→75 VU. Do **not** run 100 VU for Phase 1 closure. Chronological log:
+[k6-load-test-findings.md](./k6-load-test-findings.md).
 
 ```bash
-npm run test:load:seed && npm run test:load:mint-sessions
-BASE_URL=https://your-staging.example TEST_RUN_ID=… npm run test:load:smoke
+# Example — staging Preview + VERCEL_JWT; see suite README for full controls
+npm run test:load:preflight:100-schools
+K6_SESSIONS_FILE=../data/sessions.100-school-architecture.local.json \
+  npm run test:load:data-scale:100school:75vu
 ```
-
-Prefer staging/preview. Production hosts are blocked unless `K6_ALLOW_PRODUCTION=true`.
-
-**Results:** 15-VU light-peak, 30-VU launch-spike, and 50-VU headroom profiles
-each passed 3/3 runs against a Vercel Preview deployment on `heyralli-staging`
-— 0 tenant-isolation failures, 0 auth failures, 100% checks passed, 0% HTTP
-failure rate, all route p95s under budget. Tail latency (p99/max) spikes are
-concentrated in ramp transitions (serverless cold starts), not during the
-steady hold; at 50 VUs the hold window had essentially no >5s requests.
-Meaningful headroom above expected launch traffic is confirmed. `next dev` is
-confirmed unsuitable for this suite (false-positive tenant-isolation
-failures). Full writeup: [k6 load test findings](./k6-load-test-findings.md).
 
 ## Not covered here
 
 - Lighthouse CI / Core Web Vitals route and device matrix (optional follow-up)
 - Artwork generation latency
 - Full k6/Artillery soak against Production (avoid hammering prod; use the guarded k6 suite on staging instead)
+- Write-path / AI / Meta load profiles (post–Phase 1)
+- 100-VU characterization (deferred; see Phase 1 §15)

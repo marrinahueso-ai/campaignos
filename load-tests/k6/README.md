@@ -1,6 +1,11 @@
-# k6 load tests — first 20 schools (Hey Ralli)
+# k6 load tests — Hey Ralli
 
-Safe, production-like readiness checks for early launch. **Not** a maximum-capacity stress test.
+Safe, production-like readiness checks for early launch and 100-school data-scale
+validation. **Not** a maximum-capacity stress test.
+
+**Performance Engineering Phase 1 is COMPLETE** — accepted envelope, Medium
+tier, and handoff:
+[`docs/qa/performance-engineering-phase1-complete.md`](../../docs/qa/performance-engineering-phase1-complete.md).
 
 Twenty schools means twenty **tenants** in the fixture — not twenty virtual users running forever. Ordinary profiles hold about **4–8 concurrent users** (light peak **≤ 15**, launch spike **≤ 30**).
 
@@ -352,6 +357,12 @@ npm run test:load:data-scale:100school:50vu
 ```
 
 ### 100-school / 75-VU boundary probe
+
+**Phase 1 status:** Performance Engineering Phase 1 is **COMPLETE**. Final
+accepted envelope and handoff:
+[`docs/qa/performance-engineering-phase1-complete.md`](../../docs/qa/performance-engineering-phase1-complete.md)
+(50 VU pass; 75 VU on **Medium** near-miss at 1.55s; **do not run 100 VU** for
+Phase 1 close). Staging compute for reproduction: **Medium**.
 
 Same 11-minute stage durations as the 50-VU profile (hold fractions stay
 valid) with peak raised to **75** (`0→25→50→75`). Unchanged hard gates —

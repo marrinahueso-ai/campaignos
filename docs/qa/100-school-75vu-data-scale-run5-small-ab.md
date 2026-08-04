@@ -108,7 +108,7 @@ hold events.
 | Keep Small on staging? | **Yes** — clear capacity win; Micro was under-provisioned for this 75-VU hold. |
 | Is 75 VU a stable operating point? | **Not yet for the 1.5s gate** (2.55s read p95). Correctness is stable; latency gate is not met. |
 | Is 100 VU reasonable to test? | **Exploratory only, not a pass candidate.** Prefer clearing or tightly bounding 75 first; if run, expect fail and treat as discovery. |
-| Next engineering step | Prefer **one** of: (a) controlled **Small → Medium** A/B if you want to know remaining infra headroom, or (b) **targeted app receiving work** on remaining hot routes (`dashboard` / `calendar` / `event_detail`) now that hold contention is quieter. Do **not** loosen thresholds; do **not** touch Auth Absolute/10; do **not** deploy production. |
+| Next engineering step (as of Run 5) | Prefer **one** of: (a) controlled **Small → Medium** A/B, or (b) targeted app receiving work. **Later completed:** Medium A/B (Run 7); Phase 1 closed — [performance-engineering-phase1-complete.md](./performance-engineering-phase1-complete.md). |
 
 ---
 

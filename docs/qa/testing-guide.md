@@ -51,7 +51,7 @@ It opens Hey Ralli like a real person would and checks critical workflows, for e
 
 **Still manual (not Playwright):** Safari executed-HTML download, Resend countersign/executed email delivery, Meta OAuth deep connect, Google Calendar OAuth deep connect, org switcher (needs multi-org Owner seat), Team Access invite/edit as Owner, full Create-with-AI generate + approve cycle, SignUpGenius connect.
 
-**Performance budget:** `npm run test:hey-ralli:perf` — page loads / light saves ≤ 2s (+ concurrent dashboard). See [performance-budget.md](./performance-budget.md).
+**Performance budget:** `npm run test:hey-ralli:perf` — page loads / light saves ≤ 2s (+ concurrent dashboard). See [performance-budget.md](./performance-budget.md). Multi-tenant k6 **Phase 1 complete:** [performance-engineering-phase1-complete.md](./performance-engineering-phase1-complete.md).
 
 **Cross-browser coverage:** `npm run test:hey-ralli` (default) runs Chromium only, for speed. Firefox and WebKit (Safari's engine) are also registered as Playwright projects and can be targeted directly:
 
