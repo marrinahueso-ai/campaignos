@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Users } from "lucide-react";
+import { ChevronDown, ExternalLink, Users } from "lucide-react";
 import {
   EaseBtnPrimary,
   EaseBtnSecondary,
@@ -9,7 +9,6 @@ import {
   EaseChip,
   EaseKpi,
   EaseSectionLabel,
-  EaseSoftActions,
 } from "@/components/events-phase3/EventDetailEaseUi";
 import { EventContextFileUpload } from "@/components/campaign-files/EventContextFileUpload";
 import { formatSyncTime } from "@/lib/event-volunteers/ai-summary";
@@ -256,17 +255,9 @@ function GroupedRoleLine({
             <div className="rounded-xl border border-dashed border-cos-border px-4 py-4">
               <p className="text-sm text-cos-muted">
                 {filledWithoutNames
-                  ? "Names aren’t shared for this role yet. Fill counts still update above."
+                  ? "No names for this role yet. Refresh after SignUpGenius shares participant names."
                   : "No volunteers assigned yet."}
               </p>
-              {signupUrl ? (
-                <a
-                  href={signupUrl}
-                  className="mt-2 inline-flex text-xs font-bold text-[#2f4a3c] underline-offset-2 hover:underline"
-                >
-                  {filledWithoutNames ? "Open signup" : "Recruit"}
-                </a>
-              ) : null}
               {!filledWithoutNames && role.openSlots > 0 ? (
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {Array.from({
@@ -391,10 +382,22 @@ export function EventVolunteerRosterEase({
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <EaseSectionLabel hint={`Updated ${updatedLabel} · names when public`}>
+        <EaseSectionLabel hint={`Updated ${updatedLabel}`}>
           Volunteers
         </EaseSectionLabel>
         <div className="flex flex-wrap items-center gap-2">
+          {signupUrl ? (
+            <a
+              href={signupUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open signup"
+              aria-label="Open signup"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-text transition hover:border-[rgba(47,74,60,0.35)] hover:bg-[rgba(47,74,60,0.06)]"
+            >
+              <ExternalLink className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            </a>
+          ) : null}
           <EventContextFileUpload
             eventId={eventId}
             uploadContext="volunteers"
@@ -541,21 +544,6 @@ export function EventVolunteerRosterEase({
         </div>
       ) : null}
 
-      {!hasNamedRoster ? (
-        <EaseBox className="mb-4">
-          <p className="text-sm text-cos-muted">
-            {filledSpots > 0
-              ? "Names aren’t shared on this public signup. Role fill health still updates below."
-              : "No named volunteers yet. When SignUpGenius shares participant names, they’ll appear here."}
-          </p>
-          {signupUrl ? (
-            <EaseSoftActions>
-              <EaseBtnPrimary href={signupUrl}>Open signup</EaseBtnPrimary>
-            </EaseSoftActions>
-          ) : null}
-        </EaseBox>
-      ) : null}
-
       {view === "list" ? (
         <EaseBox className="overflow-hidden p-0">
           <div className="overflow-x-auto">
@@ -578,7 +566,9 @@ export function EventVolunteerRosterEase({
                     >
                       {hasNamedRoster
                         ? "No volunteers match this search or filter."
-                        : "Named roster is empty for this event."}
+                        : filledSpots > 0
+                          ? "No names yet from SignUpGenius. Turn on “Show names” on the public signup, then Refresh."
+                          : "No volunteers yet. Names appear here after SignUpGenius shares them."}
                     </td>
                   </tr>
                 ) : (
@@ -710,51 +700,6 @@ export function EventVolunteerRosterEase({
           ) : null}
         </div>
       )}
-
-      {assignments.length > 0 ? (
-        <div className="mt-5">
-          <EaseSectionLabel>Role breakdown</EaseSectionLabel>
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-            {assignments.map((role) => {
-              const roleFill =
-                typeof role.quantityRequested === "number" &&
-                role.quantityRequested > 0 &&
-                typeof role.quantityFilled === "number"
-                  ? Math.round(
-                      (role.quantityFilled / role.quantityRequested) * 100,
-                    )
-                  : null;
-              const selected = roleFilter === role.name;
-              return (
-                <button
-                  key={role.externalKey}
-                  type="button"
-                  onClick={() =>
-                    setRoleFilter((current) =>
-                      current === role.name ? null : role.name,
-                    )
-                  }
-                  className={cn(
-                    "rounded-2xl border px-3.5 py-3 text-left transition",
-                    selected
-                      ? "border-[#2f4a3c] bg-[rgba(47,74,60,0.08)]"
-                      : "border-cos-border bg-cos-card hover:border-[rgba(47,74,60,0.35)]",
-                  )}
-                >
-                  <strong className="block text-sm font-bold text-cos-text">
-                    {role.name}
-                  </strong>
-                  <span className="mt-1 block text-xs text-cos-muted">
-                    {role.quantityFilled ?? 0} / {role.quantityRequested ?? "?"}{" "}
-                    filled
-                    {roleFill != null ? ` · ${roleFill}%` : ""}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
     </section>
   );
 }

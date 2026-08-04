@@ -120,6 +120,29 @@ describe("signupgenius participant parse", () => {
     assert.equal(people.length, 1);
     assert.equal(people[0]?.name, "Only");
   });
+
+  it("uses nonmembername when first/last are empty", () => {
+    const people = parseSignUpGeniusParticipants(
+      {
+        "10": [{ nonmembername: "Guest Helper", email: "g@y.com" }],
+      },
+      new Map([
+        [
+          "10",
+          {
+            externalKey: "10",
+            name: "Lead",
+            quantityRequested: 1,
+            quantityFilled: 1,
+            quantityOpen: 0,
+          },
+        ],
+      ]),
+    );
+    assert.equal(people.length, 1);
+    assert.equal(people[0]?.name, "Guest Helper");
+    assert.doesNotMatch(JSON.stringify(people), /g@y\.com|email/i);
+  });
 });
 
 describe("participant list helpers", () => {

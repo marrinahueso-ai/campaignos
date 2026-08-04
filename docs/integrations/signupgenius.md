@@ -2,10 +2,10 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 1, 2026  
+**Last updated:** August 4, 2026  
 **Related:** [Feature list](../product/feature-list.md) · [Volunteer Master](../product/volunteer-master.md) · [Database](../engineering/database.md) · [Access control](../engineering/access-control.md) · [Multi-tenant isolation](../security/multi-tenant-isolation.md)
 
-Public SignUpGenius **go** links can be connected on an event’s **Volunteers** tab. Hey Ralli imports aggregate role availability and, when the public API exposes them, **named participants** (`firstname` + `lastname` only). **Emails are not stored or shown** — even if the public payload includes an email field.
+Public SignUpGenius **go** links can be connected on an event’s **Volunteers** tab. Hey Ralli imports aggregate role availability and, when the public API exposes them, **named participants** (`firstname` + `lastname`, or guest `nonmembername`). **Emails are not stored or shown** — even if the public payload includes an email field.
 
 **Product decision (Jul 27, 2026):** URL connect is the **long-term** path. SignUpGenius **Pro** is required for their API/OAuth, and many orgs do not have Pro — so we do **not** ship Settings OAuth or tease “Coming soon.” When most customers are on Pro, we may add OAuth as a **second** option alongside URL. Until then: one clear flow.
 
@@ -39,9 +39,10 @@ Migrations: `071_event_volunteer_included_assignment_dates.sql`, `20260801200000
 
 ### Privacy
 
-- Persist **name only** from public `participants` when present.
+- Persist **name only** from public `participants` when present (`firstname`/`lastname`, else `nonmembername` / `name`).
 - Never invent PII; never copy email into DB or UI.
-- When `shownames` is off / participants empty: empty named roster + honest UI copy; role fill health still comes from assignment quantities.
+- When `shownames` is off / participants empty: empty named roster + quiet List empty-table copy (enable “Show names” on the public signup, then Refresh); role fill health still comes from assignment quantities.
+- Event roster header uses a small **Open signup** icon with tooltip (no large Open signup CTA / Role breakdown strip).
 
 ---
 
