@@ -106,9 +106,9 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Footer: SignUpGenius last update note; connect/refresh stay on each event’s Volunteers tab
 - **Event Volunteers tab** (`/events/[id]?tab=volunteers`) — **shipped** (writes sources/snapshots/participants; Master only reads aggregates)
   - Ease empty/overview + full Tab for pending review: SignUpGenius public URL connect → **verify dates before import** → confirm → sticky allowlist on refresh
-  - **Named roster (Pilot):** List View + Grouped View; KPIs (Overall Health, Filled Slots, Unfilled/Critical roles); search by name/role; role filter pills; Refresh + Add/Import (Connect Signup · Add Volunteer opens signup — no in-app create API)
-  - Names only when the public SignUpGenius API exposes `participants` (`firstname`/`lastname`); **no emails stored or shown**; empty roster with honest copy when names aren’t public, while role fill health still updates
-  - Grouped View (accordion): section headers (`groupName` or **Roles**) with On Track / Needs Attention + filled count; expandable role lines (slots, emerald/gold/rose progress, initials stack); expanded panel shows name-only chips, dashed **Assign Open Slot** → signup URL, honest empty + Recruit/signup (no email / no Urgent Invite)
+  - **Named roster (Pilot):** List View + Grouped View; KPIs (Overall Health, Filled Slots, Unfilled/Critical roles); search by name/role; role filter; sortable List columns (Volunteer · Role · Shift · Location · Status) and Grouped sort (Role · Fill · Shift · Location · People); header **Open signup** icon (tooltip); Refresh + Add/Import (Connect Signup · Add Volunteer opens signup — no in-app create API)
+  - List View rows pull SignUpGenius public `participants` names (`firstname`/`lastname`, or `nonmembername` for guests); **no emails stored or shown**; quiet empty-table copy when names aren’t public
+  - Grouped View (accordion): section headers (`groupName` or **Roles**) with On Track / Needs Attention + filled count; expandable role lines (slots, emerald/gold/rose progress, initials stack); expanded panel shows name-only chips + **Assign Open Slot** (no Role breakdown strip / no email / no Urgent Invite)
   - Same fill-rate color bands as Volunteer Master; customer copy uses refresh/connect language
   - SignUpGenius **URL connect is the long-term path** (no Settings OAuth tease). OAuth deferred until most orgs have SignUpGenius Pro; then may add as a second pull option alongside URL
 
