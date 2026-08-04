@@ -16,6 +16,7 @@ import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDeta
 import {
   approveUnifiedItemAction,
   enrichUnifiedApprovalItemPreviewAction,
+  loadApprovalsDeferredPulseItemsAction,
   retryFailedUnifiedApprovalAction,
 } from "@/lib/approvals-scheduling/actions";
 import {
@@ -24,9 +25,10 @@ import {
   DEFAULT_APPROVALS_EASE_PULSE,
   approvalMatchesEasePulse,
   approvalsEaseSectionLabel,
-  computeApprovalsEasePulseCounts,
   type ApprovalsEasePulse,
+  type ApprovalsEasePulseCounts,
 } from "@/lib/approvals-scheduling/approvals-ease-pulse";
+import { dedupeUnifiedApprovalItems } from "@/lib/approvals-scheduling/approval-visibility";
 import {
   filterApprovalsBySearch,
   shouldApplyApprovalsEasePulseFilter,
@@ -92,7 +94,9 @@ function initialSearchFromEventFilter(
 }
 
 export function ApprovalsSchedulingHub({
-  items,
+  items: initialItems,
+  pulseCounts: initialPulseCounts,
+  defersTerminalDetailRows = false,
   campaigns,
   actorEmail,
   role: _role,
@@ -119,7 +123,12 @@ export function ApprovalsSchedulingHub({
   const [requestItem, setRequestItem] = useState<UnifiedApprovalItem | null>(
     null,
   );
+  const [deferredItems, setDeferredItems] = useState<UnifiedApprovalItem[]>([]);
+  const [deferredLoading, setDeferredLoading] = useState(false);
+  const deferredLoadedRef = useRef(!defersTerminalDetailRows);
+  const deferredInFlightRef = useRef(false);
   const openedReviewFromQuery = useRef<string | null>(null);
+  const pulseCounts: ApprovalsEasePulseCounts = initialPulseCounts;
 
   // Prefetch open-review + request-changes pop-outs so focus-card CTA feels instant.
   useEffect(() => {
@@ -135,6 +144,55 @@ export function ApprovalsSchedulingHub({
     scheduleSubline: string | null;
     pendingWarning?: string | null;
   } | null>(null);
+
+  const items = useMemo(
+    () =>
+      deferredItems.length === 0
+        ? initialItems
+        : dedupeUnifiedApprovalItems([...initialItems, ...deferredItems]),
+    [initialItems, deferredItems],
+  );
+
+  const ensureDeferredItemsLoaded = useMemo(() => {
+    return async () => {
+      if (!defersTerminalDetailRows || deferredLoadedRef.current) {
+        return;
+      }
+      if (deferredInFlightRef.current) {
+        return;
+      }
+      deferredInFlightRef.current = true;
+      setDeferredLoading(true);
+      try {
+        const loaded = await loadApprovalsDeferredPulseItemsAction();
+        setDeferredItems(loaded);
+        deferredLoadedRef.current = true;
+      } finally {
+        deferredInFlightRef.current = false;
+        setDeferredLoading(false);
+      }
+    };
+  }, [defersTerminalDetailRows]);
+
+  // Lazy-load terminal rows when opening Scheduled/Posted or searching the full queue.
+  useEffect(() => {
+    if (!defersTerminalDetailRows || deferredLoadedRef.current) {
+      return;
+    }
+    const needsDeferred =
+      activeFilter === "scheduled" ||
+      activeFilter === "posted" ||
+      !shouldApplyApprovalsEasePulseFilter(searchQuery);
+    if (!needsDeferred) {
+      return;
+    }
+    void ensureDeferredItemsLoaded();
+  }, [
+    activeFilter,
+    searchQuery,
+    defersTerminalDetailRows,
+    ensureDeferredItemsLoaded,
+  ]);
 
   const eventScopedItems = useMemo(() => {
     if (!lockedId) {
@@ -153,11 +211,6 @@ export function ApprovalsSchedulingHub({
   const searchedItems = useMemo(
     () => filterApprovalsBySearch(viewScopedItems, searchQuery),
     [viewScopedItems, searchQuery],
-  );
-
-  const pulseCounts = useMemo(
-    () => computeApprovalsEasePulseCounts(searchedItems),
-    [searchedItems],
   );
 
   const scopedItems = useMemo(
@@ -221,6 +274,10 @@ export function ApprovalsSchedulingHub({
     }
     const match = items.find((item) => item.id === reviewId);
     if (!match) {
+      // Terminal rows may still be deferred — fetch them before giving up.
+      if (defersTerminalDetailRows && !deferredLoadedRef.current) {
+        void ensureDeferredItemsLoaded();
+      }
       return;
     }
     openedReviewFromQuery.current = reviewId;
@@ -230,7 +287,7 @@ export function ApprovalsSchedulingHub({
     const qs = next.toString();
     router.replace(qs ? `/approvals?${qs}` : "/approvals", { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open once per review id
-  }, [items, searchParams, router]);
+  }, [items, searchParams, router, defersTerminalDetailRows, ensureDeferredItemsLoaded]);
 
   async function handleApprove() {
     if (!reviewItem) {
@@ -431,14 +488,18 @@ export function ApprovalsSchedulingHub({
           <div className="rounded-[22px] border border-cos-border/70 bg-[rgba(255,252,247,0.55)]">
             <ApprovalsEmptyEase
               title={
-                searchQuery.trim()
-                  ? "No matches"
-                  : APPROVALS_EASE_EMPTY_COPY[activeFilter].title
+                deferredLoading
+                  ? "Loading posts…"
+                  : searchQuery.trim()
+                    ? "No matches"
+                    : APPROVALS_EASE_EMPTY_COPY[activeFilter].title
               }
               body={
-                searchQuery.trim()
-                  ? "Try a different search — event names, people, dates, captions, or status labels."
-                  : APPROVALS_EASE_EMPTY_COPY[activeFilter].body
+                deferredLoading
+                  ? "Pulling in scheduled and posted items for this view."
+                  : searchQuery.trim()
+                    ? "Try a different search — event names, people, dates, captions, or status labels."
+                    : APPROVALS_EASE_EMPTY_COPY[activeFilter].body
               }
             />
           </div>

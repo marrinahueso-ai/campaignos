@@ -1133,3 +1133,16 @@ export async function enrichUnifiedApprovalItemPreviewAction(
 
   return item;
 }
+
+/**
+ * Load deferred Approvals hub statuses (scheduled / posted / published).
+ * Initial SSR omits these detail rows; pulse badges still show authoritative counts.
+ */
+export async function loadApprovalsDeferredPulseItemsAction(): Promise<
+  UnifiedApprovalItem[]
+> {
+  const { getUnifiedApprovalsDeferredPulseItems } = await import(
+    "@/lib/approvals-scheduling/queries"
+  );
+  return getUnifiedApprovalsDeferredPulseItems();
+}
