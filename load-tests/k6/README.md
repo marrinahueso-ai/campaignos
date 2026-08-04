@@ -18,6 +18,8 @@ Twenty schools means twenty **tenants** in the fixture — not twenty virtual us
 | `data-scale-100school-20vu` | ramp 0→5→20 (5m), hold 20 for **20 min**, ramp down 3m | ~28 min | 20 of 100 |
 | `data-scale-100school-50vu` | ramp 0→15→30→50 (4m), hold 50 for 5m, ramp down 2m | ~11 min | 50 of 100 |
 | `data-scale-100school-50vu-warmup` | ramp 0→5, hold ~1m40s | ~2 min (discarded) | 5 of 100 |
+| `data-scale-100school-75vu` | ramp 0→25→50→75 (4m), hold 75 for 5m, ramp down 2m | ~11 min | 75 of 100 |
+| `data-scale-100school-75vu-warmup` | ramp 0→8, hold ~1m40s | ~2 min (discarded) | 8 of 100 |
 
 Traffic mix (`smoke` / `twenty-schools`): ~35% dashboard, 25% calendar/events, 15% Create with AI (read), 15% approvals (read), 10% Communications Hub (read).
 
@@ -347,6 +349,28 @@ TEST_RUN_ID=data-scale-100school-50vu-001 \
 VERCEL_JWT=eyJhbGciOi... \
 K6_SESSIONS_FILE=../data/sessions.100-school-architecture.local.json \
 npm run test:load:data-scale:100school:50vu
+```
+
+### 100-school / 75-VU boundary probe
+
+Same 11-minute stage durations as the 50-VU profile (hold fractions stay
+valid) with peak raised to **75** (`0→25→50→75`). Unchanged hard gates —
+including ordinary-read p95 `<1.5s`. A latency-only breach is capacity
+boundary evidence, not a reason to loosen thresholds. Remint 75 pinned
+owners after preflight before the recorded run.
+
+```bash
+BASE_URL=https://your-preview-xxxxx.vercel.app \
+TEST_RUN_ID=data-scale-100school-75vu-warmup-001 \
+VERCEL_JWT=eyJhbGciOi... \
+K6_SESSIONS_FILE=../data/sessions.100-school-architecture.local.json \
+npm run test:load:data-scale:100school:75vu:warmup
+
+BASE_URL=https://your-preview-xxxxx.vercel.app \
+TEST_RUN_ID=data-scale-100school-75vu-001 \
+VERCEL_JWT=eyJhbGciOi... \
+K6_SESSIONS_FILE=../data/sessions.100-school-architecture.local.json \
+npm run test:load:data-scale:100school:75vu
 ```
 
 ## Routes exercised (real App Router pages)

@@ -222,6 +222,38 @@ export const DATA_SCALE_100SCHOOL_50VU_WARMUP_WORKLOAD = {
 };
 
 /**
+ * Data-scale 100-school / 75-VU boundary probe: same 11-minute stage
+ * durations as HEADROOM_50VU / data-scale 50-VU (4m ramp + 5m hold + 2m
+ * down) so hold-progress fractions stay valid, with peak raised to 75
+ * (0→25→50→75). Purpose is boundary discovery — not a forced pass.
+ */
+export const DATA_SCALE_100SCHOOL_75VU_WORKLOAD = {
+  executor: "ramping-vus",
+  startVUs: 0,
+  stages: [
+    { duration: "1m", target: 25 },
+    { duration: "1m", target: 50 },
+    { duration: "2m", target: 75 },
+    { duration: "5m", target: 75 },
+    { duration: "2m", target: 0 },
+  ],
+  gracefulRampDown: "90s",
+  gracefulStop: "90s",
+};
+
+/** Discardable warm-up ahead of the 75-VU recorded run. */
+export const DATA_SCALE_100SCHOOL_75VU_WARMUP_WORKLOAD = {
+  executor: "ramping-vus",
+  startVUs: 0,
+  stages: [
+    { duration: "20s", target: 8 },
+    { duration: "1m40s", target: 8 },
+  ],
+  gracefulRampDown: "20s",
+  gracefulStop: "20s",
+};
+
+/**
  * Weighted random workflow key.
  * @param {() => number} [rand] returns [0,1)
  * @param {Record<string, number>} [weights] defaults to the core 20-school mix

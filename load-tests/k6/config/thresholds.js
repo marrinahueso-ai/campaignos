@@ -160,6 +160,15 @@ export function buildDataScale100School50VuThresholds() {
   return buildDataScale100School20VuThresholds();
 }
 
+/**
+ * Identical hard gates to the 20/50-VU data-scale profiles — including the
+ * 1.5s ordinary-read p95. Do not loosen for higher concurrency; a breach
+ * is capacity-boundary evidence.
+ */
+export function buildDataScale100School75VuThresholds() {
+  return buildDataScale100School20VuThresholds();
+}
+
 export function buildDataScale100School20VuThresholds() {
   return {
     // Hard safety/correctness gates — literal 100%/0%, not the 99%/1%

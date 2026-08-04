@@ -42,22 +42,24 @@ export function sessionHeaders(session) {
 }
 
 /**
- * Hold-window classification for the 11-minute 0→15→30→50 / hold-5m /
- * ramp-down-2m shape (20-school headroom and 100-school data-scale 50-VU).
- * Previously gated only on TEST_RUN_ID containing "headroom", which left
- * data-scale 50-VU runs with inHold=false / scenarioProgress=0 always —
- * blinding hold counters. Match scenario name, run id, or explicit env.
+ * Hold-window classification for the shared 11-minute headroom shape
+ * (4m ramp + 5m hold + 2m ramp-down → HEADROOM_50VU_HOLD_PROGRESS 4/11–9/11).
+ * Used by 20-school headroom and 100-school data-scale 50/75-VU profiles.
+ * Match scenario name / run id containing "headroom" or "Nvu", or explicit env.
  */
 function shouldTrackHold() {
   if (__ENV.K6_TRACK_HOLD_SLOW === "true") return true;
   const runId = String(__ENV.TEST_RUN_ID || "");
-  if (runId.includes("headroom") || runId.includes("50vu")) return true;
+  let name = "";
   try {
-    const name = String(exec.scenario.name || "");
-    if (name.includes("headroom") || name.includes("50vu")) return true;
+    name = String(exec.scenario.name || "");
   } catch {
     // exec.scenario unavailable outside VU context
   }
+  const hay = `${runId} ${name}`;
+  if (hay.includes("headroom")) return true;
+  // data-scale-100school-50vu / data_scale_100school_75vu / …-75vu-run1
+  if (/\d+vu/i.test(hay)) return true;
   return false;
 }
 

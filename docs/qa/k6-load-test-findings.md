@@ -402,8 +402,32 @@ pattern**, not a one-off. The ~30s approvals request was **isolated
 ramp/cold-start**. Correctness headroom at 50 VU is solid; latency headroom
 is tight (~92% of the 1.5s read gate).
 
-**Status: PASSED. Safe to proceed to 100-school / 75-VU** to locate the next
-concurrency cliff (expect possible read-p95 pressure).
+**Status: PASSED. Proceeded to 100-school / 75-VU boundary probe.**
+
+## 100-school / 75-VU data-scale — Run 1 (boundary discovery)
+
+**Deployment / Auth / dataset:** unchanged from 50-VU Run 2. Profile uses the
+same 11-minute stage durations with peak 75 (`0→25→50→75`). Hard gates
+unchanged.
+**Full report:** [100-school-75vu-data-scale-run1.md](./100-school-75vu-data-scale-run1.md)
+
+| Metric | 50-VU Run 2 | 75-VU Run 1 |
+|---|---:|---:|
+| Auth / tenant / checks | 0 / 0 / 100% | **0 / 0 / 100%** |
+| `kind:read` p95 | 1.38s | **2.77s** (gate 1.5s — **FAIL**) |
+| `dashboard` / `calendar` / `events_list` p95 | 1.69 / 1.40 / 1.22s | **3.17 / 2.83 / 2.42s** (all **FAIL**) |
+| Hold >3s / >5s / >10s | 1 / 0 / 0 | **134 / 2 / 0** |
+| Overall max | 3.88s | 5.47s |
+| Post-run integrity | 25/25 | **25/25**, drift 0 |
+
+**Interpretation:** **first meaningful performance boundary.** Correctness
+holds at 75 concurrent pinned owners; latency does not. Degradation is
+**hold-sustained and multi-route**, not an isolated ramp spike. Do **not**
+loosen the 1.5s read gate. Do **not** proceed to 100 VUs until diagnosed and
+re-validated at 75 VU after a fix.
+
+**Status: LATENCY BOUNDARY — correctness PASS, p95 gates FAIL. Stop
+higher-VU progression.**
 
 ## Known coverage gaps to close before a higher-VU or write-path test
 

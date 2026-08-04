@@ -35,7 +35,8 @@ const STAGING_PROJECT_REF = "hdoujyngcqrsgtvqehyt"; // heyralli-staging
 const PRODUCTION_PROJECT_REFS = new Set(["zyllfqieeihshnwpakiv"]);
 const PRODUCTION_HOST_PATTERNS = [/^heyralli\.com$/i, /^www\.heyralli\.com$/i, /^app\.heyralli\.com$/i];
 const SESSION_FRESH_MS = 55 * 60 * 1000; // Supabase access-token TTL ~1hr
-const MIN_EXCLUSIVE_SESSIONS = 20;
+/** Enough exclusive sessions for the highest data-scale peak currently in tree (75-VU). */
+const MIN_EXCLUSIVE_SESSIONS = 75;
 const EXTERNAL_PROVIDER_ENV_VARS = [
   "OPENAI_API_KEY",
   "RESEND_API_KEY",
@@ -204,41 +205,56 @@ async function auditDataScaleProfile() {
     writeMethodHits.length ? `found in: ${writeMethodHits.join(", ")}` : `scanned ${scannedFiles.length} files, all http.get-only`,
   );
 
-  // 50-VU headroom profile (next step after 20-VU soak) — existence +
-  // workload/threshold wiring only; the shared scenario scan above already
-  // covers write-method safety for both profiles.
-  const profile50Path = resolve(k6Root(), "data-scale-100school-50vu.js");
-  const profile50Exists = existsSync(profile50Path);
-  record(
-    "Data-scale 100-school/50-VU profile file exists",
-    profile50Exists,
-    profile50Exists ? profile50Path : `missing: ${profile50Path}`,
-  );
-  if (profile50Exists) {
-    const profile50Text = readFileSync(profile50Path, "utf8");
+  // 50-VU / 75-VU headroom profiles — existence + workload/threshold wiring;
+  // the shared scenario scan above already covers write-method safety.
+  for (const spec of [
+    {
+      file: "data-scale-100school-50vu.js",
+      label: "50-VU",
+      builder: "buildDataScale100School50VuThresholds",
+      workloadKey: "DATA_SCALE_100SCHOOL_50VU_WORKLOAD",
+      minVus: 50,
+    },
+    {
+      file: "data-scale-100school-75vu.js",
+      label: "75-VU",
+      builder: "buildDataScale100School75VuThresholds",
+      workloadKey: "DATA_SCALE_100SCHOOL_75VU_WORKLOAD",
+      minVus: 75,
+    },
+  ]) {
+    const profilePath = resolve(k6Root(), spec.file);
+    const profileExists = existsSync(profilePath);
     record(
-      "50-VU profile uses pinned sessions + prepareTestContext + 50-VU thresholds",
-      /pinnedSession:\s*true/.test(profile50Text) &&
-        /prepareTestContext\s*\(/.test(profile50Text) &&
-        /buildDataScale100School50VuThresholds/.test(profile50Text),
-      "checked pinnedSession, prepareTestContext, buildDataScale100School50VuThresholds",
+      `Data-scale 100-school/${spec.label} profile file exists`,
+      profileExists,
+      profileExists ? profilePath : `missing: ${profilePath}`,
+    );
+    if (!profileExists) continue;
+    const profileText = readFileSync(profilePath, "utf8");
+    record(
+      `${spec.label} profile uses pinned sessions + prepareTestContext + thresholds`,
+      /pinnedSession:\s*true/.test(profileText) &&
+        /prepareTestContext\s*\(/.test(profileText) &&
+        profileText.includes(spec.builder),
+      `checked pinnedSession, prepareTestContext, ${spec.builder}`,
     );
     try {
       const workloadMod = await import(pathToFileURL(resolve(k6Root(), "config", "workload.js")).href);
-      const workload = workloadMod.DATA_SCALE_100SCHOOL_50VU_WORKLOAD;
+      const workload = workloadMod[spec.workloadKey];
       const maxVus =
         workload && Array.isArray(workload.stages)
           ? Math.max(...workload.stages.map((s) => Number(s.target) || 0))
           : null;
       record(
-        "50-VU profile workload reaches >= 50 VUs",
-        typeof maxVus === "number" && maxVus >= 50,
+        `${spec.label} profile workload reaches >= ${spec.minVus} VUs`,
+        typeof maxVus === "number" && maxVus >= spec.minVus,
         maxVus === null
-          ? "DATA_SCALE_100SCHOOL_50VU_WORKLOAD not found"
-          : `DATA_SCALE_100SCHOOL_50VU_WORKLOAD max stage target=${maxVus}`,
+          ? `${spec.workloadKey} not found`
+          : `${spec.workloadKey} max stage target=${maxVus}`,
       );
     } catch (err) {
-      record("50-VU profile workload reaches >= 50 VUs", false, err.message);
+      record(`${spec.label} profile workload reaches >= ${spec.minVus} VUs`, false, err.message);
     }
   }
 
