@@ -15,6 +15,7 @@ import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import { buildTodayPageData } from "@/lib/today/build-today-data";
+import { filterEventsByDateInclusive } from "@/lib/today/event-date-filter";
 import { resolveTodayGreetingName } from "@/lib/today/greeting-name";
 import { addDaysToDateOnly, getTodayDateString } from "@/lib/utils/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -121,11 +122,13 @@ export async function getTodayPageData(
 
   const weekEndStr = addDaysToDateOnly(today, 7);
 
+  // Month and week strips are subsets of the Today planning window — one
+  // events-range query covers all three (previously three overlapping
+  // PostgREST scans per dashboard load). Keep upcoming separate: it is a
+  // small, ordered, campaign-strategy-limited list.
   const [
     upcomingCampaignEvents,
     eventsInWindow,
-    monthEvents,
-    weekStripEvents,
     firstName,
   ] = await Promise.all([
     getUpcomingEvents(UPCOMING_CAMPAIGN_LIMIT, resolvedOrganization?.id ?? null),
@@ -134,18 +137,19 @@ export async function getTodayPageData(
       todayWindow.endDate,
       resolvedOrganization?.id ?? null,
     ),
-    getEventsInDateRange(
-      monthStart,
-      monthEnd,
-      resolvedOrganization?.id ?? null,
-    ),
-    getEventsInDateRange(
-      today,
-      weekEndStr,
-      resolvedOrganization?.id ?? null,
-    ),
     getTodayGreetingName(resolvedOrganization),
   ]);
+
+  const monthEvents = filterEventsByDateInclusive(
+    eventsInWindow,
+    monthStart,
+    monthEnd,
+  );
+  const weekStripEvents = filterEventsByDateInclusive(
+    eventsInWindow,
+    today,
+    weekEndStr,
+  );
 
   const eventsForRaw = mergeEventsById(upcomingCampaignEvents, eventsInWindow);
   const eventIds = eventsForRaw.map((event) => event.id);

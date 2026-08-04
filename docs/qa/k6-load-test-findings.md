@@ -5,7 +5,7 @@
 [Run 2 report](./100-school-20vu-data-scale-run2.md) and
 [auth remediation](./100-school-20vu-auth-rate-limit-remediation.md)
 **Owner:** Engineering / QA
-**Last updated:** August 2, 2026
+**Last updated:** August 3, 2026
 **Related:** [k6 suite README](../../load-tests/k6/README.md) · [Performance budget](./performance-budget.md)
 
 Results from the staging (`heyralli-staging`) 20-school k6 suite: the initial
@@ -427,6 +427,36 @@ loosen the 1.5s read gate. Do **not** proceed to 100 VUs until diagnosed and
 re-validated at 75 VU after a fix.
 
 **Status: LATENCY BOUNDARY — correctness PASS, p95 gates FAIL. Stop
+higher-VU progression.**
+
+## 100-school / 75-VU — RCA + Run 2 re-validation
+
+**RCA:** [100-school-75vu-latency-rca.md](./100-school-75vu-latency-rca.md) ·
+**Run 2:** [100-school-75vu-data-scale-run2-rca.md](./100-school-75vu-data-scale-run2-rca.md)
+
+**Root cause class:** dual bottleneck — `http_req_waiting` and
+`http_req_receiving` both inflate under a sustained 75-VU hold while
+correctness stays perfect. Auth Absolute/10 is not causal. Database-only is
+not supported (receiving remains ~half+ of read p95).
+
+**Smallest app fix tried:** collapse three overlapping dashboard
+`getEventsInDateRange` scans into one planning-window fetch.
+
+| Metric | Run 1 | Run 2 (after query collapse) |
+|---|---:|---:|
+| Auth / tenant / checks | 0 / 0 / 100% | **0 / 0 / 100%** |
+| `kind:read` p95 | 2.77s | **3.95s** (still **FAIL**) |
+| waiting / receiving p95 | 1.21 / 1.73s | **1.86 / 2.15s** |
+| Hold >3s / >10s | 134 / 0 | **395 / 92** |
+
+**Interpretation:** query collapse is **insufficient** (as predicted). Run 2
+tails were worse/noisier under the same profile — multi-route hold slows
+(dashboard, event_detail, events_list, calendar, …) indicate systemic
+concurrency + large RSC HTML, not a single Today query. Next remediation:
+hot-route payload/streaming (and only then a Micro→Small A/B if waiting
+tails remain). Do **not** proceed to 100 VU.
+
+**Status: RCA COMPLETE for this cycle — 75-VU gates still FAIL; stop
 higher-VU progression.**
 
 ## Known coverage gaps to close before a higher-VU or write-path test
