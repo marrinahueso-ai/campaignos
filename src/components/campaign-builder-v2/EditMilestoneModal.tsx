@@ -304,8 +304,8 @@ export function EditMilestoneModal({
         </Button>
       }
       footer={
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0 flex-1 space-y-2">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 flex-1 space-y-1.5">
             {tab === "artwork" ? (
               <>
                 <div className="flex items-center justify-between gap-2 text-[10px] font-bold tracking-[0.08em] text-cos-muted uppercase">
@@ -364,9 +364,9 @@ export function EditMilestoneModal({
         </div>
       }
     >
-      <div className="grid gap-5 lg:grid-cols-[minmax(200px,0.85fr)_minmax(0,1.15fr)] lg:items-start lg:gap-6">
+      <div className="grid gap-4 lg:grid-cols-[minmax(160px,0.7fr)_minmax(0,1.3fr)] lg:items-start lg:gap-5">
         {/* Live phone preview */}
-        <div className="space-y-3 lg:sticky lg:top-0">
+        <div className="space-y-2">
           <div
             className="mx-auto inline-flex rounded-full bg-cos-bg p-1"
             role="group"
@@ -383,7 +383,7 @@ export function EditMilestoneModal({
                 type="button"
                 onClick={() => setPreviewMode(id)}
                 className={cn(
-                  "rounded-full px-4 py-1.5 text-sm font-semibold transition-colors",
+                  "rounded-full px-3 py-1 text-sm font-semibold transition-colors",
                   previewMode === id
                     ? "bg-white text-cos-text shadow-sm"
                     : "text-cos-muted hover:text-cos-text",
@@ -394,21 +394,21 @@ export function EditMilestoneModal({
             ))}
           </div>
 
-          <div className="mx-auto w-full max-w-[220px] sm:max-w-[240px]">
-            <div className="rounded-[28px] bg-[#1c2430] p-2.5 shadow-lg sm:rounded-[32px] sm:p-3">
-              <div className="mx-auto mb-2 h-1.5 w-16 rounded-full bg-[#2a3340]" />
+          <div className="mx-auto w-full max-w-[168px] sm:max-w-[188px]">
+            <div className="rounded-[24px] bg-[#1c2430] p-2 shadow-lg">
+              <div className="mx-auto mb-1.5 h-1 w-12 rounded-full bg-[#2a3340]" />
               <div
                 className={cn(
-                  "overflow-hidden rounded-[22px]",
+                  "overflow-hidden rounded-[18px]",
                   previewMode === "feed" ? "bg-white" : "bg-[#0f1419]",
                 )}
               >
                 {previewMode === "feed" ? (
                   <div>
-                    <div className="flex items-center justify-between px-3 py-2.5 text-xs font-bold text-cos-text">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-block h-5 w-5 rounded-full bg-gradient-to-br from-cos-accent to-cos-bg" />
-                        {handle}
+                    <div className="flex items-center justify-between px-2.5 py-1.5 text-[10px] font-bold text-cos-text">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span className="inline-block h-4 w-4 shrink-0 rounded-full bg-gradient-to-br from-cos-accent to-cos-bg" />
+                        <span className="truncate">{handle}</span>
                       </div>
                       <span className="text-cos-muted">···</span>
                     </div>
@@ -429,14 +429,14 @@ export function EditMilestoneModal({
                         }
                       >
                         {!feedUrl ? (
-                          <div className="absolute inset-x-3 bottom-3 font-display text-xl font-semibold text-white drop-shadow">
+                          <div className="absolute inset-x-2.5 bottom-2.5 font-display text-base font-semibold text-white drop-shadow">
                             {milestone.name}
                           </div>
                         ) : null}
                         {feedUrl ? (
                           <button
                             type="button"
-                            className="absolute right-2 bottom-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-cos-muted shadow hover:text-cos-text"
+                            className="absolute right-1.5 bottom-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-cos-muted shadow hover:text-cos-text"
                             onClick={() => handleRejectPreview("feed")}
                           >
                             Reject
@@ -444,9 +444,9 @@ export function EditMilestoneModal({
                         ) : null}
                       </div>
                     </WarmBreathFrame>
-                    <div className="space-y-1 px-3 py-2.5 text-[11px] leading-snug text-cos-text">
+                    <div className="space-y-0.5 px-2.5 py-1.5 text-[10px] leading-snug text-cos-text">
                       <div className="text-cos-muted">♡</div>
-                      <p className="line-clamp-3">
+                      <p className="line-clamp-2">
                         <span className="font-bold">{handle}</span>{" "}
                         {previewCaption.trim() ||
                           "Caption appears here after you edit."}
@@ -459,7 +459,7 @@ export function EditMilestoneModal({
                     label="Generating story artwork"
                   >
                     <div
-                      className="relative aspect-[9/16] bg-gradient-to-b from-[#0b2f5b] via-[#2f9fb3] to-[#d4a84b]"
+                      className="relative aspect-[9/16] max-h-[280px] bg-gradient-to-b from-[#0b2f5b] via-[#2f9fb3] to-[#d4a84b]"
                       style={
                         storyUrl
                           ? {
@@ -471,14 +471,14 @@ export function EditMilestoneModal({
                       }
                     >
                       {!storyUrl ? (
-                        <div className="absolute inset-x-4 bottom-6 font-display text-2xl font-semibold text-white drop-shadow">
+                        <div className="absolute inset-x-3 bottom-4 font-display text-lg font-semibold text-white drop-shadow">
                           {milestone.name}
                         </div>
                       ) : null}
                       {storyUrl ? (
                         <button
                           type="button"
-                          className="absolute right-2 bottom-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold text-cos-muted shadow hover:text-cos-text"
+                          className="absolute right-1.5 bottom-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-cos-muted shadow hover:text-cos-text"
                           onClick={() => handleRejectPreview("story")}
                         >
                           Reject
@@ -493,8 +493,8 @@ export function EditMilestoneModal({
         </div>
 
         {/* Direction controls */}
-        <div className="space-y-4">
-          <div className="flex gap-3 rounded-2xl border border-[rgba(107,129,113,0.35)] bg-[rgba(107,129,113,0.1)] px-4 py-3 text-sm text-[#2f4a3c]">
+        <div className="space-y-3">
+          <div className="flex gap-2.5 rounded-xl border border-[rgba(107,129,113,0.35)] bg-[rgba(107,129,113,0.1)] px-3 py-2.5 text-sm text-[#2f4a3c]">
             <Info className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
             <p>
               Both Artwork notes and Captions apply when you{" "}
@@ -537,12 +537,12 @@ export function EditMilestoneModal({
           </div>
 
           {tab === "artwork" ? (
-            <div role="tabpanel" className="space-y-4">
+            <div role="tabpanel" className="space-y-3">
               <Textarea
                 label="What should change?"
                 value={artworkInstructions}
                 onChange={(e) => setArtworkInstructions(e.target.value)}
-                rows={4}
+                rows={3}
                 placeholder="e.g. More green accents, add playful community elements…"
                 disabled={busy}
               />
@@ -561,14 +561,14 @@ export function EditMilestoneModal({
                 <p className="text-xs font-bold tracking-[0.08em] text-cos-muted uppercase">
                   Quick suggestions
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {ARTWORK_SUGGESTIONS.map((chip) => (
                     <button
                       key={chip}
                       type="button"
                       disabled={busy}
                       onClick={() => appendChip(setArtworkInstructions, chip)}
-                      className="rounded-full border border-cos-border bg-white px-3 py-1.5 text-xs font-semibold text-cos-text transition-colors hover:bg-cos-bg"
+                      className="rounded-full border border-cos-border bg-white px-2.5 py-1 text-xs font-semibold text-cos-text transition-colors hover:bg-cos-bg"
                     >
                       {chip}
                     </button>
@@ -577,12 +577,12 @@ export function EditMilestoneModal({
               </div>
             </div>
           ) : (
-            <div role="tabpanel" className="space-y-4">
+            <div role="tabpanel" className="space-y-3">
               <Textarea
                 label="What should change?"
                 value={captionInstructions}
                 onChange={(e) => setCaptionInstructions(e.target.value)}
-                rows={4}
+                rows={3}
                 placeholder="e.g. Make it shorter and more excited…"
                 disabled={busy}
               />
@@ -618,14 +618,14 @@ export function EditMilestoneModal({
                 <p className="text-xs font-bold tracking-[0.08em] text-cos-muted uppercase">
                   Quick suggestions
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {CAPTION_SUGGESTIONS.map((chip) => (
                     <button
                       key={chip}
                       type="button"
                       disabled={busy}
                       onClick={() => appendChip(setCaptionInstructions, chip)}
-                      className="rounded-full border border-cos-border bg-white px-3 py-1.5 text-xs font-semibold text-cos-text transition-colors hover:bg-cos-bg"
+                      className="rounded-full border border-cos-border bg-white px-2.5 py-1 text-xs font-semibold text-cos-text transition-colors hover:bg-cos-bg"
                     >
                       {chip}
                     </button>
@@ -639,7 +639,7 @@ export function EditMilestoneModal({
                   setPreviewCaption(e.target.value);
                   setSuccessMessage(null);
                 }}
-                rows={4}
+                rows={3}
                 disabled={busy}
               />
             </div>
