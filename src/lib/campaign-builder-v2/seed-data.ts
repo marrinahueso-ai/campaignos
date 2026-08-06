@@ -249,6 +249,7 @@ export function buildDefaultSession(
     inspiration,
     milestones,
     milestonesPlaybookId: null,
+    mainEventImage: null,
     previewContents: milestones.map(buildEmptyPreviewContent),
     approvalWorkflow: buildDefaultApprovalWorkflow(),
     reviewFilter: "all",

@@ -195,12 +195,19 @@ export interface MilestoneApprovalStatus {
   timestamp: string | null;
 }
 
+export type MilestoneArtworkMode = "shared" | "custom";
+
 export interface MilestonePreviewContent {
   milestoneId: string;
   status: MilestonePreviewStatus;
   generationStatus?: MilestoneGenerationStatus;
   generationStartedAt?: string | null;
   artwork: MilestoneArtwork;
+  /**
+   * `shared` = using session mainEventImage (auto-reused).
+   * `custom` = independently replaced; main-image updates skip this post.
+   */
+  artworkMode?: MilestoneArtworkMode;
   captions: PlatformCaption[];
   enabledFormats: PlatformFormat[];
   deliveryMethod: DeliveryMethod;
@@ -262,6 +269,11 @@ export interface CampaignBuilderSession {
    * template). Used to detect when the user has selected a different
    * playbook than the one milestones currently reflect. */
   milestonesPlaybookId: string | null;
+  /**
+   * Primary campaign artwork reused on countdown posts (−14/−7/−1/0) until a
+   * post opts out with artworkMode "custom".
+   */
+  mainEventImage: MilestoneArtwork | null;
   previewContents: MilestonePreviewContent[];
   approvalWorkflow: ApprovalWorkflowStep[];
   reviewFilter: "all" | "needs-review" | "approved" | "changes-requested";

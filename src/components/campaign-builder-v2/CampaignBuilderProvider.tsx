@@ -76,6 +76,12 @@ import {
   resolveInspirationImagesForStorage,
 } from "@/lib/campaign-builder-v2/inspiration-preserve";
 import {
+  applyArtworkWithMainEventReuse,
+  applyImageToAllPosts,
+  detachMainEventImage,
+  isReusableArtwork,
+} from "@/lib/campaign-builder-v2/main-event-image";
+import {
   captionPlatformsForFormats,
   findNextMilestoneToGenerate,
   GENERATION_STALL_TIMEOUT_MS,
@@ -98,6 +104,7 @@ import type {
   CampaignBuilderSession,
   CampaignBuilderStepId,
   CampaignOption,
+  MilestoneArtwork,
   MilestonePreviewContent,
   PlaybookOption,
   PreviewTabId,
@@ -199,6 +206,20 @@ interface CampaignBuilderContextValue {
     milestoneId: string,
     patch: Partial<MilestonePreviewContent>,
   ) => void;
+  /**
+   * Apply artwork with main-event-image reuse (shared countdown posts).
+   * Returns milestone ids whose artwork URLs changed (for hero sync).
+   */
+  applyMilestoneArtwork: (
+    milestoneId: string,
+    artwork: MilestoneArtwork,
+    options?: { asCustom?: boolean; applyToAll?: boolean },
+  ) => string[];
+  detachMilestoneFromMainImage: (milestoneId: string) => void;
+  applyArtworkToAllPosts: (
+    artwork: MilestoneArtwork,
+    sourceMilestoneId?: string | null,
+  ) => string[];
   setReviewFilter: (filter: CampaignBuilderSession["reviewFilter"]) => void;
   toggleExpandedReview: (milestoneId: string) => void;
   reconcilePreviewStatuses: () => void;
@@ -1731,7 +1752,7 @@ export function CampaignBuilderProvider({
           workingBase.milestonesPlaybookId ??
           workingBase.inspiration.playbookId ??
           null;
-        const updatedBase: CampaignBuilderSession = {
+        let updatedBase: CampaignBuilderSession = {
           ...workingBase,
           // Keep communication plan ids aligned so a later step change cannot treat the
           // session as "needs sync" and rebuild over this artwork.
@@ -1767,17 +1788,39 @@ export function CampaignBuilderProvider({
           }),
         };
 
+        const generatedArtwork =
+          result.results.find((entry) => entry.milestoneId === milestoneId)
+            ?.artwork ?? null;
+        let reusedMilestoneIds: string[] = [];
+        if (generatedArtwork && isReusableArtwork(generatedArtwork)) {
+          const reuse = applyArtworkWithMainEventReuse(
+            updatedBase,
+            milestoneId,
+            generatedArtwork,
+          );
+          updatedBase = {
+            ...reuse.session,
+            previewContents: reuse.session.previewContents.map((content) => {
+              if (!reuse.changedMilestoneIds.includes(content.milestoneId)) {
+                return content;
+              }
+              return {
+                ...content,
+                generationStatus: inferGenerationStatus(
+                  content,
+                  content.enabledFormats,
+                ),
+              };
+            }),
+          };
+          reusedMilestoneIds = reuse.changedMilestoneIds;
+        }
+
         sessionRef.current = updatedBase;
         setSession(updatedBase);
         await persistSession(updatedBase);
 
-        const generatedArtwork =
-          result.results.find((entry) => entry.milestoneId === milestoneId)
-            ?.artwork ?? null;
-        if (
-          generatedArtwork &&
-          (generatedArtwork.feedUrl || generatedArtwork.storyUrl)
-        ) {
+        if (generatedArtwork && isReusableArtwork(generatedArtwork)) {
           try {
             // Generation already synced assets server-side. Do not revalidate
             // while the builder is open — soft remounts strip hash / bounce
@@ -1785,13 +1828,23 @@ export function CampaignBuilderProvider({
             const { syncAppliedMilestoneArtworkAction } = await import(
               "@/lib/campaign-builder-v2/actions"
             );
-            await syncAppliedMilestoneArtworkAction({
-              eventId: updatedBase.eventId,
-              milestones: updatedBase.milestones,
-              milestoneId,
-              artwork: generatedArtwork,
-              revalidate: false,
-            });
+            const syncIds =
+              reusedMilestoneIds.length > 0
+                ? reusedMilestoneIds
+                : [milestoneId];
+            for (const syncId of syncIds) {
+              const row = updatedBase.previewContents.find(
+                (content) => content.milestoneId === syncId,
+              );
+              if (!row || !isReusableArtwork(row.artwork)) continue;
+              await syncAppliedMilestoneArtworkAction({
+                eventId: updatedBase.eventId,
+                milestones: updatedBase.milestones,
+                milestoneId: syncId,
+                artwork: row.artwork,
+                revalidate: false,
+              });
+            }
           } catch (syncError) {
             console.error(
               "Failed to sync artwork after generation:",
@@ -2059,6 +2112,82 @@ export function CampaignBuilderProvider({
     [updateSession],
   );
 
+  const applyMilestoneArtwork = useCallback(
+    (
+      milestoneId: string,
+      artwork: MilestoneArtwork,
+      options?: { asCustom?: boolean; applyToAll?: boolean },
+    ): string[] => {
+      let changed: string[] = [];
+      updateSession((prev) => {
+        const result = applyArtworkWithMainEventReuse(
+          prev,
+          milestoneId,
+          artwork,
+          options,
+        );
+        changed = result.changedMilestoneIds;
+        const withStatus: CampaignBuilderSession = {
+          ...result.session,
+          previewContents: result.session.previewContents.map((content) => {
+            if (!changed.includes(content.milestoneId)) {
+              return content;
+            }
+            return {
+              ...content,
+              status: "needs-review" as const,
+              generationStatus: inferGenerationStatus(
+                content,
+                content.enabledFormats,
+              ),
+            };
+          }),
+        };
+        return withStatus;
+      });
+      return changed;
+    },
+    [updateSession],
+  );
+
+  const detachMilestoneFromMainImage = useCallback(
+    (milestoneId: string) => {
+      updateSession((prev) => detachMainEventImage(prev, milestoneId));
+    },
+    [updateSession],
+  );
+
+  const applyArtworkToAllPosts = useCallback(
+    (
+      artwork: MilestoneArtwork,
+      sourceMilestoneId?: string | null,
+    ): string[] => {
+      let changed: string[] = [];
+      updateSession((prev) => {
+        const result = applyImageToAllPosts(prev, artwork, sourceMilestoneId);
+        changed = result.changedMilestoneIds;
+        return {
+          ...result.session,
+          previewContents: result.session.previewContents.map((content) => {
+            if (!changed.includes(content.milestoneId)) {
+              return content;
+            }
+            return {
+              ...content,
+              status: "needs-review" as const,
+              generationStatus: inferGenerationStatus(
+                content,
+                content.enabledFormats,
+              ),
+            };
+          }),
+        };
+      });
+      return changed;
+    },
+    [updateSession],
+  );
+
   const setReviewFilter = useCallback(
     (filter: CampaignBuilderSession["reviewFilter"]) => {
       updateSession((prev) => ({ ...prev, reviewFilter: filter }));
@@ -2228,6 +2357,9 @@ export function CampaignBuilderProvider({
       setSelectedMilestoneId,
       setPreviewTab,
       updatePreviewContent,
+      applyMilestoneArtwork,
+      detachMilestoneFromMainImage,
+      applyArtworkToAllPosts,
       setReviewFilter,
       toggleExpandedReview,
       reconcilePreviewStatuses,
@@ -2280,6 +2412,9 @@ export function CampaignBuilderProvider({
       setSelectedMilestoneId,
       setPreviewTab,
       updatePreviewContent,
+      applyMilestoneArtwork,
+      detachMilestoneFromMainImage,
+      applyArtworkToAllPosts,
       setReviewFilter,
       toggleExpandedReview,
       reconcilePreviewStatuses,

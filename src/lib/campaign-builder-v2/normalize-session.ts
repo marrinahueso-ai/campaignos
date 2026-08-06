@@ -3,6 +3,7 @@ import {
   defaultEnabledFormats,
   normalizeMilestoneArtwork,
 } from "./platform-utils.ts";
+import { isReusableArtwork } from "./main-event-image.ts";
 import {
   captionPlatformsForFormats,
   generationStatusAfterContent,
@@ -406,12 +407,20 @@ export function mergeCampaignBuilderSessions(
       ? (secondary.inspiration ?? primary.inspiration)
       : (primary.inspiration ?? secondary.inspiration);
 
+  const primaryMain = isReusableArtwork(primary.mainEventImage)
+    ? primary.mainEventImage
+    : null;
+  const secondaryMain = isReusableArtwork(secondary.mainEventImage)
+    ? secondary.mainEventImage
+    : null;
+
   return {
     ...primary,
     ...secondary,
     inspiration,
     milestones: resultMilestones,
     milestonesPlaybookId,
+    mainEventImage: primaryMain ?? secondaryMain ?? null,
     previewContents,
     selectedMilestoneId:
       primary.selectedMilestoneId ?? secondary.selectedMilestoneId ?? null,
@@ -442,9 +451,15 @@ export function reconcilePreviewContent(
       ? ensureSharedCaptionsForPlatforms(rawCaptions, captionPlatforms)
       : rawCaptions;
 
+  const artworkMode =
+    content.artworkMode === "shared" || content.artworkMode === "custom"
+      ? content.artworkMode
+      : undefined;
+
   const normalized: MilestonePreviewContent = {
     ...content,
     artwork: normalizeMilestoneArtwork(content.artwork),
+    artworkMode,
     enabledFormats,
     captions,
     deliveryMethod: normalizeDeliveryMethod(content.deliveryMethod),
@@ -700,6 +715,13 @@ export function normalizeCampaignBuilderSession(
     raw.approvalWorkflow ?? defaults.approvalWorkflow,
   );
 
+  const rawMain = raw.mainEventImage
+    ? normalizeMilestoneArtwork(raw.mainEventImage)
+    : null;
+  const mainEventImage = isReusableArtwork(rawMain)
+    ? rawMain
+    : defaults.mainEventImage;
+
   return {
     ...defaults,
     ...raw,
@@ -707,6 +729,7 @@ export function normalizeCampaignBuilderSession(
     inspiration,
     milestones,
     milestonesPlaybookId: raw.milestonesPlaybookId ?? defaults.milestonesPlaybookId ?? null,
+    mainEventImage,
     previewContents,
     approvalWorkflow,
     expandedReviewMilestoneIds: raw.expandedReviewMilestoneIds ?? [],
