@@ -106,6 +106,57 @@ describe("homepage composer month drafts", () => {
     assert.equal(again.header.announcements[0]?.text, "September open house");
   });
 
+  it("save this month commits full chrome for copy-from and month switch", () => {
+    const august = baseState("2026-08");
+    const customized: HomepageComposerState = {
+      ...august,
+      header: {
+        ...august.header,
+        title: "August Welcome",
+        button3Label: "Donate",
+        button3Url: "https://example.com/donate",
+      },
+      footer: {
+        ...august.footer,
+        ctaButton2Label: "Contact Us",
+        ctaButton2Url: "https://example.com/contact",
+      },
+      cardsSectionTitle: "August Happenings",
+    };
+    const saved = saveWorkingMonth(customized);
+    assert.equal(workingMonthStatus(saved), "saved");
+    assert.equal(saved.monthSaved["2026-08"]?.header?.title, "August Welcome");
+    assert.equal(saved.monthSaved["2026-08"]?.header?.button3Label, "Donate");
+    assert.equal(
+      saved.monthSaved["2026-08"]?.footer?.ctaButton2Label,
+      "Contact Us",
+    );
+    assert.equal(
+      saved.monthSaved["2026-08"]?.cardsSectionTitle,
+      "August Happenings",
+    );
+
+    // Leave August intact, edit September, then return — August chrome restores.
+    const september = switchWorkingMonth(saved, "2026-09");
+    const editedSep: HomepageComposerState = {
+      ...september,
+      header: { ...september.header, title: "Scratch September" },
+      footer: { ...september.footer, ctaButton2Label: "" },
+      cardsSectionTitle: "Temp",
+    };
+    const back = switchWorkingMonth(editedSep, "2026-08");
+    assert.equal(back.header.title, "August Welcome");
+    assert.equal(back.header.button3Label, "Donate");
+    assert.equal(back.footer.ctaButton2Label, "Contact Us");
+    assert.equal(back.cardsSectionTitle, "August Happenings");
+
+    const emptySep = switchWorkingMonth(saved, "2026-09");
+    const copied = copyMonthCardsFrom(emptySep, "2026-08");
+    assert.ok(copied);
+    assert.equal(copied.header.title, "August Welcome");
+    assert.equal(copied.footer.ctaButton2Label, "Contact Us");
+  });
+
   it("save this month commits snapshot for copy-from", () => {
     const saved = saveWorkingMonth(baseState("2026-08"));
     assert.equal(workingMonthStatus(saved), "saved");

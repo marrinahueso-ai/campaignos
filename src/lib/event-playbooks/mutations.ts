@@ -225,6 +225,36 @@ export async function createEventPlaybookNote(
   return { id: data.id as string, error: null };
 }
 
+export async function deleteEventPlaybookNote(
+  noteId: string,
+  eventId: string,
+): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("event_playbook_notes")
+    .delete()
+    .eq("id", noteId)
+    .eq("event_id", eventId);
+
+  if (error) {
+    console.error("Failed to delete event playbook note:", error.message);
+    if (isMissingSchemaError(error)) {
+      return {
+        success: false,
+        error: "Notes are unavailable. Run migration 031_event_playbook_tables.sql.",
+      };
+    }
+    return {
+      success: false,
+      error: error.message?.trim() || "Unable to delete note.",
+    };
+  }
+
+  await logActivity(eventId, "Removed a note");
+  return { success: true, error: null };
+}
+
 export async function createEventPlaybookFilePlaceholder(
   eventId: string,
   name: string,

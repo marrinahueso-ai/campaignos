@@ -160,6 +160,9 @@ describe("event detail ease UI contracts", () => {
     assert.match(notes, /Recent Scratchpads/);
     assert.match(notes, /New Note/);
     assert.match(notes, /note-paper|repeating-linear-gradient/);
+    assert.match(notes, /deleteEventPlaybookNoteAction/);
+    assert.match(notes, /Trash2/);
+    assert.match(notes, /window\.confirm/);
     assert.doesNotMatch(notes, /localStorage/);
   });
 });

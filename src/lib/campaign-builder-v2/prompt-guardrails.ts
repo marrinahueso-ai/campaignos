@@ -38,6 +38,20 @@ export const CAMPAIGN_BUILDER_ANTI_CLICHE_VISUAL_RULES = [
   "Prefer clean typography and layout hierarchy over decorative side flourishes.",
 ].join(" ");
 
+/** Social posts should not look like spreadsheets or semester calendars unless asked. */
+export const CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES = [
+  "Do not lay out the graphic as a spreadsheet, data table, grid of cells, comparison chart, or multi-column tabular schedule.",
+  "Do not invent month boxes, calendar grids, or checklist tables unless the user explicitly asks for a table or calendar layout.",
+  "Prefer a single clear poster-style composition with hierarchy (hero, headline, short supporting text) over rows and columns of cells.",
+].join(" ");
+
+/** When Edit Post "Keep style locked" is on — previous art is the source of truth. */
+export const CAMPAIGN_BUILDER_STYLE_LOCK_RULES = [
+  "Style lock is ON: the attached previous image is the source of truth.",
+  "Replicate it as closely as possible — same colors, layout, composition, typography, subjects, and overall look.",
+  "Apply ONLY the user's explicit change list; change nothing else.",
+].join(" ");
+
 export const CAMPAIGN_BUILDER_CAPTION_ARTWORK_RULES = [
   "If artwork is attached, complement its mood and theme only.",
   "Do not import invented on-graphic text, times, locations, hashtags, or logistics from the image into the caption.",

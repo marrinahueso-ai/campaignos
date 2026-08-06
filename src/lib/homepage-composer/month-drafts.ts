@@ -3,7 +3,10 @@ import type {
   HomepageCard,
   HomepageComposerEvent,
   HomepageComposerState,
+  HomepageFooterConfig,
+  HomepageHeaderConfig,
   HomepageMonthCardsSnapshot,
+  HomepageResourceLink,
 } from "@/lib/homepage-composer/types";
 
 export function currentMonthYyyyMm(now: Date = new Date()): string {
@@ -37,6 +40,40 @@ function cloneAnnouncements(
   return announcements.map((row) => ({ ...row }));
 }
 
+function cloneResources(
+  resources: HomepageResourceLink[],
+): HomepageResourceLink[] {
+  return resources.map((row) => ({ ...row }));
+}
+
+function cloneHeaderChrome(
+  header: Omit<HomepageHeaderConfig, "announcements">,
+): Omit<HomepageHeaderConfig, "announcements"> {
+  return {
+    title: header.title,
+    message: header.message,
+    button1Label: header.button1Label,
+    button1Url: header.button1Url,
+    button2Label: header.button2Label,
+    button2Url: header.button2Url,
+    button3Label: header.button3Label,
+    button3Url: header.button3Url,
+    colors: { ...header.colors },
+  };
+}
+
+function cloneFooter(footer: HomepageFooterConfig): HomepageFooterConfig {
+  return {
+    ctaTitle: footer.ctaTitle,
+    ctaBody: footer.ctaBody,
+    ctaButtonLabel: footer.ctaButtonLabel,
+    ctaButtonUrl: footer.ctaButtonUrl,
+    ctaButton2Label: footer.ctaButton2Label,
+    ctaButton2Url: footer.ctaButton2Url,
+    colors: { ...footer.colors },
+  };
+}
+
 export function emptyMonthCards(): HomepageMonthCardsSnapshot {
   return { cards: [], selectedEventIds: [], announcements: [] };
 }
@@ -48,19 +85,35 @@ export function cloneMonthSnapshot(
     selectedEventIds: [...snapshot.selectedEventIds],
     cards: snapshot.cards.map((card) => ({ ...card })),
     announcements: cloneAnnouncements(snapshot.announcements ?? []),
+    header: snapshot.header ? cloneHeaderChrome(snapshot.header) : undefined,
+    footer: snapshot.footer ? cloneFooter(snapshot.footer) : undefined,
+    cardsSectionTitle: snapshot.cardsSectionTitle,
+    resources: snapshot.resources
+      ? cloneResources(snapshot.resources)
+      : undefined,
   };
 }
 
 export function snapshotFromState(
   state: Pick<
     HomepageComposerState,
-    "cards" | "selectedEventIds" | "header"
+    | "cards"
+    | "selectedEventIds"
+    | "header"
+    | "footer"
+    | "cardsSectionTitle"
+    | "resources"
   >,
 ): HomepageMonthCardsSnapshot {
+  const { announcements, ...headerChrome } = state.header;
   return {
     cards: state.cards.map((card) => ({ ...card })),
     selectedEventIds: [...state.selectedEventIds],
-    announcements: cloneAnnouncements(state.header.announcements ?? []),
+    announcements: cloneAnnouncements(announcements ?? []),
+    header: cloneHeaderChrome(headerChrome),
+    footer: cloneFooter(state.footer),
+    cardsSectionTitle: state.cardsSectionTitle,
+    resources: cloneResources(state.resources),
   };
 }
 
@@ -93,6 +146,53 @@ function stableAnnouncementKey(row: HomepageAnnouncement): string {
   ].join("\u0001");
 }
 
+function stableResourceKey(row: HomepageResourceLink): string {
+  return [row.id, row.emoji, row.label, row.url].join("\u0001");
+}
+
+function stableHeaderChromeKey(
+  header: Omit<HomepageHeaderConfig, "announcements"> | undefined,
+): string {
+  if (!header) return "";
+  const c = header.colors;
+  return [
+    header.title,
+    header.message,
+    header.button1Label,
+    header.button1Url,
+    header.button2Label,
+    header.button2Url,
+    header.button3Label,
+    header.button3Url,
+    c.backgroundStart,
+    c.backgroundEnd,
+    c.textColor,
+    c.buttonBackground,
+    c.buttonText,
+    c.announcementBackground,
+    c.announcementText,
+  ].join("\u0001");
+}
+
+function stableFooterKey(footer: HomepageFooterConfig | undefined): string {
+  if (!footer) return "";
+  const c = footer.colors;
+  return [
+    footer.ctaTitle,
+    footer.ctaBody,
+    footer.ctaButtonLabel,
+    footer.ctaButtonUrl,
+    footer.ctaButton2Label,
+    footer.ctaButton2Url,
+    c.background,
+    c.textColor,
+    c.buttonBackground,
+    c.buttonText,
+    c.resourceBackground,
+    c.resourceText,
+  ].join("\u0001");
+}
+
 export function monthSnapshotsEqual(
   a: HomepageMonthCardsSnapshot | null | undefined,
   b: HomepageMonthCardsSnapshot | null | undefined,
@@ -115,10 +215,38 @@ export function monthSnapshotsEqual(
       return false;
     }
   }
+
+  // Legacy snapshots omit chrome — only compare chrome when either side has it.
+  const aHasChrome = Boolean(
+    a.header || a.footer || a.cardsSectionTitle != null || a.resources,
+  );
+  const bHasChrome = Boolean(
+    b.header || b.footer || b.cardsSectionTitle != null || b.resources,
+  );
+  if (aHasChrome || bHasChrome) {
+    if ((a.cardsSectionTitle ?? "") !== (b.cardsSectionTitle ?? "")) {
+      return false;
+    }
+    if (stableHeaderChromeKey(a.header) !== stableHeaderChromeKey(b.header)) {
+      return false;
+    }
+    if (stableFooterKey(a.footer) !== stableFooterKey(b.footer)) {
+      return false;
+    }
+    const aRes = a.resources ?? [];
+    const bRes = b.resources ?? [];
+    if (aRes.length !== bRes.length) return false;
+    for (let i = 0; i < aRes.length; i += 1) {
+      if (stableResourceKey(aRes[i]!) !== stableResourceKey(bRes[i]!)) {
+        return false;
+      }
+    }
+  }
+
   return true;
 }
 
-/** Write active cards + announcements into monthDrafts[workingMonth]. */
+/** Write active cards + chrome into monthDrafts[workingMonth]. */
 export function stashWorkingMonth(
   state: HomepageComposerState,
 ): HomepageComposerState {
@@ -144,15 +272,38 @@ export function switchWorkingMonth(
     stashed.monthSaved[nextMonth] ??
     emptyMonthCards();
   const loaded = cloneMonthSnapshot(next);
+
+  // Legacy months without chrome keep the live chrome; months with chrome apply it.
+  const hasChrome = Boolean(
+    loaded.header ||
+      loaded.footer ||
+      loaded.cardsSectionTitle != null ||
+      loaded.resources,
+  );
+
   return {
     ...stashed,
     workingMonth: nextMonth,
     cards: loaded.cards,
     selectedEventIds: loaded.selectedEventIds,
     header: {
-      ...stashed.header,
+      ...(hasChrome && loaded.header
+        ? { ...stashed.header, ...loaded.header }
+        : stashed.header),
       announcements: cloneAnnouncements(loaded.announcements),
     },
+    footer:
+      hasChrome && loaded.footer
+        ? cloneFooter(loaded.footer)
+        : stashed.footer,
+    cardsSectionTitle:
+      hasChrome && typeof loaded.cardsSectionTitle === "string"
+        ? loaded.cardsSectionTitle
+        : stashed.cardsSectionTitle,
+    resources:
+      hasChrome && loaded.resources
+        ? cloneResources(loaded.resources)
+        : stashed.resources,
     monthDrafts: {
       ...stashed.monthDrafts,
       [nextMonth]: loaded,
@@ -160,7 +311,7 @@ export function switchWorkingMonth(
   };
 }
 
-/** Commit active month cards as the Copy-from source + “saved” snapshot. */
+/** Commit active month (cards + chrome) as the Copy-from source + “saved” snapshot. */
 export function saveWorkingMonth(
   state: HomepageComposerState,
 ): HomepageComposerState {
@@ -179,7 +330,7 @@ export function saveWorkingMonth(
 }
 
 /**
- * Seed the active month from another month’s saved snapshot.
+ * Seed the active month from another month’s saved snapshot (full homepage).
  * Marks the active month dirty until Save this month.
  */
 export function copyMonthCardsFrom(
@@ -189,14 +340,34 @@ export function copyMonthCardsFrom(
   const source = state.monthSaved[fromMonth];
   if (!source) return null;
   const copied = cloneMonthSnapshot(source);
+  const hasChrome = Boolean(
+    copied.header ||
+      copied.footer ||
+      copied.cardsSectionTitle != null ||
+      copied.resources,
+  );
   return {
     ...state,
     cards: copied.cards,
     selectedEventIds: copied.selectedEventIds,
     header: {
-      ...state.header,
+      ...(hasChrome && copied.header
+        ? { ...state.header, ...copied.header }
+        : state.header),
       announcements: cloneAnnouncements(copied.announcements),
     },
+    footer:
+      hasChrome && copied.footer
+        ? cloneFooter(copied.footer)
+        : state.footer,
+    cardsSectionTitle:
+      hasChrome && typeof copied.cardsSectionTitle === "string"
+        ? copied.cardsSectionTitle
+        : state.cardsSectionTitle,
+    resources:
+      hasChrome && copied.resources
+        ? cloneResources(copied.resources)
+        : state.resources,
     monthDrafts: {
       ...state.monthDrafts,
       [state.workingMonth]: cloneMonthSnapshot(copied),
@@ -294,9 +465,8 @@ export function slimMonthMap(
   const next: Record<string, HomepageMonthCardsSnapshot> = {};
   for (const [key, snapshot] of Object.entries(map)) {
     next[key] = {
-      selectedEventIds: [...snapshot.selectedEventIds],
+      ...cloneMonthSnapshot(snapshot),
       cards: slimMonthCards(snapshot.cards),
-      announcements: cloneAnnouncements(snapshot.announcements ?? []),
     };
   }
   return next;

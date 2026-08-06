@@ -2,6 +2,10 @@ import "server-only";
 
 import { milestoneNameMatchKey } from "@/lib/campaign-builder-v2/milestone-names";
 import type { UnifiedWorkflowStatus } from "@/lib/approvals-scheduling/types";
+import {
+  createAdminClient,
+  isSupabaseAdminConfigured,
+} from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type SchedulingPublishOutcome = "published" | "failed";
@@ -219,4 +223,116 @@ export function applyMetaSlotOutcomesToApprovalItem<
     ...item,
     metaRelativeDay: relativeDay ?? item.metaRelativeDay,
   };
+}
+
+const ORPHAN_SCHEDULE_GRACE_MS = 15 * 60 * 1000;
+const ACTIVE_META_SLOT_STATUSES = [
+  "approved",
+  "scheduled",
+  "posting",
+  "published",
+] as const;
+
+export type OrphanScheduledReconcileResult = {
+  scanned: number;
+  markedFailed: number;
+  errors: string[];
+};
+
+/**
+ * Mark schedule/publish-now Approvals rows that claim to be scheduled but have
+ * no Meta slots that can ever publish. Prevents infinite "Scheduled" orphans
+ * after approve-side Meta mapping failures or lost slots.
+ */
+export async function reconcileOrphanScheduledApprovals(options?: {
+  now?: Date;
+  graceMs?: number;
+}): Promise<OrphanScheduledReconcileResult> {
+  const result: OrphanScheduledReconcileResult = {
+    scanned: 0,
+    markedFailed: 0,
+    errors: [],
+  };
+
+  if (!isSupabaseAdminConfigured()) {
+    result.errors.push(
+      "SUPABASE_SERVICE_ROLE_KEY is not configured; cannot reconcile orphan scheduled approvals.",
+    );
+    return result;
+  }
+
+  const supabase = createAdminClient();
+  const now = options?.now ?? new Date();
+  const graceMs = options?.graceMs ?? ORPHAN_SCHEDULE_GRACE_MS;
+  const cutoffIso = new Date(now.getTime() - graceMs).toISOString();
+
+  const { data: rows, error } = await supabase
+    .from("approval_scheduling_items")
+    .select(
+      "id, event_id, milestone_name, delivery_method, schedule_at, updated_at, resolved_at",
+    )
+    .eq("workflow_status", "scheduled")
+    .in("delivery_method", ["schedule", "publish-now", "auto-publish"])
+    .lt("updated_at", cutoffIso);
+
+  if (error) {
+    result.errors.push(error.message);
+    return result;
+  }
+
+  const candidates = rows ?? [];
+  result.scanned = candidates.length;
+  if (candidates.length === 0) {
+    return result;
+  }
+
+  const eventIds = [...new Set(candidates.map((row) => String(row.event_id)))];
+  const { data: slots, error: slotError } = await supabase
+    .from("meta_publication_slots")
+    .select("event_id, milestone_title, status")
+    .in("event_id", eventIds)
+    .in("status", [...ACTIVE_META_SLOT_STATUSES]);
+
+  if (slotError) {
+    result.errors.push(slotError.message);
+    return result;
+  }
+
+  const activeKeys = new Set(
+    (slots ?? []).map(
+      (slot) =>
+        `${slot.event_id}:${milestoneNameMatchKey(String(slot.milestone_title ?? ""))}`,
+    ),
+  );
+
+  const failNote =
+    "Couldn’t queue this post for Meta publishing. Open Failed to retry, or reconnect Meta in Settings.";
+  const nowIso = now.toISOString();
+
+  for (const row of candidates) {
+    const key = `${row.event_id}:${milestoneNameMatchKey(String(row.milestone_name ?? ""))}`;
+    if (activeKeys.has(key)) {
+      continue;
+    }
+
+    const { error: updateError } = await supabase
+      .from("approval_scheduling_items")
+      .update({
+        workflow_status: "failed",
+        notes: failNote,
+        resolved_at: nowIso,
+        updated_at: nowIso,
+      })
+      .eq("id", row.id)
+      .eq("workflow_status", "scheduled");
+
+    if (updateError) {
+      result.errors.push(`${row.id}: ${updateError.message}`);
+      continue;
+    }
+
+    result.markedFailed += 1;
+  }
+
+  return result;
 }

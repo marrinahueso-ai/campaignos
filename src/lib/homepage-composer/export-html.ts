@@ -189,6 +189,29 @@ ${activeAnnouncements
   // Hover accent matches live EES / Membership Toolkit homepage.
   const hoverAccent = "#1f7a5c";
 
+  const heroButtons = [
+    { label: header.button1Label, url: header.button1Url },
+    { label: header.button2Label, url: header.button2Url },
+    { label: header.button3Label, url: header.button3Url },
+  ]
+    .filter((b) => b.label.trim())
+    .map(
+      (b) =>
+        `<a class="ees-btn" href="${escapeHtml(normalizeHref(b.url))}">${escapeHtml(b.label)}</a>`,
+    )
+    .join(" ");
+
+  const footerButtons = [
+    { label: footer.ctaButtonLabel, url: footer.ctaButtonUrl },
+    { label: footer.ctaButton2Label, url: footer.ctaButton2Url },
+  ]
+    .filter((b) => b.label.trim())
+    .map(
+      (b) =>
+        `<a class="ees-btn" href="${escapeHtml(normalizeHref(b.url))}">${escapeHtml(b.label)}</a>`,
+    )
+    .join(" ");
+
   return `<style><!--
 .ees-home-wrap{max-width:1100px;margin:0 auto;padding:20px;font-family:Arial,sans-serif}
 .ees-hero{background:linear-gradient(135deg,${hc.backgroundStart},${hc.backgroundEnd});color:${hc.textColor};padding:40px 30px;border-radius:22px;text-align:center;margin-bottom:18px}
@@ -234,14 +257,14 @@ ${
 <div class="ees-hero">
 <h1 style="text-align:center;"><span style="font-size:24pt;">${escapeHtml(header.title)}</span></h1>
 <p>${escapeHtml(header.message)}</p>
-<div class="ees-hero-btns"><a class="ees-btn" href="${escapeHtml(normalizeHref(header.button1Url))}">${escapeHtml(header.button1Label)}</a> <a class="ees-btn" href="${escapeHtml(normalizeHref(header.button2Url))}">${escapeHtml(header.button2Label)}</a></div>
+${heroButtons ? `<div class="ees-hero-btns">${heroButtons}</div>` : ""}
 </div>
 ${announcement}
 ${cardsBlock}
 <div class="ees-cta">
 <h2>${escapeHtml(footer.ctaTitle)}</h2>
 <p>${escapeHtml(footer.ctaBody)}</p>
-<a class="ees-btn" href="${escapeHtml(normalizeHref(footer.ctaButtonUrl))}">${escapeHtml(footer.ctaButtonLabel)}</a>
+${footerButtons}
 </div>
 ${resourcesBlock}
 </div>

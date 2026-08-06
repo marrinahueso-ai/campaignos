@@ -10,14 +10,15 @@ import {
   Check,
   Flag,
   Minus,
-  MoreHorizontal,
   Paperclip,
   Pencil,
+  Trash2,
 } from "lucide-react";
 import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
 import { TasksV2AssigneeSelect } from "@/components/tasks-v2/TasksV2AssigneeSelect";
 import { TasksV2StatusPill } from "@/components/tasks-v2/TasksV2StatusPill";
 import {
+  deleteTaskHubTaskAction,
   updateTaskHubTaskAction,
   updateTaskHubTaskStatusAction,
 } from "@/lib/task-hub/actions";
@@ -48,6 +49,8 @@ interface TasksEaseListProps {
   eventColors: Record<string, string>;
   onEventColorChange: (eventId: string, color: string | null) => void;
   onOpenTask: (task: TaskHubTaskItem) => void;
+  /** Called after a successful delete so parents can hide the row optimistically. */
+  onTaskDeleted?: (taskId: string) => void;
   emptyTitle: string;
   emptyBody: string;
   /** Current user — used for “Needs you” badge. */
@@ -123,6 +126,7 @@ export const TasksEaseList = memo(function TasksEaseList({
   eventColors,
   onEventColorChange,
   onOpenTask,
+  onTaskDeleted,
   emptyTitle,
   emptyBody,
   viewerUserId = null,
@@ -302,6 +306,24 @@ export const TasksEaseList = memo(function TasksEaseList({
   ) {
     saveTaskPriority(task.id, priority);
     setPriorityOverrides((current) => ({ ...current, [task.id]: priority }));
+  }
+
+  function handleDelete(task: TaskHubTaskItem) {
+    if (!canEdit || pendingIds.has(task.id)) return;
+    if (!window.confirm(`Delete “${task.title}”? This can’t be undone.`)) {
+      return;
+    }
+    setPending(task.id, true);
+    startTransition(async () => {
+      const result = await deleteTaskHubTaskAction(
+        task.eventId,
+        task.id,
+        task.title,
+      );
+      setPending(task.id, false);
+      if (!result.success) return;
+      onTaskDeleted?.(task.id);
+    });
   }
 
   function cyclePrioritySort() {
@@ -646,29 +668,41 @@ export const TasksEaseList = memo(function TasksEaseList({
                   </div>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  {isDone ? (
-                    <Check className="ml-auto h-4 w-4 text-[#2f4a3c]" aria-hidden />
-                  ) : highlightBlocked ? (
-                    <button
-                      type="button"
-                      onClick={() => onOpenTask(rawTask)}
-                      className="rounded-lg border border-amber-400 bg-white px-4 py-1.5 text-[11px] font-bold text-amber-700 transition hover:bg-amber-100"
-                    >
-                      Review
-                    </button>
-                  ) : (
-                    <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                      {due.overdue ? (
-                        <button
-                          type="button"
-                          onClick={() => onOpenTask(rawTask)}
-                          aria-label={`Escalate ${task.title}`}
-                          title="Flag for follow-up"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#c4922e] transition hover:border-[#e8e2d9] hover:bg-white"
-                        >
-                          <Flag className="h-3.5 w-3.5" aria-hidden />
-                        </button>
-                      ) : null}
+                  <div
+                    className={cn(
+                      "flex items-center justify-end gap-2",
+                      !isDone &&
+                        !highlightBlocked &&
+                        "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+                    )}
+                  >
+                    {isDone ? (
+                      <Check
+                        className="h-4 w-4 text-[#2f4a3c]"
+                        aria-hidden
+                      />
+                    ) : null}
+                    {highlightBlocked && !isDone ? (
+                      <button
+                        type="button"
+                        onClick={() => onOpenTask(rawTask)}
+                        className="rounded-lg border border-amber-400 bg-white px-4 py-1.5 text-[11px] font-bold text-amber-700 transition hover:bg-amber-100"
+                      >
+                        Review
+                      </button>
+                    ) : null}
+                    {!isDone && !highlightBlocked && due.overdue ? (
+                      <button
+                        type="button"
+                        onClick={() => onOpenTask(rawTask)}
+                        aria-label={`Escalate ${task.title}`}
+                        title="Flag for follow-up"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#c4922e] transition hover:border-[#e8e2d9] hover:bg-white"
+                      >
+                        <Flag className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    ) : null}
+                    {!isDone && !highlightBlocked ? (
                       <button
                         type="button"
                         onClick={() => onOpenTask(rawTask)}
@@ -677,16 +711,20 @@ export const TasksEaseList = memo(function TasksEaseList({
                       >
                         <Pencil className="h-3.5 w-3.5" aria-hidden />
                       </button>
+                    ) : null}
+                    {canEdit ? (
                       <button
                         type="button"
-                        onClick={() => onOpenTask(rawTask)}
-                        aria-label={`More actions for ${task.title}`}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#a8a29c] transition hover:border-[#e8e2d9] hover:bg-white hover:text-[#2a2622]"
+                        onClick={() => handleDelete(rawTask)}
+                        disabled={isPending}
+                        aria-label={`Delete ${task.title}`}
+                        title="Delete"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#a8a29c] transition hover:border-[#e8e2d9] hover:bg-white hover:text-[#a65a3a] disabled:opacity-50"
                       >
-                        <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
                       </button>
-                    </div>
-                  )}
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             );

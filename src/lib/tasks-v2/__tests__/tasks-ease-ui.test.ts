@@ -143,6 +143,20 @@ describe("tasks ease UI contracts", () => {
     assert.doesNotMatch(drawer, /TasksV2AssigneeSelect/);
   });
 
+  it("deletes tasks with icon-only trash + confirm via task-hub action", () => {
+    const drawer = readSrc("../../../components/tasks-v2/TasksEaseTaskDrawer.tsx");
+    assert.match(list, /deleteTaskHubTaskAction/);
+    assert.match(list, /Trash2/);
+    assert.match(list, /aria-label=\{`Delete \$\{task\.title\}`\}/);
+    assert.match(list, /window\.confirm/);
+    assert.match(list, /onTaskDeleted/);
+    assert.match(drawer, /deleteTaskHubTaskAction/);
+    assert.match(drawer, /Trash2/);
+    assert.match(drawer, /window\.confirm/);
+    assert.match(shell, /onTaskDeleted=\{rememberTaskDeleted\}/);
+    assert.match(shell, /deletedIds/);
+  });
+
   it("keeps newly added tasks visible (event options + optimistic create)", () => {
     assert.match(shell, /pendingCreated/);
     assert.match(shell, /assignToSelf/);

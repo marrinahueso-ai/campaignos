@@ -84,6 +84,8 @@ export type HomepageHeaderConfig = {
   button1Url: string;
   button2Label: string;
   button2Url: string;
+  button3Label: string;
+  button3Url: string;
   announcements: HomepageAnnouncement[];
   colors: HomepageHeaderColors;
 };
@@ -93,18 +95,25 @@ export type HomepageFooterConfig = {
   ctaBody: string;
   ctaButtonLabel: string;
   ctaButtonUrl: string;
+  ctaButton2Label: string;
+  ctaButton2Url: string;
   colors: HomepageFooterColors;
 };
 
 /**
- * Month-scoped homepage content (YYYY-MM): cards, event picks, and
- * announcement bar lines. Header/footer chrome (colors, hero copy, resources)
- * stay shared across months; `header.announcements` mirrors the working month.
+ * Month-scoped homepage content (YYYY-MM): cards, event picks, announcement
+ * bar lines, and full chrome (hero/footer copy + colors, section title,
+ * resources). `header.announcements` mirrors the working month.
  */
 export type HomepageMonthCardsSnapshot = {
   cards: HomepageCard[];
   selectedEventIds: string[];
   announcements: HomepageAnnouncement[];
+  /** Hero chrome for this month (announcements live in `announcements`). */
+  header?: Omit<HomepageHeaderConfig, "announcements">;
+  footer?: HomepageFooterConfig;
+  cardsSectionTitle?: string;
+  resources?: HomepageResourceLink[];
 };
 
 export type HomepageComposerState = {
@@ -115,9 +124,8 @@ export type HomepageComposerState = {
   /** Helpful Resources quick links (emoji + label + url) */
   resources: HomepageResourceLink[];
   /**
-   * Active “Working on” month (YYYY-MM). Cards, event picks, and announcement
-   * lines are for this month; hero/footer colors, section title, and resources
-   * stay shared across months.
+   * Active “Working on” month (YYYY-MM). Cards, picks, announcements, and
+   * chrome (header/footer/resources/section title) are for this month.
    */
   workingMonth: string;
   /** Selected event ids for the active working month */

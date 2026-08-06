@@ -45,6 +45,7 @@ export function EventDetailTasksEasePanel({
   const [optimisticTasks, setOptimisticTasks] = useState<TaskHubTaskItem[]>(
     [],
   );
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
 
   const eventId =
     data.eventGroups[0]?.eventId ??
@@ -55,6 +56,7 @@ export function EventDetailTasksEasePanel({
   // Clear optimistic UI / drawers when navigating to another event (no remount).
   useEffect(() => {
     setOptimisticTasks([]);
+    setDeletedIds(new Set());
     setActiveTask(null);
     setAskAiOpen(false);
     setAddOpen(false);
@@ -70,6 +72,16 @@ export function EventDetailTasksEasePanel({
       if (current.length === 0) return current;
       const next = current.filter((task) => !known.has(task.id));
       return next.length === current.length ? current : next;
+    });
+    setDeletedIds((current) => {
+      if (current.size === 0) return current;
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of current) {
+        if (known.has(id)) next.add(id);
+        else changed = true;
+      }
+      return changed ? next : current;
     });
   }, [data.eventGroups]);
 
@@ -113,26 +125,53 @@ export function EventDetailTasksEasePanel({
             ]
           : [];
 
-    if (optimisticTasks.length === 0) return base;
+    const withOptimistic =
+      optimisticTasks.length === 0
+        ? base
+        : base.map((group) => {
+            const extras = optimisticTasks.filter(
+              (task) =>
+                task.eventId === group.eventId && !deletedIds.has(task.id),
+            );
+            if (extras.length === 0) return group;
+            const existingIds = new Set(group.tasks.map((task) => task.id));
+            const merged = [
+              ...extras.filter((task) => !existingIds.has(task.id)),
+              ...group.tasks,
+            ];
+            return {
+              ...group,
+              tasks: merged,
+              totalCount: merged.length,
+              doneCount: merged.filter((task) => task.status === "done").length,
+            };
+          });
 
-    return base.map((group) => {
-      const extras = optimisticTasks.filter(
-        (task) => task.eventId === group.eventId,
-      );
-      if (extras.length === 0) return group;
-      const existingIds = new Set(group.tasks.map((task) => task.id));
-      const merged = [
-        ...extras.filter((task) => !existingIds.has(task.id)),
-        ...group.tasks,
-      ];
+    if (deletedIds.size === 0) return withOptimistic;
+
+    return withOptimistic.map((group) => {
+      const tasks = group.tasks.filter((task) => !deletedIds.has(task.id));
+      if (tasks.length === group.tasks.length) return group;
       return {
         ...group,
-        tasks: merged,
-        totalCount: merged.length,
-        doneCount: merged.filter((task) => task.status === "done").length,
+        tasks,
+        totalCount: tasks.length,
+        doneCount: tasks.filter((task) => task.status === "done").length,
       };
     });
-  }, [data.eventGroups, eventOption, optimisticTasks]);
+  }, [data.eventGroups, deletedIds, eventOption, optimisticTasks]);
+
+  const handleTaskDeleted = useCallback(
+    (taskId: string) => {
+      setDeletedIds((current) => new Set(current).add(taskId));
+      setActiveTask((current) => (current?.id === taskId ? null : current));
+      setOptimisticTasks((current) =>
+        current.filter((task) => task.id !== taskId),
+      );
+      void refresh();
+    },
+    [refresh],
+  );
 
   const taskCount = useMemo(
     () => listGroups.reduce((sum, group) => sum + group.tasks.length, 0),
@@ -301,6 +340,7 @@ export function EventDetailTasksEasePanel({
               eventColors={{}}
               onEventColorChange={() => {}}
               onOpenTask={setActiveTask}
+              onTaskDeleted={handleTaskDeleted}
               emptyTitle="No tasks yet"
               emptyBody="Ask AI or add a task manually."
               viewerUserId={data.viewer.userId}
@@ -359,6 +399,7 @@ export function EventDetailTasksEasePanel({
           );
           void refresh();
         }}
+        onTaskDeleted={handleTaskDeleted}
       />
     </section>
   );

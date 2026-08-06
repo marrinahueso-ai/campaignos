@@ -629,7 +629,7 @@
       filter: brightness(1.05);
     }
 .smc .art-dl {
-      position: absolute; right: 10px; bottom: 10px;
+      position: absolute; right: 52px; bottom: 10px;
       width: 30px; height: 30px; border-radius: 10px;
       border: none;
       background: rgba(255,252,247,.94);
@@ -648,8 +648,14 @@
       opacity: 1;
       transform: none;
     }
+@media (hover: none) {
+  .smc .art-dl {
+    opacity: 1;
+    transform: none;
+  }
+}
 .smc .art-dl:hover { background: #fff; }
-.smc .art-dl svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+.smc .art-dl svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .smc .feed-art .badge {
       position: absolute; left: 10px; top: 10px;
       background: rgba(255,252,247,.92); color: var(--forest);

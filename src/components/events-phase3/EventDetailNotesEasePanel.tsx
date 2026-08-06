@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
-import { createEventPlaybookNoteAction } from "@/lib/event-playbooks/actions";
+import {
+  createEventPlaybookNoteAction,
+  deleteEventPlaybookNoteAction,
+} from "@/lib/event-playbooks/actions";
 import { cn } from "@/lib/utils/cn";
 import type { EventPlaybookNote } from "@/types/event-playbooks";
 
@@ -61,23 +64,45 @@ export function EventDetailNotesEasePanel({
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
+
+  const visibleNotes = useMemo(
+    () => notes.filter((note) => !deletedIds.has(note.id)),
+    [deletedIds, notes],
+  );
+
+  useEffect(() => {
+    setDeletedIds((current) => {
+      if (current.size === 0) return current;
+      const known = new Set(notes.map((note) => note.id));
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of current) {
+        if (known.has(id)) next.add(id);
+        else changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, [notes]);
 
   useEffect(() => {
     if (composing) return;
-    if (selectedId && notes.some((note) => note.id === selectedId)) return;
-    setSelectedId(notes[0]?.id ?? null);
-    if (notes.length === 0) setComposing(true);
-  }, [notes, selectedId, composing]);
+    if (selectedId && visibleNotes.some((note) => note.id === selectedId)) {
+      return;
+    }
+    setSelectedId(visibleNotes[0]?.id ?? null);
+    if (visibleNotes.length === 0) setComposing(true);
+  }, [visibleNotes, selectedId, composing]);
 
   const selected = useMemo(
-    () => notes.find((note) => note.id === selectedId) ?? null,
-    [notes, selectedId],
+    () => visibleNotes.find((note) => note.id === selectedId) ?? null,
+    [visibleNotes, selectedId],
   );
 
   const scratchpads = useMemo(() => {
-    if (composing || !selectedId) return notes;
-    return notes.filter((note) => note.id !== selectedId);
-  }, [notes, selectedId, composing]);
+    if (composing || !selectedId) return visibleNotes;
+    return visibleNotes.filter((note) => note.id !== selectedId);
+  }, [visibleNotes, selectedId, composing]);
 
   const startNewNote = () => {
     setComposing(true);
@@ -111,6 +136,29 @@ export function EventDetailNotesEasePanel({
       }
       setContent("");
       setComposing(false);
+      await refresh();
+    });
+  };
+
+  const handleDelete = (note: EventPlaybookNote) => {
+    if (!tablesAvailable || pending) return;
+    const label = noteTitle(note.content);
+    if (!window.confirm(`Delete “${label}”? This can’t be undone.`)) {
+      return;
+    }
+    startTransition(async () => {
+      setError(null);
+      const result = await deleteEventPlaybookNoteAction(eventId, note.id);
+      if (!result.success) {
+        setError(result.error ?? "Unable to delete note.");
+        return;
+      }
+      setDeletedIds((current) => new Set(current).add(note.id));
+      if (selectedId === note.id) {
+        setSelectedId(null);
+        setComposing(true);
+        setContent("");
+      }
       await refresh();
     });
   };
@@ -180,9 +228,21 @@ export function EventDetailNotesEasePanel({
             </div>
           ) : selected ? (
             <div>
-              <h3 className="mb-6 font-display text-2xl leading-relaxed text-[#2f4a3c]">
-                {noteTitle(selected.content)}
-              </h3>
+              <div className="mb-6 flex items-start justify-between gap-3">
+                <h3 className="font-display text-2xl leading-relaxed text-[#2f4a3c]">
+                  {noteTitle(selected.content)}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(selected)}
+                  disabled={pending || !tablesAvailable}
+                  aria-label={`Delete ${noteTitle(selected.content)}`}
+                  title="Delete"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6b8171] transition hover:bg-[rgba(166,90,58,0.12)] hover:text-[#a65a3a] disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
               <div className="space-y-4 text-[15px] text-[#2f4a3c]">
                 {notePreviewLines(selected.content).map((line, index) => (
                   <p key={`${selected.id}-${index}`}>{line}</p>
@@ -193,6 +253,11 @@ export function EventDetailNotesEasePanel({
                 {selected.authorName ?? "Team"} ·{" "}
                 {formatEdited(selected.createdAt)}
               </p>
+              {error ? (
+                <p className="mt-4 text-sm text-[#a65a3a]" role="alert">
+                  {error}
+                </p>
+              ) : null}
             </div>
           ) : (
             <p className="text-sm text-[#6b8171]">
@@ -208,28 +273,42 @@ export function EventDetailNotesEasePanel({
         </h4>
         {scratchpads.length === 0 ? (
           <p className="text-sm text-[#6b8171]">
-            {notes.length === 0
+            {visibleNotes.length === 0
               ? "Saved notes will show up here."
               : "You’re viewing the only note."}
           </p>
         ) : (
           <div className="space-y-4">
             {scratchpads.map((note) => (
-              <button
+              <div
                 key={note.id}
-                type="button"
-                onClick={() => openScratchpad(note.id)}
-                className="w-full rounded-xl border border-[#e8e3da] bg-white/50 p-4 text-left transition hover:border-[#c4922e]"
+                className="group relative rounded-xl border border-[#e8e3da] bg-white/50 transition hover:border-[#c4922e]"
               >
-                <p className="truncate text-sm font-medium text-[#2f4a3c]">
-                  {noteTitle(note.content)}
-                </p>
-                <p className="mt-1 text-xs text-[#6b8171]">
-                  {formatWhen(note.createdAt)}
-                  {note.authorName ? ` · ${note.authorName}` : ""}
-                  {note.noteType === "lesson" ? " · Lesson" : ""}
-                </p>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => openScratchpad(note.id)}
+                  className="w-full p-4 pr-10 text-left"
+                >
+                  <p className="truncate text-sm font-medium text-[#2f4a3c]">
+                    {noteTitle(note.content)}
+                  </p>
+                  <p className="mt-1 text-xs text-[#6b8171]">
+                    {formatWhen(note.createdAt)}
+                    {note.authorName ? ` · ${note.authorName}` : ""}
+                    {note.noteType === "lesson" ? " · Lesson" : ""}
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(note)}
+                  disabled={pending || !tablesAvailable}
+                  aria-label={`Delete ${noteTitle(note.content)}`}
+                  title="Delete"
+                  className="absolute top-3 right-3 inline-flex h-7 w-7 items-center justify-center rounded-full text-[#6b8171] opacity-0 transition group-hover:opacity-100 hover:bg-[rgba(166,90,58,0.12)] hover:text-[#a65a3a] focus-visible:opacity-100 disabled:opacity-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              </div>
             ))}
           </div>
         )}

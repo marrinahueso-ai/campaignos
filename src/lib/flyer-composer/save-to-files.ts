@@ -12,6 +12,8 @@ export type SaveFlyerComposerToFilesInput = {
   eventId: string;
   imageUrl: string;
   headline?: string | null;
+  /** Optional display name for Files (becomes the file basename). */
+  title?: string | null;
   versionId?: string | null;
 };
 
@@ -163,6 +165,7 @@ export async function saveFlyerComposerToFiles(
   }
 
   const titleBit =
+    slugPart(input.title || "") ||
     slugPart(input.headline || "") ||
     slugPart(event.title) ||
     "flyer";

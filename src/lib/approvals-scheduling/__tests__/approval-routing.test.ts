@@ -353,7 +353,7 @@ describe("Approval Routing — Meta-on-approve and hybrid", () => {
     );
   });
 
-  it("7. Meta scheduling failure does not reverse approval; logs a clear warning", () => {
+  it("7. Meta scheduling failure does not reverse approval; marks Failed for retry", () => {
     const source = readFileSync(
       new URL("../actions.ts", import.meta.url),
       "utf8",
@@ -364,7 +364,7 @@ describe("Approval Routing — Meta-on-approve and hybrid", () => {
       /Approved, but we couldn’t schedule your Facebook post:/,
     );
     assert.match(source, /console\.error\(/);
-    // Success returns before Meta finishes; side-effect warning is logged only.
+    // Success returns before Meta finishes; side effects may flip to failed.
     assert.match(source, /return \{ success: true \}/);
     assert.match(
       source,
@@ -372,8 +372,9 @@ describe("Approval Routing — Meta-on-approve and hybrid", () => {
     );
     assert.match(
       source,
-      /updateSchedulingItemStatus\([\s\S]*?metaIntent\.wantsMetaFeedSchedule/,
+      /updateSchedulingItemStatus\(\s*schedulingItemId,\s*"failed"/,
     );
+    assert.match(source, /metaResult\.error \|\| !metaResult\.scheduled/);
   });
 
   it("8. hybrid approval preserves Meta scheduling and manual email timing", () => {

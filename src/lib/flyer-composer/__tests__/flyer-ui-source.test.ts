@@ -35,4 +35,14 @@ describe("flyer composer UI source contract", () => {
     assert.match(flyerHtml, /id="btnSendForApproval"/);
     assert.match(flyerHtml, /data-panel="edit"/);
   });
+
+  it("exposes save options + per-event saved flyer load", () => {
+    assert.match(flyerHtml, /FLYER_SAVED_API/);
+    assert.match(flyerHtml, /function loadSavedFlyersForEvent/);
+    assert.match(flyerHtml, /function openSavedFlyer/);
+    assert.match(flyerHtml, /id="flyerSaveTitle"/);
+    assert.match(flyerHtml, /id="savedFlyersPanel"/);
+    assert.match(flyerHtml, /id="startSavedFlyers"/);
+    assert.match(flyerHtml, /Save options/);
+  });
 });
