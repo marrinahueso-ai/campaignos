@@ -67,7 +67,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Dashboard (Today)
 - **Ease redesign mockup** — calm first viewport (greeting + Create with AI / Calendar CTAs + weather chip), quieter View / Edit layout mode, Ease-styled widget cards with soft drag reorder; HTML mockup at `public/dashboard-ease-mockup.html` — **in progress** (do not ship product UI until GO)
-- **Your overview** board: greeting · Add/Edit controls (no section title) · 2-col main (**Up Next**, **Attention**, **Waiting on me** (open steps for events that have not happened yet), **Good news**) + right rail (**Weather**, **Calendar**, **This week**) · cream widget cards · per-user `organization_users.dashboard_layout` jsonb — **shipped**
+- **Your overview** board: greeting · Add/Edit controls (no section title) · 2-col main (**Up Next** (soonest upcoming event by date — not campaign-strategy priority; action steps stay in Waiting on me), **Attention**, **Waiting on me** (open steps for events that have not happened yet), **Good news**) + right rail (**Weather**, **Calendar**, **This week**) · cream widget cards · per-user `organization_users.dashboard_layout` jsonb — **shipped**
 - Customer-facing Dashboard copy uses org/team language (weather city, event titles — not school-only, workspace, or “Open campaign” jargon); Attention / Tasks-this-week deep links use Tasks Ease `?scope=mine&pulse=week` — **shipped** (Jul 28)
 - **Add** / **Edit**: checkbox catalog + remove; Done/Apply saves optimistically — **shipped**
 - **Card colors** in Edit (palette + custom): per-user colors on Attention, Waiting on me, Good news, This week, Approvals, Tasks, Volunteers, Insights; text/surfaces auto-contrast; Weather / Up Next / Calendar excluded — **shipped**

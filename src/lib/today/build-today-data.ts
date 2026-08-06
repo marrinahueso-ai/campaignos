@@ -42,8 +42,6 @@ interface BuildTodayDataInput {
   memoryHintsByEventId?: Map<string, EventHistoryContext>;
 }
 
-const COMPLETE_STATUSES = new Set(["completed", "skipped", "published", "cancelled"]);
-
 function isActiveStep(item: PlanningCalendarItem): boolean {
   return (
     item.sourceType === "timeline_task" &&
@@ -61,22 +59,6 @@ function overdueSteps(items: PlanningCalendarItem[], today: string): PlanningCal
     .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
 }
 
-function dueTodaySteps(items: PlanningCalendarItem[], today: string): PlanningCalendarItem[] {
-  return stepItems(items).filter((item) => item.scheduledDate === today);
-}
-
-function upcomingSteps(items: PlanningCalendarItem[], today: string): PlanningCalendarItem[] {
-  return stepItems(items)
-    .filter((item) => item.scheduledDate > today)
-    .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
-}
-
-function upcomingEvents(events: Event[], today: string): Event[] {
-  return events
-    .filter((event) => event.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date));
-}
-
 function channelLabel(channel: PlanningCalendarItem["channel"]): string {
   if (!channel) return "communication";
   return CHANNEL_LABELS[channel] ?? channel;
@@ -84,29 +66,6 @@ function channelLabel(channel: PlanningCalendarItem["channel"]): string {
 
 function stepHref(eventId: string): string {
   return `/events/${eventId}`;
-}
-
-function strategyPriority(strategy: CommunicationStrategy): number {
-  switch (strategy) {
-    case "full_campaign":
-      return 0;
-    case "reminder_only":
-      return 1;
-    case "custom":
-      return 2;
-    default:
-      return 3;
-  }
-}
-
-function compareCampaignEvents(left: Event, right: Event): number {
-  const byStrategy =
-    strategyPriority(left.communicationStrategy) -
-    strategyPriority(right.communicationStrategy);
-  if (byStrategy !== 0) {
-    return byStrategy;
-  }
-  return left.date.localeCompare(right.date);
 }
 
 function buildEventStrategyById(
@@ -131,13 +90,15 @@ function filterCampaignPlanningItems(
   );
 }
 
-function pickPrimaryCampaignEvent(events: Event[], today: string): Event | null {
+/** Soonest upcoming event by date — Up Next is chronological, not strategy-ranked. */
+function pickNextUpcomingEvent(events: Event[], today: string): Event | null {
   const candidates = events
-    .filter(
-      (event) =>
-        isCampaignPageStrategy(event.communicationStrategy) && event.date >= today,
-    )
-    .sort(compareCampaignEvents);
+    .filter((event) => event.date >= today)
+    .sort((left, right) => {
+      const byDate = left.date.localeCompare(right.date);
+      if (byDate !== 0) return byDate;
+      return left.title.localeCompare(right.title);
+    });
 
   return candidates[0] ?? null;
 }
@@ -214,12 +175,7 @@ function toActionItem(
 }
 
 export function buildWhatsNext(input: BuildTodayDataInput): TodayWhatsNext {
-  const { planningItems, events, today, intelligenceByEventId } = input;
-  const strategyByEventId = buildEventStrategyById(events, planningItems);
-  const campaignPlanningItems = filterCampaignPlanningItems(
-    planningItems,
-    strategyByEventId,
-  );
+  const { events, today, intelligenceByEventId } = input;
 
   const enrichWhatsNext = (next: TodayWhatsNext): TodayWhatsNext => {
     if (!next.eventId || !intelligenceByEventId) {
@@ -237,67 +193,14 @@ export function buildWhatsNext(input: BuildTodayDataInput): TodayWhatsNext {
     };
   };
 
-  const primaryEvent = pickPrimaryCampaignEvent(events, today);
-  if (primaryEvent && intelligenceByEventId) {
-    const intelligence = intelligenceByEventId.get(primaryEvent.id);
-    if (intelligence && intelligence.readinessLabel !== "calendar_only") {
-      return enrichWhatsNext(whatsNextFromIntelligence(primaryEvent, intelligence));
-    }
-  }
-
-  const overdue = overdueSteps(campaignPlanningItems, today);
-  if (overdue[0]) {
-    const item = overdue[0];
-    return enrichWhatsNext({
-      kind: "step",
-      title: buildStepTitle(item),
-      subtitle: item.eventTitle,
-      href: stepHref(item.eventId),
-      ctaLabel: stepCta(item),
-      eventId: item.eventId,
-    });
-  }
-
-  const todaySteps = dueTodaySteps(campaignPlanningItems, today);
-  if (todaySteps[0]) {
-    const item = todaySteps[0];
-    return enrichWhatsNext({
-      kind: "step",
-      title: buildStepTitle(item),
-      subtitle: "Due today",
-      href: stepHref(item.eventId),
-      ctaLabel: stepCta(item),
-      eventId: item.eventId,
-    });
-  }
-
-  const nextStep = upcomingSteps(campaignPlanningItems, today)[0];
-  if (nextStep) {
-    return enrichWhatsNext({
-      kind: "step",
-      title: buildStepTitle(nextStep),
-      subtitle: nextStep.eventTitle,
-      href: stepHref(nextStep.eventId),
-      ctaLabel: stepCta(nextStep),
-      eventId: nextStep.eventId,
-    });
-  }
-
-  if (primaryEvent) {
-    return enrichWhatsNext({
-      kind: "event",
-      title: primaryEvent.title,
-      subtitle: primaryEvent.date,
-      href: stepHref(primaryEvent.id),
-      ctaLabel: "Open event",
-      eventId: primaryEvent.id,
-    });
-  }
-
-  const nextEvent = upcomingEvents(events, today).find((event) =>
-    isCampaignPageStrategy(event.communicationStrategy),
-  );
+  // Up Next = chronologically next event. Action steps live in Waiting on me.
+  const nextEvent = pickNextUpcomingEvent(events, today);
   if (nextEvent) {
+    const intelligence = intelligenceByEventId?.get(nextEvent.id);
+    if (intelligence && intelligence.readinessLabel !== "calendar_only") {
+      return enrichWhatsNext(whatsNextFromIntelligence(nextEvent, intelligence));
+    }
+
     return enrichWhatsNext({
       kind: "event",
       title: nextEvent.title,
