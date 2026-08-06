@@ -7,10 +7,12 @@ import { isFirstCampaignMilestone } from "./first-milestone.ts";
 import {
   CAMPAIGN_BUILDER_ANTI_CLICHE_VISUAL_RULES,
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
+  CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
   CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
   CAMPAIGN_BUILDER_LOGO_RULES,
   CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
   CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
+  CAMPAIGN_BUILDER_STYLE_LOCK_RULES,
 } from "./prompt-guardrails.ts";
 import type {
   ArtworkView,
@@ -38,6 +40,8 @@ export function buildCampaignBuilderArtworkPrompt(input: {
   storyFromFeed: boolean;
   styleStrength?: number;
   hasAttachedLogo?: boolean;
+  /** Edit Post "Keep style locked" — preserve previous art except explicit changes. */
+  styleLocked?: boolean;
 }): string {
   const formatHint =
     input.view === "story"
@@ -127,8 +131,13 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     CAMPAIGN_BUILDER_LOGO_RULES,
     CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
     CAMPAIGN_BUILDER_ANTI_CLICHE_VISUAL_RULES,
+    CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
     "Only include event name and date on the graphic when it fits the design — do not add logistics you were not given.",
   );
+
+  if (input.styleLocked) {
+    lines.push("", CAMPAIGN_BUILDER_STYLE_LOCK_RULES);
+  }
 
   if (input.brandGuidance) {
     lines.push("", "Brand kit (colors, fonts, voice — not literal copy to paste):", input.brandGuidance);
@@ -166,3 +175,4 @@ export function buildCampaignBuilderArtworkPrompt(input: {
 
   return lines.join("\n");
 }
+

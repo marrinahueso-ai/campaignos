@@ -122,6 +122,8 @@ export function defaultFooter(): HomepageFooterConfig {
       "Whether you have 30 minutes, a few hours, or want to lead a project, there is a place for everyone to help make this year memorable.",
     ctaButtonLabel: "Find a Way to Help",
     ctaButtonUrl: "#",
+    ctaButton2Label: "",
+    ctaButton2Url: "#",
     colors: defaultFooterColors(),
   };
 }
@@ -196,12 +198,97 @@ export function cardFromEvent(event: HomepageComposerEvent): HomepageCard {
   };
 }
 
+function normalizeHeaderChrome(
+  raw: unknown,
+  base: HomepageHeaderConfig,
+): Omit<HomepageHeaderConfig, "announcements"> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const parsed = raw as Partial<HomepageHeaderConfig>;
+  return {
+    title: typeof parsed.title === "string" ? parsed.title : base.title,
+    message: typeof parsed.message === "string" ? parsed.message : base.message,
+    buttonCount:
+      parsed.buttonCount === 1 || parsed.buttonCount === 2
+        ? parsed.buttonCount
+        : String(parsed.button2Label ?? "").trim()
+          ? 2
+          : 1,
+    button1Label:
+      typeof parsed.button1Label === "string"
+        ? parsed.button1Label
+        : base.button1Label,
+    button1Url:
+      typeof parsed.button1Url === "string"
+        ? parsed.button1Url
+        : base.button1Url,
+    button2Label:
+      typeof parsed.button2Label === "string"
+        ? parsed.button2Label
+        : base.button2Label,
+    button2Url:
+      typeof parsed.button2Url === "string"
+        ? parsed.button2Url
+        : base.button2Url,
+    colors: { ...base.colors, ...parsed.colors },
+  };
+}
+
+function normalizeFooterConfig(
+  raw: unknown,
+  base: HomepageFooterConfig,
+): HomepageFooterConfig | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const parsed = raw as Partial<HomepageFooterConfig>;
+  return {
+    ctaTitle:
+      typeof parsed.ctaTitle === "string" ? parsed.ctaTitle : base.ctaTitle,
+    ctaBody: typeof parsed.ctaBody === "string" ? parsed.ctaBody : base.ctaBody,
+    ctaButtonLabel:
+      typeof parsed.ctaButtonLabel === "string"
+        ? parsed.ctaButtonLabel
+        : base.ctaButtonLabel,
+    ctaButtonUrl:
+      typeof parsed.ctaButtonUrl === "string"
+        ? parsed.ctaButtonUrl
+        : base.ctaButtonUrl,
+    ctaButton2Label:
+      typeof parsed.ctaButton2Label === "string"
+        ? parsed.ctaButton2Label
+        : base.ctaButton2Label,
+    ctaButton2Url:
+      typeof parsed.ctaButton2Url === "string"
+        ? parsed.ctaButton2Url
+        : base.ctaButton2Url,
+    colors: { ...base.colors, ...parsed.colors },
+  };
+}
+
+function normalizeResourcesList(
+  raw: unknown,
+): HomepageResourceLink[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  return raw.map((r, i) => {
+    const row =
+      r && typeof r === "object" ? (r as Partial<HomepageResourceLink>) : {};
+    const cleaned = normalizeHref(row.url || "");
+    return {
+      id: row.id || `res-${i}`,
+      emoji: row.emoji || "🔗",
+      label: row.label || "Link",
+      url: cleaned === "#" ? "" : cleaned,
+    };
+  });
+}
+
 function normalizeMonthSnapshot(
   raw: unknown,
+  base?: HomepageComposerState,
 ): HomepageMonthCardsSnapshot | null {
   if (!raw || typeof raw !== "object") return null;
   const parsed = raw as Partial<HomepageMonthCardsSnapshot>;
   if (!Array.isArray(parsed.cards)) return null;
+  const headerBase = base?.header ?? defaultHeader();
+  const footerBase = base?.footer ?? defaultFooter();
   return {
     selectedEventIds: Array.isArray(parsed.selectedEventIds)
       ? parsed.selectedEventIds.filter((id): id is string => typeof id === "string")
@@ -217,6 +304,13 @@ function normalizeMonthSnapshot(
           ),
         )
       : [],
+    header: normalizeHeaderChrome(parsed.header, headerBase),
+    footer: normalizeFooterConfig(parsed.footer, footerBase),
+    cardsSectionTitle:
+      typeof parsed.cardsSectionTitle === "string"
+        ? parsed.cardsSectionTitle
+        : undefined,
+    resources: normalizeResourcesList(parsed.resources),
   };
 }
 
@@ -257,6 +351,7 @@ function normalizeCard(card: HomepageCard, i: number): HomepageCard {
 
 function normalizeMonthMap(
   raw: unknown,
+  base?: HomepageComposerState,
 ): Record<string, HomepageMonthCardsSnapshot> {
   if (!raw || typeof raw !== "object") return {};
   const next: Record<string, HomepageMonthCardsSnapshot> = {};
@@ -264,7 +359,7 @@ function normalizeMonthMap(
     raw as Record<string, unknown>,
   )) {
     if (!/^\d{4}-\d{2}$/.test(key)) continue;
-    const snapshot = normalizeMonthSnapshot(value);
+    const snapshot = normalizeMonthSnapshot(value, base);
     if (snapshot) next[key] = snapshot;
   }
   return next;
@@ -397,6 +492,14 @@ export function normalizeComposerState(
       ctaBody: parsed.footer.ctaBody ?? base.footer.ctaBody,
       ctaButtonLabel: parsed.footer.ctaButtonLabel ?? base.footer.ctaButtonLabel,
       ctaButtonUrl: parsed.footer.ctaButtonUrl ?? base.footer.ctaButtonUrl,
+      ctaButton2Label:
+        typeof parsed.footer.ctaButton2Label === "string"
+          ? parsed.footer.ctaButton2Label
+          : base.footer.ctaButton2Label,
+      ctaButton2Url:
+        typeof parsed.footer.ctaButton2Url === "string"
+          ? parsed.footer.ctaButton2Url
+          : base.footer.ctaButton2Url,
       colors: { ...base.footer.colors, ...parsed.footer.colors },
     },
     resources: (Array.isArray(parsed.resources)
@@ -421,9 +524,12 @@ export function normalizeComposerState(
       /^\d{4}-\d{2}$/.test(parsed.workingMonth)
         ? parsed.workingMonth
         : currentMonthYyyyMm(),
-    monthDrafts: normalizeMonthMap(parsed.monthDrafts),
-    monthSaved: normalizeMonthMap(parsed.monthSaved),
+    monthDrafts: {},
+    monthSaved: {},
   };
+
+  normalized.monthDrafts = normalizeMonthMap(parsed.monthDrafts, normalized);
+  normalized.monthSaved = normalizeMonthMap(parsed.monthSaved, normalized);
 
   // Legacy drafts (no month maps): treat current cards as this month’s draft + save.
   const hasMonthData =
@@ -465,13 +571,30 @@ export function normalizeComposerState(
     }
   }
 
-  // Active header announcements always mirror the working month snapshot.
+  // Active month fields always mirror the working month snapshot.
   const activeMonth = normalized.monthDrafts[normalized.workingMonth];
   if (activeMonth) {
+    const hasChrome = Boolean(
+      activeMonth.header ||
+        activeMonth.footer ||
+        activeMonth.cardsSectionTitle != null ||
+        activeMonth.resources,
+    );
     normalized.header = {
-      ...normalized.header,
+      ...(hasChrome && activeMonth.header
+        ? { ...normalized.header, ...activeMonth.header }
+        : normalized.header),
       announcements: activeMonth.announcements.map((row) => ({ ...row })),
     };
+    if (hasChrome && activeMonth.footer) {
+      normalized.footer = { ...activeMonth.footer };
+    }
+    if (hasChrome && typeof activeMonth.cardsSectionTitle === "string") {
+      normalized.cardsSectionTitle = activeMonth.cardsSectionTitle;
+    }
+    if (hasChrome && activeMonth.resources) {
+      normalized.resources = activeMonth.resources.map((row) => ({ ...row }));
+    }
   }
 
   return normalized;

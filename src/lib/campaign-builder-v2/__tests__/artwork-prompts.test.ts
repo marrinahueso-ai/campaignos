@@ -200,6 +200,26 @@ describe("buildCampaignBuilderArtworkPrompt", () => {
     assert.match(tight, /Stay very close to the reference style/);
   });
 
+  it("discourages table and calendar-grid layouts on social artwork", () => {
+    const prompt = buildPrompt();
+    assert.match(prompt, /spreadsheet|data table/i);
+    assert.match(prompt, /calendar grids/i);
+  });
+
+  it("includes style lock rules when styleLocked is on", () => {
+    const prompt = buildCampaignBuilderArtworkPrompt({
+      inspiration: baseInspiration,
+      milestone: baseMilestone,
+      view: "feed",
+      brandGuidance: null,
+      hasInspirationImages: false,
+      storyFromFeed: false,
+      styleLocked: true,
+    });
+    assert.match(prompt, /Style lock is ON/);
+    assert.match(prompt, /Apply ONLY the user's explicit change list/);
+  });
+
   it("includes brand kit guidance block when provided", () => {
     const prompt = buildCampaignBuilderArtworkPrompt({
       inspiration: baseInspiration,

@@ -100,7 +100,11 @@ describe("event detail ease UI contracts", () => {
     assert.match(roster, /Overall Health/);
     assert.match(roster, /Filled Slots/);
     assert.match(roster, /Search by name or role/);
-    assert.match(roster, /Role breakdown/);
+    assert.doesNotMatch(roster, /Role breakdown/);
+    assert.match(roster, /title="Open signup"/);
+    assert.match(roster, /sortParticipants/);
+    assert.match(roster, /sortRosterRoles/);
+    assert.match(roster, /aria-sort/);
     assert.match(roster, /GroupedRoleLine/);
     assert.match(roster, /aria-expanded/);
     assert.match(roster, /Assign Open Slot/);

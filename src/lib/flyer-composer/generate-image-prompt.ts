@@ -1,3 +1,7 @@
+import {
+  FLYER_QR_MARGIN_FRACTION,
+  FLYER_QR_SLOT_FRACTION,
+} from "@/lib/flyer-composer/qr-layout";
 import type { FlyerComposerGenerateInput } from "@/lib/flyer-composer/types";
 
 /** Structured facts that belong on the flyer (not freeform creative direction). */
@@ -159,13 +163,15 @@ export function buildFlyerComposerImagePrompt(
 
   const qrUrl = input.fields.qrUrl?.trim() || input.fields.ctaUrl?.trim();
   if (qrUrl && /^https?:\/\//i.test(qrUrl)) {
+    const slotPct = Math.round(FLYER_QR_SLOT_FRACTION * 100);
+    const marginPct = Math.round(FLYER_QR_MARGIN_FRACTION * 100);
     lines.push(
       "",
       "QR CODE SLOT (critical — the app stamps a real scannable QR after generation):",
-      "- Leave ONE empty solid white square in the footer / CTA bar, bottom-right — about 10–12% of flyer width (postage-stamp size for the footer, not a large empty panel).",
-      "- The white square should be only slightly larger than a QR code — do not leave a huge blank box.",
+      `- Leave ONE empty solid white SQUARE in the lower-right corner — exactly ~${slotPct}% of the shorter flyer side on both width and height (always square, never a rectangle).`,
+      `- Place it with ~${marginPct}% margin from the right edge and ~${marginPct}% from the bottom edge — same corner and size every time.`,
       "- Do NOT draw QR modules, fake barcodes, pixel grids, finder patterns, or any stand-in code.",
-      "- Do NOT put the URL text inside that white square — caption text may sit beside it.",
+      "- Do NOT put the URL text inside that white square — caption text may sit beside it to the left.",
       "- Keep that white square clear of icons, gradients, and texture so a QR overlay can fill it.",
     );
     const caption = input.fields.qrCaption?.trim();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Copy, Info, Sparkles } from "lucide-react";
+import { Copy, Info, Lock, Sparkles, Unlock } from "lucide-react";
 import { CampaignBuilderModal } from "@/components/campaign-builder-v2/CampaignBuilderModal";
 import { WarmBreathFrame } from "@/components/motion/WarmBreathFrame";
 import { Button } from "@/components/ui/Button";
@@ -14,6 +14,10 @@ import {
 import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
 import { isPlaceholderArtworkUrl } from "@/lib/campaign-builder-v2/platform-utils";
 import { rejectArtworkView } from "@/lib/campaign-builder-v2/reject-artwork";
+import {
+  readStyleLocked,
+  writeStyleLocked,
+} from "@/lib/campaign-builder-v2/style-lock";
 import { cn } from "@/lib/utils/cn";
 import type {
   ArtworkView,
@@ -100,7 +104,18 @@ export function EditMilestoneModal({
   const [captionInstructions, setCaptionInstructions] = useState(
     captionNotes ?? "",
   );
-  const [styleStrength, setStyleStrength] = useState(50);
+  const initialHasArtwork = Boolean(
+    (previewContent.artwork.feedUrl &&
+      !isPlaceholderArtworkUrl(previewContent.artwork.feedUrl)) ||
+      (previewContent.artwork.storyUrl &&
+        !isPlaceholderArtworkUrl(previewContent.artwork.storyUrl)),
+  );
+  const [styleLocked, setStyleLocked] = useState(() =>
+    readStyleLocked(eventId, milestoneId, initialHasArtwork),
+  );
+  const [styleStrength, setStyleStrength] = useState(() =>
+    readStyleLocked(eventId, milestoneId, initialHasArtwork) ? 90 : 50,
+  );
   const [tone, setTone] = useState(voiceTone);
   const [previewArtwork, setPreviewArtwork] = useState<MilestoneArtwork>(
     previewContent.artwork,
@@ -136,6 +151,14 @@ export function EditMilestoneModal({
     ? "Regenerate with AI"
     : "Generate with AI";
   const busy = isGenerating || isResending;
+
+  function setStyleLockedPreference(next: boolean) {
+    setStyleLocked(next);
+    writeStyleLocked(eventId, milestoneId, next);
+    if (next) {
+      setStyleStrength((prev) => Math.max(prev, 90));
+    }
+  }
 
   function copyArtworkNotesToCaptions() {
     const text = artworkInstructions.trim();
@@ -175,6 +198,7 @@ export function EditMilestoneModal({
           milestoneId,
           instructions: artworkInstructions,
           styleStrength,
+          styleLocked: styleLocked && hasExistingArtwork,
           brandKitId,
           useBrandKit: brandKitId !== null,
           inspiration,
@@ -318,7 +342,13 @@ export function EditMilestoneModal({
                   min={0}
                   max={100}
                   value={styleStrength}
-                  onChange={(e) => setStyleStrength(Number(e.target.value))}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    setStyleStrength(next);
+                    if (styleLocked && next < 90) {
+                      setStyleLockedPreference(false);
+                    }
+                  }}
                   className="w-full accent-[var(--color-cos-success,#6b8171)]"
                   aria-label="Style strength"
                   disabled={busy}
@@ -500,6 +530,9 @@ export function EditMilestoneModal({
               Both Artwork notes and Captions apply when you{" "}
               {hasExistingContent ? "regenerate" : "generate"}. Leave a side
               blank if you don&apos;t want it to change.
+              {hasExistingArtwork && styleLocked
+                ? " Style lock keeps the current image and only applies what you type."
+                : null}
             </p>
           </div>
 
@@ -538,12 +571,71 @@ export function EditMilestoneModal({
 
           {tab === "artwork" ? (
             <div role="tabpanel" className="space-y-3">
+              {hasExistingArtwork ? (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={styleLocked}
+                    disabled={busy}
+                    onClick={() => setStyleLockedPreference(!styleLocked)}
+                    className={cn(
+                      "inline-flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-colors",
+                      styleLocked
+                        ? "border-[rgba(47,74,60,0.45)] bg-[rgba(107,129,113,0.14)] text-[#2f4a3c]"
+                        : "border-cos-border bg-white text-cos-text hover:bg-cos-bg",
+                    )}
+                  >
+                    <span className="flex min-w-0 items-start gap-2.5">
+                      {styleLocked ? (
+                        <Lock
+                          className="mt-0.5 h-4 w-4 shrink-0"
+                          strokeWidth={1.75}
+                        />
+                      ) : (
+                        <Unlock
+                          className="mt-0.5 h-4 w-4 shrink-0 text-cos-muted"
+                          strokeWidth={1.75}
+                        />
+                      )}
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold">
+                          Keep style locked
+                        </span>
+                        <span className="mt-0.5 block text-xs leading-snug text-cos-muted">
+                          {styleLocked
+                            ? "Only apply your next instruction — leave everything else as-is."
+                            : "AI may restyle more freely when you regenerate."}
+                        </span>
+                      </span>
+                    </span>
+                    <span
+                      className={cn(
+                        "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                        styleLocked ? "bg-[#2f4a3c]" : "bg-cos-border",
+                      )}
+                      aria-hidden="true"
+                    >
+                      <span
+                        className={cn(
+                          "absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
+                          styleLocked && "translate-x-5",
+                        )}
+                      />
+                    </span>
+                  </button>
+                </div>
+              ) : null}
               <Textarea
                 label="What should change?"
                 value={artworkInstructions}
                 onChange={(e) => setArtworkInstructions(e.target.value)}
                 rows={3}
-                placeholder="e.g. More green accents, add playful community elements…"
+                placeholder={
+                  styleLocked && hasExistingArtwork
+                    ? "e.g. Make the headline bigger — keep everything else the same…"
+                    : "e.g. More green accents, add playful community elements…"
+                }
                 disabled={busy}
               />
               <div className="flex justify-end">

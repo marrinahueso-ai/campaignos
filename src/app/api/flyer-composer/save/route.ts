@@ -72,6 +72,7 @@ export async function POST(request: Request) {
     eventId,
     imageUrl,
     headline: readString(raw.headline).trim() || null,
+    title: readString(raw.title).trim() || null,
     versionId: readString(raw.versionId).trim() || null,
   });
 
@@ -83,6 +84,7 @@ export async function POST(request: Request) {
       fileId: result.fileId,
       fileName: result.fileName,
       filesHref: result.filesHref,
+      imageUrl: result.success ? imageUrl : null,
     },
     { status: result.success ? 200 : 400 },
   );

@@ -28,6 +28,10 @@ import {
 import { logGenerateAllContentDebug } from "@/lib/campaign-builder-v2/debug";
 import { syncCaptionsToPlatforms } from "@/lib/campaign-builder-v2/caption-utils";
 import {
+  applyStyleLockToInstructions,
+  resolveStyleStrengthForLock,
+} from "@/lib/campaign-builder-v2/style-lock";
+import {
   captionPlatformsForFormats,
   generationStatusAfterContent,
 } from "@/lib/campaign-builder-v2/milestone-status";
@@ -220,6 +224,7 @@ async function generateArtworkForMilestone(input: {
   forceRegenerate?: boolean;
   extraInstructions?: string | null;
   styleStrength?: number;
+  styleLocked?: boolean;
   userId?: string | null;
   isRegeneration?: boolean;
 }): Promise<{
@@ -231,6 +236,15 @@ async function generateArtworkForMilestone(input: {
   const artwork: MilestoneArtwork = {
     ...(input.existingArtwork ?? emptyMilestoneArtwork()),
   };
+  const styleLocked = Boolean(input.styleLocked);
+  const styleStrength = resolveStyleStrengthForLock(
+    input.styleStrength ?? 50,
+    styleLocked,
+  );
+  const lockedInstructions = applyStyleLockToInstructions(
+    input.extraInstructions ?? "",
+    styleLocked,
+  );
 
   for (const view of artworkViews) {
     const artworkKey = artworkKeyForView(view);
@@ -250,7 +264,7 @@ async function generateArtworkForMilestone(input: {
       view === "feed" &&
       Boolean(existingUrl?.trim()) &&
       !isPlaceholderArtworkUrl(existingUrl) &&
-      Boolean(input.extraInstructions?.trim());
+      Boolean(lockedInstructions);
 
     const artworkResult = await generateCampaignBuilderArtwork({
       eventId: input.eventId,
@@ -260,9 +274,10 @@ async function generateArtworkForMilestone(input: {
       inspirationImageUrls: input.inspirationImageUrls,
       brandKitId: input.brandKitId,
       useBrandKit: input.useBrandKit,
-      styleStrength: input.styleStrength,
-      extraInstructions: isAdjust ? null : input.extraInstructions?.trim() || null,
-      adjustmentComments: isAdjust ? input.extraInstructions?.trim() : null,
+      styleStrength,
+      styleLocked,
+      extraInstructions: isAdjust ? null : lockedInstructions || null,
+      adjustmentComments: isAdjust ? lockedInstructions : null,
       previousImageUrl: isAdjust ? existingUrl : storyFromFeed ? feedUrl : null,
       storyFromFeed,
       versionCount: 1,
@@ -424,6 +439,8 @@ export interface RegenerateMilestoneArtworkInput {
   previewContent: MilestonePreviewContent;
   instructions: string;
   styleStrength: number;
+  /** Keep previous art as-is except explicit instruction changes. */
+  styleLocked?: boolean;
   brandKitId: string | null;
   useBrandKit: boolean;
   inspirationImages?: InspirationImagePayload[];
@@ -459,6 +476,7 @@ export async function regenerateMilestoneArtworkAction(
     forceRegenerate: true,
     extraInstructions: input.instructions.trim() || null,
     styleStrength: input.styleStrength,
+    styleLocked: Boolean(input.styleLocked),
     userId: authUser?.id ?? null,
     isRegeneration: true,
   });

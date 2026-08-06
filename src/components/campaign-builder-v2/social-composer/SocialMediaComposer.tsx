@@ -44,6 +44,10 @@ import {
   PLATFORM_FORMAT_OPTIONS,
   isPlaceholderArtworkUrl,
 } from "@/lib/campaign-builder-v2/platform-utils";
+import {
+  buildArtworkDownloadFilename,
+  downloadArtworkImage,
+} from "@/lib/artwork-v2/download";
 import type { SetupLogoOption } from "@/lib/artwork-v2/setup-logos";
 import type {
   CampaignBuilderMilestone,
@@ -1218,13 +1222,20 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     });
   }
 
-  function handleDownload(imageUrl: string | null, label: string) {
+  async function handleDownload(imageUrl: string | null, label: string) {
     if (!imageUrl) {
       onToast("No artwork to download yet");
       return;
     }
-    window.open(imageUrl, "_blank", "noopener,noreferrer");
-    onToast(`Opening ${label} artwork…`);
+    try {
+      const filename = buildArtworkDownloadFilename(
+        `${selectedMilestone?.name ?? "artwork"} ${label}`,
+      );
+      await downloadArtworkImage(imageUrl, filename);
+      onToast(`Downloaded ${label} artwork`);
+    } catch {
+      onToast("Download failed — try again");
+    }
   }
 
   function toggleFormat(format: PlatformFormat) {
@@ -1543,6 +1554,24 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             <div className="title">{selectedMilestone?.name ?? "Post"}</div>
                           </>
                         ) : null}
+                        {feedUrl ? (
+                          <button
+                            type="button"
+                            className="art-dl"
+                            title="Download artwork"
+                            aria-label="Download feed artwork"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void handleDownload(feedUrl, "feed");
+                            }}
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M12 3v12" />
+                              <path d="m7 11 5 5 5-5" />
+                              <path d="M5 21h14" />
+                            </svg>
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           className="art-edit"
@@ -1605,6 +1634,24 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             <div className="st">{selectedMilestone?.name ?? "Post"}</div>
                             <div className="sub">{formatLongDate(selectedMilestone?.suggestedDate)}</div>
                           </>
+                        ) : null}
+                        {storyUrl ? (
+                          <button
+                            type="button"
+                            className="art-dl"
+                            title="Download artwork"
+                            aria-label="Download story artwork"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void handleDownload(storyUrl, "story");
+                            }}
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M12 3v12" />
+                              <path d="m7 11 5 5 5-5" />
+                              <path d="M5 21h14" />
+                            </svg>
+                          </button>
                         ) : null}
                         <button
                           type="button"
@@ -1895,7 +1942,12 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
               <button
                 type="button"
                 className="btn btn-sm btn-primary"
-                onClick={() => handleDownload(lightbox.imageUrl, "artwork")}
+                onClick={() =>
+                  void handleDownload(
+                    lightbox.imageUrl,
+                    lightbox.view === "story" ? "story" : "feed",
+                  )
+                }
               >
                 Download
               </button>

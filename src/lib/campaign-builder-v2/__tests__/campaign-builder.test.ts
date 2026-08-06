@@ -18,9 +18,11 @@ import {
   stripStaleClearedArtwork,
 } from "../stale-seed-migration.ts";
 import {
-  CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
-  CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
+  CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
+  CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
+  CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
+  CAMPAIGN_BUILDER_STYLE_LOCK_RULES,
 } from "../prompt-guardrails.ts";
 import {
   ensureSharedCaptionsForPlatforms,
@@ -1052,6 +1054,25 @@ describe("prompt guardrails for artwork generation", () => {
     assert.match(
       CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
       /Do not use the school, PTO, organization, or campaign name as on-graphic text/,
+    );
+  });
+
+  it("discourages table layouts on social artwork", () => {
+    assert.match(
+      CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
+      /spreadsheet|data table/,
+    );
+    assert.match(
+      CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
+      /calendar grids/,
+    );
+  });
+
+  it("defines style lock preserve rules", () => {
+    assert.match(CAMPAIGN_BUILDER_STYLE_LOCK_RULES, /Style lock is ON/);
+    assert.match(
+      CAMPAIGN_BUILDER_STYLE_LOCK_RULES,
+      /Apply ONLY the user's explicit change list/,
     );
   });
 });

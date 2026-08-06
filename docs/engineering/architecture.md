@@ -5,7 +5,7 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel · Stripe  
-**Last updated:** August 6, 2026 — Edit Post sheet viewport fit  
+**Last updated:** August 6, 2026 — Edit Post viewport/style lock · Calendar Select all · Flyer QR/logo/fonts
 **Related:** [Feature list](../product/feature-list.md) · [Storage RLS](./storage-rls.md) · [Access control](./access-control.md) · [Billing & access](../ops/billing-and-access.md) · [Stripe integration](./stripe-integration.md) · [QA architecture overview](../qa/architecture-overview.md) · [Launch checklist](../qa/launch-checklist.md) · [Ask Ralli Assistant](./ask-ralli-assistant.md)
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
@@ -85,8 +85,9 @@ CampignOS/
 
 | Route | Role |
 |-------|------|
-| `/create-with-ai` | Chooser: Home Page · Social Media · Newsletter |
+| `/create-with-ai` | Chooser: Home Page · Social Media · Newsletter · Flyer |
 | `/create-with-ai/social` | Campaign Builder v2 (Creative Setup → Review & Approve) |
+| `/create-with-ai/flyer` | Flyer composer (static HTML embed); saves to event Files (`event_playbook_files` category `flyer`); list/load via `/api/flyer-composer/saved` |
 | `/homepage-composer` | Membership Toolkit / homepage HTML export |
 | `/newsletter-composer` | Scoop-style family email HTML export |
 
@@ -169,6 +170,7 @@ flowchart LR
 | Calendar intake | `calendar-import`, `google-calendar`, school-year subscribe feeds | `calendar_imports`, `organization_google_calendar_connections`, `school_years.calendar_subscribe_url` — dedupe: [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md) |
 | Events / year calendar | `events`, `communications-calendar`, `unified-calendar` UI | `events`, publication slots on calendar |
 | Create with AI — Social | `campaign-builder-v2`, `ai`, `ai-artwork`, `artwork-v2`, `meta-captions` | Creative assets in Storage; campaign/milestone state in DB |
+| Create with AI — Flyer | `flyer-composer` | Local drafts (org+event scoped); durable saves as `event_playbook_files` (category `flyer`) via `/api/flyer-composer/save` + list `/api/flyer-composer/saved` |
 | Create with AI — Homepage / Newsletter | `homepage-composer`, `newsletter-composer` | Drafts: localStorage + IndexedDB; artwork uploads (homepage may use service role — see storage-rls); AI blurbs metered (`homepage_composer_blurb`) |
 | Approvals & publish | `approvals-scheduling`, `meta-publishing` | Approval items + `meta_publication_slots` — native schedule + Calendar DnD: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md) |
 | Inbox / Insights | `inbox`, `insights`, `meta` | Synced Meta entities + analytics tables; Ease shells at `/insights` + event `?tab=insights` |
@@ -184,7 +186,7 @@ flowchart LR
 | Auth / tenancy | `auth`, `organizations`, `organization-workspace`, `access-templates`, `school-years`, `onboarding`, `developer-agreements` |
 | Calendar | `calendar-import`, `google-calendar`, `communications-calendar`, `posting-analytics` |
 | Events / campaigns | `events`, `events-phase3`, `event-workspace`, `campaign-builder-v2`, `playbooks` |
-| Creative / composers | `ai`, `ai-artwork`, `artwork-v2`, `creative-assets`, `canva`, `homepage-composer`, `newsletter-composer` |
+| Creative / composers | `ai`, `ai-artwork`, `artwork-v2`, `creative-assets`, `canva`, `flyer-composer`, `homepage-composer`, `newsletter-composer` |
 | Meta | `meta-publishing`, `meta-captions`, `inbox`, `insights`, `meta` |
 | Work management | `tasks-v2`, `approvals-scheduling`, `vendors`, `campaign-files`, `event-volunteers` |
 | Billing / credits | `billing` |

@@ -17,6 +17,7 @@ import {
   applyMetaSlotOutcomesToApprovalItem,
   loadMetaSlotOutcomesForEvents,
 } from "@/lib/approvals-scheduling/publish-outcome-sync";
+import { computeApprovalsEasePulseCounts } from "@/lib/approvals-scheduling/approvals-ease-pulse";
 import { summarizeCounts } from "@/lib/approvals-scheduling/status";
 import type {
   ApprovalSchedulingItemRow,
@@ -43,13 +44,23 @@ import {
 } from "@/lib/events-phase3/tab-timing";
 import { createClient } from "@/lib/supabase/server";
 import {
+  APPROVALS_HUB_DEFERRED_WORKFLOW_STATUSES,
+  APPROVALS_HUB_INITIAL_WORKFLOW_STATUSES,
   SCHEDULING_EVENT_FETCH_CAP,
   SCHEDULING_ORG_FETCH_CAP,
+  SCHEDULING_STATUS_INDEX_SELECT,
 } from "@/lib/approvals-scheduling/constants";
+import {
+  campaignsFromStatusIndex,
+  computePulseCountsFromStatusIndex,
+  summarizeStatusIndex,
+  type SchedulingStatusIndexRow,
+} from "@/lib/approvals-scheduling/hub-initial-payload";
 import {
   SCHEDULING_LIST_SELECT,
   SCHEDULING_PREVIEW_SELECT,
 } from "@/lib/approvals-scheduling/selects";
+import type { UnifiedWorkflowStatus } from "@/lib/approvals-scheduling/types";
 import { getTodayDateString } from "@/lib/utils/dates";
 import { cache } from "react";
 import type { ApprovalQueueItem } from "@/types/event-workspace";
@@ -151,38 +162,70 @@ const resolveScopedSchedulingEventIds = cache(
 /**
  * Org-scoped scheduling rows for Approvals hub list (lean columns).
  * Caption bodies load on demand via fetchSchedulingItemPreviewFields.
+ * Optional workflow_status filter supports hub SSR deferral of terminal rows.
  */
-const fetchCampaignBuilderSchedulingItems = cache(
-  async function fetchCampaignBuilderSchedulingItems(): Promise<
-    ApprovalSchedulingItemRow[]
-  > {
-    const eventIds = await resolveScopedSchedulingEventIds();
-    if (eventIds.length === 0) {
-      return [];
-    }
+async function fetchCampaignBuilderSchedulingItems(
+  workflowStatuses?: readonly UnifiedWorkflowStatus[],
+): Promise<ApprovalSchedulingItemRow[]> {
+  const eventIds = await resolveScopedSchedulingEventIds();
+  if (eventIds.length === 0) {
+    return [];
+  }
 
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("approval_scheduling_items")
-      .select(SCHEDULING_LIST_SELECT)
-      .in("event_id", eventIds)
-      .order("requested_at", { ascending: false })
-      .limit(SCHEDULING_ORG_FETCH_CAP);
+  const supabase = await createClient();
+  let query = supabase
+    .from("approval_scheduling_items")
+    .select(SCHEDULING_LIST_SELECT)
+    .in("event_id", eventIds)
+    .order("requested_at", { ascending: false })
+    .limit(SCHEDULING_ORG_FETCH_CAP);
 
-    if (error?.code === "42P01") {
-      return [];
-    }
+  if (workflowStatuses && workflowStatuses.length > 0) {
+    query = query.in("workflow_status", [...workflowStatuses]);
+  }
 
-    if (error) {
-      console.error("Failed to fetch approval scheduling items:", error.message);
-      return [];
-    }
+  const { data, error } = await query;
 
-    return ((data ?? []) as unknown as Record<string, unknown>[]).map(
-      normalizeSchedulingListRow,
-    );
-  },
-);
+  if (error?.code === "42P01") {
+    return [];
+  }
+
+  if (error) {
+    console.error("Failed to fetch approval scheduling items:", error.message);
+    return [];
+  }
+
+  return ((data ?? []) as unknown as Record<string, unknown>[]).map(
+    normalizeSchedulingListRow,
+  );
+}
+
+/** Thin index of all statuses — pulse/summary/campaigns without full list DTOs. */
+async function fetchSchedulingStatusIndex(): Promise<SchedulingStatusIndexRow[]> {
+  const eventIds = await resolveScopedSchedulingEventIds();
+  if (eventIds.length === 0) {
+    return [];
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("approval_scheduling_items")
+    .select(SCHEDULING_STATUS_INDEX_SELECT)
+    .in("event_id", eventIds)
+    .order("requested_at", { ascending: false })
+    .limit(SCHEDULING_ORG_FETCH_CAP);
+
+  if (error?.code === "42P01") {
+    return [];
+  }
+
+  if (error) {
+    console.error("Failed to fetch approval scheduling status index:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as unknown as SchedulingStatusIndexRow[];
+}
 
 export async function fetchSchedulingItemPreviewFields(
   schedulingItemId: string,
@@ -353,41 +396,13 @@ function isSubmittedByActor(
   return row.requested_by_user_id === actor.organizationUserId;
 }
 
-async function buildUnifiedApprovalsPageData(options?: {
-  /** Skip live milestone names + Meta slot overlay (Dashboard widgets). */
-  leanEnrich?: boolean;
-}): Promise<UnifiedApprovalsPageData> {
-  const leanEnrich = options?.leanEnrich === true;
-  const today = getTodayDateString();
-  // Critical path: classic queue + CB2 scheduling rows only.
-  // Full Calendar / Meta publish bundles are too heavy for the ≤2s hub budget;
-  // scheduled/posted CB2 rows already cover the publishing tabs.
-  const [role, membership, queue, schedulingRows, canViewAll] =
-    await Promise.all([
-      getCurrentCampaignRole(),
-      getActiveMembership(),
-      getApprovalQueueOverviewForCurrentUser(undefined, {
-        enrichPreviews: false,
-      }),
-      fetchCampaignBuilderSchedulingItems(),
-      hasPermission("approve_comms"),
-    ]);
-
-  const actor: ApprovalActor | null = membership
-    ? {
-        organizationUserId: membership.user.id,
-        organizationRoleId: membership.user.organizationRoleId,
-        email: membership.user.email,
-      }
-    : null;
-
-  const classicItems = [
-    ...queue.assignedToMe,
-    ...queue.allPending.filter((item) => !item.assignedToMe),
-    ...queue.changesRequested,
-    ...queue.recentlyApproved.slice(0, 25),
-  ].map((item) => mapClassicApprovalItem(item, today));
-
+async function mapSchedulingRowsToUnifiedItems(input: {
+  schedulingRows: ApprovalSchedulingItemRow[];
+  classicItems: UnifiedApprovalItem[];
+  actor: ApprovalActor | null;
+  leanEnrich: boolean;
+}): Promise<UnifiedApprovalItem[]> {
+  const { schedulingRows, classicItems, actor, leanEnrich } = input;
   const eventTitleById = new Map<string, string>();
   for (const item of classicItems) {
     eventTitleById.set(item.eventId, item.eventTitle);
@@ -405,8 +420,6 @@ async function buildUnifiedApprovalsPageData(options?: {
     ]),
   ];
 
-  // Assignees always; live names + Meta slots in the same wave on the hub.
-  // after() Meta schedule/email on approve is unchanged in actions.ts.
   const [assigneeLookups, liveNames, slotOutcomes] = await Promise.all([
     loadAssigneeLookups(schedulingRows),
     leanEnrich
@@ -434,41 +447,126 @@ async function buildUnifiedApprovalsPageData(options?: {
     );
   }
 
-  const deduped = dedupeUnifiedApprovalItems([
-    ...classicItems,
-    ...cb2Items,
-  ]);
-
+  const deduped = dedupeUnifiedApprovalItems([...classicItems, ...cb2Items]);
   const named = leanEnrich
     ? deduped
     : applyLiveMilestoneNames(deduped, liveNames);
 
-  const items = (
+  return (
     leanEnrich
       ? named
       : named.map((item) =>
           applyMetaSlotOutcomesToApprovalItem(item, slotOutcomes),
         )
   ).sort((left, right) => right.requestedAt.localeCompare(left.requestedAt));
+}
 
-  const counts = summarizeCounts(items);
+async function buildUnifiedApprovalsPageData(options?: {
+  /** Skip live milestone names + Meta slot overlay (Dashboard widgets). */
+  leanEnrich?: boolean;
+  /**
+   * Org Approvals hub: omit scheduled/posted/published detail rows from SSR.
+   * Pulse counts still include every status via a thin index.
+   */
+  deferTerminalDetailRows?: boolean;
+}): Promise<UnifiedApprovalsPageData> {
+  const leanEnrich = options?.leanEnrich === true;
+  const deferTerminalDetailRows = options?.deferTerminalDetailRows === true;
+  const today = getTodayDateString();
+
+  const detailStatuses = deferTerminalDetailRows
+    ? APPROVALS_HUB_INITIAL_WORKFLOW_STATUSES
+    : undefined;
+
+  const [role, membership, queue, schedulingRows, statusIndex, canViewAll] =
+    await Promise.all([
+      getCurrentCampaignRole(),
+      getActiveMembership(),
+      getApprovalQueueOverviewForCurrentUser(undefined, {
+        enrichPreviews: false,
+      }),
+      fetchCampaignBuilderSchedulingItems(detailStatuses),
+      deferTerminalDetailRows
+        ? fetchSchedulingStatusIndex()
+        : Promise.resolve([] as SchedulingStatusIndexRow[]),
+      hasPermission("approve_comms"),
+    ]);
+
+  const actor: ApprovalActor | null = membership
+    ? {
+        organizationUserId: membership.user.id,
+        organizationRoleId: membership.user.organizationRoleId,
+        email: membership.user.email,
+      }
+    : null;
+
+  const classicItems = [
+    ...queue.assignedToMe,
+    ...queue.allPending.filter((item) => !item.assignedToMe),
+    ...queue.changesRequested,
+    ...queue.recentlyApproved.slice(0, 25),
+  ].map((item) => mapClassicApprovalItem(item, today));
+
+  const items = await mapSchedulingRowsToUnifiedItems({
+    schedulingRows,
+    classicItems,
+    actor,
+    leanEnrich,
+  });
+
+  const indexRows =
+    statusIndex.length > 0
+      ? statusIndex
+      : schedulingRows.map((row) => ({
+          id: row.id,
+          event_id: row.event_id,
+          campaign_name: row.campaign_name,
+          workflow_status: row.workflow_status,
+          delivery_method: row.delivery_method,
+        }));
+
+  const summaryFromIndex = summarizeStatusIndex(indexRows);
+  const pulseCounts = computePulseCountsFromStatusIndex(indexRows);
+  // Classic-only rows are not in the CB2 index — fold their counts in.
+  const classicCounts = summarizeCounts(classicItems);
+  const summary = {
+    inQueue: summaryFromIndex.inQueue + classicCounts.in_queue,
+    assignedToMe: summaryFromIndex.assignedToMe + classicCounts.assigned_to_me,
+    scheduled: summaryFromIndex.scheduled + classicCounts.scheduled,
+    posted: summaryFromIndex.posted + classicCounts.posted,
+    published: summaryFromIndex.published + classicCounts.published,
+    failed: summaryFromIndex.failed + classicCounts.failed,
+    changesRequested:
+      summaryFromIndex.changesRequested + classicCounts.changes_requested,
+  };
+  const mergedPulseCounts = {
+    needs:
+      pulseCounts.needs +
+      classicCounts.in_queue +
+      classicCounts.assigned_to_me,
+    scheduled: pulseCounts.scheduled + classicCounts.scheduled,
+    posted: pulseCounts.posted + classicCounts.posted + classicCounts.published,
+    failed: pulseCounts.failed + classicCounts.failed,
+    changes: pulseCounts.changes + classicCounts.changes_requested,
+  };
+
   const campaigns = [
     ...new Map(
-      items.map((item) => [item.eventId, { id: item.eventId, title: item.eventTitle }]),
+      [
+        ...campaignsFromStatusIndex(indexRows),
+        ...classicItems.map((item) => ({
+          id: item.eventId,
+          title: item.eventTitle,
+        })),
+      ].map((campaign) => [campaign.id, campaign]),
     ).values(),
   ].sort((left, right) => left.title.localeCompare(right.title));
 
   return {
     items,
-    summary: {
-      inQueue: counts.in_queue,
-      assignedToMe: counts.assigned_to_me,
-      scheduled: counts.scheduled,
-      posted: counts.posted,
-      published: counts.published,
-      failed: counts.failed,
-      changesRequested: counts.changes_requested,
-    },
+    summary,
+    pulseCounts: mergedPulseCounts,
+    defersTerminalDetailRows: deferTerminalDetailRows,
     campaigns,
     actorEmail: actor?.email ?? null,
     actorUserId: actor?.organizationUserId ?? null,
@@ -478,16 +576,23 @@ async function buildUnifiedApprovalsPageData(options?: {
   };
 }
 
+/** Org Approvals hub — defers terminal detail rows to cut RSC payload. */
 const resolveUnifiedApprovalsData = cache(
   async function resolveUnifiedApprovalsData(): Promise<UnifiedApprovalsPageData> {
-    return buildUnifiedApprovalsPageData();
+    return buildUnifiedApprovalsPageData({ deferTerminalDetailRows: true });
   },
 );
 
-/** Dashboard widgets — same list rows, skip live-name + Meta slot overlay. */
+/** Dashboard widgets / complete lists — all statuses in `items`. */
 const resolveUnifiedApprovalsDataLean = cache(
   async function resolveUnifiedApprovalsDataLean(): Promise<UnifiedApprovalsPageData> {
     return buildUnifiedApprovalsPageData({ leanEnrich: true });
+  },
+);
+
+const resolveUnifiedApprovalsDataComplete = cache(
+  async function resolveUnifiedApprovalsDataComplete(): Promise<UnifiedApprovalsPageData> {
+    return buildUnifiedApprovalsPageData();
   },
 );
 
@@ -495,8 +600,41 @@ export async function getUnifiedApprovalsSchedulingData(): Promise<UnifiedApprov
   return resolveUnifiedApprovalsData();
 }
 
+/** Full status set in `items` (revision deep-links, complete exports). */
+export async function getUnifiedApprovalsSchedulingDataComplete(): Promise<UnifiedApprovalsPageData> {
+  return resolveUnifiedApprovalsDataComplete();
+}
+
 export async function getUnifiedApprovalsSchedulingDataLean(): Promise<UnifiedApprovalsPageData> {
   return resolveUnifiedApprovalsDataLean();
+}
+
+/**
+ * Lazy-load deferred hub statuses (scheduled / posted / published) when the
+ * user opens those pulses or searches across the full queue.
+ */
+export async function getUnifiedApprovalsDeferredPulseItems(
+  statuses: readonly UnifiedWorkflowStatus[] = APPROVALS_HUB_DEFERRED_WORKFLOW_STATUSES,
+): Promise<UnifiedApprovalItem[]> {
+  const today = getTodayDateString();
+  const [membership, schedulingRows] = await Promise.all([
+    getActiveMembership(),
+    fetchCampaignBuilderSchedulingItems(statuses),
+  ]);
+  const actor: ApprovalActor | null = membership
+    ? {
+        organizationUserId: membership.user.id,
+        organizationRoleId: membership.user.organizationRoleId,
+        email: membership.user.email,
+      }
+    : null;
+
+  return mapSchedulingRowsToUnifiedItems({
+    schedulingRows,
+    classicItems: [],
+    actor,
+    leanEnrich: false,
+  });
 }
 
 /**
@@ -847,6 +985,8 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
       failed: counts.failed,
       changesRequested: counts.changes_requested,
     },
+    pulseCounts: computeApprovalsEasePulseCounts(items),
+    defersTerminalDetailRows: false,
     campaigns,
     actorEmail: actor?.email ?? null,
     actorUserId: actor?.organizationUserId ?? null,

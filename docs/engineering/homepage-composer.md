@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering (Hey Ralli)  
-**Last updated:** August 6, 2026 — Header buttonCount (1 | 2)  
+**Last updated:** August 6, 2026 — Header buttonCount (1 | 2) · full month snapshots
 **Related:** [QA guide](../qa/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Billing / AI credits](../ops/billing-and-access.md)
 
 Client-heavy Membership Toolkit homepage builder. Server actions cover AI blurbs and artwork hosting; drafts stay in the browser.
@@ -29,6 +29,7 @@ Header hero CTAs use `header.buttonCount` (`1 | 2`) with Volunteer-style **How m
 | Path | Role |
 |------|------|
 | `src/components/homepage-composer/HomepageComposer.tsx` | Step UI, autosave flush, card CRUD, preview scrubber, export UX |
+| `src/components/homepage-composer/DatePopoverField.tsx` | Portal date picker (cards + announcements; no layout expand) |
 | `src/components/homepage-composer/SettingsBox.tsx` | Shared settings panel chrome (also used by Newsletter) |
 | `src/lib/homepage-composer/types.ts` | State + card/header/footer shapes (`cardsSectionTitle`, `workingMonth`, `monthDrafts`, `monthSaved`) |
 | `src/lib/homepage-composer/defaults.ts` | Initial state, `cardFromEvent`, normalize / migrate fields (legacy → current-month save) |
@@ -77,17 +78,20 @@ Drafts are **not** stored in Postgres.
 
 ### Save by month
 
-Hero/footer colors, `cardsSectionTitle`, and resources are **shared** across months. Cards, `selectedEventIds`, and announcement bar lines are scoped to `workingMonth` (YYYY-MM). The composer shows a persistent **Working on** strip on every step; `header.announcements` mirrors the active month.
+Cards, `selectedEventIds`, announcement bar lines, **and full chrome** (hero/footer copy + colors, 1/2 header CTAs, up to 2 footer CTAs, `cardsSectionTitle`, resources) are scoped to `workingMonth` (YYYY-MM). The composer shows a persistent **Working on** strip on every step; live state mirrors the active month. **Save this month** writes a full snapshot into `monthSaved` (Copy from… source). Autosave stashes the same shape into `monthDrafts`.
 
 | Field | Role |
 |-------|------|
 | `workingMonth` | Active month workspace (all steps) |
 | `cards` / `selectedEventIds` | Live card editors for `workingMonth` |
+| `header` / `footer` / `cardsSectionTitle` / `resources` | Live chrome for `workingMonth` |
 | `header.announcements` | Live announcement editors for `workingMonth` |
-| `monthDrafts` | Working snapshots per month (cards + picks + announcements; autosave stashes here) |
+| `monthDrafts` | Working snapshots per month (full homepage; autosave stashes here) |
 | `monthSaved` | Explicit **Save this month** snapshots — sources for **Copy from…** |
 
-Legacy drafts without month maps migrate into `monthDrafts` + `monthSaved` for the current calendar month. Drafts that predate month-scoped announcements seed the working month from `header.announcements`.
+Legacy drafts without month maps migrate into `monthDrafts` + `monthSaved` for the current calendar month. Drafts that predate month-scoped announcements seed the working month from `header.announcements`. Snapshots that omit chrome keep the live header/footer when switching months until the next Save.
+
+**Export refresh:** Export step remounts a live iframe + code `<pre>` via a content hash key and imperative `srcdoc` write (same Blink-safe pattern as Preview), so month switches and edits refresh without a manual browser reload.
 
 ---
 

@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createCalendarImportFromIcsText,
   insertImportedEvents,
@@ -9,10 +10,11 @@ import {
   classifyReviewEventsAgainstExisting,
   partitionClassifiedReviewEvents,
 } from "@/lib/calendar-import/event-dedup";
-import { getSchoolYearCalendarEventsForDedup } from "@/lib/calendar-import/queries";
 import {
-  fetchSubscribeFeedIcs,
-} from "@/lib/calendar-import/fetch-subscribe-feed";
+  getSchoolYearCalendarEventsForDedup,
+  getSchoolYearEventsForDedupViaClient,
+} from "@/lib/calendar-import/queries";
+import { fetchSubscribeFeedIcs } from "@/lib/calendar-import/fetch-subscribe-feed";
 import {
   applyImportPreferencesToEvents,
   getImportEventPreferencesMap,
@@ -21,6 +23,7 @@ import {
 import { parseIcsToReviewEvents } from "@/lib/calendar-import/parse-ics";
 import { linkCalendarImportToSchoolYear } from "@/lib/school-years/mutations";
 import type { SchoolYear } from "@/lib/school-years/types";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface SyncSubscribeFeedResult {
   organizationId: string;
@@ -41,9 +44,15 @@ export async function syncSchoolYearSubscribeFeed(input: {
   organizationSchoolYear: string | null;
   schoolYear: SchoolYear;
   autoImport?: boolean;
+  /** Use service-role client (cron / background jobs). */
+  useServiceRole?: boolean;
 }): Promise<SyncSubscribeFeedResult> {
   const { organizationId, schoolYear } = input;
   const autoImport = input.autoImport ?? false;
+  const useServiceRole = input.useServiceRole ?? false;
+  const db: SupabaseClient | undefined = useServiceRole
+    ? createAdminClient()
+    : undefined;
   const base = {
     organizationId,
     schoolYearId: schoolYear.id,
@@ -75,6 +84,7 @@ export async function syncSchoolYearSubscribeFeed(input: {
     organizationId,
     fetched.text,
     filename,
+    db,
   );
 
   if (!created.importRecord) {
@@ -86,12 +96,16 @@ export async function syncSchoolYearSubscribeFeed(input: {
   }
 
   const importId = created.importRecord.id;
-  await linkCalendarImportToSchoolYear(importId, schoolYear.id);
+  await linkCalendarImportToSchoolYear(importId, schoolYear.id, db);
 
-  await updateCalendarImportParseStatus(importId, {
-    parseStatus: "parsing",
-    parseError: null,
-  });
+  await updateCalendarImportParseStatus(
+    importId,
+    {
+      parseStatus: "parsing",
+      parseError: null,
+    },
+    db,
+  );
 
   const events = parseIcsToReviewEvents(
     fetched.text,
@@ -99,11 +113,15 @@ export async function syncSchoolYearSubscribeFeed(input: {
     "subscribe",
   );
   if (!events.length) {
-    await updateCalendarImportParseStatus(importId, {
-      parseStatus: "failed",
-      parseError: "No events were found in the calendar feed.",
-      extractedText: fetched.text,
-    });
+    await updateCalendarImportParseStatus(
+      importId,
+      {
+        parseStatus: "failed",
+        parseError: "No events were found in the calendar feed.",
+        extractedText: fetched.text,
+      },
+      db,
+    );
     return {
       ...base,
       importId,
@@ -112,12 +130,14 @@ export async function syncSchoolYearSubscribeFeed(input: {
     };
   }
 
-  const preferences = await getImportEventPreferencesMap(organizationId);
+  const preferences = await getImportEventPreferencesMap(organizationId, db);
   const normalizedEvents = applyImportPreferencesToEvents(events, preferences);
 
   // External IDs must be checked across the whole school year. A rolling
   // calendar window can exclude an event after its source date is moved.
-  const existing = await getSchoolYearCalendarEventsForDedup(schoolYear.id);
+  const existing = useServiceRole
+    ? await getSchoolYearEventsForDedupViaClient(schoolYear.id, db!)
+    : await getSchoolYearCalendarEventsForDedup(schoolYear.id);
   const classified = classifyReviewEventsAgainstExisting(
     normalizedEvents,
     existing,
@@ -135,12 +155,16 @@ export async function syncSchoolYearSubscribeFeed(input: {
     : classified;
 
   if (toInsert.length === 0 && toUpdate.length === 0) {
-    await updateCalendarImportParseStatus(importId, {
-      parseStatus: "parsed",
-      parseError: null,
-      extractedText: fetched.text,
-      parsedEvents: autoImport ? [] : classified,
-    });
+    await updateCalendarImportParseStatus(
+      importId,
+      {
+        parseStatus: "parsed",
+        parseError: null,
+        extractedText: fetched.text,
+        parsedEvents: autoImport ? [] : classified,
+      },
+      db,
+    );
     return {
       ...base,
       importId,
@@ -155,19 +179,27 @@ export async function syncSchoolYearSubscribeFeed(input: {
       events: inserted,
       skippedCount: importSkipped,
       updatedCount,
-    } = await insertImportedEvents(classified, importId, existing, undefined, {
+    } = await insertImportedEvents(classified, importId, existing, db, {
       autoApplyUpdates: true,
     });
 
-    await updateCalendarImportParseStatus(importId, {
-      parseStatus: "imported",
-      parseError: null,
-      extractedText: fetched.text,
-      parsedEvents: reviewEvents,
-      importedAt: new Date().toISOString(),
-    });
+    await updateCalendarImportParseStatus(
+      importId,
+      {
+        parseStatus: "imported",
+        parseError: null,
+        extractedText: fetched.text,
+        parsedEvents: reviewEvents,
+        importedAt: new Date().toISOString(),
+      },
+      db,
+    );
 
-    await upsertImportPreferencesFromReviewEvents(organizationId, reviewEvents);
+    await upsertImportPreferencesFromReviewEvents(
+      organizationId,
+      reviewEvents,
+      db,
+    );
 
     return {
       ...base,
@@ -181,12 +213,16 @@ export async function syncSchoolYearSubscribeFeed(input: {
     };
   }
 
-  await updateCalendarImportParseStatus(importId, {
-    parseStatus: "parsed",
-    parseError: null,
-    extractedText: fetched.text,
-    parsedEvents: reviewEvents,
-  });
+  await updateCalendarImportParseStatus(
+    importId,
+    {
+      parseStatus: "parsed",
+      parseError: null,
+      extractedText: fetched.text,
+      parsedEvents: reviewEvents,
+    },
+    db,
+  );
 
   return {
     ...base,

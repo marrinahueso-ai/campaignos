@@ -215,6 +215,17 @@ ${activeAnnouncements
   // Hover accent matches live EES / Membership Toolkit homepage.
   const hoverAccent = "#1f7a5c";
 
+  const footerButtons = [
+    { label: footer.ctaButtonLabel, url: footer.ctaButtonUrl },
+    { label: footer.ctaButton2Label, url: footer.ctaButton2Url },
+  ]
+    .filter((b) => b.label.trim())
+    .map(
+      (b) =>
+        `<a class="ees-btn" href="${escapeHtml(normalizeHref(b.url))}">${escapeHtml(b.label)}</a>`,
+    )
+    .join(" ");
+
   return `<style><!--
 .ees-home-wrap{max-width:1100px;margin:0 auto;padding:20px;font-family:Arial,sans-serif}
 .ees-hero{background:linear-gradient(135deg,${hc.backgroundStart},${hc.backgroundEnd});color:${hc.textColor};padding:40px 30px;border-radius:22px;text-align:center;margin-bottom:18px}
@@ -267,7 +278,7 @@ ${cardsBlock}
 <div class="ees-cta">
 <h2>${escapeHtml(footer.ctaTitle)}</h2>
 <p>${escapeHtml(footer.ctaBody)}</p>
-<a class="ees-btn" href="${escapeHtml(normalizeHref(footer.ctaButtonUrl))}">${escapeHtml(footer.ctaButtonLabel)}</a>
+${footerButtons}
 </div>
 ${resourcesBlock}
 </div>

@@ -1,17 +1,28 @@
-# Hey Ralli k6 load test — findings (first 20 schools)
+# Hey Ralli k6 load test — findings
 
-**Status:** 20-school phase closed and passed; 100-school / 20-VU Run 2
-**passed** after `getClaims` remediation — see
-[Run 2 report](./100-school-20vu-data-scale-run2.md) and
-[auth remediation](./100-school-20vu-auth-rate-limit-remediation.md)
+**Status:** **Performance Engineering Phase 1 COMPLETE** (August 4, 2026) —
+handoff: [performance-engineering-phase1-complete.md](./performance-engineering-phase1-complete.md).
+Chronological run log below (20-school → 100-school → 75-VU ladder). Do **not**
+run 100 VU for Phase 1 closure; reopen performance only on production evidence.
 **Owner:** Engineering / QA
-**Last updated:** August 3, 2026
-**Related:** [k6 suite README](../../load-tests/k6/README.md) · [Performance budget](./performance-budget.md)
+**Last updated:** August 4, 2026
+**Related:** [Phase 1 complete](./performance-engineering-phase1-complete.md) ·
+[75-VU RCA](./100-school-75vu-latency-rca.md) ·
+[k6 suite README](../../load-tests/k6/README.md) ·
+[Performance budget](./performance-budget.md)
 
-Results from the staging (`heyralli-staging`) 20-school k6 suite: the initial
-smoke/20-schools pass, the 15-VU light-peak, 30-VU launch-spike, and 50-VU
-headroom phases. This is a **capacity confidence check**, not a
-breaking-point stress test.
+### Phase 1 accepted envelope (final)
+
+| Point | Result |
+|---|---|
+| Correctness 20→75 VU | Perfect (tenant/auth/checks/5xx/dropped) |
+| 50 VU read p95 | **~1.38s — PASS** |
+| 75 VU Medium + kept app | **1.55s — near-miss FAIL** (~53ms); route gates pass |
+| Staging / preferred prod compute | **Medium** |
+| 100 VU | **Do not run** for Phase 1 (see Phase 1 doc §15) |
+
+This file remains the chronological capacity log (confidence check + boundary
+probe), not a breaking-point stress program.
 
 ## Environment
 
@@ -458,6 +469,144 @@ tails remain). Do **not** proceed to 100 VU.
 
 **Status: RCA COMPLETE for this cycle — 75-VU gates still FAIL; stop
 higher-VU progression.**
+
+## 100-school / 75-VU — Run 3 (Attention lean counts)
+
+**Report:** [100-school-75vu-data-scale-run3-attn.md](./100-school-75vu-data-scale-run3-attn.md)
+
+**Change:** Attention widget counts use lean sidebar/scheduling badge APIs and
+short-circuit volunteer/task probes instead of materializing
+`getDashboardRichListData` (Volunteer Master + Task Hub + classic queue) on
+every default dashboard load.
+
+**Fixture pivot:** `arch100` has **0** classic `approval_requests`, **0**
+volunteer sources, **0** playbook tasks — classic-queue diet would be a no-op;
+Attention was paying for empty rich lists.
+
+| Metric | Run 1 | Run 3 |
+|---|---:|---:|
+| Auth / tenant / checks | 0 / 0 / 100% | **0 / 0 / 100%** |
+| `kind:read` p95 | 2.77s | **3.35s** (still **FAIL**) |
+| waiting / receiving **avg** | 630 / 838ms | **635 / 837ms** (~flat) |
+| Hold >3s | 134 | **344** |
+
+**Keep** the change (correctness-preserving; removes wasted work). Combined with
+Run 2 query-collapse, two waiting-path fixes have not cleared the gate. Next:
+approvals HTML receiving diet and/or Micro→Small A/B.
+
+**Status: 75-VU gates still FAIL after second app remediation; stop higher-VU.**
+
+## 100-school / 75-VU — Run 4 (Approvals terminal deferral)
+
+**Report:** [100-school-75vu-data-scale-run4-defer.md](./100-school-75vu-data-scale-run4-defer.md)
+**RCA (updated):** [100-school-75vu-latency-rca.md](./100-school-75vu-latency-rca.md)
+
+**Change:** Org Approvals hub SSR omits `scheduled` / `posted` / `published`
+detail rows; thin status index keeps pulse counts accurate; client lazy-loads
+terminal rows on Scheduled/Posted pulse or search. Revision uses complete fetch.
+
+| Metric | Run 1 | Run 3 | Run 4 |
+|---|---:|---:|---:|
+| Approvals HTML / detail rows | ~224 KB / 125 | ~218.5 KB / 125 | **130.6 KB / 50** |
+| Auth / tenant / checks | 0 / 0 / 100% | 0 / 0 / 100% | **0 / 0 / 100%** |
+| `kind:read` p95 | 2.77s | 3.35s | **3.35s** (still **FAIL**) |
+| receiving p95 | 1.73s | 2.00s | **1.93s** |
+| Hold >3s / >5s | 134 / 2 | 344 / 53 | **343 / 9** |
+
+**Keep** deferral (explicit, ~40% Approvals HTML cut, no correctness hit). Overall
+receiving/read p95 did **not** materially improve; stop further speculative
+app-side latency work. **Next:** controlled Micro→Small A/B under identical 75-VU.
+
+**Status: 75-VU gates still FAIL after receiving-focused remediation; Micro→Small is now the best next experiment.**
+
+## 100-school / 75-VU — Run 5 (Micro → Small compute A/B)
+
+**Report:** [100-school-75vu-data-scale-run5-small-ab.md](./100-school-75vu-data-scale-run5-small-ab.md)
+**RCA (updated):** [100-school-75vu-latency-rca.md](./100-school-75vu-latency-rca.md)
+
+**Variable:** Supabase compute only (**Small** 2 GB / 2-core). Same Preview as
+Run 4, same workload/thresholds/fixture/Auth Absolute/10.
+
+| Metric | Run 4 Micro | Run 5 Small | Δ |
+|---|---:|---:|---:|
+| Auth / tenant / checks | 0 / 0 / 100% | **0 / 0 / 100%** | flat |
+| `kind:read` p95 | 3.35s | **2.55s** | **−0.80s** (still **FAIL** vs 1.5s) |
+| waiting / receiving p95 | 1.51 / 1.93s | **1.14 / 1.56s** | **−0.37 / −0.37s** |
+| Hold >3s / >5s | 343 / 9 | **71 / 0** | **−272 / −9** |
+
+**Interpretation:** Micro was amplifying the dual wait/recv bottleneck under the
+75-VU hold. Small removes much of that amplification (especially hold tails)
+but does **not** clear the gate — residual is still dual wait+receiving on hot
+RSC routes.
+
+**Keep Small** on staging. 75 VU is correctness-stable but not latency-gate
+stable. 100 VU is exploratory-only until 75 clears. Next: one focused
+hot-route app change under Small, **or** optional Small→Medium A/B.
+
+**Status: Infra A/B COMPLETE — Small kept; 75-VU gate still FAIL; stop speculative multi-change work.**
+
+## 100-school / 75-VU — Run 6 (Event Detail Approvals client-load)
+
+**Report:** [100-school-75vu-data-scale-run6-event-approvals-client.md](./100-school-75vu-data-scale-run6-event-approvals-client.md)
+**RCA (updated):** [100-school-75vu-latency-rca.md](./100-school-75vu-latency-rca.md)
+
+**Variable:** Stop SSR-streaming Event Detail Approvals (`approvalsSlot={undefined}`);
+client loads via existing lazy tab action. Same Small compute + identical 75-VU
+profile vs Run 5.
+
+| Metric | Run 5 Small | Run 6 | Δ |
+|---|---:|---:|---:|
+| Auth / tenant / checks | 0 / 0 / 100% | **0 / 0 / 100%** | flat |
+| `kind:read` p95 | 2.55s | **2.46s** | **−0.10s** (still **FAIL**) |
+| waiting / receiving p95 | 1.14 / 1.56s | **1.19 / 1.40s** | +0.05 / **−0.16s** |
+| `event_detail` / `event_approvals` p95 | 2.81 / 2.70s | **2.25 / 2.13s** | **−0.56 / −0.57s** |
+| Hold >3s (hold) / `event_detail` share | 71 / 23 | **55 / 3** | −16 / **−20** |
+
+**Interpretation:** Hypothesis confirmed **locally** (Event Detail was blocked on
+Approvals SSR). Aggregate gate barely moved — remaining hold leaders are
+calendar / dashboard / events_list. Stop further Event Detail Approvals SSR
+tweaks for gate progress.
+
+**Keep** the client-load change. Next: dashboard/calendar lean **or**
+Small→Medium A/B (pick one). Do not loosen thresholds / Auth / treat 100 VU as pass.
+
+**Status: App route win kept; 75-VU gate still FAIL; Event Detail Approvals SSR lever exhausted for aggregate latency.**
+
+## 100-school / 75-VU — Run 7 (Small → Medium compute A/B)
+
+**Report:** [100-school-75vu-data-scale-run7-medium-ab.md](./100-school-75vu-data-scale-run7-medium-ab.md)
+**RCA (updated):** [100-school-75vu-latency-rca.md](./100-school-75vu-latency-rca.md)
+
+**Variable:** Supabase compute only (**Medium** 4 GB / 2-core). Same Preview as
+Run 6, same workload/thresholds/fixture/Auth Absolute/10. No app code changes.
+
+| Metric | Run 6 Small | Run 7 Medium | Δ |
+|---|---:|---:|---:|
+| Auth / tenant / checks | 0 / 0 / 100% | **0 / 0 / 100%** | flat |
+| `kind:read` p95 | 2.46s | **1.55s** | **−0.91s** (still **FAIL** by ~53ms) |
+| waiting / receiving p95 | 1.19 / 1.40s | **0.73 / 0.90s** | **−0.46 / −0.50s** |
+| dashboard / calendar / events_list p95 | 2.79 / 2.77 / 2.52s | **1.91 / 1.58 / 1.63s** | all **pass** &lt;2.0s |
+| Hold >3s / >5s | 55 / 14 | **48 / 8** | −7 / −6 |
+
+**Interpretation:** Medium **materially shifted** the latency boundary (same
+order of win as Micro→Small). Residual dual wait+recv is thin; only
+`kind:read` crossed. Small is not enough for the 75-VU + 1.5s ambition.
+
+**Keep Medium** on staging / prefer for production if 75 VU is in scope. Next:
+one dashboard/calendar lean under Medium. 100 VU remains exploratory-only.
+
+**Status: Infra A/B COMPLETE — Medium kept; 75-VU gate near-miss FAIL (~53ms); app cut now highest-value next step.**
+
+## Performance Engineering Phase 1 — closed
+
+**Canonical handoff:** [performance-engineering-phase1-complete.md](./performance-engineering-phase1-complete.md)
+
+Phase 1 is **complete**. Accepted conclusions: Medium staging/preferred
+production tier; 50 VU green; 75 VU correctness green / latency near-miss;
+kept app fixes retained; **do not run 100 VU** for Phase 1 closure. Transition
+to **Security & Production Readiness**. Post-launch dashboard lean under Medium
+is roadmap work, not a Phase 1 reopen trigger unless production evidence
+contradicts this envelope.
 
 ## Known coverage gaps to close before a higher-VU or write-path test
 

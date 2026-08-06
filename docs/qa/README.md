@@ -1,17 +1,20 @@
 # QA
 
 **Purpose:** How to test Hey Ralli, QA architecture orientation, investigation notes.  
-**Last updated:** July 27, 2026
+**Last updated:** August 4, 2026
 
 | Doc | Status |
 |-----|--------|
+| [performance-engineering-phase1-complete.md](./performance-engineering-phase1-complete.md) | **COMPLETE** — multi-tenant k6 Phase 1 handoff; Medium tier; 75-VU near-miss; no 100 VU for close |
+| [k6-load-test-findings.md](./k6-load-test-findings.md) | **Living** — chronological k6 capacity log (20-school → 75-VU) |
+| [100-school-75vu-latency-rca.md](./100-school-75vu-latency-rca.md) | **Closed with Phase 1** — 75-VU dual-bottleneck RCA |
 | [owner-ai-apis.md](./owner-ai-apis.md) | **Living** — Owner AI & APIs access, honesty, instrumentation, Phase 5 accuracy lock |
 | [pre-handoff-readiness.md](./pre-handoff-readiness.md) | **Living** — Owner/PM checklist before inviting QA (env, accounts, smoke, handoff packet) |
 | [product-completion-master.md](./product-completion-master.md) | **Living** — Phase 1 master inventory + completion tracking |
 | [launch-checklist.md](./launch-checklist.md) | **Living** — soft launch / Production pass-fail checklist |
 | [architecture-overview.md](./architecture-overview.md) | **Living** |
 | [testing-guide.md](./testing-guide.md) | **Living** |
-| [performance-budget.md](./performance-budget.md) | **Living** — ≤2s page/save budget; `npm run test:hey-ralli:perf` |
+| [performance-budget.md](./performance-budget.md) | **Living** — ≤2s page/save budget; multi-tenant k6 envelope; `npm run test:hey-ralli:perf` |
 | [create-with-ai-artwork-inputs.md](./create-with-ai-artwork-inputs.md) | **Living** — Creative Setup → artwork input matrix; Playwright `13` / `13b` |
 | [homepage-composer.md](./homepage-composer.md) | **Living** — Homepage Composer workflow, acceptance, limitations · [eng](../engineering/homepage-composer.md) |
 | [newsletter-composer.md](./newsletter-composer.md) | **Living** — Newsletter Composer workflow, acceptance, limitations · [eng](../engineering/newsletter-composer.md) |

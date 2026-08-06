@@ -169,6 +169,7 @@ export async function generateCampaignBuilderArtwork(input: {
   versionCount?: number;
   userId?: string | null;
   isRegeneration?: boolean;
+  styleLocked?: boolean;
 }): Promise<{ success: boolean; variationUrls: string[]; message: string }> {
   if (!(await hasPermission("upload_artwork"))) {
     return {
@@ -229,6 +230,7 @@ export async function generateCampaignBuilderArtwork(input: {
     storyFromFeed: Boolean(input.storyFromFeed),
     styleStrength: input.styleStrength,
     hasAttachedLogo: Boolean(selectedLogo.url),
+    styleLocked: input.styleLocked,
   });
 
   const promptSections = summarizeArtworkPromptSections({
@@ -240,6 +242,7 @@ export async function generateCampaignBuilderArtwork(input: {
     storyFromFeed: Boolean(input.storyFromFeed),
     styleStrength: input.styleStrength,
     hasAttachedLogo: Boolean(selectedLogo.url),
+    styleLocked: input.styleLocked,
   });
 
   const organization = await getLatestOrganization();

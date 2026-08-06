@@ -5,13 +5,13 @@
 **Last updated:** August 6, 2026 — Header 1/2 button toggle  
 **Related:** [Engineering companion](../engineering/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Create with AI artwork inputs](./create-with-ai-artwork-inputs.md) · [Storage RLS](../engineering/storage-rls.md) · [Launch checklist](./launch-checklist.md)
 
-Soft-launch Membership Toolkit–style homepage builder. Managers design hero/footer chrome once, refresh cards and announcement bars monthly (Working on strip on every step), preview on/off dates, and export full-page HTML for external hosting.
+Soft-launch Membership Toolkit–style homepage builder. Managers work ahead by month (Working on strip): **Save this month** keeps the full homepage (header, footer, cards, announcements, resources) for that YYYY-MM, preview on/off dates, and export full-page HTML for external hosting.
 
 ---
 
 ## Purpose
 
-Build a school/PTO homepage block (hero, announcements, event/custom cards with 1:1 artwork, footer CTA, helpful resources) and copy Membership Toolkit–compatible HTML. Drafts persist in the browser; artwork is hosted so export stays lean.
+Build a school/PTO homepage block (hero with up to 3 CTAs, announcements, event/custom cards with 1:1 artwork, footer with up to 2 CTAs, helpful resources) and copy Membership Toolkit–compatible HTML. Drafts persist in the browser; artwork is hosted so export stays lean.
 
 ---
 
@@ -33,11 +33,11 @@ No separate sidebar nav item — entry is Create with AI → Home Page (or direc
 
 | Step | Label | What to do |
 |------|-------|------------|
-| 1 | **Header** | Title, message, two CTAs, **cards section title**, announcements for the **Working on** month (emoji + text + optional on/off dates on one row), header colors (shared) |
-| 2 | **Footer** | CTA title/body/button + colors; helpful resource chips (emoji, label, URL) |
+| 1 | **Header** | Title, message, up to **3 CTAs**, **cards section title**, announcements for the **Working on** month (emoji + text + optional on/off dates on one row), header colors |
+| 2 | **Footer** | CTA title/body + up to **2 buttons** + colors; helpful resource chips (emoji, label, URL) |
 | 3 | **Cards** | Pick events (month/year filter) and/or add evergreen custom cards; edit title, blurb, link URL + **link label**, card face **date**, on/off visibility, always-on; upload artwork or deep-link to Create with AI for milestones; sort/reorder |
 | 4 | **Preview** | Full-page preview; **full month** (all cards) or date scrubber for on/off visibility; full-month **Open page** / **Save as PDF** (share page print) |
-| 5 | **Export** | Copy full-page Membership Toolkit HTML |
+| 5 | **Export** | Live export preview iframe + copy full-page Membership Toolkit HTML (auto-refreshes when draft changes) |
 
 Draft status shows in the chrome (“Saving draft…”, “Draft saved”).
 

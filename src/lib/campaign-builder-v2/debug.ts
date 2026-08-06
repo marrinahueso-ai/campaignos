@@ -57,6 +57,7 @@ export function summarizeArtworkPromptSections(input: {
   storyFromFeed: boolean;
   styleStrength?: number;
   hasAttachedLogo?: boolean;
+  styleLocked?: boolean;
 }): string[] {
   const sections = ["format", "campaign_moment", "event_facts"];
 
@@ -85,6 +86,9 @@ export function summarizeArtworkPromptSections(input: {
   }
 
   sections.push("guardrails");
+  if (input.styleLocked) {
+    sections.push("style_lock");
+  }
 
   if (input.brandGuidance) {
     sections.push("brand_kit");

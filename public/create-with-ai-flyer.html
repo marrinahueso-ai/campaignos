@@ -22,7 +22,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
       --cream: #f6f2eb;
@@ -39,9 +39,9 @@
       --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
       --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
       --radius: 22px;
-      /* Same Pilot stack as Social Create-with-AI (Fraunces display + DM Sans UI). */
-      --serif: "Fraunces", Georgia, serif;
-      --sans: "DM Sans", system-ui, sans-serif;
+      /* Match site chrome (Geist UI + Cormorant display). */
+      --serif: "Cormorant Garamond", Georgia, serif;
+      --sans: "Geist", system-ui, sans-serif;
       --ease: cubic-bezier(0.22, 1, 0.36, 1);
       /* Brand kit tokens — synced from SETTINGS_BRAND_KIT when toggle is on */
       --brand-primary: #2f4a3c;
@@ -750,6 +750,30 @@
       color: var(--forest); text-decoration: none;
     }
     .brand-manage-link:hover { text-decoration: underline; }
+    .brand-logo-picker {
+      display: none; margin-top: 12px; gap: 8px; flex-wrap: wrap;
+    }
+    .brand-logo-picker.is-visible { display: flex; }
+    .brand-logo-option {
+      width: 52px; height: 52px; padding: 6px; border-radius: 14px;
+      border: 1.5px solid var(--line); background: var(--cream);
+      cursor: pointer; display: grid; place-items: center;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .brand-logo-option:hover { border-color: var(--sage); }
+    .brand-logo-option.is-selected {
+      border-color: var(--forest);
+      background: #f0f3f1;
+      box-shadow: 0 0 0 1px rgba(47, 74, 60, 0.2);
+    }
+    .brand-logo-option img {
+      display: block; max-width: 100%; max-height: 100%;
+      width: auto; height: auto; object-fit: contain;
+    }
+    .brand-logo-option-label {
+      margin: 0; font-size: 0.72rem; font-weight: 700; color: var(--muted);
+      width: 100%;
+    }
     .insp-block-label {
       display: block; margin: 0 0 14px;
       font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
@@ -1350,6 +1374,57 @@
     }
     #btnSaveToFiles:hover:not(:disabled) { background: #faf8f5; color: var(--ink); }
     #btnSaveToFiles:disabled { opacity: 0.5; cursor: not-allowed; }
+    .save-name-label {
+      margin: 0; font-size: 11px; font-weight: 700; color: var(--muted);
+    }
+    #flyerSaveTitle {
+      width: 100%; padding: 10px 12px; border-radius: 10px;
+      border: 1px solid var(--line); background: #faf8f5;
+      font: inherit; font-size: 13px; color: var(--ink);
+    }
+    #flyerSaveTitle:focus {
+      outline: 2px solid rgba(47, 74, 60, 0.28); outline-offset: 1px;
+      border-color: var(--forest); background: var(--white);
+    }
+    #savedFlyersPanel .label,
+    .start-saved-flyers .label {
+      margin: 0 0 10px;
+    }
+    .saved-flyers-strip {
+      display: flex; flex-direction: column; gap: 8px;
+      max-height: 280px; overflow: auto;
+    }
+    .saved-flyer-row {
+      display: grid; grid-template-columns: 52px 1fr auto; gap: 10px;
+      align-items: center; width: 100%; text-align: left;
+      padding: 8px; border-radius: 12px; border: 1px solid var(--line);
+      background: #faf8f5; color: var(--ink); cursor: pointer; font: inherit;
+    }
+    .saved-flyer-row:hover { background: var(--white); border-color: rgba(47, 74, 60, 0.35); }
+    .saved-flyer-row[aria-pressed="true"] {
+      border-color: var(--forest); box-shadow: 0 0 0 1px rgba(47, 74, 60, 0.2);
+    }
+    .saved-flyer-thumb {
+      width: 52px; height: 68px; border-radius: 8px; overflow: hidden;
+      background: linear-gradient(160deg, #1e4a3a 0%, #4a6b58 55%, #c4922e 100%);
+      background-size: cover; background-position: center;
+    }
+    .saved-flyer-meta { min-width: 0; }
+    .saved-flyer-meta strong {
+      display: block; font-size: 12px; font-weight: 700; line-height: 1.3;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .saved-flyer-meta span {
+      display: block; margin-top: 2px; font-size: 11px; color: var(--muted);
+    }
+    .saved-flyer-open {
+      font-size: 11px; font-weight: 750; color: var(--forest); white-space: nowrap;
+    }
+    .start-saved-flyers {
+      margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line);
+    }
+    .start-saved-flyers[hidden] { display: none !important; }
+    #savedFlyersPanel[hidden] { display: none !important; }
     #btnSendForApproval {
       width: 100%; padding: 12px 14px; border-radius: 12px; border: none;
       background: var(--forest); color: #fff; font-weight: 800; font-size: 0.9rem;
@@ -2225,6 +2300,11 @@
                 <p id="tiedInspDetail">Pick a campaign to see if Social artwork exists.</p>
               </div>
             </div>
+            <div class="start-saved-flyers" id="startSavedFlyers" hidden>
+              <p class="label">Saved flyers for this event</p>
+              <p id="startSavedFlyersHint" class="insp-peer-note">Open a saved flyer to keep editing.</p>
+              <div class="saved-flyers-strip" id="startSavedFlyersStrip" role="list"></div>
+            </div>
             <p class="tied-unbound-note" id="tiedUnboundNote">
               Optional for now — pick a campaign before Send for approval. Drafts stay on this device until tied.
             </p>
@@ -2337,6 +2417,7 @@
               <div class="brand-preview-bar"></div>
               <div class="brand-preview-bar short"></div>
             </div>
+            <div class="brand-logo-picker" id="brandLogoPicker" role="group" aria-label="Choose logo from Brand Kit"></div>
             <a href="/settings/branding?section=colors-logos" class="brand-manage-link" id="brandSettingsLink">Manage Brand Kit</a>
             <p class="insp-peer-note">Use organization fonts, colors, and logos by default.</p>
           </div>
@@ -2604,8 +2685,23 @@
             <p id="versionsEmptyHint" class="insp-peer-note">Generate to start a version history.</p>
           </div>
 
+          <div class="sidebar-box" id="savedFlyersPanel" hidden>
+            <p class="label">Saved for this event</p>
+            <p id="savedFlyersHint" class="insp-peer-note">Loading saved flyers…</p>
+            <div class="saved-flyers-strip" id="savedFlyersStrip" role="list"></div>
+          </div>
+
           <div class="preview-sidebar-footer">
             <div class="sidebar-box" id="filesPanel">
+              <p class="label">Save options</p>
+              <label class="save-name-label" for="flyerSaveTitle">Name (optional)</label>
+              <input
+                type="text"
+                id="flyerSaveTitle"
+                maxlength="80"
+                autocomplete="off"
+                placeholder="e.g. Spring Fair handout"
+              />
               <p id="filesAsideHint">Save this flyer to the campaign’s Files tab.</p>
               <button type="button" id="btnSaveToFiles" disabled>Save to Files</button>
               <button type="button" class="btn btn-secondary" id="btnCreateNextFlyer" hidden>
@@ -2760,6 +2856,7 @@
     const FLYER_SEND_APPROVAL_API = "/api/flyer-composer/send-for-approval";
     const FLYER_APPROVAL_STATUS_API = "/api/flyer-composer/approval-status";
     const FLYER_SAVE_API = "/api/flyer-composer/save";
+    const FLYER_SAVED_API = "/api/flyer-composer/saved";
 
     /** Org + event scoped; null without organizationId (fail closed). */
     function draftStorageKey(organizationId, eventId) {
@@ -3002,6 +3099,7 @@
       schoolLogoUploaded: false,
       ptoLogoUrl: null,
       schoolLogoUrl: null,
+      logos: [],
       ink: "#2a2622",
       paper: "#faf8f4",
       surface: "#eef4ef",
@@ -3077,6 +3175,7 @@
       customTemplateFileName: null,
       customTemplateFileType: null,
       brand: true,
+      selectedLogoId: null,
       generating: false,
       previewGenerated: false,
       generatedImageUrl: null,
@@ -3109,6 +3208,10 @@
       savedFileId: null,
       savedFileName: null,
       filesSaving: false,
+      savedFlyers: [],
+      savedFlyersEventId: null,
+      savedFlyersLoading: false,
+      saveTitle: "",
     };
 
     function ensureApprovalSubmissionKey() {
@@ -3462,23 +3565,78 @@
       return (words[0] || "O").slice(0, 2).toUpperCase();
     }
 
-    function brandLogoMarkHTML(sizeClass) {
+    function getBrandLogoOptions() {
       const kit = SETTINGS_BRAND_KIT;
+      if (Array.isArray(kit.logos) && kit.logos.length) {
+        return kit.logos.filter((logo) => logo && logo.id && logo.url);
+      }
+      const fallback = [];
       if (kit.ptoLogoUrl) {
-        return `<img src="${escapeHtml(kit.ptoLogoUrl)}" alt="" />`;
+        fallback.push({ id: "pto", label: "PTO logo", url: kit.ptoLogoUrl });
       }
       if (kit.schoolLogoUrl) {
-        return `<img src="${escapeHtml(kit.schoolLogoUrl)}" alt="" />`;
+        fallback.push({ id: "school", label: "School logo", url: kit.schoolLogoUrl });
       }
-      return lettermarkFrom(kit.organizationShortName);
+      return fallback;
+    }
+
+    function resolveSelectedLogo() {
+      const options = getBrandLogoOptions();
+      if (!options.length) return null;
+      if (state.selectedLogoId) {
+        const match = options.find((logo) => logo.id === state.selectedLogoId);
+        if (match) return match;
+      }
+      return options[0];
+    }
+
+    function ensureSelectedLogoId() {
+      const selected = resolveSelectedLogo();
+      state.selectedLogoId = selected ? selected.id : null;
+      return selected;
+    }
+
+    function brandLogoMarkHTML(sizeClass) {
+      const selected = resolveSelectedLogo();
+      if (selected?.url) {
+        return `<img src="${escapeHtml(selected.url)}" alt="" />`;
+      }
+      return lettermarkFrom(SETTINGS_BRAND_KIT.organizationShortName);
+    }
+
+    function syncBrandLogoPicker() {
+      const picker = document.getElementById("brandLogoPicker");
+      if (!picker) return;
+      const options = getBrandLogoOptions();
+      const selected = ensureSelectedLogoId();
+      const show = state.brand && options.length > 0;
+      picker.classList.toggle("is-visible", show);
+      if (!show) {
+        picker.innerHTML = "";
+        return;
+      }
+      const label =
+        options.length > 1
+          ? `<p class="brand-logo-option-label">Choose logo</p>`
+          : "";
+      picker.innerHTML =
+        label +
+        options
+          .map((logo) => {
+            const isSelected = selected && selected.id === logo.id;
+            return `<button type="button" class="brand-logo-option${isSelected ? " is-selected" : ""}" data-logo-id="${escapeHtml(logo.id)}" aria-pressed="${isSelected ? "true" : "false"}" title="${escapeHtml(logo.label || "Logo")}" aria-label="${escapeHtml(logo.label || "Logo")}"><img src="${escapeHtml(logo.url)}" alt="" /></button>`;
+          })
+          .join("");
     }
 
     function syncBrandKitCardUI() {
       const kit = SETTINGS_BRAND_KIT;
+      const selected = ensureSelectedLogoId();
       const summary = document.getElementById("brandKitSummary");
       if (summary) {
+        const logoBit = selected?.label ? ` · ${selected.label}` : "";
         summary.textContent = state.brand
-          ? `${kit.organizationShortName} · ${kit.primaryColor} / ${kit.accentColor}`
+          ? `${kit.organizationShortName}${logoBit} · ${kit.primaryColor} / ${kit.accentColor}`
           : "Neutral palette — no org logo on previews";
       }
       const link = document.getElementById("brandSettingsLink");
@@ -3493,6 +3651,7 @@
       document.querySelectorAll("#brandLogoMark, #brandLogoMarkOptional").forEach((el) => {
         el.innerHTML = brandLogoMarkHTML();
       });
+      syncBrandLogoPicker();
     }
 
     async function hydrateBrandKitFromApi() {
@@ -3526,13 +3685,24 @@
           schoolLogoUploaded: Boolean(data.schoolLogoUploaded),
           ptoLogoUrl: data.ptoLogoUrl || null,
           schoolLogoUrl: data.schoolLogoUrl || null,
+          logos: Array.isArray(data.logos)
+            ? data.logos.filter(
+                (logo) =>
+                  logo &&
+                  typeof logo.id === "string" &&
+                  typeof logo.url === "string" &&
+                  logo.url.trim(),
+              )
+            : [],
         });
         syncBrandKitTokensFromSettings();
+        ensureSelectedLogoId();
 
         const orgInput = document.getElementById("orgName");
         if (orgInput && !orgInput.value.trim()) {
           orgInput.value = SETTINGS_BRAND_KIT.organizationShortName;
         }
+        syncBrandKit();
       } catch {
         /* file://, offline, or unauthenticated — keep neutral defaults */
       }
@@ -3721,11 +3891,9 @@
       if (!state.brand) return "";
       const kit = SETTINGS_BRAND_KIT;
       const label = escapeHtml(kit.organizationShortName);
-      if (kit.ptoLogoUrl) {
-        return `<img class="logo-img" src="${escapeHtml(kit.ptoLogoUrl)}" alt="${label} logo" title="${label}" />`;
-      }
-      if (kit.schoolLogoUrl) {
-        return `<img class="logo-img" src="${escapeHtml(kit.schoolLogoUrl)}" alt="${label} logo" title="${label}" />`;
+      const selected = resolveSelectedLogo();
+      if (selected?.url) {
+        return `<img class="logo-img" src="${escapeHtml(selected.url)}" alt="${label} logo" title="${escapeHtml(selected.label || label)}" />`;
       }
       return `<div class="logo-lettermark" title="${label}">${escapeHtml(lettermarkFrom(kit.organizationShortName))}</div>`;
     }
@@ -4335,6 +4503,7 @@
         customTemplateFileName: state.customTemplateFileName,
         customTemplateFileType: state.customTemplateFileType,
         brand: state.brand,
+        selectedLogoId: state.selectedLogoId,
         generatedImageUrl,
         previewGenerated: state.previewGenerated === true && !!generatedImageUrl,
         activeVersionId: state.activeVersionId,
@@ -4347,6 +4516,7 @@
         approvalWorkflowStatus: state.approvalWorkflowStatus,
         savedFileId: state.savedFileId,
         savedFileName: state.savedFileName,
+        saveTitle: state.saveTitle || "",
         ...readDraftFields(),
       };
     }
@@ -4520,6 +4690,9 @@
           state.customTemplateFileType = d.customTemplateFileType;
         }
         if (typeof d.brand === "boolean") state.brand = d.brand;
+        if (typeof d.selectedLogoId === "string" && d.selectedLogoId.trim()) {
+          state.selectedLogoId = d.selectedLogoId.trim();
+        }
         state.versions = normalizeFlyerVersions(d.versions);
         if (isPersistableFlyerImageUrl(d.generatedImageUrl)) {
           state.generatedImageUrl = d.generatedImageUrl.trim();
@@ -4576,6 +4749,11 @@
         if (typeof d.savedFileName === "string" && d.savedFileName.trim()) {
           state.savedFileName = d.savedFileName.trim();
         }
+        if (typeof d.saveTitle === "string") {
+          state.saveTitle = d.saveTitle.trim();
+          const titleInput = document.getElementById("flyerSaveTitle");
+          if (titleInput) titleInput.value = state.saveTitle;
+        }
         SLOT_IDS.forEach((id) => {
           if (d[id] != null && document.getElementById(id)) {
             document.getElementById(id).value = d[id];
@@ -4630,7 +4808,12 @@
       updateInspUI();
       syncCustomModeUI();
       syncStartPathUI();
-      if (state.approvalEventId) void refreshApprovalStatus();
+      if (state.approvalEventId) {
+        void refreshApprovalStatus();
+        void loadSavedFlyersForEvent(state.approvalEventId);
+      } else {
+        void loadSavedFlyersForEvent(null);
+      }
     }
 
     function migrateInspirationFromDraft(d) {
@@ -4690,11 +4873,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${escapeHtml(slots.headline)} · Flyer</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Fraunces:wght@600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Geist:wght@400;600;700&display=swap" rel="stylesheet" />
 <style>
   ${brandBlock}
   ${pageStyles}
-  body { margin: 0; font-family: "DM Sans", system-ui, sans-serif; background: #f6f2eb; }
+  body { margin: 0; font-family: "Geist", system-ui, sans-serif; background: #f6f2eb; }
   .wrap { ${ratioCss} margin: 0 auto; overflow: hidden; }
   .wrap .fly { font-size: 11px; }
   .wrap .fly .h { font-size: 20px; }
@@ -5555,6 +5738,187 @@
       openTiedQuietOnStart();
     }
 
+    function formatSavedFlyerLabel(name) {
+      const raw = typeof name === "string" ? name.trim() : "";
+      if (!raw) return "Saved flyer";
+      return raw
+        .replace(/^Flyer-/i, "")
+        .replace(/\.(png|jpe?g|webp|gif)$/i, "")
+        .replace(/-\d{4}-\d{2}-\d{2}$/, "")
+        .replace(/[-_]+/g, " ")
+        .trim() || "Saved flyer";
+    }
+
+    function formatSavedFlyerWhen(iso) {
+      if (!iso) return "";
+      const t = Date.parse(iso);
+      if (!Number.isFinite(t)) return "";
+      try {
+        return new Date(t).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        });
+      } catch {
+        return "";
+      }
+    }
+
+    function savedFlyerButtonHtml(flyer, options = {}) {
+      const pressed =
+        options.pressed === true || state.savedFileId === flyer.id
+          ? "true"
+          : "false";
+      const label = formatSavedFlyerLabel(flyer.name);
+      const when = formatSavedFlyerWhen(flyer.uploadedAt || flyer.updatedAt);
+      const thumbStyle = flyer.imageUrl
+        ? ` style="background-image:url('${escapeHtml(flyer.imageUrl)}')"`
+        : "";
+      return `<button type="button" class="saved-flyer-row" role="listitem" data-saved-flyer-id="${escapeHtml(flyer.id)}" aria-pressed="${pressed}" aria-label="Open ${escapeHtml(label)}"><span class="saved-flyer-thumb"${thumbStyle}></span><span class="saved-flyer-meta"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(when)}</span></span><span class="saved-flyer-open">Open</span></button>`;
+    }
+
+    function bindSavedFlyerStripClicks(strip) {
+      if (!strip) return;
+      strip.querySelectorAll("[data-saved-flyer-id]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const flyer = (state.savedFlyers || []).find(
+            (row) => row.id === btn.dataset.savedFlyerId,
+          );
+          if (flyer) openSavedFlyer(flyer);
+        });
+      });
+    }
+
+    function renderSavedFlyersLists() {
+      const event = selectedApprovalEvent();
+      const panel = document.getElementById("savedFlyersPanel");
+      const strip = document.getElementById("savedFlyersStrip");
+      const hint = document.getElementById("savedFlyersHint");
+      const startWrap = document.getElementById("startSavedFlyers");
+      const startStrip = document.getElementById("startSavedFlyersStrip");
+      const startHint = document.getElementById("startSavedFlyersHint");
+      const flyers = Array.isArray(state.savedFlyers) ? state.savedFlyers : [];
+      const loading = state.savedFlyersLoading;
+      const hasEvent = Boolean(event);
+
+      if (panel) {
+        panel.hidden = !hasEvent;
+      }
+      if (startWrap) {
+        startWrap.hidden = !hasEvent;
+      }
+
+      const emptyMsg = loading
+        ? "Loading saved flyers…"
+        : "No saved flyers for this event yet. Save one from Preview.";
+      if (hint) {
+        hint.hidden = flyers.length > 0 && !loading;
+        hint.textContent = emptyMsg;
+      }
+      if (startHint) {
+        startHint.hidden = flyers.length > 0 && !loading;
+        startHint.textContent = emptyMsg;
+      }
+
+      const html =
+        !loading && flyers.length
+          ? flyers.map((flyer) => savedFlyerButtonHtml(flyer)).join("")
+          : "";
+      if (strip) {
+        strip.innerHTML = html;
+        bindSavedFlyerStripClicks(strip);
+      }
+      if (startStrip) {
+        startStrip.innerHTML = html;
+        bindSavedFlyerStripClicks(startStrip);
+      }
+    }
+
+    async function loadSavedFlyersForEvent(eventId, options = {}) {
+      const id = typeof eventId === "string" ? eventId.trim() : "";
+      if (!id) {
+        state.savedFlyers = [];
+        state.savedFlyersEventId = null;
+        state.savedFlyersLoading = false;
+        renderSavedFlyersLists();
+        return;
+      }
+      if (
+        options.skipIfCached &&
+        state.savedFlyersEventId === id &&
+        !state.savedFlyersLoading
+      ) {
+        renderSavedFlyersLists();
+        return;
+      }
+      if (!canCallGenerateApi()) {
+        state.savedFlyers = [];
+        state.savedFlyersEventId = id;
+        state.savedFlyersLoading = false;
+        renderSavedFlyersLists();
+        return;
+      }
+
+      state.savedFlyersLoading = true;
+      state.savedFlyersEventId = id;
+      renderSavedFlyersLists();
+      try {
+        const response = await fetch(
+          `${FLYER_SAVED_API}?eventId=${encodeURIComponent(id)}`,
+          { credentials: "include" },
+        );
+        const payload = await response.json().catch(() => null);
+        if (state.savedFlyersEventId !== id) return;
+        if (!response.ok || !payload?.success) {
+          state.savedFlyers = [];
+        } else {
+          state.savedFlyers = Array.isArray(payload.flyers) ? payload.flyers : [];
+        }
+      } catch {
+        if (state.savedFlyersEventId === id) state.savedFlyers = [];
+      } finally {
+        if (state.savedFlyersEventId === id) state.savedFlyersLoading = false;
+        renderSavedFlyersLists();
+      }
+    }
+
+    function openSavedFlyer(flyer) {
+      if (!flyer || !isPersistableFlyerImageUrl(flyer.imageUrl)) return;
+      const versionId = `file-${flyer.id}`;
+      state.versions = addFlyerVersion(state.versions, flyer.imageUrl, {
+        id: versionId,
+        createdAt: Date.parse(flyer.uploadedAt) || Date.now(),
+      });
+      restoreGeneratedFromVersion(
+        findFlyerVersion(state.versions, versionId) || {
+          id: versionId,
+          imageUrl: flyer.imageUrl,
+          createdAt: Date.now(),
+        },
+      );
+      state.savedFileId = flyer.id;
+      state.savedFileName = flyer.name || null;
+      const label = formatSavedFlyerLabel(flyer.name);
+      state.saveTitle = label;
+      const titleInput = document.getElementById("flyerSaveTitle");
+      if (titleInput) titleInput.value = label;
+      persistDraft();
+      setView("result");
+      renderPreviewState();
+      renderVersionsStrip();
+      renderPreviewCampaignChrome();
+      renderApprovalPanel();
+      renderSavedFlyersLists();
+      scheduleSave();
+    }
+
+    function readSaveTitle() {
+      const input = document.getElementById("flyerSaveTitle");
+      const fromInput =
+        input && typeof input.value === "string" ? input.value.trim() : "";
+      if (fromInput) return fromInput;
+      return typeof state.saveTitle === "string" ? state.saveTitle.trim() : "";
+    }
+
     /** Soft Saved-to status line + Tied-to chip — never the hero. */
     function renderPreviewCampaignChrome() {
       const event = selectedApprovalEvent();
@@ -5658,6 +6022,7 @@
       if (btnNext) {
         btnNext.hidden = !savedHere;
       }
+      renderSavedFlyersLists();
     }
 
     function populateApprovalEventSelect() {
@@ -5872,6 +6237,7 @@
       renderPreviewCampaignChrome();
       try {
         const fields = readDraftFields();
+        const title = readSaveTitle();
         const response = await fetch(FLYER_SAVE_API, {
           method: "POST",
           credentials: "include",
@@ -5881,6 +6247,7 @@
             imageUrl,
             versionId: version?.id || null,
             headline: fields.headline || fields.orgName || null,
+            title: title || null,
           }),
         });
         const payload = await response.json().catch(() => null);
@@ -5897,8 +6264,10 @@
         }
         state.savedFileId = payload.fileId || "saved";
         state.savedFileName = payload.fileName || null;
+        if (title) state.saveTitle = title;
         persistDraft();
         renderPreviewCampaignChrome();
+        void loadSavedFlyersForEvent(eventId);
       } catch (error) {
         const msg = error?.message || "Could not save to Files.";
         const filesHint = document.getElementById("filesAsideHint");
@@ -5922,6 +6291,9 @@
       state.approvalWorkflowStatus = null;
       state.savedFileId = null;
       state.savedFileName = null;
+      state.saveTitle = "";
+      const titleInput = document.getElementById("flyerSaveTitle");
+      if (titleInput) titleInput.value = "";
       state.autoGenerateOnEnter = false;
       state.startPath = null;
       state.templateId = null;
@@ -6200,15 +6572,20 @@
     }
 
     function resolveLogoDisplay() {
-      const kit = SETTINGS_BRAND_KIT;
-      if (kit.ptoLogoUrl && kit.ptoLogoUploaded) return "pto";
-      if (kit.schoolLogoUrl && kit.schoolLogoUploaded) return "school";
-      if (kit.ptoLogoUploaded || kit.schoolLogoUploaded) return "lettermark";
-      return "none";
+      const selected = resolveSelectedLogo();
+      if (!selected) {
+        const kit = SETTINGS_BRAND_KIT;
+        if (kit.ptoLogoUploaded || kit.schoolLogoUploaded) return "lettermark";
+        return "none";
+      }
+      if (selected.id === "pto") return "pto";
+      if (selected.id === "school") return "school";
+      return "pto";
     }
 
     function buildBrandKitPayload() {
       const kit = SETTINGS_BRAND_KIT;
+      const selected = resolveSelectedLogo();
       return {
         organizationShortName: kit.organizationShortName,
         primaryColor: kit.primaryColor,
@@ -6218,6 +6595,9 @@
         ptoLogoUploaded: kit.ptoLogoUploaded,
         schoolLogoUploaded: kit.schoolLogoUploaded,
         logoDisplay: resolveLogoDisplay(),
+        selectedLogoId: selected?.id || null,
+        selectedLogoUrl: selected?.url || null,
+        selectedLogoLabel: selected?.label || null,
       };
     }
 
@@ -6441,6 +6821,10 @@
       ?.addEventListener("click", () => {
         void saveSelectedVersionToFiles();
       });
+    document.getElementById("flyerSaveTitle")?.addEventListener("input", (e) => {
+      state.saveTitle = e.target.value || "";
+      scheduleSave();
+    });
     document
       .getElementById("btnCreateNextFlyer")
       ?.addEventListener("click", startNextFlyer);
@@ -6709,6 +7093,20 @@
       if (state.view === "result") {
         if (state.previewGenerated) runGenerate();
         else renderPreviewIdleFlyer();
+      }
+      scheduleSave();
+    });
+
+    document.getElementById("brandLogoPicker")?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-logo-id]");
+      if (!button || !state.brand) return;
+      const nextId = button.getAttribute("data-logo-id");
+      if (!nextId || nextId === state.selectedLogoId) return;
+      state.selectedLogoId = nextId;
+      syncBrandKitCardUI();
+      renderMini();
+      if (state.view === "result" && !state.previewGenerated && !state.generating) {
+        renderPreviewIdleFlyer();
       }
       scheduleSave();
     });
@@ -7051,6 +7449,11 @@
         scheduleSave();
       }
       renderPreviewCampaignChrome();
+      if (state.approvalEventId) {
+        void loadSavedFlyersForEvent(state.approvalEventId);
+      } else {
+        renderSavedFlyersLists();
+      }
     });
   </script>
 </body>

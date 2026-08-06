@@ -277,12 +277,31 @@ async function runApproveSchedulingSideEffects(input: {
       storyManual: metaIntent.storyManual,
       immediatePublish: publishNow,
     });
-    if (metaResult.error) {
-      metaWarning = `Approved, but we couldn’t schedule your Facebook post: ${metaResult.error}`;
+    if (metaResult.error || !metaResult.scheduled) {
+      metaWarning =
+        metaResult.error?.trim()
+          ? `Approved, but we couldn’t schedule your Facebook post: ${metaResult.error}`
+          : "Approved, but we couldn’t queue this post for Meta. Open Failed to retry.";
       console.error(
         "Meta feed schedule after CB2 approve failed:",
-        metaResult.error,
+        metaResult.error ?? "scheduled=false",
       );
+      // Keep the approval (do not roll back to in_queue), but surface Failed so
+      // schedule-path orphans do not sit forever as Scheduled with no Meta slots.
+      await updateSchedulingItemStatus(
+        schedulingItemId,
+        "failed",
+        metaWarning,
+      );
+      if (metaResult.relativeDay !== null) {
+        await syncSchedulingItemsForMetaPublishOutcome({
+          eventId,
+          relativeDay: metaResult.relativeDay,
+          milestoneTitle: row.milestone_name,
+          outcome: "failed",
+          errorMessage: metaWarning,
+        });
+      }
     } else if (publishNow && metaResult.relativeDay !== null) {
       const publishResult = await publishMetaMilestoneBundle({
         eventId,
@@ -1132,4 +1151,17 @@ export async function enrichUnifiedApprovalItemPreviewAction(
   }
 
   return item;
+}
+
+/**
+ * Load deferred Approvals hub statuses (scheduled / posted / published).
+ * Initial SSR omits these detail rows; pulse badges still show authoritative counts.
+ */
+export async function loadApprovalsDeferredPulseItemsAction(): Promise<
+  UnifiedApprovalItem[]
+> {
+  const { getUnifiedApprovalsDeferredPulseItems } = await import(
+    "@/lib/approvals-scheduling/queries"
+  );
+  return getUnifiedApprovalsDeferredPulseItems();
 }

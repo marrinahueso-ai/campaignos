@@ -2,7 +2,7 @@
 
 **Status:** Living index  
 **Owner:** Engineering  
-**Last updated:** July 30, 2026  
+**Last updated:** August 4, 2026  
 **Production:** [heyralli.com](https://heyralli.com)
 
 This is the documentation hub. Start here.
@@ -70,6 +70,7 @@ This is the documentation hub. Start here.
 | Calendar import dedupe (school events) | [qa/calendar-import-dedupe.md](./qa/calendar-import-dedupe.md) |
 | Meta Calendar DnD / native schedule | [qa/meta-calendar-dnd.md](./qa/meta-calendar-dnd.md) |
 | Testing (Sentry / Playwright) | [qa/testing-guide.md](./qa/testing-guide.md) |
+| Performance Engineering Phase 1 (k6) | [qa/performance-engineering-phase1-complete.md](./qa/performance-engineering-phase1-complete.md) · [findings](./qa/k6-load-test-findings.md) · [budget](./qa/performance-budget.md) |
 | Report a Problem | [qa/report-a-problem.md](./qa/report-a-problem.md) |
 | Product blueprints | [product/blueprints/](./product/blueprints/) |
 

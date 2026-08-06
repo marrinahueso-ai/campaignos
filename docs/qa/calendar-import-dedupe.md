@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 29, 2026  
+**Last updated:** August 6, 2026  
 **Related:** [feature-list.md](../product/feature-list.md) · [testing-guide.md](./testing-guide.md) · [google-calendar.md](../integrations/google-calendar.md) · [architecture.md](../engineering/architecture.md)
 
 > **Not the same as Meta Calendar DnD.** This doc covers **school-year event intake** (ICS / Google / PDF → `events` rows). Rescheduling **approved Meta posts** on the calendar is a separate feature — see [meta-calendar-dnd.md](./meta-calendar-dnd.md).
@@ -61,7 +61,7 @@ Org scoping: events are unique per **school year** (`school_year_id` + source + 
 
 **Legacy near-dups:** Pre-identity pairs (same school year + date + normalized title, no external id) are not auto-merged. Clean up via **View imported items** — founder policy: **keep the most recent import**, delete the older copy. Forward re-imports with stable UIDs/Google ids patch the matched row in place.
 
-**Cron scope:** Subscribe + Google auto-import classify against the **entire active school year**, not the rolling calendar planning window — so date moves still match the same external id.
+**Cron scope:** Subscribe + Google auto-import classify against the **entire active school year**, not the rolling calendar planning window — so date moves still match the same external id. Both crons use the **service-role** Supabase client (`SUPABASE_SERVICE_ROLE_KEY`); the cookie/session client has no membership under cron and would return zero targets after membership-scoped RLS.
 
 ### Interactive review vs cron / auto-sync
 

@@ -86,8 +86,8 @@ import {
 const STEPS: Array<{ id: HomepageComposerStep; label: string; hint: string }> =
   [
     { id: "header", label: "Header", hint: "Hero + monthly bars" },
-    { id: "footer", label: "Footer", hint: "Design once" },
-    { id: "cards", label: "Cards", hint: "Change monthly" },
+    { id: "footer", label: "Footer", hint: "CTA + resources" },
+    { id: "cards", label: "Cards", hint: "Events + evergreen" },
     { id: "preview", label: "Preview", hint: "Full page" },
     { id: "export", label: "Export", hint: "Full page HTML" },
   ];
@@ -308,6 +308,7 @@ export function HomepageComposer({
   );
   const artworkCardIdRef = useRef<string | null>(null);
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
+  const exportFrameRef = useRef<HTMLIFrameElement>(null);
   const organizationNameRef = useRef(organizationName);
   const organizationIdRef = useRef(organizationId);
   const stateRef = useRef(state);
@@ -888,6 +889,15 @@ export function HomepageComposer({
 
   // Chrome (Blink) often ignores React updates to iframe `srcDoc`; Safari does not.
   // Remount via key + set the `srcdoc` property so the preview always refreshes.
+  const contentFrameKey = useMemo(() => {
+    let hash = html.length;
+    const step = Math.max(1, Math.floor(html.length / 48));
+    for (let i = 0; i < html.length; i += step) {
+      hash = (Math.imul(hash, 31) + html.charCodeAt(i)) | 0;
+    }
+    return `export:${hash}`;
+  }, [html]);
+
   const previewFrameKey = useMemo(() => {
     let hash = previewHtml.length;
     const step = Math.max(1, Math.floor(previewHtml.length / 48));
@@ -908,6 +918,13 @@ export function HomepageComposer({
     if (!frame) return;
     frame.srcdoc = previewHtml;
   }, [step, previewHtml, previewFrameKey]);
+
+  useEffect(() => {
+    if (step !== "export") return;
+    const frame = exportFrameRef.current;
+    if (!frame) return;
+    frame.srcdoc = html;
+  }, [step, html, contentFrameKey]);
 
   const copyHtml = async () => {
     setCopyLabel("Preparing…");
@@ -1156,7 +1173,7 @@ export function HomepageComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Design your header"
-                body="Hero colors and welcome copy are shared. Announcement bar lines follow the Working on month above."
+                body="Hero colors, welcome copy, and buttons save with the Working on month above — same as announcements."
                 actions={
                   <Button type="button" onClick={() => setStep("footer")}>
                     Save → Footer
@@ -1626,11 +1643,11 @@ export function HomepageComposer({
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {state.header.announcements.map((announcement) => (
-                      <div
-                        key={announcement.id}
-                        className="flex flex-wrap items-end gap-1.5"
-                      >
+                      {state.header.announcements.map((announcement) => (
+                        <div
+                          key={announcement.id}
+                          className="flex flex-wrap items-end gap-1.5"
+                        >
                         <div className="shrink-0">
                           <EmojiPicker
                             value={announcement.emoji}
@@ -1713,7 +1730,7 @@ export function HomepageComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Design your footer"
-                body="Get Involved colors plus Helpful Resources quick links."
+                body="Get Involved colors, buttons, and Helpful Resources save with the Working on month."
                 actions={
                   <Button type="button" onClick={() => setStep("cards")}>
                     Save → Cards
@@ -1737,15 +1754,33 @@ export function HomepageComposer({
                     {state.footer.ctaBody}
                   </p>
                   <div className="mt-4">
-                    <span
-                      className="inline-block rounded-full px-5 py-2.5 text-sm font-bold"
-                      style={{
-                        background: fc.buttonBackground,
-                        color: fc.buttonText,
-                      }}
-                    >
-                      {state.footer.ctaButtonLabel}
-                    </span>
+                    {(state.footer.ctaButtonLabel.trim() ||
+                      state.footer.ctaButton2Label.trim()) && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        {state.footer.ctaButtonLabel.trim() ? (
+                          <span
+                            className="inline-block rounded-full px-5 py-2.5 text-sm font-bold"
+                            style={{
+                              background: fc.buttonBackground,
+                              color: fc.buttonText,
+                            }}
+                          >
+                            {state.footer.ctaButtonLabel}
+                          </span>
+                        ) : null}
+                        {state.footer.ctaButton2Label.trim() ? (
+                          <span
+                            className="inline-block rounded-full px-5 py-2.5 text-sm font-bold"
+                            style={{
+                              background: fc.buttonBackground,
+                              color: fc.buttonText,
+                            }}
+                          >
+                            {state.footer.ctaButton2Label}
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1830,16 +1865,6 @@ export function HomepageComposer({
                     }
                   />
                   <Field
-                    label="Button label"
-                    value={state.footer.ctaButtonLabel}
-                    onChange={(v) =>
-                      setState((p) => ({
-                        ...p,
-                        footer: { ...p.footer, ctaButtonLabel: v },
-                      }))
-                    }
-                  />
-                  <Field
                     label="Body"
                     value={state.footer.ctaBody}
                     onChange={(v) =>
@@ -1851,12 +1876,43 @@ export function HomepageComposer({
                     multiline
                   />
                   <Field
-                    label="Button URL"
+                    label="Button 1 label"
+                    value={state.footer.ctaButtonLabel}
+                    onChange={(v) =>
+                      setState((p) => ({
+                        ...p,
+                        footer: { ...p.footer, ctaButtonLabel: v },
+                      }))
+                    }
+                  />
+                  <Field
+                    label="Button 1 URL"
                     value={state.footer.ctaButtonUrl}
                     onChange={(v) =>
                       setState((p) => ({
                         ...p,
                         footer: { ...p.footer, ctaButtonUrl: v },
+                      }))
+                    }
+                  />
+                  <Field
+                    label="Button 2 label"
+                    value={state.footer.ctaButton2Label}
+                    onChange={(v) =>
+                      setState((p) => ({
+                        ...p,
+                        footer: { ...p.footer, ctaButton2Label: v },
+                      }))
+                    }
+                    placeholder="Optional"
+                  />
+                  <Field
+                    label="Button 2 URL"
+                    value={state.footer.ctaButton2Url}
+                    onChange={(v) =>
+                      setState((p) => ({
+                        ...p,
+                        footer: { ...p.footer, ctaButton2Url: v },
                       }))
                     }
                   />
@@ -2414,7 +2470,7 @@ export function HomepageComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Preview"
-                body={`Showing ${formatMonthLabel(state.workingMonth)} cards with your shared header and footer. Drag the date slider to watch cards roll on and off. On full month, open the share page or save as PDF to send for review.`}
+                body={`Showing ${formatMonthLabel(state.workingMonth)} homepage — header, cards, and footer for this month. Drag the date slider to watch cards roll on and off. On full month, open the share page or save as PDF to send for review.`}
                 actions={
                   <Button type="button" onClick={() => setStep("export")}>
                     Looks good → Export
@@ -2539,13 +2595,26 @@ export function HomepageComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Copy full page code"
-                body="Complete homepage HTML — styles, header, cards, footer, helpful resources, and date script."
+                body="Complete homepage HTML — styles, header, cards, footer, helpful resources, and date script. Preview and code update live as you edit."
                 actions={
                   <Button type="button" onClick={copyHtml}>
                     {copyLabel}
                   </Button>
                 }
               />
+              <div className="overflow-hidden rounded-[22px] border border-cos-border bg-white shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+                <p className="border-b border-cos-border px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-cos-muted">
+                  Live export preview
+                </p>
+                <iframe
+                  key={contentFrameKey}
+                  ref={exportFrameRef}
+                  title="Homepage export preview"
+                  srcDoc={html}
+                  className="block w-full border-0 bg-white"
+                  style={{ minHeight: 520, height: "55vh" }}
+                />
+              </div>
               <div className="max-w-4xl rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                 <ul className="space-y-2 text-sm text-cos-text">
                   <li>✓ Full page (not cards only)</li>
@@ -2554,7 +2623,10 @@ export function HomepageComposer({
                   <li>✓ Helpful Resources emoji quick links</li>
                   <li>✓ Empty cards or resources sections omitted</li>
                 </ul>
-                <pre className="mt-4 max-h-[420px] overflow-auto rounded-[14px] bg-cos-dark p-4 text-xs leading-relaxed text-[#d9e0d6]">
+                <pre
+                  key={contentFrameKey}
+                  className="mt-4 max-h-[420px] overflow-auto rounded-[14px] bg-cos-dark p-4 text-xs leading-relaxed text-[#d9e0d6]"
+                >
                   {html}
                 </pre>
               </div>

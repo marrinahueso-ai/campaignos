@@ -1,11 +1,11 @@
 import sharp from "sharp";
 
 import { generateFlyerQrPng, isFlyerQrTarget } from "@/lib/flyer-composer/qr-code";
-import { findFlyerQrPlaceholderSlot } from "@/lib/flyer-composer/qr-slot";
+import { resolveFlyerQrStampRect } from "@/lib/flyer-composer/qr-layout";
 
 /**
- * Overlay a scannable QR code onto the flyer’s blank white QR placeholder.
- * Falls back to bottom-right if no white square is detected.
+ * Overlay a scannable QR on a fixed lower-right white square.
+ * Size and position are deterministic so every flyer gets the same QR footprint.
  */
 export async function compositeFlyerQrCode(input: {
   imageBase64: string;
@@ -22,55 +22,36 @@ export async function compositeFlyerQrCode(input: {
     const width = meta.width ?? 1024;
     const height = meta.height ?? 1792;
 
-    const slot = await findFlyerQrPlaceholderSlot(flyerBytes);
-
-    let left: number;
-    let top: number;
-    let qrSize: number;
-    let cover: { left: number; top: number; size: number } | null = null;
-
-    if (slot) {
-      // Fill the AI white box — small inset keeps a clean edge inside rounded corners.
-      const inset = Math.max(2, Math.round(slot.size * 0.05));
-      qrSize = Math.max(48, slot.size - inset * 2);
-      left = slot.left + inset;
-      top = slot.top + inset;
-      cover = slot;
-    } else {
-      qrSize = Math.round(Math.min(width, height) * 0.14);
-      const margin = Math.round(Math.min(width, height) * 0.03);
-      left = Math.max(0, width - qrSize - margin);
-      top = Math.max(0, height - qrSize - margin);
-    }
+    const rect = resolveFlyerQrStampRect(width, height);
+    const inset = Math.max(2, Math.round(rect.boxSize * 0.06));
+    const qrSize = Math.max(40, rect.boxSize - inset * 2);
+    const left = rect.left + inset;
+    const top = rect.top + inset;
 
     const qrPng = await generateFlyerQrPng(qrUrl, qrSize);
     if (!qrPng) return null;
 
-    // Use a tight quiet zone — the white box already provides padding.
     const stamp = await sharp(qrPng)
       .resize(qrSize, qrSize, { fit: "fill" })
       .png()
       .toBuffer();
 
-    const layers: sharp.OverlayOptions[] = [];
-    if (cover) {
-      // Re-paint the placeholder solid white so any leftover empty area matches.
-      const whiteBox = await sharp({
-        create: {
-          width: cover.size,
-          height: cover.size,
-          channels: 3,
-          background: { r: 255, g: 255, b: 255 },
-        },
-      })
-        .png()
-        .toBuffer();
-      layers.push({ input: whiteBox, left: cover.left, top: cover.top });
-    }
-    layers.push({ input: stamp, left, top });
+    const whiteBox = await sharp({
+      create: {
+        width: rect.boxSize,
+        height: rect.boxSize,
+        channels: 3,
+        background: { r: 255, g: 255, b: 255 },
+      },
+    })
+      .png()
+      .toBuffer();
 
     const composited = await sharp(flyerBytes)
-      .composite(layers)
+      .composite([
+        { input: whiteBox, left: rect.left, top: rect.top },
+        { input: stamp, left, top },
+      ])
       .png()
       .toBuffer();
 

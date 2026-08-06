@@ -5,6 +5,10 @@ import sharp from "sharp";
 
 import { resolveFlyerComposerQrUrl } from "@/lib/flyer-composer/qr-code";
 import { compositeFlyerQrCode } from "@/lib/flyer-composer/qr-composite";
+import {
+  FLYER_QR_SLOT_FRACTION,
+  resolveFlyerQrStampRect,
+} from "@/lib/flyer-composer/qr-layout";
 import { findFlyerQrPlaceholderSlot } from "@/lib/flyer-composer/qr-slot";
 import type { FlyerComposerGenerateInput } from "@/lib/flyer-composer/types";
 
@@ -111,12 +115,11 @@ describe("flyer QR resolve + composite", () => {
     assert.ok(Math.abs(found!.top - slotTop) <= 8, `top ${found!.top}`);
   });
 
-  it("fills most of the detected white QR box", async () => {
+  it("stamps a fixed-size square QR in the lower-right on every flyer", async () => {
     const width = 512;
     const height = 768;
-    const slotSize = 160;
-    const slotLeft = width - slotSize - 20;
-    const slotTop = height - slotSize - 24;
+    const rect = resolveFlyerQrStampRect(width, height);
+    assert.equal(rect.boxSize, Math.max(48, Math.round(Math.min(width, height) * FLYER_QR_SLOT_FRACTION)));
 
     const flyer = await sharp({
       create: {
@@ -126,22 +129,6 @@ describe("flyer QR resolve + composite", () => {
         background: { r: 20, g: 40, b: 80 },
       },
     })
-      .composite([
-        {
-          input: await sharp({
-            create: {
-              width: slotSize,
-              height: slotSize,
-              channels: 3,
-              background: { r: 255, g: 255, b: 255 },
-            },
-          })
-            .png()
-            .toBuffer(),
-          left: slotLeft,
-          top: slotTop,
-        },
-      ])
       .png()
       .toBuffer();
 
@@ -157,8 +144,8 @@ describe("flyer QR resolve + composite", () => {
 
     let darkInSlot = 0;
     let whiteInSlot = 0;
-    for (let y = slotTop; y < slotTop + slotSize; y += 1) {
-      for (let x = slotLeft; x < slotLeft + slotSize; x += 1) {
+    for (let y = rect.top; y < rect.top + rect.boxSize; y += 1) {
+      for (let x = rect.left; x < rect.left + rect.boxSize; x += 1) {
         const i = (y * info.width + x) * info.channels;
         const r = data[i]!;
         const g = data[i + 1]!;
@@ -168,15 +155,32 @@ describe("flyer QR resolve + composite", () => {
       }
     }
 
-    const slotPixels = slotSize * slotSize;
+    const slotPixels = rect.boxSize * rect.boxSize;
     assert.ok(
-      darkInSlot > slotPixels * 0.12,
-      `expected QR modules to fill the box; dark=${darkInSlot}`,
+      darkInSlot > slotPixels * 0.08,
+      `expected QR modules in fixed box; dark=${darkInSlot}`,
     );
-    // Quiet zone + modules should dominate the placeholder (not a tiny corner stamp).
+    // White square + QR quiet zone (antialiased modules leave some mid grays).
     assert.ok(
-      darkInSlot + whiteInSlot > slotPixels * 0.85,
-      `expected nearly full box coverage; covered=${darkInSlot + whiteInSlot}`,
+      darkInSlot + whiteInSlot > slotPixels * 0.55,
+      `expected most of fixed box covered; covered=${darkInSlot + whiteInSlot}`,
     );
+
+    // Lower-right corners of the painted white square should stay bright.
+    const corner = (x: number, y: number) => {
+      const i = (y * info.width + x) * info.channels;
+      return (data[i]! + data[i + 1]! + data[i + 2]!) / 3;
+    };
+    assert.ok(corner(rect.left + 1, rect.top + 1) > 240);
+    assert.ok(
+      corner(rect.left + rect.boxSize - 2, rect.top + rect.boxSize - 2) > 200,
+    );
+  });
+
+  it("uses the same stamp rect for equal shorter sides", () => {
+    const a = resolveFlyerQrStampRect(1024, 1536);
+    const b = resolveFlyerQrStampRect(1024, 1792);
+    assert.equal(a.boxSize, b.boxSize);
+    assert.equal(a.margin, b.margin);
   });
 });

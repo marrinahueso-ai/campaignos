@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Users } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronDown,
+  ExternalLink,
+  Users,
+} from "lucide-react";
 import {
   EaseBtnPrimary,
   EaseBtnSecondary,
@@ -9,22 +16,30 @@ import {
   EaseChip,
   EaseKpi,
   EaseSectionLabel,
-  EaseSoftActions,
 } from "@/components/events-phase3/EventDetailEaseUi";
 import { EventContextFileUpload } from "@/components/campaign-files/EventContextFileUpload";
 import { formatSyncTime } from "@/lib/event-volunteers/ai-summary";
 import {
+  DEFAULT_VOLUNTEER_LIST_SORT_FIELD,
+  DEFAULT_VOLUNTEER_SORT_DIRECTION,
   formatParticipantShiftTime,
   filterParticipantsByRole,
   filterParticipantsBySearch,
+  nextVolunteerSortState,
   paginateList,
+  sortParticipants,
   volunteerInitials,
+  type VolunteerListSortField,
+  type VolunteerSortDirection,
 } from "@/lib/event-volunteers/participant-list";
 import {
   buildVolunteerRosterSections,
+  DEFAULT_VOLUNTEER_GROUPED_SORT_FIELD,
   rosterProgressTone,
   rosterSectionBadgeLabel,
+  sortRosterRoles,
   type RosterProgressTone,
+  type VolunteerGroupedSortField,
   type VolunteerRosterRoleCard,
 } from "@/lib/event-volunteers/roster-groups";
 import {
@@ -49,6 +64,25 @@ const PROGRESS_BAR_CLASS: Record<RosterProgressTone, string> = {
   muted: "bg-[rgba(42,38,34,0.22)]",
 };
 
+const LIST_SORT_COLUMNS: { id: VolunteerListSortField; label: string }[] = [
+  { id: "volunteer", label: "Volunteer" },
+  { id: "role", label: "Role" },
+  { id: "shift", label: "Shift Time" },
+  { id: "location", label: "Location" },
+  { id: "status", label: "Status" },
+];
+
+const GROUPED_SORT_COLUMNS: {
+  id: VolunteerGroupedSortField;
+  label: string;
+}[] = [
+  { id: "role", label: "Role" },
+  { id: "fill", label: "Fill" },
+  { id: "shift", label: "Shift" },
+  { id: "location", label: "Location" },
+  { id: "people", label: "People" },
+];
+
 type RosterView = "list" | "grouped";
 
 type Props = {
@@ -61,6 +95,23 @@ type Props = {
   onRefresh: () => void;
   onReplaceConnect?: () => void;
 };
+
+function SortIcon({
+  active,
+  direction,
+}: {
+  active: boolean;
+  direction: VolunteerSortDirection;
+}) {
+  if (!active) {
+    return <ArrowUpDown className="h-3 w-3 opacity-40" strokeWidth={1.5} />;
+  }
+  return direction === "asc" ? (
+    <ArrowUp className="h-3 w-3" strokeWidth={1.5} />
+  ) : (
+    <ArrowDown className="h-3 w-3" strokeWidth={1.5} />
+  );
+}
 
 function Avatar({
   name,
@@ -256,17 +307,9 @@ function GroupedRoleLine({
             <div className="rounded-xl border border-dashed border-cos-border px-4 py-4">
               <p className="text-sm text-cos-muted">
                 {filledWithoutNames
-                  ? "Names aren’t shared for this role yet. Fill counts still update above."
+                  ? "No names for this role yet. Refresh after SignUpGenius shares participant names."
                   : "No volunteers assigned yet."}
               </p>
-              {signupUrl ? (
-                <a
-                  href={signupUrl}
-                  className="mt-2 inline-flex text-xs font-bold text-[#2f4a3c] underline-offset-2 hover:underline"
-                >
-                  {filledWithoutNames ? "Open signup" : "Recruit"}
-                </a>
-              ) : null}
               {!filledWithoutNames && role.openSlots > 0 ? (
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {Array.from({
@@ -313,8 +356,17 @@ export function EventVolunteerRosterEase({
   const [expandedRoles, setExpandedRoles] = useState<Record<string, boolean>>(
     {},
   );
+  const [listSortField, setListSortField] = useState<VolunteerListSortField>(
+    DEFAULT_VOLUNTEER_LIST_SORT_FIELD,
+  );
+  const [listSortDirection, setListSortDirection] =
+    useState<VolunteerSortDirection>(DEFAULT_VOLUNTEER_SORT_DIRECTION);
+  const [groupedSortField, setGroupedSortField] =
+    useState<VolunteerGroupedSortField>(DEFAULT_VOLUNTEER_GROUPED_SORT_FIELD);
+  const [groupedSortDirection, setGroupedSortDirection] =
+    useState<VolunteerSortDirection>(DEFAULT_VOLUNTEER_SORT_DIRECTION);
 
-  // Clear client filter state when switching events.
+  // Clear client filter/sort state when switching events.
   useEffect(() => {
     setView("list");
     setSearch("");
@@ -322,6 +374,10 @@ export function EventVolunteerRosterEase({
     setPage(1);
     setImportOpen(false);
     setExpandedRoles({});
+    setListSortField(DEFAULT_VOLUNTEER_LIST_SORT_FIELD);
+    setListSortDirection(DEFAULT_VOLUNTEER_SORT_DIRECTION);
+    setGroupedSortField(DEFAULT_VOLUNTEER_GROUPED_SORT_FIELD);
+    setGroupedSortDirection(DEFAULT_VOLUNTEER_SORT_DIRECTION);
   }, [eventId]);
 
   const participants = snapshot.participants ?? [];
@@ -343,8 +399,8 @@ export function EventVolunteerRosterEase({
   const filteredPeople = useMemo(() => {
     let list = filterParticipantsBySearch(participants, search);
     list = filterParticipantsByRole(list, roleFilter);
-    return list;
-  }, [participants, search, roleFilter]);
+    return sortParticipants(list, listSortField, listSortDirection);
+  }, [participants, search, roleFilter, listSortField, listSortDirection]);
 
   const paged = useMemo(
     () => paginateList(filteredPeople, page, PAGE_SIZE),
@@ -353,7 +409,7 @@ export function EventVolunteerRosterEase({
 
   useEffect(() => {
     setPage(1);
-  }, [search, roleFilter]);
+  }, [search, roleFilter, listSortField, listSortDirection]);
 
   const groupedSections = useMemo(
     () => buildVolunteerRosterSections(assignments, participants),
@@ -388,13 +444,41 @@ export function EventVolunteerRosterEase({
     ? formatSyncTime(source.lastSuccessfulSyncAt)
     : "not yet";
 
+  function toggleListSort(field: VolunteerListSortField) {
+    const next = nextVolunteerSortState(listSortField, listSortDirection, field);
+    setListSortField(next.field);
+    setListSortDirection(next.direction);
+  }
+
+  function toggleGroupedSort(field: VolunteerGroupedSortField) {
+    const next = nextVolunteerSortState(
+      groupedSortField,
+      groupedSortDirection,
+      field,
+    );
+    setGroupedSortField(next.field);
+    setGroupedSortDirection(next.direction);
+  }
+
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <EaseSectionLabel hint={`Updated ${updatedLabel} · names when public`}>
+        <EaseSectionLabel hint={`Updated ${updatedLabel}`}>
           Volunteers
         </EaseSectionLabel>
         <div className="flex flex-wrap items-center gap-2">
+          {signupUrl ? (
+            <a
+              href={signupUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open signup"
+              aria-label="Open signup"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-text transition hover:border-[rgba(47,74,60,0.35)] hover:bg-[rgba(47,74,60,0.06)]"
+            >
+              <ExternalLink className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            </a>
+          ) : null}
           <EventContextFileUpload
             eventId={eventId}
             uploadContext="volunteers"
@@ -541,32 +625,37 @@ export function EventVolunteerRosterEase({
         </div>
       ) : null}
 
-      {!hasNamedRoster ? (
-        <EaseBox className="mb-4">
-          <p className="text-sm text-cos-muted">
-            {filledSpots > 0
-              ? "Names aren’t shared on this public signup. Role fill health still updates below."
-              : "No named volunteers yet. When SignUpGenius shares participant names, they’ll appear here."}
-          </p>
-          {signupUrl ? (
-            <EaseSoftActions>
-              <EaseBtnPrimary href={signupUrl}>Open signup</EaseBtnPrimary>
-            </EaseSoftActions>
-          ) : null}
-        </EaseBox>
-      ) : null}
-
       {view === "list" ? (
         <EaseBox className="overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-cos-border text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
-                  <th className="px-4 py-3">Volunteer</th>
-                  <th className="px-4 py-3">Role</th>
-                  <th className="px-4 py-3">Shift Time</th>
-                  <th className="px-4 py-3">Location</th>
-                  <th className="px-4 py-3">Status</th>
+                  {LIST_SORT_COLUMNS.map((column) => {
+                    const active = listSortField === column.id;
+                    return (
+                      <th key={column.id} className="px-4 py-3" scope="col">
+                        <button
+                          type="button"
+                          onClick={() => toggleListSort(column.id)}
+                          aria-sort={
+                            active
+                              ? listSortDirection === "asc"
+                                ? "ascending"
+                                : "descending"
+                              : "none"
+                          }
+                          className="inline-flex items-center gap-1.5 uppercase tracking-[0.06em] transition hover:text-cos-text"
+                        >
+                          {column.label}
+                          <SortIcon
+                            active={active}
+                            direction={listSortDirection}
+                          />
+                        </button>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -578,7 +667,9 @@ export function EventVolunteerRosterEase({
                     >
                       {hasNamedRoster
                         ? "No volunteers match this search or filter."
-                        : "Named roster is empty for this event."}
+                        : filledSpots > 0
+                          ? "No names yet from SignUpGenius. Turn on “Show names” on the public signup, then Refresh."
+                          : "No volunteers yet. Names appear here after SignUpGenius shares them."}
                     </td>
                   </tr>
                 ) : (
@@ -646,9 +737,43 @@ export function EventVolunteerRosterEase({
         </EaseBox>
       ) : (
         <div className="flex flex-col gap-5">
+          <div
+            className="flex flex-wrap items-center gap-1 rounded-2xl border border-cos-border bg-[rgba(255,252,247,0.65)] p-1"
+            role="toolbar"
+            aria-label="Sort grouped roles"
+          >
+            {GROUPED_SORT_COLUMNS.map((column) => {
+              const active = groupedSortField === column.id;
+              return (
+                <button
+                  key={column.id}
+                  type="button"
+                  onClick={() => toggleGroupedSort(column.id)}
+                  aria-pressed={active}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-extrabold tracking-[0.06em] uppercase transition",
+                    active
+                      ? "bg-cos-card text-cos-text shadow-[0_4px_14px_rgba(28,36,48,0.08)]"
+                      : "text-cos-muted hover:text-cos-text",
+                  )}
+                >
+                  {column.label}
+                  <SortIcon
+                    active={active}
+                    direction={groupedSortDirection}
+                  />
+                </button>
+              );
+            })}
+          </div>
+
           {groupedSections.map((section) => {
-            const sectionRoles = section.roles.filter(
-              (role) => !roleFilter || role.assignment.name === roleFilter,
+            const sectionRoles = sortRosterRoles(
+              section.roles.filter(
+                (role) => !roleFilter || role.assignment.name === roleFilter,
+              ),
+              groupedSortField,
+              groupedSortDirection,
             );
             if (sectionRoles.length === 0) return null;
             return (
@@ -710,51 +835,6 @@ export function EventVolunteerRosterEase({
           ) : null}
         </div>
       )}
-
-      {assignments.length > 0 ? (
-        <div className="mt-5">
-          <EaseSectionLabel>Role breakdown</EaseSectionLabel>
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-            {assignments.map((role) => {
-              const roleFill =
-                typeof role.quantityRequested === "number" &&
-                role.quantityRequested > 0 &&
-                typeof role.quantityFilled === "number"
-                  ? Math.round(
-                      (role.quantityFilled / role.quantityRequested) * 100,
-                    )
-                  : null;
-              const selected = roleFilter === role.name;
-              return (
-                <button
-                  key={role.externalKey}
-                  type="button"
-                  onClick={() =>
-                    setRoleFilter((current) =>
-                      current === role.name ? null : role.name,
-                    )
-                  }
-                  className={cn(
-                    "rounded-2xl border px-3.5 py-3 text-left transition",
-                    selected
-                      ? "border-[#2f4a3c] bg-[rgba(47,74,60,0.08)]"
-                      : "border-cos-border bg-cos-card hover:border-[rgba(47,74,60,0.35)]",
-                  )}
-                >
-                  <strong className="block text-sm font-bold text-cos-text">
-                    {role.name}
-                  </strong>
-                  <span className="mt-1 block text-xs text-cos-muted">
-                    {role.quantityFilled ?? 0} / {role.quantityRequested ?? "?"}{" "}
-                    filled
-                    {roleFill != null ? ` · ${roleFill}%` : ""}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
     </section>
   );
 }

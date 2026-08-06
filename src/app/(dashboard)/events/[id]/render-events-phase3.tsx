@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { EventDetailPhase3Client } from "@/components/events-phase3/EventDetailPhase3Client";
 import {
   accessHasPermission,
@@ -26,22 +25,6 @@ import {
   loadEventDetailTabData,
 } from "@/lib/events-phase3/tab-loaders";
 import type { Event } from "@/types";
-import { EventDetailApprovalsStream } from "./event-detail-approvals-stream";
-
-function ApprovalsTabFallback() {
-  return (
-    <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
-      <div className="flex flex-wrap gap-2">
-        <div className="h-8 w-24 animate-pulse rounded-md bg-cos-bg/70" />
-        <div className="h-8 w-28 animate-pulse rounded-md bg-cos-bg/70" />
-        <div className="h-8 w-20 animate-pulse rounded-md bg-cos-bg/70" />
-      </div>
-      <div className="h-16 w-full animate-pulse rounded-md bg-cos-bg/70" />
-      <div className="h-16 w-full animate-pulse rounded-md bg-cos-bg/70" />
-      <div className="h-16 w-3/4 animate-pulse rounded-md bg-cos-bg/70" />
-    </div>
-  );
-}
 
 export async function renderEventsPhase3Detail(
   event: Event,
@@ -140,21 +123,18 @@ export async function renderEventsPhase3Detail(
     { label: "Publishing", value: publisher },
   ];
 
-  // Bare URL / Approvals: stream tab body so shell/hero paint first.
-  const streamApprovals =
-    initialTab == null ||
-    initialTab === "" ||
-    initialTab === "approvals";
-
-  // Other deep links still preload that tab (not the Approvals default path).
+  // Approvals loads via the same client tab action as other lazy tabs.
+  // SSR-streaming it into the document forced k6 (and every bare event GET)
+  // to wait on the full approvals query+DTO before the response finished —
+  // the shell/hero already paint without it, and TabSkeleton covers the gap.
+  // Deep links still preload non-Approvals tabs (not the Approvals default path).
   const lazyInitial =
-    !streamApprovals &&
-    (initialTab === "tasks" ||
-      initialTab === "files" ||
-      initialTab === "notes" ||
-      initialTab === "vendors" ||
-      initialTab === "activity" ||
-      initialTab === "insights")
+    initialTab === "tasks" ||
+    initialTab === "files" ||
+    initialTab === "notes" ||
+    initialTab === "vendors" ||
+    initialTab === "activity" ||
+    initialTab === "insights"
       ? initialTab
       : null;
 
@@ -213,12 +193,6 @@ export async function renderEventsPhase3Detail(
     }
   }
 
-  const approvalsSlot = streamApprovals ? (
-    <Suspense fallback={<ApprovalsTabFallback />}>
-      <EventDetailApprovalsStream eventId={event.id} />
-    </Suspense>
-  ) : undefined;
-
   return (
     <EventDetailPhase3Client
       event={event}
@@ -231,7 +205,7 @@ export async function renderEventsPhase3Detail(
         access && accessHasPermission(access, "manage_people"),
       )}
       workspace={initialWorkspace}
-      approvalsSlot={approvalsSlot}
+      approvalsSlot={undefined}
       initialTab={initialTab}
       showYoureSet={Boolean(options?.showYoureSet)}
       committeeId={linkedCommittee?.id ?? null}

@@ -1,16 +1,26 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Archive, Trash2, X } from "lucide-react";
 import { MilestoneContentPreview } from "@/components/approvals-scheduling/MilestoneContentPreview";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { formatPlanningItemForPanel } from "@/components/communications-planning-calendar/PlanningCalendarFilters";
 import { getCalendarItemPreviewAction } from "@/lib/communications-calendar/calendar-item-preview-actions";
 import type { CalendarItemPreview } from "@/lib/communications-calendar/calendar-item-preview";
 import { getChannelStyles } from "@/lib/communications-calendar/channel-styles";
+import {
+  archiveEventAction,
+  deleteEventAction,
+} from "@/lib/events/actions";
 import { cn } from "@/lib/utils/cn";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
+
+const DELETE_CONFIRM_TEXT = "DELETE";
+
+type ConfirmAction = "archive" | "delete" | null;
 
 interface PlanningCalendarDetailPanelProps {
   item: (PlanningCalendarItem & { isOverdue?: boolean; isToday?: boolean }) | null;
@@ -28,15 +38,27 @@ function isReviewableCommunication(
   );
 }
 
+function isSchoolEventItem(item: PlanningCalendarItem): boolean {
+  return item.sourceType === "event" || item.communicationType === "event";
+}
+
 export function PlanningCalendarDetailPanel({
   item,
   onClose,
 }: PlanningCalendarDetailPanelProps) {
+  const router = useRouter();
   const [preview, setPreview] = useState<CalendarItemPreview | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [managePending, startManageTransition] = useTransition();
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [manageError, setManageError] = useState<string | null>(null);
 
   useEffect(() => {
     setPreview(null);
+    setConfirmAction(null);
+    setDeleteConfirmText("");
+    setManageError(null);
     if (!item || !isReviewableCommunication(item)) {
       return;
     }
@@ -65,6 +87,74 @@ export function PlanningCalendarDetailPanel({
   const styles = getChannelStyles(item.channel);
   const milestoneName = item.timelineStepTitle ?? item.title;
   const showMilestoneReview = isReviewableCommunication(item);
+  const canManageEvent = isSchoolEventItem(item);
+  const deleteConfirmed = deleteConfirmText === DELETE_CONFIRM_TEXT;
+
+  function openConfirm(action: ConfirmAction) {
+    setConfirmAction(action);
+    setDeleteConfirmText("");
+    setManageError(null);
+  }
+
+  function closeConfirm() {
+    if (!managePending) {
+      setConfirmAction(null);
+      setDeleteConfirmText("");
+      setManageError(null);
+    }
+  }
+
+  function handleConfirm() {
+    if (!confirmAction || !item) return;
+    if (confirmAction === "delete" && deleteConfirmText !== DELETE_CONFIRM_TEXT) {
+      return;
+    }
+
+    setManageError(null);
+    const eventId = item.eventId;
+
+    startManageTransition(async () => {
+      if (confirmAction === "archive") {
+        const result = await archiveEventAction(eventId);
+        if (!result.success) {
+          setManageError(result.error ?? "Unable to archive event.");
+          return;
+        }
+      } else if (confirmAction === "delete") {
+        const result = await deleteEventAction(eventId);
+        if (!result.success) {
+          setManageError(
+            result.error ?? "Unable to delete event. It may still be linked to other records.",
+          );
+          return;
+        }
+      }
+
+      setConfirmAction(null);
+      setDeleteConfirmText("");
+      onClose();
+      router.refresh();
+    });
+  }
+
+  const confirmCopy =
+    confirmAction === "archive"
+      ? {
+          title: "Archive this event?",
+          message:
+            "Recommended when you’re done with active work. The event stays available by direct link and can be restored anytime. It will be hidden from Dashboard, Campaigns, Calendar, and Campaign Director.",
+          confirmLabel: "Archive event",
+          variant: "primary" as const,
+        }
+      : confirmAction === "delete"
+        ? {
+            title: "Delete this event permanently?",
+            message:
+              "This removes the event and all workspace data (drafts, versions, timeline steps, assets, approvals, schedules, and activity). This cannot be undone. Prefer archive unless you need permanent removal.",
+            confirmLabel: "Delete permanently",
+            variant: "danger" as const,
+          }
+        : null;
 
   return (
     <aside className="fixed inset-y-0 right-0 z-40 flex w-full max-w-md flex-col border-l border-cos-border bg-white shadow-2xl">
@@ -230,7 +320,93 @@ export function PlanningCalendarDetailPanel({
         <Button href={`/events/${item.eventId}`} className="w-full">
           Open planning hub
         </Button>
+        {canManageEvent ? (
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              disabled={managePending}
+              onClick={() => openConfirm("archive")}
+            >
+              <Archive className="h-4 w-4" />
+              Archive
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1 text-cos-error-text hover:text-cos-error-text"
+              disabled={managePending}
+              onClick={() => openConfirm("delete")}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </Button>
+          </div>
+        ) : null}
       </div>
+
+      {confirmAction && confirmCopy ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-cos-text/20 p-4 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="calendar-event-manage-confirm-title"
+            className="w-full max-w-md rounded-2xl border border-cos-border bg-cos-card p-6 shadow-xl"
+          >
+            <h2
+              id="calendar-event-manage-confirm-title"
+              className="text-lg font-semibold text-cos-text"
+            >
+              {confirmCopy.title}
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-cos-muted">
+              {confirmCopy.message}
+            </p>
+
+            {confirmAction === "delete" ? (
+              <div className="mt-4">
+                <Input
+                  label={`Type ${DELETE_CONFIRM_TEXT} to confirm`}
+                  value={deleteConfirmText}
+                  autoComplete="off"
+                  spellCheck={false}
+                  disabled={managePending}
+                  placeholder={DELETE_CONFIRM_TEXT}
+                  onChange={(event) => setDeleteConfirmText(event.target.value)}
+                />
+              </div>
+            ) : null}
+
+            {manageError ? (
+              <p className="mt-3 text-sm text-red-600" role="alert">
+                {manageError}
+              </p>
+            ) : null}
+
+            <div className="mt-6 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={managePending}
+                onClick={closeConfirm}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant={confirmCopy.variant}
+                disabled={
+                  managePending || (confirmAction === "delete" && !deleteConfirmed)
+                }
+                onClick={handleConfirm}
+              >
+                {managePending ? "Working…" : confirmCopy.confirmLabel}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 }

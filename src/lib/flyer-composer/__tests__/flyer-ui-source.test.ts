@@ -9,11 +9,14 @@ const flyerHtml = readFileSync(
 );
 
 describe("flyer composer UI source contract", () => {
-  it("uses Pilot Fraunces + DM Sans stack (same as Social Create-with-AI)", () => {
-    assert.match(flyerHtml, /fonts\.googleapis\.com.*Fraunces/);
-    assert.match(flyerHtml, /fonts\.googleapis\.com.*DM\+Sans|family=DM\+Sans/);
-    assert.match(flyerHtml, /--serif:\s*"Fraunces"/);
-    assert.match(flyerHtml, /--sans:\s*"DM Sans"/);
+  it("uses site Geist + Cormorant stack (same as dashboard chrome)", () => {
+    assert.match(flyerHtml, /fonts\.googleapis\.com.*Geist|family=Geist/);
+    assert.match(
+      flyerHtml,
+      /fonts\.googleapis\.com.*Cormorant|family=Cormorant/,
+    );
+    assert.match(flyerHtml, /--serif:\s*"Cormorant Garamond"/);
+    assert.match(flyerHtml, /--sans:\s*"Geist"/);
     assert.match(flyerHtml, /button,\s*input,\s*textarea,\s*select/);
   });
 
@@ -34,5 +37,23 @@ describe("flyer composer UI source contract", () => {
     assert.match(flyerHtml, /FLYER_SEND_APPROVAL_API/);
     assert.match(flyerHtml, /id="btnSendForApproval"/);
     assert.match(flyerHtml, /data-panel="edit"/);
+  });
+
+  it("exposes Brand Kit logo picker from Setup logos", () => {
+    assert.match(flyerHtml, /id="brandLogoPicker"/);
+    assert.match(flyerHtml, /function syncBrandLogoPicker/);
+    assert.match(flyerHtml, /function resolveSelectedLogo/);
+    assert.match(flyerHtml, /selectedLogoId/);
+    assert.match(flyerHtml, /data-logo-id/);
+  });
+
+  it("exposes save options + per-event saved flyer load", () => {
+    assert.match(flyerHtml, /FLYER_SAVED_API/);
+    assert.match(flyerHtml, /function loadSavedFlyersForEvent/);
+    assert.match(flyerHtml, /function openSavedFlyer/);
+    assert.match(flyerHtml, /id="flyerSaveTitle"/);
+    assert.match(flyerHtml, /id="savedFlyersPanel"/);
+    assert.match(flyerHtml, /id="startSavedFlyers"/);
+    assert.match(flyerHtml, /Save options/);
   });
 });

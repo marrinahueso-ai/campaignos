@@ -59,6 +59,10 @@ export function CalendarImportPlanList({
   );
 
   const selectedCount = selectedIds.size;
+  const filteredCount = filteredEvents.length;
+  const allFilteredSelected =
+    filteredCount > 0 &&
+    filteredEvents.every((event) => selectedIds.has(event.id));
 
   function toggleSelected(eventId: string) {
     setSelectedIds((current) => {
@@ -70,6 +74,22 @@ export function CalendarImportPlanList({
       }
       return next;
     });
+  }
+
+  function handleSelectAllVisible() {
+    setSelectedIds(new Set(filteredEvents.map((event) => event.id)));
+  }
+
+  function handleClearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  function handleToggleSelectAllVisible() {
+    if (allFilteredSelected) {
+      handleClearSelection();
+      return;
+    }
+    handleSelectAllVisible();
   }
 
   function goImport() {
@@ -216,7 +236,14 @@ export function CalendarImportPlanList({
           <thead>
             <tr className="border-b border-cos-border bg-[rgba(255,252,247,0.65)]">
               <th className="w-10 px-3.5 py-3 text-left">
-                <span className="sr-only">Select</span>
+                <input
+                  type="checkbox"
+                  checked={allFilteredSelected}
+                  onChange={handleToggleSelectAllVisible}
+                  disabled={isPending || filteredCount === 0}
+                  aria-label="Select all events"
+                  className="h-4 w-4 rounded border-cos-border"
+                />
               </th>
               <th className="px-3.5 py-3 text-left text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
                 Name
@@ -313,6 +340,28 @@ export function CalendarImportPlanList({
         >
           Import more
         </button>
+        {allFilteredSelected ? (
+          <button
+            type="button"
+            onClick={handleClearSelection}
+            disabled={isPending || selectedCount === 0}
+            className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px disabled:opacity-40"
+          >
+            Clear selection
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSelectAllVisible}
+            disabled={isPending || filteredCount === 0}
+            className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px disabled:opacity-40"
+          >
+            Select all
+            {searchQuery.trim() && filteredCount > 0
+              ? ` (${filteredCount})`
+              : ""}
+          </button>
+        )}
         <button
           type="button"
           onClick={handleDeleteSelected}

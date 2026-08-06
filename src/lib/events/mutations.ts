@@ -115,6 +115,20 @@ export async function restoreEvent(id: string): Promise<boolean> {
 export async function deleteEvent(id: string): Promise<boolean> {
   const supabase = await createClient();
 
+  // vendor_event_assignments references events with ON DELETE RESTRICT.
+  const { error: vendorClearError } = await supabase
+    .from("vendor_event_assignments")
+    .delete()
+    .eq("event_id", id);
+
+  if (vendorClearError) {
+    console.error(
+      "Failed to clear vendor assignments before event delete:",
+      vendorClearError.message,
+    );
+    return false;
+  }
+
   // Child rows cascade via FK: communication_items, communication_versions,
   // event_communication_steps, event_assets, approval_requests,
   // publication_schedule, activity_log, event_playbook_assignments.

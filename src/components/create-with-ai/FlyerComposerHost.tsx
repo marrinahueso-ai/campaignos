@@ -27,8 +27,8 @@ function flyerHtmlCacheKey(): string {
 
 /**
  * Hosts the static Flyer composer inside dashboard Sidebar + header chrome.
- * The iframe document loads Pilot Fraunces + DM Sans (same stack as Social
- * Create-with-AI) via Google Fonts under the flyer embed CSP.
+ * The iframe document loads site fonts (Geist + Cormorant Garamond) via
+ * Google Fonts under the flyer embed CSP.
  */
 export function FlyerComposerHost({
   view,
