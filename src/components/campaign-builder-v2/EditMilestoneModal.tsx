@@ -539,7 +539,9 @@ export function EditMilestoneModal({
             <p>
               Both Artwork notes and Captions apply when you{" "}
               {hasExistingContent ? "regenerate" : "generate"}. Leave a side
-              blank if you don&apos;t want it to change.
+              blank if you don&apos;t want it to change. Artwork direction
+              updates Feed, then Story is adapted from that Feed automatically
+              — same notes, no separate 9:16 step.
               {hasExistingArtwork && styleLocked
                 ? " Style lock keeps the current image and only applies what you type."
                 : null}

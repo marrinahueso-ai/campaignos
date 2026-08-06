@@ -70,7 +70,7 @@ export function buildCampaignBuilderArtworkPrompt(input: {
 
   const lines = [
     input.storyFromFeed
-      ? `Create a ${campaignMoment.label.toLowerCase()} story adaptation of the attached feed artwork in ${formatHint}.`
+      ? `Produce a ${campaignMoment.label.toLowerCase()} story version of the attached feed artwork in ${formatHint}. This is the same post as the 1:1 feed — match its design exactly; only recompose for vertical story safe zones.`
       : `Create campaign artwork for a ${campaignMoment.label.toLowerCase()} social post in ${formatHint}.`,
     "",
     `Campaign / event: ${input.inspiration.campaignName}`,
@@ -147,7 +147,7 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     lines.push(
       "",
       input.storyFromFeed
-        ? "Keep the same visual style, colors, and branding as the attached feed design. Adapt layout for vertical story safe zones."
+        ? "The attached feed image is the source of truth for this story. Preserve its look, hierarchy, and on-graphic text; only adapt layout for vertical story safe zones."
         : "Use the attached inspiration images for composition, layout, visual hierarchy, style, color palette, and visual mood.",
     );
 

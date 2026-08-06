@@ -31,6 +31,7 @@ import {
   applyStyleLockToInstructions,
   resolveStyleStrengthForLock,
 } from "@/lib/campaign-builder-v2/style-lock";
+import { resolveMilestoneArtworkGenerationPass } from "@/lib/campaign-builder-v2/artwork-generation-mode";
 import {
   captionPlatformsForFormats,
   generationStatusAfterContent,
@@ -258,13 +259,14 @@ async function generateArtworkForMilestone(input: {
       continue;
     }
 
-    const storyFromFeed = view === "story" && Boolean(artwork.feedUrl);
-    const feedUrl = artwork.feedUrl;
-    const isAdjust =
-      view === "feed" &&
-      Boolean(existingUrl?.trim()) &&
-      !isPlaceholderArtworkUrl(existingUrl) &&
-      Boolean(lockedInstructions);
+    // Feed first, then Story from the just-written feedUrl — same Edit Post
+    // direction, Story via adjust-from-feed (not a second creative create).
+    const pass = resolveMilestoneArtworkGenerationPass({
+      view,
+      existingUrl,
+      feedUrl: artwork.feedUrl,
+      lockedInstructions,
+    });
 
     const artworkResult = await generateCampaignBuilderArtwork({
       eventId: input.eventId,
@@ -276,10 +278,10 @@ async function generateArtworkForMilestone(input: {
       useBrandKit: input.useBrandKit,
       styleStrength,
       styleLocked,
-      extraInstructions: isAdjust ? null : lockedInstructions || null,
-      adjustmentComments: isAdjust ? lockedInstructions : null,
-      previousImageUrl: isAdjust ? existingUrl : storyFromFeed ? feedUrl : null,
-      storyFromFeed,
+      extraInstructions: pass.extraInstructions,
+      adjustmentComments: pass.adjustmentComments,
+      previousImageUrl: pass.previousImageUrl,
+      storyFromFeed: pass.storyFromFeed,
       versionCount: 1,
       userId: input.userId,
       isRegeneration: input.isRegeneration ?? false,
