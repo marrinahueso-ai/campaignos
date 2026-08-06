@@ -77,9 +77,9 @@ import {
 } from "@/lib/campaign-builder-v2/inspiration-preserve";
 import {
   applyArtworkWithMainEventReuse,
-  applyImageToAllPosts,
   detachMainEventImage,
   isReusableArtwork,
+  reapplyMainEventImageAfterPlanChange,
 } from "@/lib/campaign-builder-v2/main-event-image";
 import {
   captionPlatformsForFormats,
@@ -213,13 +213,9 @@ interface CampaignBuilderContextValue {
   applyMilestoneArtwork: (
     milestoneId: string,
     artwork: MilestoneArtwork,
-    options?: { asCustom?: boolean; applyToAll?: boolean },
+    options?: { asCustom?: boolean },
   ) => string[];
   detachMilestoneFromMainImage: (milestoneId: string) => void;
-  applyArtworkToAllPosts: (
-    artwork: MilestoneArtwork,
-    sourceMilestoneId?: string | null,
-  ) => string[];
   setReviewFilter: (filter: CampaignBuilderSession["reviewFilter"]) => void;
   toggleExpandedReview: (milestoneId: string) => void;
   reconcilePreviewStatuses: () => void;
@@ -751,7 +747,7 @@ export function CampaignBuilderProvider({
         (milestone) => milestone.id === current.selectedMilestoneId,
       );
 
-      const next: CampaignBuilderSession = {
+      const rebuiltSession: CampaignBuilderSession = {
         ...current,
         inspiration: {
           ...current.inspiration,
@@ -764,6 +760,11 @@ export function CampaignBuilderProvider({
           ? current.selectedMilestoneId
           : (rebuilt.milestones[0]?.id ?? null),
       };
+      // Keep Event Image across plan switches and fill empty posts on the new timeline.
+      const next = reapplyMainEventImageAfterPlanChange(
+        rebuiltSession,
+        current,
+      ).session;
       sessionRef.current = next;
       setSession(next);
       return { success: true, changed: true };
@@ -2116,7 +2117,7 @@ export function CampaignBuilderProvider({
     (
       milestoneId: string,
       artwork: MilestoneArtwork,
-      options?: { asCustom?: boolean; applyToAll?: boolean },
+      options?: { asCustom?: boolean },
     ): string[] => {
       let changed: string[] = [];
       updateSession((prev) => {
@@ -2153,37 +2154,6 @@ export function CampaignBuilderProvider({
   const detachMilestoneFromMainImage = useCallback(
     (milestoneId: string) => {
       updateSession((prev) => detachMainEventImage(prev, milestoneId));
-    },
-    [updateSession],
-  );
-
-  const applyArtworkToAllPosts = useCallback(
-    (
-      artwork: MilestoneArtwork,
-      sourceMilestoneId?: string | null,
-    ): string[] => {
-      let changed: string[] = [];
-      updateSession((prev) => {
-        const result = applyImageToAllPosts(prev, artwork, sourceMilestoneId);
-        changed = result.changedMilestoneIds;
-        return {
-          ...result.session,
-          previewContents: result.session.previewContents.map((content) => {
-            if (!changed.includes(content.milestoneId)) {
-              return content;
-            }
-            return {
-              ...content,
-              status: "needs-review" as const,
-              generationStatus: inferGenerationStatus(
-                content,
-                content.enabledFormats,
-              ),
-            };
-          }),
-        };
-      });
-      return changed;
     },
     [updateSession],
   );
@@ -2359,7 +2329,6 @@ export function CampaignBuilderProvider({
       updatePreviewContent,
       applyMilestoneArtwork,
       detachMilestoneFromMainImage,
-      applyArtworkToAllPosts,
       setReviewFilter,
       toggleExpandedReview,
       reconcilePreviewStatuses,
@@ -2414,7 +2383,6 @@ export function CampaignBuilderProvider({
       updatePreviewContent,
       applyMilestoneArtwork,
       detachMilestoneFromMainImage,
-      applyArtworkToAllPosts,
       setReviewFilter,
       toggleExpandedReview,
       reconcilePreviewStatuses,

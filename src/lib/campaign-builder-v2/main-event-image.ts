@@ -8,7 +8,7 @@ import type {
   MilestonePreviewContent,
 } from "./types.ts";
 
-/** Countdown posts that auto-reuse the main event image. */
+/** @deprecated Prefer filling every empty plan post — kept for callers/tests. */
 export const MAIN_EVENT_IMAGE_RELATIVE_DAYS = [-14, -7, -1, 0] as const;
 
 function artworkUrlsEqual(left: MilestoneArtwork, right: MilestoneArtwork): boolean {
@@ -97,7 +97,52 @@ function patchPreviewArtwork(
 }
 
 /**
- * Set / refresh main event image and copy onto shared (or empty target-day) posts.
+ * Copy main artwork onto every empty or already-shared post.
+ * Custom overrides (Change image) are left alone. Captions never change.
+ */
+export function seedMainEventImageAcrossPlan(
+  session: CampaignBuilderSession,
+  artwork: MilestoneArtwork,
+): ApplyMainEventImageResult {
+  const normalized = cloneArtwork(artwork);
+  if (!isReusableArtwork(normalized)) {
+    return { session, changedMilestoneIds: [] };
+  }
+
+  const changedMilestoneIds: string[] = [];
+  const previewContents = session.previewContents.map((preview) => {
+    if (
+      preview.artworkMode === "custom" &&
+      isReusableArtwork(preview.artwork)
+    ) {
+      return preview;
+    }
+    if (
+      preview.artworkMode === "shared" ||
+      !isReusableArtwork(preview.artwork)
+    ) {
+      return patchPreviewArtwork(
+        preview,
+        normalized,
+        "shared",
+        changedMilestoneIds,
+      );
+    }
+    return preview;
+  });
+
+  return {
+    session: {
+      ...session,
+      mainEventImage: cloneArtwork(normalized),
+      previewContents,
+    },
+    changedMilestoneIds: [...new Set(changedMilestoneIds)],
+  };
+}
+
+/**
+ * Set / refresh main event image and auto-copy onto empty + shared posts.
  * Captions are never modified.
  */
 export function applyArtworkWithMainEventReuse(
@@ -107,8 +152,6 @@ export function applyArtworkWithMainEventReuse(
   options?: {
     /** Mark only the source post custom (Change image). */
     asCustom?: boolean;
-    /** Copy onto every post and mark all shared. */
-    applyToAll?: boolean;
   },
 ): ApplyMainEventImageResult {
   const normalized = cloneArtwork(artwork);
@@ -117,14 +160,13 @@ export function applyArtworkWithMainEventReuse(
   }
 
   const asCustom = Boolean(options?.asCustom);
-  const applyToAll = Boolean(options?.applyToAll);
   const sourcePreview = session.previewContents.find(
     (row) => row.milestoneId === sourceMilestoneId,
   );
   const sourceWasCustom = sourcePreview?.artworkMode === "custom";
 
-  // Independent post: only that row changes (unless Apply to all).
-  if ((asCustom || sourceWasCustom) && !applyToAll) {
+  // Independent post: only that row changes.
+  if (asCustom || sourceWasCustom) {
     const changedMilestoneIds: string[] = [];
     return {
       session: {
@@ -139,60 +181,20 @@ export function applyArtworkWithMainEventReuse(
     };
   }
 
-  const eventDate = session.inspiration.eventDate;
-  const milestoneById = new Map(
-    session.milestones.map((milestone) => [milestone.id, milestone]),
-  );
-  const mainEventImage = normalized;
-
-  const changedMilestoneIds: string[] = [];
-  const previewContents = session.previewContents.map((preview) => {
-    const milestone = milestoneById.get(preview.milestoneId);
-    if (!milestone) return preview;
-
-    if (preview.milestoneId === sourceMilestoneId || applyToAll) {
-      return patchPreviewArtwork(
-        preview,
-        mainEventImage,
-        "shared",
-        changedMilestoneIds,
-      );
-    }
-
-    if (preview.artworkMode === "custom") {
-      return preview;
-    }
-
-    const relativeDay = milestoneRelativeDayForPreview(
-      eventDate,
-      milestone,
-      preview,
-    );
-    const alreadyShared = preview.artworkMode === "shared";
-    const emptyTarget =
-      isMainEventImageTargetDay(relativeDay) &&
-      !isReusableArtwork(preview.artwork);
-
-    if (alreadyShared || emptyTarget) {
-      return patchPreviewArtwork(
-        preview,
-        mainEventImage,
-        "shared",
-        changedMilestoneIds,
-      );
-    }
-
-    return preview;
-  });
-
-  return {
-    session: {
-      ...session,
-      mainEventImage: cloneArtwork(mainEventImage),
-      previewContents,
-    },
-    changedMilestoneIds: [...new Set(changedMilestoneIds)],
+  const withSource: CampaignBuilderSession = {
+    ...session,
+    previewContents: session.previewContents.map((preview) =>
+      preview.milestoneId === sourceMilestoneId
+        ? {
+            ...preview,
+            artwork: cloneArtwork(normalized),
+            artworkMode: "shared" as const,
+          }
+        : preview,
+    ),
   };
+
+  return seedMainEventImageAcrossPlan(withSource, normalized);
 }
 
 /** Mark a post as independent before the user replaces its image. */
@@ -210,19 +212,33 @@ export function detachMainEventImage(
   };
 }
 
-export function applyImageToAllPosts(
-  session: CampaignBuilderSession,
-  artwork: MilestoneArtwork,
-  sourceMilestoneId?: string | null,
+/**
+ * After a communication plan rebuild, keep the prior Event Image and fill
+ * empty posts on the new timeline (custom overrides stay).
+ */
+export function reapplyMainEventImageAfterPlanChange(
+  nextSession: CampaignBuilderSession,
+  previousSession: CampaignBuilderSession,
 ): ApplyMainEventImageResult {
-  const sourceId =
-    sourceMilestoneId ??
-    session.selectedMilestoneId ??
-    session.milestones[0]?.id ??
-    "";
-  return applyArtworkWithMainEventReuse(session, sourceId, artwork, {
-    applyToAll: true,
-  });
+  const artwork =
+    resolveDisplayMainEventImage(previousSession) ??
+    resolveDisplayMainEventImage(nextSession);
+  if (!artwork) {
+    return {
+      session: {
+        ...nextSession,
+        mainEventImage: nextSession.mainEventImage ?? previousSession.mainEventImage ?? null,
+      },
+      changedMilestoneIds: [],
+    };
+  }
+  return seedMainEventImageAcrossPlan(
+    {
+      ...nextSession,
+      mainEventImage: artwork,
+    },
+    artwork,
+  );
 }
 
 export function resolveDisplayMainEventImage(

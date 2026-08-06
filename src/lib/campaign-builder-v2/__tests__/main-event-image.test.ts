@@ -3,8 +3,8 @@ import { describe, it } from "node:test";
 import { buildDefaultSession } from "../seed-data.ts";
 import {
   applyArtworkWithMainEventReuse,
-  applyImageToAllPosts,
   detachMainEventImage,
+  reapplyMainEventImageAfterPlanChange,
   usesMainEventImage,
 } from "../main-event-image.ts";
 import type { CampaignBuilderMilestone } from "../types.ts";
@@ -53,7 +53,7 @@ function shiftDate(date: string, days: number): string {
 }
 
 describe("main event image reuse", () => {
-  it("auto-fills -14/-7/-1/0 and leaves captions alone", () => {
+  it("auto-fills every empty plan post and leaves captions alone", () => {
     const base = withRelativeDay(buildDefaultSession("e1", "Fair", "2026-09-01"), [
       -14, -7, -1, 0, 2,
     ]);
@@ -64,16 +64,13 @@ describe("main event image reuse", () => {
     const { session } = applyArtworkWithMainEventReuse(base, "ms--14", art);
 
     assert.equal(session.mainEventImage?.feedUrl, art.feedUrl);
-    for (const id of ["ms--14", "ms--7", "ms--1", "ms-0"]) {
+    for (const id of ["ms--14", "ms--7", "ms--1", "ms-0", "ms-2"]) {
       const row = session.previewContents.find((p) => p.milestoneId === id);
       assert.equal(row?.artwork.feedUrl, art.feedUrl);
       assert.equal(row?.artworkMode, "shared");
       assert.equal(usesMainEventImage(row, session.mainEventImage), true);
       assert.match(row?.captions[0]?.text ?? "", /Caption/);
     }
-    const recap = session.previewContents.find((p) => p.milestoneId === "ms-2");
-    assert.equal(recap?.artwork.feedUrl, null);
-    assert.notEqual(recap?.artworkMode, "shared");
   });
 
   it("keeps custom posts independent when main updates", () => {
@@ -112,28 +109,34 @@ describe("main event image reuse", () => {
     );
   });
 
-  it("apply to all overwrites every post as shared", () => {
-    const base = withRelativeDay(buildDefaultSession("e1", "Fair", "2026-09-01"), [
-      -14, -7, 2,
-    ]);
-    let { session } = applyArtworkWithMainEventReuse(base, "ms--14", {
-      feedUrl: "https://cdn.example/a.png",
-      storyUrl: null,
-    });
-    session = detachMainEventImage(session, "ms-2");
-    ({ session } = applyArtworkWithMainEventReuse(
-      session,
-      "ms-2",
-      { feedUrl: "https://cdn.example/custom.png", storyUrl: null },
-      { asCustom: true },
-    ));
-
+  it("reapplies event image onto empty posts after a plan change", () => {
+    const previous = withRelativeDay(
+      buildDefaultSession("e1", "Fair", "2026-09-01"),
+      [-14, -7],
+    );
     const art = {
-      feedUrl: "https://cdn.example/all.png",
+      feedUrl: "https://cdn.example/kept.png",
       storyUrl: null,
     };
-    ({ session } = applyImageToAllPosts(session, art, "ms--14"));
+    const seeded = applyArtworkWithMainEventReuse(previous, "ms--14", art).session;
 
+    const nextPlan = withRelativeDay(
+      buildDefaultSession("e1", "Fair", "2026-09-01"),
+      [-3, -1, 0],
+    );
+    // Simulate rebuild: new empty posts, no artwork carried by name match.
+    const rebuilt = {
+      ...nextPlan,
+      mainEventImage: null,
+      previewContents: nextPlan.previewContents.map((row) => ({
+        ...row,
+        artwork: { feedUrl: null, storyUrl: null },
+        artworkMode: undefined,
+      })),
+    };
+
+    const { session } = reapplyMainEventImageAfterPlanChange(rebuilt, seeded);
+    assert.equal(session.mainEventImage?.feedUrl, art.feedUrl);
     for (const row of session.previewContents) {
       assert.equal(row.artwork.feedUrl, art.feedUrl);
       assert.equal(row.artworkMode, "shared");

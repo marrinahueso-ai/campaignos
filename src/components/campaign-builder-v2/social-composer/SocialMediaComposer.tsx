@@ -1015,7 +1015,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     updatePreviewContent,
     applyMilestoneArtwork,
     detachMilestoneFromMainImage,
-    applyArtworkToAllPosts,
     updateMilestone,
     addMilestone,
     removeMilestone,
@@ -1241,36 +1240,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     openEdit("artwork");
   }
 
-  async function handleApplyImageToAllPosts() {
-    if (!selectedPreview) return;
-    const artwork = selectedPreview.artwork;
-    if (
-      !artwork.feedUrl &&
-      !artwork.storyUrl
-    ) {
-      onToast("Generate or apply an image on this post first.");
-      return;
-    }
-    const changedIds = applyArtworkToAllPosts(
-      artwork,
-      selectedPreview.milestoneId,
-    );
-    onToast("Applied image to all posts.");
-    try {
-      for (const milestoneId of changedIds) {
-        await syncAppliedMilestoneArtworkAction({
-          eventId: session.eventId,
-          milestones: session.milestones,
-          milestoneId,
-          artwork,
-        });
-      }
-      router.refresh();
-    } catch {
-      // Best-effort sync
-    }
-  }
-
   function openLightbox(view: "feed" | "story") {
     const imageUrl = view === "feed" ? feedUrl : storyUrl;
     setLightbox({
@@ -1400,18 +1369,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                 >
                   {mainEventThumb ? "Edit image" : "Add image"}
                 </button>
-                {mainEventThumb ? (
-                  <button
-                    type="button"
-                    className="link-action"
-                    disabled={!selectedPreview}
-                    onClick={() => {
-                      void handleApplyImageToAllPosts();
-                    }}
-                  >
-                    Apply to all posts
-                  </button>
-                ) : null}
               </div>
             </div>
           </div>
@@ -1571,28 +1528,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
               <span>Using main event image</span>
               <button type="button" className="link-action" onClick={handleChangeImage}>
                 Change image
-              </button>
-              <button
-                type="button"
-                className="link-action"
-                onClick={() => {
-                  void handleApplyImageToAllPosts();
-                }}
-              >
-                Apply this image to all posts
-              </button>
-            </div>
-          ) : selectedPreview &&
-            (feedUrl || storyUrl) ? (
-            <div className="main-image-banner">
-              <button
-                type="button"
-                className="link-action"
-                onClick={() => {
-                  void handleApplyImageToAllPosts();
-                }}
-              >
-                Apply this image to all posts
               </button>
             </div>
           ) : null}
