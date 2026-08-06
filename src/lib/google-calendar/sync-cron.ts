@@ -15,7 +15,7 @@ import {
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/admin";
 
-/** Daily cron — auto-import new Google Calendar events (deduped). */
+/** Daily cron — stage New/Update into Review (deduped; no silent apply). */
 export async function syncAllActiveGoogleCalendars(): Promise<{
   targetCount: number;
   results: SyncGoogleCalendarResult[];
@@ -70,7 +70,7 @@ export async function syncAllActiveGoogleCalendars(): Promise<{
       organizationSchoolYear: (org.school_year as string | null) ?? null,
       schoolYear,
       connection,
-      autoImport: true,
+      stageForReview: true,
       useServiceRole: true,
     });
     results.push(result);

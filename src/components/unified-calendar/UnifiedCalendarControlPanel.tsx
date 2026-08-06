@@ -67,6 +67,8 @@ interface UnifiedCalendarControlPanelProps {
   onLayersChange: (layers: Set<CalendarLayerId>) => void;
   onLayerColorChange?: (layerId: CalendarLayerId, color: string | null) => void;
   compact?: boolean;
+  /** Pending New/Update/Conflict rows waiting in Review. */
+  pendingReviewCount?: number;
 }
 
 export function UnifiedCalendarControlPanel({
@@ -85,6 +87,7 @@ export function UnifiedCalendarControlPanel({
   onLayersChange,
   onLayerColorChange,
   compact = false,
+  pendingReviewCount = 0,
 }: UnifiedCalendarControlPanelProps) {
   function toggleLayer(layerId: CalendarLayerId) {
     const next = new Set(activeLayers);
@@ -115,13 +118,27 @@ export function UnifiedCalendarControlPanel({
           </p>
         </div>
         {!compact ? (
-          <button
-            type="button"
-            onClick={() => onViewChange("import")}
-            className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
-          >
-            Bring in calendar <span aria-hidden="true">→</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onViewChange("review")}
+              className="inline-flex items-center gap-2 rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px"
+            >
+              Review
+              {pendingReviewCount > 0 ? (
+                <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-[rgba(255,252,247,0.2)] px-1.5 text-[11px] font-extrabold tabular-nums">
+                  {pendingReviewCount > 99 ? "99+" : pendingReviewCount}
+                </span>
+              ) : null}
+            </button>
+            <button
+              type="button"
+              onClick={() => onViewChange("import")}
+              className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
+            >
+              Bring in calendar <span aria-hidden="true">→</span>
+            </button>
+          </div>
         ) : null}
       </div>
 

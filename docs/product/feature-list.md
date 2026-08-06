@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 6, 2026 — Homepage 1/2 buttons + month save · Calendar Select all · Flyer QR/logo/fonts · Social Edit Post
+**Last updated:** August 6, 2026 — Calendar Review CTA + overnight stage + school-year filter
 
 ---
 
@@ -191,7 +191,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Legacy Publishing Center → redirects to Approvals
 
 ## Calendar
-- Calendar IA: primary views are Month · Week · Best times · Agenda only; one quiet **Bring in calendar** entry owns import → review → **View imported items** (no peer Import list / Import / Review tabs or duplicate header buttons) — **shipped** (design ref: [`public/calendar-ease-cleanup-mockup.html`](../../public/calendar-ease-cleanup-mockup.html))
+- Calendar IA: primary views are Month · Week · Best times · Agenda; header **Review** (badge when New/Update pending) + **Bring in calendar** (Google · RSS/subscribe · Doc upload/parse — three methods kept); Review is the only approve/import screen — **shipped** (design ref: [`public/calendar-ease-cleanup-mockup.html`](../../public/calendar-ease-cleanup-mockup.html))
 - Calendar Ease shell: compact framed header + soft view pills aligned to cleanup mockup; month view no longer shows **Coming up · Next 7 days** — **shipped**
 - Calendar chrome (shell, import, review, Google/subscribe feed) customer copy — org/team/year + refresh language; Settings **School year** feature name retained — **shipped**
 - School-year calendar (month / week / agenda) — **shipped**
@@ -202,11 +202,11 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Posting heatmap (Calendar week view + planning suggestions; prefs + published Meta history; gated on org Meta connection) — **shipped**
 - Insights-weighted engagement heatmap — **deferred** (current scores use preferred windows + local publish times, not Meta Insights metrics)
 - Google Calendar Sign-in (OAuth → auto-sync → review → `/calendar` + dashboard) — **shipped** (live; see [google-calendar.md](../integrations/google-calendar.md))
-- Google Calendar daily sync cron (auto-import new events) — **shipped**
+- Google Calendar daily sync cron (stages New/Update into Review; prior-year dates filtered) — **shipped**
 - Google Calendar connect from **Bring in calendar** + Settings Integrations — **shipped**
-- ICS / webcal subscribe feed — **shipped** (daily `calendar-subscribe-sync` cron auto-imports New/Update via service role — same pattern as Google; cookie client under membership RLS returned zero targets)
-
-- Calendar file upload + import review (incl. AI fix) — **shipped** (canonical UX: **Bring in calendar** → `/calendar?tab=import` → `/calendar?tab=review` — Google + ICS + file on one screen; onboarding checklist + Get started wizard calendar step use that same path; Settings → Google Calendar is connect/subscribe with deep-links to Import)
+- ICS / webcal subscribe feed — **shipped** (daily `calendar-subscribe-sync` cron stages New/Update into Review via service role — same pattern as Google; cookie client under membership RLS returned zero targets)
+- Calendar import review: one **Import** action for New + Updates; Duplicates collapsed; school-year Jul–Jun filter on Google/RSS/doc intake — **shipped**
+- Calendar file upload + import review (incl. AI fix) — **shipped** (canonical UX: **Bring in calendar** → `/calendar?tab=import` → `/calendar?tab=review` — Google + ICS + file on one hub; onboarding checklist + Get started wizard calendar step use that same path; Settings → Google Calendar is connect/subscribe with deep-links to Import)
 - Calendar import review plan type from org communication plans (Settings → Communication Plans; stores `playbookId` on import) — **shipped**
 - Calendar import review search (name/category/date/year), type/date filters, and Archive past events (bulk remove prior dates from the import queue) — **shipped**
 - Calendar Import list search (name/category/date/year) with Select all / Delete selected on visible filtered rows — **shipped** (`/calendar` → **Bring in calendar** → View imported items; hard-deletes events for the org’s school years — same membership as Events, not the rolling calendar date window)

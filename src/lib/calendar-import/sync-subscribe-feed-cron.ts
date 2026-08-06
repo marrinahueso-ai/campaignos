@@ -7,7 +7,7 @@ import {
 import { getActiveSubscribeFeedTargets } from "@/lib/school-years/subscribe-feed-targets";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
-/** Daily cron — auto-import new feed events (deduped). */
+/** Daily cron — stage New/Update into Review (deduped; no silent apply). */
 export async function syncAllActiveSubscribeFeeds(): Promise<{
   targetCount: number;
   results: SyncSubscribeFeedResult[];
@@ -27,7 +27,7 @@ export async function syncAllActiveSubscribeFeeds(): Promise<{
       organizationId: target.organizationId,
       organizationSchoolYear: target.organizationSchoolYear,
       schoolYear: target.schoolYear,
-      autoImport: true,
+      stageForReview: true,
       useServiceRole: true,
     });
     results.push(result);

@@ -81,6 +81,17 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
       <CalendarReviewEmptyEase />
     );
 
+  const pendingReviewCount =
+    reviewPage.importRecord?.parseStatus === "parsed" && reviewPage.reviewData
+      ? reviewPage.reviewData.events.filter(
+          (event) =>
+            event.status === "ready" ||
+            event.status === "needs_review" ||
+            event.status === "update" ||
+            event.status === "conflict",
+        ).length
+      : 0;
+
   return (
     <UnifiedCalendarShell
       data={planningData}
@@ -88,6 +99,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
       initialView={initialView}
       importSections={importSections}
       reviewPanel={reviewPanel}
+      pendingReviewCount={pendingReviewCount}
     />
   );
 }

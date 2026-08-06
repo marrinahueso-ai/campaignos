@@ -28,6 +28,7 @@ import {
 import { countDateMentions } from "@/lib/calendar-import/extract-date-lines";
 import { generateText } from "@/lib/ai/provider";
 import { resolveCalendarSchoolYearLabel } from "@/lib/calendar-import/calendar-window";
+import { filterEventsToSchoolYearWindow } from "@/lib/calendar-import/school-year-event-window";
 import {
   getCalendarImportById,
   getCalendarWindowEventCount,
@@ -145,19 +146,25 @@ export async function parseCalendarImportAction(
     : null;
 
   if (importRecord.fileType === "ics") {
-    const events = parseIcsToReviewEvents(
-      extracted.text,
-      organization?.schoolYear,
-      "ics",
+    const schoolYearLabel =
+      activeSchoolYear?.label ?? organization?.schoolYear ?? null;
+    const events = filterEventsToSchoolYearWindow(
+      parseIcsToReviewEvents(extracted.text, schoolYearLabel, "ics"),
+      schoolYearLabel,
     );
 
     if (!events.length) {
       await updateCalendarImportParseStatus(importId, {
         parseStatus: "failed",
-        parseError: "No events were found in the ICS calendar file.",
+        parseError:
+          "No events in this school year were found in the ICS calendar file.",
         extractedText: extracted.text,
       });
-      return { events: [], error: "No events were found in the ICS calendar file." };
+      return {
+        events: [],
+        error:
+          "No events in this school year were found in the ICS calendar file.",
+      };
     }
 
     let normalizedEvents = events;
@@ -202,7 +209,22 @@ export async function parseCalendarImportAction(
     return { events: [], error: parsed.error };
   }
 
-  let events = parsed.events;
+  const schoolYearLabel =
+    activeSchoolYear?.label ?? organization?.schoolYear ?? null;
+  let events = filterEventsToSchoolYearWindow(parsed.events, schoolYearLabel);
+  if (!events.length) {
+    await updateCalendarImportParseStatus(importId, {
+      parseStatus: "failed",
+      parseError:
+        "No events in this school year were found in the uploaded document.",
+      extractedText: extracted.text,
+    });
+    return {
+      events: [],
+      error:
+        "No events in this school year were found in the uploaded document.",
+    };
+  }
   if (organization) {
     const preferences = await getImportEventPreferencesMap(organization.id);
     events = applyImportPreferencesToEvents(events, preferences);

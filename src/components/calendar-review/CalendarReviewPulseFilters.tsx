@@ -17,20 +17,22 @@ export function CalendarReviewPulseFilters({
 }: CalendarReviewPulseFiltersProps) {
   const needs = events.filter((e) => e.status === "needs_review").length;
   const ready = events.filter((e) => e.status === "ready").length;
+  const updates = events.filter((e) => e.status === "update").length;
   const conflicts = events.filter((e) => e.status === "conflict").length;
   const duplicates = events.filter((e) => e.status === "duplicate").length;
 
-  // Match calendar-ease-mockup.html review pulse (no “All” pill).
+  // Actionable first; duplicates stay available but quieter.
   const tabs: Array<{
     id: CalendarReviewFilter;
     label: string;
     count: number;
   }> = [
     { id: "needs_review", label: "Needs you", count: needs },
-    { id: "ready", label: "Ready", count: ready },
+    { id: "ready", label: "New", count: ready },
+    { id: "updates", label: "Updates", count: updates },
     { id: "conflicts", label: "Conflicts", count: conflicts },
     { id: "duplicates", label: "Duplicates", count: duplicates },
-  ];
+  ].filter((tab) => tab.id === "duplicates" ? tab.count > 0 : true);
 
   return (
     <div

@@ -145,14 +145,14 @@ export function CalendarImportEasePanel({
                 onClick={onContinueToReview}
                 className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px"
               >
-                Continue to Review →
+                Review
               </button>
             ) : (
               <Link
                 href="/calendar?tab=review"
                 className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px"
               >
-                Continue to Review →
+                Review
               </Link>
             )}
             {onViewImportedItems ? (

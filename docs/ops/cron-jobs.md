@@ -88,7 +88,7 @@ Page loads (Dashboard, Approvals, etc.) stay **DB reads only** — no Meta polli
 
 | Symptom | Likely cron / cause |
 |---------|---------------------|
-| ICS subscribe stale | `calendar-subscribe-sync` failing or bad subscribe URL. Cron **must** use service role (`SUPABASE_SERVICE_ROLE_KEY`) — membership RLS returns zero orgs with the cookie client. Manual **Refresh** only stages review (`autoImport: false`); overnight cron auto-applies New/Update. |
+| ICS subscribe stale | `calendar-subscribe-sync` failing or bad subscribe URL. Cron **must** use service role (`SUPABASE_SERVICE_ROLE_KEY`) — membership RLS returns zero orgs with the cookie client. Manual **Refresh** and overnight cron both **stage Review** (`stageForReview` / `autoImport: false`); they do not silent-apply New/Update. Prior-year dates outside Jul–Jun school year are dropped. |
 | Google events not refreshing overnight | `google-calendar-sync`; OAuth revoked / `deleted_client`; no active school year |
 | Scheduled FB/IG posts not going out | `meta-publish`; cron loads due slots + org Meta connection via **service role** (no user session). Token expired → check `meta-token-health`. Create with AI **Publish Now** bypasses cron and publishes on approve. |
 | Scheduled posts delayed >30 min | Check Vercel cron invocations for `meta-publish`; due backlog may exceed per-run cap (20 bundles) — clears on subsequent runs |

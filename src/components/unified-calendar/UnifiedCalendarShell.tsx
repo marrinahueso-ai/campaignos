@@ -67,6 +67,7 @@ interface UnifiedCalendarShellProps {
     upload: ReactNode;
   };
   reviewPanel?: ReactNode;
+  pendingReviewCount?: number;
 }
 
 export function UnifiedCalendarShell({
@@ -75,6 +76,7 @@ export function UnifiedCalendarShell({
   initialView = "month",
   importSections,
   reviewPanel,
+  pendingReviewCount = 0,
 }: UnifiedCalendarShellProps) {
   const router = useRouter();
   const today = getTodayDateString();
@@ -323,6 +325,7 @@ export function UnifiedCalendarShell({
           onLayerColorChange={handleLayerColorChange}
           postingHeatmap={data.postingHeatmap}
           showPostingHeatmap={showHeatmap && data.postingHeatmap != null}
+          pendingReviewCount={pendingReviewCount}
         />
 
         {showSearchNoMatches ? (

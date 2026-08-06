@@ -69,7 +69,15 @@ export function CalendarImportReview({
   const [importedCount, setImportedCount] = useState(importedEventCount);
   const [actionError, setActionError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] =
-    useState<CalendarReviewFilter>("needs_review");
+    useState<CalendarReviewFilter>(() => {
+      const needs = data.events.filter((e) => e.status === "needs_review").length;
+      const ready = data.events.filter((e) => e.status === "ready").length;
+      const updates = data.events.filter((e) => e.status === "update").length;
+      if (needs > 0) return "needs_review";
+      if (ready > 0) return "ready";
+      if (updates > 0) return "updates";
+      return "ready";
+    });
   const [showAiChat, setShowAiChat] = useState(false);
   const [isPending, startTransition] = useTransition();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -432,7 +440,7 @@ export function CalendarImportReview({
                 disabled={isPending}
                 className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px disabled:opacity-50"
               >
-                Import ready items
+                Import
               </button>
               <button
                 type="button"

@@ -21,9 +21,11 @@ import {
   upsertImportPreferencesFromReviewEvents,
 } from "@/lib/calendar-import/import-preferences";
 import { parseIcsToReviewEvents } from "@/lib/calendar-import/parse-ics";
+import { filterEventsToSchoolYearWindow } from "@/lib/calendar-import/school-year-event-window";
 import { linkCalendarImportToSchoolYear } from "@/lib/school-years/mutations";
 import type { SchoolYear } from "@/lib/school-years/types";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { CalendarReviewEvent } from "@/types/calendar-review";
 
 export interface SyncSubscribeFeedResult {
   organizationId: string;
@@ -39,16 +41,34 @@ export interface SyncSubscribeFeedResult {
   autoImported: boolean;
 }
 
+function actionableReviewEvents(
+  events: CalendarReviewEvent[],
+): CalendarReviewEvent[] {
+  return events.filter(
+    (event) =>
+      event.status === "ready" ||
+      event.status === "needs_review" ||
+      event.status === "update" ||
+      event.status === "conflict",
+  );
+}
+
 export async function syncSchoolYearSubscribeFeed(input: {
   organizationId: string;
   organizationSchoolYear: string | null;
   schoolYear: SchoolYear;
   autoImport?: boolean;
+  /**
+   * Overnight / background: stage only New/Update/Conflict into Review
+   * (no silent apply). Skips storing a duplicate-only batch.
+   */
+  stageForReview?: boolean;
   /** Use service-role client (cron / background jobs). */
   useServiceRole?: boolean;
 }): Promise<SyncSubscribeFeedResult> {
   const { organizationId, schoolYear } = input;
-  const autoImport = input.autoImport ?? false;
+  const stageForReview = input.stageForReview ?? false;
+  const autoImport = stageForReview ? false : (input.autoImport ?? false);
   const useServiceRole = input.useServiceRole ?? false;
   const db: SupabaseClient | undefined = useServiceRole
     ? createAdminClient()
@@ -107,17 +127,17 @@ export async function syncSchoolYearSubscribeFeed(input: {
     db,
   );
 
-  const events = parseIcsToReviewEvents(
-    fetched.text,
+  const events = filterEventsToSchoolYearWindow(
+    parseIcsToReviewEvents(fetched.text, schoolYear.label, "subscribe"),
     schoolYear.label,
-    "subscribe",
   );
   if (!events.length) {
     await updateCalendarImportParseStatus(
       importId,
       {
         parseStatus: "failed",
-        parseError: "No events were found in the calendar feed.",
+        parseError:
+          "No events in this school year were found in the calendar feed.",
         extractedText: fetched.text,
       },
       db,
@@ -126,7 +146,7 @@ export async function syncSchoolYearSubscribeFeed(input: {
       ...base,
       importId,
       success: false,
-      error: "No events were found in the calendar feed.",
+      error: "No events in this school year were found in the calendar feed.",
     };
   }
 
@@ -145,14 +165,16 @@ export async function syncSchoolYearSubscribeFeed(input: {
   );
   const { toInsert, toUpdate, skippedDuplicates } =
     partitionClassifiedReviewEvents(classified);
-  const reviewEvents = autoImport
-    ? classified.filter(
-        (event) =>
-          event.status === "ready" ||
-          event.status === "needs_review" ||
-          event.status === "update",
-      )
-    : classified;
+  const storedEvents = stageForReview
+    ? actionableReviewEvents(classified)
+    : autoImport
+      ? classified.filter(
+          (event) =>
+            event.status === "ready" ||
+            event.status === "needs_review" ||
+            event.status === "update",
+        )
+      : classified;
 
   if (toInsert.length === 0 && toUpdate.length === 0) {
     await updateCalendarImportParseStatus(
@@ -161,7 +183,7 @@ export async function syncSchoolYearSubscribeFeed(input: {
         parseStatus: "parsed",
         parseError: null,
         extractedText: fetched.text,
-        parsedEvents: autoImport ? [] : classified,
+        parsedEvents: stageForReview || autoImport ? [] : classified,
       },
       db,
     );
@@ -189,7 +211,7 @@ export async function syncSchoolYearSubscribeFeed(input: {
         parseStatus: "imported",
         parseError: null,
         extractedText: fetched.text,
-        parsedEvents: reviewEvents,
+        parsedEvents: storedEvents,
         importedAt: new Date().toISOString(),
       },
       db,
@@ -197,7 +219,7 @@ export async function syncSchoolYearSubscribeFeed(input: {
 
     await upsertImportPreferencesFromReviewEvents(
       organizationId,
-      reviewEvents,
+      storedEvents,
       db,
     );
 
@@ -219,7 +241,7 @@ export async function syncSchoolYearSubscribeFeed(input: {
       parseStatus: "parsed",
       parseError: null,
       extractedText: fetched.text,
-      parsedEvents: reviewEvents,
+      parsedEvents: storedEvents,
     },
     db,
   );
@@ -230,6 +252,7 @@ export async function syncSchoolYearSubscribeFeed(input: {
     success: true,
     error: null,
     added: toInsert.length + toUpdate.length,
+    updated: toUpdate.length,
     skipped: skippedDuplicates.length,
   };
 }

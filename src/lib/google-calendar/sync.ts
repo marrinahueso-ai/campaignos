@@ -21,6 +21,10 @@ import {
 } from "@/lib/calendar-import/import-preferences";
 import { parseIcsToReviewEvents } from "@/lib/calendar-import/parse-ics";
 import {
+  filterEventsToSchoolYearWindow,
+  schoolYearGoogleTimeBounds,
+} from "@/lib/calendar-import/school-year-event-window";
+import {
   googleEventsToIcsText,
   listGoogleCalendarEvents,
 } from "@/lib/google-calendar/api";
@@ -32,6 +36,7 @@ import type { GoogleCalendarConnection } from "@/lib/google-calendar/types";
 import { linkCalendarImportToSchoolYear } from "@/lib/school-years/mutations";
 import type { SchoolYear } from "@/lib/school-years/types";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { CalendarReviewEvent } from "@/types/calendar-review";
 
 export interface SyncGoogleCalendarResult {
   organizationId: string;
@@ -47,18 +52,35 @@ export interface SyncGoogleCalendarResult {
   autoImported: boolean;
 }
 
+function actionableReviewEvents(
+  events: CalendarReviewEvent[],
+): CalendarReviewEvent[] {
+  return events.filter(
+    (event) =>
+      event.status === "ready" ||
+      event.status === "needs_review" ||
+      event.status === "update" ||
+      event.status === "conflict",
+  );
+}
+
 export async function syncSchoolYearGoogleCalendar(input: {
   organizationId: string;
   organizationSchoolYear: string | null;
   schoolYear: SchoolYear;
   connection: GoogleCalendarConnection;
   autoImport?: boolean;
+  /**
+   * Overnight / background: stage only New/Update/Conflict into Review
+   * (no silent apply). Skips storing a duplicate-only batch.
+   */
+  stageForReview?: boolean;
   /** Use service-role client (cron / background jobs). */
   useServiceRole?: boolean;
 }): Promise<SyncGoogleCalendarResult> {
-  const { organizationId, schoolYear, connection } =
-    input;
-  const autoImport = input.autoImport ?? false;
+  const { organizationId, schoolYear, connection } = input;
+  const stageForReview = input.stageForReview ?? false;
+  const autoImport = stageForReview ? false : (input.autoImport ?? false);
   const useServiceRole = input.useServiceRole ?? false;
   const db: SupabaseClient | undefined = useServiceRole
     ? createAdminClient()
@@ -95,7 +117,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
     };
   }
 
-  const window = googleSyncWindow();
+  const window = schoolYearGoogleTimeBounds(schoolYear.label);
   const listed = await listGoogleCalendarEvents({
     accessToken,
     calendarId: connection.googleCalendarId,
@@ -143,14 +165,17 @@ export async function syncSchoolYearGoogleCalendar(input: {
     db,
   );
 
-  const events = parseIcsToReviewEvents(icsText, schoolYear.label, "google");
+  const events = filterEventsToSchoolYearWindow(
+    parseIcsToReviewEvents(icsText, schoolYear.label, "google"),
+    schoolYear.label,
+  );
   if (!events.length) {
     await updateCalendarImportParseStatus(
       importId,
       {
         parseStatus: "failed",
         parseError:
-          "No events were found on Google Calendar in this date range.",
+          "No events in this school year were found on Google Calendar.",
         extractedText: icsText,
       },
       db,
@@ -159,7 +184,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
       ...base,
       importId,
       success: false,
-      error: "No events were found on Google Calendar in this date range.",
+      error: "No events in this school year were found on Google Calendar.",
     };
   }
 
@@ -177,14 +202,16 @@ export async function syncSchoolYearGoogleCalendar(input: {
   );
   const { toInsert, toUpdate, skippedDuplicates } =
     partitionClassifiedReviewEvents(classified);
-  const reviewEvents = autoImport
-    ? classified.filter(
-        (event) =>
-          event.status === "ready" ||
-          event.status === "needs_review" ||
-          event.status === "update",
-      )
-    : classified;
+  const storedEvents = stageForReview
+    ? actionableReviewEvents(classified)
+    : autoImport
+      ? classified.filter(
+          (event) =>
+            event.status === "ready" ||
+            event.status === "needs_review" ||
+            event.status === "update",
+        )
+      : classified;
 
   if (toInsert.length === 0 && toUpdate.length === 0) {
     await updateCalendarImportParseStatus(
@@ -193,7 +220,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
         parseStatus: "parsed",
         parseError: null,
         extractedText: icsText,
-        parsedEvents: autoImport ? [] : classified,
+        parsedEvents: stageForReview || autoImport ? [] : classified,
       },
       db,
     );
@@ -211,13 +238,9 @@ export async function syncSchoolYearGoogleCalendar(input: {
       events: inserted,
       skippedCount: importSkipped,
       updatedCount,
-    } = await insertImportedEvents(
-      classified,
-      importId,
-      existing,
-      db,
-      { autoApplyUpdates: true },
-    );
+    } = await insertImportedEvents(classified, importId, existing, db, {
+      autoApplyUpdates: true,
+    });
 
     await updateCalendarImportParseStatus(
       importId,
@@ -225,7 +248,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
         parseStatus: "imported",
         parseError: null,
         extractedText: icsText,
-        parsedEvents: reviewEvents,
+        parsedEvents: storedEvents,
         importedAt: new Date().toISOString(),
       },
       db,
@@ -233,7 +256,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
 
     await upsertImportPreferencesFromReviewEvents(
       organizationId,
-      reviewEvents,
+      storedEvents,
       db,
     );
 
@@ -255,7 +278,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
       parseStatus: "parsed",
       parseError: null,
       extractedText: icsText,
-      parsedEvents: reviewEvents,
+      parsedEvents: storedEvents,
     },
     db,
   );
@@ -266,20 +289,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
     success: true,
     error: null,
     added: toInsert.length + toUpdate.length,
+    updated: toUpdate.length,
     skipped: skippedDuplicates.length,
-  };
-}
-
-function googleSyncWindow(): { timeMin: string; timeMax: string } {
-  const now = new Date();
-  const start = new Date(now);
-  start.setUTCMonth(start.getUTCMonth() - 1);
-  start.setUTCHours(0, 0, 0, 0);
-  const end = new Date(now);
-  end.setUTCFullYear(end.getUTCFullYear() + 1);
-  end.setUTCHours(23, 59, 59, 999);
-  return {
-    timeMin: start.toISOString(),
-    timeMax: end.toISOString(),
   };
 }
