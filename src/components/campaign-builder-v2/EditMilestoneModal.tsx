@@ -364,9 +364,9 @@ export function EditMilestoneModal({
         </div>
       }
     >
-      <div className="grid gap-6 lg:grid-cols-[minmax(240px,0.9fr)_minmax(0,1.15fr)] lg:items-start">
+      <div className="grid gap-5 lg:grid-cols-[minmax(200px,0.85fr)_minmax(0,1.15fr)] lg:items-start lg:gap-6">
         {/* Live phone preview */}
-        <div className="space-y-3">
+        <div className="space-y-3 lg:sticky lg:top-0">
           <div
             className="mx-auto inline-flex rounded-full bg-cos-bg p-1"
             role="group"
@@ -394,8 +394,8 @@ export function EditMilestoneModal({
             ))}
           </div>
 
-          <div className="mx-auto w-full max-w-[260px]">
-            <div className="rounded-[32px] bg-[#1c2430] p-3 shadow-lg">
+          <div className="mx-auto w-full max-w-[220px] sm:max-w-[240px]">
+            <div className="rounded-[28px] bg-[#1c2430] p-2.5 shadow-lg sm:rounded-[32px] sm:p-3">
               <div className="mx-auto mb-2 h-1.5 w-16 rounded-full bg-[#2a3340]" />
               <div
                 className={cn(
@@ -542,7 +542,7 @@ export function EditMilestoneModal({
                 label="What should change?"
                 value={artworkInstructions}
                 onChange={(e) => setArtworkInstructions(e.target.value)}
-                rows={5}
+                rows={4}
                 placeholder="e.g. More green accents, add playful community elements…"
                 disabled={busy}
               />

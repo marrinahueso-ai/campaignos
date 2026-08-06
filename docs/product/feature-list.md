@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 31, 2026 — Approval emails: app HTML via sendEmail (Resend 2k template-var limit)
+**Last updated:** August 6, 2026 — Edit Post sheet fits viewport
 
 ---
 
@@ -122,7 +122,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Generate artwork + captions per post — **shipped** (client treats gateway / aborted server-action responses as interruptions and restores saved artwork when generation finished server-side; campaign-builder route `maxDuration` 300s)
 - Social **Creative Setup** (UX Pilot–aligned): three numbered cards — **1 Campaign & Plan** (event · date · communication plan + milestone list · Use Last Year's Plan soon) · **2 Look & Feel** (brand logos · inspiration images) · **3 Voice & Colors** · sticky **Live Vibe Preview** phone · **Create with AI** / Save Draft / Report a Problem (+ top **Save → Preview**) — **shipped**
 - Social **Preview** studio (UX Pilot–aligned): horizontal step pills · **N of M posts ready** progress bar · **Save → Review** · Campaign posts cards with thumbs + Ready/Needs work/Draft · drag reorder · icon-only **+** to add · inline rename · phone Feed/Story with pencil Edit (opens Edit Post for AI notes — no second Generate CTA under the phone) · caption + character count · **How this post goes out** (Instagram/Facebook pills · Publish now / Schedule for later cards · Action required highlight · Advanced post options for feed/story/manual kit); Save → Review focuses first incomplete; app sidebar collapses to icons on Preview — **shipped**
-- Social **Edit Post** (Preview / change-request): UX Pilot–aligned sheet opened from phone pencil (single edit entry — no competing under-phone Generate link); phone Feed/Story preview left; sage tip + **Artwork | Captions** tabs; What should change + quick chips; **Copy notes to Captions** / from Artwork; footer style slider (creative ↔ similar) + **Generate with AI** (first time) / **Regenerate with AI** (when art or caption exists); **Apply & close** in header; generate only sides with instructions — **shipped**
+- Social **Edit Post** (Preview / change-request): UX Pilot–aligned sheet opened from phone pencil (single edit entry — no competing under-phone Generate link); phone Feed/Story preview left; sage tip + **Artwork | Captions** tabs; What should change + quick chips; **Copy notes to Captions** / from Artwork; footer style slider (creative ↔ similar) + **Generate with AI** (first time) / **Regenerate with AI** (when art or caption exists); **Apply & close** in header; generate only sides with instructions; sheet capped to the viewport (`100dvh`) with a scrollable body so the regenerate footer stays on-screen — **shipped**
 - Social artwork waiting motion: **Warm breath** (subtle scale + cream/amber/teal wash) while feed/story generate or regenerate in Create with AI Preview / Edit / Social composer and Approvals Revision; honors `prefers-reduced-motion` — **shipped** (mockup: [`public/approvals-celebration-motions-mockup.html`](../../public/approvals-celebration-motions-mockup.html))
 - Reject generated artwork: subtle thumbs-down icon on Preview (and Edit regenerated preview) discards that feed/story slot so you can regenerate — **shipped**
 - Artwork Apply hydrate: regenerated artwork sticks after Apply (local backup + hydrate merge so remount / Preview hydrate does not orphan richer in-memory art) — **shipped**
