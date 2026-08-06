@@ -26,13 +26,15 @@ export function CalendarReviewPulseFilters({
     id: CalendarReviewFilter;
     label: string;
     count: number;
-  }> = [
-    { id: "needs_review", label: "Needs you", count: needs },
-    { id: "ready", label: "New", count: ready },
-    { id: "updates", label: "Updates", count: updates },
-    { id: "conflicts", label: "Conflicts", count: conflicts },
-    { id: "duplicates", label: "Duplicates", count: duplicates },
-  ].filter((tab) => tab.id === "duplicates" ? tab.count > 0 : true);
+  }> = (
+    [
+      { id: "needs_review", label: "Needs you", count: needs },
+      { id: "ready", label: "New", count: ready },
+      { id: "updates", label: "Updates", count: updates },
+      { id: "conflicts", label: "Conflicts", count: conflicts },
+      { id: "duplicates", label: "Duplicates", count: duplicates },
+    ] as const
+  ).filter((tab) => (tab.id === "duplicates" ? tab.count > 0 : true));
 
   return (
     <div
