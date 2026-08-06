@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { Trash2 } from "lucide-react";
 import {
   canResendTeamInvite,
   formatLastLoggedInLabel,
@@ -60,6 +61,8 @@ interface SettingsEaseTeamAccessPersonDrawerProps {
   onEditProfile: () => void;
   onGiveAccess: () => void;
   onResendInvite: () => void;
+  /** Icon-only remove; omitted for self or when manage_people is off. */
+  onRemove?: () => void;
   onSaveAccessLevel: (templateId: string) => Promise<string | null>;
   onSaveEventAssignments: (eventIds: string[]) => Promise<string | null>;
 }
@@ -128,6 +131,7 @@ export function SettingsEaseTeamAccessPersonDrawer({
   onEditProfile,
   onGiveAccess,
   onResendInvite,
+  onRemove,
   onSaveAccessLevel,
   onSaveEventAssignments,
 }: SettingsEaseTeamAccessPersonDrawerProps) {
@@ -332,14 +336,28 @@ export function SettingsEaseTeamAccessPersonDrawer({
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              aria-label="Close"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[rgba(42,38,34,0.1)] bg-[#fffcf7] text-[#5c554c]"
-              onClick={onClose}
-            >
-              ✕
-            </button>
+            <div className="flex shrink-0 items-start gap-1.5">
+              {onRemove ? (
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={onRemove}
+                  aria-label={`Delete ${member.displayName}`}
+                  title="Delete"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-[rgba(42,38,34,0.1)] bg-[#fffcf7] text-[#7a7166] transition hover:border-[rgba(166,90,58,0.35)] hover:bg-[rgba(166,90,58,0.12)] hover:text-[#a65a3a] disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                </button>
+              ) : null}
+              <button
+                type="button"
+                aria-label="Close"
+                className="grid h-9 w-9 place-items-center rounded-full border border-[rgba(42,38,34,0.1)] bg-[#fffcf7] text-[#5c554c]"
+                onClick={onClose}
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           {canManage ? (

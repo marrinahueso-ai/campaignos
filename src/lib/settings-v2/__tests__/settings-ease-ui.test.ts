@@ -397,6 +397,13 @@ describe("settings ease UI contracts", () => {
     assert.doesNotMatch(teamAccessEase, /TeamAccessMemberTable/);
     assert.doesNotMatch(teamAccessEase, /TeamAccessPeopleSidebar/);
     assert.doesNotMatch(teamAccessEase, /TeamAccessShell/);
+    assert.match(teamAccessEase, /removeTeamMemberAction/);
+    assert.match(teamAccessEase, /Trash2/);
+    assert.match(
+      teamAccessEase,
+      /aria-label=\{`Delete \$\{member\.displayName\}`\}/,
+    );
+    assert.match(teamAccessEase, /window\.confirm/);
   });
 
   it("ships Team & Access person drawer Ease contract (permissions + events + deep links)", () => {
@@ -418,6 +425,12 @@ describe("settings ease UI contracts", () => {
     assert.match(personDrawer, /role="switch"/);
     assert.match(personDrawer, /formatLastLoggedInLabel/);
     assert.match(personDrawer, /Last logged in/);
+    assert.match(personDrawer, /onRemove/);
+    assert.match(personDrawer, /Trash2/);
+    assert.match(
+      personDrawer,
+      /aria-label=\{`Delete \$\{member\.displayName\}`\}/,
+    );
     assert.doesNotMatch(personDrawer, /TeamAccessDrawer/);
     assert.doesNotMatch(personDrawer, /SettingsV2Card/);
     assert.doesNotMatch(personDrawer, /bg-cos-card/);

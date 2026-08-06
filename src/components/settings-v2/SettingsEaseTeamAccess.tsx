@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 import { OrganizationRosterImportPanel } from "@/components/organization-workspace/OrganizationRosterImportPanel";
 import {
   SettingsEaseTeamAccessPersonDrawer,
@@ -27,6 +28,7 @@ import {
 } from "@/components/settings-v2/team-access/team-access-utils";
 import {
   claimOrganizationAccessAction,
+  removeTeamMemberAction,
   replaceMemberEventAssignmentsAction,
   resendTeamInviteAction,
   setOrganizationUserEventAssignmentsAction,
@@ -409,6 +411,33 @@ export function SettingsEaseTeamAccess({
     });
   }
 
+  function handleRemove(member: UnifiedTeamMember) {
+    if (!canManage || !member.raw) return;
+    if (isCurrentUserTeamMember(member, currentUserEmail)) return;
+    if (
+      !window.confirm(
+        `Remove ${member.displayName} from the team? This can’t be undone.`,
+      )
+    ) {
+      return;
+    }
+    startTransition(async () => {
+      const result = await removeTeamMemberAction(member.raw!.id);
+      if (result.error) {
+        window.alert(result.error);
+        return;
+      }
+      setLocalMembers((current) => {
+        const base = current ?? unifiedMembers;
+        return base.filter((entry) => entry.id !== member.id);
+      });
+      if (drawerMemberId === member.id) {
+        closePerson();
+      }
+      router.refresh();
+    });
+  }
+
   async function handleSaveAccessLevel(
     member: UnifiedTeamMember,
     campaignRole: CampaignRole | string,
@@ -772,51 +801,68 @@ export function SettingsEaseTeamAccess({
               const status = peopleLoginStatus(member);
               const tone = AVATAR_TONES[index % AVATAR_TONES.length];
               const linkedCount = peopleRelatedEventIds(member).length;
+              const canDelete = canManage && Boolean(member.raw) && !isSelf;
 
               return (
-                <button
+                <div
                   key={member.id}
-                  type="button"
-                  data-person={personDeepLinkKeys(member)[1] ?? member.id}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-transparent bg-[rgba(246,242,235,0.55)] px-3.5 py-3 text-left transition-all duration-100 hover:-translate-y-px hover:border-[rgba(47,74,60,0.14)] hover:bg-[rgba(246,242,235,0.95)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f4a3c]"
-                  onClick={() => openPerson(member)}
+                  className="group flex items-center gap-1 rounded-2xl border border-transparent bg-[rgba(246,242,235,0.55)] transition-all duration-100 hover:-translate-y-px hover:border-[rgba(47,74,60,0.14)] hover:bg-[rgba(246,242,235,0.95)]"
                 >
-                  <div
-                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xs font-extrabold ${tone}`}
-                    aria-hidden
+                  <button
+                    type="button"
+                    data-person={personDeepLinkKeys(member)[1] ?? member.id}
+                    className="flex min-w-0 flex-1 items-center gap-3 px-3.5 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f4a3c]"
+                    onClick={() => openPerson(member)}
                   >
-                    {member.initials}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-bold text-[#2a2622]">
-                      {member.displayName}
+                    <div
+                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xs font-extrabold ${tone}`}
+                      aria-hidden
+                    >
+                      {member.initials}
                     </div>
-                    <div className="mt-0.5 truncate text-xs text-[#7a7166]">
-                      {peopleEaseRoleLine(member)}
-                    </div>
-                    <div className="mt-0.5 truncate text-xs leading-snug text-[#7a7166]">
-                      {formatLastLoggedInLabel(member.lastActive)}
-                    </div>
-                    {linkedCount > 0 ? (
-                      <div className="mt-1 text-[11px] font-bold text-[#2a7a86]">
-                        {linkedCount} event{linkedCount === 1 ? "" : "s"}{" "}
-                        linked
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-bold text-[#2a2622]">
+                        {member.displayName}
                       </div>
-                    ) : null}
-                  </div>
-                  <div className="flex-1" />
-                  {isSelf ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(47,74,60,0.1)] px-2.5 py-1 text-xs font-bold text-[#2f4a3c]">
-                      You
-                    </span>
-                  ) : status === "invited" ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(196,146,46,0.16)] px-2.5 py-1 text-xs font-bold text-[#7a5a12]">
-                      Pending
-                    </span>
-                  ) : (
-                    <span className={btnGhostClassName}>Open</span>
-                  )}
-                </button>
+                      <div className="mt-0.5 truncate text-xs text-[#7a7166]">
+                        {peopleEaseRoleLine(member)}
+                      </div>
+                      <div className="mt-0.5 truncate text-xs leading-snug text-[#7a7166]">
+                        {formatLastLoggedInLabel(member.lastActive)}
+                      </div>
+                      {linkedCount > 0 ? (
+                        <div className="mt-1 text-[11px] font-bold text-[#2a7a86]">
+                          {linkedCount} event{linkedCount === 1 ? "" : "s"}{" "}
+                          linked
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="flex-1" />
+                    {isSelf ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(47,74,60,0.1)] px-2.5 py-1 text-xs font-bold text-[#2f4a3c]">
+                        You
+                      </span>
+                    ) : status === "invited" ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(196,146,46,0.16)] px-2.5 py-1 text-xs font-bold text-[#7a5a12]">
+                        Pending
+                      </span>
+                    ) : (
+                      <span className={btnGhostClassName}>Open</span>
+                    )}
+                  </button>
+                  {canDelete ? (
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => handleRemove(member)}
+                      aria-label={`Delete ${member.displayName}`}
+                      title="Delete"
+                      className="mr-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#7a7166] opacity-70 transition hover:bg-[rgba(166,90,58,0.12)] hover:text-[#a65a3a] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a65a3a] disabled:opacity-40 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                    </button>
+                  ) : null}
+                </div>
               );
             })}
           </div>
@@ -846,6 +892,14 @@ export function SettingsEaseTeamAccess({
           if (!drawerMember) return;
           handleResendInvite(drawerMember);
         }}
+        onRemove={
+          drawerMember &&
+          canManage &&
+          Boolean(drawerMember.raw) &&
+          !isCurrentUserTeamMember(drawerMember, currentUserEmail)
+            ? () => handleRemove(drawerMember)
+            : undefined
+        }
         onSaveAccessLevel={(templateId) =>
           drawerMember
             ? handleSaveAccessLevel(drawerMember, templateId)
