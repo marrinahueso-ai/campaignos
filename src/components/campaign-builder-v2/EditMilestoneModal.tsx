@@ -424,7 +424,15 @@ export function EditMilestoneModal({
             ))}
           </div>
 
-          <div className="mx-auto w-full max-w-[168px] sm:max-w-[188px]">
+          <div
+            className={cn(
+              "mx-auto w-full",
+              /* Story is 9:16 — slightly narrower phone keeps height under ~280 without max-height hacks. */
+              previewMode === "story"
+                ? "max-w-[148px] sm:max-w-[158px]"
+                : "max-w-[168px] sm:max-w-[188px]",
+            )}
+          >
             <div className="rounded-[24px] bg-[#1c2430] p-2 shadow-lg">
               <div className="mx-auto mb-1.5 h-1 w-12 rounded-full bg-[#2a3340]" />
               <div
@@ -488,27 +496,29 @@ export function EditMilestoneModal({
                     active={isGenerating && willRegenerateArtwork}
                     label="Generating story artwork"
                   >
-                    <div
-                      className="relative aspect-[9/16] max-h-[280px] bg-gradient-to-b from-[#0b2f5b] via-[#2f9fb3] to-[#d4a84b]"
-                      style={
-                        storyUrl
-                          ? {
-                              backgroundImage: `url(${storyUrl})`,
-                              backgroundSize: "cover",
-                              backgroundPosition: "center",
-                            }
-                          : undefined
-                      }
-                    >
-                      {!storyUrl ? (
+                    {/*
+                      True 9:16 only — do not pair aspect-ratio with max-height;
+                      that stretches the box wider than 9:16 and letterboxes /
+                      clips the story stroke inside the phone bezel.
+                    */}
+                    <div className="relative aspect-[9/16] w-full overflow-hidden bg-gradient-to-b from-[#0b2f5b] via-[#2f9fb3] to-[#d4a84b]">
+                      {storyUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- blob/CDN artwork URL; avoid next/image remote config in modal preview
+                        <img
+                          src={storyUrl}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover object-center"
+                          draggable={false}
+                        />
+                      ) : (
                         <div className="absolute inset-x-3 bottom-4 font-display text-lg font-semibold text-white drop-shadow">
                           {milestone.name}
                         </div>
-                      ) : null}
+                      )}
                       {storyUrl ? (
                         <button
                           type="button"
-                          className="absolute right-1.5 bottom-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-cos-muted shadow hover:text-cos-text"
+                          className="absolute right-1.5 bottom-1.5 z-[1] rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-cos-muted shadow hover:text-cos-text"
                           onClick={() => handleRejectPreview("story")}
                         >
                           Reject
