@@ -359,6 +359,33 @@ describe("stale seed migration", () => {
 });
 
 describe("normalizeCampaignBuilderSession", () => {
+  it("binds Campaign Date to the route event and shifts post dates", () => {
+    const defaults = buildDefaultSession(
+      "evt-1",
+      "Back to School Fair",
+      "2026-10-30",
+    );
+    const normalized = normalizeCampaignBuilderSession(
+      {
+        inspiration: {
+          ...defaults.inspiration,
+          eventDate: "2026-10-30",
+        },
+        milestones: defaults.milestones,
+        previewContents: defaults.previewContents,
+      },
+      "evt-1",
+      "Back to School Fair",
+      "2026-08-05",
+    );
+
+    assert.equal(normalized.inspiration.eventDate, "2026-08-05");
+    const twoWeek = normalized.milestones.find((m) => m.id === "ms-two-week");
+    assert.ok(twoWeek);
+    // Default seed: two-week reminder is 14 days before the event.
+    assert.equal(twoWeek.suggestedDate, "2026-07-22");
+  });
+
   it("forces the first milestone category to awareness", () => {
     const defaults = buildDefaultSession("evt-1", "Back to School Fair", "2026-08-17");
     const first = defaults.milestones[0];

@@ -1559,8 +1559,8 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                         <button
                           type="button"
                           className="art-edit"
-                          title="Edit Artwork"
-                          aria-label="Edit Artwork"
+                          title="Edit Post"
+                          aria-label="Edit Post"
                           onClick={(event) => {
                             event.stopPropagation();
                             openEdit("artwork");
@@ -1570,7 +1570,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             <path d="M12 20h9" />
                             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
                           </svg>
-                          <span className="art-edit-label">Edit Artwork</span>
+                          <span className="art-edit-label">Edit Post</span>
                         </button>
                       </div>
                     </WarmBreathFrame>
@@ -1623,8 +1623,8 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                         <button
                           type="button"
                           className="art-edit"
-                          title="Edit Artwork"
-                          aria-label="Edit Artwork"
+                          title="Edit Post"
+                          aria-label="Edit Post"
                           onClick={(event) => {
                             event.stopPropagation();
                             openEdit("artwork");
@@ -1634,7 +1634,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             <path d="M12 20h9" />
                             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
                           </svg>
-                          <span className="art-edit-label">Edit Artwork</span>
+                          <span className="art-edit-label">Edit Post</span>
                         </button>
                       </div>
                     </WarmBreathFrame>

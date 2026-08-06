@@ -26,6 +26,7 @@ import {
 import { isFirstCampaignMilestone } from "./first-milestone.ts";
 import { normalizeDeliveryMethod } from "./delivery-method.ts";
 import { normalizeMilestoneName } from "./milestone-names.ts";
+import { resyncSessionToEventDate } from "./resync-event-date.ts";
 import type {
   CampaignBuilderMilestone,
   CampaignBuilderSession,
@@ -648,6 +649,9 @@ export function normalizeCampaignBuilderSession(
       // from a corrupted local/server snapshot (e.g. old Inspiration dropdown rename).
       campaignId: eventId,
       campaignName: eventTitle || defaults.inspiration.campaignName,
+      // Same for the event date — stale local/server sessions were keeping an
+      // old Campaign Date (e.g. October) after switching to an August event.
+      eventDate,
       primarySchoolColor:
         raw.inspiration?.primarySchoolColor ?? defaults.inspiration.primarySchoolColor,
       secondarySchoolColor:
@@ -722,7 +726,7 @@ export function normalizeCampaignBuilderSession(
     ? rawMain
     : defaults.mainEventImage;
 
-  return {
+  const normalized: CampaignBuilderSession = {
     ...defaults,
     ...raw,
     eventId,
@@ -736,4 +740,22 @@ export function normalizeCampaignBuilderSession(
     previewTab: normalizePreviewTab(raw.previewTab),
     currentStep: raw.currentStep ?? defaults.currentStep,
   };
+
+  // If the persisted session carried a different event date, shift post dates
+  // to match the route event while keeping relative spacing.
+  const staleEventDate = raw.inspiration?.eventDate;
+  if (staleEventDate && staleEventDate !== eventDate) {
+    return resyncSessionToEventDate(
+      {
+        ...normalized,
+        inspiration: {
+          ...normalized.inspiration,
+          eventDate: staleEventDate,
+        },
+      },
+      eventDate,
+    );
+  }
+
+  return normalized;
 }

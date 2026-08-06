@@ -39,6 +39,7 @@ import {
   playbookSwitchConfirmMessage,
   reconcileMilestonesWithPlaybookSteps,
 } from "@/lib/campaign-builder-v2/playbook-milestones";
+import { resyncSessionToEventDate } from "@/lib/campaign-builder-v2/resync-event-date";
 import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
 import {
   ensureSharedCaptionsForPlatforms,
@@ -683,7 +684,7 @@ export function CampaignBuilderProvider({
         options?.eventDate ?? current.inspiration.eventDate ?? eventDate;
       const milestonesPlaybookId = current.milestonesPlaybookId ?? null;
 
-      if (!playbookId || playbookId === milestonesPlaybookId) {
+      if (!playbookId) {
         return { success: true, changed: false };
       }
 
@@ -715,6 +716,15 @@ export function CampaignBuilderProvider({
           setSession(aligned);
           return { success: true, changed: true };
         }
+        return { success: true, changed: false };
+      }
+
+      // Same plan id is not enough — Settings may have changed step count
+      // (e.g. 5 seed posts vs a 4-step communication plan). Rebuild then.
+      if (
+        playbookId === milestonesPlaybookId &&
+        stepsResult.steps.length === current.milestones.length
+      ) {
         return { success: true, changed: false };
       }
 
@@ -771,6 +781,46 @@ export function CampaignBuilderProvider({
     },
     [eventDate],
   );
+
+  // Heal stale seed post counts when the selected plan already matches by id
+  // but Settings has fewer steps — only when no generated work would be lost.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const current = sessionRef.current;
+      const playbookId = current.inspiration.playbookId;
+      if (!playbookId) {
+        return;
+      }
+      const stepsResult = await getPlaybookMilestoneStepsAction(playbookId);
+      if (
+        cancelled ||
+        !stepsResult.success ||
+        stepsResult.steps.length === 0 ||
+        stepsResult.steps.length === current.milestones.length
+      ) {
+        return;
+      }
+      const atRisk = milestonesLostOnPlaybookSwitch(
+        stepsResult.steps,
+        current.milestones,
+        current.previewContents,
+      );
+      if (atRisk.length > 0) {
+        return;
+      }
+      const syncResult = await syncMilestonesToSelectedPlaybook({
+        playbookId,
+        confirm: false,
+      });
+      if (!cancelled && syncResult.changed) {
+        await persistSession(sessionRef.current);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, persistSession, syncMilestonesToSelectedPlaybook]);
 
   /**
    * Creative Setup primary CTA: normalize None/empty, save session, navigate
@@ -875,8 +925,23 @@ export function CampaignBuilderProvider({
           prev,
           resolvedWorkflowApprover,
         );
-        persistLocalSession(retained);
-        return retained;
+        // Richness retention must not keep a stale Campaign Date from an
+        // older session snapshot (e.g. October after switching to August).
+        const dateBound = resyncSessionToEventDate(
+          {
+            ...retained,
+            eventId,
+            inspiration: {
+              ...retained.inspiration,
+              campaignId: eventId,
+              campaignName: eventTitle || retained.inspiration.campaignName,
+            },
+          },
+          eventDate,
+        );
+        sessionRef.current = dateBound;
+        persistLocalSession(dateBound);
+        return dateBound;
       }
 
       if (
@@ -921,6 +986,23 @@ export function CampaignBuilderProvider({
         !workflowChanged &&
         hydrated.previewContents.length === prev.previewContents.length
       ) {
+        const dateBound = resyncSessionToEventDate(
+          {
+            ...prev,
+            eventId,
+            inspiration: {
+              ...prev.inspiration,
+              campaignId: eventId,
+              campaignName: eventTitle || prev.inspiration.campaignName,
+            },
+          },
+          eventDate,
+        );
+        if (dateBound !== prev) {
+          sessionRef.current = dateBound;
+          persistLocalSession(dateBound);
+          return dateBound;
+        }
         return prev;
       }
 
@@ -934,7 +1016,7 @@ export function CampaignBuilderProvider({
     });
     // Reconcile persisted milestone statuses once per mount after hydration.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId, resolvedWorkflowApprover]);
+  }, [eventId, eventTitle, eventDate, resolvedWorkflowApprover]);
 
   // If the client is stuck on an empty/failed Preview while the server has
   // richer artwork (common after Storage RLS errors), pull it back once.
@@ -1205,16 +1287,20 @@ export function CampaignBuilderProvider({
         return;
       }
 
-      updateSession((prev) => ({
-        ...prev,
-        eventId: campaign.id,
-        inspiration: {
-          ...prev.inspiration,
-          campaignId: campaign.id,
-          campaignName: campaign.title,
-          eventDate: campaign.date,
-        },
-      }));
+      updateSession((prev) =>
+        resyncSessionToEventDate(
+          {
+            ...prev,
+            eventId: campaign.id,
+            inspiration: {
+              ...prev.inspiration,
+              campaignId: campaign.id,
+              campaignName: campaign.title,
+            },
+          },
+          campaign.date,
+        ),
+      );
     },
     [campaignOptions, eventId, flushSave, router, updateSession],
   );
