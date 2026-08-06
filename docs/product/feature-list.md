@@ -197,7 +197,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Google Calendar Sign-in (OAuth → auto-sync → review → `/calendar` + dashboard) — **shipped** (live; see [google-calendar.md](../integrations/google-calendar.md))
 - Google Calendar daily sync cron (auto-import new events) — **shipped**
 - Google Calendar connect from **Bring in calendar** + Settings Integrations — **shipped**
-- ICS / webcal subscribe feed — **shipped**
+- ICS / webcal subscribe feed — **shipped** (daily `calendar-subscribe-sync` cron auto-imports New/Update via service role — same pattern as Google; cookie client under membership RLS returned zero targets)
+
 - Calendar file upload + import review (incl. AI fix) — **shipped** (canonical UX: **Bring in calendar** → `/calendar?tab=import` → `/calendar?tab=review` — Google + ICS + file on one screen; onboarding checklist + Get started wizard calendar step use that same path; Settings → Google Calendar is connect/subscribe with deep-links to Import)
 - Calendar import review plan type from org communication plans (Settings → Communication Plans; stores `playbookId` on import) — **shipped**
 - Calendar import review search (name/category/date/year), type/date filters, and Archive past events (bulk remove prior dates from the import queue) — **shipped**

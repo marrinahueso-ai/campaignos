@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 29, 2026  
+**Last updated:** August 6, 2026  
 **Related:** [Ops](./README.md) · [`vercel.json`](../../vercel.json) · [Env & secrets](./env-and-secrets.md) · [Architecture](../engineering/architecture.md) · [Documentation home](../README.md)
 
 ## Auth
@@ -88,7 +88,7 @@ Page loads (Dashboard, Approvals, etc.) stay **DB reads only** — no Meta polli
 
 | Symptom | Likely cron / cause |
 |---------|---------------------|
-| ICS subscribe stale | `calendar-subscribe-sync` failing or bad subscribe URL |
+| ICS subscribe stale | `calendar-subscribe-sync` failing or bad subscribe URL. Cron **must** use service role (`SUPABASE_SERVICE_ROLE_KEY`) — membership RLS returns zero orgs with the cookie client. Manual **Refresh** only stages review (`autoImport: false`); overnight cron auto-applies New/Update. |
 | Google events not refreshing overnight | `google-calendar-sync`; OAuth revoked / `deleted_client`; no active school year |
 | Scheduled FB/IG posts not going out | `meta-publish`; cron loads due slots + org Meta connection via **service role** (no user session). Token expired → check `meta-token-health`. Create with AI **Publish Now** bypasses cron and publishes on approve. |
 | Scheduled posts delayed >30 min | Check Vercel cron invocations for `meta-publish`; due backlog may exceed per-run cap (20 bundles) — clears on subsequent runs |
