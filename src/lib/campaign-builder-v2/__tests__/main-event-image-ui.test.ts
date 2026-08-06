@@ -11,13 +11,12 @@ const source = readFileSync(
 );
 
 describe("Preview main event image UI", () => {
-  it("surfaces Event Image and Change image without Apply-to-all buttons", () => {
-    assert.match(source, /Event Image/);
-    assert.match(source, /Used for all posts unless replaced/);
-    assert.match(source, /Using main event image/);
-    assert.match(source, /Change image/);
+  it("keeps auto-reuse wiring without Event Image / Change image chrome", () => {
     assert.match(source, /applyMilestoneArtwork/);
+    assert.doesNotMatch(source, /Event Image/);
+    assert.doesNotMatch(source, /Used for all posts unless replaced/);
+    assert.doesNotMatch(source, /Using main event image/);
+    assert.doesNotMatch(source, /Change image/);
     assert.doesNotMatch(source, /Apply to all posts/);
-    assert.doesNotMatch(source, /Apply this image to all posts/);
   });
 });

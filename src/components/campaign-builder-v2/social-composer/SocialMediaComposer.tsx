@@ -41,10 +41,6 @@ import {
 } from "@/lib/campaign-builder-v2/milestone-status";
 import { isPublishNowDelivery } from "@/lib/campaign-builder-v2/delivery-method";
 import {
-  resolveDisplayMainEventImage,
-  usesMainEventImage,
-} from "@/lib/campaign-builder-v2/main-event-image";
-import {
   PLATFORM_FORMAT_OPTIONS,
   isPlaceholderArtworkUrl,
 } from "@/lib/campaign-builder-v2/platform-utils";
@@ -1014,7 +1010,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     setSelectedMilestoneId,
     updatePreviewContent,
     applyMilestoneArtwork,
-    detachMilestoneFromMainImage,
     updateMilestone,
     addMilestone,
     removeMilestone,
@@ -1095,22 +1090,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     }
     return { complete, total: milestones.length };
   }, [milestones, session.previewContents]);
-
-  const mainEventImage = useMemo(
-    () => resolveDisplayMainEventImage(session),
-    [session],
-  );
-  const mainEventThumb =
-    mainEventImage?.feedUrl && !isPlaceholderArtworkUrl(mainEventImage.feedUrl)
-      ? mainEventImage.feedUrl
-      : mainEventImage?.storyUrl &&
-          !isPlaceholderArtworkUrl(mainEventImage.storyUrl)
-        ? mainEventImage.storyUrl
-        : null;
-  const selectedUsesMainImage = usesMainEventImage(
-    selectedPreview,
-    session.mainEventImage,
-  );
 
   function handleSaveToReview() {
     for (const milestone of milestones) {
@@ -1234,12 +1213,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     }
   }
 
-  function handleChangeImage() {
-    if (!selectedPreview) return;
-    detachMilestoneFromMainImage(selectedPreview.milestoneId);
-    openEdit("artwork");
-  }
-
   function openLightbox(view: "feed" | "story") {
     const imageUrl = view === "feed" ? feedUrl : storyUrl;
     setLightbox({
@@ -1338,40 +1311,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
 
       <div className="preview-layout preview-layout-v2">
         <aside className="campaign-posts">
-          <div className="event-image-block">
-            <div className="event-image-block-head">
-              <h4>Event Image</h4>
-              <p>Used for all posts unless replaced.</p>
-            </div>
-            <div className="event-image-row">
-              <div
-                className="event-image-thumb"
-                style={
-                  mainEventThumb
-                    ? {
-                        backgroundImage: `url(${mainEventThumb})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }
-                    : undefined
-                }
-                aria-hidden
-              />
-              <div className="event-image-actions">
-                <button
-                  type="button"
-                  className="link-action"
-                  disabled={!selectedPreview}
-                  onClick={() => {
-                    if (!selectedPreview) return;
-                    openEdit("artwork");
-                  }}
-                >
-                  {mainEventThumb ? "Edit image" : "Add image"}
-                </button>
-              </div>
-            </div>
-          </div>
           <div className="campaign-posts-head">
             <h4>Campaign posts</h4>
             <button
@@ -1397,7 +1336,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                 : preview?.artwork.storyUrl && !isPlaceholderArtworkUrl(preview.artwork.storyUrl)
                   ? preview.artwork.storyUrl
                   : null;
-            const usesMain = usesMainEventImage(preview, session.mainEventImage);
             const isRenaming = renamingId === milestone.id;
             return (
               <div
@@ -1496,9 +1434,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                   <span className={`status-chip ${meta.cls}`}>
                     {meta.label === "Ready" ? "✓ Ready" : meta.label}
                   </span>
-                  {usesMain ? (
-                    <span className="post-card-main-image">Using main event image</span>
-                  ) : null}
                   {meta.hint ? <span className="post-card-hint">{meta.hint}</span> : null}
                 </div>
                 <button
@@ -1523,14 +1458,6 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
         </aside>
 
         <div className="preview-phone-col">
-          {selectedUsesMainImage ? (
-            <div className="main-image-banner">
-              <span>Using main event image</span>
-              <button type="button" className="link-action" onClick={handleChangeImage}>
-                Change image
-              </button>
-            </div>
-          ) : null}
           {isChangesRequested ? (
             <div className="alert alert-changes">
               <strong>Changes requested</strong>

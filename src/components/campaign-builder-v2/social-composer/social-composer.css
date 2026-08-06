@@ -1140,67 +1140,6 @@
   padding: 14px;
   box-shadow: var(--shadow);
 }
-.smc .event-image-block {
-  margin-bottom: 14px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
-}
-.smc .event-image-block-head h4 {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.smc .event-image-block-head p {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--ink-soft);
-  line-height: 1.35;
-}
-.smc .event-image-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-}
-.smc .event-image-thumb {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
-  background: var(--cream);
-  border: 1px solid var(--line);
-  flex-shrink: 0;
-}
-.smc .event-image-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-.smc .post-card-main-image {
-  display: block;
-  margin-top: 2px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--muted);
-  letter-spacing: .01em;
-}
-.smc .main-image-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  margin-bottom: 10px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: var(--cream);
-  border: 1px solid var(--line);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
 .smc .campaign-posts-head {
   display: flex;
   align-items: center;
