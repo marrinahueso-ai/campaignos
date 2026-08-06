@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   milestonesLostOnPlaybookSwitch,
   playbookSwitchConfirmMessage,
+  playbookTimelineNeedsSync,
   reconcileMilestonesWithPlaybookSteps,
   type PlaybookMilestoneStep,
 } from "../playbook-milestones.ts";
@@ -262,6 +263,74 @@ describe("playbook milestone reconcile", () => {
     assert.equal(atRisk.length, 1);
     assert.equal(atRisk[0]?.id, "ms-art");
     assert.match(playbookSwitchConfirmMessage(atRisk), /post timeline/i);
+  });
+
+  it("detects post-count and date drift against the communication plan", () => {
+    const fourSteps: PlaybookMilestoneStep[] = [
+      step({ title: "Announcement", relativeDay: -14, sortOrder: 0 }),
+      step({ title: "14 Days Out", relativeDay: -14, sortOrder: 1 }),
+      step({ title: "7 Days Out", relativeDay: -7, sortOrder: 2 }),
+      step({ title: "Day Of", relativeDay: 0, sortOrder: 3 }),
+    ];
+    const sixPosts = [
+      milestone({
+        id: "1",
+        name: "Announcement",
+        sortOrder: 0,
+        suggestedDate: "2026-04-11",
+      }),
+      milestone({
+        id: "2",
+        name: "14 Days Out",
+        sortOrder: 1,
+        suggestedDate: "2026-04-27",
+      }),
+      milestone({
+        id: "3",
+        name: "7 Days Out",
+        sortOrder: 2,
+        suggestedDate: "2026-05-04",
+      }),
+      milestone({
+        id: "4",
+        name: "Day Before",
+        sortOrder: 3,
+        suggestedDate: "2026-05-10",
+      }),
+      milestone({
+        id: "5",
+        name: "Day Of",
+        sortOrder: 4,
+        suggestedDate: "2026-05-11",
+      }),
+      milestone({
+        id: "6",
+        name: "Thank You",
+        sortOrder: 5,
+        suggestedDate: "2026-05-12",
+      }),
+    ];
+
+    assert.equal(
+      playbookTimelineNeedsSync(fourSteps, "2026-08-05", sixPosts),
+      true,
+    );
+
+    const aligned = reconcileMilestonesWithPlaybookSteps(
+      fourSteps,
+      "2026-08-05",
+      sixPosts,
+      sixPosts.map((m) => preview(m.id)),
+    );
+    assert.equal(aligned.milestones.length, 4);
+    assert.equal(
+      playbookTimelineNeedsSync(
+        fourSteps,
+        "2026-08-05",
+        aligned.milestones,
+      ),
+      false,
+    );
   });
 
   it("does not attach prior artwork to a different milestone name", () => {

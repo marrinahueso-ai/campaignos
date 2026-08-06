@@ -37,6 +37,7 @@ import {
 import {
   milestonesLostOnPlaybookSwitch,
   playbookSwitchConfirmMessage,
+  playbookTimelineNeedsSync,
   reconcileMilestonesWithPlaybookSteps,
 } from "@/lib/campaign-builder-v2/playbook-milestones";
 import { resyncSessionToEventDate } from "@/lib/campaign-builder-v2/resync-event-date";
@@ -719,11 +720,16 @@ export function CampaignBuilderProvider({
         return { success: true, changed: false };
       }
 
-      // Same plan id is not enough — Settings may have changed step count
-      // (e.g. 5 seed posts vs a 4-step communication plan). Rebuild then.
+      // Same plan id is not enough — Settings may have changed step count or
+      // relative days, and stale sessions can keep wrong dates (e.g. April
+      // posts for an August event). Rebuild when the timeline drifts.
       if (
         playbookId === milestonesPlaybookId &&
-        stepsResult.steps.length === current.milestones.length
+        !playbookTimelineNeedsSync(
+          stepsResult.steps,
+          resolvedEventDate,
+          current.milestones,
+        )
       ) {
         return { success: true, changed: false };
       }
@@ -781,46 +787,6 @@ export function CampaignBuilderProvider({
     },
     [eventDate],
   );
-
-  // Heal stale seed post counts when the selected plan already matches by id
-  // but Settings has fewer steps — only when no generated work would be lost.
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const current = sessionRef.current;
-      const playbookId = current.inspiration.playbookId;
-      if (!playbookId) {
-        return;
-      }
-      const stepsResult = await getPlaybookMilestoneStepsAction(playbookId);
-      if (
-        cancelled ||
-        !stepsResult.success ||
-        stepsResult.steps.length === 0 ||
-        stepsResult.steps.length === current.milestones.length
-      ) {
-        return;
-      }
-      const atRisk = milestonesLostOnPlaybookSwitch(
-        stepsResult.steps,
-        current.milestones,
-        current.previewContents,
-      );
-      if (atRisk.length > 0) {
-        return;
-      }
-      const syncResult = await syncMilestonesToSelectedPlaybook({
-        playbookId,
-        confirm: false,
-      });
-      if (!cancelled && syncResult.changed) {
-        await persistSession(sessionRef.current);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [eventId, persistSession, syncMilestonesToSelectedPlaybook]);
 
   /**
    * Creative Setup primary CTA: normalize None/empty, save session, navigate
@@ -1047,6 +1013,57 @@ export function CampaignBuilderProvider({
       cancelled = true;
     };
   }, [eventId, eventTitle, eventDate, resolvedWorkflowApprover]);
+
+  // After hydrate: Creative Setup must mirror the selected communication plan.
+  // Stale sessions often keep an older 6-post timeline (with artwork) after
+  // Settings drops to 4 steps — force-reconcile so Maps to / dates catch up.
+  useEffect(() => {
+    if (currentStep !== "inspiration") {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const current = sessionRef.current;
+      const playbookId = current.inspiration.playbookId;
+      if (!playbookId) {
+        return;
+      }
+      const resolvedEventDate = current.inspiration.eventDate || eventDate;
+      const stepsResult = await getPlaybookMilestoneStepsAction(playbookId);
+      if (
+        cancelled ||
+        !stepsResult.success ||
+        stepsResult.steps.length === 0 ||
+        !playbookTimelineNeedsSync(
+          stepsResult.steps,
+          resolvedEventDate,
+          current.milestones,
+        )
+      ) {
+        return;
+      }
+      const syncResult = await syncMilestonesToSelectedPlaybook({
+        playbookId,
+        eventDate: resolvedEventDate,
+        confirm: false,
+      });
+      if (!cancelled && syncResult.changed) {
+        await persistSession(sessionRef.current);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    currentStep,
+    eventDate,
+    eventId,
+    persistSession,
+    session.inspiration.eventDate,
+    session.inspiration.playbookId,
+    session.milestones.length,
+    syncMilestonesToSelectedPlaybook,
+  ]);
 
   const reconcilePreviewStatuses = useCallback(() => {
     setSession((prev) => {

@@ -36,10 +36,46 @@ function categoryForRelativeDay(
   return "recap";
 }
 
-function dateForRelativeDay(eventDate: string, relativeDay: number): string {
+export function dateForRelativeDay(eventDate: string, relativeDay: number): string {
   const base = new Date(`${eventDate}T12:00:00`);
   base.setDate(base.getDate() + relativeDay);
   return base.toISOString().slice(0, 10);
+}
+
+/**
+ * True when the session timeline does not match the communication plan:
+ * wrong post count, missing step titles, or dates that ignore relative_day
+ * for the current event date (e.g. April posts for an August event).
+ */
+export function playbookTimelineNeedsSync(
+  steps: PlaybookMilestoneStep[],
+  eventDate: string,
+  milestones: CampaignBuilderMilestone[],
+): boolean {
+  if (steps.length === 0) {
+    return false;
+  }
+  if (steps.length !== milestones.length) {
+    return true;
+  }
+  const byName = new Map(
+    milestones.map((milestone) => [
+      milestoneNameMatchKey(milestone.name),
+      milestone,
+    ]),
+  );
+  for (const step of steps) {
+    const matched = byName.get(milestoneNameMatchKey(step.title));
+    if (!matched) {
+      return true;
+    }
+    if (
+      matched.suggestedDate !== dateForRelativeDay(eventDate, step.relativeDay)
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function platformsForChannel(channel: string): Array<"facebook" | "instagram"> {
