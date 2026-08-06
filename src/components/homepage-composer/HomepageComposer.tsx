@@ -1,6 +1,7 @@
 "use client";
 
 import { EmojiPicker } from "@/components/homepage-composer/EmojiPicker";
+import { DatePopoverField } from "@/components/homepage-composer/DatePopoverField";
 import { SettingsBox } from "@/components/homepage-composer/SettingsBox";
 import { Button } from "@/components/ui/Button";
 import {
@@ -1597,11 +1598,11 @@ export function HomepageComposer({
                     No announcements yet — add one to highlight dates or news.
                   </p>
                 ) : (
-                  <div className="space-y-2 overflow-visible">
+                  <div className="space-y-2">
                     {state.header.announcements.map((announcement) => (
                       <div
                         key={announcement.id}
-                        className="flex flex-wrap items-end gap-1.5 overflow-visible focus-within:pb-[min(20rem,50vh)]"
+                        className="flex flex-wrap items-end gap-1.5"
                       >
                         <div className="shrink-0">
                           <EmojiPicker
@@ -1621,52 +1622,34 @@ export function HomepageComposer({
                             }
                           />
                         </div>
-                        <label className="relative z-20 mb-0.5 flex shrink-0 flex-col gap-1">
-                          <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-cos-muted">
-                            On
-                          </span>
-                          <input
-                            type="date"
-                            className="w-[8.5rem] rounded-xl border border-cos-border bg-cos-card px-2 py-2 text-sm text-cos-text disabled:opacity-50"
+                        <div className="mb-0.5 w-[8.5rem] shrink-0">
+                          <DatePopoverField
+                            label="On"
+                            size="sm"
                             disabled={announcement.alwaysOn}
-                            value={announcement.startsOn ?? ""}
-                            onFocus={(e) => {
-                              e.currentTarget.scrollIntoView({
-                                block: "center",
-                                inline: "nearest",
-                              });
-                            }}
-                            onChange={(e) =>
+                            value={announcement.startsOn}
+                            onChange={(startsOn) =>
                               updateAnnouncement(announcement.id, {
-                                startsOn: e.target.value || null,
+                                startsOn,
                                 alwaysOn: false,
                               })
                             }
                           />
-                        </label>
-                        <label className="relative z-20 mb-0.5 flex shrink-0 flex-col gap-1">
-                          <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-cos-muted">
-                            Off
-                          </span>
-                          <input
-                            type="date"
-                            className="w-[8.5rem] rounded-xl border border-cos-border bg-cos-card px-2 py-2 text-sm text-cos-text disabled:opacity-50"
+                        </div>
+                        <div className="mb-0.5 w-[8.5rem] shrink-0">
+                          <DatePopoverField
+                            label="Off"
+                            size="sm"
                             disabled={announcement.alwaysOn}
-                            value={announcement.expiresOn ?? ""}
-                            onFocus={(e) => {
-                              e.currentTarget.scrollIntoView({
-                                block: "center",
-                                inline: "nearest",
-                              });
-                            }}
-                            onChange={(e) =>
+                            value={announcement.expiresOn}
+                            onChange={(expiresOn) =>
                               updateAnnouncement(announcement.id, {
-                                expiresOn: e.target.value || null,
+                                expiresOn,
                                 alwaysOn: false,
                               })
                             }
                           />
-                        </label>
+                        </div>
                         <label className="mb-2.5 flex shrink-0 items-center gap-1.5 text-xs font-medium text-cos-muted">
                           <input
                             type="checkbox"
@@ -2323,19 +2306,13 @@ export function HomepageComposer({
                                     placeholder="Learn More →"
                                   />
                                 </label>
-                                <label className="block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
-                                  Card date
-                                  <input
-                                    type="date"
-                                    className="mt-1 w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-cos-text"
-                                    value={card.date ?? ""}
-                                    onChange={(e) =>
-                                      updateCard(card.id, {
-                                        date: e.target.value || null,
-                                      })
-                                    }
-                                  />
-                                </label>
+                                <DatePopoverField
+                                  label="Card date"
+                                  value={card.date}
+                                  onChange={(date) =>
+                                    updateCard(card.id, { date })
+                                  }
+                                />
                                 <label className="block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
                                   Start time
                                   <input
@@ -2357,7 +2334,7 @@ export function HomepageComposer({
                                 face. On / Off below only control when the card
                                 is visible.
                               </p>
-                              <div className="grid gap-2 overflow-visible rounded-[12px] bg-cos-bg-alt/80 p-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]">
+                              <div className="grid gap-2 rounded-[12px] bg-cos-bg-alt/80 p-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]">
                                 <label className="flex items-center gap-2 text-xs font-semibold text-cos-text sm:self-end sm:pb-1.5">
                                   <input
                                     type="checkbox"
@@ -2370,49 +2347,29 @@ export function HomepageComposer({
                                   />
                                   Always on
                                 </label>
-                                <div className="grid gap-2 overflow-visible sm:col-span-2 sm:grid-cols-2 focus-within:pb-[min(20rem,50vh)]">
-                                  <label className="relative z-20 block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
-                                    On date
-                                    <input
-                                      type="date"
-                                      className="mt-1 w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-cos-text disabled:opacity-40"
-                                      disabled={card.alwaysOn}
-                                      value={card.startsOn ?? ""}
-                                      onFocus={(e) => {
-                                        e.currentTarget.scrollIntoView({
-                                          block: "center",
-                                          inline: "nearest",
-                                        });
-                                      }}
-                                      onChange={(e) =>
-                                        updateCard(card.id, {
-                                          startsOn: e.target.value || null,
-                                          alwaysOn: false,
-                                        })
-                                      }
-                                    />
-                                  </label>
-                                  <label className="relative z-20 block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
-                                    Off date
-                                    <input
-                                      type="date"
-                                      className="mt-1 w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-cos-text disabled:opacity-40"
-                                      disabled={card.alwaysOn}
-                                      value={card.expiresOn ?? ""}
-                                      onFocus={(e) => {
-                                        e.currentTarget.scrollIntoView({
-                                          block: "center",
-                                          inline: "nearest",
-                                        });
-                                      }}
-                                      onChange={(e) =>
-                                        updateCard(card.id, {
-                                          expiresOn: e.target.value || null,
-                                          alwaysOn: false,
-                                        })
-                                      }
-                                    />
-                                  </label>
+                                <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2">
+                                  <DatePopoverField
+                                    label="On date"
+                                    disabled={card.alwaysOn}
+                                    value={card.startsOn}
+                                    onChange={(startsOn) =>
+                                      updateCard(card.id, {
+                                        startsOn,
+                                        alwaysOn: false,
+                                      })
+                                    }
+                                  />
+                                  <DatePopoverField
+                                    label="Off date"
+                                    disabled={card.alwaysOn}
+                                    value={card.expiresOn}
+                                    onChange={(expiresOn) =>
+                                      updateCard(card.id, {
+                                        expiresOn,
+                                        alwaysOn: false,
+                                      })
+                                    }
+                                  />
                                 </div>
                               </div>
                             </div>

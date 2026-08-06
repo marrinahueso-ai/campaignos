@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 6, 2026 — Edit Post sheet fits viewport
+**Last updated:** August 6, 2026 — Homepage floating date popover
 
 ---
 
@@ -138,7 +138,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Homepage Composer
 - Route `/homepage-composer` via Create with AI → Homepage (composer back link → `/create-with-ai`; no separate sidebar item); step rail only for step nav (no redundant “Back to …” chrome); full-page HTML export for your site; SettingsBox layout; searchable full emoji picker (`emoji-picker-react`); editable **cards section title** (Header tab — heading above event cards in preview/export); announcements with free-form rows (emoji · shorter text · on/off dates · Always on one line) plus **From calendar** event picker (month filter, title + date default text; calendar adds default off date); preview/export hide announcement lines outside their window like cards; month/year event filter; hosted 1:1 artwork with upload + Create-with-AI deep link icons; card on/off dates; full-month + date-slider preview (**Preview on** / **Full month preview**; Chrome-safe iframe refresh) with **Open page** + **Save as PDF** on share snapshot (`/share/homepage/[token]`, browser print for PDF); share snapshots stored server-side with `share_status` stub for future approvals — **shipped** (approvals integration **Partial** / later); durable draft autosave (localStorage + IndexedDB, flush on navigate/hide; IDB stale-write guard + artwork merge on load); subtle AI **Generate text** on card description (≤2 sentences, credits via `homepage_composer_blurb`) — **shipped** (soft launch; further blurb/copy polish deferred) — living docs: [QA](../qa/homepage-composer.md) · [Engineering](../engineering/homepage-composer.md)
-- Evergreen custom cards + optional link URL · editable link name (`linkLabel`) · card face date (`date`, distinct from on/off visibility) · on date · off date · always-on · artwork upload — **shipped** (soft launch)
+- Evergreen custom cards + optional link URL · editable link name (`linkLabel`) · card face date (`date`, distinct from on/off visibility) · on date · off date · always-on · artwork upload; dates use a floating calendar popover (does not expand the card editor) — **shipped** (soft launch)
 - **Save by month** (work ahead on next month’s homepage) — **shipped**: persistent **Working on** strip on every step · **Save this month** · **Copy from…** prior saved month; hero/footer colors, section title, and resources stay shared; **cards + event picks + announcement bar lines** scoped per YYYY-MM in the org draft (`monthDrafts` / `monthSaved`); event list month filter stays independent. Ease mock kept: [`public/homepage-composer-month-ease-mockup.html`](../../public/homepage-composer-month-ease-mockup.html)
 
 ## Newsletter Composer

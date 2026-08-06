@@ -1,6 +1,7 @@
 "use client";
 
 import { EmojiPicker } from "@/components/homepage-composer/EmojiPicker";
+import { DatePopoverField } from "@/components/homepage-composer/DatePopoverField";
 import { SettingsBox } from "@/components/homepage-composer/SettingsBox";
 import { Button } from "@/components/ui/Button";
 import { campaignBuilderHref } from "@/lib/campaign-builder-v2/navigation";
@@ -1425,7 +1426,7 @@ export function VolunteerComposer({
                                 />
                               </div>
                               <div className="flex flex-wrap items-end gap-3">
-                                <label className="flex items-center gap-2 text-sm font-semibold text-cos-text">
+                                <label className="flex items-center gap-2 pb-1.5 text-sm font-semibold text-cos-text">
                                   <input
                                     type="checkbox"
                                     checked={op.alwaysOn}
@@ -1439,36 +1440,26 @@ export function VolunteerComposer({
                                 </label>
                                 {!op.alwaysOn ? (
                                   <>
-                                    <label className="block text-xs">
-                                      <span className="mb-1 block font-bold uppercase tracking-[0.05em] text-cos-muted">
-                                        On date
-                                      </span>
-                                      <input
-                                        type="date"
-                                        className="rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-sm"
-                                        value={op.startsOn ?? ""}
-                                        onChange={(e) =>
+                                    <div className="w-[9.5rem]">
+                                      <DatePopoverField
+                                        label="On date"
+                                        value={op.startsOn}
+                                        onChange={(startsOn) =>
+                                          patchOpportunity(op.id, { startsOn })
+                                        }
+                                      />
+                                    </div>
+                                    <div className="w-[9.5rem]">
+                                      <DatePopoverField
+                                        label="Off date"
+                                        value={op.expiresOn}
+                                        onChange={(expiresOn) =>
                                           patchOpportunity(op.id, {
-                                            startsOn: e.target.value || null,
+                                            expiresOn,
                                           })
                                         }
                                       />
-                                    </label>
-                                    <label className="block text-xs">
-                                      <span className="mb-1 block font-bold uppercase tracking-[0.05em] text-cos-muted">
-                                        Off date
-                                      </span>
-                                      <input
-                                        type="date"
-                                        className="rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-sm"
-                                        value={op.expiresOn ?? ""}
-                                        onChange={(e) =>
-                                          patchOpportunity(op.id, {
-                                            expiresOn: e.target.value || null,
-                                          })
-                                        }
-                                      />
-                                    </label>
+                                    </div>
                                   </>
                                 ) : null}
                               </div>
