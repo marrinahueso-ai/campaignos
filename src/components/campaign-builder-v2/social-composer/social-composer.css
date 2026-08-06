@@ -629,33 +629,8 @@
       filter: brightness(1.05);
     }
 .smc .art-dl {
-      position: absolute; right: 52px; bottom: 10px;
-      width: 30px; height: 30px; border-radius: 10px;
-      border: none;
-      background: rgba(255,252,247,.94);
-      color: var(--ink);
-      box-shadow: 0 4px 12px rgba(0,0,0,.22);
-      display: grid; place-items: center;
-      cursor: pointer;
-      z-index: 4;
-      opacity: 0;
-      transform: translateY(4px);
-      transition: opacity .2s, transform .2s, background .15s;
-    }
-    .feed-art.zoomable:hover .art-dl,
-    .story-frame.zoomable:hover .art-dl,
-.smc .art-dl:focus {
-      opacity: 1;
-      transform: none;
-    }
-@media (hover: none) {
-  .smc .art-dl {
-    opacity: 1;
-    transform: none;
-  }
+  display: none;
 }
-.smc .art-dl:hover { background: #fff; }
-.smc .art-dl svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .smc .feed-art .badge {
       position: absolute; left: 10px; top: 10px;
       background: rgba(255,252,247,.92); color: var(--forest);
@@ -1716,23 +1691,99 @@
   position: absolute;
   right: 10px;
   bottom: 10px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255,252,247,.96);
-  color: var(--ink);
-  box-shadow: 0 4px 14px rgba(0,0,0,.22);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
   z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  height: 36px;
+  width: 36px;
+  max-width: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  overflow: hidden;
+  cursor: pointer;
+  color: #fff;
+  background-image: linear-gradient(
+    115deg,
+    #f6c9a8 0%,
+    #e87bb8 35%,
+    #9b7dff 70%,
+    #6f7dff 100%
+  );
+  background-size: 220% 220%;
+  background-position: 0% 50%;
+  box-shadow: 0 6px 16px rgba(90, 60, 140, 0.28);
+  transition:
+    max-width 0.28s ease,
+    width 0.28s ease,
+    padding 0.28s ease,
+    gap 0.28s ease,
+    border-radius 0.28s ease,
+    background-position 0.45s ease,
+    box-shadow 0.28s ease,
+    transform 0.28s ease;
 }
-.smc .art-edit:hover { background: #fff; transform: scale(1.04); }
 .smc .art-edit svg {
-  width: 15px; height: 15px;
-  stroke: currentColor; fill: none; stroke-width: 2;
-  stroke-linecap: round; stroke-linejoin: round;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.smc .art-edit-label {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: max-width 0.28s ease, opacity 0.2s ease, margin 0.28s ease;
+}
+.smc .art-edit:hover,
+.smc .art-edit:focus-visible {
+  width: auto;
+  max-width: 160px;
+  padding: 0 14px 0 12px;
+  gap: 8px;
+  border-radius: 999px;
+  background-position: 100% 50%;
+  box-shadow: 0 8px 20px rgba(90, 60, 140, 0.36);
+  transform: translateY(-1px);
+  outline: none;
+}
+.smc .art-edit:hover .art-edit-label,
+.smc .art-edit:focus-visible .art-edit-label {
+  max-width: 110px;
+  opacity: 1;
+}
+.smc .art-edit:hover {
+  animation: smc-art-edit-gradient 1.6s ease infinite alternate;
+}
+@keyframes smc-art-edit-gradient {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+@media (hover: none) {
+  .smc .art-edit {
+    width: auto;
+    max-width: 160px;
+    padding: 0 14px 0 12px;
+    gap: 8px;
+  }
+  .smc .art-edit-label {
+    max-width: 110px;
+    opacity: 1;
+  }
 }
 .smc .ig-actions {
   display: flex;

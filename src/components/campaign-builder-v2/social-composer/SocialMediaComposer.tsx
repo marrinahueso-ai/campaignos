@@ -1628,29 +1628,11 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             <div className="title">{selectedMilestone?.name ?? "Post"}</div>
                           </>
                         ) : null}
-                        {feedUrl ? (
-                          <button
-                            type="button"
-                            className="art-dl"
-                            title="Download artwork"
-                            aria-label="Download feed artwork"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              void handleDownload(feedUrl, "feed");
-                            }}
-                          >
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path d="M12 3v12" />
-                              <path d="m7 11 5 5 5-5" />
-                              <path d="M5 21h14" />
-                            </svg>
-                          </button>
-                        ) : null}
                         <button
                           type="button"
                           className="art-edit"
-                          title="Edit artwork & caption"
-                          aria-label="Edit artwork and caption"
+                          title="Edit Artwork"
+                          aria-label="Edit Artwork"
                           onClick={(event) => {
                             event.stopPropagation();
                             openEdit("artwork");
@@ -1660,6 +1642,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             <path d="M12 20h9" />
                             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
                           </svg>
+                          <span className="art-edit-label">Edit Artwork</span>
                         </button>
                       </div>
                     </WarmBreathFrame>
@@ -1709,29 +1692,11 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             <div className="sub">{formatLongDate(selectedMilestone?.suggestedDate)}</div>
                           </>
                         ) : null}
-                        {storyUrl ? (
-                          <button
-                            type="button"
-                            className="art-dl"
-                            title="Download artwork"
-                            aria-label="Download story artwork"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              void handleDownload(storyUrl, "story");
-                            }}
-                          >
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path d="M12 3v12" />
-                              <path d="m7 11 5 5 5-5" />
-                              <path d="M5 21h14" />
-                            </svg>
-                          </button>
-                        ) : null}
                         <button
                           type="button"
                           className="art-edit"
-                          title="Edit artwork & caption"
-                          aria-label="Edit artwork and caption"
+                          title="Edit Artwork"
+                          aria-label="Edit Artwork"
                           onClick={(event) => {
                             event.stopPropagation();
                             openEdit("artwork");
@@ -1741,6 +1706,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
                             <path d="M12 20h9" />
                             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
                           </svg>
+                          <span className="art-edit-label">Edit Artwork</span>
                         </button>
                       </div>
                     </WarmBreathFrame>
