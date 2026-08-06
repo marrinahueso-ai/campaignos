@@ -6,6 +6,8 @@ import { getVolunteersMasterPageData } from "@/lib/event-volunteers/org-master";
 import type { VolunteersMasterEventRow } from "@/lib/event-volunteers/org-master-shared";
 import { filterTasksForMyView } from "@/lib/tasks-v2/my-tasks-filter";
 import { getDashboardTaskItems } from "@/lib/today/dashboard-task-items";
+import { filterDashboardUnderfilledVolunteerEvents } from "@/lib/today/dashboard-volunteer-events";
+import { getTodayDateString } from "@/lib/utils/dates";
 import type { ApprovalQueueItem } from "@/types/event-workspace";
 import type { TaskHubTaskItem } from "@/types/task-hub";
 
@@ -39,7 +41,10 @@ export const getDashboardRichListData = cache(
     return {
       approvals: approvals.assignedToMe,
       tasksThisWeek,
-      underfilledEvents: volunteers.events.filter((event) => event.needsPeople),
+      underfilledEvents: filterDashboardUnderfilledVolunteerEvents(
+        volunteers.events,
+        getTodayDateString(),
+      ),
     };
   },
 );

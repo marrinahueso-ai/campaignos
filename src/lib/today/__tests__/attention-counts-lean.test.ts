@@ -22,6 +22,7 @@ describe("Attention counts stay lean for default dashboard", () => {
     assert.match(source, /event_volunteer_sources/);
     assert.match(source, /count: "exact", head: true/);
     assert.match(source, /getVolunteersMasterPageData/);
+    assert.match(source, /filterDashboardUnderfilledVolunteerEvents/);
   });
 
   it("short-circuits tasks when no event_playbook_tasks exist", () => {

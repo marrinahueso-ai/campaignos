@@ -9,6 +9,8 @@ import { getApprovalSidebarCountsForCurrentUser } from "@/lib/event-workspace/ap
 import { createClient } from "@/lib/supabase/server";
 import { filterTasksForMyView } from "@/lib/tasks-v2/my-tasks-filter";
 import { getDashboardTaskItems } from "@/lib/today/dashboard-task-items";
+import { filterDashboardUnderfilledVolunteerEvents } from "@/lib/today/dashboard-volunteer-events";
+import { getTodayDateString } from "@/lib/utils/dates";
 import type { TodayAttentionCounts } from "@/types/today";
 
 /**
@@ -41,7 +43,10 @@ async function countAttentionVolunteerEvents(): Promise<number> {
   }
 
   const master = await getVolunteersMasterPageData(organization.id);
-  return master.events.filter((event) => event.needsPeople).length;
+  return filterDashboardUnderfilledVolunteerEvents(
+    master.events,
+    getTodayDateString(),
+  ).length;
 }
 
 /**
