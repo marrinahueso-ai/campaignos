@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Owner Background Library Manager Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --danger: #a65a3a;
+      --ok: #2f6b4f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 18px 0; gap: 6px;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft);
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 28px; gap: 12px; flex-wrap: wrap;
+    }
+    .owner-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 13px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .owner-pill .lock {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--mustard); background: rgba(196, 146, 46, 0.14);
+      border-radius: 999px; padding: 3px 8px;
+    }
+    .content { padding: 0 28px 96px; max-width: 92rem; }
+
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 12px; padding: 6px 12px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12; font-size: 12px; font-weight: 700;
+    }
+    .intro-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .intro-card h2 {
+      margin: 0 0 8px;
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .intro-card p, .intro-card li {
+      margin: 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.55;
+    }
+    .intro-card ul { margin: 8px 0 0; padding-left: 1.2rem; }
+    .intro-card code {
+      font-size: 12px;
+      background: var(--cream-deep);
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+    .schema-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .schema-chip {
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: var(--cream);
+    }
+    .schema-chip strong {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .schema-chip span { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+    .page-head {
+      display: flex; flex-wrap: wrap; align-items: flex-end;
+      justify-content: space-between; gap: 16px;
+      margin-bottom: 18px;
+    }
+    .page-head h1 {
+      margin: 0 0 6px;
+      font-family: var(--serif);
+      font-size: clamp(28px, 3.5vw, 36px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .page-head .sub {
+      margin: 0;
+      font-size: 14px;
+      color: var(--ink-soft);
+      max-width: 52ch;
+      line-height: 1.5;
+    }
+    .head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--white);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 650;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+    .btn-primary {
+      background: var(--forest);
+      border-color: var(--forest);
+      color: var(--cream);
+    }
+    .btn-danger {
+      background: rgba(166, 90, 58, 0.1);
+      border-color: rgba(166, 90, 58, 0.35);
+      color: var(--danger);
+    }
+    .btn-ghost { background: transparent; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .stat {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      animation: rise .4s ease both;
+    }
+    .stat:nth-child(2) { animation-delay: .04s; }
+    .stat:nth-child(3) { animation-delay: .08s; }
+    .stat:nth-child(4) { animation-delay: .12s; }
+    .stat:nth-child(5) { animation-delay: .16s; }
+    .stat .label {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .stat .value {
+      margin-top: 6px;
+      font-family: var(--serif);
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .stat .hint { margin-top: 2px; font-size: 12px; color: var(--ink-soft); }
+    .stat.warn .value { color: var(--danger); }
+    .stat.ok .value { color: var(--ok); }
+
+    .tabs {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 14px;
+      padding: 4px;
+      background: rgba(255, 252, 247, 0.7);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      width: fit-content;
+      max-width: 100%;
+    }
+    .tab {
+      border: none;
+      background: transparent;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 650;
+      color: var(--ink-soft);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .tab.active {
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .tab .count {
+      font-size: 11px;
+      font-weight: 800;
+      min-width: 1.4rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.18);
+    }
+    .tab:not(.active) .count {
+      background: var(--cream-deep);
+      color: var(--ink-soft);
+    }
+
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .search {
+      flex: 1 1 220px;
+      min-width: 180px;
+      display: flex; align-items: center; gap: 8px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 14px;
+      box-shadow: var(--shadow);
+    }
+    .search input {
+      border: none; outline: none; background: transparent;
+      width: 100%; font-size: 14px; color: var(--ink);
+    }
+    .filter {
+      border: 1px solid var(--line);
+      background: var(--white);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--ink);
+      box-shadow: var(--shadow);
+    }
+    .bulk-bar {
+      display: none;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      width: 100%;
+      background: rgba(47, 74, 60, 0.08);
+      border: 1px solid rgba(47, 74, 60, 0.2);
+      border-radius: 16px;
+      padding: 10px 12px;
+    }
+    .bulk-bar.show { display: flex; }
+    .bulk-bar strong { font-size: 13px; margin-right: 4px; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+      align-items: start;
+    }
+    .workspace.panel-closed { grid-template-columns: 1fr; }
+    .workspace.panel-closed .detail { display: none; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      position: relative;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      text-align: left;
+      padding: 0;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+      animation: rise .35s ease both;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .card.selected {
+      border-color: rgba(47, 74, 60, 0.55);
+      box-shadow: 0 0 0 3px rgba(47, 74, 60, 0.12), var(--shadow-lg);
+    }
+    .card-check {
+      position: absolute; top: 10px; left: 10px; z-index: 2;
+      width: 22px; height: 22px; border-radius: 7px;
+      border: 1.5px solid rgba(255,255,255,0.85);
+      background: rgba(42, 38, 34, 0.35);
+      display: grid; place-items: center;
+      color: #fff; font-size: 12px; font-weight: 800;
+    }
+    .card.checked .card-check {
+      background: var(--forest);
+      border-color: var(--forest);
+    }
+    .thumb {
+      aspect-ratio: 1;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+    .thumb::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 55%, rgba(42,38,34,0.35));
+    }
+    .status-pill {
+      position: absolute; top: 10px; right: 10px; z-index: 2;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 4px 8px; border-radius: 999px;
+      background: rgba(255,252,247,0.92);
+      color: var(--ink-soft);
+    }
+    .status-pill.pending { color: var(--danger); background: rgba(255, 236, 228, 0.95); }
+    .status-pill.published { color: var(--ok); background: rgba(232, 245, 236, 0.95); }
+    .status-pill.archived { color: var(--muted); }
+    .status-pill.source { color: var(--teal); background: rgba(230, 245, 247, 0.95); }
+    .card-body { padding: 12px 12px 14px; }
+    .card-body h3 {
+      margin: 0 0 4px;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .meta {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin: 8px 0 0;
+    }
+    .chip {
+      font-size: 11px; font-weight: 650;
+      padding: 3px 8px; border-radius: 999px;
+      background: var(--cream);
+      color: var(--ink-soft);
+      border: 1px solid var(--line);
+    }
+    .uses {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .detail {
+      position: sticky;
+      top: 16px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      max-height: calc(100vh - 32px);
+      display: flex;
+      flex-direction: column;
+      animation: slideIn .28s ease both;
+    }
+    .detail-preview {
+      aspect-ratio: 1;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+    .detail-preview button.enlarge {
+      position: absolute; bottom: 12px; right: 12px;
+    }
+    .detail-body {
+      padding: 16px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .detail-body h2 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+    }
+    .field-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field, .textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--cream);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--ink);
+    }
+    .textarea { min-height: 72px; resize: vertical; }
+    .lib-checks {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .lib-checks label {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 650;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--cream);
+      cursor: pointer;
+    }
+    .lib-checks input { accent-color: var(--forest); }
+    .detail-actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding-top: 4px;
+      border-top: 1px solid var(--line);
+    }
+    .empty, .loading, .error-state {
+      grid-column: 1 / -1;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,252,247,0.65);
+      padding: 48px 24px;
+      text-align: center;
+    }
+    .empty h3, .loading h3, .error-state h3 {
+      margin: 0 0 8px;
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+    }
+    .empty p, .loading p, .error-state p {
+      margin: 0 auto;
+      max-width: 40ch;
+      color: var(--ink-soft);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid var(--cream-deep);
+      border-top-color: var(--forest);
+      border-radius: 50%;
+      margin: 0 auto 14px;
+      animation: spin .8s linear infinite;
+    }
+    .error-state { border-color: rgba(166, 90, 58, 0.35); background: rgba(166, 90, 58, 0.06); }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--forest);
+      color: var(--cream);
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 650;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index: 40;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .lightbox {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(42, 38, 34, 0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img {
+      max-width: min(920px, 100%);
+      max-height: 85vh;
+      border-radius: 18px;
+      box-shadow: var(--shadow-lg);
+    }
+    .lightbox .close {
+      position: absolute; top: 20px; right: 20px;
+      background: var(--white);
+    }
+
+    .demo-controls {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 14px;
+    }
+    .demo-controls .btn { font-size: 12px; padding: 8px 12px; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(12px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 1100px) {
+      .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .workspace { grid-template-columns: 1fr; }
+      .detail { position: relative; top: 0; max-height: none; }
+    }
+    @media (max-width: 720px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .content, .topbar { padding-left: 16px; padding-right: 16px; }
+      .tabs { border-radius: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="App navigation">
+      <div class="rail-logo">R</div>
+      <button type="button" title="Dashboard" aria-label="Dashboard">
+        <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
+      </button>
+      <button type="button" class="active" title="Owner Ops" aria-label="Owner Ops">
+        <svg viewBox="0 0 24 24"><path d="M12 3l2.2 4.5 5 .7-3.6 3.5.9 5L12 14.8 7.5 16.7l.9-5L4.8 8.2l5-.7z"/></svg>
+      </button>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="owner-pill">
+          <span class="lock">Owner only</span>
+          Hey Ralli Ops · Background Library
+        </div>
+        <div class="owner-pill">marrina@heyralli.com</div>
+      </header>
+
+      <div class="content">
+        <div class="mock-tag">UX Pilot mockup · not wired · proposed route <code style="font-weight:700">/ops/background-library</code></div>
+
+        <section class="intro-card" aria-label="Recommended architecture">
+          <h2>Recommended structure (simplest maintainable)</h2>
+          <p>
+            Gate with existing <code>canAccessOwnerOps()</code> (allowlisted email + Owner role) — same as <code>/ops/ai-apis</code>.
+            Not org-scoped. Storage under a private bucket prefix like <code>ops/backgrounds/{assetId}/…</code>.
+          </p>
+          <div class="schema-grid">
+            <div class="schema-chip">
+              <strong>background_libraries</strong>
+              <span>Back to School, Fall, Winter, Sports, Generic, Graduation — name, slug, sort_order, active</span>
+            </div>
+            <div class="schema-chip">
+              <strong>background_sources</strong>
+              <span>Uploaded inspiration/source graphics used to generate variants — storage_path, title, notes</span>
+            </div>
+            <div class="schema-chip">
+              <strong>background_assets</strong>
+              <span>Each candidate/published bg — status, title, tags[], colors[], season, school_level, usage_count, source_id</span>
+            </div>
+            <div class="schema-chip">
+              <strong>background_asset_libraries</strong>
+              <span>M2M join only — one asset → many libraries. Avoid duplicating files per collection.</span>
+            </div>
+          </div>
+          <ul>
+            <li><strong>Workflow:</strong> Upload source → generate variants (async job later) → Review Queue → Approve + assign libraries → Published. Reject / Archive / Restore / hard-delete.</li>
+            <li><strong>Usage:</strong> increment <code>usage_count</code> when a school campaign attaches the asset; optional later event log if analytics deepen.</li>
+            <li><strong>Skip for v1:</strong> per-org libraries, versioning trees, complex AI job UI — keep generation as owner-triggered action + status on source row.</li>
+          </ul>
+        </section>
+
+        <div class="page-head">
+          <div>
+            <h1>Background Library</h1>
+            <p class="sub">Curate platform backgrounds before schools see them. Review AI variations, assign collections, and track usage.</p>
+          </div>
+          <div class="head-actions">
+            <button type="button" class="btn" id="btnManageLibs">Manage libraries</button>
+            <button type="button" class="btn btn-primary" id="btnUploadSource">Upload source graphic</button>
+          </div>
+        </div>
+
+        <div class="demo-controls" aria-label="Mock state toggles">
+          <button type="button" class="btn btn-ghost" data-demo="normal">Demo: populated</button>
+          <button type="button" class="btn btn-ghost" data-demo="loading">Demo: loading</button>
+          <button type="button" class="btn btn-ghost" data-demo="empty">Demo: empty</button>
+          <button type="button" class="btn btn-ghost" data-demo="error">Demo: error</button>
+        </div>
+
+        <div class="stats" id="stats">
+          <article class="stat"><div class="label">Total backgrounds</div><div class="value" data-stat="total">128</div><div class="hint">All statuses</div></article>
+          <article class="stat warn"><div class="label">Awaiting review</div><div class="value" data-stat="pending">12</div><div class="hint">In review queue</div></article>
+          <article class="stat ok"><div class="label">Published</div><div class="value" data-stat="published">96</div><div class="hint">Live in school picker</div></article>
+          <article class="stat"><div class="label">Archived</div><div class="value" data-stat="archived">14</div><div class="hint">Hidden, restorable</div></article>
+          <article class="stat"><div class="label">Total uses</div><div class="value" data-stat="uses">2,841</div><div class="hint">Across all schools</div></article>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Library sections">
+          <button type="button" class="tab active" data-tab="review" role="tab" aria-selected="true">Review Queue <span class="count">12</span></button>
+          <button type="button" class="tab" data-tab="published" role="tab" aria-selected="false">Published Library <span class="count">96</span></button>
+          <button type="button" class="tab" data-tab="archived" role="tab" aria-selected="false">Archived <span class="count">14</span></button>
+          <button type="button" class="tab" data-tab="sources" role="tab" aria-selected="false">Source Graphics <span class="count">8</span></button>
+        </div>
+
+        <div class="toolbar">
+          <label class="search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="search" type="search" placeholder="Search title, tags, colors…" />
+          </label>
+          <select class="filter" id="filterLibrary" aria-label="Filter by library">
+            <option value="">All libraries</option>
+            <option>Back to School</option>
+            <option>Fall</option>
+            <option>Winter</option>
+            <option>Sports</option>
+            <option>Generic</option>
+            <option>Graduation</option>
+          </select>
+          <select class="filter" id="filterSeason" aria-label="Filter by season">
+            <option value="">All seasons</option>
+            <option>Fall</option>
+            <option>Winter</option>
+            <option>Spring</option>
+            <option>Summer</option>
+            <option>Anytime</option>
+          </select>
+          <select class="filter" id="filterLevel" aria-label="Filter by school level">
+            <option value="">All levels</option>
+            <option>Elementary</option>
+            <option>Middle</option>
+            <option>High</option>
+            <option>Any</option>
+          </select>
+          <select class="filter" id="filterSort" aria-label="Sort">
+            <option>Newest first</option>
+            <option>Most used</option>
+            <option>Title A–Z</option>
+          </select>
+          <div class="bulk-bar" id="bulkBar">
+            <strong><span id="bulkCount">0</span> selected</strong>
+            <button type="button" class="btn btn-primary" data-bulk="approve">Approve</button>
+            <button type="button" class="btn" data-bulk="assign">Assign libraries…</button>
+            <button type="button" class="btn" data-bulk="reject">Reject</button>
+            <button type="button" class="btn" data-bulk="archive">Archive</button>
+            <button type="button" class="btn btn-danger" data-bulk="delete">Delete</button>
+            <button type="button" class="btn btn-ghost" id="clearSelection">Clear</button>
+          </div>
+        </div>
+
+        <div class="workspace" id="workspace">
+          <div class="grid" id="grid" aria-live="polite"></div>
+          <aside class="detail" id="detail" hidden>
+            <div class="detail-preview" id="detailPreview">
+              <button type="button" class="btn enlarge" id="btnEnlarge">Preview larger</button>
+            </div>
+            <div class="detail-body">
+              <h2 id="detailTitle">—</h2>
+              <div>
+                <label class="field-label" for="metaTitle">Title</label>
+                <input class="field" id="metaTitle" />
+              </div>
+              <div>
+                <label class="field-label" for="metaTags">Tags</label>
+                <input class="field" id="metaTags" placeholder="chalkboard, supplies, bright" />
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div>
+                  <label class="field-label" for="metaSeason">Season</label>
+                  <select class="field" id="metaSeason">
+                    <option>Anytime</option>
+                    <option>Fall</option>
+                    <option>Winter</option>
+                    <option>Spring</option>
+                    <option>Summer</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="field-label" for="metaLevel">School level</label>
+                  <select class="field" id="metaLevel">
+                    <option>Any</option>
+                    <option>Elementary</option>
+                    <option>Middle</option>
+                    <option>High</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="field-label" for="metaColors">Colors</label>
+                <input class="field" id="metaColors" placeholder="#2F4A3C, #C4922E, cream" />
+              </div>
+              <div>
+                <span class="field-label">Libraries</span>
+                <div class="lib-checks" id="libChecks">
+                  <label><input type="checkbox" value="Back to School" /> Back to School</label>
+                  <label><input type="checkbox" value="Fall" /> Fall</label>
+                  <label><input type="checkbox" value="Winter" /> Winter</label>
+                  <label><input type="checkbox" value="Sports" /> Sports</label>
+                  <label><input type="checkbox" value="Generic" /> Generic</label>
+                  <label><input type="checkbox" value="Graduation" /> Graduation</label>
+                </div>
+              </div>
+              <p class="uses" id="detailUses">Used 0 times</p>
+              <div class="detail-actions" id="detailActions"></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <div class="lightbox" id="lightbox" aria-modal="true" role="dialog">
+    <button type="button" class="btn close" id="lightboxClose">Close</button>
+    <img id="lightboxImg" alt="Background preview" />
+  </div>
+
+  <script>
+    const LIBRARIES = ["Back to School", "Fall", "Winter", "Sports", "Generic", "Graduation"];
+
+    const ASSETS = [
+      { id: "a1", tab: "review", title: "Chalkboard Save-the-Date", status: "pending", libraries: ["Back to School"], season: "Fall", level: "Elementary", tags: "chalkboard, supplies", colors: "#1a1a1a, #f4d35e", uses: 0, gradient: "linear-gradient(145deg,#2a2622 0%,#5c554c 40%,#c4922e 100%)", date: "2026-08-06" },
+      { id: "a2", tab: "review", title: "Bright Supply Burst", status: "pending", libraries: ["Back to School", "Generic"], season: "Fall", level: "Any", tags: "pencils, apples, bright", colors: "#2f4a3c, #e8a0a0", uses: 0, gradient: "linear-gradient(135deg,#f6f2eb,#6b8171 45%,#c4922e)", date: "2026-08-06" },
+      { id: "a3", tab: "review", title: "Soft Paper Texture", status: "pending", libraries: ["Generic"], season: "Anytime", level: "Any", tags: "paper, neutral", colors: "#f6f2eb, #ebe4d9", uses: 0, gradient: "linear-gradient(160deg,#fffcf7,#ebe4d9 60%,#d8cfc0)", date: "2026-08-05" },
+      { id: "a4", tab: "review", title: "Stadium Night Lights", status: "pending", libraries: ["Sports"], season: "Fall", level: "High", tags: "sports, night", colors: "#0b1d33, #c4922e", uses: 0, gradient: "linear-gradient(180deg,#0b1d33,#2a7a86 70%,#c4922e)", date: "2026-08-05" },
+      { id: "a5", tab: "published", title: "Autumn Leaves Soft", status: "published", libraries: ["Fall"], season: "Fall", level: "Elementary", tags: "leaves, warm", colors: "#a65a3a, #c4922e", uses: 214, gradient: "linear-gradient(135deg,#a65a3a,#c4922e 50%,#f6f2eb)", date: "2026-07-12" },
+      { id: "a6", tab: "published", title: "Winter Frost Panel", status: "published", libraries: ["Winter"], season: "Winter", level: "Any", tags: "frost, blue", colors: "#2a7a86, #fffcf7", uses: 89, gradient: "linear-gradient(160deg,#dceef1,#2a7a86)", date: "2026-06-02" },
+      { id: "a7", tab: "published", title: "Graduation Cap Grid", status: "published", libraries: ["Graduation"], season: "Spring", level: "High", tags: "caps, gold", colors: "#2f4a3c, #c4922e", uses: 412, gradient: "linear-gradient(145deg,#2f4a3c,#c4922e)", date: "2026-05-18" },
+      { id: "a8", tab: "published", title: "Generic Cream Wash", status: "published", libraries: ["Generic"], season: "Anytime", level: "Any", tags: "cream, clean", colors: "#f6f2eb, #6b8171", uses: 901, gradient: "linear-gradient(180deg,#fffcf7,#ebe4d9)", date: "2026-04-01" },
+      { id: "a9", tab: "archived", title: "Old Confetti Blast", status: "archived", libraries: ["Generic"], season: "Anytime", level: "Any", tags: "confetti", colors: "#e8a0a0, #2a7a86", uses: 33, gradient: "linear-gradient(135deg,#e8a0a0,#2a7a86)", date: "2025-11-02" },
+      { id: "a10", tab: "archived", title: "Heavy Sparkle Overlay", status: "archived", libraries: ["Back to School"], season: "Fall", level: "Elementary", tags: "sparkle", colors: "#c4922e, #fff", uses: 12, gradient: "linear-gradient(145deg,#c4922e,#fffcf7)", date: "2025-10-14" },
+      { id: "s1", tab: "sources", title: "Source · PTA flyer scan", status: "source", libraries: [], season: "Fall", level: "Elementary", tags: "source, scan", colors: "—", uses: 4, gradient: "linear-gradient(135deg,#5c554c,#f6f2eb 40%,#6b8171)", date: "2026-08-04", sourceNote: "Used to generate 6 variations" },
+      { id: "s2", tab: "sources", title: "Source · Brand moodboard", status: "source", libraries: [], season: "Anytime", level: "Any", tags: "source, mood", colors: "—", uses: 2, gradient: "linear-gradient(160deg,#2f4a3c,#ebe4d9,#c4922e)", date: "2026-07-28", sourceNote: "Generate variations pending" },
+    ];
+
+    let activeTab = "review";
+    let selectedId = null;
+    let checked = new Set();
+    let demoState = "normal";
+
+    const grid = document.getElementById("grid");
+    const detail = document.getElementById("detail");
+    const workspace = document.getElementById("workspace");
+    const bulkBar = document.getElementById("bulkBar");
+    const toastEl = document.getElementById("toast");
+
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastEl._t);
+      toastEl._t = setTimeout(() => toastEl.classList.remove("show"), 2200);
+    }
+
+    function filtered() {
+      const q = document.getElementById("search").value.trim().toLowerCase();
+      const lib = document.getElementById("filterLibrary").value;
+      const season = document.getElementById("filterSeason").value;
+      const level = document.getElementById("filterLevel").value;
+      let rows = ASSETS.filter((a) => a.tab === activeTab);
+      if (q) {
+        rows = rows.filter((a) =>
+          [a.title, a.tags, a.colors, a.libraries.join(" ")].join(" ").toLowerCase().includes(q)
+        );
+      }
+      if (lib) rows = rows.filter((a) => a.libraries.includes(lib));
+      if (season) rows = rows.filter((a) => a.season === season);
+      if (level) rows = rows.filter((a) => a.level === level);
+      const sort = document.getElementById("filterSort").value;
+      if (sort === "Most used") rows = [...rows].sort((a, b) => b.uses - a.uses);
+      if (sort === "Title A–Z") rows = [...rows].sort((a, b) => a.title.localeCompare(b.title));
+      return rows;
+    }
+
+    function statusClass(status) {
+      if (status === "pending") return "pending";
+      if (status === "published") return "published";
+      if (status === "archived") return "archived";
+      return "source";
+    }
+
+    function renderGrid() {
+      workspace.classList.toggle("panel-closed", !selectedId);
+      if (demoState === "loading") {
+        grid.innerHTML = `<div class="loading"><div class="spinner"></div><h3>Loading backgrounds…</h3><p>Fetching from storage and library joins.</p></div>`;
+        detail.hidden = true;
+        return;
+      }
+      if (demoState === "error") {
+        grid.innerHTML = `<div class="error-state"><h3>Couldn’t load library</h3><p>Supabase or storage request failed. Retry or check owner ops access.</p><p style="margin-top:14px"><button type="button" class="btn btn-primary" id="retryBtn">Retry</button></p></div>`;
+        detail.hidden = true;
+        document.getElementById("retryBtn")?.addEventListener("click", () => {
+          demoState = "normal";
+          render();
+          toast("Library reloaded");
+        });
+        return;
+      }
+      const rows = filtered();
+      if (demoState === "empty" || rows.length === 0) {
+        const emptyCopy = {
+          review: ["Review queue is clear", "Upload a source graphic and generate variations to fill this queue."],
+          published: ["No published backgrounds match", "Adjust filters or approve items from the review queue."],
+          archived: ["Nothing archived", "Archive published backgrounds you want to hide without deleting."],
+          sources: ["No source graphics yet", "Upload an inspiration image to start generating background variations."],
+        }[activeTab];
+        grid.innerHTML = `<div class="empty"><h3>${emptyCopy[0]}</h3><p>${emptyCopy[1]}</p></div>`;
+        detail.hidden = true;
+        return;
+      }
+
+      grid.innerHTML = rows.map((a, i) => `
+        <button type="button" class="card ${selectedId === a.id ? "selected" : ""} ${checked.has(a.id) ? "checked" : ""}" data-id="${a.id}" style="animation-delay:${i * 0.03}s">
+          <span class="card-check" data-check="${a.id}">${checked.has(a.id) ? "✓" : ""}</span>
+          <span class="status-pill ${statusClass(a.status)}">${a.status === "pending" ? "Awaiting" : a.status}</span>
+          <div class="thumb" style="background-image:${a.gradient}"></div>
+          <div class="card-body">
+            <h3>${a.title}</h3>
+            <div class="meta">
+              ${(a.libraries[0] ? `<span class="chip">${a.libraries[0]}${a.libraries.length > 1 ? ` +${a.libraries.length - 1}` : ""}</span>` : `<span class="chip">Unassigned</span>`)}
+              <span class="chip">${a.season}</span>
+            </div>
+            <div class="uses">${a.tab === "sources" ? (a.sourceNote || "Source graphic") : `Used ${a.uses.toLocaleString()} times`}</div>
+          </div>
+        </button>
+      `).join("");
+
+      grid.querySelectorAll(".card").forEach((card) => {
+        card.addEventListener("click", (e) => {
+          const check = e.target.closest("[data-check]");
+          const id = card.getAttribute("data-id");
+          if (check) {
+            e.stopPropagation();
+            if (checked.has(id)) checked.delete(id); else checked.add(id);
+            updateBulk();
+            renderGrid();
+            return;
+          }
+          selectedId = id;
+          renderGrid();
+          renderDetail();
+        });
+      });
+
+      if (selectedId && !rows.some((r) => r.id === selectedId)) {
+        selectedId = rows[0]?.id ?? null;
+      }
+      renderDetail();
+    }
+
+    function renderDetail() {
+      const asset = ASSETS.find((a) => a.id === selectedId);
+      if (!asset || demoState !== "normal") {
+        detail.hidden = true;
+        workspace.classList.add("panel-closed");
+        return;
+      }
+      detail.hidden = false;
+      workspace.classList.remove("panel-closed");
+      document.getElementById("detailPreview").style.backgroundImage = asset.gradient;
+      document.getElementById("detailTitle").textContent = asset.title;
+      document.getElementById("metaTitle").value = asset.title;
+      document.getElementById("metaTags").value = asset.tags;
+      document.getElementById("metaSeason").value = asset.season;
+      document.getElementById("metaLevel").value = asset.level;
+      document.getElementById("metaColors").value = asset.colors;
+      document.getElementById("detailUses").textContent =
+        asset.tab === "sources"
+          ? `${asset.sourceNote || "Source graphic"} · ${asset.uses} variations linked`
+          : `Used ${asset.uses.toLocaleString()} times across schools`;
+
+      document.querySelectorAll("#libChecks input").forEach((input) => {
+        input.checked = asset.libraries.includes(input.value);
+        input.disabled = asset.tab === "sources";
+      });
+
+      const actions = document.getElementById("detailActions");
+      if (asset.tab === "review") {
+        actions.innerHTML = `
+          <button type="button" class="btn btn-primary" data-act="approve">Approve &amp; publish</button>
+          <button type="button" class="btn" data-act="reject">Reject</button>
+          <button type="button" class="btn" data-act="save">Save metadata</button>
+          <button type="button" class="btn btn-danger" data-act="delete">Delete</button>
+        `;
+      } else if (asset.tab === "published") {
+        actions.innerHTML = `
+          <button type="button" class="btn" data-act="save">Save metadata</button>
+          <button type="button" class="btn" data-act="archive">Archive</button>
+          <button type="button" class="btn btn-danger" data-act="delete">Delete</button>
+        `;
+      } else if (asset.tab === "archived") {
+        actions.innerHTML = `
+          <button type="button" class="btn btn-primary" data-act="restore">Restore to published</button>
+          <button type="button" class="btn btn-danger" data-act="delete">Permanently delete</button>
+        `;
+      } else {
+        actions.innerHTML = `
+          <button type="button" class="btn btn-primary" data-act="generate">Generate variations</button>
+          <button type="button" class="btn" data-act="save">Save notes</button>
+          <button type="button" class="btn btn-danger" data-act="delete">Delete source</button>
+        `;
+      }
+
+      actions.querySelectorAll("[data-act]").forEach((btn) => {
+        btn.addEventListener("click", () => handleAction(btn.getAttribute("data-act"), asset));
+      });
+    }
+
+    function handleAction(act, asset) {
+      if (act === "save") {
+        asset.title = document.getElementById("metaTitle").value.trim() || asset.title;
+        asset.tags = document.getElementById("metaTags").value;
+        asset.season = document.getElementById("metaSeason").value;
+        asset.level = document.getElementById("metaLevel").value;
+        asset.colors = document.getElementById("metaColors").value;
+        asset.libraries = [...document.querySelectorAll("#libChecks input:checked")].map((i) => i.value);
+        toast("Metadata saved (mock)");
+        render();
+        return;
+      }
+      if (act === "approve") {
+        asset.libraries = [...document.querySelectorAll("#libChecks input:checked")].map((i) => i.value);
+        if (asset.libraries.length === 0) {
+          toast("Assign at least one library before publishing");
+          return;
+        }
+        asset.status = "published";
+        asset.tab = "published";
+        toast(`Approved · ${asset.title}`);
+        selectedId = null;
+        render();
+        return;
+      }
+      if (act === "reject") {
+        ASSETS.splice(ASSETS.indexOf(asset), 1);
+        selectedId = null;
+        toast("Rejected and removed from queue (mock)");
+        render();
+        return;
+      }
+      if (act === "archive") {
+        asset.status = "archived";
+        asset.tab = "archived";
+        toast("Archived");
+        selectedId = null;
+        render();
+        return;
+      }
+      if (act === "restore") {
+        asset.status = "published";
+        asset.tab = "published";
+        toast("Restored to published library");
+        selectedId = null;
+        render();
+        return;
+      }
+      if (act === "delete") {
+        ASSETS.splice(ASSETS.indexOf(asset), 1);
+        selectedId = null;
+        toast("Permanently deleted (mock)");
+        render();
+        return;
+      }
+      if (act === "generate") {
+        toast("Queued 4 variations into Review Queue (mock)");
+        ASSETS.unshift({
+          id: "gen-" + Date.now(),
+          tab: "review",
+          title: "Variation from " + asset.title.replace(/^Source · /, ""),
+          status: "pending",
+          libraries: ["Generic"],
+          season: asset.season,
+          level: asset.level,
+          tags: "generated",
+          colors: "#2f4a3c, #c4922e",
+          uses: 0,
+          gradient: asset.gradient,
+          date: "2026-08-06",
+        });
+        activeTab = "review";
+        document.querySelectorAll(".tab").forEach((t) => {
+          const on = t.getAttribute("data-tab") === "review";
+          t.classList.toggle("active", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        render();
+      }
+    }
+
+    function updateBulk() {
+      bulkBar.classList.toggle("show", checked.size > 0 && activeTab === "review");
+      document.getElementById("bulkCount").textContent = String(checked.size);
+    }
+
+    function render() {
+      updateBulk();
+      renderGrid();
+    }
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        activeTab = tab.getAttribute("data-tab");
+        document.querySelectorAll(".tab").forEach((t) => {
+          const on = t === tab;
+          t.classList.toggle("active", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        checked.clear();
+        selectedId = null;
+        demoState = "normal";
+        render();
+      });
+    });
+
+    ["search", "filterLibrary", "filterSeason", "filterLevel", "filterSort"].forEach((id) => {
+      document.getElementById(id).addEventListener("input", render);
+      document.getElementById(id).addEventListener("change", render);
+    });
+
+    document.getElementById("clearSelection").addEventListener("click", () => {
+      checked.clear();
+      render();
+    });
+
+    document.querySelectorAll("[data-bulk]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const act = btn.getAttribute("data-bulk");
+        const ids = [...checked];
+        if (act === "approve") {
+          ids.forEach((id) => {
+            const a = ASSETS.find((x) => x.id === id);
+            if (!a) return;
+            if (a.libraries.length === 0) a.libraries = ["Generic"];
+            a.status = "published";
+            a.tab = "published";
+          });
+          toast(`Approved ${ids.length} backgrounds`);
+        } else if (act === "assign") {
+          ids.forEach((id) => {
+            const a = ASSETS.find((x) => x.id === id);
+            if (a && !a.libraries.includes("Back to School")) a.libraries.push("Back to School");
+          });
+          toast("Assigned Back to School to selection (mock)");
+        } else if (act === "reject" || act === "delete") {
+          ids.forEach((id) => {
+            const idx = ASSETS.findIndex((x) => x.id === id);
+            if (idx >= 0) ASSETS.splice(idx, 1);
+          });
+          toast(`${act === "reject" ? "Rejected" : "Deleted"} ${ids.length} items`);
+        } else if (act === "archive") {
+          ids.forEach((id) => {
+            const a = ASSETS.find((x) => x.id === id);
+            if (!a) return;
+            a.status = "archived";
+            a.tab = "archived";
+          });
+          toast(`Archived ${ids.length} backgrounds`);
+        }
+        checked.clear();
+        selectedId = null;
+        render();
+      });
+    });
+
+    document.querySelectorAll("[data-demo]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        demoState = btn.getAttribute("data-demo");
+        selectedId = null;
+        checked.clear();
+        render();
+      });
+    });
+
+    document.getElementById("btnUploadSource").addEventListener("click", () => {
+      toast("Upload source graphic dialog (mock)");
+      activeTab = "sources";
+      document.querySelectorAll(".tab").forEach((t) => {
+        const on = t.getAttribute("data-tab") === "sources";
+        t.classList.toggle("active", on);
+        t.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      render();
+    });
+
+    document.getElementById("btnManageLibs").addEventListener("click", () => {
+      toast("Libraries: " + LIBRARIES.join(" · "));
+    });
+
+    document.getElementById("btnEnlarge").addEventListener("click", () => {
+      const asset = ASSETS.find((a) => a.id === selectedId);
+      if (!asset) return;
+      const img = document.getElementById("lightboxImg");
+      // CSS gradient as data URL substitute — show colored panel via canvas-like CSS background on a blank svg
+      img.src = "data:image/svg+xml," + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2f4a3c"/><stop offset="1" stop-color="#c4922e"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><text x="50%" y="48%" text-anchor="middle" fill="#fffcf7" font-family="Georgia,serif" font-size="42">${asset.title.replace(/[<>&]/g, "")}</text><text x="50%" y="56%" text-anchor="middle" fill="#fffcf7" font-family="sans-serif" font-size="18" opacity=".85">Large preview</text></svg>`
+      );
+      document.getElementById("lightbox").classList.add("open");
+    });
+    document.getElementById("lightboxClose").addEventListener("click", () => {
+      document.getElementById("lightbox").classList.remove("open");
+    });
+    document.getElementById("lightbox").addEventListener("click", (e) => {
+      if (e.target.id === "lightbox") e.currentTarget.classList.remove("open");
+    });
+
+    render();
+  </script>
+</body>
+</html>

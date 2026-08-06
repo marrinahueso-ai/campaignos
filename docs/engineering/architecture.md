@@ -5,7 +5,7 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel · Stripe  
-**Last updated:** August 6, 2026 — Edit Post viewport/style lock · Calendar Select all · Flyer QR/logo/fonts
+**Last updated:** August 6, 2026 — Owner Background Library · Edit Post feed→story adjust
 **Related:** [Feature list](../product/feature-list.md) · [Storage RLS](./storage-rls.md) · [Access control](./access-control.md) · [Billing & access](../ops/billing-and-access.md) · [Stripe integration](./stripe-integration.md) · [QA architecture overview](../qa/architecture-overview.md) · [Launch checklist](../qa/launch-checklist.md) · [Ask Ralli Assistant](./ask-ralli-assistant.md)
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
@@ -90,6 +90,7 @@ CampignOS/
 | `/create-with-ai/flyer` | Flyer composer (static HTML embed); saves to event Files (`event_playbook_files` category `flyer`); list/load via `/api/flyer-composer/saved` |
 | `/homepage-composer` | Membership Toolkit / homepage HTML export |
 | `/newsletter-composer` | Scoop-style family email HTML export |
+| `/ops/background-library` | Owner-only Background Library (upload → generate 10 → approve/delete); `platform-backgrounds` storage + `background_*` tables |
 
 **Settings Ease left nav:** Overview · Organization · Branding · Team & Access · Integrations · Billing & Plan · Account. Header settings gear → `/settings` (no section dropdown). Branding hub (`/settings/branding`) nests AI Brain · AI Inbox · Playbook · Colors & Logos · School Year (`?section=`); standalone `/settings/school-year` still works.
 

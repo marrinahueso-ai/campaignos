@@ -138,6 +138,12 @@ export function OwnerDashboard({
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
+            href="/ops/background-library"
+            className="inline-flex items-center gap-2 rounded-lg border border-cos-border bg-cos-card px-4 py-2 text-sm font-medium text-cos-text hover:bg-cos-bg"
+          >
+            Background Library
+          </Link>
+          <Link
             href="/account/agreements/countersign"
             className="inline-flex items-center gap-2 rounded-lg bg-cos-primary px-4 py-2 text-sm font-medium text-[#f6f2eb] hover:bg-cos-primary-hover"
           >

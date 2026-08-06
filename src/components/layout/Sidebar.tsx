@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Cpu,
   FolderOpen,
+  ImagePlus,
   Inbox,
   LayoutDashboard,
   ListChecks,
@@ -572,6 +573,18 @@ export function Sidebar({
                   >
                     AI &amp; APIs
                   </Link>
+                  <Link
+                    href="/ops/background-library"
+                    onClick={() => onNavigate?.()}
+                    className={cn(
+                      "block px-3 py-2 text-sm transition-colors",
+                      pathname.startsWith("/ops/background-library")
+                        ? "bg-cos-dark text-[#f6f2eb]"
+                        : "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
+                    )}
+                  >
+                    Backgrounds
+                  </Link>
                 </div>
               ) : null}
             </div>
@@ -602,6 +615,19 @@ export function Sidebar({
                 )}
               >
                 <Cpu className="h-4 w-4" strokeWidth={1.5} />
+              </Link>
+              <Link
+                href="/ops/background-library"
+                title="Background Library"
+                onClick={() => onNavigate?.()}
+                className={cn(
+                  "group relative flex items-center justify-center p-2.5 text-sm transition-colors",
+                  pathname.startsWith("/ops/background-library")
+                    ? "bg-cos-dark text-[#f6f2eb]"
+                    : "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
+                )}
+              >
+                <ImagePlus className="h-4 w-4" strokeWidth={1.5} />
               </Link>
             </div>
           )
