@@ -652,19 +652,29 @@
       font-family: var(--serif); font-size: 22px; font-weight: 700;
       color: #fffcf7; line-height: 1.1; text-shadow: 0 2px 12px rgba(0,0,0,.35);
     }
-    /* Lightbox */
+    /* Lightbox — portaled to body via .smc-lightbox-host so it clears the app header */
+.smc.smc-lightbox-host {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+.smc.smc-lightbox-host .lightbox {
+  pointer-events: auto;
+}
 .smc .lightbox {
-      position: fixed; inset: 0; z-index: 80;
+      position: fixed; inset: 0; z-index: 200;
       background: rgba(28, 36, 48, 0.72);
       backdrop-filter: blur(6px);
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: max(24px, env(safe-area-inset-top, 0px)) 24px 24px;
     }
 .smc .lightbox.open { display: flex; animation: fadeUp .2s ease both; }
 .smc .lightbox-card {
       width: min(520px, 92vw);
+      max-height: min(92vh, 960px);
       background: var(--white);
       border-radius: 22px;
       box-shadow: var(--shadow-lg);
@@ -1633,12 +1643,13 @@
   z-index: 4;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0;
   height: 36px;
-  width: 36px;
-  max-width: 36px;
-  padding: 0;
+  /* Icon-only footprint; expands left via padding + label (no width:auto). */
+  width: max-content;
+  max-width: none;
+  padding: 0 10.5px;
   border: none;
   border-radius: 999px;
   overflow: hidden;
@@ -1647,22 +1658,21 @@
   background-image: linear-gradient(
     115deg,
     #f6c9a8 0%,
-    #e87bb8 35%,
-    #9b7dff 70%,
+    #e87bb8 32%,
+    #9b7dff 68%,
     #6f7dff 100%
   );
-  background-size: 220% 220%;
+  background-size: 220% 100%;
   background-position: 0% 50%;
   box-shadow: 0 6px 16px rgba(90, 60, 140, 0.28);
+  transform-origin: right center;
+  will-change: padding, gap, background-position;
   transition:
-    max-width 0.28s ease,
-    width 0.28s ease,
-    padding 0.28s ease,
-    gap 0.28s ease,
-    border-radius 0.28s ease,
-    background-position 0.45s ease,
-    box-shadow 0.28s ease,
-    transform 0.28s ease;
+    padding 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    gap 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.32s ease,
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: smc-art-edit-gradient 5s ease-in-out infinite alternate;
 }
 .smc .art-edit svg {
   width: 15px;
@@ -1675,6 +1685,7 @@
   stroke-linejoin: round;
 }
 .smc .art-edit-label {
+  display: inline-block;
   max-width: 0;
   opacity: 0;
   overflow: hidden;
@@ -1682,27 +1693,24 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.01em;
-  transition: max-width 0.28s ease, opacity 0.2s ease, margin 0.28s ease;
+  transition:
+    max-width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.22s ease;
 }
 .smc .art-edit:hover,
 .smc .art-edit:focus-visible {
-  width: auto;
-  max-width: 160px;
   padding: 0 14px 0 12px;
   gap: 8px;
-  border-radius: 999px;
-  background-position: 100% 50%;
   box-shadow: 0 8px 20px rgba(90, 60, 140, 0.36);
   transform: translateY(-1px);
   outline: none;
+  /* Speed up the same continuous gradient — don’t restart a new animation. */
+  animation-duration: 2.2s;
 }
 .smc .art-edit:hover .art-edit-label,
 .smc .art-edit:focus-visible .art-edit-label {
-  max-width: 110px;
+  max-width: 7.5rem;
   opacity: 1;
-}
-.smc .art-edit:hover {
-  animation: smc-art-edit-gradient 1.6s ease infinite alternate;
 }
 @keyframes smc-art-edit-gradient {
   from {
@@ -1714,14 +1722,21 @@
 }
 @media (hover: none) {
   .smc .art-edit {
-    width: auto;
-    max-width: 160px;
     padding: 0 14px 0 12px;
     gap: 8px;
   }
   .smc .art-edit-label {
-    max-width: 110px;
+    max-width: 7.5rem;
     opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .smc .art-edit {
+    animation: none;
+    transition: none;
+  }
+  .smc .art-edit-label {
+    transition: none;
   }
 }
 .smc .ig-actions {

@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { DM_Sans, Fraunces } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { WarmBreathFrame } from "@/components/motion/WarmBreathFrame";
 
@@ -1863,65 +1864,72 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
         </div>
       </div>
 
-      {lightbox ? (
-        <div
-          className="lightbox open"
-          aria-hidden="false"
-          onClick={() => setLightbox(null)}
-        >
-          <div
-            className={`lightbox-card${lightbox.view === "story" ? " is-story" : " is-feed"}`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="lightbox-x"
-              aria-label="Close"
-              onClick={() => setLightbox(null)}
-            >
-              ×
-            </button>
+      {lightbox
+        ? createPortal(
             <div
-              className={`lightbox-art${lightbox.view === "story" ? " is-story" : " is-feed"}`}
-              style={
-                lightbox.imageUrl
-                  ? {
-                      backgroundImage: `url(${lightbox.imageUrl})`,
-                      backgroundSize: "contain",
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "center",
-                      backgroundColor: "#1c2430",
-                    }
-                  : {
-                      background: `radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%), ${lightbox.gradient}`,
-                    }
-              }
+              className={`smc smc-lightbox-host ${smcSans.variable} ${smcSerif.variable}`}
             >
-              {!lightbox.imageUrl ? (
-                <div className="title">{lightbox.title}</div>
-              ) : null}
-            </div>
-            <div className="lightbox-bar">
-              <p>
-                Generated artwork · larger view
-                {lightbox.view === "story" ? " (9:16)" : " (1:1)"}
-              </p>
-              <button
-                type="button"
-                className="btn btn-sm btn-primary"
-                onClick={() =>
-                  void handleDownload(
-                    lightbox.imageUrl,
-                    lightbox.view === "story" ? "story" : "feed",
-                  )
-                }
+              <div
+                className="lightbox open"
+                aria-hidden="false"
+                onClick={() => setLightbox(null)}
               >
-                Download
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+                <div
+                  className={`lightbox-card${lightbox.view === "story" ? " is-story" : " is-feed"}`}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className="lightbox-x"
+                    aria-label="Close"
+                    onClick={() => setLightbox(null)}
+                  >
+                    ×
+                  </button>
+                  <div
+                    className={`lightbox-art${lightbox.view === "story" ? " is-story" : " is-feed"}`}
+                    style={
+                      lightbox.imageUrl
+                        ? {
+                            backgroundImage: `url(${lightbox.imageUrl})`,
+                            backgroundSize: "contain",
+                            backgroundRepeat: "no-repeat",
+                            backgroundPosition: "center",
+                            backgroundColor: "#1c2430",
+                          }
+                        : {
+                            background: `radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%), ${lightbox.gradient}`,
+                          }
+                    }
+                  >
+                    {!lightbox.imageUrl ? (
+                      <div className="title">{lightbox.title}</div>
+                    ) : null}
+                  </div>
+                  <div className="lightbox-bar">
+                    <p>
+                      Generated artwork · larger view
+                      {lightbox.view === "story" ? " (9:16)" : " (1:1)"}
+                    </p>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={() =>
+                        void handleDownload(
+                          lightbox.imageUrl,
+                          lightbox.view === "story" ? "story" : "feed",
+                        )
+                      }
+                    >
+                      Download
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {editModalOpen && selectedPreview && selectedMilestone ? (
         <EditMilestoneModal
