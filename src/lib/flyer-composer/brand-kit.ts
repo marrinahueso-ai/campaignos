@@ -1,6 +1,15 @@
 import "server-only";
 
+import { buildCampaignBuilderLogoOptions } from "@/lib/artwork-v2/setup-logos";
+import { getBrandKitItems } from "@/lib/creative-assets/queries";
 import { getSchoolProfile } from "@/lib/organizations/queries";
+
+/** Logo choice from Setup brand kit (PTO / school / extras). */
+export type FlyerComposerLogoOption = {
+  id: string;
+  label: string;
+  url: string;
+};
 
 /** JSON shape returned by GET /api/flyer-composer/brand-kit */
 export type FlyerComposerBrandKitResponse = {
@@ -15,6 +24,8 @@ export type FlyerComposerBrandKitResponse = {
   schoolLogoUploaded: boolean;
   ptoLogoUrl: string | null;
   schoolLogoUrl: string | null;
+  /** Setup logos the volunteer can pick for the Brand Kit block. */
+  logos: FlyerComposerLogoOption[];
   brandKitReady: boolean;
 };
 
@@ -40,6 +51,15 @@ export async function getFlyerComposerBrandKit(): Promise<FlyerComposerBrandKitR
   const ptoLogoUrl = brandAssets?.ptoLogo ?? null;
   const schoolLogoUrl = brandAssets?.schoolLogo ?? null;
 
+  const brandKitItems = await getBrandKitItems(organization.id);
+  const logos = buildCampaignBuilderLogoOptions(brandAssets, brandKitItems).map(
+    (option) => ({
+      id: option.id,
+      label: option.label,
+      url: option.url,
+    }),
+  );
+
   return {
     organizationId: organization.id,
     organizationShortName: shortenOrganizationName(organization.name),
@@ -51,8 +71,12 @@ export async function getFlyerComposerBrandKit(): Promise<FlyerComposerBrandKitR
     schoolLogoUploaded: Boolean(schoolLogoUrl),
     ptoLogoUrl,
     schoolLogoUrl,
+    logos,
     brandKitReady: Boolean(
-      brandAssets?.primaryColor?.trim() || ptoLogoUrl || schoolLogoUrl,
+      brandAssets?.primaryColor?.trim() ||
+        ptoLogoUrl ||
+        schoolLogoUrl ||
+        logos.length > 0,
     ),
   };
 }

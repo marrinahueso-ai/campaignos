@@ -22,7 +22,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
       --cream: #f6f2eb;
@@ -39,9 +39,9 @@
       --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
       --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
       --radius: 22px;
-      /* Same Pilot stack as Social Create-with-AI (Fraunces display + DM Sans UI). */
-      --serif: "Fraunces", Georgia, serif;
-      --sans: "DM Sans", system-ui, sans-serif;
+      /* Match site chrome (Geist UI + Cormorant display). */
+      --serif: "Cormorant Garamond", Georgia, serif;
+      --sans: "Geist", system-ui, sans-serif;
       --ease: cubic-bezier(0.22, 1, 0.36, 1);
       /* Brand kit tokens — synced from SETTINGS_BRAND_KIT when toggle is on */
       --brand-primary: #2f4a3c;
@@ -750,6 +750,30 @@
       color: var(--forest); text-decoration: none;
     }
     .brand-manage-link:hover { text-decoration: underline; }
+    .brand-logo-picker {
+      display: none; margin-top: 12px; gap: 8px; flex-wrap: wrap;
+    }
+    .brand-logo-picker.is-visible { display: flex; }
+    .brand-logo-option {
+      width: 52px; height: 52px; padding: 6px; border-radius: 14px;
+      border: 1.5px solid var(--line); background: var(--cream);
+      cursor: pointer; display: grid; place-items: center;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .brand-logo-option:hover { border-color: var(--sage); }
+    .brand-logo-option.is-selected {
+      border-color: var(--forest);
+      background: #f0f3f1;
+      box-shadow: 0 0 0 1px rgba(47, 74, 60, 0.2);
+    }
+    .brand-logo-option img {
+      display: block; max-width: 100%; max-height: 100%;
+      width: auto; height: auto; object-fit: contain;
+    }
+    .brand-logo-option-label {
+      margin: 0; font-size: 0.72rem; font-weight: 700; color: var(--muted);
+      width: 100%;
+    }
     .insp-block-label {
       display: block; margin: 0 0 14px;
       font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
@@ -2393,6 +2417,7 @@
               <div class="brand-preview-bar"></div>
               <div class="brand-preview-bar short"></div>
             </div>
+            <div class="brand-logo-picker" id="brandLogoPicker" role="group" aria-label="Choose logo from Brand Kit"></div>
             <a href="/settings/branding?section=colors-logos" class="brand-manage-link" id="brandSettingsLink">Manage Brand Kit</a>
             <p class="insp-peer-note">Use organization fonts, colors, and logos by default.</p>
           </div>
@@ -3074,6 +3099,7 @@
       schoolLogoUploaded: false,
       ptoLogoUrl: null,
       schoolLogoUrl: null,
+      logos: [],
       ink: "#2a2622",
       paper: "#faf8f4",
       surface: "#eef4ef",
@@ -3149,6 +3175,7 @@
       customTemplateFileName: null,
       customTemplateFileType: null,
       brand: true,
+      selectedLogoId: null,
       generating: false,
       previewGenerated: false,
       generatedImageUrl: null,
@@ -3538,23 +3565,78 @@
       return (words[0] || "O").slice(0, 2).toUpperCase();
     }
 
-    function brandLogoMarkHTML(sizeClass) {
+    function getBrandLogoOptions() {
       const kit = SETTINGS_BRAND_KIT;
+      if (Array.isArray(kit.logos) && kit.logos.length) {
+        return kit.logos.filter((logo) => logo && logo.id && logo.url);
+      }
+      const fallback = [];
       if (kit.ptoLogoUrl) {
-        return `<img src="${escapeHtml(kit.ptoLogoUrl)}" alt="" />`;
+        fallback.push({ id: "pto", label: "PTO logo", url: kit.ptoLogoUrl });
       }
       if (kit.schoolLogoUrl) {
-        return `<img src="${escapeHtml(kit.schoolLogoUrl)}" alt="" />`;
+        fallback.push({ id: "school", label: "School logo", url: kit.schoolLogoUrl });
       }
-      return lettermarkFrom(kit.organizationShortName);
+      return fallback;
+    }
+
+    function resolveSelectedLogo() {
+      const options = getBrandLogoOptions();
+      if (!options.length) return null;
+      if (state.selectedLogoId) {
+        const match = options.find((logo) => logo.id === state.selectedLogoId);
+        if (match) return match;
+      }
+      return options[0];
+    }
+
+    function ensureSelectedLogoId() {
+      const selected = resolveSelectedLogo();
+      state.selectedLogoId = selected ? selected.id : null;
+      return selected;
+    }
+
+    function brandLogoMarkHTML(sizeClass) {
+      const selected = resolveSelectedLogo();
+      if (selected?.url) {
+        return `<img src="${escapeHtml(selected.url)}" alt="" />`;
+      }
+      return lettermarkFrom(SETTINGS_BRAND_KIT.organizationShortName);
+    }
+
+    function syncBrandLogoPicker() {
+      const picker = document.getElementById("brandLogoPicker");
+      if (!picker) return;
+      const options = getBrandLogoOptions();
+      const selected = ensureSelectedLogoId();
+      const show = state.brand && options.length > 0;
+      picker.classList.toggle("is-visible", show);
+      if (!show) {
+        picker.innerHTML = "";
+        return;
+      }
+      const label =
+        options.length > 1
+          ? `<p class="brand-logo-option-label">Choose logo</p>`
+          : "";
+      picker.innerHTML =
+        label +
+        options
+          .map((logo) => {
+            const isSelected = selected && selected.id === logo.id;
+            return `<button type="button" class="brand-logo-option${isSelected ? " is-selected" : ""}" data-logo-id="${escapeHtml(logo.id)}" aria-pressed="${isSelected ? "true" : "false"}" title="${escapeHtml(logo.label || "Logo")}" aria-label="${escapeHtml(logo.label || "Logo")}"><img src="${escapeHtml(logo.url)}" alt="" /></button>`;
+          })
+          .join("");
     }
 
     function syncBrandKitCardUI() {
       const kit = SETTINGS_BRAND_KIT;
+      const selected = ensureSelectedLogoId();
       const summary = document.getElementById("brandKitSummary");
       if (summary) {
+        const logoBit = selected?.label ? ` · ${selected.label}` : "";
         summary.textContent = state.brand
-          ? `${kit.organizationShortName} · ${kit.primaryColor} / ${kit.accentColor}`
+          ? `${kit.organizationShortName}${logoBit} · ${kit.primaryColor} / ${kit.accentColor}`
           : "Neutral palette — no org logo on previews";
       }
       const link = document.getElementById("brandSettingsLink");
@@ -3569,6 +3651,7 @@
       document.querySelectorAll("#brandLogoMark, #brandLogoMarkOptional").forEach((el) => {
         el.innerHTML = brandLogoMarkHTML();
       });
+      syncBrandLogoPicker();
     }
 
     async function hydrateBrandKitFromApi() {
@@ -3602,13 +3685,24 @@
           schoolLogoUploaded: Boolean(data.schoolLogoUploaded),
           ptoLogoUrl: data.ptoLogoUrl || null,
           schoolLogoUrl: data.schoolLogoUrl || null,
+          logos: Array.isArray(data.logos)
+            ? data.logos.filter(
+                (logo) =>
+                  logo &&
+                  typeof logo.id === "string" &&
+                  typeof logo.url === "string" &&
+                  logo.url.trim(),
+              )
+            : [],
         });
         syncBrandKitTokensFromSettings();
+        ensureSelectedLogoId();
 
         const orgInput = document.getElementById("orgName");
         if (orgInput && !orgInput.value.trim()) {
           orgInput.value = SETTINGS_BRAND_KIT.organizationShortName;
         }
+        syncBrandKit();
       } catch {
         /* file://, offline, or unauthenticated — keep neutral defaults */
       }
@@ -3797,11 +3891,9 @@
       if (!state.brand) return "";
       const kit = SETTINGS_BRAND_KIT;
       const label = escapeHtml(kit.organizationShortName);
-      if (kit.ptoLogoUrl) {
-        return `<img class="logo-img" src="${escapeHtml(kit.ptoLogoUrl)}" alt="${label} logo" title="${label}" />`;
-      }
-      if (kit.schoolLogoUrl) {
-        return `<img class="logo-img" src="${escapeHtml(kit.schoolLogoUrl)}" alt="${label} logo" title="${label}" />`;
+      const selected = resolveSelectedLogo();
+      if (selected?.url) {
+        return `<img class="logo-img" src="${escapeHtml(selected.url)}" alt="${label} logo" title="${escapeHtml(selected.label || label)}" />`;
       }
       return `<div class="logo-lettermark" title="${label}">${escapeHtml(lettermarkFrom(kit.organizationShortName))}</div>`;
     }
@@ -4411,6 +4503,7 @@
         customTemplateFileName: state.customTemplateFileName,
         customTemplateFileType: state.customTemplateFileType,
         brand: state.brand,
+        selectedLogoId: state.selectedLogoId,
         generatedImageUrl,
         previewGenerated: state.previewGenerated === true && !!generatedImageUrl,
         activeVersionId: state.activeVersionId,
@@ -4597,6 +4690,9 @@
           state.customTemplateFileType = d.customTemplateFileType;
         }
         if (typeof d.brand === "boolean") state.brand = d.brand;
+        if (typeof d.selectedLogoId === "string" && d.selectedLogoId.trim()) {
+          state.selectedLogoId = d.selectedLogoId.trim();
+        }
         state.versions = normalizeFlyerVersions(d.versions);
         if (isPersistableFlyerImageUrl(d.generatedImageUrl)) {
           state.generatedImageUrl = d.generatedImageUrl.trim();
@@ -4777,11 +4873,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${escapeHtml(slots.headline)} · Flyer</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Fraunces:wght@600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Geist:wght@400;600;700&display=swap" rel="stylesheet" />
 <style>
   ${brandBlock}
   ${pageStyles}
-  body { margin: 0; font-family: "DM Sans", system-ui, sans-serif; background: #f6f2eb; }
+  body { margin: 0; font-family: "Geist", system-ui, sans-serif; background: #f6f2eb; }
   .wrap { ${ratioCss} margin: 0 auto; overflow: hidden; }
   .wrap .fly { font-size: 11px; }
   .wrap .fly .h { font-size: 20px; }
@@ -6476,15 +6572,20 @@
     }
 
     function resolveLogoDisplay() {
-      const kit = SETTINGS_BRAND_KIT;
-      if (kit.ptoLogoUrl && kit.ptoLogoUploaded) return "pto";
-      if (kit.schoolLogoUrl && kit.schoolLogoUploaded) return "school";
-      if (kit.ptoLogoUploaded || kit.schoolLogoUploaded) return "lettermark";
-      return "none";
+      const selected = resolveSelectedLogo();
+      if (!selected) {
+        const kit = SETTINGS_BRAND_KIT;
+        if (kit.ptoLogoUploaded || kit.schoolLogoUploaded) return "lettermark";
+        return "none";
+      }
+      if (selected.id === "pto") return "pto";
+      if (selected.id === "school") return "school";
+      return "pto";
     }
 
     function buildBrandKitPayload() {
       const kit = SETTINGS_BRAND_KIT;
+      const selected = resolveSelectedLogo();
       return {
         organizationShortName: kit.organizationShortName,
         primaryColor: kit.primaryColor,
@@ -6494,6 +6595,9 @@
         ptoLogoUploaded: kit.ptoLogoUploaded,
         schoolLogoUploaded: kit.schoolLogoUploaded,
         logoDisplay: resolveLogoDisplay(),
+        selectedLogoId: selected?.id || null,
+        selectedLogoUrl: selected?.url || null,
+        selectedLogoLabel: selected?.label || null,
       };
     }
 
@@ -6989,6 +7093,20 @@
       if (state.view === "result") {
         if (state.previewGenerated) runGenerate();
         else renderPreviewIdleFlyer();
+      }
+      scheduleSave();
+    });
+
+    document.getElementById("brandLogoPicker")?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-logo-id]");
+      if (!button || !state.brand) return;
+      const nextId = button.getAttribute("data-logo-id");
+      if (!nextId || nextId === state.selectedLogoId) return;
+      state.selectedLogoId = nextId;
+      syncBrandKitCardUI();
+      renderMini();
+      if (state.view === "result" && !state.previewGenerated && !state.generating) {
+        renderPreviewIdleFlyer();
       }
       scheduleSave();
     });

@@ -630,7 +630,7 @@ export function EditMilestoneModal({
                 label="What should change?"
                 value={artworkInstructions}
                 onChange={(e) => setArtworkInstructions(e.target.value)}
-                rows={5}
+                rows={4}
                 placeholder={
                   styleLocked && hasExistingArtwork
                     ? "e.g. Make the headline bigger — keep everything else the same…"

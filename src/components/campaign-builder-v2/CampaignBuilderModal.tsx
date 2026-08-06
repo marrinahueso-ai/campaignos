@@ -43,18 +43,20 @@ export function CampaignBuilderModal({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-cos-text/20 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-cos-text/20 p-4 backdrop-blur-sm">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="campaign-builder-modal-title"
         className={cn(
-          "flex max-h-[90vh] w-full flex-col overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-xl",
+          // min-h-0 + dvh: flex body can shrink and scroll inside the viewport
+          // (Safari otherwise grows past max-height and clips Quick suggestions).
+          "flex max-h-[calc(100dvh-2rem)] w-full min-h-0 flex-col overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-xl",
           sizeClasses[size],
           className,
         )}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-cos-border px-6 py-5">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-cos-border px-6 py-5">
           <div className="min-w-0">
             <h2
               id="campaign-builder-modal-title"
@@ -79,10 +81,14 @@ export function CampaignBuilderModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5">
+          {children}
+        </div>
 
         {footer && (
-          <div className="border-t border-cos-border px-6 py-4">{footer}</div>
+          <div className="shrink-0 border-t border-cos-border px-6 py-4">
+            {footer}
+          </div>
         )}
       </div>
     </div>

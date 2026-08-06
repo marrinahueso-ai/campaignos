@@ -64,6 +64,10 @@ export type FlyerComposerBrandKit = {
   ptoLogoUploaded: boolean;
   schoolLogoUploaded: boolean;
   logoDisplay: "pto" | "school" | "lettermark" | "none";
+  /** Selected Setup logo id (pto / school / brand-kit item). */
+  selectedLogoId?: string | null;
+  selectedLogoUrl?: string | null;
+  selectedLogoLabel?: string | null;
 };
 
 export type FlyerComposerGenerateInput = {
