@@ -1,3 +1,4 @@
+import { formatTimingCatalogDay } from "@/lib/playbooks/timing-catalog";
 import type { EventType } from "@/types/playbooks";
 
 export const EVENT_TYPES: {
@@ -74,11 +75,11 @@ export const STEP_DEFAULT_STATUS_OPTIONS = [
 ] as const;
 
 export function formatRelativeDay(relativeDay: number): string {
-  if (relativeDay === 0) return "Day Of";
-  if (relativeDay === 1) return "Thank You (+1 day)";
-  if (relativeDay === -1) return "Day Before";
-  if (relativeDay < 0) return `${Math.abs(relativeDay)} Days Out`;
-  return `+${relativeDay} Days After`;
+  const catalogLabel = formatTimingCatalogDay(relativeDay);
+  if (catalogLabel) return catalogLabel;
+
+  if (relativeDay < 0) return `${Math.abs(relativeDay)} days before`;
+  return `${relativeDay} days after`;
 }
 
 export function slugifyPlaybookName(name: string): string {

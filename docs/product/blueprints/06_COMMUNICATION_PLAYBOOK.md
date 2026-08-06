@@ -1,15 +1,22 @@
 # CampaignOS 2.0 — Communication Playbook
 
 **Purpose:** Define Communication Playbooks — the reusable intelligence that drives auto-generated timelines for every event.  
-**Last updated:** June 2026 (timing presets + calendar import defaults)
+**Last updated:** August 2026 (Settings timing catalog + day-offset editor)
+
+---
+
+## Settings editor: timing catalog (day offsets)
+
+Org chairs build named Communication Plans in **Settings → Branding → Communication Plan**. Step timing uses a curated **Before / After** day-offset catalog (`src/lib/playbooks/timing-catalog.ts`) — dropdown per step plus **Build from timings** multi-select. Storage remains `relative_day` integers (no hourly offsets). Code timing presets below still apply when a plan has no DB steps.
 
 ---
 
 ## Implemented Timing Presets (Application v1)
 
-CampaignOS ships **timing presets** in code that drive playbook assignment, communication steps, Meta artwork milestones, and Posts & Schedule bundles. These presets are the live source of truth until organization-level playbook editing fully replaces them.
+CampaignOS ships **timing presets** in code that drive playbook assignment, communication steps, Meta artwork milestones, and Posts & Schedule bundles when org-edited plan steps are empty.
 
 **Source files:**
+- `src/lib/playbooks/timing-catalog.ts` — curated day offsets for the Settings plan editor
 - `src/lib/playbooks/timing-presets.ts` — countdown steps and channels
 - `src/lib/artwork-v2/campaign-phases.ts` — Meta feed/story artwork per milestone
 - `src/lib/events/event-type-inference.ts` — event type from calendar event title

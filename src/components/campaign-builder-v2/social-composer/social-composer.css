@@ -1698,21 +1698,27 @@
 .smc .link-action:hover:not(:disabled) { color: var(--ink); }
 .smc .link-action:disabled { opacity: .5; cursor: not-allowed; }
 .smc .preview-settings-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+.smc .caption-panel,
+.smc .delivery-panel {
   background: var(--white);
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 16px;
   box-shadow: var(--shadow);
 }
-.smc .caption-panel {
-  margin-bottom: 16px;
-  border-radius: 14px;
-  padding: 2px;
-}
 .smc .caption-panel.highlight {
-  background: rgba(212, 168, 75, .12);
-  box-shadow: inset 0 0 0 1.5px rgba(196, 146, 46, .55);
-  padding: 10px;
+  background: rgba(255, 252, 245, 1);
+  box-shadow:
+    var(--shadow),
+    inset 0 0 0 1.5px rgba(196, 146, 46, .55);
 }
 .smc .caption-panel-head {
   display: flex;
