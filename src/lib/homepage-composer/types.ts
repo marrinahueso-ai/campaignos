@@ -80,6 +80,8 @@ export type HomepageFooterColors = {
 export type HomepageHeaderConfig = {
   title: string;
   message: string;
+  /** How many hero CTAs to show (2nd button fields stay in draft when set to 1). */
+  buttonCount: 1 | 2;
   button1Label: string;
   button1Url: string;
   button2Label: string;

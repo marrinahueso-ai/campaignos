@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA (Hey Ralli)  
-**Last updated:** August 6, 2026 — Floating date popover (no layout expand)  
+**Last updated:** August 6, 2026 — Header 1/2 button toggle  
 **Related:** [Engineering companion](../engineering/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Create with AI artwork inputs](./create-with-ai-artwork-inputs.md) · [Storage RLS](../engineering/storage-rls.md) · [Launch checklist](./launch-checklist.md)
 
 Soft-launch Membership Toolkit–style homepage builder. Managers design hero/footer chrome once, refresh cards and announcement bars monthly (Working on strip on every step), preview on/off dates, and export full-page HTML for external hosting.
@@ -46,6 +46,7 @@ Draft status shows in the chrome (“Saving draft…”, “Draft saved”).
 ## What shipped (soft launch)
 
 - SettingsBox step layout + emoji pickers on announcements / resources
+- Header **1 or 2 buttons** segmented control (same pattern as Volunteer Composer) — button 2 fields hide when set to 1; preview/export respect the count
 - Event cards seeded from campaign events (title, description, date/time, approved square art, volunteer signup URL when present)
 - Evergreen **custom** cards with optional link URL, editable **link label**, card face **date** (display only — not visibility), **on date** / **off date** / **always on**
 - Card / announcement dates use a floating calendar **popover** (`DatePopoverField`) — does not expand the editor layout (Safari native `type="date"` expand hack removed)

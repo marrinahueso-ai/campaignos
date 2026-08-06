@@ -9,11 +9,13 @@ import {
   Mic,
   MicOff,
   Sparkles,
+  Trash2,
   X,
 } from "lucide-react";
 import { eventTasksHref } from "@/lib/events/event-responsibility";
 import { useSpeechToText } from "@/lib/speech/use-speech-to-text";
 import {
+  deleteTaskHubTaskAction,
   getTaskHubTaskNotesAction,
   updateTaskHubTaskAction,
 } from "@/lib/task-hub/actions";
@@ -36,6 +38,7 @@ interface TasksEaseTaskDrawerProps {
   orgMembers: TaskHubOrgMember[];
   onClose: () => void;
   onTaskUpdated?: (task: TaskHubTaskItem) => void;
+  onTaskDeleted?: (taskId: string) => void;
 }
 
 const PRIORITY_STYLE: Record<TasksV2Priority, string> = {
@@ -53,6 +56,7 @@ export function TasksEaseTaskDrawer({
   orgMembers,
   onClose,
   onTaskUpdated,
+  onTaskDeleted,
 }: TasksEaseTaskDrawerProps) {
   const [title, setTitle] = useState(task?.title ?? "");
   const [status, setStatus] = useState<EventPlaybookTaskStatus>(
@@ -73,6 +77,7 @@ export function TasksEaseTaskDrawer({
     "idle",
   );
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [, startTransition] = useTransition();
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -114,6 +119,7 @@ export function TasksEaseTaskDrawer({
     lastSavedNotesRef.current = task.notes ?? "";
     setSaveState("idle");
     setError(null);
+    setDeleting(false);
     clearVoiceError();
     stopListening();
     if (debounceRef.current) {
@@ -264,6 +270,32 @@ export function TasksEaseTaskDrawer({
     stopListening();
     flushNotes();
     onClose();
+  }
+
+  function handleDelete() {
+    if (!canEdit || deleting) return;
+    if (
+      !window.confirm(`Delete “${current.title}”? This can’t be undone.`)
+    ) {
+      return;
+    }
+    setDeleting(true);
+    setError(null);
+    startTransition(async () => {
+      const result = await deleteTaskHubTaskAction(
+        current.event.eventId,
+        current.id,
+        current.title,
+      );
+      if (!result.success) {
+        setDeleting(false);
+        setError(result.error ?? "Could not delete task.");
+        return;
+      }
+      stopListening();
+      onTaskDeleted?.(current.id);
+      onClose();
+    });
   }
 
   const statusHint =
@@ -580,33 +612,46 @@ export function TasksEaseTaskDrawer({
             <p
               className={cn(
                 "text-xs font-semibold md:hidden",
-                saveState === "error" || voiceError
+                saveState === "error" || voiceError || error
                   ? "text-[#a65a3a]"
                   : "text-[#6e6a64]",
               )}
               aria-live="polite"
             >
-              {statusHint}
+              {error && saveState !== "error" ? error : statusHint}
             </p>
 
             <div className="flex flex-col gap-3 pt-2">
               <button
                 type="button"
                 onClick={handleClose}
-                className="w-full rounded-2xl bg-[#2f4a3c] py-4 text-lg font-bold text-white shadow-xl shadow-[#2f4a3c]/10 transition hover:bg-[#253a2f]"
+                disabled={deleting}
+                className="w-full rounded-2xl bg-[#2f4a3c] py-4 text-lg font-bold text-white shadow-xl shadow-[#2f4a3c]/10 transition hover:bg-[#253a2f] disabled:opacity-60"
               >
                 Done
               </button>
+              {canEdit ? (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  aria-label={`Delete ${current.title}`}
+                  title="Delete task"
+                  className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full text-[#a8a29c] transition hover:bg-[rgba(166,90,58,0.12)] hover:text-[#a65a3a] disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                </button>
+              ) : null}
               <p
                 className={cn(
                   "hidden text-center text-xs font-semibold md:block",
-                  saveState === "error" || voiceError
+                  saveState === "error" || voiceError || error
                     ? "text-[#a65a3a]"
                     : "text-[#6e6a64]",
                 )}
                 aria-live="polite"
               >
-                {statusHint}
+                {error && saveState !== "error" ? error : statusHint}
               </p>
             </div>
           </div>

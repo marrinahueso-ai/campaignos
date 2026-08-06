@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering (Hey Ralli)  
-**Last updated:** July 31, 2026  
+**Last updated:** August 6, 2026 — Header buttonCount (1 | 2)  
 **Related:** [QA guide](../qa/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Billing / AI credits](../ops/billing-and-access.md)
 
 Client-heavy Membership Toolkit homepage builder. Server actions cover AI blurbs and artwork hosting; drafts stay in the browser.
@@ -15,10 +15,12 @@ Client-heavy Membership Toolkit homepage builder. Server actions cover AI blurbs
 |------|--------|
 | Route | `/homepage-composer` — `src/app/(dashboard)/homepage-composer/page.tsx` |
 | Chooser | `/create-with-ai` → Home Page (`CreateWithAiLanding` → `/homepage-composer`) |
-| UI | `src/components/homepage-composer/HomepageComposer.tsx` (+ `SettingsBox`, `EmojiPicker`) |
+| UI | `src/components/homepage-composer/HomepageComposer.tsx` (+ `SettingsBox`, `EmojiPicker`, `DatePopoverField`) |
 | Events feed | `getCampaignPageEvents` + `getEventVolunteerSignupUrls` → `HomepageComposerEvent[]` |
 
 Steps: `header` → `footer` → `cards` → `preview` → `export` (`HomepageComposerStep` in `types.ts`).
+
+Header hero CTAs use `header.buttonCount` (`1 | 2`) with Volunteer-style **How many buttons?** toggle; `button2*` fields stay in the draft when count is 1 but are hidden in the editor / preview / export.
 
 ---
 

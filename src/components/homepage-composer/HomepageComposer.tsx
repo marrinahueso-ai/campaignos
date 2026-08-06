@@ -1187,7 +1187,8 @@ export function HomepageComposer({
                     </p>
                   ) : null}
                   {(state.header.button1Label.trim() ||
-                    state.header.button2Label.trim()) && (
+                    (state.header.buttonCount === 2 &&
+                      state.header.button2Label.trim())) && (
                     <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                       {state.header.button1Label.trim() ? (
                         <span
@@ -1200,7 +1201,8 @@ export function HomepageComposer({
                           {state.header.button1Label}
                         </span>
                       ) : null}
-                      {state.header.button2Label.trim() ? (
+                      {state.header.buttonCount === 2 &&
+                      state.header.button2Label.trim() ? (
                         <span
                           className="inline-block rounded-full px-5 py-2.5 text-sm font-bold"
                           style={{
@@ -1407,8 +1409,8 @@ export function HomepageComposer({
 
               <SettingsBox
                 compact
-                title="Title & buttons"
-                description="Welcome copy and primary calls to action."
+                title="Title & message"
+                description="Welcome copy at the top of your homepage."
               >
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field
@@ -1432,6 +1434,25 @@ export function HomepageComposer({
                     }
                     multiline
                   />
+                </div>
+              </SettingsBox>
+
+              <SettingsBox
+                compact
+                title="Header buttons"
+                description="Choose 1 or 2 buttons — label and URL for each."
+              >
+                <SegToggle
+                  label="How many buttons?"
+                  value={state.header.buttonCount}
+                  onChange={(buttonCount) =>
+                    setState((p) => ({
+                      ...p,
+                      header: { ...p.header, buttonCount },
+                    }))
+                  }
+                />
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <Field
                     label="Button 1 label"
                     value={state.header.button1Label}
@@ -1451,28 +1472,34 @@ export function HomepageComposer({
                         header: { ...p.header, button1Url: v },
                       }))
                     }
-                  />
-                  <Field
-                    label="Button 2 label"
-                    value={state.header.button2Label}
-                    onChange={(v) =>
-                      setState((p) => ({
-                        ...p,
-                        header: { ...p.header, button2Label: v },
-                      }))
-                    }
-                  />
-                  <Field
-                    label="Button 2 URL"
-                    value={state.header.button2Url}
-                    onChange={(v) =>
-                      setState((p) => ({
-                        ...p,
-                        header: { ...p.header, button2Url: v },
-                      }))
-                    }
+                    placeholder="https://… or #anchor"
                   />
                 </div>
+                {state.header.buttonCount === 2 ? (
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <Field
+                      label="Button 2 label"
+                      value={state.header.button2Label}
+                      onChange={(v) =>
+                        setState((p) => ({
+                          ...p,
+                          header: { ...p.header, button2Label: v },
+                        }))
+                      }
+                    />
+                    <Field
+                      label="Button 2 URL"
+                      value={state.header.button2Url}
+                      onChange={(v) =>
+                        setState((p) => ({
+                          ...p,
+                          header: { ...p.header, button2Url: v },
+                        }))
+                      }
+                      placeholder="https://… or mailto:…"
+                    />
+                  </div>
+                ) : null}
               </SettingsBox>
 
               <SettingsBox
@@ -2566,6 +2593,41 @@ function PanelHead({
         </p>
       </div>
       <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>
+    </div>
+  );
+}
+
+function SegToggle({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: 1 | 2;
+  onChange: (value: 1 | 2) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <span className="text-[12px] font-bold uppercase tracking-[0.05em] text-cos-muted">
+        {label}
+      </span>
+      <div className="flex gap-1 rounded-full border border-cos-border bg-cos-bg p-1">
+        {([1, 2] as const).map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-semibold",
+              value === n
+                ? "bg-[#2f4a3c] text-[#f6f2eb]"
+                : "text-cos-muted hover:text-cos-text",
+            )}
+          >
+            {n} button{n === 1 ? "" : "s"}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

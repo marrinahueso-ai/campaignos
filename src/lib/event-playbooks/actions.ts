@@ -7,6 +7,7 @@ import {
   createEventPlaybookNote,
   createEventPlaybookTask,
   createEventPlaybookTaskGroup,
+  deleteEventPlaybookNote,
   deleteEventPlaybookTask,
   deleteEventPlaybookTaskGroup,
   persistEventPlaybookTaskOrder,
@@ -248,6 +249,34 @@ export async function createEventPlaybookNoteAction(
     return {
       success: false,
       error: result.error ?? "Unable to save note.",
+    };
+  }
+
+  revalidatePlaybookPaths(event.id);
+  return { success: true, error: null };
+}
+
+export async function deleteEventPlaybookNoteAction(
+  eventId: string,
+  noteId: string,
+): Promise<{ success: boolean; error: string | null }> {
+  const trimmedId = noteId.trim();
+  if (!trimmedId) {
+    return { success: false, error: "Note is required." };
+  }
+
+  // App-layer event gate before delete — do not trust client eventId alone.
+  // RLS `can_access_event` still applies on the write.
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { success: false, error: "Event not found." };
+  }
+
+  const result = await deleteEventPlaybookNote(trimmedId, event.id);
+  if (!result.success) {
+    return {
+      success: false,
+      error: result.error ?? "Unable to delete note.",
     };
   }
 

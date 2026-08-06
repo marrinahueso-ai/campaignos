@@ -101,6 +101,7 @@ export function defaultHeader(
   return {
     title: `Welcome to ${org}!`,
     message: `We're so glad you're here! This page is your hub for updates, upcoming events, and ways to get involved at ${org}.`,
+    buttonCount: 2,
     button1Label: "Volunteer Sign Up",
     button1Url: "#",
     button2Label: "Become a Sponsor",
@@ -368,10 +369,19 @@ export function normalizeComposerState(
       }))
     : null;
 
+  const rawButtonCount = (parsed.header as { buttonCount?: unknown }).buttonCount;
+  const inferredButtonCount: 1 | 2 =
+    rawButtonCount === 1 || rawButtonCount === 2
+      ? rawButtonCount
+      : String(parsed.header.button2Label ?? "").trim()
+        ? 2
+        : 1;
+
   const normalized: HomepageComposerState = {
     header: {
       ...base.header,
       ...parsed.header,
+      buttonCount: inferredButtonCount,
       announcements: migrateAnnouncements(
         parsed.header as unknown as Record<string, unknown>,
       ),

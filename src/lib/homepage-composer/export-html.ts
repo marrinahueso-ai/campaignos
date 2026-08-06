@@ -14,6 +14,32 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** Hero CTAs for export — respects buttonCount and skips blank labels. */
+export function buildHomepageHeroButtonsHtml(
+  header: HomepageComposerState["header"],
+): string {
+  const buttons: Array<{ label: string; url: string }> = [];
+  if (header.button1Label.trim()) {
+    buttons.push({
+      label: header.button1Label.trim(),
+      url: header.button1Url,
+    });
+  }
+  if (header.buttonCount === 2 && header.button2Label.trim()) {
+    buttons.push({
+      label: header.button2Label.trim(),
+      url: header.button2Url,
+    });
+  }
+  if (buttons.length === 0) return "";
+  return `<div class="ees-hero-btns">${buttons
+    .map(
+      (btn) =>
+        `<a class="ees-btn" href="${escapeHtml(normalizeHref(btn.url))}">${escapeHtml(btn.label)}</a>`,
+    )
+    .join(" ")}</div>`;
+}
+
 /** Short manager-facing date: 2026-08-10 → 8/10/26 */
 export function formatVisibilityShortDate(ymd: string): string {
   const [y, m, d] = ymd.split("-").map((p) => parseInt(p, 10));
@@ -234,7 +260,7 @@ ${
 <div class="ees-hero">
 <h1 style="text-align:center;"><span style="font-size:24pt;">${escapeHtml(header.title)}</span></h1>
 <p>${escapeHtml(header.message)}</p>
-<div class="ees-hero-btns"><a class="ees-btn" href="${escapeHtml(normalizeHref(header.button1Url))}">${escapeHtml(header.button1Label)}</a> <a class="ees-btn" href="${escapeHtml(normalizeHref(header.button2Url))}">${escapeHtml(header.button2Label)}</a></div>
+${buildHomepageHeroButtonsHtml(header)}
 </div>
 ${announcement}
 ${cardsBlock}

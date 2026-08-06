@@ -99,6 +99,23 @@ function applyTaskPatches(
   });
 }
 
+function omitDeletedTasks(
+  groups: TasksV2EventGroup[],
+  deletedIds: Set<string>,
+): TasksV2EventGroup[] {
+  if (deletedIds.size === 0) return groups;
+  return groups.map((group) => {
+    const tasks = group.tasks.filter((task) => !deletedIds.has(task.id));
+    if (tasks.length === group.tasks.length) return group;
+    return {
+      ...group,
+      tasks,
+      totalCount: tasks.length,
+      doneCount: tasks.filter((task) => task.status === "done").length,
+    };
+  });
+}
+
 export function TasksEaseShell({
   data,
   initialEventFilter = null,
@@ -139,6 +156,8 @@ export function TasksEaseShell({
   const [taskPatches, setTaskPatches] = useState<Record<string, TaskHubTaskItem>>(
     {},
   );
+  /** Hide deleted rows until SSR drops them (no full refresh on delete). */
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     setEventColors(loadTasksEaseColors().events);
@@ -203,6 +222,18 @@ export function TasksEaseShell({
     setTaskPatches((current) => ({ ...current, [next.id]: next }));
   }, []);
 
+  const rememberTaskDeleted = useCallback((taskId: string) => {
+    setDeletedIds((current) => new Set(current).add(taskId));
+    setActiveTask((current) => (current?.id === taskId ? null : current));
+    setPendingCreated((current) => current.filter((task) => task.id !== taskId));
+    setTaskPatches((current) => {
+      if (!(taskId in current)) return current;
+      const next = { ...current };
+      delete next[taskId];
+      return next;
+    });
+  }, []);
+
   const handleEventColorChange = useCallback(
     (eventId: string, color: string | null) => {
       saveEventColor(eventId, color);
@@ -253,10 +284,15 @@ export function TasksEaseShell({
   );
 
   const displayGroups = useMemo(() => {
-    let groups = applyTaskPatches(eventScopedGroups, taskPatches);
+    let groups = omitDeletedTasks(
+      applyTaskPatches(eventScopedGroups, taskPatches),
+      deletedIds,
+    );
     if (pendingCreated.length > 0) {
       const known = new Set(flattenEventGroups(groups).map((task) => task.id));
-      const extras = pendingCreated.filter((task) => !known.has(task.id));
+      const extras = pendingCreated.filter(
+        (task) => !known.has(task.id) && !deletedIds.has(task.id),
+      );
       if (extras.length > 0) {
         const byEvent = new Map<string, TaskHubTaskItem[]>();
         for (const task of extras) {
@@ -298,7 +334,14 @@ export function TasksEaseShell({
     return filterEventGroupsByTasks(groups, (task) =>
       taskMatchesTasksEasePulse(task, pulse, data.viewer),
     );
-  }, [data.viewer, eventScopedGroups, pendingCreated, pulse, taskPatches]);
+  }, [
+    data.viewer,
+    deletedIds,
+    eventScopedGroups,
+    pendingCreated,
+    pulse,
+    taskPatches,
+  ]);
 
   const chipEvents = useMemo(
     () =>
@@ -363,6 +406,20 @@ export function TasksEaseShell({
           continue;
         }
         next[id] = patch;
+      }
+      return changed ? next : current;
+    });
+
+    setDeletedIds((current) => {
+      if (current.size === 0) return current;
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of current) {
+        if (known.has(id)) {
+          next.add(id);
+        } else {
+          changed = true;
+        }
       }
       return changed ? next : current;
     });
@@ -750,6 +807,7 @@ export function TasksEaseShell({
               eventColors={eventColors}
               onEventColorChange={handleEventColorChange}
               onOpenTask={handleOpenTask}
+              onTaskDeleted={rememberTaskDeleted}
               viewerUserId={data.viewer.userId}
               organizationId={data.organizationId}
               emptyTitle={
@@ -800,6 +858,7 @@ export function TasksEaseShell({
         orgMembers={data.orgMembers}
         onClose={() => setActiveTask(null)}
         onTaskUpdated={rememberTaskPatch}
+        onTaskDeleted={rememberTaskDeleted}
       />
 
       {askAiOpen ? (
