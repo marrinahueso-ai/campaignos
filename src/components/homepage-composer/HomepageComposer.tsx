@@ -1755,7 +1755,8 @@ export function HomepageComposer({
                   </p>
                   <div className="mt-4">
                     {(state.footer.ctaButtonLabel.trim() ||
-                      state.footer.ctaButton2Label.trim()) && (
+                      (state.footer.buttonCount === 2 &&
+                        state.footer.ctaButton2Label.trim())) && (
                       <div className="flex flex-wrap items-center justify-center gap-2">
                         {state.footer.ctaButtonLabel.trim() ? (
                           <span
@@ -1768,7 +1769,8 @@ export function HomepageComposer({
                             {state.footer.ctaButtonLabel}
                           </span>
                         ) : null}
-                        {state.footer.ctaButton2Label.trim() ? (
+                        {state.footer.buttonCount === 2 &&
+                        state.footer.ctaButton2Label.trim() ? (
                           <span
                             className="inline-block rounded-full px-5 py-2.5 text-sm font-bold"
                             style={{
@@ -1875,6 +1877,25 @@ export function HomepageComposer({
                     }
                     multiline
                   />
+                </div>
+              </SettingsBox>
+
+              <SettingsBox
+                compact
+                title="Footer buttons"
+                description="Choose 1 or 2 buttons — label and URL for each."
+              >
+                <SegToggle
+                  label="How many buttons?"
+                  value={state.footer.buttonCount}
+                  onChange={(buttonCount) =>
+                    setState((p) => ({
+                      ...p,
+                      footer: { ...p.footer, buttonCount },
+                    }))
+                  }
+                />
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <Field
                     label="Button 1 label"
                     value={state.footer.ctaButtonLabel}
@@ -1894,29 +1915,34 @@ export function HomepageComposer({
                         footer: { ...p.footer, ctaButtonUrl: v },
                       }))
                     }
-                  />
-                  <Field
-                    label="Button 2 label"
-                    value={state.footer.ctaButton2Label}
-                    onChange={(v) =>
-                      setState((p) => ({
-                        ...p,
-                        footer: { ...p.footer, ctaButton2Label: v },
-                      }))
-                    }
-                    placeholder="Optional"
-                  />
-                  <Field
-                    label="Button 2 URL"
-                    value={state.footer.ctaButton2Url}
-                    onChange={(v) =>
-                      setState((p) => ({
-                        ...p,
-                        footer: { ...p.footer, ctaButton2Url: v },
-                      }))
-                    }
+                    placeholder="https://… or #anchor"
                   />
                 </div>
+                {state.footer.buttonCount === 2 ? (
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <Field
+                      label="Button 2 label"
+                      value={state.footer.ctaButton2Label}
+                      onChange={(v) =>
+                        setState((p) => ({
+                          ...p,
+                          footer: { ...p.footer, ctaButton2Label: v },
+                        }))
+                      }
+                    />
+                    <Field
+                      label="Button 2 URL"
+                      value={state.footer.ctaButton2Url}
+                      onChange={(v) =>
+                        setState((p) => ({
+                          ...p,
+                          footer: { ...p.footer, ctaButton2Url: v },
+                        }))
+                      }
+                      placeholder="https://… or mailto:…"
+                    />
+                  </div>
+                ) : null}
               </SettingsBox>
 
               <SettingsBox

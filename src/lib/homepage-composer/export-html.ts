@@ -40,6 +40,31 @@ export function buildHomepageHeroButtonsHtml(
     .join(" ")}</div>`;
 }
 
+/** Footer CTAs for export — respects buttonCount and skips blank labels. */
+export function buildHomepageFooterButtonsHtml(
+  footer: HomepageComposerState["footer"],
+): string {
+  const buttons: Array<{ label: string; url: string }> = [];
+  if (footer.ctaButtonLabel.trim()) {
+    buttons.push({
+      label: footer.ctaButtonLabel.trim(),
+      url: footer.ctaButtonUrl,
+    });
+  }
+  if (footer.buttonCount === 2 && footer.ctaButton2Label.trim()) {
+    buttons.push({
+      label: footer.ctaButton2Label.trim(),
+      url: footer.ctaButton2Url,
+    });
+  }
+  return buttons
+    .map(
+      (b) =>
+        `<a class="ees-btn" href="${escapeHtml(normalizeHref(b.url))}">${escapeHtml(b.label)}</a>`,
+    )
+    .join(" ");
+}
+
 /** Short manager-facing date: 2026-08-10 → 8/10/26 */
 export function formatVisibilityShortDate(ymd: string): string {
   const [y, m, d] = ymd.split("-").map((p) => parseInt(p, 10));
@@ -215,16 +240,7 @@ ${activeAnnouncements
   // Hover accent matches live EES / Membership Toolkit homepage.
   const hoverAccent = "#1f7a5c";
 
-  const footerButtons = [
-    { label: footer.ctaButtonLabel, url: footer.ctaButtonUrl },
-    { label: footer.ctaButton2Label, url: footer.ctaButton2Url },
-  ]
-    .filter((b) => b.label.trim())
-    .map(
-      (b) =>
-        `<a class="ees-btn" href="${escapeHtml(normalizeHref(b.url))}">${escapeHtml(b.label)}</a>`,
-    )
-    .join(" ");
+  const footerButtons = buildHomepageFooterButtonsHtml(footer);
 
   return `<style><!--
 .ees-home-wrap{max-width:1100px;margin:0 auto;padding:20px;font-family:Arial,sans-serif}

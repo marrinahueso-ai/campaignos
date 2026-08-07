@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering (Hey Ralli)  
-**Last updated:** August 6, 2026 — Header buttonCount (1 | 2) · full month snapshots
+**Last updated:** August 7, 2026 — Header + footer buttonCount (1 | 2) · full month snapshots
 **Related:** [QA guide](../qa/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Image architecture](./image-architecture.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Billing / AI credits](../ops/billing-and-access.md)
 
 Client-heavy Membership Toolkit homepage builder. Server actions cover AI blurbs and artwork hosting; drafts stay in the browser.
@@ -20,7 +20,7 @@ Client-heavy Membership Toolkit homepage builder. Server actions cover AI blurbs
 
 Steps: `header` → `footer` → `cards` → `preview` → `export` (`HomepageComposerStep` in `types.ts`).
 
-Header hero CTAs use `header.buttonCount` (`1 | 2`) with Volunteer-style **How many buttons?** toggle; `button2*` fields stay in the draft when count is 1 but are hidden in the editor / preview / export.
+Header and footer CTAs both use `buttonCount` (`1 | 2`) with Volunteer-style **How many buttons?** toggle; button 2 fields stay in the draft when count is 1 but are hidden in the editor / preview / export.
 
 ---
 

@@ -120,6 +120,7 @@ export function defaultFooter(): HomepageFooterConfig {
     ctaTitle: "Get Involved",
     ctaBody:
       "Whether you have 30 minutes, a few hours, or want to lead a project, there is a place for everyone to help make this year memorable.",
+    buttonCount: 1,
     ctaButtonLabel: "Find a Way to Help",
     ctaButtonUrl: "#",
     ctaButton2Label: "",
@@ -243,6 +244,12 @@ function normalizeFooterConfig(
     ctaTitle:
       typeof parsed.ctaTitle === "string" ? parsed.ctaTitle : base.ctaTitle,
     ctaBody: typeof parsed.ctaBody === "string" ? parsed.ctaBody : base.ctaBody,
+    buttonCount:
+      parsed.buttonCount === 1 || parsed.buttonCount === 2
+        ? parsed.buttonCount
+        : String(parsed.ctaButton2Label ?? "").trim()
+          ? 2
+          : 1,
     ctaButtonLabel:
       typeof parsed.ctaButtonLabel === "string"
         ? parsed.ctaButtonLabel
@@ -472,6 +479,15 @@ export function normalizeComposerState(
         ? 2
         : 1;
 
+  const rawFooterButtonCount = (parsed.footer as { buttonCount?: unknown })
+    .buttonCount;
+  const inferredFooterButtonCount: 1 | 2 =
+    rawFooterButtonCount === 1 || rawFooterButtonCount === 2
+      ? rawFooterButtonCount
+      : String(parsed.footer.ctaButton2Label ?? "").trim()
+        ? 2
+        : 1;
+
   const normalized: HomepageComposerState = {
     header: {
       ...base.header,
@@ -490,6 +506,7 @@ export function normalizeComposerState(
     footer: {
       ctaTitle: parsed.footer.ctaTitle ?? base.footer.ctaTitle,
       ctaBody: parsed.footer.ctaBody ?? base.footer.ctaBody,
+      buttonCount: inferredFooterButtonCount,
       ctaButtonLabel: parsed.footer.ctaButtonLabel ?? base.footer.ctaButtonLabel,
       ctaButtonUrl: parsed.footer.ctaButtonUrl ?? base.footer.ctaButtonUrl,
       ctaButton2Label:

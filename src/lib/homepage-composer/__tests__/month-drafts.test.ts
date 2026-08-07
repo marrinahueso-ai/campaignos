@@ -117,6 +117,7 @@ describe("homepage composer month drafts", () => {
       },
       footer: {
         ...august.footer,
+        buttonCount: 2,
         ctaButton2Label: "Contact Us",
         ctaButton2Url: "https://example.com/contact",
       },
@@ -130,6 +131,7 @@ describe("homepage composer month drafts", () => {
       saved.monthSaved["2026-08"]?.footer?.ctaButton2Label,
       "Contact Us",
     );
+    assert.equal(saved.monthSaved["2026-08"]?.footer?.buttonCount, 2);
     assert.equal(
       saved.monthSaved["2026-08"]?.cardsSectionTitle,
       "August Happenings",
@@ -147,6 +149,7 @@ describe("homepage composer month drafts", () => {
     assert.equal(back.header.title, "August Welcome");
     assert.equal(back.header.buttonCount, 1);
     assert.equal(back.footer.ctaButton2Label, "Contact Us");
+    assert.equal(back.footer.buttonCount, 2);
     assert.equal(back.cardsSectionTitle, "August Happenings");
 
     const emptySep = switchWorkingMonth(saved, "2026-09");

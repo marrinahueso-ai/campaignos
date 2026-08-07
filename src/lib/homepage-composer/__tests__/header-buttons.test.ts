@@ -9,6 +9,7 @@ import {
 } from "@/lib/homepage-composer/defaults";
 import {
   buildHomepageHeroButtonsHtml,
+  buildHomepageFooterButtonsHtml,
   exportHomepageHtml,
 } from "@/lib/homepage-composer/export-html";
 import { currentMonthYyyyMm } from "@/lib/homepage-composer/month-drafts";
@@ -103,5 +104,77 @@ describe("homepage header buttonCount", () => {
     );
     assert.match(full, /Volunteer/);
     assert.doesNotMatch(full, /Hidden Sponsor/);
+  });
+});
+
+describe("homepage footer buttonCount", () => {
+  it("defaults to 1 footer button", () => {
+    assert.equal(defaultFooter().buttonCount, 1);
+  });
+
+  it("normalizes missing buttonCount from ctaButton2 label", () => {
+    const withSecond = normalizeComposerState(
+      {
+        header: defaultHeader("Test"),
+        footer: {
+          ...defaultFooter(),
+          buttonCount: undefined,
+          ctaButton2Label: "Contact",
+        },
+        cardsSectionTitle: defaultCardsSectionTitle(),
+        resources: [],
+        selectedEventIds: [],
+        cards: [],
+      },
+      "Test",
+    );
+    assert.ok(withSecond);
+    assert.equal(withSecond!.footer.buttonCount, 2);
+
+    const oneOnly = normalizeComposerState(
+      {
+        header: defaultHeader("Test"),
+        footer: {
+          ...defaultFooter(),
+          buttonCount: undefined,
+          ctaButton2Label: "",
+        },
+        cardsSectionTitle: defaultCardsSectionTitle(),
+        resources: [],
+        selectedEventIds: [],
+        cards: [],
+      },
+      "Test",
+    );
+    assert.ok(oneOnly);
+    assert.equal(oneOnly!.footer.buttonCount, 1);
+  });
+
+  it("exports only one footer button when buttonCount is 1", () => {
+    const footer = {
+      ...defaultFooter(),
+      buttonCount: 1 as const,
+      ctaButtonLabel: "Help Out",
+      ctaButtonUrl: "https://example.com/help",
+      ctaButton2Label: "Hidden Contact",
+      ctaButton2Url: "https://example.com/contact",
+    };
+    const html = buildHomepageFooterButtonsHtml(footer);
+    assert.match(html, /Help Out/);
+    assert.doesNotMatch(html, /Hidden Contact/);
+    assert.equal((html.match(/ees-btn/g) ?? []).length, 1);
+
+    const full = exportHomepageHtml(
+      withMonthFields({
+        header: defaultHeader("Test"),
+        footer,
+        cardsSectionTitle: defaultCardsSectionTitle(),
+        resources: [],
+        selectedEventIds: [],
+        cards: [],
+      }),
+    );
+    assert.match(full, /Help Out/);
+    assert.doesNotMatch(full, /Hidden Contact/);
   });
 });

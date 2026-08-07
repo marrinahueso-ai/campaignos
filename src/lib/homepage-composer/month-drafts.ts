@@ -65,6 +65,7 @@ function cloneFooter(footer: HomepageFooterConfig): HomepageFooterConfig {
   return {
     ctaTitle: footer.ctaTitle,
     ctaBody: footer.ctaBody,
+    buttonCount: footer.buttonCount,
     ctaButtonLabel: footer.ctaButtonLabel,
     ctaButtonUrl: footer.ctaButtonUrl,
     ctaButton2Label: footer.ctaButton2Label,
@@ -178,6 +179,7 @@ function stableFooterKey(footer: HomepageFooterConfig | undefined): string {
   return [
     footer.ctaTitle,
     footer.ctaBody,
+    String(footer.buttonCount),
     footer.ctaButtonLabel,
     footer.ctaButtonUrl,
     footer.ctaButton2Label,

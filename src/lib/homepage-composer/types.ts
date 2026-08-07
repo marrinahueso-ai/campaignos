@@ -93,6 +93,8 @@ export type HomepageHeaderConfig = {
 export type HomepageFooterConfig = {
   ctaTitle: string;
   ctaBody: string;
+  /** How many footer CTAs to show (2nd button fields stay in draft when set to 1). */
+  buttonCount: 1 | 2;
   ctaButtonLabel: string;
   ctaButtonUrl: string;
   ctaButton2Label: string;
