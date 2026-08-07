@@ -453,11 +453,11 @@ describe("settings ease UI contracts", () => {
     assert.match(integrationsEase, /Facebook & Instagram/);
     assert.match(integrationsEase, /Google Calendar/);
     assert.match(integrationsEase, /Connect Canva/);
-    assert.match(integrationsEase, /Monday\.com/);
-    assert.match(integrationsEase, /Gmail · Dropbox/);
+    assert.doesNotMatch(integrationsEase, /Monday\.com/);
+    assert.doesNotMatch(integrationsEase, /Gmail · Dropbox/);
     assert.doesNotMatch(integrationsEase, /SignUpGenius/);
-    assert.match(integrationsEase, /Not available in soft launch yet/);
-    assert.match(integrationsEase, /Coming soon/);
+    assert.doesNotMatch(integrationsEase, /Not available in soft launch yet/);
+    assert.doesNotMatch(integrationsEase, /Coming soon/);
     assert.match(integrationsEase, /font-fraunces/);
     assert.match(integrationsEase, /#fffcf7|#2f4a3c/);
     assert.match(integrationsEase, /buildOAuthStartPath/);

@@ -38,21 +38,17 @@ function StatusPill({
 function IntegrationLogoMark({
   kind,
 }: {
-  kind: "meta" | "gcal" | "canva" | "monday" | "soon";
+  kind: "meta" | "gcal" | "canva";
 }) {
   const styles: Record<typeof kind, string> = {
     meta: "bg-[linear-gradient(135deg,#1877f2,#c13584)] text-[#fffcf7]",
     gcal: "bg-[#2a7a86] text-[#fffcf7]",
     canva: "bg-[#7b61ff] text-[#fffcf7]",
-    monday: "bg-[#ff3d57] text-[#fffcf7]",
-    soon: "bg-[#ebe4d9] text-[#7a7166]",
   };
   const labels: Record<typeof kind, string> = {
     meta: "M",
     gcal: "G",
     canva: "C",
-    monday: "Mo",
-    soon: "···",
   };
 
   return (
@@ -71,7 +67,7 @@ function IntegrationRow({
   description,
   actions,
 }: {
-  kind: "meta" | "gcal" | "canva" | "monday" | "soon";
+  kind: "meta" | "gcal" | "canva";
   title: string;
   description: string;
   actions: React.ReactNode;
@@ -97,17 +93,11 @@ export function SettingsEaseIntegrations({ data }: SettingsEaseIntegrationsProps
     data.meta.connected,
     data.googleCalendar.connected,
     data.canva.connected,
-    data.monday.connected,
   ].filter(Boolean).length;
 
   const canvaConnectHref = data.canva.configured
     ? buildOAuthStartPath("canva", { returnTo: "/settings/canva" })
     : "/settings/canva";
-
-  const mondayConnectHref =
-    data.monday.enabled && data.monday.configured
-      ? buildOAuthStartPath("monday", { returnTo: "/settings/monday" })
-      : "/settings/monday";
 
   return (
     <section data-settings-ease="integrations">
@@ -224,42 +214,6 @@ export function SettingsEaseIntegrations({ data }: SettingsEaseIntegrationsProps
                   </a>
                 )}
               </>
-            }
-          />
-
-          <IntegrationRow
-            kind="monday"
-            title="Monday.com"
-            description="Optional task connection for boards you already use."
-            actions={
-              <>
-                <StatusPill tone={data.monday.connected ? "ok" : "off"}>
-                  {data.monday.connected ? "Connected" : "Not connected"}
-                </StatusPill>
-                {data.monday.connected ? (
-                  <Link
-                    href="/settings/monday"
-                    className={btnSecondaryClassName}
-                  >
-                    Manage
-                  </Link>
-                ) : (
-                  <a href={mondayConnectHref} className={btnSecondaryClassName}>
-                    Connect
-                  </a>
-                )}
-              </>
-            }
-          />
-
-          <IntegrationRow
-            kind="soon"
-            title="Gmail · Dropbox"
-            description="Not available in soft launch yet."
-            actions={
-              <button type="button" className={btnSecondaryClassName} disabled>
-                Coming soon
-              </button>
             }
           />
         </div>
