@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import {
   approveBackgroundAssetsAction,
+  bulkUploadBackgroundAssetsAction,
   deleteBackgroundSourceAction,
   generateBackgroundBatchAction,
   rejectBackgroundAssetsAction,
@@ -23,7 +24,12 @@ import {
   updateBackgroundAssetAction,
   uploadBackgroundSourceAction,
 } from "@/lib/background-library/actions";
-import { BACKGROUND_LIBRARY_BATCH_SIZE } from "@/lib/background-library/constants";
+import {
+  BACKGROUND_LIBRARY_BATCH_SIZE,
+  BACKGROUND_LIBRARY_BULK_UPLOAD_MAX,
+  BACKGROUND_LIBRARY_DETAIL_THUMB_WIDTH,
+  BACKGROUND_LIBRARY_GRID_THUMB_WIDTH,
+} from "@/lib/background-library/constants";
 import type {
   BackgroundAsset,
   BackgroundLibrary,
@@ -32,6 +38,7 @@ import type {
   BackgroundSeason,
   BackgroundSource,
 } from "@/lib/background-library/types";
+import { toSupabaseThumbnailUrl } from "@/lib/images/supabase-thumbnail";
 
 type TabId = "review" | "published" | "archived" | "sources";
 
@@ -66,6 +73,39 @@ function StatusPill({ status }: { status: string }) {
     >
       {label}
     </span>
+  );
+}
+
+function LibraryThumb({
+  publicUrl,
+  alt,
+  width,
+  sizes,
+  priority = false,
+}: {
+  publicUrl: string;
+  alt: string;
+  width: number;
+  sizes: string;
+  priority?: boolean;
+}) {
+  const src = toSupabaseThumbnailUrl(publicUrl, {
+    width,
+    height: width,
+    resize: "cover",
+    quality: 72,
+  });
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      className="object-cover"
+      sizes={sizes}
+      quality={75}
+      priority={priority}
+      loading={priority ? "eager" : "lazy"}
+    />
   );
 }
 
@@ -124,6 +164,7 @@ export function BackgroundLibraryShell({
   const [metaSeason, setMetaSeason] = useState<BackgroundSeason>("anytime");
   const [metaLevel, setMetaLevel] = useState<BackgroundSchoolLevel>("any");
   const [metaLibraries, setMetaLibraries] = useState<string[]>([]);
+  const [bulkLibraryIds, setBulkLibraryIds] = useState<string[]>([]);
 
   function selectAsset(asset: BackgroundAsset) {
     setSelectedId(asset.id);
@@ -167,6 +208,24 @@ export function BackgroundLibraryShell({
       }
       setMessage(result.message);
       router.push("/ops/background-library?tab=sources");
+      router.refresh();
+    });
+  }
+
+  async function onBulkUpload(formData: FormData) {
+    setError(null);
+    setMessage(null);
+    for (const libraryId of bulkLibraryIds) {
+      formData.append("libraryIds", libraryId);
+    }
+    startTransition(async () => {
+      const result = await bulkUploadBackgroundAssetsAction(formData);
+      if (!result.success) {
+        setError(result.message);
+        return;
+      }
+      setMessage(result.message);
+      router.push("/ops/background-library?tab=review");
       router.refresh();
     });
   }
@@ -274,52 +333,153 @@ export function BackgroundLibraryShell({
       {tab === "sources" ? (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-4">
-            <form
-              action={onUpload}
-              className="rounded-2xl border border-dashed border-cos-border bg-cos-card p-5"
-            >
-              <h2 className="font-serif text-xl text-cos-text">Upload source graphic</h2>
-              <p className="mt-1 text-sm text-cos-muted">
-                One inspiration image. Generate creates {BACKGROUND_LIBRARY_BATCH_SIZE}{" "}
-                separate backgrounds (not a grid).
-              </p>
-              <div className="mt-4 grid gap-3">
-                <input
-                  name="title"
-                  placeholder="Title (e.g. Chalkboard fall mood)"
-                  className="rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm"
-                />
-                <input
-                  name="notes"
-                  placeholder="Notes (optional)"
-                  className="rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm"
-                />
-                <input
-                  name="file"
-                  type="file"
-                  accept="image/*"
-                  required
-                  className="text-sm"
-                />
-              </div>
-              <div className="mt-4">
-                <Button type="submit" disabled={pendingUi}>
-                  {pendingUi ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ImagePlus className="h-4 w-4" />
-                  )}
-                  Upload source
-                </Button>
-              </div>
-            </form>
+            <div className="grid gap-4 xl:grid-cols-2">
+              <form
+                action={onUpload}
+                className="rounded-2xl border border-dashed border-cos-border bg-cos-card p-5"
+              >
+                <h2 className="font-serif text-xl text-cos-text">Upload source graphic</h2>
+                <p className="mt-1 text-sm text-cos-muted">
+                  One inspiration image. Generate creates {BACKGROUND_LIBRARY_BATCH_SIZE}{" "}
+                  separate backgrounds (not a grid).
+                </p>
+                <div className="mt-4 grid gap-3">
+                  <input
+                    name="title"
+                    placeholder="Title (e.g. Chalkboard fall mood)"
+                    className="rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm"
+                  />
+                  <input
+                    name="notes"
+                    placeholder="Notes (optional)"
+                    className="rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm"
+                  />
+                  <input
+                    name="file"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    required
+                    className="text-sm"
+                  />
+                </div>
+                <div className="mt-4">
+                  <Button type="submit" disabled={pendingUi}>
+                    {pendingUi ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ImagePlus className="h-4 w-4" />
+                    )}
+                    Upload source
+                  </Button>
+                </div>
+              </form>
+
+              <form
+                action={onBulkUpload}
+                className="rounded-2xl border border-dashed border-cos-brand-sage/40 bg-cos-card p-5"
+              >
+                <h2 className="font-serif text-xl text-cos-text">Bulk upload to library</h2>
+                <p className="mt-1 text-sm text-cos-muted">
+                  Finished artwork goes straight to the review queue (no AI). Originals are
+                  stored once; grids use sized thumbnails.
+                </p>
+                <div className="mt-4 grid gap-3">
+                  <input
+                    name="files"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    multiple
+                    required
+                    className="text-sm"
+                  />
+                  <p className="text-xs text-cos-muted">
+                    Up to {BACKGROUND_LIBRARY_BULK_UPLOAD_MAX} images · 12MB each · PNG /
+                    JPEG / WebP / GIF
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block text-[11px] font-bold tracking-wide text-cos-muted uppercase">
+                      Season
+                      <select
+                        name="season"
+                        defaultValue="anytime"
+                        className="mt-1 w-full rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm font-normal normal-case tracking-normal text-cos-text"
+                      >
+                        <option value="anytime">Anytime</option>
+                        <option value="fall">Fall</option>
+                        <option value="winter">Winter</option>
+                        <option value="spring">Spring</option>
+                        <option value="summer">Summer</option>
+                      </select>
+                    </label>
+                    <label className="block text-[11px] font-bold tracking-wide text-cos-muted uppercase">
+                      Level
+                      <select
+                        name="schoolLevel"
+                        defaultValue="any"
+                        className="mt-1 w-full rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm font-normal normal-case tracking-normal text-cos-text"
+                      >
+                        <option value="any">Any</option>
+                        <option value="elementary">Elementary</option>
+                        <option value="middle">Middle</option>
+                        <option value="high">High</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold tracking-wide text-cos-muted uppercase">
+                      Libraries (optional)
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {libraries.map((library) => {
+                        const on = bulkLibraryIds.includes(library.id);
+                        return (
+                          <label
+                            key={library.id}
+                            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                              on
+                                ? "border-cos-dark bg-cos-dark text-[#f6f2eb]"
+                                : "border-cos-border bg-cos-bg text-cos-text"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="sr-only"
+                              checked={on}
+                              onChange={() =>
+                                setBulkLibraryIds((prev) =>
+                                  on
+                                    ? prev.filter((id) => id !== library.id)
+                                    : [...prev, library.id],
+                                )
+                              }
+                            />
+                            {library.name}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Button type="submit" disabled={pendingUi}>
+                    {pendingUi ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ImagePlus className="h-4 w-4" />
+                    )}
+                    Upload to review queue
+                  </Button>
+                </div>
+              </form>
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {sources.length === 0 ? (
                 <div className="col-span-full rounded-2xl border border-dashed border-cos-border px-6 py-16 text-center">
                   <h3 className="font-serif text-xl text-cos-text">No source graphics yet</h3>
                   <p className="mx-auto mt-2 max-w-md text-sm text-cos-muted">
-                    Upload an inspiration image to start generating library backgrounds.
+                    Upload an inspiration image to start generating library backgrounds, or
+                    bulk upload finished artwork into the review queue.
                   </p>
                 </div>
               ) : (
@@ -330,12 +490,11 @@ export function BackgroundLibraryShell({
                   >
                     <div className="relative aspect-square bg-cos-bg">
                       <StatusPill status="source" />
-                      <Image
-                        src={source.publicUrl}
+                      <LibraryThumb
+                        publicUrl={source.publicUrl}
                         alt={source.title}
-                        fill
-                        className="object-cover"
-                        unoptimized
+                        width={BACKGROUND_LIBRARY_GRID_THUMB_WIDTH}
+                        sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 280px"
                       />
                     </div>
                     <div className="space-y-3 p-3">
@@ -383,8 +542,11 @@ export function BackgroundLibraryShell({
           <aside className="rounded-2xl border border-cos-border bg-cos-card p-4 text-sm text-cos-muted shadow-sm">
             <h3 className="font-serif text-lg text-cos-text">How it works</h3>
             <ol className="mt-3 list-decimal space-y-2 pl-4">
-              <li>Upload one inspiration image.</li>
-              <li>Click Generate — AI creates {BACKGROUND_LIBRARY_BATCH_SIZE} separate images.</li>
+              <li>Upload one inspiration image, or bulk upload finished artwork.</li>
+              <li>
+                For sources: click Generate — AI creates {BACKGROUND_LIBRARY_BATCH_SIZE}{" "}
+                separate images.
+              </li>
               <li>Approve keepers into libraries; rejects are deleted.</li>
               <li>Schools later pick published assets as inspiration (normal AI cost).</li>
             </ol>
@@ -475,7 +637,7 @@ export function BackgroundLibraryShell({
                   </h3>
                   <p className="mx-auto mt-2 max-w-md text-sm text-cos-muted">
                     {tab === "review"
-                      ? "Upload a source and generate variations to fill this queue."
+                      ? "Upload a source and generate variations, or bulk upload finished artwork."
                       : "Adjust filters or move items from another tab."}
                   </p>
                 </div>
@@ -519,12 +681,11 @@ export function BackgroundLibraryShell({
                           </span>
                         ) : null}
                         <StatusPill status={asset.status} />
-                        <Image
-                          src={asset.publicUrl}
+                        <LibraryThumb
+                          publicUrl={asset.publicUrl}
                           alt={asset.title}
-                          fill
-                          className="object-cover"
-                          unoptimized
+                          width={BACKGROUND_LIBRARY_GRID_THUMB_WIDTH}
+                          sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 220px"
                         />
                       </div>
                       <div className="p-3">
@@ -552,12 +713,12 @@ export function BackgroundLibraryShell({
               {selectedAsset ? (
                 <div>
                   <div className="relative aspect-square bg-cos-bg">
-                    <Image
-                      src={selectedAsset.publicUrl}
+                    <LibraryThumb
+                      publicUrl={selectedAsset.publicUrl}
                       alt={selectedAsset.title}
-                      fill
-                      className="object-cover"
-                      unoptimized
+                      width={BACKGROUND_LIBRARY_DETAIL_THUMB_WIDTH}
+                      sizes="340px"
+                      priority
                     />
                   </div>
                   <div className="space-y-3 p-4">

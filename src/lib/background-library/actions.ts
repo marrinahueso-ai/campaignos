@@ -8,7 +8,12 @@ import {
   createAdminClient,
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/admin";
-import { BACKGROUND_LIBRARY_BATCH_SIZE } from "./constants.ts";
+import {
+  BACKGROUND_LIBRARY_BATCH_SIZE,
+  BACKGROUND_LIBRARY_MAX_BYTES,
+  BACKGROUND_SEASONS,
+  BACKGROUND_SCHOOL_LEVELS,
+} from "./constants.ts";
 import { generateBackgroundBatchFromSource } from "./generate.ts";
 import { getBackgroundSourceById } from "./queries.ts";
 import {
@@ -21,6 +26,11 @@ import type {
   BackgroundSchoolLevel,
   BackgroundSeason,
 } from "./types.ts";
+import {
+  collectBackgroundBulkUploadFiles,
+  isBackgroundLibraryImageFile,
+  titleFromBackgroundFilename,
+} from "./upload-validation.ts";
 
 function revalidateLibrary() {
   revalidatePath("/ops/background-library");
@@ -62,13 +72,19 @@ export async function uploadBackgroundSourceAction(formData: FormData): Promise<
   if (!(file instanceof File) || file.size <= 0) {
     return { success: false, message: "Choose an inspiration image to upload." };
   }
-  if (file.size > 12 * 1024 * 1024) {
-    return { success: false, message: "Image must be 12MB or smaller." };
+  if (!isBackgroundLibraryImageFile(file)) {
+    return {
+      success: false,
+      message:
+        file.size > BACKGROUND_LIBRARY_MAX_BYTES
+          ? "Image must be 12MB or smaller."
+          : "Use a PNG, JPEG, WebP, or GIF image.",
+    };
   }
 
   const title =
     String(formData.get("title") ?? "").trim() ||
-    file.name.replace(/\.[^.]+$/, "") ||
+    titleFromBackgroundFilename(file.name) ||
     "Inspiration source";
   const notes = String(formData.get("notes") ?? "").trim();
   const bytes = Buffer.from(await file.arrayBuffer());
@@ -108,6 +124,147 @@ export async function uploadBackgroundSourceAction(formData: FormData): Promise<
     success: true,
     message: "Source graphic uploaded.",
     sourceId: (data as { id: string }).id,
+  };
+}
+
+/**
+ * Upload finished artwork straight into the review queue (no AI generate).
+ * Stores one original object per file; display thumbs are derived at render time.
+ */
+export async function bulkUploadBackgroundAssetsAction(formData: FormData): Promise<{
+  success: boolean;
+  message: string;
+  createdCount: number;
+  failedCount: number;
+  assetIds: string[];
+}> {
+  const gate = await requireOwner();
+  if (!gate.ok) {
+    return {
+      success: false,
+      message: gate.message,
+      createdCount: 0,
+      failedCount: 0,
+      assetIds: [],
+    };
+  }
+
+  const collected = collectBackgroundBulkUploadFiles(formData);
+  if (collected.error) {
+    return {
+      success: false,
+      message: collected.error,
+      createdCount: 0,
+      failedCount: 0,
+      assetIds: [],
+    };
+  }
+
+  const seasonRaw = String(formData.get("season") ?? "anytime").trim() || "anytime";
+  const levelRaw =
+    String(formData.get("schoolLevel") ?? "any").trim() || "any";
+  const defaultSeason = (
+    BACKGROUND_SEASONS as readonly string[]
+  ).includes(seasonRaw)
+    ? (seasonRaw as BackgroundSeason)
+    : "anytime";
+  const defaultLevel = (
+    BACKGROUND_SCHOOL_LEVELS as readonly string[]
+  ).includes(levelRaw)
+    ? (levelRaw as BackgroundSchoolLevel)
+    : "any";
+  const libraryIds = formData
+    .getAll("libraryIds")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+
+  const admin = createAdminClient();
+  const assetIds: string[] = [];
+  let failedCount = 0;
+
+  for (const file of collected.files) {
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const contentType = file.type || "image/png";
+    const storagePath = buildBackgroundStoragePath(
+      "assets",
+      file.name || "library-asset.png",
+    );
+    const uploaded = await uploadPlatformBackgroundBytes({
+      storagePath,
+      bytes,
+      contentType,
+    });
+    if (!uploaded.success) {
+      failedCount += 1;
+      continue;
+    }
+
+    const title = titleFromBackgroundFilename(file.name);
+    const { data: inserted, error } = await admin
+      .from("background_assets")
+      .insert({
+        source_id: null,
+        status: "pending_review" satisfies BackgroundAssetStatus,
+        title,
+        tags: [],
+        colors: [],
+        season: defaultSeason,
+        school_level: defaultLevel,
+        storage_path: storagePath,
+        public_url: uploaded.publicUrl,
+        created_by: gate.userId,
+      })
+      .select("id")
+      .single();
+
+    if (error || !inserted) {
+      await deletePlatformBackgroundPath(storagePath);
+      failedCount += 1;
+      continue;
+    }
+
+    const assetId = (inserted as { id: string }).id;
+    if (libraryIds.length > 0) {
+      const { error: joinError } = await admin
+        .from("background_asset_libraries")
+        .insert(
+          libraryIds.map((libraryId) => ({
+            asset_id: assetId,
+            library_id: libraryId,
+          })),
+        );
+      if (joinError) {
+        // Asset still lands in review; libraries can be assigned there.
+      }
+    }
+    assetIds.push(assetId);
+  }
+
+  const createdCount = assetIds.length;
+  revalidateLibrary();
+
+  if (createdCount === 0) {
+    return {
+      success: false,
+      message:
+        failedCount > 0
+          ? "Could not upload any images. Check file types and try again."
+          : "No images were uploaded.",
+      createdCount: 0,
+      failedCount,
+      assetIds: [],
+    };
+  }
+
+  return {
+    success: true,
+    message:
+      failedCount > 0
+        ? `Uploaded ${createdCount} to the review queue (${failedCount} failed).`
+        : `Uploaded ${createdCount} background${createdCount === 1 ? "" : "s"} to the review queue.`,
+    createdCount,
+    failedCount,
+    assetIds,
   };
 }
 

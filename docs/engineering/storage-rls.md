@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** 2026-07-26  
+**Last updated:** 2026-08-07  
 **Related:** [access-control.md](./access-control.md) · [multi-tenant-isolation.md](../security/multi-tenant-isolation.md) · [developer-agreements.md](./developer-agreements.md)
 
 **Supabase project:** `zyllfqieeihshnwpakiv`  
@@ -32,6 +32,7 @@ Phase C3 locks **Storage API** access (`storage.objects` policies) to the same m
 | `event-assets` | **public** | `event_id` (usual) | `{eventId}/{assetType}/…`, AI concepts under `{eventId}/…/concepts/…` | `event-workspace/storage.ts`, `ai-artwork/storage.ts` |
 | `campaign-files` | **public** | `event_id` | `{eventId}/{timestamp}-file.pdf` | `campaign-files/storage.ts` |
 | `developer-agreements` | private | path prefix (not org/event UUID) | `templates/…`, `signatures/{userId}/…`, `signatures/company/…` | `developer-agreements/actions.ts` + `storage.ts` (`073`) |
+| `platform-backgrounds` | **public** | `sources` / `assets` (not org-scoped) | `sources/{uuid}-….png`, `assets/{uuid}-….png` | `background-library/storage.ts` (Owner ops; service-role writes) |
 
 ### Path exceptions (still shipped)
 
@@ -107,7 +108,25 @@ Hard refresh also restores the saved session for affected events.
 **Residual risk (documented, intentional for this phase):**  
 Objects in public buckets remain fetchable via `/storage/v1/object/public/...` URLs already stored in the DB. Closing that requires a signed-URL migration, not only RLS.
 
-Public buckets today: `event-assets`, `campaign-files`, `school-assets`, `organization-stickers`.
+Public buckets today: `event-assets`, `campaign-files`, `school-assets`, `organization-stickers`, `platform-backgrounds`.
+
+---
+
+## Image Transformations (display)
+
+**Status (2026-08-07):** Enabled and verified on production project `zyllfqieeihshnwpakiv`.
+
+Public object URLs can be rewritten to on-the-fly derivatives:
+
+`/storage/v1/object/public/{bucket}/{path}` → `/storage/v1/render/image/public/{bucket}/{path}?width=&quality=`
+
+- Helper: `src/lib/images/supabase-thumbnail.ts` (`toSupabaseThumbnailUrl`)
+- Auto WebP when the client accepts it; originals remain the source of truth at `storage_path` / original `public_url`
+- Do **not** store transform URLs in the database or write separate thumbnail files
+- Owner Background Library grids/detail already use this pattern; Approvals / Volunteers hubs do too
+- Re-check anytime: Storage → Settings → **Enable Image Transformations**, or fetch a known public object via `/render/image/public/…?width=360` and confirm `image/webp` (or resized) with a much smaller body than the original
+
+Dashboard toggle path: [Storage Settings](https://supabase.com/dashboard/project/zyllfqieeihshnwpakiv/storage/files/settings) (Pro plan and above).
 
 ---
 
