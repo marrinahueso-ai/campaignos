@@ -199,12 +199,17 @@ export function ApprovalsQueueTable({
     <div className="overflow-x-auto rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
       <table className="w-full min-w-[680px] table-fixed border-collapse text-left">
         <colgroup>
+          {/*
+            table-fixed: thumb + action stay rem-sized; middle columns use %
+            so Event/Campaign stays dominant without absorbing all leftover
+            space (the bare <col /> caused Post/Status/Assignee to pack right).
+          */}
           <col className="w-[4.5rem]" />
-          <col />
-          <col className="w-[11.5rem]" />
-          <col className="w-[8.25rem]" />
-          <col className="w-[9.25rem]" />
-          <col className="w-[3.25rem]" />
+          <col className="w-[40%]" />
+          <col className="w-[17%]" />
+          <col className="w-[12%]" />
+          <col className="w-[16%]" />
+          <col className="w-[4.25rem]" />
         </colgroup>
         <thead>
           <tr className="border-b border-cos-border text-[10px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
