@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / Security  
-**Last updated:** August 7, 2026 (operator Production smoke reconciliation)  
+**Last updated:** August 7, 2026 (Calendar SSRF Production-path closed; APPROVED FOR PRODUCTION)  
 **Related:** [Production readiness verification](./production-readiness-verification-2026-08.md) · [Audit remediation](./audit-remediation.md) · [Multi-tenant isolation](./multi-tenant-isolation.md) · [Access & onboarding](./access-and-onboarding.md) · [OWASP ZAP](./owasp-zap.md) · [Storage RLS](../engineering/storage-rls.md) · [Env & secrets](../ops/env-and-secrets.md) · [Integrations](../integrations/README.md)
 
 Independent production-readiness review of Hey Ralli (CampignOS). Goal: determine whether the **core platform** is ready to serve real schools from a security perspective—not to rubber-stamp every third-party integration as feature-complete.
@@ -28,7 +28,7 @@ Three separate questions are answered here. They must not be collapsed into one 
 Hey Ralli has completed two security hardening waves (July audit remediations + August launch execution). The **core platform** is in a **launch-ready posture for unrestricted PTA/PTO school signup**, subject to the ops checklist in §10 and documented residual risks.
 
 **Core platform sign-off (PTA/PTO):**  
-**Yes — deploy, secrets, fail-closed, and human Production product smokes verified; remaining launch-security smoke is Calendar SSRF Production-path (§10 + [verification report](./production-readiness-verification-2026-08.md)).**  
+**Yes — ✅ APPROVED FOR PRODUCTION** after deploy, secrets/fail-closed, human product smokes, and Calendar SSRF Production-path verification ([verification report](./production-readiness-verification-2026-08.md)).  
 
 **Meta / Google feature-complete sign-off:**  
 **No — not in scope for this certification.** Classify as *Operationally Ready but Pending Final Review*.
@@ -314,7 +314,7 @@ Core platform launch **does not** require Meta or Google to be feature-complete 
 - [x] `ALLOW_ROLE_SIMULATOR` unset/false in Production
 - [x] Smoke: inspiration / school-media signed URL on Production — upload → `/object/sign/` → public deny → delete ([verification report](./production-readiness-verification-2026-08.md))
 - [x] Smoke: authenticated Production flows + AI credit decrease observed (human Production smoke; see verification report)
-- [ ] Smoke (remaining): calendar subscribe rejects `http://127.0.0.1/` on authenticated Production path — Stripe unsigned/invalid webhook **verified** rejected
+- [x] Smoke: calendar subscribe rejects localhost/private-IP URLs on authenticated Production Refresh path (verification report §4.8)
 - [ ] Ops acknowledges residual public historical media + CSP inline + npm backlog
 - [ ] Ops acknowledges Meta/Google remain **Pending Final Review** and are not marketed as final
 
@@ -335,7 +335,7 @@ Core platform launch **does not** require Meta or Google to be feature-complete 
 | P0 | Deploy launch hardening branch | Internal ops | **Done** (Production `94853e2`) |
 | P0 | Verify Production secrets | Internal ops | **Done (presence + runtime)** — format of Sensitive values still CLI-redacted; see verification report |
 | P0 | Authenticated Production smoke (browser / AI burn / school-media) | Internal ops | **Done** (human Production smoke + storage API) |
-| P0 | Calendar SSRF Production-path smoke | Internal ops | Remaining — see verification report §5.1 |
+| P0 | Calendar SSRF Production-path smoke | Internal ops | **Done** — Refresh rejects private/loopback URLs (verification report §4.8) |
 | P0 | Atomic credits + school-media + Stripe migrations | Internal | Done (prod + staging) |
 | P1 | Extend private media lane; Next/sharp upgrade; pen test | Internal | Backlog |
 | P2 | Nonce CSP; broader Zod; audit logging | Internal | Backlog |

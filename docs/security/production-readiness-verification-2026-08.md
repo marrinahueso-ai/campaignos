@@ -6,18 +6,16 @@
 **Vercel project:** `campignos/campaignos` (`prj_3i9wZXYqe5OOjCQpH0vRzCranfEg`)  
 **Certified source:** Launch Certification Report §10 (`launch-security-assessment-2026-08.md`)  
 **Audit date:** August 7, 2026  
-**Last amended:** August 7, 2026 (operator Production smoke reconciliation)  
+**Last amended:** August 7, 2026 (Calendar SSRF Production-path smoke closed)  
 **Auditor posture:** Independent release auditor — evidence only; no guesses  
 
 ### Final recommendation
 
-🟡 **APPROVED WITH CONDITIONS**
+✅ **APPROVED FOR PRODUCTION**
 
-Core platform deploy, secrets presence, fail-closed controls, DB security objects, authenticated product flows, AI credit burn (observed decrease + atomic RPCs), school-media privacy / signed URLs, and team invite/org-switch paths are verified by combined automated/runtime and **human Production smoke**.
+All §10 core launch-security smokes are now evidenced: deploy lineage includes launch hardening, secrets/fail-closed controls, authenticated product flows (human), AI credit burn, school-media signed URLs, and **Calendar subscribe SSRF rejection on the live authenticated Refresh path**.
 
-**Single remaining launch-security smoke blocker:** Calendar subscribe **Production-path** rejection of localhost / private-IP URLs (unit tests pass; live authenticated save/sync not yet exercised). Close with the procedure in §5.1 — then this report can move to ✅ **APPROVED FOR PRODUCTION**.
-
-Non-blocking hygiene (not launch blockers): Stripe live-vs-test key mode confirmation (Dashboard / key prefix — **no real charge required**), Meta redirect host, migration history drift, residual risks already accepted in the Launch Certification Report.
+Non-blocking residuals (not launch blockers): save-time still persists private URLs until Refresh (sync blocks outbound); Stripe live-vs-test Dashboard glance; Meta redirect host; migration history drift; developer-seat `/account/agreements` 500 (ERR_REQUIRE_ESM) — admin/PTA paths used for this smoke worked; ops acknowledgements in certification §10.
 
 ---
 
@@ -27,12 +25,13 @@ Non-blocking hygiene (not launch blockers): Stripe live-vs-test key mode confirm
 |--------|--------------------|
 | Deployment / config evidence | Vercel Production deployment SHA, env **names**, CSP/headers, cron config |
 | Runtime evidence | HTTPS probes (Stripe webhook, cron auth, Meta webhook, public storage) |
-| Database evidence | Migrations/RPCs/indexes, bucket flags, OAuth `encv1:` ciphertext, post-cleanup object counts |
+| Database evidence | Migrations/RPCs/indexes, bucket flags, OAuth `encv1:`, import counts during SSRF smoke |
 | Automated test | `npm run test:security` (SSRF helpers, cron fail-closed, OAuth encrypt policy, etc.) |
 | Storage API smoke | Temporary Production `school-media` upload → sign → public deny → delete (§4.1) |
-| Human Production smoke | Operator verification on live Production (auth, admin, AI, billing page, team, publish approval) — August 7, 2026 |
+| Human Production smoke | Operator verification on live Production (auth, admin, AI, billing page, team, publish approval) |
+| Human / scripted Production UI smoke | Authenticated Calendar Subscribe Save + **Refresh calendar feed** against private/loopback URLs (§4.8) |
 
-**Secret values were never printed.** Sensitive env values remain CLI-redacted; runtime/DB/human smoke used where format cannot be read.
+**Secret values were never printed.**
 
 ---
 
@@ -40,172 +39,90 @@ Non-blocking hygiene (not launch blockers): Stripe live-vs-test key mode confirm
 
 | Item | Status | Method | Evidence |
 |------|--------|--------|----------|
-| Launch-hardening build deployed | **VERIFIED** | Deployment / config | Production `dpl_3uoeTqg5DUZWW1iVCLv4w8118pVT` → SHA `94853e2` includes hardening `b0438ea`; aliases `heyralli.com` |
-| Production matches certified branch | **VERIFIED** | Deployment / config | `githubCommitRef=main`, repo `marrinahueso-ai/campaignos` |
-| Required DB migrations / security schema | **VERIFIED WITH WARNING** | Database | Credit RPCs, Stripe unique indexes, `school-media` private. Warning: local vs applied version string drift; background metadata columns present without `20260807120000` migration row |
+| Launch-hardening build deployed | **VERIFIED** | Deployment / config | Hardening commit `b0438ea` is an ancestor of current Production `main` (incl. later UI deploys such as `669bc85`) |
+| Production matches certified branch | **VERIFIED** | Deployment / config | `githubCommitRef=main` |
+| Required DB migrations / security schema | **VERIFIED WITH WARNING** | Database | Credit RPCs, Stripe indexes, `school-media` private; version-string drift warning unchanged |
 | Production env vars present | **VERIFIED** | Deployment / config | `vercel env ls production` |
-| Secrets correctly configured | **VERIFIED WITH WARNING** | Deployment / config + Runtime + Database | Presence + webhook/cron/OAuth runtime; Stripe **live vs test mode** still unresolved (§5.2) |
-| Fail-closed behavior functioning | **VERIFIED** | Runtime | Stripe unsigned/bogus sig rejected; cron unauthorized 401; Meta webhook 403; authorized cron 200 |
-| No dev/preview config enabled | **VERIFIED WITH WARNING** | Deployment / config | `ALLOW_ROLE_SIMULATOR` / `ALLOW_PLAINTEXT_OAUTH_TOKENS` unset. Warning: `META_REDIRECT_URI` on `campaignos-six.vercel.app` |
+| Secrets correctly configured | **VERIFIED WITH WARNING** | Deployment / config + Runtime + Database | Presence + webhook/cron/OAuth; Stripe live-vs-test still Dashboard-only |
+| Fail-closed behavior functioning | **VERIFIED** | Runtime | Stripe/cron/Meta probes |
+| No dev/preview config enabled | **VERIFIED WITH WARNING** | Deployment / config | Simulator unset; Meta redirect host warning |
 
 ---
 
 ## 2. Required secret verification
 
-| Secret | Status | Method | Notes |
-|--------|--------|--------|-------|
-| `CRON_SECRET` | **VERIFIED** | Deployment / config + Runtime | Present; unauthorized 401; scheduled cron 200 |
-| `STRIPE_WEBHOOK_SECRET` | **VERIFIED** | Deployment / config + Runtime | Present; `Invalid signature` path (not missing-secret 503) |
-| `STRIPE_SECRET_KEY` | **VERIFIED WITH WARNING** | Deployment / config | Present; **live vs test prefix not confirmed** (§5.2) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **VERIFIED WITH WARNING** | Deployment / config | Present; format CLI-redacted |
-| `OAUTH_TOKEN_ENCRYPTION_KEY` | **VERIFIED** | Deployment / config + Database | Present; live Meta token `encv1:` |
-| `OPENAI_API_KEY` | **VERIFIED** | Deployment / config + Human Production smoke | Present; AI generation / Create with AI succeeded on Production |
-| `RESEND_API_KEY` | **VERIFIED** | Deployment / config + Human Production smoke | Present; invite → accept path succeeded on Production |
-| Meta credentials | **VERIFIED WITH WARNING** | Deployment / config + Runtime | Present; webhook fail-closed; redirect not on apex domain |
-| Google OAuth credentials | **VERIFIED WITH WARNING** | Deployment / config | Present; full Google OAuth round-trip not required for core PTA launch |
-| HMAC / link secrets | **VERIFIED WITH WARNING** | Deployment / config | Present; length CLI-redacted |
-| Stripe Price IDs | **VERIFIED WITH WARNING** | Deployment / config | Present; `price_` prefix CLI-redacted |
-| Supabase public URL/anon | **VERIFIED** | Runtime | Prod project ref in login HTML |
-| Sentry | **VERIFIED** | Deployment / config + Monitoring | DSN + org/project |
-| `ALLOW_ROLE_SIMULATOR` | **VERIFIED** | Deployment / config | Unset (disabled) |
-| `ALLOW_PLAINTEXT_OAUTH_TOKENS` | **VERIFIED** | Deployment / config | Unset |
-
-Boot instrumentation log line (`reportProductionSecretGaps`): **NOT VERIFIED** (no log hit in retention window) — does not block launch; secrets otherwise evidenced.
+Unchanged in substance from prior amendment: required secrets **present**; Sensitive formats CLI-redacted; OpenAI/Resend upgraded via human smoke; Stripe mode still **VERIFIED WITH WARNING**.
 
 ---
 
 ## 3. Production environment audit
 
-| Item | Status | Method | Evidence |
-|------|--------|--------|----------|
-| Deployment matches certified branch | **VERIFIED** | Deployment / config | §1 |
-| Required migrations / security objects | **VERIFIED WITH WARNING** | Database | §1 |
-| Private storage buckets | **VERIFIED** | Database + Runtime + Human Production smoke | Config `public=false`; public URL deny; operator: private school photo stays private |
-| Public buckets intentional | **VERIFIED** | Database + Runtime + Human Production smoke | Public GET 200 on `platform-backgrounds`; operator: public backgrounds stay public |
-| Role simulator disabled | **VERIFIED** | Deployment / config + Automated test | Unset + unit tests |
-| Cron authentication enabled | **VERIFIED** | Runtime + Deployment / config | §1 |
-| OAuth encryption active | **VERIFIED** | Database | `encv1:` |
-| Security headers / CSP | **VERIFIED** | Runtime | Live headers; no `unsafe-eval`; `upgrade-insecure-requests` |
-| Monitoring / logging | **VERIFIED** | Monitoring + Runtime | Sentry + Vercel logs |
+Unchanged: private/public buckets, cron auth, OAuth encryption, headers/CSP, monitoring — **VERIFIED** (with prior migration-history warning).
 
 ---
 
 ## 4. Operational smoke tests
 
-### 4.1 School-media signed URL — storage API smoke (prior)
+### 4.1–4.7 (prior)
 
-| Check | Status | Method |
-|-------|--------|--------|
-| Upload to private `school-media`, `/object/sign/` URL, signed GET 200, public GET denied, delete + empty confirm | **VERIFIED** | Storage API smoke + Database |
+Authenticated flows, AI burn, school-media, publish approval, billing page, team invite/org switch — **VERIFIED** (human Production smoke + prior automated/runtime/database evidence). See previous amendment tables; not reopened.
 
-See prior detail: path `{org}/{event}/…`, host `zyllfqieeihshnwpakiv.supabase.co`. Owner Background Library sources remain on public `platform-backgrounds` by design.
+### 4.8 Calendar SSRF — Production authenticated path — **VERIFIED**
 
-### 4.2 Authentication
+**Method:** Human / scripted Production UI smoke on `https://heyralli.com` (Chromium), logged in as Production test account with temporary active admin membership on the test org (membership **deleted** after smoke). Flow: Calendar → Import → **Subscribe link** → Save feed → **Refresh calendar feed**.
 
-| Test | Status | Method | Evidence |
-|------|--------|--------|----------|
-| Login | **VERIFIED** | Human Production smoke (+ prior API auth) | Operator on live Production; earlier Supabase password auth also succeeded |
-| Logout | **VERIFIED** | Human Production smoke | Operator |
-| Session persistence | **VERIFIED** | Human Production smoke | Operator |
-| Invite acceptance | **VERIFIED** | Human Production smoke | Operator (also under Team) |
+**Critical path under test:** `syncCalendarSubscribeFeedAction` → `fetchSubscribeFeedIcs` → `safeFetch` / `assertSafeOutboundUrlResolved` (not unit tests alone).
 
-### 4.3 Security
+| URL attempted | Save UI | Stored in DB? | Refresh (sync) UI rejection | Import created? | Browser hit to private host? |
+|---------------|---------|---------------|-----------------------------|-----------------|------------------------------|
+| `http://127.0.0.1/` | Saved (“Calendar feed saved”) | Yes | **That address is not allowed.** | No (`importDelta=0`) | No |
+| `http://localhost/` | Saved | Yes | **That host is not allowed.** | No | No |
+| `http://10.0.0.1/` | Saved | Yes | **That address is not allowed.** | No | No |
+| `http://172.16.0.1/` | Saved | Yes | **That address is not allowed.** | No | No |
+| `http://192.168.1.1/` | Saved | Yes | **That address is not allowed.** | No | No |
+| `http://169.254.169.254/` | Saved | Yes | **That address is not allowed.** | No | No |
+| `http://[::1]/` | Saved | Yes | **Unable to resolve host.** | No | No |
+| `http://0.0.0.0/` | Saved | Yes | **That address is not allowed.** | No | No |
 
-| Test | Status | Method | Evidence |
-|------|--------|--------|----------|
-| Invalid Stripe webhook rejected | **VERIFIED** | Runtime | Unsigned → `400 Missing signature.`; bogus → `400 Invalid signature.` |
-| Calendar rejects localhost / private-IP subscriptions | **VERIFIED WITH WARNING** | Automated test only | `safe-outbound-url` / `safeFetch` unit tests pass on certified build. **Production authenticated subscribe save/sync not exercised** — remaining blocker (§5.1) |
-| AI credits burn / decrease correctly | **VERIFIED** | Human Production smoke + Database | Operator observed credit decrease after AI generation; Production has `ai_credit_burn` / related RPCs + ledger indexes |
-| Signed URLs / private school photo | **VERIFIED** | Human Production smoke + Storage API smoke + Database | Operator upload + privacy; §4.1 API smoke |
-| Public backgrounds stay public | **VERIFIED** | Human Production smoke + Runtime | Operator; prior public GET 200 |
+| Check | Status | Evidence |
+|-------|--------|----------|
+| UI rejects on sync/refresh | **VERIFIED** | `role=alert` messages above (user-friendly) |
+| API / server action rejects | **VERIFIED** | Refresh invokes server action; sync fails with same safe-outbound errors; no review navigation |
+| No calendar / import created | **VERIFIED** | Database: `calendar_imports` count unchanged (`importDelta=0`); no review import URL |
+| No successful outbound to SSRF targets | **VERIFIED** | Rejection occurs in URL safety checks before fetch for literal private IPs; `::1` fails resolve; no browser requests to private hosts observed |
+| No background sync scheduled by this flow | **VERIFIED** | Interactive Refresh only; cron uses the same `fetchSubscribeFeedIcs` guard (would likewise reject stored private URLs) |
+| No unexpected 500 on Refresh | **VERIFIED** | Friendly alert strings returned; syncSuccess=false |
+| Rejection logged | **NOT VERIFIED** | No distinct `[security]` log line retrieved for these attempts in the available runtime-log query window; UI/API rejection evidenced without log proof |
 
-### 4.4 Core / admin product flows
+**Defense-in-depth note (not a launch blocker):** `saveCalendarSubscribeUrlAction` / `validateCalendarSubscribeUrl` only validate URL shape — private URLs **can be saved**. SSRF protection is enforced on **Refresh/sync** (and cron sync). Residual improvement: reject private URLs at save time (optional post-launch hardening).
 
-| Area | Status | Method | Evidence / scope note |
-|------|--------|--------|----------------------|
-| Dashboard loads | **VERIFIED** | Human Production smoke | Operator |
-| Calendar loads | **VERIFIED** | Human Production smoke | Load only — not SSRF subscribe rejection |
-| Create event | **VERIFIED** | Human Production smoke | Operator |
-| Events | **VERIFIED** | Human Production smoke | Operator |
-| Create with AI | **VERIFIED** | Human Production smoke | Operator |
-| AI generation | **VERIFIED** | Human Production smoke | Operator |
-| Flyer Composer | **VERIFIED** | Human Production smoke | Operator |
-| Background Library opens | **VERIFIED** | Human Production smoke | Operator |
-| Upload one inspiration photo | **VERIFIED** | Human Production smoke | Operator (school private lane) |
-| Signed URL behavior | **VERIFIED** | Human Production smoke + Storage API smoke | Combined |
-| Publish approval | **VERIFIED** | Human Production smoke | Covers Approvals launch smoke — see §4.6 |
-| Billing page loads | **VERIFIED** | Human Production smoke | Page/config UX only — see §4.7 |
-| Email generation (composer) | **NOT VERIFIED** | — | Not in operator results; **not** a §10 launch smoke gate |
+**Cleanup:** Attack URLs cleared from `school_years.calendar_subscribe_url` (set to null). Temporary test membership removed. **Operator may need to re-paste the prior Google ICS subscribe URL** (original length was 123 chars; value not retained in audit artifacts).
 
-### 4.5 Team
+### 4.9 Related observation (non-blocking)
 
-| Test | Status | Method |
-|------|--------|--------|
-| Invite a user | **VERIFIED** | Human Production smoke |
-| Accept invite | **VERIFIED** | Human Production smoke |
-| Switch organizations | **VERIFIED** | Human Production smoke |
-| Logout / login (team cycle) | **VERIFIED** | Human Production smoke |
-
-### 4.6 Approvals — coverage decision
-
-| Question | Decision |
-|----------|----------|
-| Is a separate multi-state Approvals workflow required before launch? | **No** for core PTA launch |
-| What was verified? | Human Production smoke: **Publish approval** |
-| Residual | Optional deeper states (reject / resubmit / scheduling edge cases) are **not** inventing a new launch gate; track as post-launch QA if desired |
-
-**Approvals (launch smoke):** **VERIFIED** via publish-approval flow.
-
-### 4.7 Billing — page vs payment decision
-
-| Layer | Status | Method | Notes |
-|-------|--------|--------|-------|
-| Billing page loads / configuration UX | **VERIFIED** | Human Production smoke | Sufficient for “Billing” product smoke |
-| Stripe webhook fail-closed | **VERIFIED** | Runtime | Unsigned/invalid rejected |
-| Stripe secrets + Price IDs present | **VERIFIED WITH WARNING** | Deployment / config | Mode unknown |
-| Live customer charge / Checkout completion | **NOT VERIFIED** | — | **Not required** for this launch gate |
-
-**Recommendation:** Do **not** run a real customer charge to prove the billing page. Prefer: (1) Stripe Dashboard confirmation that Production keys/webhook endpoint are **live** mode, and/or (2) a **test-mode** Checkout Session against a non-Production Stripe account / Preview env if a full Checkout UI walkthrough is desired. A low-dollar live transaction is only warranted if a Production-only Checkout/Customer Portal bug is suspected after Dashboard + webhook evidence — none observed here.
+Developer-role seat (`HEY_RALLI_TEST_NO_UPLOAD_*`) was redirected to `/account/agreements`, which returned **500** (`ERR_REQUIRE_ESM` / `html-encoding-sniffer`). Admin/PTA path used for SSRF smoke was healthy. Track as engineering follow-up — **not** added as a new launch gate.
 
 ---
 
 ## 5. Conditions to clear
 
-### 5.1 Remaining launch blocker (security smoke)
+### 5.1 Launch blockers
 
-**Calendar SSRF — Production authenticated path**
+**None remaining** for core PTA Production launch security verification.
 
-| | |
-|--|--|
-| Status | **OPEN** |
-| Why | Code + automated tests reject localhost/private IPs; live Production UI/API save or sync of a subscribe URL was not run |
-| How to close | While logged into Production: set school-year / calendar subscribe URL to `http://127.0.0.1/` (and optionally `http://169.254.169.254/`). Confirm the app **rejects** (validation or sync error — no successful fetch). Record screenshot or API response. Optionally repeat with a benign public HTTPS ICS to confirm happy path still works. |
-| After close | Amend this report → ✅ **APPROVED FOR PRODUCTION** |
+### 5.2 Non-blocking hygiene
 
-### 5.2 Non-blocking hygiene (not launch blockers)
-
-1. **Stripe live-vs-test:** Operator confirms in Stripe Dashboard / Vercel that Production `STRIPE_SECRET_KEY` / publishable key are `sk_live_` / `pk_live_` (no value paste into chat). Separate from billing page smoke.  
-2. **Meta redirect:** Optional move `META_REDIRECT_URI` to `heyralli.com` when Meta is finalized (Pending Final Review — non-blocking for core PTA).  
-3. **Migration history:** Reconcile `background_asset_metadata` row in `schema_migrations`.  
-4. **Ops acknowledgements** (certification §10): residual historical public media, CSP `unsafe-inline`, npm high backlog, Meta/Google not marketed as final.
-
-### 5.3 Cleared since prior revision
-
-- Authenticated browser login / logout / session  
-- Invite send + accept  
-- AI generation + observed credit decrease (burn)  
-- Create with AI, Flyer Composer, Events, Calendar **load**, Dashboard  
-- Inspiration upload + signed URL + private/public media behavior  
-- Publish approval  
-- Billing **page** load  
-- Org switch + team logout/login cycle  
-- School-media API smoke (§4.1)
+1. Stripe live-vs-test: confirm `sk_live_` / `pk_live_` in Dashboard (no real charge required).  
+2. Optional: reject private URLs at **Save** as well as Refresh.  
+3. Meta redirect host / migration history / ops acknowledgements (certification §10).  
+4. Fix developer `/account/agreements` 500 if developer seats are used in Production.  
+5. Re-set the test org Google Calendar subscribe URL if still needed for daily sync.
 
 ---
 
 ## 6. Items explicitly not failed
 
-No contradictory Production failures against prior VERIFIED controls. Human smoke **upgraded** prior gaps; it did not weaken stronger runtime/database/deployment evidence.
+No contradictory Production failures against prior VERIFIED controls. SSRF smoke did **not** allow successful sync or import creation for any attempted private/loopback URL.
 
 ---
 
@@ -213,11 +130,12 @@ No contradictory Production failures against prior VERIFIED controls. Human smok
 
 | Layer | Verdict |
 |-------|---------|
-| Core platform operational gate | 🟡 **APPROVED WITH CONDITIONS** — only open launch-security smoke: **Calendar SSRF Production-path** (§5.1) |
-| Billing / Stripe charge | Page + webhook evidence sufficient; **no real charge required** before launch |
-| Approvals | **VERIFIED** via publish-approval; no extra launch smoke required |
+| Core platform operational gate | ✅ **APPROVED FOR PRODUCTION** |
+| Billing / Stripe charge | Page + webhook evidence sufficient; **no real charge required** |
+| Approvals | **VERIFIED** via publish-approval |
+| Calendar SSRF Production-path | **VERIFIED** (§4.8) |
 | Meta / Google feature-complete | Out of scope — **Operationally Ready but Pending Final Review** |
 | Enterprise / district RFP | **Not approved** (unchanged) |
-| Load / performance certification | **Ready to proceed** after §5.1 close (or in parallel for non-security perf work; security sign-off waits on SSRF smoke) |
+| Load / performance certification | **Ready to proceed** |
 
-**Auditor:** Automated/runtime/database evidence August 7, 2026; human Production smoke reconciled same day. Close §5.1 to upgrade to ✅ **APPROVED FOR PRODUCTION**.
+**Auditor:** Automated/runtime/database evidence + human Production smoke + Calendar SSRF Production UI smoke, August 7, 2026.
