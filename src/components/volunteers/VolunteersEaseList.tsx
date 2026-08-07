@@ -1,9 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
 import { eventVolunteersHref } from "@/lib/events/event-responsibility";
 import {
   getVolunteerFillRateBand,
@@ -11,7 +9,7 @@ import {
   type VolunteerFillRateBand,
   type VolunteersMasterEventRow,
 } from "@/lib/event-volunteers/org-master-shared";
-import { toSupabaseThumbnailUrl } from "@/lib/images/supabase-thumbnail";
+import { AppImage } from "@/components/images/AppImage";
 import { formatLocalDate, getEventCountdown } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
@@ -79,15 +77,6 @@ function ArtTile({
 }) {
   const source = event.artworkUrl?.trim() || "";
   const isCompact = width <= 200;
-  const imageUrl = toSupabaseThumbnailUrl(source, {
-    width,
-    height: isCompact ? width : Math.round(width * 1.25),
-    resize: "cover",
-  });
-  const [imageSrc, setImageSrc] = useState(imageUrl);
-  useEffect(() => {
-    setImageSrc(imageUrl);
-  }, [imageUrl]);
   return (
     <div
       className={cn(
@@ -95,16 +84,18 @@ function ArtTile({
         className,
       )}
     >
-      {imageSrc ? (
-        <Image
-          src={imageSrc}
+      {source ? (
+        <AppImage
+          src={source}
           alt=""
           fill
+          preset={isCompact ? "thumb" : "card"}
+          displayWidth={width}
+          displayHeight={isCompact ? width : Math.round(width * 1.25)}
+          resize="cover"
           className="object-cover object-center"
           sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 280px"}
           priority={priority}
-          loading={priority ? "eager" : "lazy"}
-          onError={() => setImageSrc("")}
         />
       ) : null}
     </div>

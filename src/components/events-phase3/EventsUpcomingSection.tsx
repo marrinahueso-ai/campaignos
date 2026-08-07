@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CalendarDays, User } from "lucide-react";
 import { EventStatusBadge } from "@/components/events/EventStatusBadge";
+import { AppImage } from "@/components/images/AppImage";
 import { Button } from "@/components/ui/Button";
 import { resolveEventsHomeListArtwork } from "@/lib/events/resolve-events-home-list-artwork";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
@@ -127,12 +128,16 @@ export function EventsHomeArtwork({
   if (hasDisplayableArtwork(artwork) && artwork.imageUrl) {
     return (
       <div className={frameClassName}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <AppImage
           src={artwork.imageUrl}
           alt={isUpcoming ? "" : `${eventTitle} artwork`}
-          className="absolute inset-0 h-full w-full object-cover object-center"
-          loading="lazy"
+          fill
+          preset={isUpcoming ? "card" : "thumb"}
+          displayWidth={isUpcoming ? 360 : 160}
+          displayHeight={isUpcoming ? 288 : 160}
+          resize="cover"
+          sizes={isUpcoming ? "232px" : "120px"}
+          className="object-cover object-center"
         />
       </div>
     );

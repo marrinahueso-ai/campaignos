@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   useEffect,
   useState,
@@ -10,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Download, X, ZoomIn } from "lucide-react";
+import { AppImage } from "@/components/images/AppImage";
 import { Button } from "@/components/ui/Button";
 import {
   buildArtworkDownloadFilename,
@@ -355,13 +355,15 @@ export function ArtworkHoverThumbnail({
           }
         }}
       >
-        <Image
+        <AppImage
           src={url}
           alt=""
           fill
+          preset={compact ? "thumb" : "card"}
+          displayWidth={compact ? 128 : 360}
+          resize="cover"
           className="object-cover"
           sizes={sizes}
-          unoptimized
         />
         <span className="pointer-events-none absolute inset-0 z-[1] bg-[rgba(28,36,48,0.22)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100" />
         <div

@@ -1,6 +1,6 @@
-import Image from "next/image";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
+import { AppImage } from "@/components/images/AppImage";
 import { cn } from "@/lib/utils/cn";
 
 interface EventArtworkPreviewProps {
@@ -29,62 +29,6 @@ function getPlaceholderGradient(title: string): string {
   return palette[index];
 }
 
-function isOptimizableImageUrl(url: string): boolean {
-  try {
-    return new URL(url).hostname.endsWith(".supabase.co");
-  } catch {
-    return false;
-  }
-}
-
-function ArtworkImg({
-  src,
-  alt,
-  className,
-  width,
-  height,
-  sizes,
-  priority = false,
-}: {
-  src: string;
-  alt: string;
-  className?: string;
-  width: number;
-  height: number;
-  sizes: string;
-  priority?: boolean;
-}) {
-  if (isOptimizableImageUrl(src)) {
-    return (
-      <Image
-        src={src}
-        alt={alt}
-        width={width}
-        height={height}
-        sizes={sizes}
-        quality={75}
-        priority={priority}
-        fetchPriority={priority ? "high" : "auto"}
-        loading={priority ? "eager" : "lazy"}
-        className={className}
-      />
-    );
-  }
-
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={alt}
-      width={width}
-      height={height}
-      loading={priority ? "eager" : "lazy"}
-      fetchPriority={priority ? "high" : "auto"}
-      className={className}
-    />
-  );
-}
-
 interface ArtworkImageFrameProps {
   artwork: HeroArtworkSelection;
   eventTitle: string;
@@ -108,11 +52,14 @@ function ArtworkImageFrame({
         frameClassName,
       )}
     >
-      <ArtworkImg
+      <AppImage
         src={artwork.imageUrl!}
         alt={`${eventTitle} artwork`}
         width={680}
         height={680}
+        preset="hero"
+        displayWidth={800}
+        resize="contain"
         sizes="(max-width: 1024px) 90vw, 340px"
         priority={priority}
         className={cn(
@@ -148,11 +95,15 @@ export function EventArtworkPreview({
         )}
       >
         {hasImage ? (
-          <ArtworkImg
+          <AppImage
             src={artwork.imageUrl!}
             alt=""
             width={128}
             height={128}
+            preset="thumb"
+            displayWidth={128}
+            displayHeight={128}
+            resize="contain"
             sizes="64px"
             className="max-h-full max-w-full object-contain object-center"
           />
@@ -179,11 +130,14 @@ export function EventArtworkPreview({
           className,
         )}
       >
-        <ArtworkImg
+        <AppImage
           src={artwork.imageUrl!}
           alt={`${eventTitle} artwork`}
           width={560}
           height={560}
+          preset="card"
+          displayWidth={560}
+          resize="contain"
           sizes="(max-width: 1024px) 90vw, 280px"
           priority={priority}
           className="block h-auto max-h-[192px] w-[90%] max-w-[280px] rounded-[22px] object-contain object-center shadow-sm shadow-slate-200/35"

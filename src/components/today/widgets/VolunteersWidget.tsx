@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Check, Users } from "lucide-react";
+import { AppImage } from "@/components/images/AppImage";
 import { DashboardWidgetCard } from "@/components/today/DashboardWidgetCard";
 import {
   getVolunteerFillRateBand,
@@ -142,12 +143,16 @@ function EventArtworkThumb({
   if (artworkUrl) {
     return (
       <span className="mt-0.5 relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-cos-card ring-1 ring-black/[0.06]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <AppImage
           src={artworkUrl}
           alt=""
-          className="h-full w-full object-cover object-center"
-          loading="lazy"
+          fill
+          preset="thumb"
+          displayWidth={128}
+          displayHeight={128}
+          resize="cover"
+          sizes="36px"
+          className="object-cover object-center"
         />
       </span>
     );

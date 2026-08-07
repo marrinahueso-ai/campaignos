@@ -120,10 +120,14 @@ Public object URLs can be rewritten to on-the-fly derivatives:
 
 `/storage/v1/object/public/{bucket}/{path}` → `/storage/v1/render/image/public/{bucket}/{path}?width=&quality=`
 
-- Helper: `src/lib/images/supabase-thumbnail.ts` (`toSupabaseThumbnailUrl`)
+- **Shared display API:** `src/lib/images/display.ts` (`toDisplayImageUrl`) + `src/components/images/AppImage.tsx`
+- Presets: `thumb` (128) · `card` (360) · `hero` / `detail` (800) — see `src/lib/images/presets.ts`
+- Low-level rewriter: `src/lib/images/supabase-thumbnail.ts` (`toSupabaseThumbnailUrl`)
 - Auto WebP when the client accepts it; originals remain the source of truth at `storage_path` / original `public_url`
 - Do **not** store transform URLs in the database or write separate thumbnail files
-- Owner Background Library grids/detail already use this pattern; Approvals / Volunteers hubs do too
+- Hub surfaces on the shared pipeline: Background Library, Approvals, Volunteers, Events lists/heroes, Campaigns thumbs, Today/Dashboard widgets
+- Still migrating (display originals OK for now): campaign builder / composers / planning hub / vendor signed logos / inbox stickers
+- Keep originals for: AI inspiration, Meta publish, downloads, exports, email HTML, lightbox enlarge
 - Re-check anytime: Storage → Settings → **Enable Image Transformations**, or fetch a known public object via `/render/image/public/…?width=360` and confirm `image/webp` (or resized) with a much smaller body than the original
 
 Dashboard toggle path: [Storage Settings](https://supabase.com/dashboard/project/zyllfqieeihshnwpakiv/storage/files/settings) (Pro plan and above).

@@ -11,6 +11,9 @@ type SupabaseThumbnailOptions = {
 /**
  * Returns a bounded Supabase Image Transformation URL for a public object.
  *
+ * Prefer {@link toDisplayImageUrl} from `@/lib/images/display` at call sites —
+ * this helper is the low-level transform rewriter.
+ *
  * `next/image` still optimizes the returned source for the requesting device,
  * but the upstream fetch is capped too. This prevents the optimizer from
  * downloading multi-megabyte originals before it can create a derivative.

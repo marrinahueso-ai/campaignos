@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
+import { AppImage } from "@/components/images/AppImage";
 import {
   approveBackgroundAssetsAction,
   bulkUploadBackgroundAssetsAction,
@@ -38,7 +38,6 @@ import type {
   BackgroundSeason,
   BackgroundSource,
 } from "@/lib/background-library/types";
-import { toSupabaseThumbnailUrl } from "@/lib/images/supabase-thumbnail";
 
 type TabId = "review" | "published" | "archived" | "sources";
 
@@ -89,22 +88,19 @@ function LibraryThumb({
   sizes: string;
   priority?: boolean;
 }) {
-  const src = toSupabaseThumbnailUrl(publicUrl, {
-    width,
-    height: width,
-    resize: "cover",
-    quality: 72,
-  });
   return (
-    <Image
-      src={src}
+    <AppImage
+      src={publicUrl}
       alt={alt}
       fill
-      className="object-cover"
+      preset={width <= 400 ? "card" : "detail"}
+      displayWidth={width}
+      displayHeight={width}
+      resize="cover"
+      displayQuality={72}
       sizes={sizes}
-      quality={75}
       priority={priority}
-      loading={priority ? "eager" : "lazy"}
+      className="object-cover"
     />
   );
 }

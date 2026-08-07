@@ -1,6 +1,6 @@
-import Image from "next/image";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
+import { AppImage } from "@/components/images/AppImage";
 import { cn } from "@/lib/utils/cn";
 
 interface CampaignThumbnailProps {
@@ -22,14 +22,6 @@ function getPlaceholderGradient(title: string): string {
   return palette[index];
 }
 
-function isOptimizableImageUrl(url: string): boolean {
-  try {
-    return new URL(url).hostname.endsWith(".supabase.co");
-  } catch {
-    return false;
-  }
-}
-
 export function CampaignThumbnail({
   artwork,
   title,
@@ -48,25 +40,18 @@ export function CampaignThumbnail({
           className,
         )}
       >
-        {isOptimizableImageUrl(artwork.imageUrl) ? (
-          <Image
-            src={artwork.imageUrl}
-            alt=""
-            width={pixelSize}
-            height={pixelSize}
-            className="h-full w-full object-cover"
-            sizes={`${pixelSize}px`}
-            loading="lazy"
-          />
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={artwork.imageUrl}
-            alt=""
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-        )}
+        <AppImage
+          src={artwork.imageUrl}
+          alt=""
+          width={pixelSize}
+          height={pixelSize}
+          preset="thumb"
+          displayWidth={128}
+          displayHeight={128}
+          resize="cover"
+          className="h-full w-full object-cover"
+          sizes={`${pixelSize}px`}
+        />
       </span>
     );
   }

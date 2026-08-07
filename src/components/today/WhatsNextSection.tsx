@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { AppImage } from "@/components/images/AppImage";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import type { TodayWhatsNext } from "@/types/today";
@@ -37,23 +37,18 @@ export function WhatsNextSection({ whatsNext, artwork }: WhatsNextSectionProps) 
         >
           {imageUrl ? (
             <div className="relative aspect-square overflow-hidden sm:aspect-auto sm:min-h-full">
-              {isOptimizableImageUrl(imageUrl) ? (
-                <Image
-                  src={imageUrl}
-                  alt=""
-                  fill
-                  priority
-                  sizes="(max-width: 640px) 100vw, 12rem"
-                  className="object-cover object-center"
-                />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={imageUrl}
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover object-center"
-                />
-              )}
+              <AppImage
+                src={imageUrl}
+                alt=""
+                fill
+                preset="hero"
+                displayWidth={800}
+                displayHeight={800}
+                resize="cover"
+                priority
+                sizes="(max-width: 640px) 100vw, 12rem"
+                className="object-cover object-center"
+              />
               <div
                 className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10 sm:bg-gradient-to-r sm:from-transparent sm:to-black/40"
                 aria-hidden
@@ -94,14 +89,6 @@ export function WhatsNextSection({ whatsNext, artwork }: WhatsNextSectionProps) 
       </div>
     </section>
   );
-}
-
-function isOptimizableImageUrl(url: string): boolean {
-  try {
-    return new URL(url).hostname.endsWith(".supabase.co");
-  } catch {
-    return false;
-  }
 }
 
 function parseWhatsNextDisplay(whatsNext: TodayWhatsNext) {

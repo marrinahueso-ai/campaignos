@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { ArtworkV2ReviewLightbox } from "@/components/artwork-v2/ArtworkV2ReviewLightbox";
+import { AppImage } from "@/components/images/AppImage";
 import { cn } from "@/lib/utils/cn";
 
 interface ArtworkLightboxThumbnailProps {
@@ -25,10 +25,11 @@ export function ArtworkLightboxThumbnail({
   placeholder = "No image",
 }: ArtworkLightboxThumbnailProps) {
   const [open, setOpen] = useState(false);
+  const url = src?.trim() || null;
 
   return (
     <div className={cn("flex flex-col gap-2", wrapperClassName)}>
-      {src ? (
+      {url ? (
         <>
           <button
             type="button"
@@ -44,18 +45,20 @@ export function ArtworkLightboxThumbnail({
             )}
             aria-label={`View ${alt} full size`}
           >
-            <Image
-              src={src}
+            <AppImage
+              src={url}
               alt=""
               fill
+              preset="card"
+              displayWidth={360}
+              resize="cover"
               sizes="(max-width: 768px) 45vw, 220px"
               className="object-cover"
-              unoptimized
             />
           </button>
           {open && (
             <ArtworkV2ReviewLightbox
-              src={src}
+              src={url}
               alt={alt}
               variant={variant}
               onClose={() => setOpen(false)}

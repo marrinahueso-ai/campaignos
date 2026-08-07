@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Check, FileText, MessageSquare, UserRound } from "lucide-react";
+import { AppImage } from "@/components/images/AppImage";
 import { DashboardWidgetCard } from "@/components/today/DashboardWidgetCard";
 import type { TodayActionItem } from "@/types/today";
 
@@ -75,12 +76,16 @@ function ActionArtworkThumb({
   if (artworkUrl) {
     return (
       <span className="relative mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-cos-card ring-1 ring-black/[0.06]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <AppImage
           src={artworkUrl}
           alt=""
-          className="h-full w-full object-cover object-center"
-          loading="lazy"
+          fill
+          preset="thumb"
+          displayWidth={128}
+          displayHeight={128}
+          resize="cover"
+          sizes="36px"
+          className="object-cover object-center"
         />
         <span className="sr-only">{title}</span>
       </span>

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArtworkHoverThumbnail, ArtworkPreviewActions } from "@/components/artwork/ArtworkHoverThumbnail";
+import { AppImage } from "@/components/images/AppImage";
 import {
   formatEventsHomeMonthLabel,
   matchesEventsHomeSummary,
@@ -150,11 +151,17 @@ export function EventsEaseFocusCard({
         aria-hidden
       >
         {url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <AppImage
             src={url}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            fill
+            preset="hero"
+            displayWidth={800}
+            displayHeight={800}
+            resize="cover"
+            sizes="(max-width: 768px) 100vw, 640px"
+            className="object-cover"
+            priority
           />
         ) : null}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(20,28,24,0.92)] via-[rgba(20,28,24,0.55)] to-[rgba(20,28,24,0.18)]" />

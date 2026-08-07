@@ -1,8 +1,6 @@
 "use client";
 
-import Image from "next/image";
 import { Eye } from "lucide-react";
-import { useEffect, useState } from "react";
 import {
   approvalOutcomeChip,
   canRetryFailedApproval,
@@ -12,7 +10,7 @@ import {
   getUnifiedApprovalPreview,
   type UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
-import { toSupabaseThumbnailUrl } from "@/lib/images/supabase-thumbnail";
+import { AppImage } from "@/components/images/AppImage";
 import { cn } from "@/lib/utils/cn";
 
 function artBackground(item: UnifiedApprovalItem): string {
@@ -64,27 +62,20 @@ function ArtTile({
 }) {
   const source = artBackground(item);
   const isCompact = width <= 200;
-  const imageUrl = toSupabaseThumbnailUrl(source, {
-    width,
-    height: isCompact ? width : Math.round(width * 1.25),
-    resize: "cover",
-  });
-  const [imageSrc, setImageSrc] = useState(imageUrl);
-  useEffect(() => {
-    setImageSrc(imageUrl);
-  }, [imageUrl]);
   return (
     <div className={cn("relative overflow-hidden bg-cos-bg", className)}>
-      {imageSrc ? (
-        <Image
-          src={imageSrc}
+      {source ? (
+        <AppImage
+          src={source}
           alt=""
           fill
+          preset={isCompact ? "thumb" : "card"}
+          displayWidth={width}
+          displayHeight={isCompact ? width : Math.round(width * 1.25)}
+          resize="cover"
           className="object-cover object-center"
           sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
           priority={priority}
-          loading={priority ? "eager" : "lazy"}
-          onError={() => setImageSrc("")}
         />
       ) : null}
       {label ? (
