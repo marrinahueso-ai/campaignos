@@ -11,6 +11,7 @@ import {
   type ImageDisplayPreset,
   type ImageDisplayResize,
 } from "@/lib/images/display";
+import { objectFitFromClassName } from "@/lib/images/object-fit";
 import { cn } from "@/lib/utils/cn";
 
 type AppImageBase = {
@@ -45,10 +46,16 @@ type AppImageFixedProps = AppImageBase & {
 
 export type AppImageProps = AppImageFillProps | AppImageFixedProps;
 
+export { objectFitFromClassName } from "@/lib/images/object-fit";
+
 /**
  * Shared display image: derives Supabase transform URLs for display intent,
  * falls back to <img> for blob/data/non-Supabase hosts, and keeps originals
  * when intent="original" (lightbox, etc.).
+ *
+ * Fill mode always uses a plain <img> (same pattern as Homepage / Social).
+ * next/image `fill` was stretching artwork in Events / Volunteers / Approvals
+ * thumbs even when `object-cover` was in className.
  */
 export function AppImage(props: AppImageProps) {
   const {
@@ -101,25 +108,30 @@ export function AppImage(props: AppImageProps) {
   };
 
   const loading = priority ? "eager" : "lazy";
+  const objectFit =
+    style?.objectFit ?? objectFitFromClassName(className) ?? "cover";
+
+  // Fill: plain img only. Supabase already bounds the URL; next/image fill
+  // stretched aspect on dashboard card rails.
+  if (props.fill) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- fill thumbs need reliable object-fit
+      <img
+        src={currentSrc}
+        alt={alt}
+        loading={loading}
+        fetchPriority={priority ? "high" : "auto"}
+        className={cn("absolute inset-0 h-full w-full", className)}
+        style={{ ...style, objectFit }}
+        onError={handleError}
+      />
+    );
+  }
+
   const usePlainImg =
     isLocalOrDataImageUrl(currentSrc) || !canOptimizeWithNextImage(currentSrc);
 
   if (usePlainImg) {
-    if (props.fill) {
-      return (
-        // eslint-disable-next-line @next/next/no-img-element -- blob/data/remote hosts
-        <img
-          src={currentSrc}
-          alt={alt}
-          loading={loading}
-          fetchPriority={priority ? "high" : "auto"}
-          className={cn("absolute inset-0 h-full w-full", className)}
-          style={style}
-          onError={handleError}
-        />
-      );
-    }
-
     return (
       // eslint-disable-next-line @next/next/no-img-element -- blob/data/remote hosts
       <img
@@ -148,18 +160,6 @@ export function AppImage(props: AppImageProps) {
     onError: handleError,
     style,
   };
-
-  if (props.fill) {
-    return (
-      <Image
-        {...shared}
-        src={currentSrc}
-        fill
-        loading={loading}
-        fetchPriority={priority ? "high" : "auto"}
-      />
-    );
-  }
 
   return (
     <Image

@@ -237,7 +237,7 @@ export function EventsEaseAheadCard({
       <ArtThumb
         event={event}
         artwork={artwork}
-        className="aspect-square w-full self-center rounded-none"
+        className="h-[88px] w-[88px] shrink-0 rounded-none"
         sizes="88px"
       />
       <button

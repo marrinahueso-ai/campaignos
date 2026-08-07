@@ -328,7 +328,7 @@ export function ArtworkHoverThumbnail({
     return (
       <span
         className={cn(
-          "relative block h-full w-full overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
+          "relative block aspect-square w-full overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
           className,
           placeholderClassName,
         )}
@@ -341,7 +341,9 @@ export function ArtworkHoverThumbnail({
     <>
       <div
         className={cn(
-          "group relative h-full w-full cursor-zoom-in overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
+          // Do not set h-full here — it overrides aspect-square and stretches
+          // landscape art into tall card rails (Events ahead cards).
+          "group relative block aspect-square w-full cursor-zoom-in overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
           className,
         )}
         role="button"
@@ -355,17 +357,13 @@ export function ArtworkHoverThumbnail({
           }
         }}
       >
-        {/*
-          Square rail + CSS cover: fills the thumb block edge-to-edge without
-          letterboxing or stretching landscape art into a tall strip.
-        */}
         <AppImage
           src={url}
           alt=""
           fill
           preset={compact ? "thumb" : "card"}
           displayWidth={compact ? 128 : 256}
-          className="!h-full !w-full object-cover object-center"
+          className="object-cover object-center"
           style={{ objectFit: "cover" }}
           sizes={sizes}
         />

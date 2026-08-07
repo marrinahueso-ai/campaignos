@@ -62,8 +62,8 @@ describe("events ease UI contracts", () => {
     assert.match(artworkHover, /object-cover object-center/);
     assert.doesNotMatch(artworkHover, /displayHeight=\{compact \? 128 : 256\}/);
     assert.doesNotMatch(artworkHover, /resize="contain"/);
-    // Ahead thumbs stay square so landscape art covers without stretch.
-    assert.match(ease, /aspect-square w-full self-center/);
-    assert.doesNotMatch(ease, /self-stretch rounded-none/);
+    // Fixed square ahead thumbs — h-full was stretching landscape art.
+    assert.match(ease, /h-\[88px\] w-\[88px\] shrink-0/);
+    assert.match(artworkHover, /Do not set h-full here/);
   });
 });

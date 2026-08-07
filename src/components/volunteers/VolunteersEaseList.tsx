@@ -91,9 +91,14 @@ function ArtTile({
           fill
           preset={isCompact ? "thumb" : "card"}
           displayWidth={width}
-          displayHeight={isCompact ? width : Math.round(width * 1.25)}
-          resize="contain"
-          className="object-contain object-center p-1"
+          // Width-only transform + CSS fit — avoid baking a mismatched
+          // height that next/image then stretched into the tile.
+          className={
+            isCompact
+              ? "object-cover object-center"
+              : "object-contain object-center p-1"
+          }
+          style={{ objectFit: isCompact ? "cover" : "contain" }}
           sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 280px"}
           priority={priority}
         />

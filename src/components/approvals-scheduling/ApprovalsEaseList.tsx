@@ -71,9 +71,12 @@ function ArtTile({
           fill
           preset={isCompact ? "thumb" : "card"}
           displayWidth={width}
-          displayHeight={isCompact ? width : Math.round(width * 1.25)}
-          resize="contain"
-          className="object-contain object-center p-1"
+          className={
+            isCompact
+              ? "object-cover object-center"
+              : "object-contain object-center p-1"
+          }
+          style={{ objectFit: isCompact ? "cover" : "contain" }}
           sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
           priority={priority}
         />
