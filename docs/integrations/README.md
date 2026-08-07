@@ -1,7 +1,9 @@
 # Integrations
 
 **Purpose:** Org-level OAuth and third-party connections.  
-**Last updated:** July 23, 2026
+**Last updated:** August 7, 2026
+
+Launch certification treats **Meta** and **Google Calendar** as *Operationally Ready but Pending Final Review* — not feature-complete for launch marketing. Core platform launch does not wait on those reviews. See [External Integration Readiness](../security/launch-security-assessment-2026-08.md#6-external-integration-readiness).
 
 | Doc | Status |
 |-----|--------|

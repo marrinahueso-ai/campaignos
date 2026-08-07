@@ -5,7 +5,7 @@
 
 | Doc | Status |
 |-----|--------|
-| [launch-security-assessment-2026-08.md](./launch-security-assessment-2026-08.md) | **Living** — Aug 7 2026 production launch security assessment |
+| [launch-security-assessment-2026-08.md](./launch-security-assessment-2026-08.md) | **Living** — Launch Certification Report (core platform vs integrations vs third-party approval) |
 | [access-and-onboarding.md](./access-and-onboarding.md) | **Living** — signup, invites, org switcher, roles, gates |
 | [multi-tenant-isolation.md](./multi-tenant-isolation.md) | **Living** — isolation guarantees (short) |
 | [overview.md](./overview.md) | Planned stub |
