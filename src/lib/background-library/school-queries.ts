@@ -88,8 +88,9 @@ export async function listActiveBackgroundLibrariesForSchools(): Promise<
 
 /**
  * Published backgrounds for school pickers.
- * Search matches rich metadata (title/tags/colors/style/objects/…); order is
- * assortment (variety across sources), not likeness / created_at.
+ * Search matches rich metadata (title/tags/colors/style/objects/…).
+ * Order is assortment for variety (mix Generate batches + lookalike buckets),
+ * not likeness clumps or created_at.
  */
 export async function searchPublishedBackgroundAssetsForSchools(
   query = "",

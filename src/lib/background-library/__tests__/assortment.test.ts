@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  assortmentGroupKey,
   assetMatchesLibrarySearch,
   assortBackgroundAssets,
   filterAndAssortBackgroundAssets,
@@ -62,6 +63,53 @@ describe("background library assortment", () => {
         true,
       );
     }
+  });
+
+  it("interleaves bulk lookalikes by style/color instead of upload clumps", () => {
+    const rows = [
+      asset({
+        id: "pink-1",
+        colors: ["pink"],
+        style: "illustrated",
+        libraryNames: ["Back to School"],
+      }),
+      asset({
+        id: "pink-2",
+        colors: ["pink"],
+        style: "illustrated",
+        libraryNames: ["Back to School"],
+      }),
+      asset({
+        id: "pink-3",
+        colors: ["pink"],
+        style: "illustrated",
+        libraryNames: ["Back to School"],
+      }),
+      asset({
+        id: "blue-1",
+        colors: ["blue"],
+        style: "photo",
+        libraryNames: ["Fall"],
+      }),
+      asset({
+        id: "blue-2",
+        colors: ["blue"],
+        style: "photo",
+        libraryNames: ["Fall"],
+      }),
+      asset({
+        id: "cream-1",
+        colors: ["cream"],
+        style: "minimal",
+        libraryNames: ["Generic"],
+      }),
+    ];
+    assert.equal(assortmentGroupKey(rows[0]!), assortmentGroupKey(rows[1]!));
+    assert.notEqual(assortmentGroupKey(rows[0]!), assortmentGroupKey(rows[3]!));
+    const ordered = assortBackgroundAssets(rows);
+    const colors = ordered.map((row) => row.colors[0]);
+    // First three should mix look-alike buckets.
+    assert.equal(new Set(colors.slice(0, 3)).size, 3);
   });
 
   it("prefers lower usage within a source group", () => {

@@ -1,7 +1,9 @@
 /**
  * School-facing Background Library search + assortment ordering.
- * Assortment intentionally avoids "likeness" clumping (same Generate batch /
- * same source variations adjacent) so browsing feels varied.
+ * Assortment intentionally avoids "likeness" clumping so browsing feels varied:
+ * - Same Generate batch (shared sourceId) is interleaved with other sources
+ * - Bulk uploads (no source) are grouped by soft likeness (style/color/library)
+ *   and round-robined the same way — not left in upload / created_at order
  */
 
 export type AssortableBackgroundAsset = {
@@ -80,9 +82,25 @@ function stableHash(value: string): number {
 }
 
 /**
- * Round-robin across source groups so AI variations from one Generate batch
- * do not sit in a likeness row. Within a group, prefer lower usage first so
- * underused assets surface earlier while still mixing sources.
+ * Bucket key for assortment. Shared Generate batches stay together as a group
+ * to interleave; bulk uploads use style/color/library so lookalikes are not
+ * adjacent after round-robin.
+ */
+export function assortmentGroupKey(asset: AssortableBackgroundAsset): string {
+  const source = asset.sourceId?.trim();
+  if (source) return `source:${source}`;
+
+  const style = normalizeLibrarySearch(asset.style ?? "") || "nostyle";
+  const color = normalizeLibrarySearch(asset.colors[0] ?? "") || "nocolor";
+  const library =
+    normalizeLibrarySearch(asset.libraryNames[0] ?? "") || "nolibrary";
+  return `look:${style}:${color}:${library}`;
+}
+
+/**
+ * Round-robin across likeness / source groups so similar artwork does not sit
+ * in a row. Within a group, prefer lower usage first so underused assets
+ * surface earlier while still mixing groups.
  */
 export function assortBackgroundAssets<T extends AssortableBackgroundAsset>(
   assets: T[],
@@ -92,7 +110,7 @@ export function assortBackgroundAssets<T extends AssortableBackgroundAsset>(
 
   const groups = new Map<string, T[]>();
   for (const asset of assets) {
-    const key = asset.sourceId?.trim() || `solo:${asset.id}`;
+    const key = assortmentGroupKey(asset);
     const list = groups.get(key) ?? [];
     list.push(asset);
     groups.set(key, list);
@@ -101,7 +119,11 @@ export function assortBackgroundAssets<T extends AssortableBackgroundAsset>(
   for (const list of groups.values()) {
     list.sort((a, b) => {
       if (a.usageCount !== b.usageCount) return a.usageCount - b.usageCount;
-      return a.id.localeCompare(b.id);
+      // Scatter siblings inside a look-alike bucket (not upload order).
+      return (
+        stableHash(`${seed}:item:${a.id}`) -
+          stableHash(`${seed}:item:${b.id}`) || a.id.localeCompare(b.id)
+      );
     });
   }
 
