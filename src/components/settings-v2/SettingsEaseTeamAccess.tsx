@@ -238,6 +238,14 @@ export function SettingsEaseTeamAccess({
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [drawerMemberId, setDrawerMemberId] = useState<string | null>(null);
   const [drawerTab, setDrawerTab] = useState<EasePersonDrawerTab>("overview");
+  const [inviteFeedback, setInviteFeedback] = useState<{
+    tone: "success" | "warning" | "error";
+    message: string;
+    inviteUrl?: string | null;
+  } | null>(null);
+  const [resendingMemberId, setResendingMemberId] = useState<string | null>(
+    null,
+  );
   const [localMembers, setLocalMembers] = useState<UnifiedTeamMember[] | null>(
     null,
   );
@@ -360,12 +368,15 @@ export function SettingsEaseTeamAccess({
   }, [loginPeople]);
 
   function openPerson(member: UnifiedTeamMember, tab: EasePersonDrawerTab = "overview") {
+    setInviteFeedback(null);
     setDrawerMemberId(member.id);
     setDrawerTab(tab);
     syncPersonQuery(personQueryValue(member, loginPeople), tab);
   }
 
   function closePerson() {
+    setInviteFeedback(null);
+    setResendingMemberId(null);
     setDrawerMemberId(null);
     setDrawerTab("overview");
     syncPersonQuery(null, "overview");
@@ -405,9 +416,35 @@ export function SettingsEaseTeamAccess({
 
   function handleResendInvite(member: UnifiedTeamMember) {
     if (!canResendTeamInvite(member, canManage) || !member.raw) return;
+    setInviteFeedback(null);
+    setResendingMemberId(member.id);
     startTransition(async () => {
-      await resendTeamInviteAction(member.raw!.id);
-      router.refresh();
+      try {
+        const result = await resendTeamInviteAction(member.raw!.id);
+        if (result.error) {
+          setInviteFeedback({
+            tone: "error",
+            message: result.error,
+          });
+          return;
+        }
+        if (result.warning) {
+          setInviteFeedback({
+            tone: "warning",
+            message: [result.message, result.warning].filter(Boolean).join(" "),
+            inviteUrl: result.inviteUrl,
+          });
+        } else {
+          setInviteFeedback({
+            tone: "success",
+            message: result.message ?? "Invite email sent.",
+            inviteUrl: result.inviteUrl,
+          });
+        }
+        router.refresh();
+      } finally {
+        setResendingMemberId(null);
+      }
     });
   }
 
@@ -892,6 +929,11 @@ export function SettingsEaseTeamAccess({
           if (!drawerMember) return;
           handleResendInvite(drawerMember);
         }}
+        inviteFeedback={inviteFeedback}
+        onDismissInviteFeedback={() => setInviteFeedback(null)}
+        resendPending={
+          Boolean(drawerMember) && resendingMemberId === drawerMember?.id
+        }
         onRemove={
           drawerMember &&
           canManage &&

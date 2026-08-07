@@ -487,7 +487,16 @@ export function TeamAccessShell({
             return;
           }
           startTransition(async () => {
-            await resendTeamInviteAction(moreActionsMember.raw!.id);
+            const result = await resendTeamInviteAction(moreActionsMember.raw!.id);
+            if (result.error) {
+              window.alert(result.error);
+              return;
+            }
+            window.alert(
+              result.warning
+                ? [result.message, result.warning].filter(Boolean).join("\n")
+                : result.message ?? "Invite email sent.",
+            );
             router.refresh();
           });
         }}

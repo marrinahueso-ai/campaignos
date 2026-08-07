@@ -260,13 +260,23 @@ export function TeamAccessPersonProfileShell({
     }
     startTransition(async () => {
       const result = await resendTeamInviteAction(target.raw!.id);
-      if (result.inviteUrl) {
+      if (result.error) {
         setInviteLinkBanner({
-          url: result.inviteUrl,
-          warning: result.warning ?? null,
-          message: result.message ?? "Invite link refreshed.",
+          url: null,
+          warning: result.error,
+          message: "Couldn’t resend invite.",
         });
+        return;
       }
+      setInviteLinkBanner({
+        url: result.inviteUrl ?? null,
+        warning: result.warning ?? null,
+        message:
+          result.message ??
+          (result.warning
+            ? "Invite link refreshed."
+            : "Invite email sent."),
+      });
       router.refresh();
     });
   }

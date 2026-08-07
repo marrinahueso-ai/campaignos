@@ -1427,6 +1427,7 @@ export async function resendTeamInviteAction(
   }
 
   revalidatePath("/settings/team-access");
+  const email = (membership?.email as string | null)?.trim() || null;
   return {
     error: null,
     success: true,
@@ -1434,7 +1435,9 @@ export async function resendTeamInviteAction(
     warning: emailWarning,
     message: emailWarning
       ? "Invite link refreshed."
-      : "Invite link refreshed. Share the new link below.",
+      : email
+        ? `Invite email sent to ${email}.`
+        : "Invite link refreshed. Share the new link below.",
   };
 }
 

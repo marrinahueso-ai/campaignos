@@ -419,6 +419,9 @@ describe("settings ease UI contracts", () => {
     assert.match(personDrawer, /Access role/);
     assert.match(personDrawer, /Save changes/);
     assert.match(personDrawer, /Give access|Resend invite/);
+    assert.match(personDrawer, /inviteFeedback|data-settings-ease="invite-feedback"/);
+    assert.match(personDrawer, /Sending…/);
+    assert.match(teamAccessEase, /Invite email sent/);
     assert.match(personDrawer, /onSaveEventAssignments/);
     assert.match(personDrawer, /onSaveAccessLevel/);
     assert.match(personDrawer, /ACCESS_PERMISSION_KEYS/);

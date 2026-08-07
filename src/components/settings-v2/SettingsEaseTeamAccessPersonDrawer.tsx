@@ -61,6 +61,14 @@ interface SettingsEaseTeamAccessPersonDrawerProps {
   onEditProfile: () => void;
   onGiveAccess: () => void;
   onResendInvite: () => void;
+  /** Shown after Resend invite (success, warning, or error). */
+  inviteFeedback?: {
+    tone: "success" | "warning" | "error";
+    message: string;
+    inviteUrl?: string | null;
+  } | null;
+  onDismissInviteFeedback?: () => void;
+  resendPending?: boolean;
   /** Icon-only remove; omitted for self or when manage_people is off. */
   onRemove?: () => void;
   onSaveAccessLevel: (templateId: string) => Promise<string | null>;
@@ -131,6 +139,9 @@ export function SettingsEaseTeamAccessPersonDrawer({
   onEditProfile,
   onGiveAccess,
   onResendInvite,
+  inviteFeedback = null,
+  onDismissInviteFeedback,
+  resendPending = false,
   onRemove,
   onSaveAccessLevel,
   onSaveEventAssignments,
@@ -373,9 +384,50 @@ export function SettingsEaseTeamAccessPersonDrawer({
                 <button
                   type="button"
                   className={`${btnPrimaryClassName} ${btnSmClassName}`}
+                  disabled={showResend ? resendPending || isPending : isPending}
                   onClick={showResend ? onResendInvite : onGiveAccess}
                 >
-                  {giveLabel}
+                  {showResend && resendPending ? "Sending…" : giveLabel}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {inviteFeedback ? (
+            <div
+              className={
+                inviteFeedback.tone === "error"
+                  ? "mt-3 rounded-[14px] border border-[rgba(166,90,58,0.28)] bg-[rgba(166,90,58,0.08)] px-3.5 py-3"
+                  : inviteFeedback.tone === "warning"
+                    ? "mt-3 rounded-[14px] border border-[rgba(196,146,46,0.35)] bg-[rgba(196,146,46,0.12)] px-3.5 py-3"
+                    : "mt-3 rounded-[14px] border border-[rgba(47,74,60,0.22)] bg-[rgba(47,74,60,0.08)] px-3.5 py-3"
+              }
+              role={inviteFeedback.tone === "error" ? "alert" : "status"}
+              data-settings-ease="invite-feedback"
+            >
+              <p
+                className={
+                  inviteFeedback.tone === "error"
+                    ? "m-0 text-[13px] font-semibold text-[#a65a3a]"
+                    : inviteFeedback.tone === "warning"
+                      ? "m-0 text-[13px] font-semibold text-[#7a5a12]"
+                      : "m-0 text-[13px] font-semibold text-[#2f4a3c]"
+                }
+              >
+                {inviteFeedback.message}
+              </p>
+              {inviteFeedback.inviteUrl ? (
+                <p className="mt-2 mb-0 break-all text-xs leading-snug text-[#5c554c]">
+                  {inviteFeedback.inviteUrl}
+                </p>
+              ) : null}
+              {onDismissInviteFeedback ? (
+                <button
+                  type="button"
+                  className="mt-2 text-xs font-bold text-[#5c554c] underline hover:text-[#2a2622]"
+                  onClick={onDismissInviteFeedback}
+                >
+                  Dismiss
                 </button>
               ) : null}
             </div>
