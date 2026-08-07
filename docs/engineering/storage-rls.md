@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** 2026-08-07 — Background Library metadata note  
+**Last updated:** 2026-08-07 — school-media private bucket; Background Library metadata note  
 **Related:** [access-control.md](./access-control.md) · [image-architecture.md](./image-architecture.md) · [multi-tenant-isolation.md](../security/multi-tenant-isolation.md) · [developer-agreements.md](./developer-agreements.md)
 
 **Supabase project:** `zyllfqieeihshnwpakiv`  
@@ -31,6 +31,7 @@ Phase C3 locks **Storage API** access (`storage.objects` policies) to the same m
 | `organization-stickers` | **public** | `organization_id` | `{orgId}/{stickerId}.png` | `src/lib/inbox/sticker-constants.ts` (Meta DM stickers) |
 | `event-assets` | **public** | `event_id` (usual) | `{eventId}/{assetType}/…`, AI concepts under `{eventId}/…/concepts/…` | `event-workspace/storage.ts`, `ai-artwork/storage.ts` |
 | `campaign-files` | **public** | `event_id` | `{eventId}/{timestamp}-file.pdf` | `campaign-files/storage.ts` |
+| `school-media` | **private** | `organization_id` | `{orgId}/{eventId}/{uuid}-….png` | `school-media/storage.ts` — school-uploaded inspiration photos; signed URLs only |
 | `developer-agreements` | private | path prefix (not org/event UUID) | `templates/…`, `signatures/{userId}/…`, `signatures/company/…` | `developer-agreements/actions.ts` + `storage.ts` (`073`) |
 | `platform-backgrounds` | **public** | `sources` / `assets` (not org-scoped) | `sources/{uuid}-….png`, `assets/{uuid}-….png` | `background-library/storage.ts` (Owner ops; service-role writes). Display/search metadata (`title`, `filename_label`, tags, …) lives on `background_assets` — paths stay UUID-based. |
 
@@ -109,6 +110,8 @@ Hard refresh also restores the saved session for affected events.
 Objects in public buckets remain fetchable via `/storage/v1/object/public/...` URLs already stored in the DB. Closing that requires a signed-URL migration, not only RLS.
 
 Public buckets today: `event-assets`, `campaign-files`, `school-assets`, `organization-stickers`, `platform-backgrounds`.
+
+**Private school-uploaded photos (Aug 2026):** Campaign Builder inspiration uploads go to `school-media` (`public = false`) and are served via time-limited signed URLs (`src/lib/school-media/`). AI-generated marketing art and logos remain on public buckets for Meta/email compatibility. Historical public inspiration URLs already in sessions/DB remain fetchable until rotated.
 
 ---
 

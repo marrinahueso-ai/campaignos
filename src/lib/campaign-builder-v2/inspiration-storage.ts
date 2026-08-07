@@ -1,7 +1,5 @@
 import "server-only";
 
-import { createConceptBatchId } from "@/lib/ai-artwork/mutations";
-import { uploadArtworkBytes } from "@/lib/ai-artwork/storage";
 import { requireEventAccess } from "@/lib/events/queries";
 import {
   resolveAssetImageUrl,
@@ -12,18 +10,9 @@ import type {
   InspirationImage,
   InspirationImagePayload,
 } from "@/lib/campaign-builder-v2/types";
+import { uploadSchoolMediaBytes } from "@/lib/school-media/storage";
 
 export type { InspirationImagePayload };
-
-function buildInspirationStoragePath(
-  eventId: string,
-  batchId: string,
-  filename: string,
-  index: number,
-): string {
-  const safeName = sanitizeEventAssetFilename(filename);
-  return `${eventId}/campaign-builder-v2/inspiration/${batchId}/${index}-${safeName}`;
-}
 
 /** Data URLs are entirely client-authored — their declared MIME is no more
  * trustworthy than a raw file.type header, so only allow real image types. */
@@ -36,7 +25,7 @@ const ALLOWED_INSPIRATION_DATA_URL_MIME_TYPES = new Set([
 
 async function uploadDataUrlImage(input: {
   eventId: string;
-  batchId: string;
+  organizationId: string;
   dataUrl: string;
   label: string;
   index: number;
@@ -54,28 +43,23 @@ async function uploadDataUrlImage(input: {
     };
   }
   const bytes = Buffer.from(match[2], "base64");
-  const storagePath = buildInspirationStoragePath(
-    input.eventId,
-    input.batchId,
-    input.label || "inspiration.png",
-    input.index,
-  );
-
-  const uploaded = await uploadArtworkBytes({
-    storagePath,
+  const uploaded = await uploadSchoolMediaBytes({
+    organizationId: input.organizationId,
+    eventId: input.eventId,
     bytes,
     contentType,
-    eventId: input.eventId,
+    filename: sanitizeEventAssetFilename(input.label || "inspiration.png"),
+    index: input.index,
   });
 
-  if (!uploaded.success || !uploaded.publicUrl) {
+  if (!uploaded.success || !uploaded.signedUrl) {
     return {
       url: null,
       error: uploaded.error ?? "Unable to upload inspiration image.",
     };
   }
 
-  return { url: uploaded.publicUrl };
+  return { url: uploaded.signedUrl };
 }
 
 function resolvePersistedImageUrl(url: string | null | undefined): string | null {
@@ -95,7 +79,10 @@ function resolvePersistedImageUrl(url: string | null | undefined): string | null
   return resolveAssetImageUrl(trimmed) ?? trimmed;
 }
 
-/** Uploads pending inspiration images and returns stable public URLs for generation. */
+/**
+ * Uploads pending inspiration images to the private school-media bucket and
+ * returns time-limited signed URLs for generation (not permanent public CDN URLs).
+ */
 export async function persistInspirationImages(
   eventId: string,
   images: InspirationImagePayload[],
@@ -121,7 +108,19 @@ export async function persistInspirationImages(
     };
   }
 
-  const batchId = createConceptBatchId();
+  const organizationId =
+    access.access?.organizationId?.trim() ||
+    (await import("@/lib/auth/organization-context").then((m) =>
+      m.getCurrentOrganization(),
+    ).then((org) => org?.id?.trim() || ""));
+  if (!organizationId) {
+    return {
+      urls: [],
+      updatedImages: [],
+      error: "Could not resolve organization for this event.",
+    };
+  }
+
   const urls: string[] = [];
   const updatedImages: InspirationImage[] = [];
 
@@ -132,7 +131,7 @@ export async function persistInspirationImages(
     if (!url && image.dataUrl?.trim()) {
       const uploaded = await uploadDataUrlImage({
         eventId,
-        batchId,
+        organizationId,
         dataUrl: image.dataUrl.trim(),
         label: image.label,
         index: index + 1,

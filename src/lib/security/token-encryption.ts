@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { isOAuthTokenEncryptionRequired } from "@/lib/security/oauth-encryption-policy";
 
 /**
  * At-rest encryption for third-party OAuth tokens (Meta page tokens, Canva /
@@ -13,8 +14,8 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
  * without the `encv1:` prefix unchanged, so rows written before this key was
  * configured keep working and are transparently re-encrypted the next time
  * their connection is refreshed/reconnected — no bulk migration required.
- * If the key isn't configured at all, `encryptOAuthToken` stores tokens
- * unencrypted (previous behavior) rather than breaking OAuth connect flows.
+ * Preview/Production require the key (fail closed on encrypt). Local may
+ * still store plaintext with a warning when the key is unset.
  */
 
 const ALGORITHM = "aes-256-gcm";
@@ -47,12 +48,21 @@ function loadEncryptionKey(): Buffer | null {
   }
 }
 
-/** Encrypts a token for storage. Returns the plaintext unchanged if no key is configured. */
+/**
+ * Encrypts a token for storage.
+ * Preview/Production: throws if the key is missing (refuse plaintext).
+ * Local/dev: returns plaintext with a warning when no key is configured.
+ */
 export function encryptOAuthToken(plaintext: string): string {
   if (!plaintext) return plaintext;
 
   const key = loadEncryptionKey();
   if (!key) {
+    if (isOAuthTokenEncryptionRequired()) {
+      throw new Error(
+        "OAUTH_TOKEN_ENCRYPTION_KEY is required in Preview/Production. Refusing to store OAuth tokens in plaintext.",
+      );
+    }
     if (!warnedMissingKey) {
       warnedMissingKey = true;
       console.warn(

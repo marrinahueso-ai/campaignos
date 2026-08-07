@@ -23,6 +23,7 @@ import {
   isPersistableFlyerApprovalImageUrl,
 } from "@/lib/flyer-composer/approval";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
+import { assertSafeOutboundUrl, supabaseStorageHostPatterns } from "@/lib/security/safe-outbound-url";
 import { createClient } from "@/lib/supabase/server";
 
 export type SendFlyerComposerForApprovalInput = {
@@ -60,7 +61,17 @@ async function ensureHostedFlyerImageUrl(
 ): Promise<{ url: string | null; error: string | null }> {
   const trimmed = imageUrl.trim();
   if (trimmed.startsWith("https://") || trimmed.startsWith("http://")) {
-    return { url: trimmed, error: null };
+    const safe = assertSafeOutboundUrl(trimmed, {
+      allowHttp: false,
+      allowedHostPatterns: supabaseStorageHostPatterns(),
+    });
+    if (!safe.ok) {
+      return {
+        url: null,
+        error: "Flyer image must come from Hey Ralli storage.",
+      };
+    }
+    return { url: safe.url.toString(), error: null };
   }
 
   const match = trimmed.match(/^data:image\/([\w+.-]+);base64,(.+)$/i);

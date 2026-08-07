@@ -135,6 +135,7 @@ type BalanceRow = {
 /**
  * Ensure the org has a balance row for the current UTC month.
  * Rolls period (resets used, new allowance) without touching reserve_balance.
+ * Prefer atomic Postgres RPC when available.
  */
 export async function ensurePeriodAllowance(
   organizationId: string,
@@ -151,6 +152,49 @@ export async function ensurePeriodAllowance(
   const periodYm = periodYmUtc(now);
   const { tier, unlimited } = await resolvePlanTier(orgId);
   const allowance = unlimited ? 0 : (monthlyAllowanceForTier(tier) ?? 0);
+  const admin = createAdminClient();
+
+  const { data: rpcRow, error: rpcError } = await admin.rpc(
+    "ai_credit_ensure_period",
+    {
+      p_organization_id: orgId,
+      p_period_ym: periodYm,
+      p_plan_tier: tier,
+      p_allowance: allowance,
+      p_unlimited: unlimited,
+    },
+  );
+
+  if (!rpcError && rpcRow) {
+    const row = (Array.isArray(rpcRow) ? rpcRow[0] : rpcRow) as BalanceRow | null;
+    return row;
+  }
+
+  // RPC missing (migration not applied) — legacy path for local/dev only.
+  if (rpcError && process.env.NODE_ENV === "production") {
+    console.error(
+      "[ai-credits] ai_credit_ensure_period RPC required in production:",
+      rpcError.message,
+    );
+    return null;
+  }
+  if (rpcError) {
+    console.warn(
+      "[ai-credits] ensure RPC unavailable, using legacy path:",
+      rpcError.message,
+    );
+  }
+
+  return ensurePeriodAllowanceLegacy(orgId, periodYm, tier, unlimited, allowance);
+}
+
+async function ensurePeriodAllowanceLegacy(
+  orgId: string,
+  periodYm: string,
+  tier: AiPlanTier,
+  unlimited: boolean,
+  allowance: number,
+): Promise<BalanceRow | null> {
   const admin = createAdminClient();
 
   const { data: existing, error: readError } = await admin
@@ -224,10 +268,8 @@ export async function ensurePeriodAllowance(
     return row;
   }
 
-  // Trial pool is 600 for the whole 14-day window — do not reset used on month roll.
   const trialCarry = tier === "trial" && row.plan_tier === "trial";
 
-  // New period: reset used (unless active trial); keep reserve; grant new allowance.
   const { data: rolled, error: rollError } = await admin
     .from("organization_ai_credit_balances")
     .update({
@@ -496,7 +538,8 @@ export async function assertAiCreditsAvailable(input: {
 
 /**
  * Idempotent burn keyed by ai_usage_log_id. Period first, then reserve.
- * Phase 6 blocks new AI before the call; burn still records partial if a race slips through.
+ * Uses atomic Postgres RPC (row lock) when available — fails closed on
+ * insufficient credits instead of partial burns.
  */
 export async function recordAiCreditBurn(input: {
   organizationId: string | null | undefined;
@@ -511,6 +554,58 @@ export async function recordAiCreditBurn(input: {
   const cost = creditCostForAction(input.actionType, input.success);
   if (cost <= 0) return;
 
+  const periodYm = periodYmUtc();
+  const { tier, unlimited } = await resolvePlanTier(orgId);
+  const allowance = unlimited ? 0 : (monthlyAllowanceForTier(tier) ?? 0);
+  const admin = createAdminClient();
+
+  const { data, error } = await admin.rpc("ai_credit_burn", {
+    p_organization_id: orgId,
+    p_ai_usage_log_id: input.aiUsageLogId,
+    p_cost: cost,
+    p_period_ym: periodYm,
+    p_plan_tier: tier,
+    p_allowance: allowance,
+    p_unlimited: unlimited,
+    p_actor_user_id: input.actorUserId?.trim() || null,
+    p_note: `${input.actionType}`,
+  });
+
+  if (!error) {
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.error_code === "insufficient") {
+      console.warn(
+        "[ai-credits] burn refused — insufficient credits after assert race:",
+        orgId,
+        input.actionType,
+      );
+    }
+    return;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    console.error("[ai-credits] ai_credit_burn RPC failed:", error.message);
+    return;
+  }
+
+  console.warn(
+    "[ai-credits] burn RPC unavailable, using legacy path:",
+    error.message,
+  );
+  await recordAiCreditBurnLegacy(input, orgId, cost);
+}
+
+async function recordAiCreditBurnLegacy(
+  input: {
+    organizationId: string | null | undefined;
+    aiUsageLogId: string;
+    actionType: AiActionType;
+    success: boolean;
+    actorUserId?: string | null;
+  },
+  orgId: string,
+  cost: number,
+): Promise<void> {
   const row = await ensurePeriodAllowance(orgId);
   if (!row) return;
 
@@ -546,6 +641,11 @@ export async function recordAiCreditBurn(input: {
     cost,
   });
 
+  if (split.periodBurn + split.reserveBurn < cost) {
+    console.warn("[ai-credits] legacy burn skipped — insufficient credits");
+    return;
+  }
+
   const admin = createAdminClient();
   const { error: ledgerError } = await admin
     .from("organization_ai_credit_ledger")
@@ -561,15 +661,11 @@ export async function recordAiCreditBurn(input: {
             : "period",
       period_ym: row.period_ym,
       ai_usage_log_id: input.aiUsageLogId,
-      note:
-        split.periodBurn + split.reserveBurn < cost
-          ? `Partial burn ${split.periodBurn + split.reserveBurn}/${cost} (${input.actionType})`
-          : `${input.actionType}: ${split.periodBurn} period + ${split.reserveBurn} reserve`,
+      note: `${input.actionType}: ${split.periodBurn} period + ${split.reserveBurn} reserve`,
       actor_user_id: input.actorUserId?.trim() || null,
     });
 
   if (ledgerError?.code === "23505") {
-    // Unique ai_usage_log_id — already burned.
     return;
   }
   if (ledgerError) {
@@ -614,6 +710,54 @@ async function applyReserveDelta(input: {
     return { ok: false, creditsGranted: 0, error: "amount_too_large" };
   }
 
+  const periodYm = periodYmUtc();
+  const { tier, unlimited } = await resolvePlanTier(orgId);
+  const allowance = unlimited ? 0 : (monthlyAllowanceForTier(tier) ?? 0);
+  const admin = createAdminClient();
+
+  const { data, error } = await admin.rpc("ai_credit_apply_reserve_delta", {
+    p_organization_id: orgId,
+    p_delta: input.delta,
+    p_entry_type: input.entryType,
+    p_period_ym: periodYm,
+    p_plan_tier: tier,
+    p_allowance: allowance,
+    p_unlimited: unlimited,
+    p_actor_user_id: input.actorUserId?.trim() || null,
+    p_note: input.note?.trim() || null,
+  });
+
+  if (!error) {
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) {
+      return { ok: false, creditsGranted: 0, error: "empty_rpc_result" };
+    }
+    if (!row.ok) {
+      return {
+        ok: false,
+        creditsGranted: 0,
+        error: String(row.error_code ?? "rpc_failed"),
+      };
+    }
+    return {
+      ok: true,
+      creditsGranted: Number(row.credits_granted ?? 0),
+    };
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    console.error(
+      "[ai-credits] ai_credit_apply_reserve_delta RPC failed:",
+      error.message,
+    );
+    return { ok: false, creditsGranted: 0, error: error.message };
+  }
+
+  console.warn(
+    "[ai-credits] reserve RPC unavailable, using legacy path:",
+    error.message,
+  );
+
   const row = await ensurePeriodAllowance(orgId);
   if (!row) {
     return { ok: false, creditsGranted: 0, error: "balance_missing" };
@@ -624,7 +768,32 @@ async function applyReserveDelta(input: {
     return { ok: false, creditsGranted: 0, error: "insufficient_reserve" };
   }
 
-  const admin = createAdminClient();
+  const note = input.note?.trim() || null;
+  const ledgerRow = {
+    organization_id: orgId,
+    entry_type: input.entryType,
+    amount: input.delta,
+    bucket: "reserve" as const,
+    period_ym: row.period_ym,
+    note,
+    actor_user_id: input.actorUserId?.trim() || null,
+  };
+
+  if (
+    input.entryType === "reserve_grant" &&
+    note?.startsWith("Stripe Checkout ")
+  ) {
+    const { error: ledgerError } = await admin
+      .from("organization_ai_credit_ledger")
+      .insert(ledgerRow);
+    if (ledgerError?.code === "23505") {
+      return { ok: true, creditsGranted: 0 };
+    }
+    if (ledgerError) {
+      return { ok: false, creditsGranted: 0, error: ledgerError.message };
+    }
+  }
+
   const { error: updateError } = await admin
     .from("organization_ai_credit_balances")
     .update({
@@ -637,20 +806,18 @@ async function applyReserveDelta(input: {
     return { ok: false, creditsGranted: 0, error: updateError.message };
   }
 
-  const { error: ledgerError } = await admin
-    .from("organization_ai_credit_ledger")
-    .insert({
-      organization_id: orgId,
-      entry_type: input.entryType,
-      amount: input.delta,
-      bucket: "reserve",
-      period_ym: row.period_ym,
-      note: input.note?.trim() || null,
-      actor_user_id: input.actorUserId?.trim() || null,
-    });
-
-  if (ledgerError) {
-    console.error("[ai-credits] reserve ledger failed:", ledgerError.message);
+  if (
+    !(
+      input.entryType === "reserve_grant" &&
+      note?.startsWith("Stripe Checkout ")
+    )
+  ) {
+    const { error: ledgerError } = await admin
+      .from("organization_ai_credit_ledger")
+      .insert(ledgerRow);
+    if (ledgerError) {
+      console.error("[ai-credits] reserve ledger failed:", ledgerError.message);
+    }
   }
 
   return { ok: true, creditsGranted: input.delta };

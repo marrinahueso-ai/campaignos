@@ -76,14 +76,17 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Generous-but-real allowlist rather than a nonce-based strict CSP — the
-// goal here is closing off the obviously dangerous vectors (framing,
-// unexpected script/object origins, MIME sniffing) without a live-testing
-// pass across every page. 'unsafe-inline'/'unsafe-eval' on script-src is a
-// known trade-off; tightening to nonces is a good follow-up, not a blocker.
+// CSP: keep 'unsafe-inline' for Next.js bootstrap (nonce migration is follow-up).
+// Drop 'unsafe-eval' in production builds — App Router does not need it and it
+// widens XSS→RCE gadget space. Keep eval only for local next-dev tooling.
+const SCRIPT_SRC =
+  process.env.NODE_ENV === "production"
+    ? "script-src 'self' 'unsafe-inline'"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
+
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  SCRIPT_SRC,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net",
   "font-src 'self' data:",
@@ -93,6 +96,7 @@ const CONTENT_SECURITY_POLICY = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  "upgrade-insecure-requests",
 ].join("; ");
 
 const SECURITY_HEADERS = [
@@ -113,7 +117,7 @@ const SECURITY_HEADERS = [
 /** Same-origin embed of the static Flyer composer (Create with AI → Flyer). */
 const FLYER_EMBED_CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  SCRIPT_SRC,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net",
   "font-src 'self' data: https://fonts.gstatic.com",
@@ -123,6 +127,7 @@ const FLYER_EMBED_CSP = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  "upgrade-insecure-requests",
 ].join("; ");
 
 const FLYER_EMBED_HEADERS = [

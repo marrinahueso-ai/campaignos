@@ -208,14 +208,28 @@ async function fetchReferenceImageBytes(
   url: string,
 ): Promise<{ bytes: Buffer; mimeType: string } | null> {
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
+    const { safeFetch } = await import("@/lib/security/safe-fetch");
+    const { supabaseStorageHostPatterns } = await import(
+      "@/lib/security/safe-outbound-url"
+    );
+    const fetched = await safeFetch(
+      url,
+      {},
+      {
+        allowHttp: false,
+        allowedHostPatterns: supabaseStorageHostPatterns(),
+        timeoutMs: 20_000,
+        maxBytes: 12_000_000,
+      },
+    );
+    if (!fetched.ok || !fetched.response.ok) {
       return null;
     }
 
-    const contentType = response.headers.get("content-type") ?? "image/png";
-    const buffer = Buffer.from(await response.arrayBuffer());
-    return { bytes: buffer, mimeType: contentType.split(";")[0] };
+    const contentType =
+      fetched.response.headers.get("content-type") ?? "image/png";
+    const buffer = Buffer.from(await fetched.response.arrayBuffer());
+    return { bytes: buffer, mimeType: contentType.split(";")[0] ?? "image/png" };
   } catch {
     return null;
   }

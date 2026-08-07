@@ -1,14 +1,28 @@
 import { NextResponse } from "next/server";
 import { requireFlyerComposerGenerateAccess } from "@/lib/flyer-composer/api-auth";
+import {
+  flyerSaveBodySchema,
+  parseJsonBody,
+} from "@/lib/flyer-composer/request-schemas";
 import { saveFlyerComposerToFiles } from "@/lib/flyer-composer/save-to-files";
+import { isSameOriginRequest } from "@/lib/security/verify-same-origin";
 
 export const dynamic = "force-dynamic";
 
-function readString(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
 export async function POST(request: Request) {
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden.",
+        fileId: null,
+        fileName: null,
+        filesHref: null,
+      },
+      { status: 403 },
+    );
+  }
+
   const access = await requireFlyerComposerGenerateAccess();
   if (!access.ok) {
     return NextResponse.json(
@@ -39,12 +53,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const raw = body && typeof body === "object" ? (body as Record<string, unknown>) : null;
-  if (!raw) {
+  const parsed = parseJsonBody(flyerSaveBodySchema, body);
+  if (!parsed.ok) {
     return NextResponse.json(
       {
         success: false,
-        error: "Invalid request body.",
+        error: parsed.error,
         fileId: null,
         fileName: null,
         filesHref: null,
@@ -53,27 +67,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const eventId = readString(raw.eventId).trim();
-  const imageUrl = readString(raw.imageUrl).trim();
-  if (!eventId || !imageUrl) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "eventId and imageUrl are required.",
-        fileId: null,
-        fileName: null,
-        filesHref: null,
-      },
-      { status: 400 },
-    );
-  }
-
+  const { eventId, imageUrl, headline, title, versionId } = parsed.data;
   const result = await saveFlyerComposerToFiles({
     eventId,
     imageUrl,
-    headline: readString(raw.headline).trim() || null,
-    title: readString(raw.title).trim() || null,
-    versionId: readString(raw.versionId).trim() || null,
+    headline: headline?.trim() || null,
+    title: title?.trim() || null,
+    versionId: versionId?.trim() || null,
   });
 
   return NextResponse.json(

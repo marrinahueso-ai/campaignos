@@ -1,56 +1,59 @@
 import "server-only";
 
 import { isLikelyAuthWall } from "@/lib/inbox/ai/draft-templates";
+import { safeFetch } from "@/lib/security/safe-fetch";
 
 const FETCH_TIMEOUT_MS = 12_000;
 const USER_AGENT = "HeyRalli-InboxAI/1.0 (+https://heyralli.com)";
+const MAX_PAGE_BYTES = 2_000_000;
 
 export async function fetchPublicPageText(
   url: string,
 ): Promise<{ text: string } | { error: string }> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      redirect: "follow",
+  const fetched = await safeFetch(
+    url,
+    {
       headers: {
         Accept: "text/html, text/plain, application/xhtml+xml, */*",
         "User-Agent": USER_AGENT,
       },
-    });
+    },
+    {
+      allowHttp: false,
+      timeoutMs: FETCH_TIMEOUT_MS,
+      maxBytes: MAX_PAGE_BYTES,
+    },
+  );
 
-    if (!response.ok) {
-      return { error: `Page returned ${response.status}` };
-    }
+  if (!fetched.ok) {
+    return { error: fetched.error };
+  }
 
-    const contentType = response.headers.get("content-type") ?? "";
-    const raw = await response.text();
+  const { response } = fetched;
+  if (!response.ok) {
+    return { error: `Page returned ${response.status}` };
+  }
 
-    if (contentType.includes("text/plain")) {
-      const text = normalizeWhitespace(raw).slice(0, 12_000);
-      if (isLikelyAuthWall(text)) {
-        return { error: "Page requires sign-in (no public content)" };
-      }
-      return { text };
-    }
+  const contentType = response.headers.get("content-type") ?? "";
+  const raw = await response.text();
+  if (raw.length > MAX_PAGE_BYTES) {
+    return { error: "Page response is too large" };
+  }
 
-    const text = extractTextFromHtml(raw).slice(0, 12_000);
+  if (contentType.includes("text/plain")) {
+    const text = normalizeWhitespace(raw).slice(0, 12_000);
     if (isLikelyAuthWall(text)) {
       return { error: "Page requires sign-in (no public content)" };
     }
-
     return { text };
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      return { error: "Request timed out" };
-    }
-
-    return { error: "Unable to fetch page" };
-  } finally {
-    clearTimeout(timeout);
   }
+
+  const text = extractTextFromHtml(raw).slice(0, 12_000);
+  if (isLikelyAuthWall(text)) {
+    return { error: "Page requires sign-in (no public content)" };
+  }
+
+  return { text };
 }
 
 function extractTextFromHtml(html: string): string {

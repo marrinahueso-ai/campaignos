@@ -60,7 +60,9 @@
     "test:load:data-scale:100school:50vu": "K6_TRACK_HOLD_SLOW=true k6 run load-tests/k6/data-scale-100school-50vu.js",
     "test:load:data-scale:100school:50vu:warmup": "K6_TRACK_HOLD_SLOW=true k6 run load-tests/k6/data-scale-100school-50vu-warmup.js",
     "test:load:data-scale:100school:75vu": "K6_TRACK_HOLD_SLOW=true k6 run load-tests/k6/data-scale-100school-75vu.js",
-    "test:load:data-scale:100school:75vu:warmup": "K6_TRACK_HOLD_SLOW=true k6 run load-tests/k6/data-scale-100school-75vu-warmup.js"
+    "test:load:data-scale:100school:75vu:warmup": "K6_TRACK_HOLD_SLOW=true k6 run load-tests/k6/data-scale-100school-75vu-warmup.js",
+    "test:security": "npx tsx --test 'src/lib/security/__tests__/*.test.ts'",
+    "audit:ci": "npm audit --audit-level=high"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -85,7 +87,8 @@
     "resend": "^6.17.1",
     "sharp": "^0.34.5",
     "stripe": "^22.3.2",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",

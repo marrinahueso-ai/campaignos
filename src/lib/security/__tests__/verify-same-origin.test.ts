@@ -34,12 +34,12 @@ describe("isSameOriginRequest", () => {
     );
   });
 
-  it("allows matching localhost origins in dev", () => {
-    assert.equal(
-      isSameOriginRequest(
-        requestWith("http://localhost:3000/api/insights/sync", "http://localhost:3000"),
-      ),
-      true,
-    );
+  it("rejects Sec-Fetch-Site cross-site even without Origin", () => {
+    const headers = new Headers({ "sec-fetch-site": "cross-site" });
+    const request = new Request("https://heyralli.com/api/insights/sync", {
+      method: "POST",
+      headers,
+    });
+    assert.equal(isSameOriginRequest(request), false);
   });
 });

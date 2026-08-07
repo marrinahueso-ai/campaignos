@@ -2,8 +2,8 @@
 
 **Status:** Living
 **Owner:** Engineering
-**Last updated:** August 1, 2026 (Event Detail ease client tenancy M11; Flyer composer localStorage M10; multi-tenant / IDOR hardening pass); July 29, 2026 (all 25 findings, including Low/Info cleanup, fixed); Jul 30 2026 OWASP ZAP soft-launch pass — [owasp-zap.md](./owasp-zap.md)
-**Related:** [Security](./README.md) · [OWASP ZAP soft-launch pass](./owasp-zap.md) · [Access & onboarding](./access-and-onboarding.md) · [Multi-tenant isolation](./multi-tenant-isolation.md) · [Access control](../engineering/access-control.md) · [Feature list](../product/feature-list.md)
+**Last updated:** August 7, 2026 (launch security assessment + SSRF / Stripe Reserve / cron / rate-limit hardening); August 1, 2026 (Event Detail ease client tenancy M11; Flyer composer localStorage M10; multi-tenant / IDOR hardening pass); July 29, 2026 (all 25 findings, including Low/Info cleanup, fixed); Jul 30 2026 OWASP ZAP soft-launch pass — [owasp-zap.md](./owasp-zap.md)
+**Related:** [Security](./README.md) · [Launch security assessment (Aug 2026)](./launch-security-assessment-2026-08.md) · [OWASP ZAP soft-launch pass](./owasp-zap.md) · [Access & onboarding](./access-and-onboarding.md) · [Multi-tenant isolation](./multi-tenant-isolation.md) · [Access control](../engineering/access-control.md) · [Feature list](../product/feature-list.md)
 
 Tracks findings from the July 2026 full-app security audit (Authentication, Authorization/RBAC/RLS, injection/XSS/CSRF, API security & architecture) and their remediation status. Read this before re-auditing so prior findings aren't rediscovered as new.
 
@@ -76,6 +76,45 @@ App-layer gates on event-scoped mutations and service-role storage uploads. RLS 
 
 - **Public bucket → signed URLs migration:** event-assets (and related) still serve public URLs after upload. Migrating to signed/private URLs is a larger storage + client change; app-layer event/org gates above are the primary control for this pass. Track under storage hardening when scheduled.
 - **Flyer residual:** Generated flyer PNGs saved to event Files / public artwork URLs remain reachable by anyone with the URL (same as other event assets). Tenant isolation for *which draft/preview loads in the composer* is fixed; URL secrecy is not.
+
+## August 7, 2026 — Launch security assessment pass
+
+Full write-up: [launch-security-assessment-2026-08.md](./launch-security-assessment-2026-08.md).
+
+| # | Finding | Fix | Status |
+|---|---------|-----|--------|
+| S1 | SSRF: calendar subscribe feed fetched arbitrary http(s) URLs (redirects, no private-IP block) | Shared `safeFetch` / `safe-outbound-url` with DNS + private/metadata IP blocking; wired into `fetch-subscribe-feed.ts` | ✅ Fixed (code) |
+| S2 | SSRF: Flyer save downloaded client-supplied `imageUrl` from any http(s) host | Restrict to project Supabase Storage hosts + `safeFetch`; approval path rejects non-storage hosts | ✅ Fixed (code) |
+| S3 | Stripe AI Reserve webhook retries could double-grant credits | Ledger-first insert for `Stripe Checkout %` notes + unique partial index migration `20260807180000_stripe_reserve_grant_idempotency.sql` | ✅ Fixed (code; **apply migration**) |
+| S4 | Cron auth helpers duplicated; Preview/Production must always require `CRON_SECRET` | Shared `isCronRequestAuthorized` on all `/api/cron/*` routes | ✅ Fixed (code) |
+| S5 | Rate limit failed open on RPC errors when admin configured | Fail closed (deny) when service role is configured and RPC fails; still allow when admin missing (local) | ✅ Fixed (code) |
+| S6 | Role simulator auto-enabled on Vercel Preview | Preview requires explicit `ALLOW_ROLE_SIMULATOR=true` | ✅ Fixed (code) |
+| S7 | Flyer composer POST APIs missing Origin CSRF check | `isSameOriginRequest` on generate / save / send-for-approval | ✅ Fixed (code) |
+| S8 | Artwork URL fetches (Meta feed prep, email attachments, AI reference images) lacked host controls | Supabase host allowlist + `safeFetch` | ✅ Fixed (code) |
+
+### Still open after this pass
+
+- Historical public inspiration/event URLs (new inspiration → private `school-media`).
+- CSP `unsafe-inline` (production no longer allows `unsafe-eval`).
+- Campaign-files / non-inspiration event photo uploads still public-bucket capable.
+- Transitive npm highs (Next/postcss, sharp, exceljs/uuid) requiring breaking upgrades.
+- Formal external pen test (ZAP soft-launch done).
+- Optional `OAUTH_TOKEN_ENCRYPTION_KEY` **no longer optional** on Preview/Production (code fail-closed); ops must still set the value in Vercel.
+
+### Launch execution pass (same day)
+
+| # | Finding | Fix | Status |
+|---|---------|-----|--------|
+| L1 | AI credit RMW races | Postgres RPCs `ai_credit_*` + period_grant unique index | ✅ Applied prod+staging |
+| L2 | School photo public CDN | `school-media` private bucket; CB2 inspiration → signed URLs | ✅ Applied prod+staging |
+| L3 | OAuth plaintext in deploy | Encrypt throws without key on Preview/Production | ✅ Code |
+| L4 | Silent secret gaps | `reportProductionSecretGaps` in instrumentation | ✅ Code |
+| L5 | CSP unsafe-eval | Dropped in production builds | ✅ Code |
+| L6 | Flyer body validation | Zod schemas | ✅ Code |
+
+See [launch-security-assessment-2026-08.md](./launch-security-assessment-2026-08.md) for launch verdict.
+
+---
 
 ## Already solid — no action needed
 

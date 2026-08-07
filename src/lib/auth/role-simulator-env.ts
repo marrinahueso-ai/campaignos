@@ -1,6 +1,7 @@
 /**
  * Role simulation is for local/staging developer tooling only.
- * Production stays closed unless ALLOW_ROLE_SIMULATOR=true.
+ * Production and Preview stay closed unless ALLOW_ROLE_SIMULATOR=true
+ * is set explicitly (never rely on VERCEL_ENV alone).
  */
 export function isRoleSimulatorEnvironmentAllowed(): boolean {
   if (process.env.ALLOW_ROLE_SIMULATOR === "true") {
@@ -11,12 +12,7 @@ export function isRoleSimulatorEnvironmentAllowed(): boolean {
   }
   const environment = (
     process.env.SENTRY_ENVIRONMENT ||
-    process.env.VERCEL_ENV ||
     ""
   ).toLowerCase();
-  return (
-    environment === "development" ||
-    environment === "preview" ||
-    environment === "staging"
-  );
+  return environment === "development" || environment === "staging";
 }

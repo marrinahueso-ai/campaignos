@@ -211,10 +211,25 @@ export async function handleStripeCheckoutCompleted(
         .eq("id", orgId)
         .is("stripe_customer_id", null);
     }
+
+    // Stripe may retry webhooks — grant at most once per Checkout session.
+    const checkoutNote = `Stripe Checkout ${session.id}`;
+    const admin = createAdminClient();
+    const { data: existingGrant } = await admin
+      .from("organization_ai_credit_ledger")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("entry_type", "reserve_grant")
+      .eq("note", checkoutNote)
+      .maybeSingle();
+    if (existingGrant?.id) {
+      return;
+    }
+
     await grantAiReserve({
       organizationId: orgId,
       sku,
-      note: `Stripe Checkout ${session.id}`,
+      note: checkoutNote,
     });
   }
 }

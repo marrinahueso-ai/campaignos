@@ -5,9 +5,13 @@ import { encryptOAuthToken, decryptOAuthToken } from "@/lib/security/token-encry
 
 describe("token-encryption", () => {
   const originalKey = process.env.OAUTH_TOKEN_ENCRYPTION_KEY;
+  const originalVercelEnv = process.env.VERCEL_ENV;
+  const originalNodeEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
     process.env.OAUTH_TOKEN_ENCRYPTION_KEY = randomBytes(32).toString("base64");
+    delete process.env.VERCEL_ENV;
+    process.env.NODE_ENV = "development";
   });
 
   afterEach(() => {
@@ -16,6 +20,12 @@ describe("token-encryption", () => {
     } else {
       process.env.OAUTH_TOKEN_ENCRYPTION_KEY = originalKey;
     }
+    if (originalVercelEnv === undefined) {
+      delete process.env.VERCEL_ENV;
+    } else {
+      process.env.VERCEL_ENV = originalVercelEnv;
+    }
+    process.env.NODE_ENV = originalNodeEnv;
   });
 
   it("round-trips a token through encrypt/decrypt", () => {
@@ -49,14 +59,28 @@ describe("token-encryption", () => {
     assert.equal(decryptOAuthToken("encv1:not:valid:base64!!"), "");
   });
 
-  it("falls back to storing plaintext when no key is configured", () => {
+  it("falls back to storing plaintext when no key is configured (local only)", () => {
     delete process.env.OAUTH_TOKEN_ENCRYPTION_KEY;
+    delete process.env.VERCEL_ENV;
+    process.env.NODE_ENV = "development";
     const plaintext = "some-token";
     assert.equal(encryptOAuthToken(plaintext), plaintext);
   });
 
+  it("rejects plaintext storage in production when no key is configured", () => {
+    delete process.env.OAUTH_TOKEN_ENCRYPTION_KEY;
+    process.env.VERCEL_ENV = "production";
+    process.env.NODE_ENV = "production";
+    assert.throws(
+      () => encryptOAuthToken("some-token"),
+      /OAUTH_TOKEN_ENCRYPTION_KEY is required/,
+    );
+  });
+
   it("rejects a key that isn't exactly 32 bytes", () => {
     process.env.OAUTH_TOKEN_ENCRYPTION_KEY = Buffer.from("too-short").toString("base64");
+    delete process.env.VERCEL_ENV;
+    process.env.NODE_ENV = "development";
     const plaintext = "some-token";
     assert.equal(encryptOAuthToken(plaintext), plaintext);
   });

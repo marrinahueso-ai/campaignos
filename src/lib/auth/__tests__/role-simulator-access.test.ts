@@ -30,13 +30,17 @@ describe("isRoleSimulatorEnvironmentAllowed", () => {
     restoreEnv();
   });
 
-  it("allows preview / staging environments", () => {
+  it("blocks preview unless explicitly allowlisted; allows staging via SENTRY_ENVIRONMENT", () => {
     delete process.env.ALLOW_ROLE_SIMULATOR;
     process.env.NODE_ENV = "production";
     process.env.VERCEL_ENV = "preview";
     delete process.env.SENTRY_ENVIRONMENT;
+    assert.equal(isRoleSimulatorEnvironmentAllowed(), false);
+
+    process.env.ALLOW_ROLE_SIMULATOR = "true";
     assert.equal(isRoleSimulatorEnvironmentAllowed(), true);
 
+    delete process.env.ALLOW_ROLE_SIMULATOR;
     process.env.VERCEL_ENV = "production";
     process.env.SENTRY_ENVIRONMENT = "staging";
     assert.equal(isRoleSimulatorEnvironmentAllowed(), true);

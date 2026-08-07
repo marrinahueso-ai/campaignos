@@ -22,9 +22,11 @@ const ALLOW_RESULT: RateLimitResult = {
 
 /**
  * Fixed-window rate limit backed by `public.rate_limit_hit` (Postgres RPC,
- * service-role only). Fails **open** on infra errors (missing service role
- * locally, DB hiccup) — this is defense in depth, not the primary control,
- * so an outage here should not take down login/signup for everyone.
+ * service-role only).
+ *
+ * - Service role missing (typical local without admin key): allow (no limiter).
+ * - Service role configured but RPC/DB errors: **deny** so production auth/AI
+ *   throttles cannot fail open under outage/misconfig.
  */
 export async function checkRateLimit(input: {
   key: string;
@@ -45,8 +47,12 @@ export async function checkRateLimit(input: {
 
     const row = Array.isArray(data) ? data[0] : null;
     if (error || !row) {
-      console.error("[rate-limit] check failed, allowing request:", error?.message);
-      return ALLOW_RESULT;
+      console.error("[rate-limit] check failed, denying request:", error?.message);
+      return {
+        allowed: false,
+        remaining: 0,
+        retryAfterSeconds: 60,
+      };
     }
 
     return {
@@ -55,8 +61,12 @@ export async function checkRateLimit(input: {
       retryAfterSeconds: Number(row.retry_after_seconds ?? 0),
     };
   } catch (err) {
-    console.error("[rate-limit] check threw, allowing request:", err);
-    return ALLOW_RESULT;
+    console.error("[rate-limit] check threw, denying request:", err);
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: 60,
+    };
   }
 }
 

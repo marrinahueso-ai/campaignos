@@ -1,14 +1,29 @@
 import { NextResponse } from "next/server";
 import { requireFlyerComposerSubmitApprovalAccess } from "@/lib/flyer-composer/api-auth";
+import {
+  flyerSendForApprovalBodySchema,
+  parseJsonBody,
+} from "@/lib/flyer-composer/request-schemas";
 import { sendFlyerComposerForApproval } from "@/lib/flyer-composer/send-for-approval";
+import { isSameOriginRequest } from "@/lib/security/verify-same-origin";
 
 export const dynamic = "force-dynamic";
 
-function readString(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
 export async function POST(request: Request) {
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden.",
+        schedulingItemId: null,
+        workflowStatus: null,
+        campaignMilestoneId: null,
+        feedArtworkUrl: null,
+      },
+      { status: 403 },
+    );
+  }
+
   const access = await requireFlyerComposerSubmitApprovalAccess();
   if (!access.ok) {
     return NextResponse.json(
@@ -41,12 +56,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const raw = body && typeof body === "object" ? (body as Record<string, unknown>) : null;
-  if (!raw) {
+  const parsed = parseJsonBody(flyerSendForApprovalBodySchema, body);
+  if (!parsed.ok) {
     return NextResponse.json(
       {
         success: false,
-        error: "Invalid request body.",
+        error: parsed.error,
         schedulingItemId: null,
         workflowStatus: null,
         campaignMilestoneId: null,
@@ -56,33 +71,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const eventId = readString(raw.eventId).trim();
-  const submissionKey = readString(raw.submissionKey).trim();
-  const imageUrl = readString(raw.imageUrl).trim();
-
-  if (!eventId || !submissionKey || !imageUrl) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "eventId, submissionKey, and imageUrl are required.",
-        schedulingItemId: null,
-        workflowStatus: null,
-        campaignMilestoneId: null,
-        feedArtworkUrl: null,
-      },
-      { status: 400 },
-    );
-  }
-
+  const data = parsed.data;
   const result = await sendFlyerComposerForApproval({
-    eventId,
-    submissionKey,
-    imageUrl,
-    versionId: readString(raw.versionId).trim() || null,
-    headline: readString(raw.headline).trim() || null,
-    orgName: readString(raw.orgName).trim() || null,
-    templateName: readString(raw.templateName).trim() || null,
-    captionText: readString(raw.captionText).trim() || null,
+    eventId: data.eventId,
+    submissionKey: data.submissionKey,
+    imageUrl: data.imageUrl,
+    versionId: data.versionId?.trim() || null,
+    headline: data.headline?.trim() || null,
+    orgName: data.orgName?.trim() || null,
+    templateName: data.templateName?.trim() || null,
+    captionText: data.captionText?.trim() || null,
   });
 
   return NextResponse.json(

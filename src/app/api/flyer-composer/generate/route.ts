@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireFlyerComposerGenerateAccess } from "@/lib/flyer-composer/api-auth";
 import { generateFlyerComposer } from "@/lib/flyer-composer/generate";
+import { isSameOriginRequest } from "@/lib/security/verify-same-origin";
 import type {
   FlyerComposerAssetContext,
   FlyerComposerBrandKit,
@@ -174,6 +175,20 @@ function parseGenerateBody(body: unknown): FlyerComposerGenerateInput | null {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden.",
+        imageUrl: null,
+        imageBase64: null,
+        slots: null,
+        aiUsed: false,
+      },
+      { status: 403 },
+    );
+  }
+
   const access = await requireFlyerComposerGenerateAccess();
   if (!access.ok) {
     return NextResponse.json(

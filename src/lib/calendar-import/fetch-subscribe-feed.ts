@@ -1,5 +1,9 @@
+import { safeFetch } from "@/lib/security/safe-fetch";
+
 const FETCH_TIMEOUT_MS = 15_000;
 const USER_AGENT = "Hey Ralli/1.0 (calendar subscribe sync)";
+/** Cap ICS body size to reduce memory DoS from huge feeds. */
+const MAX_ICS_BYTES = 5_000_000;
 
 export function normalizeSubscribeFeedUrl(url: string): string {
   const trimmed = url.trim();
@@ -48,44 +52,45 @@ export async function fetchSubscribeFeedIcs(
   }
 
   const fetchUrl = normalizeSubscribeFeedUrl(url.trim());
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(fetchUrl, {
-      signal: controller.signal,
-      redirect: "follow",
+  const fetched = await safeFetch(
+    fetchUrl,
+    {
       headers: {
         Accept: "text/calendar, text/plain, */*",
         "User-Agent": USER_AGENT,
       },
-    });
+    },
+    {
+      allowHttp: true,
+      timeoutMs: FETCH_TIMEOUT_MS,
+      maxBytes: MAX_ICS_BYTES,
+    },
+  );
 
-    if (!response.ok) {
-      return {
-        error: `Calendar feed returned ${response.status}. Check the URL and try again.`,
-      };
-    }
-
-    const text = await response.text();
-    if (!text.trim()) {
-      return { error: "Calendar feed returned an empty response." };
-    }
-
-    if (!/BEGIN:VCALENDAR/i.test(text)) {
-      return {
-        error: "The URL did not return a valid ICS calendar file.",
-      };
-    }
-
-    return { text };
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      return { error: "Calendar feed request timed out. Try again later." };
-    }
-    console.error("Failed to fetch calendar subscribe feed:", error);
-    return { error: "Unable to fetch calendar feed. Check the URL and try again." };
-  } finally {
-    clearTimeout(timeout);
+  if (!fetched.ok) {
+    return { error: fetched.error };
   }
+
+  const { response } = fetched;
+  if (!response.ok) {
+    return {
+      error: `Calendar feed returned ${response.status}. Check the URL and try again.`,
+    };
+  }
+
+  const text = await response.text();
+  if (text.length > MAX_ICS_BYTES) {
+    return { error: "Calendar feed is too large." };
+  }
+  if (!text.trim()) {
+    return { error: "Calendar feed returned an empty response." };
+  }
+
+  if (!/BEGIN:VCALENDAR/i.test(text)) {
+    return {
+      error: "The URL did not return a valid ICS calendar file.",
+    };
+  }
+
+  return { text };
 }

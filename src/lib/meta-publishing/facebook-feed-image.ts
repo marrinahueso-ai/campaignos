@@ -1,6 +1,8 @@
 import "server-only";
 
 import sharp from "sharp";
+import { safeFetch } from "@/lib/security/safe-fetch";
+import { supabaseStorageHostPatterns } from "@/lib/security/safe-outbound-url";
 
 /** Meta-recommended Facebook feed portrait size (4:5). */
 export const FACEBOOK_FEED_WIDTH = 1080;
@@ -23,18 +25,28 @@ function isFacebookFeedAspect(width: number, height: number): boolean {
 export async function prepareFacebookFeedImageBytes(
   imageUrl: string,
 ): Promise<{ bytes: Buffer; contentType: "image/jpeg" } | { error: string }> {
-  let response: Response;
-  try {
-    response = await fetch(imageUrl);
-  } catch (error) {
+  const fetched = await safeFetch(
+    imageUrl,
+    {},
+    {
+      allowHttp: false,
+      allowedHostPatterns: supabaseStorageHostPatterns(),
+      timeoutMs: 20_000,
+      maxBytes: 20_000_000,
+    },
+  );
+
+  if (!fetched.ok) {
     const { reportIntegrationError } = await import(
       "@/lib/monitoring/report-error"
     );
-    reportIntegrationError("meta", error, { action: "prepareFacebookFeedImageBytes.fetch" });
-    const message = error instanceof Error ? error.message : "Unknown fetch error";
-    return { error: `Unable to download feed artwork: ${message}` };
+    reportIntegrationError("meta", new Error(fetched.error), {
+      action: "prepareFacebookFeedImageBytes.fetch",
+    });
+    return { error: `Unable to download feed artwork: ${fetched.error}` };
   }
 
+  const response = fetched.response;
   if (!response.ok) {
     return { error: `Unable to download feed artwork (HTTP ${response.status}).` };
   }

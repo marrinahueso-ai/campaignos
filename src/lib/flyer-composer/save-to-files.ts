@@ -7,6 +7,8 @@ import { uploadCampaignFile } from "@/lib/campaign-files/mutations";
 import { getEventById } from "@/lib/events/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { isPersistableFlyerApprovalImageUrl } from "@/lib/flyer-composer/approval";
+import { safeFetch } from "@/lib/security/safe-fetch";
+import { supabaseStorageHostPatterns } from "@/lib/security/safe-outbound-url";
 
 export type SaveFlyerComposerToFilesInput = {
   eventId: string;
@@ -77,35 +79,56 @@ async function bytesFromImageUrl(
     }
   }
 
-  try {
-    const response = await fetch(trimmed);
-    if (!response.ok) {
-      return { ok: false, error: "Could not download flyer image." };
-    }
-    const contentType = (response.headers.get("content-type") || "image/png")
-      .split(";")[0]
-      ?.trim()
-      .toLowerCase();
-    if (!contentType?.startsWith("image/")) {
-      return { ok: false, error: "Flyer file is not an image." };
-    }
-    const bytes = Buffer.from(await response.arrayBuffer());
-    if (!bytes.length) {
-      return { ok: false, error: "Flyer image is empty." };
-    }
-    let ext = contentType.replace("image/", "").replace("jpeg", "jpg");
-    if (!["png", "jpg", "webp", "gif"].includes(ext)) {
-      ext = "png";
-    }
+  // Only fetch from this project's Supabase Storage — never arbitrary URLs
+  // (SSRF to metadata / internal hosts).
+  const fetched = await safeFetch(
+    trimmed,
+    {},
+    {
+      allowHttp: false,
+      allowedHostPatterns: supabaseStorageHostPatterns(),
+      timeoutMs: 20_000,
+      maxBytes: 12_000_000,
+    },
+  );
+  if (!fetched.ok) {
     return {
-      ok: true,
-      bytes,
-      contentType: contentType === "image/jpg" ? "image/jpeg" : contentType,
-      ext,
+      ok: false,
+      error:
+        fetched.error === "That host is not allowed."
+          ? "Flyer image must come from Hey Ralli storage."
+          : "Could not download flyer image.",
     };
-  } catch {
+  }
+
+  const { response } = fetched;
+  if (!response.ok) {
     return { ok: false, error: "Could not download flyer image." };
   }
+  const contentType = (response.headers.get("content-type") || "image/png")
+    .split(";")[0]
+    ?.trim()
+    .toLowerCase();
+  if (!contentType?.startsWith("image/")) {
+    return { ok: false, error: "Flyer file is not an image." };
+  }
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (!bytes.length) {
+    return { ok: false, error: "Flyer image is empty." };
+  }
+  if (bytes.length > 12_000_000) {
+    return { ok: false, error: "Flyer image is too large." };
+  }
+  let ext = contentType.replace("image/", "").replace("jpeg", "jpg");
+  if (!["png", "jpg", "webp", "gif"].includes(ext)) {
+    ext = "png";
+  }
+  return {
+    ok: true,
+    bytes,
+    contentType: contentType === "image/jpg" ? "image/jpeg" : contentType,
+    ext,
+  };
 }
 
 export async function saveFlyerComposerToFiles(

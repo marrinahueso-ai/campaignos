@@ -40,13 +40,27 @@ async function fetchStoryAttachment(
   }
 
   try {
-    const response = await fetch(storyArtworkUrl);
-    if (!response.ok) {
+    const { safeFetch } = await import("@/lib/security/safe-fetch");
+    const { supabaseStorageHostPatterns } = await import(
+      "@/lib/security/safe-outbound-url"
+    );
+    const fetched = await safeFetch(
+      storyArtworkUrl,
+      {},
+      {
+        allowHttp: false,
+        allowedHostPatterns: supabaseStorageHostPatterns(),
+        timeoutMs: 15_000,
+        maxBytes: 12_000_000,
+      },
+    );
+    if (!fetched.ok || !fetched.response.ok) {
       return [];
     }
 
-    const contentType = response.headers.get("content-type") ?? "image/png";
-    const buffer = Buffer.from(await response.arrayBuffer());
+    const contentType =
+      fetched.response.headers.get("content-type") ?? "image/png";
+    const buffer = Buffer.from(await fetched.response.arrayBuffer());
 
     return [
       {

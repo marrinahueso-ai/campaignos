@@ -60,6 +60,7 @@ This is the documentation hub. Start here.
 | Access & multi-tenant onboarding | [security/access-and-onboarding.md](./security/access-and-onboarding.md) |
 | Access control (templates / RLS) | [engineering/access-control.md](./engineering/access-control.md) |
 | Multi-tenant isolation | [security/multi-tenant-isolation.md](./security/multi-tenant-isolation.md) |
+| Launch security assessment (Aug 2026) | [security/launch-security-assessment-2026-08.md](./security/launch-security-assessment-2026-08.md) |
 | OWASP ZAP soft-launch pass | [security/owasp-zap.md](./security/owasp-zap.md) |
 | Storage RLS | [engineering/storage-rls.md](./engineering/storage-rls.md) |
 | Image Transformations (verify) | See [image-architecture.md](./engineering/image-architecture.md#5-storage-buckets-images) · bucket policies in [storage-rls.md](./engineering/storage-rls.md) |

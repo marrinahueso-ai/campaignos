@@ -1,18 +1,34 @@
 import { resolveSiteOrigin } from "@/lib/site/url";
 
 /**
- * CSRF guard for cookie-authenticated API routes: browsers always send an
- * `Origin` header on cross-site POST/PUT/PATCH/DELETE fetches/forms, and
- * that header can't be spoofed by page script or a plain HTML form. Reject
- * the request unless it matches the app's own origin.
+ * CSRF guard for cookie-authenticated API routes.
+ *
+ * Browsers always send `Origin` on cross-site POST/PUT/PATCH/DELETE, and send
+ * `Sec-Fetch-Site: cross-site` on modern cross-site fetches. Reject those.
+ * Same-origin browser requests and trusted same-site navigations are allowed.
  */
 export function isSameOriginRequest(request: Request): boolean {
+  const secFetchSite = (request.headers.get("sec-fetch-site") || "")
+    .trim()
+    .toLowerCase();
+  if (secFetchSite === "cross-site") {
+    return false;
+  }
+
   const origin = request.headers.get("origin");
-  // No Origin header at all (e.g. some same-site navigations, non-browser
-  // clients using a bearer token elsewhere) — don't block those; this check
-  // exists to catch cross-site browser requests, which always send Origin.
   if (!origin) {
-    return true;
+    // No Origin: allow only when the browser declares same-origin/same-site,
+    // or when Sec-Fetch-Site is absent (non-browser / older clients). Mutating
+    // cookie APIs should prefer an explicit Origin when available.
+    if (
+      secFetchSite === "same-origin" ||
+      secFetchSite === "same-site" ||
+      secFetchSite === "none" ||
+      secFetchSite === ""
+    ) {
+      return true;
+    }
+    return false;
   }
 
   const requestOrigin = new URL(request.url).origin;
