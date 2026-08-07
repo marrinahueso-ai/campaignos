@@ -80,8 +80,8 @@ function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
           fill
           preset="thumb"
           displayWidth={128}
-          className="object-cover object-center"
-          style={{ objectFit: "cover" }}
+          className="object-contain object-center p-0.5"
+          style={{ objectFit: "contain" }}
           sizes="48px"
         />
       ) : (

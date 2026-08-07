@@ -5,14 +5,19 @@
 **Supabase project:** `zyllfqieeihshnwpakiv` (ACTIVE_HEALTHY, us-east-1)  
 **Vercel project:** `campignos/campaignos` (`prj_3i9wZXYqe5OOjCQpH0vRzCranfEg`)  
 **Certified source:** Launch Certification Report §10 (`launch-security-assessment-2026-08.md`)  
-**Audit date:** August 7, 2026 (amended same day: school-media signed-URL smoke)  
+**Audit date:** August 7, 2026  
+**Last amended:** August 7, 2026 (operator Production smoke reconciliation)  
 **Auditor posture:** Independent release auditor — evidence only; no guesses  
 
 ### Final recommendation
 
 🟡 **APPROVED WITH CONDITIONS**
 
-Production is running the launch-hardening lineage on `main`, required security DB objects are live, critical fail-closed controls respond correctly at the edge, required Production secret **names** are present, and the **private school-media signed-URL lane** is operationally proven (upload → `/object/sign/` → public deny → delete). Remaining conditions are authenticated product UI smokes (login UX, AI burn, calendar SSRF via app path) and config warnings below.
+Core platform deploy, secrets presence, fail-closed controls, DB security objects, authenticated product flows, AI credit burn (observed decrease + atomic RPCs), school-media privacy / signed URLs, and team invite/org-switch paths are verified by combined automated/runtime and **human Production smoke**.
+
+**Single remaining launch-security smoke blocker:** Calendar subscribe **Production-path** rejection of localhost / private-IP URLs (unit tests pass; live authenticated save/sync not yet exercised). Close with the procedure in §5.1 — then this report can move to ✅ **APPROVED FOR PRODUCTION**.
+
+Non-blocking hygiene (not launch blockers): Stripe live-vs-test key mode confirmation (Dashboard / key prefix — **no real charge required**), Meta redirect host, migration history drift, residual risks already accepted in the Launch Certification Report.
 
 ---
 
@@ -20,159 +25,187 @@ Production is running the launch-hardening lineage on `main`, required security 
 
 | Method | What was inspected |
 |--------|--------------------|
-| Deployment inspection | Vercel `list_deployments` / `get_deployment` for Production alias |
-| Configuration inspection | `vercel env ls production` (names/types only); Sensitive values redacted by CLI as `[SENSITIVE]` |
-| Database inspection | Supabase MCP `list_migrations`, `execute_sql`, `get_project` |
-| Runtime observation | HTTPS probes to `https://heyralli.com` (headers, Stripe webhook, cron, Meta webhook, login) |
-| Log evidence | Vercel runtime logs (cron 200 with auth; unauthorized probes) |
-| Test execution | `npm run test:security` (local); Production school-media upload/sign/public-deny/delete smoke with `HEY_RALLI_TEST_*` (see §4.1) |
-| Monitoring inspection | Sentry org `hey-ralli` / project `heyralli`; `NEXT_PUBLIC_SENTRY_DSN` present in Production |
+| Deployment / config evidence | Vercel Production deployment SHA, env **names**, CSP/headers, cron config |
+| Runtime evidence | HTTPS probes (Stripe webhook, cron auth, Meta webhook, public storage) |
+| Database evidence | Migrations/RPCs/indexes, bucket flags, OAuth `encv1:` ciphertext, post-cleanup object counts |
+| Automated test | `npm run test:security` (SSRF helpers, cron fail-closed, OAuth encrypt policy, etc.) |
+| Storage API smoke | Temporary Production `school-media` upload → sign → public deny → delete (§4.1) |
+| Human Production smoke | Operator verification on live Production (auth, admin, AI, billing page, team, publish approval) — August 7, 2026 |
 
-**Secret values were never printed.** Format/length of Vercel **Sensitive** secrets could not be read via `vercel env pull` (placeholders only). Where possible, presence and correctness were inferred from runtime behavior or DB ciphertext shape.
+**Secret values were never printed.** Sensitive env values remain CLI-redacted; runtime/DB/human smoke used where format cannot be read.
 
 ---
 
 ## 1. Production configuration audit
 
-| Item | Status | Evidence |
-|------|--------|----------|
-| Launch-hardening build deployed | **VERIFIED** | Production deployment `dpl_3uoeTqg5DUZWW1iVCLv4w8118pVT` is `READY`, `target=production`, aliases include `heyralli.com`. SHA `94853e2d5410309d126add563332eed4f8810aa3` (`main`). `git merge-base --is-ancestor b0438eacae7b966e4dbba03694c3ad124d9a1c86 94853e2…` → **YES** (hardening commit is an ancestor). Prior Production deploy `dpl_Ho29gCCa…` was the hardening commit itself. |
-| Production matches certified branch | **VERIFIED** | Deploy meta: `githubCommitRef=main`, repo `marrinahueso-ai/campaignos`. |
-| Required DB migrations / security schema | **VERIFIED WITH WARNING** | Applied: `stripe_reserve_grant_idempotency` (`20260807173316`), `ai_credit_atomic_rpcs_and_school_media` (`20260807173347`). RPCs `ai_credit_ensure_period`, `ai_credit_burn`, `ai_credit_apply_reserve_delta` present. Stripe ledger unique indexes present. `school-media` bucket `public=false`. **Warning:** local filenames use different timestamps (`…180000` / `…190000`); schema effects match. `background_assets` metadata columns exist, but `20260807120000_background_asset_metadata` is **not** recorded in `schema_migrations` (history drift). |
-| Production env vars present | **VERIFIED** | `vercel env ls production` lists required keys (see §2). |
-| Secrets correctly configured | **VERIFIED WITH WARNING** | Presence verified; Sensitive **format/length** not readable via CLI. Runtime/DB evidence covers CRON, Stripe webhook, OAuth encryption (see §2). Stripe `sk_live` vs `sk_test` **not** confirmed. |
-| Fail-closed behavior functioning | **VERIFIED** | Stripe missing sig → `400 Missing signature.`; bogus sig → `400 Invalid signature.` (not `503` missing secret). Cron without/bogus bearer → `401 Unauthorized`. Meta webhook GET without verify → `403`. Cron jobs at ~18:00Z returned `200` (authorized Vercel Cron). |
-| No dev/preview config enabled | **VERIFIED WITH WARNING** | `ALLOW_ROLE_SIMULATOR` **absent** from Production env. `ALLOW_PLAINTEXT_OAUTH_TOKENS` **absent**. Login HTML has no `localhost`. **Warning:** `META_REDIRECT_URI` is `https://campaignos-six.vercel.app/...` (not `heyralli.com`). Legacy `YOUR_CRON_SECRET` still listed (unused by app code search). |
+| Item | Status | Method | Evidence |
+|------|--------|--------|----------|
+| Launch-hardening build deployed | **VERIFIED** | Deployment / config | Production `dpl_3uoeTqg5DUZWW1iVCLv4w8118pVT` → SHA `94853e2` includes hardening `b0438ea`; aliases `heyralli.com` |
+| Production matches certified branch | **VERIFIED** | Deployment / config | `githubCommitRef=main`, repo `marrinahueso-ai/campaignos` |
+| Required DB migrations / security schema | **VERIFIED WITH WARNING** | Database | Credit RPCs, Stripe unique indexes, `school-media` private. Warning: local vs applied version string drift; background metadata columns present without `20260807120000` migration row |
+| Production env vars present | **VERIFIED** | Deployment / config | `vercel env ls production` |
+| Secrets correctly configured | **VERIFIED WITH WARNING** | Deployment / config + Runtime + Database | Presence + webhook/cron/OAuth runtime; Stripe **live vs test mode** still unresolved (§5.2) |
+| Fail-closed behavior functioning | **VERIFIED** | Runtime | Stripe unsigned/bogus sig rejected; cron unauthorized 401; Meta webhook 403; authorized cron 200 |
+| No dev/preview config enabled | **VERIFIED WITH WARNING** | Deployment / config | `ALLOW_ROLE_SIMULATOR` / `ALLOW_PLAINTEXT_OAUTH_TOKENS` unset. Warning: `META_REDIRECT_URI` on `campaignos-six.vercel.app` |
 
 ---
 
 ## 2. Required secret verification
 
-Classification legend: Exists = listed on Production; Format/length = only when observable without exposing value.
+| Secret | Status | Method | Notes |
+|--------|--------|--------|-------|
+| `CRON_SECRET` | **VERIFIED** | Deployment / config + Runtime | Present; unauthorized 401; scheduled cron 200 |
+| `STRIPE_WEBHOOK_SECRET` | **VERIFIED** | Deployment / config + Runtime | Present; `Invalid signature` path (not missing-secret 503) |
+| `STRIPE_SECRET_KEY` | **VERIFIED WITH WARNING** | Deployment / config | Present; **live vs test prefix not confirmed** (§5.2) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **VERIFIED WITH WARNING** | Deployment / config | Present; format CLI-redacted |
+| `OAUTH_TOKEN_ENCRYPTION_KEY` | **VERIFIED** | Deployment / config + Database | Present; live Meta token `encv1:` |
+| `OPENAI_API_KEY` | **VERIFIED** | Deployment / config + Human Production smoke | Present; AI generation / Create with AI succeeded on Production |
+| `RESEND_API_KEY` | **VERIFIED** | Deployment / config + Human Production smoke | Present; invite → accept path succeeded on Production |
+| Meta credentials | **VERIFIED WITH WARNING** | Deployment / config + Runtime | Present; webhook fail-closed; redirect not on apex domain |
+| Google OAuth credentials | **VERIFIED WITH WARNING** | Deployment / config | Present; full Google OAuth round-trip not required for core PTA launch |
+| HMAC / link secrets | **VERIFIED WITH WARNING** | Deployment / config | Present; length CLI-redacted |
+| Stripe Price IDs | **VERIFIED WITH WARNING** | Deployment / config | Present; `price_` prefix CLI-redacted |
+| Supabase public URL/anon | **VERIFIED** | Runtime | Prod project ref in login HTML |
+| Sentry | **VERIFIED** | Deployment / config + Monitoring | DSN + org/project |
+| `ALLOW_ROLE_SIMULATOR` | **VERIFIED** | Deployment / config | Unset (disabled) |
+| `ALLOW_PLAINTEXT_OAUTH_TOKENS` | **VERIFIED** | Deployment / config | Unset |
 
-| Secret | Exists (Prod) | Format / length | Used by app | Fail-closed if missing | Status |
-|--------|---------------|-----------------|-------------|------------------------|--------|
-| `CRON_SECRET` | Yes (Sensitive) | **Unable to verify** via CLI | Yes (`cron-auth.ts`); Vercel Cron `/api/cron/*` returned 200 | Yes (Preview/Prod deny without secret) | **VERIFIED** (presence + runtime auth success / unauthorized reject) |
-| `STRIPE_SECRET_KEY` | Yes | **Unable to verify** live vs test prefix | Yes (`getStripe`) | Route/SDK throws if missing | **VERIFIED WITH WARNING** (present; mode unknown) |
-| `STRIPE_WEBHOOK_SECRET` | Yes | **Unable to verify** `whsec_` via CLI | Yes (webhook route) | Returns `503` if missing — **not** observed; observed `400 Invalid signature` ⇒ secret loaded | **VERIFIED** |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | **Unable to verify** JWT shape via CLI | Yes (admin client / rate limit / storage) | Boot check lists it; rate-limit fails closed when configured | **VERIFIED WITH WARNING** (present; format not readable) |
-| `OAUTH_TOKEN_ENCRYPTION_KEY` | Yes (Preview+Prod) | **Unable to verify** 32-byte decode via CLI | Yes (`token-encryption.ts`) | Encrypt throws on Preview/Prod without valid key | **VERIFIED** (DB: Meta `page_access_token` prefix `encv1:` — encryption active with a working key) |
-| `OPENAI_API_KEY` | Yes | **Unable to verify** | Yes | Feature errors if missing | **VERIFIED WITH WARNING** (present only; no live AI call) |
-| `RESEND_API_KEY` | Yes | **Unable to verify** | Yes | Email send fails if missing | **VERIFIED WITH WARNING** (present only; no send observed) |
-| Meta (`META_APP_ID`, `META_APP_SECRET`, `META_WEBHOOK_VERIFY_TOKEN`, `META_REDIRECT_URI`) | Yes | App ID numeric shape observed; secrets redacted; redirect host = `campaignos-six.vercel.app` | Yes | Webhook verify fails closed (`403` observed) | **VERIFIED WITH WARNING** (redirect not on apex domain) |
-| Google (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) | Yes | Redacted | Yes; `GOOGLE_REDIRECT_URI` **unset** (falls back to request origin — intentional in code) | Throws if missing on OAuth start | **VERIFIED WITH WARNING** (present; OAuth round-trip not exercised) |
-| HMAC / link secrets (`DEVELOPER_AGREEMENT_DOWNLOAD_SECRET`, `FOUNDING_ACCESS_LINK_SECRET`, `SENTRY_VERIFY_SECRET`) | Yes | Redacted | Yes (per env docs / boot required list) | Boot gap logging | **VERIFIED WITH WARNING** (present; length not readable) |
-| Stripe Price IDs (`STRIPE_PRICE_*`) | Yes | Redacted | Billing | Checkout fails if wrong | **VERIFIED WITH WARNING** (present; `price_` prefix not readable) |
-| Supabase public (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) | Yes | URL confirmed in login HTML → `https://zyllfqieeihshnwpakiv.supabase.co` | Client auth | App broken if wrong | **VERIFIED** (prod project ref in runtime HTML) |
-| Sentry (`SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, org/project) | Yes | Public DSN host `ingest.us.sentry.io` observed | Client/server | Soft-fail | **VERIFIED** |
-| Canva / Monday / Weather / Giphy / owner emails | Present as applicable | N/A for core gate | Integration paths | Feature-scoped | **VERIFIED WITH WARNING** (listed; not smoke-tested) |
-| `ALLOW_ROLE_SIMULATOR` | **Unset** | N/A | Role simulator | Disabled unless `true` | **VERIFIED** (disabled) |
-| `ALLOW_PLAINTEXT_OAUTH_TOKENS` | **Unset** | N/A | Encryption policy | Must stay unset | **VERIFIED** (disabled) |
-
-Boot instrumentation (`reportProductionSecretGaps`): **NOT VERIFIED** — no `[security] Missing required secrets` (or success) log lines retrieved for the current deployment window (log query empty / retention limits).
+Boot instrumentation log line (`reportProductionSecretGaps`): **NOT VERIFIED** (no log hit in retention window) — does not block launch; secrets otherwise evidenced.
 
 ---
 
 ## 3. Production environment audit
 
-| Item | Status | Evidence |
-|------|--------|----------|
-| Deployment matches certified branch | **VERIFIED** | See §1 — `main` @ `94853e2` includes hardening. |
-| Required migrations exist in Production | **VERIFIED WITH WARNING** | Launch security objects present; migration **version strings** differ from repo filenames; background metadata columns present without matching `schema_migrations` row for `20260807120000`. |
-| Private storage buckets correct | **VERIFIED** | SQL: `school-media`, `calendar-uploads`, `developer-agreements`, `training-library`, `vendor-documents` → `public=false`. Public object URL to `school-media` → `NoSuchBucket` / non-public behavior. |
-| Public buckets intentional | **VERIFIED** | `platform-backgrounds`, `event-assets`, `campaign-files`, `organization-stickers`, `school-assets` → `public=true`. Sample `platform-backgrounds` object returned **HTTP 200** (~2.6MB). Matches hybrid storage design in certification report. |
-| Role simulator disabled | **VERIFIED** | Env flag unset on Production; unit tests confirm Preview/Prod closed unless explicit `true`. |
-| Cron authentication enabled | **VERIFIED** | Unauthorized → 401; scheduled cron → 200 in runtime logs; `vercel.json` defines cron paths. |
-| OAuth encryption active | **VERIFIED** | Live Meta connection token stored as `encv1:…`. |
-| Security headers enabled | **VERIFIED** | Live: `CSP`, `HSTS` (preload), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`. |
-| CSP matches certified build | **VERIFIED** | No `unsafe-eval`; includes `upgrade-insecure-requests`; matches production branch of `next.config.ts`. Residual `unsafe-inline` acknowledged in certification. |
-| Monitoring / logging active | **VERIFIED** | Sentry org/project reachable; DSN in Production; CSP allows Sentry ingest; Vercel runtime logs observe requests. |
-
-**school-media object count:** `0` after cleanup (SQL `storage.objects` + storage list) — see §4.1.
+| Item | Status | Method | Evidence |
+|------|--------|--------|----------|
+| Deployment matches certified branch | **VERIFIED** | Deployment / config | §1 |
+| Required migrations / security objects | **VERIFIED WITH WARNING** | Database | §1 |
+| Private storage buckets | **VERIFIED** | Database + Runtime + Human Production smoke | Config `public=false`; public URL deny; operator: private school photo stays private |
+| Public buckets intentional | **VERIFIED** | Database + Runtime + Human Production smoke | Public GET 200 on `platform-backgrounds`; operator: public backgrounds stay public |
+| Role simulator disabled | **VERIFIED** | Deployment / config + Automated test | Unset + unit tests |
+| Cron authentication enabled | **VERIFIED** | Runtime + Deployment / config | §1 |
+| OAuth encryption active | **VERIFIED** | Database | `encv1:` |
+| Security headers / CSP | **VERIFIED** | Runtime | Live headers; no `unsafe-eval`; `upgrade-insecure-requests` |
+| Monitoring / logging | **VERIFIED** | Monitoring + Runtime | Sentry + Vercel logs |
 
 ---
 
 ## 4. Operational smoke tests
 
-### 4.1 School inspiration → private `school-media` (signed URL) — Production smoke
+### 4.1 School-media signed URL — storage API smoke (prior)
 
-**Scope clarification (do not conflate):**
+| Check | Status | Method |
+|-------|--------|--------|
+| Upload to private `school-media`, `/object/sign/` URL, signed GET 200, public GET denied, delete + empty confirm | **VERIFIED** | Storage API smoke + Database |
 
-| Surface | Bucket | URL type | In this smoke? |
-|---------|--------|----------|----------------|
-| Owner **Background Library** inspiration/source upload (`uploadBackgroundSourceAction`) | `platform-backgrounds` (`public=true`) | Permanent **public** CDN URL | **No** — by design not private; would not satisfy school-media criteria |
-| School **Create with AI / campaign builder** inspiration photo upload (`uploadSchoolMediaBytes` / `persistInspirationImages`) | `school-media` (`public=false`) | Time-limited **`/storage/v1/object/sign/`** URL | **Yes** — this is the certified private lane |
+See prior detail: path `{org}/{event}/…`, host `zyllfqieeihshnwpakiv.supabase.co`. Owner Background Library sources remain on public `platform-backgrounds` by design.
 
-Request asked for a Background Library inspiration upload stored in `school-media`. Code inspection shows owner Background Library does **not** write to `school-media`. The auditor therefore executed the **certified private inspiration path** on Production (same storage API the deployed app uses when admin is configured), using the Production test account for auth + org/event context.
+### 4.2 Authentication
 
-| Check | Status | Evidence (2026-08-07 ~18:36Z UTC) |
-|-------|--------|-----------------------------------|
-| Test account authenticates to Production Supabase | **VERIFIED** | `signInWithPassword` against `zyllfqieeihshnwpakiv` succeeded (`HEY_RALLI_TEST_EMAIL` domain `heyralli.dev`; user id prefix `63916a55`) |
-| Org/event context resolved | **VERIFIED** | `HEY_RALLI_TEST_EVENT_ID` → school year → org prefix `d88b2f96`; event prefix `08ddc3de` |
-| Bucket private | **VERIFIED** | `listBuckets`: `school-media.public === false` |
-| Object stored in `school-media` | **VERIFIED** | Upload path `{org}/{event}/{uuid}-1-pr-audit-inspiration-temp.png`; `storage.list` found object |
-| Returned URL is signed (`/storage/v1/object/sign/`) | **VERIFIED** | `createSignedUrl` pathname includes `/object/sign/`; query has `token=`; host `zyllfqieeihshnwpakiv.supabase.co` (**token not logged**) |
-| Signed URL fetches object | **VERIFIED** | HTTP **200**, `content-type: image/png` |
-| Public URL cannot access object | **VERIFIED** | `…/object/public/school-media/…` → HTTP **400**, body code `NoSuchBucket` |
-| Cleanup delete | **VERIFIED** | `storage.remove` succeeded; list no longer finds leaf |
-| Cleanup confirmed empty | **VERIFIED** | SQL `count(*)` on `storage.objects` where `bucket_id='school-media'` → **0**; storage root list empty |
+| Test | Status | Method | Evidence |
+|------|--------|--------|----------|
+| Login | **VERIFIED** | Human Production smoke (+ prior API auth) | Operator on live Production; earlier Supabase password auth also succeeded |
+| Logout | **VERIFIED** | Human Production smoke | Operator |
+| Session persistence | **VERIFIED** | Human Production smoke | Operator |
+| Invite acceptance | **VERIFIED** | Human Production smoke | Operator (also under Team) |
 
-**Limitation (honest):** Smoke used Production Supabase Auth + Storage (service role, matching Production server when `SUPABASE_SERVICE_ROLE_KEY` is set). It did **not** drive the heyralli.com UI / Next.js server action in-browser. Storage behavior matches `src/lib/school-media/storage.ts` on the deployed lineage.
+### 4.3 Security
 
-### Authentication
+| Test | Status | Method | Evidence |
+|------|--------|--------|----------|
+| Invalid Stripe webhook rejected | **VERIFIED** | Runtime | Unsigned → `400 Missing signature.`; bogus → `400 Invalid signature.` |
+| Calendar rejects localhost / private-IP subscriptions | **VERIFIED WITH WARNING** | Automated test only | `safe-outbound-url` / `safeFetch` unit tests pass on certified build. **Production authenticated subscribe save/sync not exercised** — remaining blocker (§5.1) |
+| AI credits burn / decrease correctly | **VERIFIED** | Human Production smoke + Database | Operator observed credit decrease after AI generation; Production has `ai_credit_burn` / related RPCs + ledger indexes |
+| Signed URLs / private school photo | **VERIFIED** | Human Production smoke + Storage API smoke + Database | Operator upload + privacy; §4.1 API smoke |
+| Public backgrounds stay public | **VERIFIED** | Human Production smoke + Runtime | Operator; prior public GET 200 |
 
-| Test | Status | Evidence / gap |
-|------|--------|----------------|
-| Login | **VERIFIED WITH WARNING** | Production Supabase password login succeeded for test account (API). Full `/login` browser UX / cookie session on `heyralli.com` **not** exercised. |
-| Logout | **NOT VERIFIED** | Requires browser session. |
-| Session persistence | **NOT VERIFIED** | Requires browser session. |
-| Invite acceptance | **NOT VERIFIED** | Requires invite token + mailbox. |
+### 4.4 Core / admin product flows
 
-Protected routes (`/settings`, `/events`, `/calendar`, `/billing`) redirect **307 → `/login`** — middleware gate observed earlier; not re-run in §4.1.
+| Area | Status | Method | Evidence / scope note |
+|------|--------|--------|----------------------|
+| Dashboard loads | **VERIFIED** | Human Production smoke | Operator |
+| Calendar loads | **VERIFIED** | Human Production smoke | Load only — not SSRF subscribe rejection |
+| Create event | **VERIFIED** | Human Production smoke | Operator |
+| Events | **VERIFIED** | Human Production smoke | Operator |
+| Create with AI | **VERIFIED** | Human Production smoke | Operator |
+| AI generation | **VERIFIED** | Human Production smoke | Operator |
+| Flyer Composer | **VERIFIED** | Human Production smoke | Operator |
+| Background Library opens | **VERIFIED** | Human Production smoke | Operator |
+| Upload one inspiration photo | **VERIFIED** | Human Production smoke | Operator (school private lane) |
+| Signed URL behavior | **VERIFIED** | Human Production smoke + Storage API smoke | Combined |
+| Publish approval | **VERIFIED** | Human Production smoke | Covers Approvals launch smoke — see §4.6 |
+| Billing page loads | **VERIFIED** | Human Production smoke | Page/config UX only — see §4.7 |
+| Email generation (composer) | **NOT VERIFIED** | — | Not in operator results; **not** a §10 launch smoke gate |
 
-### Security
+### 4.5 Team
 
-| Test | Status | Evidence / gap |
-|------|--------|----------------|
-| Invalid Stripe webhook rejected | **VERIFIED** | Unsigned → `400 Missing signature.`; bogus sig → `400 Invalid signature.` |
-| Calendar rejects localhost/private-IP subscriptions | **VERIFIED WITH WARNING** | `npm run test:security` passes `assertSafeOutboundUrl` / IP blocklist; `fetchSubscribeFeedIcs` uses `safeFetch`. **No authenticated Production call** saving `http://127.0.0.1/` was executed. |
-| AI credits burn correctly | **NOT VERIFIED** | RPCs exist; no Production generation/burn transaction observed. |
-| Signed URLs for private school media | **VERIFIED** | §4.1 — upload, `/object/sign/` URL, signed GET 200, public GET denied, deleted |
-| Public assets remain public where intended | **VERIFIED** | `platform-backgrounds` public GET **200**. |
+| Test | Status | Method |
+|------|--------|--------|
+| Invite a user | **VERIFIED** | Human Production smoke |
+| Accept invite | **VERIFIED** | Human Production smoke |
+| Switch organizations | **VERIFIED** | Human Production smoke |
+| Logout / login (team cycle) | **VERIFIED** | Human Production smoke |
 
-### Core platform (feature availability)
+### 4.6 Approvals — coverage decision
 
-| Area | Status | Evidence / gap |
-|------|--------|----------------|
-| Calendar | **NOT VERIFIED** | Auth-gated; cron `calendar-subscribe-sync` configured. |
-| Events | **NOT VERIFIED** | Auth-gated (`307` to login). |
-| Background Library | **VERIFIED WITH WARNING** | Public library objects fetchable from Storage; owner UI / publish path not exercised logged-in. |
-| Create with AI | **NOT VERIFIED** | Needs session + OpenAI spend. |
-| Flyer Composer | **NOT VERIFIED** | Needs session. |
-| Approvals | **NOT VERIFIED** | Needs session. |
-| Billing | **NOT VERIFIED** | Needs session; Stripe secrets present. |
-| Email generation | **NOT VERIFIED** | Needs session + Resend. |
+| Question | Decision |
+|----------|----------|
+| Is a separate multi-state Approvals workflow required before launch? | **No** for core PTA launch |
+| What was verified? | Human Production smoke: **Publish approval** |
+| Residual | Optional deeper states (reject / resubmit / scheduling edge cases) are **not** inventing a new launch gate; track as post-launch QA if desired |
+
+**Approvals (launch smoke):** **VERIFIED** via publish-approval flow.
+
+### 4.7 Billing — page vs payment decision
+
+| Layer | Status | Method | Notes |
+|-------|--------|--------|-------|
+| Billing page loads / configuration UX | **VERIFIED** | Human Production smoke | Sufficient for “Billing” product smoke |
+| Stripe webhook fail-closed | **VERIFIED** | Runtime | Unsigned/invalid rejected |
+| Stripe secrets + Price IDs present | **VERIFIED WITH WARNING** | Deployment / config | Mode unknown |
+| Live customer charge / Checkout completion | **NOT VERIFIED** | — | **Not required** for this launch gate |
+
+**Recommendation:** Do **not** run a real customer charge to prove the billing page. Prefer: (1) Stripe Dashboard confirmation that Production keys/webhook endpoint are **live** mode, and/or (2) a **test-mode** Checkout Session against a non-Production Stripe account / Preview env if a full Checkout UI walkthrough is desired. A low-dollar live transaction is only warranted if a Production-only Checkout/Customer Portal bug is suspected after Dashboard + webhook evidence — none observed here.
 
 ---
 
-## 5. Conditions to clear before unrestricted marketing launch
+## 5. Conditions to clear
 
-1. **Authenticated browser smoke:** login/logout/session cookie on `heyralli.com` (API login already proven for test account).  
-2. **AI credit burn:** one Create-with-AI (or equivalent) run; confirm ledger burn via RPC path.  
-3. ~~**School-media signed URL**~~ — **cleared** (§4.1). Optional follow-up: one in-browser Create with AI inspiration attach to confirm the Next.js action returns the same URL shape.  
-4. **Calendar SSRF on Production path:** attempt save/sync of `http://127.0.0.1/` / private IP and confirm rejection in UI/API.  
-5. **Stripe mode check (operator):** confirm Production `STRIPE_SECRET_KEY` / publishable key are **live** (not test) without pasting values into chat.  
-6. **Meta redirect:** decide whether `META_REDIRECT_URI` should move to `https://heyralli.com/...` and update Meta app settings accordingly (non-blocking for core PTA if Meta remains Pending Final Review).  
-7. **Migration history hygiene:** record or reconcile `background_asset_metadata` in `schema_migrations` so future deploys do not re-apply / drift.  
-8. **Do not expect owner Background Library inspiration to be private** — it uses public `platform-backgrounds` by design; private lane is school inspiration uploads only.
+### 5.1 Remaining launch blocker (security smoke)
 
-Ops acknowledgements still required from certification §10: residual historical public media, CSP `unsafe-inline`, npm high backlog, Meta/Google **Pending Final Review** (not marketed as final).
+**Calendar SSRF — Production authenticated path**
+
+| | |
+|--|--|
+| Status | **OPEN** |
+| Why | Code + automated tests reject localhost/private IPs; live Production UI/API save or sync of a subscribe URL was not run |
+| How to close | While logged into Production: set school-year / calendar subscribe URL to `http://127.0.0.1/` (and optionally `http://169.254.169.254/`). Confirm the app **rejects** (validation or sync error — no successful fetch). Record screenshot or API response. Optionally repeat with a benign public HTTPS ICS to confirm happy path still works. |
+| After close | Amend this report → ✅ **APPROVED FOR PRODUCTION** |
+
+### 5.2 Non-blocking hygiene (not launch blockers)
+
+1. **Stripe live-vs-test:** Operator confirms in Stripe Dashboard / Vercel that Production `STRIPE_SECRET_KEY` / publishable key are `sk_live_` / `pk_live_` (no value paste into chat). Separate from billing page smoke.  
+2. **Meta redirect:** Optional move `META_REDIRECT_URI` to `heyralli.com` when Meta is finalized (Pending Final Review — non-blocking for core PTA).  
+3. **Migration history:** Reconcile `background_asset_metadata` row in `schema_migrations`.  
+4. **Ops acknowledgements** (certification §10): residual historical public media, CSP `unsafe-inline`, npm high backlog, Meta/Google not marketed as final.
+
+### 5.3 Cleared since prior revision
+
+- Authenticated browser login / logout / session  
+- Invite send + accept  
+- AI generation + observed credit decrease (burn)  
+- Create with AI, Flyer Composer, Events, Calendar **load**, Dashboard  
+- Inspiration upload + signed URL + private/public media behavior  
+- Publish approval  
+- Billing **page** load  
+- Org switch + team logout/login cycle  
+- School-media API smoke (§4.1)
 
 ---
 
 ## 6. Items explicitly not failed
 
-No Production control in the P0 security set returned a contradictory fail (e.g. webhook accepting unsigned payloads, cron open without secret, role simulator enabled, public `school-media`, missing hardening SHA, missing credit RPCs). Gaps are **verification coverage** and **configuration warnings**, not observed control breakage.
+No contradictory Production failures against prior VERIFIED controls. Human smoke **upgraded** prior gaps; it did not weaken stronger runtime/database/deployment evidence.
 
 ---
 
@@ -180,8 +213,11 @@ No Production control in the P0 security set returned a contradictory fail (e.g.
 
 | Layer | Verdict |
 |-------|---------|
-| Core platform operational gate | 🟡 **APPROVED WITH CONDITIONS** (deploy + secrets + fail-closed + DB + school-media signed URLs OK; browser auth / AI burn / calendar SSRF still outstanding) |
-| Meta / Google feature-complete | Out of scope — remains **Operationally Ready but Pending Final Review** |
-| Enterprise / district RFP | **Not approved** (unchanged from certification) |
+| Core platform operational gate | 🟡 **APPROVED WITH CONDITIONS** — only open launch-security smoke: **Calendar SSRF Production-path** (§5.1) |
+| Billing / Stripe charge | Page + webhook evidence sufficient; **no real charge required** before launch |
+| Approvals | **VERIFIED** via publish-approval; no extra launch smoke required |
+| Meta / Google feature-complete | Out of scope — **Operationally Ready but Pending Final Review** |
+| Enterprise / district RFP | **Not approved** (unchanged) |
+| Load / performance certification | **Ready to proceed** after §5.1 close (or in parallel for non-security perf work; security sign-off waits on SSRF smoke) |
 
-**Auditor:** Evidence collected August 7, 2026 against live Production. Re-run authenticated smokes after conditions 1–4; then this report can be amended to ✅ **APPROVED FOR PRODUCTION**.
+**Auditor:** Automated/runtime/database evidence August 7, 2026; human Production smoke reconciled same day. Close §5.1 to upgrade to ✅ **APPROVED FOR PRODUCTION**.

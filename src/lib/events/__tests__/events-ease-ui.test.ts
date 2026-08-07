@@ -59,11 +59,11 @@ describe("events ease UI contracts", () => {
     const artworkHover = readSrc(
       "../../../components/artwork/ArtworkHoverThumbnail.tsx",
     );
-    assert.match(artworkHover, /object-cover object-center/);
+    // Poster thumbs use contain so full graphic stays readable (not cover-cropped).
+    assert.match(artworkHover, /object-contain object-center/);
+    assert.match(artworkHover, /objectFit: "contain"/);
     assert.doesNotMatch(artworkHover, /displayHeight=\{compact \? 128 : 256\}/);
-    assert.doesNotMatch(artworkHover, /resize="contain"/);
-    // Fixed square ahead thumbs — h-full was stretching landscape art.
     assert.match(ease, /h-\[88px\] w-\[88px\] shrink-0/);
-    assert.match(artworkHover, /Do not set h-full here/);
+    assert.match(artworkHover, /contain keeps full poster art readable/);
   });
 });

@@ -93,12 +93,8 @@ function ArtTile({
           displayWidth={width}
           // Width-only transform + CSS fit — avoid baking a mismatched
           // height that next/image then stretched into the tile.
-          className={
-            isCompact
-              ? "object-cover object-center"
-              : "object-contain object-center p-1"
-          }
-          style={{ objectFit: isCompact ? "cover" : "contain" }}
+          className="object-contain object-center p-0.5"
+          style={{ objectFit: "contain" }}
           sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 280px"}
           priority={priority}
         />

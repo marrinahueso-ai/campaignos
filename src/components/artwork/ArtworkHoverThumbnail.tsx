@@ -328,7 +328,7 @@ export function ArtworkHoverThumbnail({
     return (
       <span
         className={cn(
-          "relative block aspect-square w-full overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
+          "relative block aspect-square w-full overflow-hidden bg-[#f7f6f3]",
           className,
           placeholderClassName,
         )}
@@ -341,9 +341,9 @@ export function ArtworkHoverThumbnail({
     <>
       <div
         className={cn(
-          // Do not set h-full here — it overrides aspect-square and stretches
-          // landscape art into tall card rails (Events ahead cards).
-          "group relative block aspect-square w-full cursor-zoom-in overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
+          // Fixed square rail; contain keeps full poster art readable (cover was
+          // cropping feed graphics into illegible letter fragments).
+          "group relative block aspect-square w-full cursor-zoom-in overflow-hidden bg-[#f7f6f3]",
           className,
         )}
         role="button"
@@ -363,8 +363,8 @@ export function ArtworkHoverThumbnail({
           fill
           preset={compact ? "thumb" : "card"}
           displayWidth={compact ? 128 : 256}
-          className="object-cover object-center"
-          style={{ objectFit: "cover" }}
+          className="object-contain object-center p-0.5"
+          style={{ objectFit: "contain" }}
           sizes={sizes}
         />
         <span className="pointer-events-none absolute inset-0 z-[1] bg-[rgba(28,36,48,0.22)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100" />

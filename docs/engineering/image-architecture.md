@@ -113,9 +113,9 @@ const original = toDisplayImageUrl(url, { intent: "original" });
 | Surface | Notes |
 |---------|-------|
 | Background Library grids / detail | `AppImage` |
-| Approvals Ease + table | `AppImage` fill via plain `<img>` + `object-fit` (cover for list thumbs, contain for focus posters) |
-| Volunteers Ease | Same as Approvals — cover for queue squares, contain for focus art |
-| Events Ease list / focus / upcoming | Plain `AppImage` fill (`<img>` + inline `object-fit`) in fixed square rails — no next/image fill stretch |
+| Approvals Ease + table | `AppImage` fill + `object-contain` so poster text stays readable |
+| Volunteers Ease | Same — contain for queue + focus art |
+| Events Ease list / focus / upcoming | Plain `AppImage` fill + `object-contain` in fixed square rails (full poster visible; focus hero stays cover) |
 | Campaign list thumbs | `CampaignThumbnail` → `AppImage` |
 | Today / Dashboard widgets | `AppImage` |
 | Small approval lightbox **tiles** | Transform; open lightbox stays original |
