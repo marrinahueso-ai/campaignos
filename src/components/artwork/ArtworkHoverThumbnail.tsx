@@ -328,7 +328,7 @@ export function ArtworkHoverThumbnail({
     return (
       <span
         className={cn(
-          "relative block overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
+          "relative block h-full w-full overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
           className,
           placeholderClassName,
         )}
@@ -341,7 +341,7 @@ export function ArtworkHoverThumbnail({
     <>
       <div
         className={cn(
-          "group relative cursor-zoom-in overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
+          "group relative h-full w-full cursor-zoom-in overflow-hidden bg-gradient-to-br from-[#1e4a3a] via-[#4a6b58] to-[#8a9e7a]",
           className,
         )}
         role="button"
@@ -355,15 +355,17 @@ export function ArtworkHoverThumbnail({
           }
         }}
       >
+        {/*
+          Width-bounded transform (no square height) + CSS cover so the image
+          fills the card rail / thumb block instead of letterboxing as 1:1.
+        */}
         <AppImage
           src={url}
           alt=""
           fill
           preset={compact ? "thumb" : "card"}
           displayWidth={compact ? 128 : 256}
-          displayHeight={compact ? 128 : 256}
-          resize="contain"
-          className="object-contain object-center p-0.5"
+          className="object-cover object-center"
           sizes={sizes}
         />
         <span className="pointer-events-none absolute inset-0 z-[1] bg-[rgba(28,36,48,0.22)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100" />

@@ -54,4 +54,15 @@ describe("events ease UI contracts", () => {
     assert.match(artworkHover, /Download artwork/);
     assert.doesNotMatch(artworkHover, /Click to enlarge/);
   });
+
+  it("fills event card artwork rails instead of 1:1 letterbox", () => {
+    const artworkHover = readSrc(
+      "../../../components/artwork/ArtworkHoverThumbnail.tsx",
+    );
+    assert.match(artworkHover, /object-cover object-center/);
+    assert.doesNotMatch(artworkHover, /displayHeight=\{compact \? 128 : 256\}/);
+    assert.doesNotMatch(artworkHover, /resize="contain"/);
+    assert.match(ease, /items-stretch/);
+    assert.match(ease, /self-stretch/);
+  });
 });

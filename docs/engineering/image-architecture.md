@@ -115,7 +115,7 @@ const original = toDisplayImageUrl(url, { intent: "original" });
 | Background Library grids / detail | `AppImage` |
 | Approvals Ease + table | `AppImage` with `resize=contain` for poster thumbs (full graphic visible) |
 | Volunteers Ease | `AppImage` with `resize=contain` for poster thumbs |
-| Events Ease list / focus / upcoming | `ArtworkHoverThumbnail` contain thumbs; focus hero is width-bounded + CSS `object-cover` (no square server crop) |
+| Events Ease list / focus / upcoming | `ArtworkHoverThumbnail` width-bounded + CSS `object-cover` so card rails fill (no 1:1 letterbox); focus hero same |
 | Campaign list thumbs | `CampaignThumbnail` → `AppImage` |
 | Today / Dashboard widgets | `AppImage` |
 | Small approval lightbox **tiles** | Transform; open lightbox stays original |

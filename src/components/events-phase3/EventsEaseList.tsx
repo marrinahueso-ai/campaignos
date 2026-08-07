@@ -104,11 +104,13 @@ function ArtThumb({
   artwork,
   className,
   compact = false,
+  sizes,
 }: {
   event: Event;
   artwork: HeroArtworkSelection | null;
   className?: string;
   compact?: boolean;
+  sizes?: string;
 }) {
   const resolved = resolveEventsHomeListArtwork(event, artwork);
   const url =
@@ -123,7 +125,7 @@ function ArtThumb({
       downloadName={event.title}
       className={className}
       compact={compact}
-      sizes={compact ? "56px" : "120px"}
+      sizes={sizes ?? (compact ? "56px" : "120px")}
     />
   );
 }
@@ -231,8 +233,13 @@ export function EventsEaseAheadCard({
 }) {
   const tone = eventStatusTone(event, today);
   return (
-    <div className="grid min-h-[100px] flex-1 grid-cols-[88px_1fr] overflow-hidden rounded-[18px] border border-cos-border bg-cos-card text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)]">
-      <ArtThumb event={event} artwork={artwork} className="h-full min-h-[100px]" />
+    <div className="grid min-h-[100px] flex-1 grid-cols-[88px_1fr] items-stretch overflow-hidden rounded-[18px] border border-cos-border bg-cos-card text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)]">
+      <ArtThumb
+        event={event}
+        artwork={artwork}
+        className="min-h-[100px] self-stretch rounded-none"
+        sizes="88px"
+      />
       <button
         type="button"
         onClick={onSelect}
