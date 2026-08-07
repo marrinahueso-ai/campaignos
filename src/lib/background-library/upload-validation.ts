@@ -1,4 +1,5 @@
 import {
+  BACKGROUND_LIBRARY_BULK_TOTAL_BYTES,
   BACKGROUND_LIBRARY_BULK_UPLOAD_MAX,
   BACKGROUND_LIBRARY_MAX_BYTES,
 } from "./constants.ts";
@@ -59,6 +60,15 @@ export function collectBackgroundBulkUploadFiles(formData: FormData): {
     return {
       files: [],
       error: `"${invalid.name}" is not a supported image (PNG, JPEG, WebP, or GIF).`,
+    };
+  }
+
+  const totalBytes = raw.reduce((sum, file) => sum + file.size, 0);
+  if (totalBytes > BACKGROUND_LIBRARY_BULK_TOTAL_BYTES) {
+    const limitMb = Math.round(BACKGROUND_LIBRARY_BULK_TOTAL_BYTES / (1024 * 1024));
+    return {
+      files: [],
+      error: `Those images total more than ${limitMb}MB. Upload fewer files or smaller images.`,
     };
   }
 

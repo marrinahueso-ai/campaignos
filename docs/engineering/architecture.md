@@ -5,8 +5,8 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel · Stripe  
-**Last updated:** August 7, 2026 — Shared AppImage display pipeline
-**Related:** [Feature list](../product/feature-list.md) · [Storage RLS](./storage-rls.md) · [Access control](./access-control.md) · [Billing & access](../ops/billing-and-access.md) · [Stripe integration](./stripe-integration.md) · [QA architecture overview](../qa/architecture-overview.md) · [Launch checklist](../qa/launch-checklist.md) · [Ask Ralli Assistant](./ask-ralli-assistant.md)
+**Last updated:** August 7, 2026 — Image architecture living doc  
+**Related:** [Feature list](../product/feature-list.md) · [Image architecture](./image-architecture.md) · [Storage RLS](./storage-rls.md) · [Access control](./access-control.md) · [Billing & access](../ops/billing-and-access.md) · [Stripe integration](./stripe-integration.md) · [QA architecture overview](../qa/architecture-overview.md) · [Launch checklist](../qa/launch-checklist.md) · [Ask Ralli Assistant](./ask-ralli-assistant.md)
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
 
@@ -30,7 +30,7 @@ Public marketing (WOW homepage, pricing, features, auth chrome) sits outside the
 | Hosting | Vercel (Production + Preview; Cron) |
 | Billing | Stripe Checkout / Customer Portal / webhooks (`src/lib/billing`) — [stripe-integration.md](./stripe-integration.md) |
 | AI text | OpenAI Chat Completions (`OPENAI_API_KEY`) via `src/lib/ai` (+ credit metering) |
-| AI images | OpenAI Images via `src/lib/ai-artwork` / `artwork-v2` |
+| AI images | OpenAI Images via `src/lib/ai-artwork` / `artwork-v2` — display/storage rules: [image-architecture.md](./image-architecture.md) |
 | Social | Meta Graph API (`src/lib/meta-publishing`, `inbox`, `insights`) |
 | Calendar OAuth | Google Calendar API (`src/lib/google-calendar`) |
 | Email | Resend |
@@ -90,7 +90,7 @@ CampignOS/
 | `/create-with-ai/flyer` | Flyer composer (static HTML embed); saves to event Files (`event_playbook_files` category `flyer`); list/load via `/api/flyer-composer/saved` |
 | `/homepage-composer` | Membership Toolkit / homepage HTML export |
 | `/newsletter-composer` | Scoop-style family email HTML export |
-| `/ops/background-library` | Owner-only Background Library (source upload → generate 10, or bulk upload finished assets → approve/delete); `platform-backgrounds` + `background_*` tables; display via Supabase Image Transformations |
+| `/ops/background-library` | Owner-only Background Library (source upload → generate 10, or bulk upload finished assets → approve/delete); `platform-backgrounds` + `background_*` tables; display via shared `AppImage` ([image-architecture.md](./image-architecture.md)) |
 
 **Settings Ease left nav:** Overview · Organization · Branding · Team & Access · Integrations · Billing & Plan · Account. Header settings gear → `/settings` (no section dropdown). Branding hub (`/settings/branding`) nests AI Brain · AI Inbox · Playbook · Colors & Logos · School Year (`?section=`); standalone `/settings/school-year` still works.
 
@@ -135,7 +135,7 @@ flowchart TB
 3. **Background:** Vercel Cron → `/api/cron/*` (often uses service-role admin client).  
 4. **OAuth:** Browser → `/api/{provider}/oauth/start` → provider → `/api/{provider}/oauth/callback` → org connection row.
 
-Multi-tenant rule: almost all rows are **organization-scoped**. Membership + RLS (migrations 064–067+) enforce access; app code also resolves active org via membership helpers. User-facing join / switch / gates: [access-and-onboarding.md](../security/access-and-onboarding.md). Storage path + policy model: [storage-rls.md](./storage-rls.md) (synced July 26, 2026).
+Multi-tenant rule: almost all rows are **organization-scoped**. Membership + RLS (migrations 064–067+) enforce access; app code also resolves active org via membership helpers. User-facing join / switch / gates: [access-and-onboarding.md](../security/access-and-onboarding.md). Storage path + policy model: [storage-rls.md](./storage-rls.md). Image upload / display / AI / Meta pipeline: [image-architecture.md](./image-architecture.md).
 
 ---
 
@@ -260,7 +260,8 @@ Pattern: `isAiConfigured()` / missing `OPENAI_API_KEY` → clear “not configur
 
 - Migrations live in `supabase/migrations/` (well past the original 001–006 set; includes Meta, Insights, vendors, team access RLS, Google Calendar, access templates, AI credits, Stripe billing, developer agreements, notification prefs, etc.).
 - **Table RLS:** Membership-scoped policies are the default for tenant tables. Cron / admin paths use `createAdminClient()` where required.
-- **Storage RLS (Phase C3):** Authenticated Storage API access is membership-scoped via first-folder UUID (org or event). Bucket table, path exceptions (homepage composer, AI artwork service role, developer-agreements prefixes), and verify SQL: **[storage-rls.md](./storage-rls.md)** (living; last synced July 26, 2026 — prefer that doc over archive blueprints).
+- **Storage RLS (Phase C3):** Authenticated Storage API access is membership-scoped via first-folder UUID (org or event). Bucket table, path exceptions (homepage composer, AI artwork service role, developer-agreements prefixes), and verify SQL: **[storage-rls.md](./storage-rls.md)**.
+- **Images:** One original in Storage; display via Supabase Image Transformations + `AppImage`. Full rules, presets, and migration status: **[image-architecture.md](./image-architecture.md)**.
 - **Storage buckets (examples):** `school-assets`, `calendar-uploads`, `event-assets`, `campaign-files`, `vendor-documents`, `organization-stickers`, `developer-agreements`, `training-library`. Prefer org- or event-prefixed paths as documented.
 
 ---
@@ -337,6 +338,7 @@ Historical Release 0.5 notes remain in [archive/RELEASE_0_5.md](../archive/RELEA
 | [product/feature-list.md](../product/feature-list.md) | Shipped / partial / deferred inventory |
 | [qa/launch-checklist.md](../qa/launch-checklist.md) | Soft-launch / Production pass-fail checklist |
 | [storage-rls.md](./storage-rls.md) | Storage buckets, path conventions, Phase C3 policies |
+| [image-architecture.md](./image-architecture.md) | Image upload, display transforms (`AppImage`), AI / Meta / migration checklist |
 | [integrations/meta.md](../integrations/meta.md) | Meta OAuth model |
 | [integrations/google-calendar.md](../integrations/google-calendar.md) | Google Calendar OAuth + sync |
 | [qa/meta-calendar-dnd.md](../qa/meta-calendar-dnd.md) | Meta-native Graph schedule + Calendar DnD (no re-approval) |

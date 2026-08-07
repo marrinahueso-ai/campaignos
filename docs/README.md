@@ -2,7 +2,7 @@
 
 **Status:** Living index  
 **Owner:** Engineering  
-**Last updated:** August 4, 2026  
+**Last updated:** August 7, 2026  
 **Production:** [heyralli.com](https://heyralli.com)
 
 This is the documentation hub. Start here.
@@ -13,7 +13,7 @@ This is the documentation hub. Start here.
 
 | You are… | Open first |
 |----------|------------|
-| **New engineer** | [Architecture](./engineering/architecture.md) → [Feature list](./product/feature-list.md) → [Access & multi-tenant onboarding](./security/access-and-onboarding.md) → [Local setup](./getting-started/local-setup.md) |
+| **New engineer** | [Architecture](./engineering/architecture.md) → [Image architecture](./engineering/image-architecture.md) → [Feature list](./product/feature-list.md) → [Access & multi-tenant onboarding](./security/access-and-onboarding.md) → [Local setup](./getting-started/local-setup.md) |
 | **QA** | [Product completion master](./qa/product-completion-master.md) → [Launch checklist](./qa/launch-checklist.md) → [QA architecture overview](./qa/architecture-overview.md) → [Testing guide](./qa/testing-guide.md) → [Feature list](./product/feature-list.md) |
 | **Integrations** | [Meta](./integrations/meta.md) · [Google Calendar](./integrations/google-calendar.md) · [SignUpGenius](./integrations/signupgenius.md) |
 | **Ops / deploy** | [Ops](./ops/README.md) → deploy · env · cron · [Meta App Review use cases](./ops/meta-app-review-use-cases.md) |
@@ -29,7 +29,7 @@ This is the documentation hub. Start here.
 |--------|---------|---------------|
 | [getting-started/](./getting-started/) | Local setup, environments | [README](./getting-started/README.md) |
 | [product/](./product/) | Feature status, vision, blueprints | [README](./product/README.md) |
-| [engineering/](./engineering/) | Architecture, DB, access, storage | [README](./engineering/README.md) |
+| [engineering/](./engineering/) | Architecture, images, DB, access, storage | [README](./engineering/README.md) |
 | [integrations/](./integrations/) | Meta, Google, Canva, Monday | [README](./integrations/README.md) |
 | [qa/](./qa/) | QA overview, testing, findings | [README](./qa/README.md) |
 | [ops/](./ops/) | Deploy, env, cron, support | [README](./ops/README.md) |
@@ -43,6 +43,7 @@ This is the documentation hub. Start here.
 | Topic | Path |
 |-------|------|
 | Architecture | [engineering/architecture.md](./engineering/architecture.md) |
+| Image architecture (upload / display / AI / Meta) | [engineering/image-architecture.md](./engineering/image-architecture.md) |
 | Ask Ralli Assistant | [engineering/ask-ralli-assistant.md](./engineering/ask-ralli-assistant.md) |
 | Feature status | [product/feature-list.md](./product/feature-list.md) |
 | Owner AI & APIs | [product/ai-and-apis.md](./product/ai-and-apis.md) · [qa/owner-ai-apis.md](./qa/owner-ai-apis.md) |
@@ -61,6 +62,7 @@ This is the documentation hub. Start here.
 | Multi-tenant isolation | [security/multi-tenant-isolation.md](./security/multi-tenant-isolation.md) |
 | OWASP ZAP soft-launch pass | [security/owasp-zap.md](./security/owasp-zap.md) |
 | Storage RLS | [engineering/storage-rls.md](./engineering/storage-rls.md) |
+| Image Transformations (verify) | See [image-architecture.md](./engineering/image-architecture.md#5-storage-buckets-images) · bucket policies in [storage-rls.md](./engineering/storage-rls.md) |
 | Welcome email | [engineering/auth-welcome-email.md](./engineering/auth-welcome-email.md) |
 | Developer agreements | [engineering/developer-agreements.md](./engineering/developer-agreements.md) |
 | Artwork → approvals findings | [qa/artwork-approval-findings.md](./qa/artwork-approval-findings.md) |

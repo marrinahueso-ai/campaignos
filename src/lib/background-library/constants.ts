@@ -10,6 +10,12 @@ export const BACKGROUND_LIBRARY_MAX_BYTES = 12 * 1024 * 1024;
 export const BACKGROUND_LIBRARY_BULK_UPLOAD_MAX = 40;
 
 /**
+ * Total FormData budget for one bulk upload (must stay under
+ * next.config serverActions.bodySizeLimit).
+ */
+export const BACKGROUND_LIBRARY_BULK_TOTAL_BYTES = 40 * 1024 * 1024;
+
+/**
  * Display-only Supabase Image Transformation widths.
  * Originals stay at `storage_path` / `public_url`; never persist these URLs.
  */

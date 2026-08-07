@@ -142,15 +142,17 @@ export function seedMainEventImageAcrossPlan(
 }
 
 /**
- * Set / refresh main event image and auto-copy onto empty + shared posts.
- * Captions are never modified.
+ * Set / refresh artwork for one post. First fill of an empty plan still
+ * waterfalls onto empty posts. Regenerating a post after others already have
+ * art updates **only that post** (marks it custom) so Edit Post → Apply never
+ * overwrites the rest of the timeline.
  */
 export function applyArtworkWithMainEventReuse(
   session: CampaignBuilderSession,
   sourceMilestoneId: string,
   artwork: MilestoneArtwork,
   options?: {
-    /** Mark only the source post custom (Change image). */
+    /** Mark only the source post custom (Change image / Edit Apply). */
     asCustom?: boolean;
   },
 ): ApplyMainEventImageResult {
@@ -164,16 +166,26 @@ export function applyArtworkWithMainEventReuse(
     (row) => row.milestoneId === sourceMilestoneId,
   );
   const sourceWasCustom = sourcePreview?.artworkMode === "custom";
+  const othersAlreadyHaveArt = session.previewContents.some(
+    (row) =>
+      row.milestoneId !== sourceMilestoneId && isReusableArtwork(row.artwork),
+  );
 
-  // Independent post: only that row changes.
-  if (asCustom || sourceWasCustom) {
+  // Independent post, explicit custom apply, or regeneration after waterfall:
+  // only that row changes.
+  if (asCustom || sourceWasCustom || othersAlreadyHaveArt) {
     const changedMilestoneIds: string[] = [];
     return {
       session: {
         ...session,
         previewContents: session.previewContents.map((preview) =>
           preview.milestoneId === sourceMilestoneId
-            ? patchPreviewArtwork(preview, normalized, "custom", changedMilestoneIds)
+            ? patchPreviewArtwork(
+                preview,
+                normalized,
+                "custom",
+                changedMilestoneIds,
+              )
             : preview,
         ),
       },

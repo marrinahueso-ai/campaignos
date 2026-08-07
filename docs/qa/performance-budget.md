@@ -2,10 +2,11 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA  
-**Last updated:** August 4, 2026 (Performance Engineering Phase 1 complete)  
+**Last updated:** August 7, 2026 (image display pipeline note)  
 **Related:** [Phase 1 complete](./performance-engineering-phase1-complete.md) ·
 [k6 findings](./k6-load-test-findings.md) ·
-[Testing guide](./testing-guide.md) · [Launch checklist](./launch-checklist.md)
+[Testing guide](./testing-guide.md) · [Launch checklist](./launch-checklist.md) ·
+[Image architecture](../engineering/image-architecture.md)
 
 ## Target
 
@@ -61,6 +62,8 @@ Every run warned that IndexedDB may affect loading. Re-run in an incognito Chrom
 ### Post-deploy win — Supabase image transform (July 29, 2026)
 
 Deployed fix: public Supabase object URLs become `/storage/v1/render/image/public/...` transformed derivatives before they reach `next/image`. Hero cards are capped at 800px and queue thumbnails at 128px; queue images retain Next Image's default lazy loading. This bounds the upstream source instead of relying on the Vercel image optimizer to retrieve a multi-megabyte original. Signed/non-Supabase URLs intentionally retain their existing source URL and still use Next Image optimization.
+
+**Current standard (August 2026):** shared `AppImage` + `toDisplayImageUrl` — see [image-architecture.md](../engineering/image-architecture.md). Hub surfaces (Approvals, Volunteers, Events, Campaigns, Today, Background Library) use that pipeline; remaining surfaces migrate when touched.
 
 Founder post-deploy re-measure (incognito production desktop Lighthouse):
 

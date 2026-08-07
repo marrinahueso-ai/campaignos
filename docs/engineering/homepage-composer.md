@@ -3,7 +3,7 @@
 **Status:** Living  
 **Owner:** Engineering (Hey Ralli)  
 **Last updated:** August 6, 2026 — Header buttonCount (1 | 2) · full month snapshots
-**Related:** [QA guide](../qa/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Billing / AI credits](../ops/billing-and-access.md)
+**Related:** [QA guide](../qa/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Image architecture](./image-architecture.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Billing / AI credits](../ops/billing-and-access.md)
 
 Client-heavy Membership Toolkit homepage builder. Server actions cover AI blurbs and artwork hosting; drafts stay in the browser.
 

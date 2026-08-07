@@ -73,4 +73,16 @@ describe("background library upload validation", () => {
     assert.match(capped.error ?? "", /at most/);
     assert.equal(capped.files.length, 0);
   });
+
+  it("rejects bulk uploads that exceed the total FormData budget", () => {
+    const form = new FormData();
+    // Four ~11MB files stay under the per-file cap but blow the 40MB total.
+    const chunk = 11 * 1024 * 1024;
+    for (let i = 0; i < 4; i += 1) {
+      form.append("files", fakeFile(`big-${i}.png`, { size: chunk }));
+    }
+    const result = collectBackgroundBulkUploadFiles(form);
+    assert.match(result.error ?? "", /total more than/);
+    assert.equal(result.files.length, 0);
+  });
 });

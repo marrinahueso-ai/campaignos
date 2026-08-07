@@ -95,6 +95,8 @@ describe("main event image reuse", () => {
       feedUrl: "https://cdn.example/b.png",
       storyUrl: null,
     };
+    // Regenerating the first post after others already have art must not
+    // overwrite the rest of the timeline (including still-shared posts).
     ({ session } = applyArtworkWithMainEventReuse(session, "ms--14", nextMain));
 
     assert.equal(
@@ -103,9 +105,51 @@ describe("main event image reuse", () => {
       customArt.feedUrl,
     );
     assert.equal(
-      session.previewContents.find((p) => p.milestoneId === "ms--1")?.artwork
+      session.previewContents.find((p) => p.milestoneId === "ms--14")?.artwork
         .feedUrl,
       nextMain.feedUrl,
+    );
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms--14")
+        ?.artworkMode,
+      "custom",
+    );
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms--1")?.artwork
+        .feedUrl,
+      first.feedUrl,
+    );
+  });
+
+  it("does not re-waterfall when regenerating one post after a shared fill", () => {
+    const base = withRelativeDay(buildDefaultSession("e1", "Fair", "2026-09-01"), [
+      -14, -7, -1,
+    ]);
+    const first = {
+      feedUrl: "https://cdn.example/waterfall.png",
+      storyUrl: null,
+    };
+    let { session } = applyArtworkWithMainEventReuse(base, "ms--14", first);
+    const regen = {
+      feedUrl: "https://cdn.example/two-weeks-only.png",
+      storyUrl: null,
+    };
+    ({ session } = applyArtworkWithMainEventReuse(session, "ms--14", regen));
+
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms--14")?.artwork
+        .feedUrl,
+      regen.feedUrl,
+    );
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms--7")?.artwork
+        .feedUrl,
+      first.feedUrl,
+    );
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms--1")?.artwork
+        .feedUrl,
+      first.feedUrl,
     );
   });
 

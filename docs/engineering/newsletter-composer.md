@@ -3,7 +3,7 @@
 **Status:** Living  
 **Owner:** Engineering (Hey Ralli)  
 **Last updated:** July 31, 2026  
-**Related:** [QA guide](../qa/newsletter-composer.md) · [Feature list](../product/feature-list.md) · [Homepage Composer eng](./homepage-composer.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md)
+**Related:** [QA guide](../qa/newsletter-composer.md) · [Feature list](../product/feature-list.md) · [Homepage Composer eng](./homepage-composer.md) · [Image architecture](./image-architecture.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md)
 
 Client-heavy scoop-style email builder. Server actions host artwork; drafts stay in the browser. No in-app SMTP send.
 

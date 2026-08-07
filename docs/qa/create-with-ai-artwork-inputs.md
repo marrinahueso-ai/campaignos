@@ -3,7 +3,7 @@
 **Status:** Living  
 **Owner:** Engineering / QA (Hey Ralli)  
 **Last updated:** 2026-07-21  
-**Related:** [Testing guide](./testing-guide.md) · [Feature list](../product/feature-list.md) · [Campaign Builder debug](../../.cursor/rules/campaign-builder-debug.mdc) · Playwright Layer A `tests/hey-ralli/smoke/13-create-with-ai-artwork-inputs.spec.ts` · Layer C `tests/hey-ralli/smoke/13b-create-with-ai-artwork-generation-inputs.spec.ts` · Prompt contracts `src/lib/campaign-builder-v2/__tests__/artwork-prompts.test.ts`
+**Related:** [Testing guide](./testing-guide.md) · [Feature list](../product/feature-list.md) · [Image architecture](../engineering/image-architecture.md) · [Campaign Builder debug](../../.cursor/rules/campaign-builder-debug.mdc) · Playwright Layer A `tests/hey-ralli/smoke/13-create-with-ai-artwork-inputs.spec.ts` · Layer C `tests/hey-ralli/smoke/13b-create-with-ai-artwork-generation-inputs.spec.ts` · Prompt contracts `src/lib/campaign-builder-v2/__tests__/artwork-prompts.test.ts`
 
 Inventory of every Create with AI control that feeds **artwork** generation (feed + story). Use Layer A for wiring/persistence, unit prompt contracts for “UI saved but AI ignored,” and Layer C only for a small opt-in golden set that actually calls the model.
 

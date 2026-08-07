@@ -1,7 +1,7 @@
 # QA
 
 **Purpose:** How to test Hey Ralli, QA architecture orientation, investigation notes.  
-**Last updated:** August 4, 2026
+**Last updated:** August 7, 2026
 
 | Doc | Status |
 |-----|--------|
@@ -14,7 +14,7 @@
 | [launch-checklist.md](./launch-checklist.md) | **Living** — soft launch / Production pass-fail checklist |
 | [architecture-overview.md](./architecture-overview.md) | **Living** |
 | [testing-guide.md](./testing-guide.md) | **Living** |
-| [performance-budget.md](./performance-budget.md) | **Living** — ≤2s page/save budget; multi-tenant k6 envelope; `npm run test:hey-ralli:perf` |
+| [performance-budget.md](./performance-budget.md) | **Living** — ≤2s page/save budget; image transform notes → [image-architecture](../engineering/image-architecture.md); `npm run test:hey-ralli:perf` |
 | [create-with-ai-artwork-inputs.md](./create-with-ai-artwork-inputs.md) | **Living** — Creative Setup → artwork input matrix; Playwright `13` / `13b` |
 | [homepage-composer.md](./homepage-composer.md) | **Living** — Homepage Composer workflow, acceptance, limitations · [eng](../engineering/homepage-composer.md) |
 | [newsletter-composer.md](./newsletter-composer.md) | **Living** — Newsletter Composer workflow, acceptance, limitations · [eng](../engineering/newsletter-composer.md) |

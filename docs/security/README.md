@@ -12,6 +12,6 @@
 | [audit-remediation.md](./audit-remediation.md) | **Living** — July 2026 security audit findings + fix status |
 | [owasp-zap.md](./owasp-zap.md) | **Living** — Jul 30 2026 OWASP ZAP soft-launch pass (production manual explore) |
 
-Living related: [Access control](../engineering/access-control.md) · [Storage RLS](../engineering/storage-rls.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md)
+Living related: [Access control](../engineering/access-control.md) · [Storage RLS](../engineering/storage-rls.md) · [Image architecture](../engineering/image-architecture.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md)
 
 **Back:** [Documentation home](../README.md)

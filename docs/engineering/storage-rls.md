@@ -3,7 +3,7 @@
 **Status:** Living  
 **Owner:** Engineering  
 **Last updated:** 2026-08-07  
-**Related:** [access-control.md](./access-control.md) · [multi-tenant-isolation.md](../security/multi-tenant-isolation.md) · [developer-agreements.md](./developer-agreements.md)
+**Related:** [access-control.md](./access-control.md) · [image-architecture.md](./image-architecture.md) · [multi-tenant-isolation.md](../security/multi-tenant-isolation.md) · [developer-agreements.md](./developer-agreements.md)
 
 **Supabase project:** `zyllfqieeihshnwpakiv`  
 **Core migration:** `supabase/migrations/067_storage_membership_rls.sql`  
@@ -114,23 +114,13 @@ Public buckets today: `event-assets`, `campaign-files`, `school-assets`, `organi
 
 ## Image Transformations (display)
 
-**Status (2026-08-07):** Enabled and verified on production project `zyllfqieeihshnwpakiv`.
+**Canonical guide:** [image-architecture.md](./image-architecture.md) — presets, `AppImage`, originals vs transforms, migration status, and anti-patterns.
 
-Public object URLs can be rewritten to on-the-fly derivatives:
+**Ops check (this project):** Image Transformations are **enabled** on `zyllfqieeihshnwpakiv` (Pro+). Toggle: [Storage Settings](https://supabase.com/dashboard/project/zyllfqieeihshnwpakiv/storage/files/settings).
 
-`/storage/v1/object/public/{bucket}/{path}` → `/storage/v1/render/image/public/{bucket}/{path}?width=&quality=`
+Quick verify: request `/storage/v1/render/image/public/{bucket}/{path}?width=360&quality=72` and confirm a smaller body than the original object URL (often `image/webp`).
 
-- **Shared display API:** `src/lib/images/display.ts` (`toDisplayImageUrl`) + `src/components/images/AppImage.tsx`
-- Presets: `thumb` (128) · `card` (360) · `hero` / `detail` (800) — see `src/lib/images/presets.ts`
-- Low-level rewriter: `src/lib/images/supabase-thumbnail.ts` (`toSupabaseThumbnailUrl`)
-- Auto WebP when the client accepts it; originals remain the source of truth at `storage_path` / original `public_url`
-- Do **not** store transform URLs in the database or write separate thumbnail files
-- Hub surfaces on the shared pipeline: Background Library, Approvals, Volunteers, Events lists/heroes, Campaigns thumbs, Today/Dashboard widgets
-- Still migrating (display originals OK for now): campaign builder / composers / planning hub / vendor signed logos / inbox stickers
-- Keep originals for: AI inspiration, Meta publish, downloads, exports, email HTML, lightbox enlarge
-- Re-check anytime: Storage → Settings → **Enable Image Transformations**, or fetch a known public object via `/render/image/public/…?width=360` and confirm `image/webp` (or resized) with a much smaller body than the original
-
-Dashboard toggle path: [Storage Settings](https://supabase.com/dashboard/project/zyllfqieeihshnwpakiv/storage/files/settings) (Pro plan and above).
+Public buckets that participate in display transforms today include `event-assets`, `campaign-files`, `school-assets`, `organization-stickers`, and `platform-backgrounds`. Do **not** persist transform URLs in the database.
 
 ---
 
@@ -165,4 +155,5 @@ Expect **31** policies: 28 named `*_active_member` / `*_event_member` (using `ca
 | Organization stickers bucket + policies | `supabase/migrations/20260723042605_organization_stickers.sql` |
 | Developer agreements bucket + policies | `supabase/migrations/073_developer_agreements.sql` |
 | Contract test | `src/lib/auth/__tests__/storage-rls-phase-c3.test.ts` |
-| Path builders | `vendors/storage.ts`, `event-workspace/storage.ts`, `campaign-files/storage.ts`, `inbox/sticker-constants.ts`, `ai-artwork/storage.ts`, `homepage-composer/artwork-actions.ts`, `newsletter-composer/artwork-actions.ts`, `developer-agreements/actions.ts` |
+| Path builders | `vendors/storage.ts`, `event-workspace/storage.ts`, `campaign-files/storage.ts`, `inbox/sticker-constants.ts`, `ai-artwork/storage.ts`, `homepage-composer/artwork-actions.ts`, `newsletter-composer/artwork-actions.ts`, `developer-agreements/actions.ts`, `background-library/storage.ts` |
+| Image display pipeline | [image-architecture.md](./image-architecture.md) · `src/lib/images/` · `src/components/images/AppImage.tsx` |

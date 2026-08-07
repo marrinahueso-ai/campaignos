@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 import withBundleAnalyzer from "@next/bundle-analyzer";
 import { withSentryConfig } from "@sentry/nextjs";
+import { BACKGROUND_LIBRARY_BULK_TOTAL_BYTES } from "./src/lib/background-library/constants";
 import { MAX_EVENT_ASSET_BYTES } from "./src/lib/event-workspace/storage";
+
+/** Ceiling for server action FormData (event assets + Background Library bulk). */
+const SERVER_ACTION_BODY_SIZE_LIMIT = `${Math.ceil(
+  Math.max(MAX_EVENT_ASSET_BYTES, BACKGROUND_LIBRARY_BULK_TOTAL_BYTES) /
+    (1024 * 1024),
+)}mb`;
 
 const nextConfig: NextConfig = {
   // Dev and build share a distDir by default, which is unsafe: running `next
@@ -39,8 +46,8 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // Must match MAX_EVENT_ASSET_BYTES in upload validation (10 MB).
-      bodySizeLimit: MAX_EVENT_ASSET_BYTES,
+      // Background Library allows 12MB/file and bulk totals up to 40MB.
+      bodySizeLimit: SERVER_ACTION_BODY_SIZE_LIMIT,
     },
   },
   async redirects() {

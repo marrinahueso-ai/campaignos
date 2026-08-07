@@ -26,9 +26,11 @@ import {
 } from "@/lib/background-library/actions";
 import {
   BACKGROUND_LIBRARY_BATCH_SIZE,
+  BACKGROUND_LIBRARY_BULK_TOTAL_BYTES,
   BACKGROUND_LIBRARY_BULK_UPLOAD_MAX,
   BACKGROUND_LIBRARY_DETAIL_THUMB_WIDTH,
   BACKGROUND_LIBRARY_GRID_THUMB_WIDTH,
+  BACKGROUND_LIBRARY_MAX_BYTES,
 } from "@/lib/background-library/constants";
 import type {
   BackgroundAsset,
@@ -193,10 +195,34 @@ export function BackgroundLibraryShell({
     });
   }
 
+  function friendlyUploadError(caught: unknown): string {
+    const message =
+      caught instanceof Error
+        ? caught.message
+        : typeof caught === "string"
+          ? caught
+          : "";
+    if (/Body exceeded|body size|413/i.test(message)) {
+      const limitMb = Math.round(
+        BACKGROUND_LIBRARY_BULK_TOTAL_BYTES / (1024 * 1024),
+      );
+      const fileMb = Math.round(BACKGROUND_LIBRARY_MAX_BYTES / (1024 * 1024));
+      return `Upload is too large for one request. Use fewer images, or keep each under ${fileMb}MB (${limitMb}MB total for bulk).`;
+    }
+    return message || "Upload failed. Refresh the page and try again.";
+  }
+
   async function onUpload(formData: FormData) {
     setError(null);
     setMessage(null);
-    startTransition(async () => {
+    const file = formData.get("file");
+    if (file instanceof File && file.size > BACKGROUND_LIBRARY_MAX_BYTES) {
+      setError(
+        `Image must be ${Math.round(BACKGROUND_LIBRARY_MAX_BYTES / (1024 * 1024))}MB or smaller.`,
+      );
+      return;
+    }
+    try {
       const result = await uploadBackgroundSourceAction(formData);
       if (!result.success) {
         setError(result.message);
@@ -205,7 +231,9 @@ export function BackgroundLibraryShell({
       setMessage(result.message);
       router.push("/ops/background-library?tab=sources");
       router.refresh();
-    });
+    } catch (caught) {
+      setError(friendlyUploadError(caught));
+    }
   }
 
   async function onBulkUpload(formData: FormData) {
@@ -214,7 +242,20 @@ export function BackgroundLibraryShell({
     for (const libraryId of bulkLibraryIds) {
       formData.append("libraryIds", libraryId);
     }
-    startTransition(async () => {
+    const files = formData.getAll("files").filter(
+      (entry): entry is File => entry instanceof File && entry.size > 0,
+    );
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+    if (totalBytes > BACKGROUND_LIBRARY_BULK_TOTAL_BYTES) {
+      const limitMb = Math.round(
+        BACKGROUND_LIBRARY_BULK_TOTAL_BYTES / (1024 * 1024),
+      );
+      setError(
+        `Those images total more than ${limitMb}MB. Upload fewer files or smaller images.`,
+      );
+      return;
+    }
+    try {
       const result = await bulkUploadBackgroundAssetsAction(formData);
       if (!result.success) {
         setError(result.message);
@@ -223,7 +264,9 @@ export function BackgroundLibraryShell({
       setMessage(result.message);
       router.push("/ops/background-library?tab=review");
       router.refresh();
-    });
+    } catch (caught) {
+      setError(friendlyUploadError(caught));
+    }
   }
 
   function onGenerate(sourceId: string) {

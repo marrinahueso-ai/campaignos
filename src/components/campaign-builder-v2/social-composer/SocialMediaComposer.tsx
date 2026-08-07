@@ -1195,6 +1195,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     const changedIds = applyMilestoneArtwork(
       selectedPreview.milestoneId,
       artwork,
+      { asCustom: true },
     );
     setEditModalOpen(false);
     try {

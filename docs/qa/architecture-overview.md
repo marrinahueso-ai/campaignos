@@ -246,6 +246,7 @@ Use this as a **do-not-file-as-regression** / expected-gap list unless the ticke
 | School calendar import dedupe | [calendar-import-dedupe.md](./calendar-import-dedupe.md) |
 | Access control phases | [access-control.md](../engineering/access-control.md) |
 | Storage / RLS notes | [storage-rls.md](../engineering/storage-rls.md) |
+| Image architecture | [image-architecture.md](../engineering/image-architecture.md) |
 
 ---
 
@@ -253,4 +254,4 @@ Use this as a **do-not-file-as-regression** / expected-gap list unless the ticke
 
 ---
 
-**Canonical docs:** [Documentation home](../README.md) · [Feature list](../product/feature-list.md) · [Architecture](../engineering/architecture.md)
+**Canonical docs:** [Documentation home](../README.md) · [Feature list](../product/feature-list.md) · [Architecture](../engineering/architecture.md) · [Image architecture](../engineering/image-architecture.md)
