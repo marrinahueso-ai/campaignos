@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { ImagePlus, Upload, X } from "lucide-react";
 import { CanvaDesignPicker } from "@/components/canva/CanvaDesignPicker";
+import { BackgroundLibraryPicker } from "@/components/background-library/BackgroundLibraryPicker";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { CampaignBuilderFooter } from "@/components/campaign-builder-v2/CampaignBuilderFooter";
 import { Select } from "@/components/ui/Select";
@@ -145,6 +146,7 @@ export function InspirationStep() {
     setPlaybookId,
     selectCampaign,
     addInspirationImage,
+    addInspirationFromLibrary,
     removeInspirationImage,
     updateInspirationImage,
     uploadCampaignLogo,
@@ -167,6 +169,7 @@ export function InspirationStep() {
   const [playbookError, setPlaybookError] = useState<string | null>(null);
   const [isUpdatingPlaybook, setIsUpdatingPlaybook] = useState(false);
   const [canvaPickerOpen, setCanvaPickerOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [importingCanvaDesignId, setImportingCanvaDesignId] = useState<
     string | null
   >(null);
@@ -545,6 +548,13 @@ export function InspirationStep() {
                         >
                           <ImagePlus className="h-3.5 w-3.5" strokeWidth={1.5} />
                           Add images
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLibraryOpen(true)}
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-cos-text underline hover:no-underline"
+                        >
+                          Browse Library
                         </button>
                         <button
                           type="button"
@@ -1042,6 +1052,13 @@ export function InspirationStep() {
         onSelect={handleImportCanvaDesign}
         importingDesignId={importingCanvaDesignId}
         connectHref={canvaConnectHref}
+      />
+      <BackgroundLibraryPicker
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        onSelect={(asset) => {
+          addInspirationFromLibrary(asset);
+        }}
       />
     </div>
   );

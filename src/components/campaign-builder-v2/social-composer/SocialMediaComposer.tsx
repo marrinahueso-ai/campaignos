@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
+import { BackgroundLibraryPicker } from "@/components/background-library/BackgroundLibraryPicker";
 import { WarmBreathFrame } from "@/components/motion/WarmBreathFrame";
 
 const smcSans = DM_Sans({
@@ -496,6 +497,7 @@ function SetupPanel({
     setPlaybookId,
     selectCampaign,
     addInspirationImage,
+    addInspirationFromLibrary,
     removeInspirationImage,
     saveCreativeSetupAndContinue,
     flushSave,
@@ -512,6 +514,7 @@ function SetupPanel({
   const [error, setError] = useState<string | null>(null);
   const [playbookError, setPlaybookError] = useState<string | null>(null);
   const [inspDragOver, setInspDragOver] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   function addInspirationFiles(fileList: FileList | File[] | null | undefined) {
     const files = Array.from(fileList ?? []);
@@ -782,16 +785,25 @@ function SetupPanel({
               ) : null}
             </div>
 
-            <div className="setup-insp-block">
+              <div className="setup-insp-block">
               <div className="setup-plan-label-row">
                 <label className="field-label">Inspiration Images</label>
-                <button
-                  type="button"
-                  className="setup-add-images"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  + Add Images
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    className="setup-add-images"
+                    onClick={() => setLibraryOpen(true)}
+                  >
+                    Browse Library
+                  </button>
+                  <button
+                    type="button"
+                    className="setup-add-images"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    + Add Images
+                  </button>
+                </div>
               </div>
               <div
                 className={`insp-drop setup-insp-drop${inspDragOver ? " drag-over" : ""}`}
@@ -999,6 +1011,16 @@ function SetupPanel({
           </div>
         </aside>
       </div>
+      <BackgroundLibraryPicker
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        onSelect={(asset) => {
+          const result = addInspirationFromLibrary(asset);
+          if (!result.success && result.message) {
+            setError(result.message);
+          }
+        }}
+      />
     </section>
   );
 }

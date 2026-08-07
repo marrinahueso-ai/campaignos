@@ -115,6 +115,7 @@ import type {
   StepWarning,
 } from "@/lib/campaign-builder-v2/types";
 import type { SetupLogoOption } from "@/lib/artwork-v2/setup-logos";
+import { ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
 
 export interface CampaignBuilderSchoolColors {
   primary: string | null;
@@ -173,6 +174,12 @@ interface CampaignBuilderContextValue {
   ) => Promise<{ success: boolean; message?: string }>;
   selectCampaign: (campaignId: string) => void;
   addInspirationImage: (file: File) => void;
+  /** Attach a published Background Library URL as inspiration (bumps usage). */
+  addInspirationFromLibrary: (asset: {
+    id: string;
+    publicUrl: string;
+    title: string;
+  }) => { success: boolean; message?: string };
   removeInspirationImage: (imageId: string) => void;
   updateInspirationImage: (
     imageId: string,
@@ -1397,6 +1404,52 @@ export function CampaignBuilderProvider({
     [canUploadArtwork, eventId, updateSession],
   );
 
+  const addInspirationFromLibrary = useCallback(
+    (asset: { id: string; publicUrl: string; title: string }) => {
+      if (!canUploadArtwork) {
+        setInspirationUploadError(
+          "You do not have permission to upload artwork.",
+        );
+        return { success: false, message: "You do not have permission to upload artwork." };
+      }
+      const url = asset.publicUrl?.trim();
+      if (!url) {
+        return { success: false, message: "That background has no image URL." };
+      }
+
+      const existing = sessionRef.current.inspiration.inspirationImages ?? [];
+      if (existing.length >= ARTWORK_V2_MAX_INSPIRATION_IMAGES) {
+        const message = `You can attach up to ${ARTWORK_V2_MAX_INSPIRATION_IMAGES} inspiration images.`;
+        setInspirationUploadError(message);
+        return { success: false, message };
+      }
+      if (existing.some((image) => image.url === url || image.previewUrl === url)) {
+        return { success: true };
+      }
+
+      const imageId = `inspiration-library-${asset.id}-${Date.now()}`;
+      const label = asset.title?.trim() || "Library background";
+      setInspirationUploadError(null);
+      updateSession((prev) => ({
+        ...prev,
+        inspiration: {
+          ...prev.inspiration,
+          inspirationImages: [
+            ...prev.inspiration.inspirationImages,
+            {
+              id: imageId,
+              label,
+              url,
+              previewUrl: url,
+            },
+          ],
+        },
+      }));
+      return { success: true };
+    },
+    [canUploadArtwork, updateSession],
+  );
+
   const removeInspirationImage = useCallback(
     (imageId: string) => {
       updateSession((prev) => {
@@ -2417,6 +2470,7 @@ export function CampaignBuilderProvider({
       setPlaybookId,
       selectCampaign,
       addInspirationImage,
+      addInspirationFromLibrary,
       removeInspirationImage,
       updateInspirationImage,
       uploadCampaignLogo,
@@ -2471,6 +2525,7 @@ export function CampaignBuilderProvider({
       setPlaybookId,
       selectCampaign,
       addInspirationImage,
+      addInspirationFromLibrary,
       removeInspirationImage,
       updateInspirationImage,
       uploadCampaignLogo,

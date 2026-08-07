@@ -1,6 +1,8 @@
 import { statSync } from "node:fs";
 import { join } from "node:path";
 
+import { FlyerComposerEmbed } from "@/components/create-with-ai/FlyerComposerEmbed";
+
 type FlyerComposerHostProps = {
   view?: string | null;
   eventId?: string | null;
@@ -66,14 +68,9 @@ export function FlyerComposerHost({
   const frameKey = `${trimmedOrgId || "no-org"}:${trimmedEventId || "no-event"}:${resolved}:${fresh ? "1" : "0"}`;
 
   return (
-    <div className="-mx-4 -my-8 flex h-[calc(100dvh-3.75rem)] min-h-[560px] flex-col overflow-hidden bg-[#f6f2eb] lg:-mx-8 lg:-my-10">
-      <iframe
-        key={frameKey}
-        src={`/create-with-ai-flyer.html?${params.toString()}`}
-        title="Flyer composer"
-        className="min-h-0 w-full flex-1 border-0 bg-[#f6f2eb]"
-        allow="microphone"
-      />
-    </div>
+    <FlyerComposerEmbed
+      frameKey={frameKey}
+      src={`/create-with-ai-flyer.html?${params.toString()}`}
+    />
   );
 }

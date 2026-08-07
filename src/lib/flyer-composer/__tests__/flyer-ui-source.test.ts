@@ -56,4 +56,13 @@ describe("flyer composer UI source contract", () => {
     assert.match(flyerHtml, /id="startSavedFlyers"/);
     assert.match(flyerHtml, /Save options/);
   });
+
+  it("wires Browse Gallery to the host Background Library picker", () => {
+    assert.match(flyerHtml, /id="browseGalleryBtn"/);
+    assert.doesNotMatch(flyerHtml, /id="browseGalleryBtn"[^>]*\sdisabled/);
+    assert.match(flyerHtml, /open-background-library/);
+    assert.match(flyerHtml, /background-library-selected/);
+    assert.match(flyerHtml, /function applyLibraryInspiration/);
+    assert.match(flyerHtml, /inspirationPhotoSource === "library"/);
+  });
 });

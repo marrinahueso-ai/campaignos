@@ -730,9 +730,15 @@
       width: 100%; padding: 9px 12px; border-radius: 10px;
       border: 1px solid var(--line); background: #faf8f5;
       font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--ink-soft); cursor: not-allowed; opacity: 0.72;
+      color: var(--ink-soft); cursor: pointer; opacity: 1;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
     }
-    .insp-gallery-btn:disabled { cursor: not-allowed; }
+    .insp-gallery-btn:hover {
+      border-color: rgba(42, 122, 134, 0.35);
+      background: #f3fafb;
+      color: var(--teal);
+    }
+    .insp-gallery-btn:disabled { cursor: not-allowed; opacity: 0.72; }
     .brand-preview-tile {
       aspect-ratio: 16/10; border-radius: 14px; border: 1px solid var(--line);
       background: #faf8f5; padding: 16px; display: flex; flex-direction: column; gap: 12px;
@@ -2362,7 +2368,7 @@
                 </div>
                 <input type="file" id="inspFile" accept="image/*" hidden />
               </div>
-              <button type="button" class="insp-gallery-btn" id="browseGalleryBtn" disabled title="Gallery coming soon">
+              <button type="button" class="insp-gallery-btn" id="browseGalleryBtn" title="Browse the Hey Ralli background library">
                 Browse Gallery
               </button>
               <p class="insp-peer-note">Upload a photo to use as the hero or to set the color palette.</p>
@@ -3819,6 +3825,7 @@
     function hasExplicitInspirationPhoto() {
       if (!state.imageUrl) return false;
       if (state.inspirationPhotoSource === "upload") return true;
+      if (state.inspirationPhotoSource === "library") return true;
       return state.inspirationPhotoSource === "sample" && state.inspirationPhotoExplicit === true;
     }
 
@@ -3833,6 +3840,18 @@
         if (state.previewGenerated) runGenerate();
         else renderPreviewIdleFlyer();
       }
+      scheduleSave();
+    }
+
+    function applyLibraryInspiration(asset) {
+      if (!asset || !asset.publicUrl) return;
+      state.imageUrl = String(asset.publicUrl);
+      state.inspirationPhotoSource = "library";
+      state.inspirationPhotoLabel = asset.title || "Library background";
+      state.inspirationPhotoExplicit = true;
+      updateInspUI();
+      renderThumbs();
+      if (state.view === "result" && !state.generating) renderPreviewIdleFlyer();
       scheduleSave();
     }
 
@@ -4826,7 +4845,11 @@
       }
       const source = d.inspirationPhotoSource;
       const explicit = d.inspirationPhotoExplicit === true;
-      if (source === "upload" || (source === "sample" && explicit)) {
+      if (
+        source === "upload" ||
+        source === "library" ||
+        (source === "sample" && explicit)
+      ) {
         state.imageUrl = d.imageUrl;
         state.inspirationPhotoSource = source;
         state.inspirationPhotoLabel = d.inspirationPhotoLabel || null;
@@ -7189,6 +7212,33 @@
     document.getElementById("inspRemove").addEventListener("click", (e) => {
       e.stopPropagation();
       removeInspirationPhoto();
+    });
+
+    const browseGalleryBtn = document.getElementById("browseGalleryBtn");
+    if (browseGalleryBtn) {
+      browseGalleryBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(
+            { source: "hey-ralli-flyer", type: "open-background-library" },
+            window.location.origin,
+          );
+          return;
+        }
+        window.alert(
+          "Open Flyer from Create with AI to browse the Background Library.",
+        );
+      });
+    }
+    window.addEventListener("message", (event) => {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+      if (data.source !== "hey-ralli-flyer-host") return;
+      if (data.type === "background-library-selected" && data.asset) {
+        applyLibraryInspiration(data.asset);
+      }
     });
 
     const startUpload = document.getElementById("startUpload");

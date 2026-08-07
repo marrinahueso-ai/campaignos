@@ -90,7 +90,7 @@ CampignOS/
 | `/create-with-ai/flyer` | Flyer composer (static HTML embed); saves to event Files (`event_playbook_files` category `flyer`); list/load via `/api/flyer-composer/saved` |
 | `/homepage-composer` | Membership Toolkit / homepage HTML export |
 | `/newsletter-composer` | Scoop-style family email HTML export |
-| `/ops/background-library` | Owner-only Background Library (source upload → generate 10, or bulk upload finished assets → approve/delete); `platform-backgrounds` + `background_*` tables; display via shared `AppImage` ([image-architecture.md](./image-architecture.md)) |
+| `/ops/background-library` | Owner-only Background Library (source upload → generate 10, or bulk upload finished assets → approve/delete); `platform-backgrounds` + `background_*` tables; display via shared `AppImage` ([image-architecture.md](./image-architecture.md)). School picker: Social **Browse Library** + Flyer **Browse Gallery** (search/assortment + usage count) |
 
 **Settings Ease left nav:** Overview · Organization · Branding · Team & Access · Integrations · Billing & Plan · Account. Header settings gear → `/settings` (no section dropdown). Branding hub (`/settings/branding`) nests AI Brain · AI Inbox · Playbook · Colors & Logos · School Year (`?section=`); standalone `/settings/school-year` still works.
 

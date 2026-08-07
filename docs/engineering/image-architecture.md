@@ -170,7 +170,7 @@ Expect a much smaller body than the original (often `image/webp`) and `cf-cache-
 
 | Feature | Store | Display | Full-quality use |
 |---------|-------|---------|------------------|
-| Background Library | `platform-backgrounds` | `AppImage` | AI generate from source original; approve/export later |
+| Background Library | `platform-backgrounds` | Owner grids + school picker (`AppImage`) | AI generate from source; school attach uses `public_url` as inspiration (Social / Flyer); selecting bumps `usage_count` |
 | AI / Artwork V2 / CB2 | `event-assets` | Hubs via shared thumbs; builder still migrating | Generation + inspiration URLs |
 | Approvals / Volunteers / Events / Today | URLs from event / approval rows | Shared pipeline | Download / Meta from original columns |
 | Campaign lists | Hero artwork URL | `CampaignThumbnail` | — |
