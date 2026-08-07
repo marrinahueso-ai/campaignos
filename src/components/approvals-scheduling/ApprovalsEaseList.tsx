@@ -202,14 +202,14 @@ export function ApprovalsQueueTable({
           {/*
             table-fixed: thumb + action stay rem-sized; middle columns use %
             so Event/Campaign stays dominant without absorbing all leftover
-            space (the bare <col /> caused Post/Status/Assignee to pack right).
+            space. Actions is wide enough for Failed Retry + Eye (~7rem).
           */}
           <col className="w-[4.5rem]" />
-          <col className="w-[40%]" />
+          <col className="w-[37%]" />
           <col className="w-[17%]" />
           <col className="w-[12%]" />
           <col className="w-[16%]" />
-          <col className="w-[4.25rem]" />
+          <col className="w-[7rem]" />
         </colgroup>
         <thead>
           <tr className="border-b border-cos-border text-[10px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">

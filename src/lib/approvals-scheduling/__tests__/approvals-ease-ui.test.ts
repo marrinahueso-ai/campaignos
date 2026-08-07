@@ -182,7 +182,7 @@ describe("approvals ease pulse contracts", () => {
     assert.match(ease, /table-fixed/);
     assert.match(
       ease,
-      /ApprovalsQueueTable[\s\S]*?<colgroup>[\s\S]*?w-\[4\.5rem\][\s\S]*?w-\[40%\][\s\S]*?w-\[17%\][\s\S]*?w-\[12%\][\s\S]*?w-\[16%\][\s\S]*?w-\[4\.25rem\]/,
+      /ApprovalsQueueTable[\s\S]*?<colgroup>[\s\S]*?w-\[4\.5rem\][\s\S]*?w-\[37%\][\s\S]*?w-\[17%\][\s\S]*?w-\[12%\][\s\S]*?w-\[16%\][\s\S]*?w-\[7rem\]/,
     );
     assert.match(ease, /displayApprovalPostName/);
     assert.match(table, /AppImage/);
