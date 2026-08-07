@@ -32,8 +32,13 @@ export type BackgroundAsset = {
   sourceId: string | null;
   status: BackgroundAssetStatus;
   title: string;
+  filenameLabel: string;
+  description: string;
   tags: string[];
   colors: string[];
+  style: string;
+  audience: string;
+  objects: string[];
   season: BackgroundSeason;
   schoolLevel: BackgroundSchoolLevel;
   storagePath: string;

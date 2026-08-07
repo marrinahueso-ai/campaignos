@@ -37,8 +37,13 @@ type AssetRow = {
   source_id: string | null;
   status: BackgroundAssetStatus;
   title: string;
+  filename_label: string | null;
+  description: string | null;
   tags: string[] | null;
   colors: string[] | null;
+  style: string | null;
+  audience: string | null;
+  objects: string[] | null;
   season: string;
   school_level: string;
   storage_path: string;
@@ -69,8 +74,13 @@ function mapAsset(
     sourceId: row.source_id,
     status: row.status,
     title: row.title,
+    filenameLabel: row.filename_label ?? "",
+    description: row.description ?? "",
     tags: row.tags ?? [],
     colors: row.colors ?? [],
+    style: row.style ?? "",
+    audience: row.audience ?? "",
+    objects: row.objects ?? [],
     season: (row.season as BackgroundSeason) || "anytime",
     schoolLevel: (row.school_level as BackgroundSchoolLevel) || "any",
     storagePath: row.storage_path,
@@ -179,7 +189,7 @@ export async function listBackgroundAssetsByStatus(
   const { data, error } = await admin
     .from("background_assets")
     .select(
-      "id, source_id, status, title, tags, colors, season, school_level, storage_path, public_url, usage_count, created_at, updated_at",
+      "id, source_id, status, title, filename_label, description, tags, colors, style, audience, objects, season, school_level, storage_path, public_url, usage_count, created_at, updated_at",
     )
     .eq("status", status)
     .order("created_at", { ascending: false });

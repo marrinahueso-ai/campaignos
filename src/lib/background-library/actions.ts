@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getAuthUser } from "@/lib/auth/queries";
+import { getLatestOrganization } from "@/lib/organizations/queries";
 import { canAccessOwnerOps } from "@/lib/ops/access";
 import {
   createAdminClient,
@@ -15,6 +16,10 @@ import {
   BACKGROUND_SEASONS,
   BACKGROUND_SCHOOL_LEVELS,
 } from "./constants.ts";
+import {
+  analyzeBackgroundAssetsBatch,
+  applyBackgroundAssetVisionMetadata,
+} from "./analyze-metadata.ts";
 import { generateBackgroundBatchFromSource } from "./generate.ts";
 import { getBackgroundSourceById } from "./queries.ts";
 import {
@@ -43,6 +48,31 @@ import {
 
 function revalidateLibrary() {
   revalidatePath("/ops/background-library");
+}
+
+async function catalogNewAssets(input: {
+  assetIds: string[];
+  userId: string;
+  applyLibrarySuggestions: boolean;
+}): Promise<string> {
+  if (input.assetIds.length === 0) return "";
+  const organization = await getLatestOrganization();
+  if (!organization?.id) {
+    return " Metadata tagging skipped — no active organization for AI credits.";
+  }
+  const catalog = await analyzeBackgroundAssetsBatch({
+    assetIds: input.assetIds,
+    organizationId: organization.id,
+    userId: input.userId,
+    applyLibrarySuggestions: input.applyLibrarySuggestions,
+  });
+  if (catalog.analyzed > 0) {
+    return ` Auto-tagged ${catalog.analyzed}${catalog.failed > 0 ? ` (${catalog.failed} skipped)` : ""}.`;
+  }
+  if (catalog.failed > 0) {
+    return " Metadata tagging failed — edit titles/tags in Review.";
+  }
+  return "";
 }
 
 async function requireOwner(): Promise<
@@ -284,6 +314,11 @@ export async function registerBackgroundAssetUploadsAction(input: {
   }
 
   const createdCount = assetIds.length;
+  const catalogNote = await catalogNewAssets({
+    assetIds,
+    userId: gate.userId,
+    applyLibrarySuggestions: libraryIds.length === 0,
+  });
   revalidateLibrary();
 
   if (createdCount === 0) {
@@ -303,8 +338,8 @@ export async function registerBackgroundAssetUploadsAction(input: {
     success: true,
     message:
       failedCount > 0
-        ? `Uploaded ${createdCount} to the review queue (${failedCount} failed).`
-        : `Uploaded ${createdCount} background${createdCount === 1 ? "" : "s"} to the review queue.`,
+        ? `Uploaded ${createdCount} to the review queue (${failedCount} failed).${catalogNote}`
+        : `Uploaded ${createdCount} background${createdCount === 1 ? "" : "s"} to the review queue.${catalogNote}`,
     createdCount,
     failedCount,
     assetIds,
@@ -496,6 +531,11 @@ export async function bulkUploadBackgroundAssetsAction(formData: FormData): Prom
   }
 
   const createdCount = assetIds.length;
+  const catalogNote = await catalogNewAssets({
+    assetIds,
+    userId: gate.userId,
+    applyLibrarySuggestions: libraryIds.length === 0,
+  });
   revalidateLibrary();
 
   if (createdCount === 0) {
@@ -515,8 +555,8 @@ export async function bulkUploadBackgroundAssetsAction(formData: FormData): Prom
     success: true,
     message:
       failedCount > 0
-        ? `Uploaded ${createdCount} to the review queue (${failedCount} failed).`
-        : `Uploaded ${createdCount} background${createdCount === 1 ? "" : "s"} to the review queue.`,
+        ? `Uploaded ${createdCount} to the review queue (${failedCount} failed).${catalogNote}`
+        : `Uploaded ${createdCount} background${createdCount === 1 ? "" : "s"} to the review queue.${catalogNote}`,
     createdCount,
     failedCount,
     assetIds,
@@ -556,8 +596,13 @@ export async function generateBackgroundBatchAction(input: {
 export async function updateBackgroundAssetAction(input: {
   assetId: string;
   title: string;
+  filenameLabel?: string;
+  description?: string;
   tags: string;
   colors: string;
+  style?: string;
+  audience?: string;
+  objects?: string;
   season: BackgroundSeason;
   schoolLevel: BackgroundSchoolLevel;
   libraryIds: string[];
@@ -570,8 +615,13 @@ export async function updateBackgroundAssetAction(input: {
     .from("background_assets")
     .update({
       title: input.title.trim() || "Untitled background",
+      filename_label: (input.filenameLabel ?? "").trim().slice(0, 80),
+      description: (input.description ?? "").trim().slice(0, 280),
       tags: parseTags(input.tags),
       colors: parseTags(input.colors),
+      style: (input.style ?? "").trim().slice(0, 80),
+      audience: (input.audience ?? "").trim().slice(0, 80),
+      objects: parseTags(input.objects ?? ""),
       season: input.season,
       school_level: input.schoolLevel,
       updated_at: new Date().toISOString(),
@@ -602,6 +652,28 @@ export async function updateBackgroundAssetAction(input: {
 
   revalidateLibrary();
   return { success: true, message: "Saved." };
+}
+
+export async function analyzeBackgroundAssetMetadataAction(
+  assetId: string,
+): Promise<{ success: boolean; message: string }> {
+  const gate = await requireOwner();
+  if (!gate.ok) return { success: false, message: gate.message };
+  const organization = await getLatestOrganization();
+  if (!organization?.id) {
+    return {
+      success: false,
+      message: "Choose an active organization so AI credits can be attributed.",
+    };
+  }
+  const result = await applyBackgroundAssetVisionMetadata({
+    assetId,
+    organizationId: organization.id,
+    userId: gate.userId,
+    applyLibrarySuggestions: true,
+  });
+  if (result.success) revalidateLibrary();
+  return result;
 }
 
 export async function approveBackgroundAssetsAction(input: {

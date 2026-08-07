@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { AppImage } from "@/components/images/AppImage";
 import {
   approveBackgroundAssetsAction,
+  analyzeBackgroundAssetMetadataAction,
   deleteBackgroundSourceAction,
   generateBackgroundBatchAction,
   prepareBackgroundLibraryUploadAction,
@@ -148,8 +149,15 @@ export function BackgroundLibraryShell({
       if (!q) return true;
       const haystack = [
         asset.title,
+        asset.filenameLabel,
+        asset.description,
         asset.tags.join(" "),
         asset.colors.join(" "),
+        asset.style,
+        asset.audience,
+        asset.objects.join(" "),
+        asset.season,
+        asset.schoolLevel,
         asset.libraryNames.join(" "),
       ]
         .join(" ")
@@ -161,8 +169,13 @@ export function BackgroundLibraryShell({
   const selectedAsset = assets.find((asset) => asset.id === selectedId) ?? null;
 
   const [metaTitle, setMetaTitle] = useState("");
+  const [metaFilename, setMetaFilename] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
   const [metaTags, setMetaTags] = useState("");
   const [metaColors, setMetaColors] = useState("");
+  const [metaStyle, setMetaStyle] = useState("");
+  const [metaAudience, setMetaAudience] = useState("");
+  const [metaObjects, setMetaObjects] = useState("");
   const [metaSeason, setMetaSeason] = useState<BackgroundSeason>("anytime");
   const [metaLevel, setMetaLevel] = useState<BackgroundSchoolLevel>("any");
   const [metaLibraries, setMetaLibraries] = useState<string[]>([]);
@@ -171,8 +184,13 @@ export function BackgroundLibraryShell({
   function selectAsset(asset: BackgroundAsset) {
     setSelectedId(asset.id);
     setMetaTitle(asset.title);
+    setMetaFilename(asset.filenameLabel);
+    setMetaDescription(asset.description);
     setMetaTags(asset.tags.join(", "));
     setMetaColors(asset.colors.join(", "));
+    setMetaStyle(asset.style);
+    setMetaAudience(asset.audience);
+    setMetaObjects(asset.objects.join(", "));
     setMetaSeason(asset.season);
     setMetaLevel(asset.schoolLevel);
     setMetaLibraries(asset.libraryIds);
@@ -709,7 +727,7 @@ export function BackgroundLibraryShell({
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search title, tags…"
+              placeholder="Search title, tags, colors, style…"
               className="min-w-[200px] flex-1 rounded-full border border-cos-border bg-cos-card px-4 py-2 text-sm shadow-sm"
             />
             <select
@@ -874,6 +892,9 @@ export function BackgroundLibraryShell({
                   </div>
                   <div className="space-y-3 p-4">
                     <h2 className="font-serif text-xl text-cos-text">{selectedAsset.title}</h2>
+                    {selectedAsset.description ? (
+                      <p className="text-sm text-cos-muted">{selectedAsset.description}</p>
+                    ) : null}
                     <label className="block text-[11px] font-bold tracking-wide text-cos-muted uppercase">
                       Title
                       <input
@@ -883,13 +904,61 @@ export function BackgroundLibraryShell({
                       />
                     </label>
                     <label className="block text-[11px] font-bold tracking-wide text-cos-muted uppercase">
+                      Filename label
+                      <input
+                        value={metaFilename}
+                        onChange={(e) => setMetaFilename(e.target.value)}
+                        placeholder="lavender-school-supplies-background.png"
+                        className="mt-1 w-full rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm font-normal normal-case tracking-normal text-cos-text"
+                      />
+                    </label>
+                    <label className="block text-[11px] font-bold tracking-wide text-cos-muted uppercase">
+                      Description
+                      <textarea
+                        value={metaDescription}
+                        onChange={(e) => setMetaDescription(e.target.value)}
+                        rows={2}
+                        className="mt-1 w-full rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm font-normal normal-case tracking-normal text-cos-text"
+                      />
+                    </label>
+                    <label className="block text-[11px] font-bold tracking-wide text-cos-muted uppercase">
                       Tags
                       <input
                         value={metaTags}
                         onChange={(e) => setMetaTags(e.target.value)}
+                        placeholder="back to school, lavender, pencil…"
                         className="mt-1 w-full rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm font-normal normal-case tracking-normal text-cos-text"
                       />
                     </label>
+                    <label className="block text-[11px] font-bold tracking-wide text-cos-muted uppercase">
+                      Objects
+                      <input
+                        value={metaObjects}
+                        onChange={(e) => setMetaObjects(e.target.value)}
+                        placeholder="notebook, pencil, scissors"
+                        className="mt-1 w-full rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm font-normal normal-case tracking-normal text-cos-text"
+                      />
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="block text-[11px] font-bold tracking-wide text-cos-muted uppercase">
+                        Style
+                        <input
+                          value={metaStyle}
+                          onChange={(e) => setMetaStyle(e.target.value)}
+                          placeholder="illustrated"
+                          className="mt-1 w-full rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm font-normal normal-case tracking-normal text-cos-text"
+                        />
+                      </label>
+                      <label className="block text-[11px] font-bold tracking-wide text-cos-muted uppercase">
+                        Audience
+                        <input
+                          value={metaAudience}
+                          onChange={(e) => setMetaAudience(e.target.value)}
+                          placeholder="elementary"
+                          className="mt-1 w-full rounded-xl border border-cos-border bg-cos-bg px-3 py-2 text-sm font-normal normal-case tracking-normal text-cos-text"
+                        />
+                      </label>
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       <label className="block text-[11px] font-bold tracking-wide text-cos-muted uppercase">
                         Season
@@ -976,11 +1045,32 @@ export function BackgroundLibraryShell({
                         disabled={pendingUi}
                         onClick={() =>
                           run(() =>
+                            analyzeBackgroundAssetMetadataAction(
+                              selectedAsset.id,
+                            ),
+                          )
+                        }
+                      >
+                        <Wand2 className="h-3.5 w-3.5" />
+                        Auto-tag from image
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={pendingUi}
+                        onClick={() =>
+                          run(() =>
                             updateBackgroundAssetAction({
                               assetId: selectedAsset.id,
                               title: metaTitle,
+                              filenameLabel: metaFilename,
+                              description: metaDescription,
                               tags: metaTags,
                               colors: metaColors,
+                              style: metaStyle,
+                              audience: metaAudience,
+                              objects: metaObjects,
                               season: metaSeason,
                               schoolLevel: metaLevel,
                               libraryIds: metaLibraries,

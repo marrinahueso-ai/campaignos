@@ -31,7 +31,8 @@ export type AiActionType =
   | "inbox_ai"
   | "calendar_import_parse"
   | "tasks_generate"
-  | "playbook_insights";
+  | "playbook_insights"
+  | "background_library_metadata";
 
 /** When set on generateText, usage is persisted to ai_usage_log (Phase 2). */
 export interface AiGenerateUsageContext {

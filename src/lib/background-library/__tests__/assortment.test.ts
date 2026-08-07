@@ -104,4 +104,23 @@ describe("background library assortment", () => {
       ["1", "3"],
     );
   });
+
+  it("matches style, objects, and audience phrases", () => {
+    const row = asset({
+      id: "1",
+      title: "Lavender School Supplies Background",
+      tags: ["back to school"],
+      colors: ["lavender", "purple"],
+      style: "minimal illustrated",
+      audience: "elementary",
+      objects: ["pencil", "scissors"],
+      description: "Soft lavender desk with school supplies",
+      libraryNames: ["Back to School"],
+    });
+    assert.equal(assetMatchesLibrarySearch(row, "purple"), true);
+    assert.equal(assetMatchesLibrarySearch(row, "pencils"), true);
+    assert.equal(assetMatchesLibrarySearch(row, "elementary"), true);
+    assert.equal(assetMatchesLibrarySearch(row, "minimal"), true);
+    assert.equal(assetMatchesLibrarySearch(row, "winter"), false);
+  });
 });

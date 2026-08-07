@@ -11,8 +11,13 @@ type PublishedAssetRow = {
   source_id: string | null;
   status: "published";
   title: string;
+  filename_label: string | null;
+  description: string | null;
   tags: string[] | null;
   colors: string[] | null;
+  style: string | null;
+  audience: string | null;
+  objects: string[] | null;
   season: string;
   school_level: string;
   storage_path: string;
@@ -32,8 +37,13 @@ function mapPublishedAsset(
     sourceId: row.source_id,
     status: "published",
     title: row.title,
+    filenameLabel: row.filename_label ?? "",
+    description: row.description ?? "",
     tags: row.tags ?? [],
     colors: row.colors ?? [],
+    style: row.style ?? "",
+    audience: row.audience ?? "",
+    objects: row.objects ?? [],
     season: (row.season as BackgroundAsset["season"]) || "anytime",
     schoolLevel: (row.school_level as BackgroundAsset["schoolLevel"]) || "any",
     storagePath: row.storage_path,
@@ -78,8 +88,8 @@ export async function listActiveBackgroundLibrariesForSchools(): Promise<
 
 /**
  * Published backgrounds for school pickers.
- * Search matches title/tags/library names (compacted); order is assortment
- * (variety across sources), not likeness / created_at.
+ * Search matches rich metadata (title/tags/colors/style/objects/…); order is
+ * assortment (variety across sources), not likeness / created_at.
  */
 export async function searchPublishedBackgroundAssetsForSchools(
   query = "",
@@ -88,7 +98,7 @@ export async function searchPublishedBackgroundAssetsForSchools(
   const { data, error } = await supabase
     .from("background_assets")
     .select(
-      "id, source_id, status, title, tags, colors, season, school_level, storage_path, public_url, usage_count, created_at, updated_at",
+      "id, source_id, status, title, filename_label, description, tags, colors, style, audience, objects, season, school_level, storage_path, public_url, usage_count, created_at, updated_at",
     )
     .eq("status", "published")
     .order("created_at", { ascending: false });

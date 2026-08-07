@@ -9,6 +9,7 @@ import {
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/admin";
 import { BACKGROUND_LIBRARY_BATCH_SIZE } from "./constants.ts";
+import { analyzeBackgroundAssetsBatch } from "./analyze-metadata.ts";
 import { buildBackgroundLibraryVariationPrompt } from "./prompt.ts";
 import {
   buildBackgroundStoragePath,
@@ -149,12 +150,26 @@ export async function generateBackgroundBatchFromSource(
     };
   }
 
+  const catalog = await analyzeBackgroundAssetsBatch({
+    assetIds,
+    organizationId: organization.id,
+    userId: authUser?.id ?? null,
+    applyLibrarySuggestions: true,
+  });
+
+  const catalogNote =
+    catalog.analyzed > 0
+      ? ` Auto-tagged ${catalog.analyzed}${catalog.failed > 0 ? ` (${catalog.failed} skipped)` : ""}.`
+      : catalog.failed > 0
+        ? " Metadata tagging failed — edit titles/tags in Review."
+        : "";
+
   return {
     success: true,
     message:
       failedCount > 0
-        ? `Created ${createdCount} of ${batchSize} backgrounds (${failedCount} failed).`
-        : `Created ${createdCount} backgrounds in the review queue.`,
+        ? `Created ${createdCount} of ${batchSize} backgrounds (${failedCount} failed).${catalogNote}`
+        : `Created ${createdCount} backgrounds in the review queue.${catalogNote}`,
     createdCount,
     failedCount,
     assetIds,

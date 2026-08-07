@@ -88,6 +88,8 @@ export function featureFromAiActionType(actionType: string): string {
       return "tasks_generate";
     case "playbook_insights":
       return "playbook_insights";
+    case "background_library_metadata":
+      return "background_library_metadata";
     default:
       return actionType;
   }
