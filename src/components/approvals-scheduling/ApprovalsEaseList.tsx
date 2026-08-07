@@ -111,7 +111,7 @@ export function ApprovalsFocusCard({
     <article className="grid gap-3 rounded-[22px] border border-cos-border bg-cos-card p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(240px,300px)_1fr] md:gap-4 md:p-3.5">
       <ArtTile
         item={item}
-        className="aspect-square min-h-[220px] w-full self-stretch overflow-hidden rounded-[14px] md:aspect-auto md:min-h-[260px]"
+        className="aspect-square w-full overflow-hidden rounded-[14px]"
         width={800}
         priority
         label={

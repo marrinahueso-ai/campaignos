@@ -168,7 +168,7 @@ describe("approvals ease pulse contracts", () => {
     );
     assert.match(
       ease,
-      /min-h-\[220px\] w-full self-stretch overflow-hidden rounded-\[14px\]/,
+      /aspect-square w-full overflow-hidden rounded-\[14px\]/,
     );
     assert.match(ease, /AppImage/);
     assert.match(ease, /resize=\{isCompact \? "cover" : "contain"\}/);
