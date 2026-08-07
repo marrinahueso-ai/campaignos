@@ -50,31 +50,6 @@ function revalidateLibrary() {
   revalidatePath("/ops/background-library");
 }
 
-async function catalogNewAssets(input: {
-  assetIds: string[];
-  userId: string;
-  applyLibrarySuggestions: boolean;
-}): Promise<string> {
-  if (input.assetIds.length === 0) return "";
-  const organization = await getLatestOrganization();
-  if (!organization?.id) {
-    return " Metadata tagging skipped — no active organization for AI credits.";
-  }
-  const catalog = await analyzeBackgroundAssetsBatch({
-    assetIds: input.assetIds,
-    organizationId: organization.id,
-    userId: input.userId,
-    applyLibrarySuggestions: input.applyLibrarySuggestions,
-  });
-  if (catalog.analyzed > 0) {
-    return ` Auto-tagged ${catalog.analyzed}${catalog.failed > 0 ? ` (${catalog.failed} skipped)` : ""}.`;
-  }
-  if (catalog.failed > 0) {
-    return " Metadata tagging failed — edit titles/tags in Review.";
-  }
-  return "";
-}
-
 async function requireOwner(): Promise<
   { ok: true; userId: string } | { ok: false; message: string }
 > {
@@ -314,11 +289,8 @@ export async function registerBackgroundAssetUploadsAction(input: {
   }
 
   const createdCount = assetIds.length;
-  const catalogNote = await catalogNewAssets({
-    assetIds,
-    userId: gate.userId,
-    applyLibrarySuggestions: libraryIds.length === 0,
-  });
+  // Tagging is kicked off by the client after register so the review grid
+  // appears quickly; avoid blocking the upload action on N vision calls.
   revalidateLibrary();
 
   if (createdCount === 0) {
@@ -338,8 +310,8 @@ export async function registerBackgroundAssetUploadsAction(input: {
     success: true,
     message:
       failedCount > 0
-        ? `Uploaded ${createdCount} to the review queue (${failedCount} failed).${catalogNote}`
-        : `Uploaded ${createdCount} background${createdCount === 1 ? "" : "s"} to the review queue.${catalogNote}`,
+        ? `Uploaded ${createdCount} to the review queue (${failedCount} failed).`
+        : `Uploaded ${createdCount} background${createdCount === 1 ? "" : "s"} to the review queue.`,
     createdCount,
     failedCount,
     assetIds,
@@ -531,11 +503,6 @@ export async function bulkUploadBackgroundAssetsAction(formData: FormData): Prom
   }
 
   const createdCount = assetIds.length;
-  const catalogNote = await catalogNewAssets({
-    assetIds,
-    userId: gate.userId,
-    applyLibrarySuggestions: libraryIds.length === 0,
-  });
   revalidateLibrary();
 
   if (createdCount === 0) {
@@ -555,8 +522,8 @@ export async function bulkUploadBackgroundAssetsAction(formData: FormData): Prom
     success: true,
     message:
       failedCount > 0
-        ? `Uploaded ${createdCount} to the review queue (${failedCount} failed).${catalogNote}`
-        : `Uploaded ${createdCount} background${createdCount === 1 ? "" : "s"} to the review queue.${catalogNote}`,
+        ? `Uploaded ${createdCount} to the review queue (${failedCount} failed).`
+        : `Uploaded ${createdCount} background${createdCount === 1 ? "" : "s"} to the review queue.`,
     createdCount,
     failedCount,
     assetIds,
@@ -674,6 +641,65 @@ export async function analyzeBackgroundAssetMetadataAction(
   });
   if (result.success) revalidateLibrary();
   return result;
+}
+
+/** Batch vision auto-tag for review-queue / import follow-up. */
+export async function analyzeBackgroundAssetsMetadataAction(input: {
+  assetIds: string[];
+  applyLibrarySuggestions?: boolean;
+}): Promise<{ success: boolean; message: string; analyzed: number; failed: number }> {
+  const gate = await requireOwner();
+  if (!gate.ok) {
+    return { success: false, message: gate.message, analyzed: 0, failed: 0 };
+  }
+  const assetIds = [...new Set(input.assetIds.filter(Boolean))];
+  if (assetIds.length === 0) {
+    return {
+      success: false,
+      message: "Select at least one background to auto-tag.",
+      analyzed: 0,
+      failed: 0,
+    };
+  }
+  const organization = await getLatestOrganization();
+  if (!organization?.id) {
+    return {
+      success: false,
+      message: "Choose an active organization so AI credits can be attributed.",
+      analyzed: 0,
+      failed: 0,
+    };
+  }
+
+  const catalog = await analyzeBackgroundAssetsBatch({
+    assetIds,
+    organizationId: organization.id,
+    userId: gate.userId,
+    applyLibrarySuggestions: input.applyLibrarySuggestions !== false,
+  });
+  revalidateLibrary();
+
+  if (catalog.analyzed === 0) {
+    return {
+      success: false,
+      message:
+        catalog.failed > 0
+          ? `Could not auto-tag ${catalog.failed} background${catalog.failed === 1 ? "" : "s"}. Check AI credits and try again.`
+          : "No backgrounds were auto-tagged.",
+      analyzed: 0,
+      failed: catalog.failed,
+    };
+  }
+
+  return {
+    success: true,
+    message:
+      catalog.failed > 0
+        ? `Auto-tagged ${catalog.analyzed} background${catalog.analyzed === 1 ? "" : "s"} (${catalog.failed} failed).`
+        : `Auto-tagged ${catalog.analyzed} background${catalog.analyzed === 1 ? "" : "s"}.`,
+    analyzed: catalog.analyzed,
+    failed: catalog.failed,
+  };
 }
 
 export async function approveBackgroundAssetsAction(input: {

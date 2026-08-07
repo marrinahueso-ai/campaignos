@@ -171,7 +171,7 @@ export async function analyzeBackgroundAssetsBatch(input: {
   const ids = [...new Set(input.assetIds.filter(Boolean))];
   let analyzed = 0;
   let failed = 0;
-  const concurrency = 3;
+  const concurrency = 5;
   for (let i = 0; i < ids.length; i += concurrency) {
     const slice = ids.slice(i, i + concurrency);
     const results = await Promise.all(

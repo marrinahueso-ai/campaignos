@@ -2,12 +2,12 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** 2026-08-07  
+**Last updated:** 2026-08-07 — Background Library metadata note  
 **Related:** [access-control.md](./access-control.md) · [image-architecture.md](./image-architecture.md) · [multi-tenant-isolation.md](../security/multi-tenant-isolation.md) · [developer-agreements.md](./developer-agreements.md)
 
 **Supabase project:** `zyllfqieeihshnwpakiv`  
 **Core migration:** `supabase/migrations/067_storage_membership_rls.sql`  
-**Later bucket policies:** `20260723042605_organization_stickers.sql`, `073_developer_agreements.sql`  
+**Later bucket policies:** `20260723042605_organization_stickers.sql`, `073_developer_agreements.sql`, `20260806210000_platform_background_library.sql` (`platform-backgrounds`)  
 **Depends on:** Phase C helpers (`private.is_active_org_member`, `private.can_access_event`)
 
 ---
@@ -32,7 +32,7 @@ Phase C3 locks **Storage API** access (`storage.objects` policies) to the same m
 | `event-assets` | **public** | `event_id` (usual) | `{eventId}/{assetType}/…`, AI concepts under `{eventId}/…/concepts/…` | `event-workspace/storage.ts`, `ai-artwork/storage.ts` |
 | `campaign-files` | **public** | `event_id` | `{eventId}/{timestamp}-file.pdf` | `campaign-files/storage.ts` |
 | `developer-agreements` | private | path prefix (not org/event UUID) | `templates/…`, `signatures/{userId}/…`, `signatures/company/…` | `developer-agreements/actions.ts` + `storage.ts` (`073`) |
-| `platform-backgrounds` | **public** | `sources` / `assets` (not org-scoped) | `sources/{uuid}-….png`, `assets/{uuid}-….png` | `background-library/storage.ts` (Owner ops; service-role writes) |
+| `platform-backgrounds` | **public** | `sources` / `assets` (not org-scoped) | `sources/{uuid}-….png`, `assets/{uuid}-….png` | `background-library/storage.ts` (Owner ops; service-role writes). Display/search metadata (`title`, `filename_label`, tags, …) lives on `background_assets` — paths stay UUID-based. |
 
 ### Path exceptions (still shipped)
 

@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** 2026-08-07  
+**Last updated:** 2026-08-07 — Background Library vision metadata  
 **Related:** [Architecture](./architecture.md) · [Storage RLS](./storage-rls.md) · [Feature list](../product/feature-list.md) · [Performance budget](../qa/performance-budget.md) · [Homepage Composer](./homepage-composer.md) · [Newsletter Composer](./newsletter-composer.md)
 
 This is the **canonical guide** for how images are uploaded, stored, displayed, published, and consumed by AI across Hey Ralli. Follow it for every new image-heavy feature.
@@ -170,7 +170,7 @@ Expect a much smaller body than the original (often `image/webp`) and `cf-cache-
 
 | Feature | Store | Display | Full-quality use |
 |---------|-------|---------|------------------|
-| Background Library | `platform-backgrounds` | Owner grids + school picker (`AppImage`) | AI generate from source; school attach uses `public_url` as inspiration (Social / Flyer); selecting bumps `usage_count` |
+| Background Library | `platform-backgrounds` | Owner grids + school picker (`AppImage`) | AI generate from source; **vision auto-tag** fills searchable metadata (title, tags, …) from the image; school attach uses original `public_url` as inspiration (Social / Flyer); selecting bumps `usage_count` |
 | AI / Artwork V2 / CB2 | `event-assets` | Hubs via shared thumbs; builder still migrating | Generation + inspiration URLs |
 | Approvals / Volunteers / Events / Today | URLs from event / approval rows | Shared pipeline | Download / Meta from original columns |
 | Campaign lists | Hero artwork URL | `CampaignThumbnail` | — |
@@ -181,6 +181,24 @@ Expect a much smaller body than the original (often `image/webp`) and `cf-cache-
 | Flyer composer | `event-assets` | iframe vanilla `<img>` | Approval + Files save = original |
 | Insights | Meta Graph thumbnails | Remote `<img>` | — |
 | Marketing | `public/images` | `next/image` / raw | — |
+
+### Background Library metadata (vision)
+
+Platform-owned curated backgrounds (`/ops/background-library`) grow via Generate-10 or bulk upload into `pending_review`. After each successful ingest, vision (`generateText` + `imageUrl`, `action_type: background_library_metadata`) fills:
+
+| Field | Purpose |
+|-------|---------|
+| `title` | Clean human title (not UUID / timestamp filenames) |
+| `filename_label` | Display/export kebab-case name — **does not** rename `storage_path` |
+| `description` | One-sentence scene description |
+| `tags[]`, `colors[]`, `objects[]` | Search facets |
+| `style`, `audience` | Style + intended audience phrases |
+| `season`, `school_level` | Existing enums |
+| Suggested `librarySlugs` | Applied to `background_asset_libraries` only when the asset has no collections yet |
+
+Owner reviews/edits in the detail panel (**Auto-tag from image** re-runs analysis) before Approve. School pickers (Social **Browse Library**, Flyer **Browse Gallery**) search the same haystack with assortment ordering — see `src/lib/background-library/assortment.ts`.
+
+**Migration:** `supabase/migrations/20260807120000_background_asset_metadata.sql` (apply before deploy that writes these columns).
 
 ---
 
@@ -238,6 +256,7 @@ Do **not** block product work on a big-bang migration — convert call sites whe
 | Presets / display API | `src/lib/images/` |
 | `AppImage` | `src/components/images/AppImage.tsx` |
 | Background Library storage | `src/lib/background-library/storage.ts` |
+| Background Library vision metadata | `src/lib/background-library/analyze-metadata.ts`, `metadata-parse.ts` |
 | Event asset URLs | `src/lib/event-workspace/storage.ts` |
 | AI upload | `src/lib/ai-artwork/storage.ts`, `src/lib/artwork-v2/` |
 | Meta FB feed prepare | `src/lib/meta-publishing/facebook-feed-image.ts` |

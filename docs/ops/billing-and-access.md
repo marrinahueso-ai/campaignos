@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product  
-**Last updated:** July 29, 2026  
+**Last updated:** August 7, 2026  
 **Related:** [Ops](./README.md) · [Stripe integration (eng)](../engineering/stripe-integration.md) · [AI and APIs](../product/ai-and-apis.md) · [Feature list](../product/feature-list.md) · [Env & secrets](./env-and-secrets.md) · [Documentation home](../README.md)
 
 ## Purpose
@@ -201,6 +201,7 @@ Pre-Stripe default paid tier for metering: **Professional (1,200)**.
 | `draft_communication` | 1 | Communication Draft |
 | `generate_event_brief` | 1 | Event Brief |
 | `generate_creative_brief` | 1 | Creative Brief |
+| `background_library_metadata` | 1 | Etc today (Owner Background Library vision auto-tag / **Auto-tag from image**; 1× TEXT weight) |
 | anything else / unmapped | — | Etc |
 | Failed / non-AI | 0 | — |
 

@@ -2,8 +2,8 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 26, 2026  
-**Related:** [Engineering](./README.md) · [`supabase/migrations/`](../../supabase/migrations/) · [Access control](./access-control.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Owner AI & APIs](../product/ai-and-apis.md) · [SignUpGenius volunteers](../integrations/signupgenius.md) · [Documentation home](../README.md)
+**Last updated:** August 7, 2026  
+**Related:** [Engineering](./README.md) · [`supabase/migrations/`](../../supabase/migrations/) · [Access control](./access-control.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Image architecture](./image-architecture.md) · [Owner AI & APIs](../product/ai-and-apis.md) · [SignUpGenius volunteers](../integrations/signupgenius.md) · [Documentation home](../README.md)
 
 ## Source of truth
 
@@ -69,6 +69,8 @@ Not exhaustive — skim filenames for the full list:
 | Value-first onboarding progress | `072` (`organizations.onboarding_state` jsonb — first event + skipped/completed calendar/brand/invite) |
 | Owner AI & APIs usage warehouse | `20260723220241_ai_api_usage_logs.sql` — `ai_usage_log`, `api_usage_log` (RLS on, no JWT policies; service_role only) |
 | Account notification preferences | `20260726150000_organization_users_notification_preferences.sql` — `organization_users.notification_preferences` jsonb (Settings Ease Account toggles) |
+| Owner Background Library | `20260806210000_platform_background_library.sql` — `background_libraries` / `background_sources` / `background_assets` / `background_asset_libraries` + `platform-backgrounds` bucket |
+| Background Library vision metadata | `20260807120000_background_asset_metadata.sql` — `description`, `style`, `audience`, `objects`, `filename_label` on `background_assets` |
 
 ## What belongs in a migration PR
 

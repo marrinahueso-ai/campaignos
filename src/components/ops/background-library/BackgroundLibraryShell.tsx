@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
 import {
   Archive,
   Check,
@@ -17,6 +17,7 @@ import { AppImage } from "@/components/images/AppImage";
 import {
   approveBackgroundAssetsAction,
   analyzeBackgroundAssetMetadataAction,
+  analyzeBackgroundAssetsMetadataAction,
   deleteBackgroundSourceAction,
   generateBackgroundBatchAction,
   prepareBackgroundLibraryUploadAction,
@@ -102,12 +103,12 @@ function LibraryThumb({
       fill
       preset={width <= 400 ? "card" : "detail"}
       displayWidth={width}
-      displayHeight={width}
-      resize="cover"
+      displayHeight={Math.round(width * 0.75)}
+      resize="contain"
       displayQuality={72}
       sizes={sizes}
       priority={priority}
-      className="object-cover"
+      className="object-contain object-center p-1"
     />
   );
 }
@@ -195,6 +196,22 @@ export function BackgroundLibraryShell({
     setMetaLevel(asset.schoolLevel);
     setMetaLibraries(asset.libraryIds);
   }
+
+  // Keep the detail form in sync after auto-tag / refresh updates the asset row.
+  useEffect(() => {
+    if (!selectedAsset) return;
+    setMetaTitle(selectedAsset.title);
+    setMetaFilename(selectedAsset.filenameLabel);
+    setMetaDescription(selectedAsset.description);
+    setMetaTags(selectedAsset.tags.join(", "));
+    setMetaColors(selectedAsset.colors.join(", "));
+    setMetaStyle(selectedAsset.style);
+    setMetaAudience(selectedAsset.audience);
+    setMetaObjects(selectedAsset.objects.join(", "));
+    setMetaSeason(selectedAsset.season);
+    setMetaLevel(selectedAsset.schoolLevel);
+    setMetaLibraries(selectedAsset.libraryIds);
+  }, [selectedAsset]);
 
   function toggleCheck(id: string) {
     setChecked((prev) =>
@@ -383,15 +400,30 @@ export function BackgroundLibraryShell({
         setError(result.message);
         return;
       }
+
       setMessage(
         failedCount > 0
-          ? `${result.message} (${failedCount} file upload${failedCount === 1 ? "" : "s"} failed).`
-          : result.message,
+          ? `${result.message} (${failedCount} file upload${failedCount === 1 ? "" : "s"} failed). Auto-tagging…`
+          : `${result.message} Auto-tagging…`,
       );
+      const suggestLibraries = bulkLibraryIds.length === 0;
       form.reset();
       setBulkLibraryIds([]);
       router.push("/ops/background-library?tab=review");
       router.refresh();
+
+      if (result.assetIds.length > 0) {
+        const tagged = await analyzeBackgroundAssetsMetadataAction({
+          assetIds: result.assetIds,
+          applyLibrarySuggestions: suggestLibraries,
+        });
+        setMessage(
+          failedCount > 0
+            ? `${result.message} (${failedCount} file upload${failedCount === 1 ? "" : "s"} failed). ${tagged.message}`
+            : `${result.message} ${tagged.message}`,
+        );
+        router.refresh();
+      }
     } catch (caught) {
       setError(friendlyUploadError(caught));
     } finally {
@@ -750,6 +782,23 @@ export function BackgroundLibraryShell({
                 <Button
                   type="button"
                   size="sm"
+                  variant="secondary"
+                  disabled={pendingUi}
+                  onClick={() =>
+                    run(() =>
+                      analyzeBackgroundAssetsMetadataAction({
+                        assetIds: checked,
+                        applyLibrarySuggestions: true,
+                      }),
+                    )
+                  }
+                >
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Auto-tag selected
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
                   disabled={pendingUi}
                   title="Uses libraries checked in the detail panel (or Generic)"
                   onClick={() => {
@@ -793,8 +842,8 @@ export function BackgroundLibraryShell({
             ) : null}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="grid grid-cols-2 items-start gap-3 md:grid-cols-3 xl:grid-cols-4">
               {filteredAssets.length === 0 ? (
                 <div className="col-span-full rounded-2xl border border-dashed border-cos-border px-6 py-16 text-center">
                   <h3 className="font-serif text-xl text-cos-text">
@@ -819,13 +868,13 @@ export function BackgroundLibraryShell({
                       key={asset.id}
                       type="button"
                       onClick={() => selectAsset(asset)}
-                      className={`overflow-hidden rounded-2xl border bg-cos-card text-left shadow-sm transition ${
+                      className={`self-start overflow-hidden rounded-2xl border bg-cos-card text-left shadow-sm transition ${
                         isSelected
                           ? "border-cos-dark ring-2 ring-cos-dark/15"
                           : "border-cos-border hover:border-cos-brand-sage"
                       }`}
                     >
-                      <div className="relative aspect-square bg-cos-bg">
+                      <div className="relative aspect-[4/3] bg-cos-bg">
                         {tab === "review" ? (
                           <span
                             role="checkbox"
@@ -857,11 +906,11 @@ export function BackgroundLibraryShell({
                           sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 220px"
                         />
                       </div>
-                      <div className="p-3">
-                        <h3 className="line-clamp-2 text-sm font-bold text-cos-text">
+                      <div className="space-y-1 p-2.5">
+                        <h3 className="line-clamp-2 text-sm font-bold leading-snug text-cos-text">
                           {asset.title}
                         </h3>
-                        <p className="mt-1 text-xs text-cos-muted">
+                        <p className="line-clamp-1 text-xs text-cos-muted">
                           {asset.libraryNames[0]
                             ? `${asset.libraryNames[0]}${
                                 asset.libraryNames.length > 1
