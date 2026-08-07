@@ -151,7 +151,8 @@ Path and RLS details: **[storage-rls.md](./storage-rls.md)**.
 - Prefer **relative** `storage_path` in DB; derive public URL with bucket helpers.
 - Immutable / versioned paths when possible; set long `cacheControl` (e.g. Background Library: `public, max-age=31536000`).
 - Enforce MIME + size limits at the action layer (Background Library 12MB/file, **40MB total** per bulk FormData; event assets 10MB; stickers 2MB; etc.).
-- Server Action request ceiling is `experimental.serverActions.bodySizeLimit` in `next.config.ts` (max of event-asset + Background Library bulk budgets). Uploads that exceed it surface an in-page error — not the dashboard “page update may have interrupted” screen.
+- Server Action request ceiling is `experimental.serverActions.bodySizeLimit` in `next.config.ts` (max of event-asset + Background Library bulk budgets).
+- **Background Library uploads** use signed direct-to-Supabase Storage (`createSignedUploadUrl` → browser `uploadToSignedUrl` → register DB row). Bytes never pass through the Vercel Server Action body, so large images do not hit the platform request-size wall or the dashboard error screen.
 
 **Image Transformations** must stay enabled on the Supabase project (Pro+): [Storage Settings](https://supabase.com/dashboard/project/zyllfqieeihshnwpakiv/storage/files/settings).
 

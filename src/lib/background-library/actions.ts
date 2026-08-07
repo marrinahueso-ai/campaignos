@@ -10,6 +10,7 @@ import {
 } from "@/lib/supabase/admin";
 import {
   BACKGROUND_LIBRARY_BATCH_SIZE,
+  BACKGROUND_LIBRARY_BULK_UPLOAD_MAX,
   BACKGROUND_LIBRARY_MAX_BYTES,
   BACKGROUND_SEASONS,
   BACKGROUND_SCHOOL_LEVELS,
@@ -18,7 +19,11 @@ import { generateBackgroundBatchFromSource } from "./generate.ts";
 import { getBackgroundSourceById } from "./queries.ts";
 import {
   buildBackgroundStoragePath,
+  createPlatformBackgroundSignedUpload,
   deletePlatformBackgroundPath,
+  getPlatformBackgroundPublicUrl,
+  isBackgroundLibraryStoragePath,
+  platformBackgroundObjectExists,
   uploadPlatformBackgroundBytes,
 } from "./storage.ts";
 import type {
@@ -31,6 +36,10 @@ import {
   isBackgroundLibraryImageFile,
   titleFromBackgroundFilename,
 } from "./upload-validation.ts";
+import {
+  IMAGE_UPLOAD_EXTENSIONS,
+  resolveSafeUploadContentType,
+} from "@/lib/uploads/safe-content-type";
 
 function revalidateLibrary() {
   revalidatePath("/ops/background-library");
@@ -58,6 +67,248 @@ function parseTags(value: string): string[] {
     .map((part) => part.trim())
     .filter(Boolean)
     .slice(0, 24);
+}
+
+/**
+ * Mint a one-time signed upload URL so the browser can PUT the file straight
+ * to Supabase (avoids Vercel / Server Action body size limits).
+ */
+export async function prepareBackgroundLibraryUploadAction(input: {
+  kind: "sources" | "assets";
+  filename: string;
+}): Promise<{
+  success: boolean;
+  message: string;
+  storagePath?: string;
+  token?: string;
+  contentType?: string;
+  publicUrl?: string;
+}> {
+  const gate = await requireOwner();
+  if (!gate.ok) return { success: false, message: gate.message };
+
+  const filename = input.filename.trim();
+  if (!filename) {
+    return { success: false, message: "Choose an image to upload." };
+  }
+  const contentType = resolveSafeUploadContentType(
+    filename,
+    IMAGE_UPLOAD_EXTENSIONS,
+  );
+  if (!contentType) {
+    return {
+      success: false,
+      message: "Use a PNG, JPEG, WebP, or GIF image.",
+    };
+  }
+
+  const prepared = await createPlatformBackgroundSignedUpload({
+    kind: input.kind,
+    filename,
+  });
+  if (!prepared.success) {
+    return { success: false, message: prepared.error };
+  }
+
+  return {
+    success: true,
+    message: "Upload ready.",
+    storagePath: prepared.storagePath,
+    token: prepared.token,
+    contentType,
+    publicUrl: prepared.publicUrl,
+  };
+}
+
+export async function registerBackgroundSourceUploadAction(input: {
+  storagePath: string;
+  title: string;
+  notes: string;
+  filename?: string;
+}): Promise<{
+  success: boolean;
+  message: string;
+  sourceId?: string;
+}> {
+  const gate = await requireOwner();
+  if (!gate.ok) return { success: false, message: gate.message };
+
+  if (!isBackgroundLibraryStoragePath("sources", input.storagePath)) {
+    return { success: false, message: "Invalid upload path." };
+  }
+  if (!(await platformBackgroundObjectExists(input.storagePath))) {
+    return {
+      success: false,
+      message: "Upload did not finish. Try again.",
+    };
+  }
+
+  const title =
+    input.title.trim() ||
+    titleFromBackgroundFilename(input.filename || "") ||
+    "Inspiration source";
+  const notes = input.notes.trim();
+  const publicUrl = getPlatformBackgroundPublicUrl(input.storagePath);
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("background_sources")
+    .insert({
+      title,
+      notes,
+      storage_path: input.storagePath,
+      public_url: publicUrl,
+      created_by: gate.userId,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return {
+      success: false,
+      message: error?.message ?? "Could not save source graphic.",
+    };
+  }
+
+  revalidateLibrary();
+  return {
+    success: true,
+    message: "Source graphic uploaded.",
+    sourceId: (data as { id: string }).id,
+  };
+}
+
+export async function registerBackgroundAssetUploadsAction(input: {
+  items: Array<{ storagePath: string; filename: string }>;
+  season: string;
+  schoolLevel: string;
+  libraryIds: string[];
+}): Promise<{
+  success: boolean;
+  message: string;
+  createdCount: number;
+  failedCount: number;
+  assetIds: string[];
+}> {
+  const gate = await requireOwner();
+  if (!gate.ok) {
+    return {
+      success: false,
+      message: gate.message,
+      createdCount: 0,
+      failedCount: 0,
+      assetIds: [],
+    };
+  }
+
+  if (input.items.length === 0) {
+    return {
+      success: false,
+      message: "Choose one or more images to upload into the library.",
+      createdCount: 0,
+      failedCount: 0,
+      assetIds: [],
+    };
+  }
+  if (input.items.length > BACKGROUND_LIBRARY_BULK_UPLOAD_MAX) {
+    return {
+      success: false,
+      message: `Upload at most ${BACKGROUND_LIBRARY_BULK_UPLOAD_MAX} images at a time.`,
+      createdCount: 0,
+      failedCount: 0,
+      assetIds: [],
+    };
+  }
+
+  const defaultSeason = (
+    BACKGROUND_SEASONS as readonly string[]
+  ).includes(input.season)
+    ? (input.season as BackgroundSeason)
+    : "anytime";
+  const defaultLevel = (
+    BACKGROUND_SCHOOL_LEVELS as readonly string[]
+  ).includes(input.schoolLevel)
+    ? (input.schoolLevel as BackgroundSchoolLevel)
+    : "any";
+  const libraryIds = [...new Set(input.libraryIds.filter(Boolean))];
+
+  const admin = createAdminClient();
+  const assetIds: string[] = [];
+  let failedCount = 0;
+
+  for (const item of input.items) {
+    if (!isBackgroundLibraryStoragePath("assets", item.storagePath)) {
+      failedCount += 1;
+      continue;
+    }
+    if (!(await platformBackgroundObjectExists(item.storagePath))) {
+      failedCount += 1;
+      continue;
+    }
+
+    const title = titleFromBackgroundFilename(item.filename || item.storagePath);
+    const publicUrl = getPlatformBackgroundPublicUrl(item.storagePath);
+    const { data: inserted, error } = await admin
+      .from("background_assets")
+      .insert({
+        source_id: null,
+        status: "pending_review" satisfies BackgroundAssetStatus,
+        title,
+        tags: [],
+        colors: [],
+        season: defaultSeason,
+        school_level: defaultLevel,
+        storage_path: item.storagePath,
+        public_url: publicUrl,
+        created_by: gate.userId,
+      })
+      .select("id")
+      .single();
+
+    if (error || !inserted) {
+      await deletePlatformBackgroundPath(item.storagePath);
+      failedCount += 1;
+      continue;
+    }
+
+    const assetId = (inserted as { id: string }).id;
+    if (libraryIds.length > 0) {
+      await admin.from("background_asset_libraries").insert(
+        libraryIds.map((libraryId) => ({
+          asset_id: assetId,
+          library_id: libraryId,
+        })),
+      );
+    }
+    assetIds.push(assetId);
+  }
+
+  const createdCount = assetIds.length;
+  revalidateLibrary();
+
+  if (createdCount === 0) {
+    return {
+      success: false,
+      message:
+        failedCount > 0
+          ? "Could not upload any images. Check file types and try again."
+          : "No images were uploaded.",
+      createdCount: 0,
+      failedCount,
+      assetIds: [],
+    };
+  }
+
+  return {
+    success: true,
+    message:
+      failedCount > 0
+        ? `Uploaded ${createdCount} to the review queue (${failedCount} failed).`
+        : `Uploaded ${createdCount} background${createdCount === 1 ? "" : "s"} to the review queue.`,
+    createdCount,
+    failedCount,
+    assetIds,
+  };
 }
 
 export async function uploadBackgroundSourceAction(formData: FormData): Promise<{
@@ -88,7 +339,9 @@ export async function uploadBackgroundSourceAction(formData: FormData): Promise<
     "Inspiration source";
   const notes = String(formData.get("notes") ?? "").trim();
   const bytes = Buffer.from(await file.arrayBuffer());
-  const contentType = file.type || "image/png";
+  const contentType =
+    resolveSafeUploadContentType(file.name, IMAGE_UPLOAD_EXTENSIONS) ||
+    "image/png";
   const storagePath = buildBackgroundStoragePath("sources", file.name || "source.png");
   const uploaded = await uploadPlatformBackgroundBytes({
     storagePath,
@@ -184,7 +437,9 @@ export async function bulkUploadBackgroundAssetsAction(formData: FormData): Prom
 
   for (const file of collected.files) {
     const bytes = Buffer.from(await file.arrayBuffer());
-    const contentType = file.type || "image/png";
+    const contentType =
+      resolveSafeUploadContentType(file.name, IMAGE_UPLOAD_EXTENSIONS) ||
+      "image/png";
     const storagePath = buildBackgroundStoragePath(
       "assets",
       file.name || "library-asset.png",

@@ -82,6 +82,8 @@ import {
   detachMainEventImage,
   isReusableArtwork,
   reapplyMainEventImageAfterPlanChange,
+  resolveDisplayMainEventImage,
+  seedMainEventImageAcrossPlan,
 } from "@/lib/campaign-builder-v2/main-event-image";
 import {
   captionPlatformsForFormats,
@@ -1547,12 +1549,18 @@ export function CampaignBuilderProvider({
         prev.inspiration,
         prev.milestones.length,
       );
-      return {
+      const withNew: CampaignBuilderSession = {
         ...prev,
         milestones: [...prev.milestones, milestone],
         previewContents: [...prev.previewContents, preview],
         selectedMilestoneId: milestone.id,
       };
+      // New empty posts inherit the Event Image (same as first-fill waterfall).
+      const sharedArt = resolveDisplayMainEventImage(prev);
+      if (!sharedArt) {
+        return withNew;
+      }
+      return seedMainEventImageAcrossPlan(withNew, sharedArt).session;
     });
   }, [updateSession]);
 

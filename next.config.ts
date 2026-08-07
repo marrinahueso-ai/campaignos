@@ -5,10 +5,10 @@ import { BACKGROUND_LIBRARY_BULK_TOTAL_BYTES } from "./src/lib/background-librar
 import { MAX_EVENT_ASSET_BYTES } from "./src/lib/event-workspace/storage";
 
 /** Ceiling for server action FormData (event assets + Background Library bulk). */
-const SERVER_ACTION_BODY_SIZE_LIMIT = `${Math.ceil(
-  Math.max(MAX_EVENT_ASSET_BYTES, BACKGROUND_LIBRARY_BULK_TOTAL_BYTES) /
-    (1024 * 1024),
-)}mb`;
+const SERVER_ACTION_BODY_SIZE_LIMIT = Math.max(
+  MAX_EVENT_ASSET_BYTES,
+  BACKGROUND_LIBRARY_BULK_TOTAL_BYTES,
+);
 
 const nextConfig: NextConfig = {
   // Dev and build share a distDir by default, which is unsafe: running `next

@@ -1,27 +1,66 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
-
 import {
   createAdminClient,
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/admin";
 import { PLATFORM_BACKGROUNDS_BUCKET } from "./constants.ts";
+import {
+  buildBackgroundStoragePath,
+  getPlatformBackgroundPublicUrl,
+} from "./paths.ts";
 
-export function buildBackgroundStoragePath(
-  kind: "sources" | "assets",
-  filename: string,
-): string {
-  const safe = filename.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 80);
-  return `${kind}/${randomUUID()}-${safe || "image.png"}`;
+export {
+  buildBackgroundStoragePath,
+  getPlatformBackgroundPublicUrl,
+  isBackgroundLibraryStoragePath,
+} from "./paths.ts";
+
+export async function createPlatformBackgroundSignedUpload(input: {
+  kind: "sources" | "assets";
+  filename: string;
+}): Promise<
+  | {
+      success: true;
+      storagePath: string;
+      token: string;
+      publicUrl: string;
+    }
+  | { success: false; error: string }
+> {
+  if (!isSupabaseAdminConfigured()) {
+    return { success: false, error: "Storage admin is not configured." };
+  }
+  const storagePath = buildBackgroundStoragePath(input.kind, input.filename);
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage
+    .from(PLATFORM_BACKGROUNDS_BUCKET)
+    .createSignedUploadUrl(storagePath);
+  if (error || !data?.token) {
+    return {
+      success: false,
+      error: error?.message ?? "Could not create upload URL.",
+    };
+  }
+  return {
+    success: true,
+    storagePath,
+    token: data.token,
+    publicUrl: getPlatformBackgroundPublicUrl(storagePath),
+  };
 }
 
-export function getPlatformBackgroundPublicUrl(storagePath: string): string {
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  if (!base) {
-    return storagePath;
+export async function platformBackgroundObjectExists(
+  storagePath: string,
+): Promise<boolean> {
+  if (!isSupabaseAdminConfigured() || !storagePath.trim()) {
+    return false;
   }
-  return `${base}/storage/v1/object/public/${PLATFORM_BACKGROUNDS_BUCKET}/${storagePath}`;
+  const admin = createAdminClient();
+  const { error } = await admin.storage
+    .from(PLATFORM_BACKGROUNDS_BUCKET)
+    .createSignedUrl(storagePath, 60);
+  return !error;
 }
 
 export async function uploadPlatformBackgroundBytes(input: {

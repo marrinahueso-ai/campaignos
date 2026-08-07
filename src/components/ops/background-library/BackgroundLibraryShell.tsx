@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import {
   Archive,
   Check,
@@ -16,13 +16,14 @@ import { Button } from "@/components/ui/Button";
 import { AppImage } from "@/components/images/AppImage";
 import {
   approveBackgroundAssetsAction,
-  bulkUploadBackgroundAssetsAction,
   deleteBackgroundSourceAction,
   generateBackgroundBatchAction,
+  prepareBackgroundLibraryUploadAction,
+  registerBackgroundAssetUploadsAction,
+  registerBackgroundSourceUploadAction,
   rejectBackgroundAssetsAction,
   setBackgroundAssetStatusAction,
   updateBackgroundAssetAction,
-  uploadBackgroundSourceAction,
 } from "@/lib/background-library/actions";
 import {
   BACKGROUND_LIBRARY_BATCH_SIZE,
@@ -31,6 +32,7 @@ import {
   BACKGROUND_LIBRARY_DETAIL_THUMB_WIDTH,
   BACKGROUND_LIBRARY_GRID_THUMB_WIDTH,
   BACKGROUND_LIBRARY_MAX_BYTES,
+  PLATFORM_BACKGROUNDS_BUCKET,
 } from "@/lib/background-library/constants";
 import type {
   BackgroundAsset,
@@ -40,6 +42,8 @@ import type {
   BackgroundSeason,
   BackgroundSource,
 } from "@/lib/background-library/types";
+import { createClient } from "@/lib/supabase/client";
+import { isBackgroundLibraryImageFile } from "@/lib/background-library/upload-validation";
 
 type TabId = "review" | "published" | "archived" | "sources";
 
@@ -195,6 +199,8 @@ export function BackgroundLibraryShell({
     });
   }
 
+  const [uploading, setUploading] = useState(false);
+
   function friendlyUploadError(caught: unknown): string {
     const message =
       caught instanceof Error
@@ -212,39 +218,108 @@ export function BackgroundLibraryShell({
     return message || "Upload failed. Refresh the page and try again.";
   }
 
-  async function onUpload(formData: FormData) {
+  async function uploadFileToSignedPath(
+    file: File,
+    kind: "sources" | "assets",
+  ): Promise<
+    | { success: true; storagePath: string }
+    | { success: false; message: string }
+  > {
+    if (!isBackgroundLibraryImageFile(file)) {
+      return {
+        success: false,
+        message:
+          file.size > BACKGROUND_LIBRARY_MAX_BYTES
+            ? `"${file.name}" is larger than 12MB.`
+            : `"${file.name}" is not a supported image (PNG, JPEG, WebP, or GIF).`,
+      };
+    }
+    const prepared = await prepareBackgroundLibraryUploadAction({
+      kind,
+      filename: file.name,
+    });
+    if (
+      !prepared.success ||
+      !prepared.storagePath ||
+      !prepared.token ||
+      !prepared.contentType
+    ) {
+      return {
+        success: false,
+        message: prepared.message || "Could not start upload.",
+      };
+    }
+    const supabase = createClient();
+    const { error } = await supabase.storage
+      .from(PLATFORM_BACKGROUNDS_BUCKET)
+      .uploadToSignedUrl(prepared.storagePath, prepared.token, file, {
+        contentType: prepared.contentType,
+        cacheControl: "31536000",
+      });
+    if (error) {
+      return { success: false, message: error.message };
+    }
+    return { success: true, storagePath: prepared.storagePath };
+  }
+
+  async function onUpload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError(null);
     setMessage(null);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const file = formData.get("file");
-    if (file instanceof File && file.size > BACKGROUND_LIBRARY_MAX_BYTES) {
-      setError(
-        `Image must be ${Math.round(BACKGROUND_LIBRARY_MAX_BYTES / (1024 * 1024))}MB or smaller.`,
-      );
+    if (!(file instanceof File) || file.size <= 0) {
+      setError("Choose an inspiration image to upload.");
       return;
     }
+    setUploading(true);
     try {
-      const result = await uploadBackgroundSourceAction(formData);
+      const uploaded = await uploadFileToSignedPath(file, "sources");
+      if (!uploaded.success) {
+        setError(uploaded.message);
+        return;
+      }
+      const result = await registerBackgroundSourceUploadAction({
+        storagePath: uploaded.storagePath,
+        title: String(formData.get("title") ?? ""),
+        notes: String(formData.get("notes") ?? ""),
+        filename: file.name,
+      });
       if (!result.success) {
         setError(result.message);
         return;
       }
       setMessage(result.message);
+      form.reset();
       router.push("/ops/background-library?tab=sources");
       router.refresh();
     } catch (caught) {
       setError(friendlyUploadError(caught));
+    } finally {
+      setUploading(false);
     }
   }
 
-  async function onBulkUpload(formData: FormData) {
+  async function onBulkUpload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError(null);
     setMessage(null);
-    for (const libraryId of bulkLibraryIds) {
-      formData.append("libraryIds", libraryId);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const files = formData
+      .getAll("files")
+      .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    if (files.length === 0) {
+      setError("Choose one or more images to upload into the library.");
+      return;
     }
-    const files = formData.getAll("files").filter(
-      (entry): entry is File => entry instanceof File && entry.size > 0,
-    );
+    if (files.length > BACKGROUND_LIBRARY_BULK_UPLOAD_MAX) {
+      setError(
+        `Upload at most ${BACKGROUND_LIBRARY_BULK_UPLOAD_MAX} images at a time.`,
+      );
+      return;
+    }
     const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
     if (totalBytes > BACKGROUND_LIBRARY_BULK_TOTAL_BYTES) {
       const limitMb = Math.round(
@@ -255,17 +330,54 @@ export function BackgroundLibraryShell({
       );
       return;
     }
+
+    setUploading(true);
     try {
-      const result = await bulkUploadBackgroundAssetsAction(formData);
+      const uploadedItems: Array<{ storagePath: string; filename: string }> =
+        [];
+      let failedCount = 0;
+      for (const file of files) {
+        const uploaded = await uploadFileToSignedPath(file, "assets");
+        if (!uploaded.success) {
+          failedCount += 1;
+          continue;
+        }
+        uploadedItems.push({
+          storagePath: uploaded.storagePath,
+          filename: file.name,
+        });
+      }
+      if (uploadedItems.length === 0) {
+        setError(
+          failedCount > 0
+            ? "Could not upload any images. Check file types and try again."
+            : "No images were uploaded.",
+        );
+        return;
+      }
+      const result = await registerBackgroundAssetUploadsAction({
+        items: uploadedItems,
+        season: String(formData.get("season") ?? "anytime"),
+        schoolLevel: String(formData.get("schoolLevel") ?? "any"),
+        libraryIds: bulkLibraryIds,
+      });
       if (!result.success) {
         setError(result.message);
         return;
       }
-      setMessage(result.message);
+      setMessage(
+        failedCount > 0
+          ? `${result.message} (${failedCount} file upload${failedCount === 1 ? "" : "s"} failed).`
+          : result.message,
+      );
+      form.reset();
+      setBulkLibraryIds([]);
       router.push("/ops/background-library?tab=review");
       router.refresh();
     } catch (caught) {
       setError(friendlyUploadError(caught));
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -374,7 +486,7 @@ export function BackgroundLibraryShell({
           <div className="space-y-4">
             <div className="grid gap-4 xl:grid-cols-2">
               <form
-                action={onUpload}
+                onSubmit={(event) => void onUpload(event)}
                 className="rounded-2xl border border-dashed border-cos-border bg-cos-card p-5"
               >
                 <h2 className="font-serif text-xl text-cos-text">Upload source graphic</h2>
@@ -402,8 +514,8 @@ export function BackgroundLibraryShell({
                   />
                 </div>
                 <div className="mt-4">
-                  <Button type="submit" disabled={pendingUi}>
-                    {pendingUi ? (
+                  <Button type="submit" disabled={pendingUi || uploading}>
+                    {pendingUi || uploading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <ImagePlus className="h-4 w-4" />
@@ -414,7 +526,7 @@ export function BackgroundLibraryShell({
               </form>
 
               <form
-                action={onBulkUpload}
+                onSubmit={(event) => void onBulkUpload(event)}
                 className="rounded-2xl border border-dashed border-cos-brand-sage/40 bg-cos-card p-5"
               >
                 <h2 className="font-serif text-xl text-cos-text">Bulk upload to library</h2>
@@ -500,8 +612,8 @@ export function BackgroundLibraryShell({
                   </div>
                 </div>
                 <div className="mt-4">
-                  <Button type="submit" disabled={pendingUi}>
-                    {pendingUi ? (
+                  <Button type="submit" disabled={pendingUi || uploading}>
+                    {pendingUi || uploading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <ImagePlus className="h-4 w-4" />

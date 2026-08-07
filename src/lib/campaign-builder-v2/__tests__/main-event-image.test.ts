@@ -5,6 +5,8 @@ import {
   applyArtworkWithMainEventReuse,
   detachMainEventImage,
   reapplyMainEventImageAfterPlanChange,
+  resolveDisplayMainEventImage,
+  seedMainEventImageAcrossPlan,
   usesMainEventImage,
 } from "../main-event-image.ts";
 import type { CampaignBuilderMilestone } from "../types.ts";
@@ -150,6 +152,57 @@ describe("main event image reuse", () => {
       session.previewContents.find((p) => p.milestoneId === "ms--1")?.artwork
         .feedUrl,
       first.feedUrl,
+    );
+  });
+
+  it("fills a newly added empty post with the shared event image", () => {
+    const base = withRelativeDay(buildDefaultSession("e1", "Fair", "2026-09-01"), [
+      -14, -7,
+    ]);
+    const art = {
+      feedUrl: "https://cdn.example/main.png",
+      storyUrl: null,
+    };
+    let { session } = applyArtworkWithMainEventReuse(base, "ms--14", art);
+
+    const emptyRow = {
+      ...session.previewContents[0]!,
+      milestoneId: "ms-new",
+      artwork: { feedUrl: null, storyUrl: null },
+      artworkMode: undefined,
+      captions: [
+        { platform: "facebook" as const, text: "Caption ms-new" },
+        { platform: "instagram" as const, text: "Caption ms-new" },
+      ],
+    };
+    session = {
+      ...session,
+      milestones: [
+        ...session.milestones,
+        {
+          ...session.milestones[0]!,
+          id: "ms-new",
+          name: "New post",
+          sortOrder: session.milestones.length,
+        },
+      ],
+      previewContents: [...session.previewContents, emptyRow],
+    };
+
+    ({ session } = seedMainEventImageAcrossPlan(
+      session,
+      resolveDisplayMainEventImage(session)!,
+    ));
+
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms-new")?.artwork
+        .feedUrl,
+      art.feedUrl,
+    );
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms-new")
+        ?.artworkMode,
+      "shared",
     );
   });
 
