@@ -26,12 +26,24 @@ describe("toDisplayImageUrl", () => {
     assert.match(result, /height=128/);
   });
 
-  it("does not force height or resize when only width is overridden", () => {
+  it("defaults height to the overridden width for preset-based squares", () => {
+    // Regression: Supabase's render/image transform does not proportionally
+    // scale the omitted axis when only width is given — it crops to that
+    // width and leaves height at the source's native size (e.g. a 128-wide
+    // request against a 1024x1024 source returned 128x1024, not 128x128).
+    // Presets must always send both axes so thumbs stay square, not sliced.
     const result = toDisplayImageUrl(PUBLIC, {
       preset: "card",
       width: 560,
       resize: "contain",
     });
+    assert.match(result, /width=560/);
+    assert.match(result, /height=560/);
+    assert.match(result, /resize=contain/);
+  });
+
+  it("does not force a height when no preset is used (raw width request)", () => {
+    const result = toDisplayImageUrl(PUBLIC, { width: 560 });
     assert.match(result, /width=560/);
     assert.doesNotMatch(result, /height=/);
     assert.doesNotMatch(result, /resize=/);

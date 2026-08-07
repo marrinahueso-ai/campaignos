@@ -51,6 +51,7 @@ export function ArtworkLightboxThumbnail({
               fill
               preset="card"
               displayWidth={360}
+              displayHeight={360}
               resize="cover"
               sizes="(max-width: 768px) 45vw, 220px"
               className="object-cover"

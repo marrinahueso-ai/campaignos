@@ -44,15 +44,19 @@ export function toDisplayImageUrl(
     ? IMAGE_DISPLAY_PRESETS[options.preset]
     : null;
   const width = options.width ?? preset?.width ?? 360;
-  // Only default a square height when the caller did not pass an explicit width
-  // (preset-only). Explicit widths keep aspect unless height is also set.
-  const height =
-    options.height ??
-    (options.width == null && preset ? preset.width : undefined);
+  // Default height to match width (square) whenever a preset is used, even if
+  // the caller overrode width for a specific size. Supabase's image
+  // transform does NOT proportionally scale the omitted axis when only one
+  // of width/height is given — it crops to the given axis and leaves the
+  // other axis at the source image's native pixel size (e.g. width=128 on a
+  // 1024x1024 source returns 128x1024, not a proportional 128x128). That
+  // produced squished/sliced thumbs on Events/Volunteers/Approvals list rows.
+  // Passing both axes (with resize=contain) lets Supabase letterbox
+  // correctly so the full poster art stays visible without stretching.
+  const height = options.height ?? (preset ? width : undefined);
   const quality = options.quality ?? preset?.quality ?? 72;
   const requestedResize = options.resize ?? preset?.resize ?? "cover";
-  // cover/contain/fill need both axes. Width-only + resize=cover was cropping
-  // poster art into unreadable fragments on Events/Approvals thumbs.
+  // cover/contain/fill need both axes.
   const resize = height != null ? requestedResize : undefined;
 
   return toSupabaseThumbnailUrl(trimmed, {
