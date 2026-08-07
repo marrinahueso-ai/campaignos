@@ -74,10 +74,13 @@ export function AppImage(props: AppImageProps) {
     resize,
   });
 
+  const originalSrc = src.trim();
   const [currentSrc, setCurrentSrc] = useState(resolvedSrc);
+  const [triedOriginalFallback, setTriedOriginalFallback] = useState(false);
 
   useEffect(() => {
     setCurrentSrc(resolvedSrc);
+    setTriedOriginalFallback(false);
   }, [resolvedSrc]);
 
   if (!currentSrc) {
@@ -85,6 +88,12 @@ export function AppImage(props: AppImageProps) {
   }
 
   const handleError = () => {
+    // Transform / next/image can fail while the original object URL still works.
+    if (!triedOriginalFallback && originalSrc && currentSrc !== originalSrc) {
+      setTriedOriginalFallback(true);
+      setCurrentSrc(originalSrc);
+      return;
+    }
     setCurrentSrc("");
     onError?.();
   };

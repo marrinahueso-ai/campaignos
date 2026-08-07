@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { Loader2, Search, X } from "lucide-react";
 
 import { AppImage } from "@/components/images/AppImage";
@@ -36,6 +37,11 @@ export function BackgroundLibraryPicker({
   const [selectingId, setSelectingId] = useState<string | null>(null);
   const [isLoading, startLoading] = useTransition();
   const [isSelecting, startSelecting] = useTransition();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -84,9 +90,9 @@ export function BackgroundLibraryPicker({
     });
   }
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-cos-text/30 p-3 sm:items-center sm:p-6">
       <button
         type="button"
@@ -98,9 +104,9 @@ export function BackgroundLibraryPicker({
         role="dialog"
         aria-modal="true"
         aria-labelledby="background-library-picker-title"
-        className="relative z-10 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-xl"
+        className="relative z-10 flex h-[min(90vh,52rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-xl"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-cos-border px-5 py-4">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-cos-border px-5 py-4">
           <div>
             <h3
               id="background-library-picker-title"
@@ -109,7 +115,7 @@ export function BackgroundLibraryPicker({
               Background Library
             </h3>
             <p className="mt-1 text-sm text-cos-muted">
-              Search by collection or tag — results mix for variety, not likeness.
+              Search a collection, then tap an image to use it.
             </p>
           </div>
           <button
@@ -122,7 +128,7 @@ export function BackgroundLibraryPicker({
           </button>
         </div>
 
-        <div className="space-y-3 border-b border-cos-border px-5 py-3">
+        <div className="shrink-0 space-y-3 border-b border-cos-border px-5 py-3">
           <form
             className="flex gap-2"
             onSubmit={(event) => {
@@ -185,7 +191,7 @@ export function BackgroundLibraryPicker({
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {error ? (
             <p
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
               role="alert"
             >
               {error}
@@ -207,47 +213,35 @@ export function BackgroundLibraryPicker({
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
               {assets.map((asset) => {
                 const busy = isSelecting && selectingId === asset.id;
+                const label = asset.title?.trim() || "Library background";
                 return (
                   <li key={asset.id}>
                     <button
                       type="button"
                       disabled={isSelecting}
                       onClick={() => handleSelect(asset)}
+                      aria-label={`Use ${label}`}
                       className={cn(
-                        "group flex w-full flex-col overflow-hidden rounded-xl border border-cos-border bg-cos-bg/20 text-left transition",
-                        "hover:border-cos-accent hover:shadow-md disabled:opacity-60",
+                        "group relative aspect-square w-full overflow-hidden rounded-xl border border-cos-border bg-[#f7f6f3] transition",
+                        "hover:border-cos-accent hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cos-accent disabled:opacity-60",
                       )}
                     >
-                      <div className="relative aspect-[4/3] overflow-hidden bg-cos-bg">
-                        <AppImage
-                          src={asset.publicUrl}
-                          alt={asset.title || "Background"}
-                          fill
-                          preset="card"
-                          displayWidth={BACKGROUND_LIBRARY_GRID_THUMB_WIDTH}
-                          className="object-cover transition duration-300 group-hover:scale-[1.03]"
-                          sizes="(max-width: 640px) 45vw, 180px"
-                        />
-                        {busy ? (
-                          <div className="absolute inset-0 flex items-center justify-center bg-cos-card/70">
-                            <Loader2 className="h-5 w-5 animate-spin text-cos-accent" />
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className="space-y-1 p-2.5">
-                        <p className="line-clamp-1 text-sm font-medium text-cos-text">
-                          {asset.title || "Untitled"}
-                        </p>
-                        <p className="line-clamp-1 text-[11px] text-cos-muted">
-                          {asset.libraryNames.length > 0
-                            ? asset.libraryNames.join(" · ")
-                            : "Uncategorized"}
-                        </p>
-                        <p className="text-[11px] text-cos-muted">
-                          Used {asset.usageCount.toLocaleString()}
-                          {asset.usageCount === 1 ? " time" : " times"}
-                        </p>
-                      </div>
+                      <AppImage
+                        src={asset.publicUrl}
+                        alt=""
+                        fill
+                        preset="card"
+                        displayWidth={BACKGROUND_LIBRARY_GRID_THUMB_WIDTH}
+                        displayHeight={BACKGROUND_LIBRARY_GRID_THUMB_WIDTH}
+                        resize="contain"
+                        sizes="(max-width: 640px) 45vw, 180px"
+                        className="object-contain object-center p-1.5 transition duration-300 group-hover:scale-[1.02]"
+                      />
+                      {busy ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-cos-card/70">
+                          <Loader2 className="h-5 w-5 animate-spin text-cos-accent" />
+                        </div>
+                      ) : null}
                     </button>
                   </li>
                 );
@@ -256,7 +250,8 @@ export function BackgroundLibraryPicker({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
