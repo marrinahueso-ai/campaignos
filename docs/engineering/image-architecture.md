@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** 2026-08-07 — Background Library vision metadata  
+**Last updated:** 2026-08-07 — Compact list thumbs use cover; focus/lightbox keep contain  
 **Related:** [Architecture](./architecture.md) · [Storage RLS](./storage-rls.md) · [Feature list](../product/feature-list.md) · [Performance budget](../qa/performance-budget.md) · [Homepage Composer](./homepage-composer.md) · [Newsletter Composer](./newsletter-composer.md)
 
 This is the **canonical guide** for how images are uploaded, stored, displayed, published, and consumed by AI across Hey Ralli. Follow it for every new image-heavy feature.
@@ -113,9 +113,9 @@ const original = toDisplayImageUrl(url, { intent: "original" });
 | Surface | Notes |
 |---------|-------|
 | Background Library grids / detail | `AppImage` |
-| Approvals Ease + table | `AppImage` fill + `object-contain` so poster text stays readable |
-| Volunteers Ease | Same — contain for queue + focus art |
-| Events Ease list / focus / upcoming | Plain `AppImage` fill + `object-contain` in fixed square rails (full poster visible; focus hero stays cover) |
+| Approvals Ease + table | Focus cards: inset `p-3` + `rounded-[14px]` art wells (not flush); compact queue/table thumbs: square transform + `object-cover` |
+| Volunteers Ease | Same focus inset + `rounded-[14px]`; cover for compact queue thumbs; contain for larger focus art |
+| Events Ease list / focus / upcoming | Coming Up / Also ahead: inset + `rounded-[14px]`; Upcoming carousel: inset card padding + rounded art; hero focus stays full-bleed cover |
 | Campaign list thumbs | `CampaignThumbnail` → `AppImage` |
 | Today / Dashboard widgets | `AppImage` |
 | Small approval lightbox **tiles** | Transform; open lightbox stays original |

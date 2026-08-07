@@ -55,15 +55,38 @@ describe("events ease UI contracts", () => {
     assert.doesNotMatch(artworkHover, /Click to enlarge/);
   });
 
-  it("fills event card artwork rails instead of 1:1 letterbox", () => {
+  it("fills compact list thumbs edge-to-edge while focus keeps full poster", () => {
     const artworkHover = readSrc(
       "../../../components/artwork/ArtworkHoverThumbnail.tsx",
     );
-    // Poster thumbs use contain so full graphic stays readable (not cover-cropped).
-    assert.match(artworkHover, /object-contain object-center/);
-    assert.match(artworkHover, /objectFit: "contain"/);
-    assert.doesNotMatch(artworkHover, /displayHeight=\{compact \? 128 : 256\}/);
-    assert.match(ease, /h-\[88px\] w-\[88px\] shrink-0/);
-    assert.match(artworkHover, /contain keeps full poster art readable/);
+    // Compact queue thumbs use cover; focus/non-compact keeps contain.
+    assert.match(artworkHover, /resize=\{compact \? "cover" : "contain"\}/);
+    assert.match(artworkHover, /objectFit: compact \? "cover" : "contain"/);
+    assert.match(artworkHover, /object-cover object-center/);
+    assert.match(artworkHover, /object-contain object-center p-0\.5/);
+    assert.match(ease, /h-\[88px\] w-\[88px\] shrink-0 rounded-\[14px\]/);
+    assert.match(
+      ease,
+      /EventsEaseAheadCard[\s\S]*?grid-cols-\[88px_1fr\][\s\S]*?gap-3[\s\S]*?p-3/,
+    );
+    assert.match(artworkHover, /Compact list/);
+  });
+
+  it("requests square Supabase transforms for poster thumbs (no sliced/squished art)", () => {
+    // Regression: Supabase's render/image transform only crops to whichever
+    // single axis is given and leaves the other axis at native source size
+    // (e.g. a 128-wide request against a 1024x1024 source came back
+    // 128x1024, not proportionally 128x128). That squished/sliced the
+    // EventsEaseQueueRow ("Also ahead") thumbs into thin vertical strips
+    // bleeding past the rounded rail. displayHeight must always be sent
+    // alongside displayWidth so Supabase returns a real square; compact
+    // list presentation then uses cover (focus/lightbox keep contain).
+    const artworkHover = readSrc(
+      "../../../components/artwork/ArtworkHoverThumbnail.tsx",
+    );
+    assert.match(artworkHover, /displayHeight=\{compact \? 128 : 256\}/);
+    assert.match(artworkHover, /resize=\{compact \? "cover" : "contain"\}/);
+    assert.match(ease, /EventsEaseQueueRow/);
+    assert.match(ease, /h-12 w-12 rounded-\[14px\] sm:h-14 sm:w-14/);
   });
 });

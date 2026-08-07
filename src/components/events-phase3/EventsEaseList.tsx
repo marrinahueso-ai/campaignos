@@ -233,17 +233,18 @@ export function EventsEaseAheadCard({
 }) {
   const tone = eventStatusTone(event, today);
   return (
-    <div className="grid min-h-[100px] flex-1 grid-cols-[88px_1fr] items-center overflow-hidden rounded-[18px] border border-cos-border bg-cos-card text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)]">
+    <div className="grid min-h-[100px] flex-1 grid-cols-[88px_1fr] items-center gap-3 rounded-[18px] border border-cos-border bg-cos-card p-3 text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)]">
       <ArtThumb
         event={event}
         artwork={artwork}
-        className="h-[88px] w-[88px] shrink-0 rounded-none"
+        compact
+        className="h-[88px] w-[88px] shrink-0 rounded-[14px]"
         sizes="88px"
       />
       <button
         type="button"
         onClick={onSelect}
-        className="flex min-w-0 flex-col justify-center gap-1 px-3.5 py-3 text-left"
+        className="flex min-w-0 flex-col justify-center gap-1 text-left"
       >
         <strong className="truncate text-sm font-bold text-cos-text">
           {event.title}

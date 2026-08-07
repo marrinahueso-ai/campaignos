@@ -71,8 +71,14 @@ function ArtTile({
           fill
           preset={isCompact ? "thumb" : "card"}
           displayWidth={width}
-          className="object-contain object-center p-0.5"
-          style={{ objectFit: "contain" }}
+          displayHeight={width}
+          resize={isCompact ? "cover" : "contain"}
+          className={
+            isCompact
+              ? "object-cover object-center"
+              : "object-contain object-center p-1"
+          }
+          style={{ objectFit: isCompact ? "cover" : "contain" }}
           sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
           priority={priority}
         />
@@ -102,10 +108,10 @@ export function ApprovalsFocusCard({
   const preview = getUnifiedApprovalPreview(item);
 
   return (
-    <article className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(240px,300px)_1fr]">
+    <article className="grid gap-3 rounded-[22px] border border-cos-border bg-cos-card p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(240px,300px)_1fr] md:gap-4 md:p-3.5">
       <ArtTile
         item={item}
-        className="aspect-square min-h-[220px] w-full self-stretch md:aspect-auto md:min-h-[260px]"
+        className="aspect-square min-h-[220px] w-full self-stretch overflow-hidden rounded-[14px] md:aspect-auto md:min-h-[260px]"
         width={800}
         priority
         label={
@@ -119,7 +125,7 @@ export function ApprovalsFocusCard({
                 : undefined
         }
       />
-      <div className="flex flex-col gap-3.5 p-6 sm:p-8">
+      <div className="flex flex-col gap-3.5 p-3 sm:p-5 md:py-4 md:pr-5 md:pl-1">
         <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold text-cos-muted">
           <span
             className={cn(
@@ -269,7 +275,7 @@ export function ApprovalsQueueRow({
       <td className="px-3 py-3">
         <ArtTile
           item={item}
-          className="relative h-12 w-12 shrink-0 rounded-[10px]"
+          className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[14px]"
           width={128}
         />
       </td>

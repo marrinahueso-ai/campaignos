@@ -29,16 +29,23 @@ describe("volunteers ease UI contracts", () => {
     assert.match(ease, /Event volunteers/);
   });
 
-  it("fills focus art wells edge-to-edge while queue thumbs stay compact", () => {
+  it("insets focus art with rounded rails while queue thumbs stay compact", () => {
     assert.match(
       ease,
-      /relative h-14 w-14 shrink-0 rounded-xl/,
+      /relative h-14 w-14 shrink-0 overflow-hidden rounded-\[14px\]/,
     );
-    assert.match(ease, /grid overflow-hidden[\s\S]*minmax\(220px,280px\)_1fr/);
-    assert.match(ease, /min-h-\[240px\] w-full self-stretch/);
+    assert.match(
+      ease,
+      /VolunteersFocusCard[\s\S]*?gap-3[\s\S]*?p-3[\s\S]*?minmax\(220px,280px\)_1fr/,
+    );
+    assert.match(
+      ease,
+      /min-h-\[240px\] w-full self-stretch overflow-hidden rounded-\[14px\]/,
+    );
     assert.match(ease, /AppImage/);
-    assert.match(ease, /resize="contain"/);
-    assert.match(ease, /className="object-contain object-center p-1"/);
+    assert.match(ease, /resize=\{isCompact \? "cover" : "contain"\}/);
+    assert.match(ease, /object-cover object-center/);
+    assert.match(ease, /object-contain object-center p-1/);
     assert.match(ease, /bg-cos-bg/);
     assert.match(ease, /sizes=\{isCompact \? "56px"/);
     assert.match(ease, /VolunteersQueueRow[\s\S]*ArtTile/);

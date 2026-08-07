@@ -72,7 +72,7 @@ function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
     "";
 
   return (
-    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-cos-border bg-cos-bg">
+    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[14px] border border-cos-border bg-cos-bg">
       {source.trim() ? (
         <AppImage
           src={source}
@@ -80,8 +80,10 @@ function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
           fill
           preset="thumb"
           displayWidth={128}
-          className="object-contain object-center p-0.5"
-          style={{ objectFit: "contain" }}
+          displayHeight={128}
+          resize="cover"
+          className="object-cover object-center"
+          style={{ objectFit: "cover" }}
           sizes="48px"
         />
       ) : (

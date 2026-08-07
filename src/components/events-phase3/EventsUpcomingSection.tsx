@@ -62,14 +62,14 @@ export function EventsUpcomingSection({
           return (
             <article
               key={event.id}
-              className="flex min-w-[14.5rem] max-w-[14.5rem] shrink-0 flex-col overflow-hidden rounded-xl border border-cos-border bg-cos-card"
+              className="flex min-w-[14.5rem] max-w-[14.5rem] shrink-0 flex-col gap-2.5 rounded-xl border border-cos-border bg-cos-card p-2.5"
             >
               <EventsHomeArtwork
                 artwork={artwork}
                 eventTitle={event.title}
                 size="upcoming"
               />
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1.5 p-2.5">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1.5">
                 <Link
                   href={`/events/${event.id}`}
                   className="line-clamp-2 min-h-[2.25rem] text-sm font-semibold text-cos-text hover:text-cos-primary"
@@ -122,10 +122,13 @@ export function EventsHomeArtwork({
 }) {
   const isUpcoming = size === "upcoming";
   const frameClassName = isUpcoming
-    ? "relative aspect-[5/4] w-full overflow-hidden bg-[#f7f6f3]"
-    : "relative h-[7.5rem] w-[7.5rem] shrink-0 overflow-hidden rounded-xl bg-[#f7f6f3] ring-1 ring-cos-border/60";
+    ? "relative aspect-[5/4] w-full overflow-hidden rounded-[14px] bg-[#f7f6f3]"
+    : "relative h-[7.5rem] w-[7.5rem] shrink-0 overflow-hidden rounded-[14px] bg-[#f7f6f3] ring-1 ring-cos-border/60";
 
   if (hasDisplayableArtwork(artwork) && artwork.imageUrl) {
+    // Compact list row thumbs fill the square (cover); larger upcoming cards
+    // keep contain so the full flyer stays visible.
+    const fit = isUpcoming ? "contain" : "cover";
     return (
       <div className={frameClassName}>
         <AppImage
@@ -134,9 +137,15 @@ export function EventsHomeArtwork({
           fill
           preset={isUpcoming ? "card" : "thumb"}
           displayWidth={isUpcoming ? 360 : 160}
+          displayHeight={isUpcoming ? 360 : 160}
+          resize={fit}
           sizes={isUpcoming ? "232px" : "120px"}
-          className="object-contain object-center p-0.5"
-          style={{ objectFit: "contain" }}
+          className={
+            isUpcoming
+              ? "object-contain object-center p-0.5"
+              : "object-cover object-center"
+          }
+          style={{ objectFit: fit }}
         />
       </div>
     );
@@ -146,8 +155,8 @@ export function EventsHomeArtwork({
     <div
       className={
         isUpcoming
-          ? "flex aspect-[5/4] w-full items-center justify-center bg-gradient-to-br from-[#e8efe9] via-[#f5f1ea] to-[#ebe6df]"
-          : "flex h-[7.5rem] w-[7.5rem] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#e8efe9] via-[#f5f1ea] to-[#ebe6df] ring-1 ring-cos-border/60"
+          ? "flex aspect-[5/4] w-full items-center justify-center overflow-hidden rounded-[14px] bg-gradient-to-br from-[#e8efe9] via-[#f5f1ea] to-[#ebe6df]"
+          : "flex h-[7.5rem] w-[7.5rem] shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-gradient-to-br from-[#e8efe9] via-[#f5f1ea] to-[#ebe6df] ring-1 ring-cos-border/60"
       }
       aria-hidden
     >

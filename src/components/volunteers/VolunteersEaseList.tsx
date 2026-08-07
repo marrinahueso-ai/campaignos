@@ -91,10 +91,14 @@ function ArtTile({
           fill
           preset={isCompact ? "thumb" : "card"}
           displayWidth={width}
-          // Width-only transform + CSS fit — avoid baking a mismatched
-          // height that next/image then stretched into the tile.
-          className="object-contain object-center p-0.5"
-          style={{ objectFit: "contain" }}
+          displayHeight={width}
+          resize={isCompact ? "cover" : "contain"}
+          className={
+            isCompact
+              ? "object-cover object-center"
+              : "object-contain object-center p-1"
+          }
+          style={{ objectFit: isCompact ? "cover" : "contain" }}
           sizes={isCompact ? "56px" : "(max-width: 820px) 100vw, 280px"}
           priority={priority}
         />
@@ -150,15 +154,15 @@ export function VolunteersFocusCard({
   return (
     <article
       key={event.id}
-      className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(220px,280px)_1fr]"
+      className="grid gap-3 rounded-[22px] border border-cos-border bg-cos-card p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(220px,280px)_1fr] md:gap-4 md:p-3.5"
     >
       <ArtTile
         event={event}
-        className="min-h-[240px] w-full self-stretch"
+        className="min-h-[240px] w-full self-stretch overflow-hidden rounded-[14px]"
         width={800}
         priority
       />
-      <div className="flex flex-col gap-3 p-6 sm:p-7">
+      <div className="flex flex-col gap-3 p-3 sm:p-5 md:py-4 md:pr-5 md:pl-1">
         <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-cos-muted">
           <span
             className={cn(
@@ -281,7 +285,7 @@ export function VolunteersQueueRow({
     >
       <ArtTile
         event={event}
-        className="relative h-14 w-14 shrink-0 rounded-xl"
+        className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[14px]"
         width={128}
       />
       <span className="min-w-0">

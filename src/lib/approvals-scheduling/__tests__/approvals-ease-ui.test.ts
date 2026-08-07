@@ -153,7 +153,7 @@ describe("approvals ease pulse contracts", () => {
     assert.match(hub, /shouldApplyApprovalsEasePulseFilter/);
   });
 
-  it("fills focus art wells edge-to-edge while queue thumbs stay compact", () => {
+  it("insets focus art with rounded rails while queue thumbs stay compact", () => {
     const ease = readSrc(
       "../../../components/approvals-scheduling/ApprovalsEaseList.tsx",
     );
@@ -161,12 +161,19 @@ describe("approvals ease pulse contracts", () => {
       "../../../components/approvals-scheduling/ApprovalsTable.tsx",
     );
 
-    assert.match(ease, /relative h-12 w-12 shrink-0 rounded-\[10px\]/);
-    assert.match(ease, /grid overflow-hidden[\s\S]*minmax\(240px,300px\)_1fr/);
-    assert.match(ease, /min-h-\[220px\] w-full self-stretch/);
+    assert.match(ease, /relative h-12 w-12 shrink-0 overflow-hidden rounded-\[14px\]/);
+    assert.match(
+      ease,
+      /ApprovalsFocusCard[\s\S]*?gap-3[\s\S]*?p-3[\s\S]*?minmax\(240px,300px\)_1fr/,
+    );
+    assert.match(
+      ease,
+      /min-h-\[220px\] w-full self-stretch overflow-hidden rounded-\[14px\]/,
+    );
     assert.match(ease, /AppImage/);
-    assert.match(ease, /resize="contain"/);
-    assert.match(ease, /className="object-contain object-center p-1"/);
+    assert.match(ease, /resize=\{isCompact \? "cover" : "contain"\}/);
+    assert.match(ease, /object-cover object-center/);
+    assert.match(ease, /object-contain object-center p-1/);
     assert.match(ease, /bg-cos-bg/);
     assert.match(ease, /sizes=\{width > 200 \?[\s\S]*: "56px"\}/);
     assert.match(ease, /ApprovalsQueueRow[\s\S]*ArtTile/);
@@ -177,8 +184,8 @@ describe("approvals ease pulse contracts", () => {
     assert.match(table, /AppImage/);
     assert.match(table, /displayWidth=\{128\}/);
     assert.match(table, /displayHeight=\{128\}/);
-    assert.match(table, /resize="contain"/);
-    assert.match(table, /className="object-contain object-center p-0\.5"/);
+    assert.match(table, /resize="cover"/);
+    assert.match(table, /className="object-cover object-center"/);
     assert.match(table, /sizes="48px"/);
   });
 });

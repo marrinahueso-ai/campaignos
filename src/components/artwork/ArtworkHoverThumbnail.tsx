@@ -125,9 +125,13 @@ function ArtworkPreviewLightbox({
         >
           <X className="h-4 w-4" />
         </button>
-        <div className="relative aspect-square w-full">
+        <div className="relative aspect-square w-full bg-[#f7f6f3]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={imageUrl} alt={alt} className="h-full w-full object-cover" />
+          <img
+            src={imageUrl}
+            alt={alt}
+            className="h-full w-full object-contain object-center"
+          />
         </div>
         <div className="flex items-center justify-between gap-3 border-t border-cos-border px-4 py-3">
           <p className="text-sm font-semibold text-cos-muted">Event artwork</p>
@@ -341,8 +345,9 @@ export function ArtworkHoverThumbnail({
     <>
       <div
         className={cn(
-          // Fixed square rail; contain keeps full poster art readable (cover was
-          // cropping feed graphics into illegible letter fragments).
+          // Fixed square rail + square transform (width+height). Compact list
+          // thumbs use cover to fill the cell; larger/focus + lightbox keep
+          // contain so the full flyer stays readable.
           "group relative block aspect-square w-full cursor-zoom-in overflow-hidden bg-[#f7f6f3]",
           className,
         )}
@@ -363,8 +368,14 @@ export function ArtworkHoverThumbnail({
           fill
           preset={compact ? "thumb" : "card"}
           displayWidth={compact ? 128 : 256}
-          className="object-contain object-center p-0.5"
-          style={{ objectFit: "contain" }}
+          displayHeight={compact ? 128 : 256}
+          resize={compact ? "cover" : "contain"}
+          className={
+            compact
+              ? "object-cover object-center"
+              : "object-contain object-center p-0.5"
+          }
+          style={{ objectFit: compact ? "cover" : "contain" }}
           sizes={sizes}
         />
         <span className="pointer-events-none absolute inset-0 z-[1] bg-[rgba(28,36,48,0.22)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100" />
