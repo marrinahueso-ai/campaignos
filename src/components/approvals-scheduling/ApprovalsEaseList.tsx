@@ -63,7 +63,14 @@ function ArtTile({
   const source = artBackground(item);
   const isCompact = width <= 200;
   return (
-    <div className={cn("relative overflow-hidden bg-cos-bg", className)}>
+    <div
+      className={cn(
+        // Radius + overflow must live on this positioning root so the absolute
+        // fill <img> from AppImage is clipped (no intermediate wrapper).
+        "relative isolate overflow-hidden rounded-[14px] bg-cos-bg",
+        className,
+      )}
+    >
       {source ? (
         <AppImage
           src={source}
@@ -75,8 +82,8 @@ function ArtTile({
           resize={isCompact ? "cover" : "contain"}
           className={
             isCompact
-              ? "object-cover object-center"
-              : "object-contain object-center p-1"
+              ? "rounded-[14px] object-cover object-center"
+              : "rounded-[14px] object-contain object-center p-1"
           }
           style={{ objectFit: isCompact ? "cover" : "contain" }}
           sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
