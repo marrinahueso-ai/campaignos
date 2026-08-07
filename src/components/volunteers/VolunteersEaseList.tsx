@@ -281,7 +281,7 @@ export function VolunteersQueueRow({
   return (
     <Link
       href={eventVolunteersHref(event.id)}
-      className="grid w-full grid-cols-[56px_1fr] items-center gap-3.5 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.55)] px-3.5 py-3 text-left transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)] sm:grid-cols-[56px_1fr_minmax(100px,140px)_auto]"
+      className="grid w-full grid-cols-[56px_1fr] items-center gap-3.5 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.55)] px-3.5 py-3 text-left transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)] sm:grid-cols-[56px_minmax(0,1.4fr)_minmax(100px,140px)_minmax(5rem,0.9fr)]"
     >
       <ArtTile
         event={event}
