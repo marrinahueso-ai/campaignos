@@ -233,11 +233,11 @@ export function EventsEaseAheadCard({
 }) {
   const tone = eventStatusTone(event, today);
   return (
-    <div className="grid min-h-[100px] flex-1 grid-cols-[88px_1fr] items-stretch overflow-hidden rounded-[18px] border border-cos-border bg-cos-card text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)]">
+    <div className="grid min-h-[100px] flex-1 grid-cols-[88px_1fr] items-center overflow-hidden rounded-[18px] border border-cos-border bg-cos-card text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)]">
       <ArtThumb
         event={event}
         artwork={artwork}
-        className="min-h-[100px] self-stretch rounded-none"
+        className="aspect-square w-full self-center rounded-none"
         sizes="88px"
       />
       <button

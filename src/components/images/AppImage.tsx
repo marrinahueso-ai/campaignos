@@ -1,7 +1,7 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import {
   canOptimizeWithNextImage,
@@ -25,6 +25,7 @@ type AppImageBase = {
   resize?: ImageDisplayResize;
   displayQuality?: number;
   className?: string;
+  style?: CSSProperties;
   priority?: boolean;
   sizes?: string;
   onError?: () => void;
@@ -60,6 +61,7 @@ export function AppImage(props: AppImageProps) {
     resize,
     displayQuality,
     className,
+    style,
     priority = false,
     sizes,
     onError,
@@ -112,6 +114,7 @@ export function AppImage(props: AppImageProps) {
           loading={loading}
           fetchPriority={priority ? "high" : "auto"}
           className={cn("absolute inset-0 h-full w-full", className)}
+          style={style}
           onError={handleError}
         />
       );
@@ -127,6 +130,7 @@ export function AppImage(props: AppImageProps) {
         loading={loading}
         fetchPriority={priority ? "high" : "auto"}
         className={className}
+        style={style}
         onError={handleError}
       />
     );
@@ -134,7 +138,7 @@ export function AppImage(props: AppImageProps) {
 
   const shared: Pick<
     ImageProps,
-    "alt" | "className" | "sizes" | "priority" | "quality" | "onError"
+    "alt" | "className" | "sizes" | "priority" | "quality" | "onError" | "style"
   > = {
     alt,
     className,
@@ -142,6 +146,7 @@ export function AppImage(props: AppImageProps) {
     priority,
     quality: 75,
     onError: handleError,
+    style,
   };
 
   if (props.fill) {

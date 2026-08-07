@@ -356,8 +356,8 @@ export function ArtworkHoverThumbnail({
         }}
       >
         {/*
-          Width-bounded transform (no square height) + CSS cover so the image
-          fills the card rail / thumb block instead of letterboxing as 1:1.
+          Square rail + CSS cover: fills the thumb block edge-to-edge without
+          letterboxing or stretching landscape art into a tall strip.
         */}
         <AppImage
           src={url}
@@ -365,7 +365,8 @@ export function ArtworkHoverThumbnail({
           fill
           preset={compact ? "thumb" : "card"}
           displayWidth={compact ? 128 : 256}
-          className="object-cover object-center"
+          className="!h-full !w-full object-cover object-center"
+          style={{ objectFit: "cover" }}
           sizes={sizes}
         />
         <span className="pointer-events-none absolute inset-0 z-[1] bg-[rgba(28,36,48,0.22)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100" />

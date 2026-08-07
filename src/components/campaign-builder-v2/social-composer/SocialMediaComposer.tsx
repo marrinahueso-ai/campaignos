@@ -788,22 +788,13 @@ function SetupPanel({
               <div className="setup-insp-block">
               <div className="setup-plan-label-row">
                 <label className="field-label">Inspiration Images</label>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    className="setup-add-images"
-                    onClick={() => setLibraryOpen(true)}
-                  >
-                    Browse Library
-                  </button>
-                  <button
-                    type="button"
-                    className="setup-add-images"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    + Add Images
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="setup-add-images"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  + Add Images
+                </button>
               </div>
               <div
                 className={`insp-drop setup-insp-drop${inspDragOver ? " drag-over" : ""}`}
@@ -864,6 +855,17 @@ function SetupPanel({
                   <span className="insp-tile-upload-label">Upload</span>
                 </button>
               </div>
+              <button
+                type="button"
+                className="setup-browse-gallery"
+                title="Browse the Hey Ralli background library"
+                onClick={() => setLibraryOpen(true)}
+              >
+                Browse Gallery
+              </button>
+              <p className="setup-insp-peer-note">
+                Upload a photo to use as inspiration or to set the color palette.
+              </p>
               <input
                 ref={fileInputRef}
                 type="file"

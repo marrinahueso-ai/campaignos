@@ -443,6 +443,33 @@
       background: transparent;
       padding: 0;
       min-height: 0;
+      margin-bottom: 10px;
+}
+.smc .setup-browse-gallery {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #faf8f5;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft, #5c554c);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.smc .setup-browse-gallery:hover {
+  border-color: rgba(42, 122, 134, 0.35);
+  background: #f3fafb;
+  color: var(--teal, #2a7a86);
+}
+.smc .setup-insp-peer-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  font-style: italic;
 }
 .smc .setup-insp-drop .insp-tile {
       width: 128px;

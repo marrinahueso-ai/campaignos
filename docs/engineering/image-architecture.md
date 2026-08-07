@@ -115,7 +115,7 @@ const original = toDisplayImageUrl(url, { intent: "original" });
 | Background Library grids / detail | `AppImage` |
 | Approvals Ease + table | `AppImage` with `resize=contain` for poster thumbs (full graphic visible) |
 | Volunteers Ease | `AppImage` with `resize=contain` for poster thumbs |
-| Events Ease list / focus / upcoming | `ArtworkHoverThumbnail` width-bounded + CSS `object-cover` so card rails fill (no 1:1 letterbox); focus hero same |
+| Events Ease list / focus / upcoming | `ArtworkHoverThumbnail` square rail + CSS `object-cover` (fills thumb, no letterbox/stretch); focus hero width-bounded + cover |
 | Campaign list thumbs | `CampaignThumbnail` → `AppImage` |
 | Today / Dashboard widgets | `AppImage` |
 | Small approval lightbox **tiles** | Transform; open lightbox stays original |
@@ -196,7 +196,7 @@ Platform-owned curated backgrounds (`/ops/background-library`) grow via Generate
 | `season`, `school_level` | Existing enums |
 | Suggested `librarySlugs` | Applied to `background_asset_libraries` only when the asset has no collections yet |
 
-Owner reviews/edits in the detail panel (**Auto-tag from image** re-runs analysis) before Approve. School pickers (Social **Browse Library**, Flyer **Browse Gallery**) search the same haystack with assortment ordering (round-robin across Generate `sourceId` batches and bulk lookalike buckets of style/color/library; within a bucket prefer lower `usage_count`) — see `src/lib/background-library/assortment.ts`.
+Owner reviews/edits in the detail panel (**Auto-tag from image** re-runs analysis) before Approve. School pickers (Social **Browse Gallery**, Flyer **Browse Gallery**) search the same haystack with assortment ordering (round-robin across Generate `sourceId` batches and bulk lookalike buckets of style/color/library; within a bucket prefer lower `usage_count`) — see `src/lib/background-library/assortment.ts`.
 
 **Migration:** `supabase/migrations/20260807120000_background_asset_metadata.sql` (apply before deploy that writes these columns).
 
