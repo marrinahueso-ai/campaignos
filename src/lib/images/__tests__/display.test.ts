@@ -15,6 +15,7 @@ describe("toDisplayImageUrl", () => {
     const result = toDisplayImageUrl(PUBLIC, { preset: "card" });
     assert.match(result, /\/render\/image\/public\/event-assets\//);
     assert.match(result, /width=360/);
+    assert.match(result, /height=360/);
     assert.match(result, /quality=72/);
     assert.match(result, /resize=cover/);
   });
@@ -22,9 +23,10 @@ describe("toDisplayImageUrl", () => {
   it("uses thumb preset for list cells", () => {
     const result = toDisplayImageUrl(PUBLIC, { preset: "thumb" });
     assert.match(result, /width=128/);
+    assert.match(result, /height=128/);
   });
 
-  it("does not force height when only width is overridden", () => {
+  it("does not force height or resize when only width is overridden", () => {
     const result = toDisplayImageUrl(PUBLIC, {
       preset: "card",
       width: 560,
@@ -32,6 +34,18 @@ describe("toDisplayImageUrl", () => {
     });
     assert.match(result, /width=560/);
     assert.doesNotMatch(result, /height=/);
+    assert.doesNotMatch(result, /resize=/);
+  });
+
+  it("keeps contain resize when both axes are set for poster thumbs", () => {
+    const result = toDisplayImageUrl(PUBLIC, {
+      width: 256,
+      height: 256,
+      resize: "contain",
+    });
+    assert.match(result, /width=256/);
+    assert.match(result, /height=256/);
+    assert.match(result, /resize=contain/);
   });
 
   it("leaves originals untouched when intent is original", () => {

@@ -81,8 +81,8 @@ function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
           preset="thumb"
           displayWidth={128}
           displayHeight={128}
-          resize="cover"
-          className="object-cover object-center"
+          resize="contain"
+          className="object-contain object-center p-0.5"
           sizes="48px"
         />
       ) : (

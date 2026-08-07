@@ -50,7 +50,10 @@ export function toDisplayImageUrl(
     options.height ??
     (options.width == null && preset ? preset.width : undefined);
   const quality = options.quality ?? preset?.quality ?? 72;
-  const resize = options.resize ?? preset?.resize ?? "cover";
+  const requestedResize = options.resize ?? preset?.resize ?? "cover";
+  // cover/contain/fill need both axes. Width-only + resize=cover was cropping
+  // poster art into unreadable fragments on Events/Approvals thumbs.
+  const resize = height != null ? requestedResize : undefined;
 
   return toSupabaseThumbnailUrl(trimmed, {
     width,

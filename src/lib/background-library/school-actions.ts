@@ -95,7 +95,7 @@ export async function searchBackgroundLibraryForSchoolsAction(input?: {
 }
 
 /** Attach path: bump usage when a school picks a published asset. */
-export async function useBackgroundLibraryAssetAction(assetId: string): Promise<{
+export async function selectBackgroundLibraryAssetAction(assetId: string): Promise<{
   success: boolean;
   message?: string;
   asset?: BackgroundLibraryPickerAsset;

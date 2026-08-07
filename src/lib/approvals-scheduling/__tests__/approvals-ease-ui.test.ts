@@ -165,8 +165,8 @@ describe("approvals ease pulse contracts", () => {
     assert.match(ease, /grid overflow-hidden[\s\S]*minmax\(240px,300px\)_1fr/);
     assert.match(ease, /min-h-\[220px\] w-full self-stretch/);
     assert.match(ease, /AppImage/);
-    assert.match(ease, /resize="cover"/);
-    assert.match(ease, /className="object-cover object-center"/);
+    assert.match(ease, /resize="contain"/);
+    assert.match(ease, /className="object-contain object-center p-1"/);
     assert.match(ease, /bg-cos-bg/);
     assert.match(ease, /sizes=\{width > 200 \?[\s\S]*: "56px"\}/);
     assert.match(ease, /ApprovalsQueueRow[\s\S]*ArtTile/);
@@ -177,8 +177,8 @@ describe("approvals ease pulse contracts", () => {
     assert.match(table, /AppImage/);
     assert.match(table, /displayWidth=\{128\}/);
     assert.match(table, /displayHeight=\{128\}/);
-    assert.match(table, /resize="cover"/);
-    assert.match(table, /className="object-cover object-center"/);
+    assert.match(table, /resize="contain"/);
+    assert.match(table, /className="object-contain object-center p-0\.5"/);
     assert.match(table, /sizes="48px"/);
   });
 });

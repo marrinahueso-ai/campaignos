@@ -360,9 +360,10 @@ export function ArtworkHoverThumbnail({
           alt=""
           fill
           preset={compact ? "thumb" : "card"}
-          displayWidth={compact ? 128 : 360}
-          resize="cover"
-          className="object-cover"
+          displayWidth={compact ? 128 : 256}
+          displayHeight={compact ? 128 : 256}
+          resize="contain"
+          className="object-contain object-center p-0.5"
           sizes={sizes}
         />
         <span className="pointer-events-none absolute inset-0 z-[1] bg-[rgba(28,36,48,0.22)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100" />

@@ -36,11 +36,12 @@ describe("volunteers ease UI contracts", () => {
     );
     assert.match(ease, /grid overflow-hidden[\s\S]*minmax\(220px,280px\)_1fr/);
     assert.match(ease, /min-h-\[240px\] w-full self-stretch/);
-    assert.match(ease, /resize: "cover"/);
-    assert.match(ease, /className="object-cover object-center"/);
+    assert.match(ease, /AppImage/);
+    assert.match(ease, /resize="contain"/);
+    assert.match(ease, /className="object-contain object-center p-1"/);
     assert.match(ease, /bg-cos-bg/);
     assert.match(ease, /sizes=\{isCompact \? "56px"/);
-    assert.match(ease, /loading=\{priority \? "eager" : "lazy"\}/);
     assert.match(ease, /VolunteersQueueRow[\s\S]*ArtTile/);
   });
 });
+

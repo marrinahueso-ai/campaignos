@@ -48,8 +48,8 @@ export function CampaignThumbnail({
           preset="thumb"
           displayWidth={128}
           displayHeight={128}
-          resize="cover"
-          className="h-full w-full object-cover"
+          resize="contain"
+          className="h-full w-full object-contain object-center p-0.5"
           sizes={`${pixelSize}px`}
         />
       </span>

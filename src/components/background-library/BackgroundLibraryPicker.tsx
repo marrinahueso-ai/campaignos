@@ -7,7 +7,7 @@ import { AppImage } from "@/components/images/AppImage";
 import { Button } from "@/components/ui/Button";
 import {
   searchBackgroundLibraryForSchoolsAction,
-  useBackgroundLibraryAssetAction,
+  selectBackgroundLibraryAssetAction,
   type BackgroundLibraryPickerAsset,
 } from "@/lib/background-library/school-actions";
 import type { BackgroundLibrary } from "@/lib/background-library/types";
@@ -72,7 +72,7 @@ export function BackgroundLibraryPicker({
     setSelectingId(asset.id);
     setError(null);
     startSelecting(async () => {
-      const result = await useBackgroundLibraryAssetAction(asset.id);
+      const result = await selectBackgroundLibraryAssetAction(asset.id);
       if (!result.success || !result.asset) {
         setError(result.message ?? "Could not use that background.");
         setSelectingId(null);

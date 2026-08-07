@@ -157,10 +157,8 @@ export function EventsEaseFocusCard({
             fill
             preset="hero"
             displayWidth={800}
-            displayHeight={800}
-            resize="cover"
             sizes="(max-width: 768px) 100vw, 640px"
-            className="object-cover"
+            className="object-cover object-center"
             priority
           />
         ) : null}

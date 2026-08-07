@@ -135,9 +135,9 @@ export function EventsHomeArtwork({
           preset={isUpcoming ? "card" : "thumb"}
           displayWidth={isUpcoming ? 360 : 160}
           displayHeight={isUpcoming ? 288 : 160}
-          resize="cover"
+          resize="contain"
           sizes={isUpcoming ? "232px" : "120px"}
-          className="object-cover object-center"
+          className="object-contain object-center p-1"
         />
       </div>
     );
