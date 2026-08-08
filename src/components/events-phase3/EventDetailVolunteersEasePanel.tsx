@@ -2,10 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Link2 } from "lucide-react";
-import {
-  ew,
-  ewCard,
-} from "@/components/events-phase3/event-workspace-tokens";
+import { ew } from "@/components/events-phase3/event-workspace-tokens";
 import { EventVolunteerRosterEase } from "@/components/events-phase3/EventVolunteerRosterEase";
 import { EventVolunteersTab } from "@/components/events-phase3/EventVolunteersTab";
 import {
@@ -121,37 +118,33 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
 
   if (empty || showReplace) {
     return (
-      <section className="space-y-6">
-        <div>
-          <h2 className={cn("font-display text-2xl", ew.ink)} data-testid="event-detail-tab-volunteers">
-            Volunteers
-          </h2>
-          <p className={cn("mt-1 text-sm", ew.inksoft)}>
-            Connect a public SignUpGenius link to see roles, shifts, and
-            arrivals here.
-          </p>
-        </div>
-        <div className={cn(ewCard, "mx-auto max-w-xl px-6 py-10 text-center")}>
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#e6dfd5] bg-[#faf8f5]">
-            <Link2 className={cn("h-6 w-6", ew.sageDeep)} aria-hidden />
+      <section className="flex min-h-[28rem] flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md space-y-8 text-center">
+          <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-3xl border border-[#e6dfd5] bg-[#f4f0ea] text-[#c5a880]">
+            <Link2 className="h-10 w-10" aria-hidden />
           </div>
-          <h3 className={cn("font-display text-xl", ew.ink)}>
-            {showReplace ? "Replace signup link" : "No Signup Connected"}
-          </h3>
-          <p className={cn("mx-auto mt-2 max-w-md text-sm", ew.inksoft)}>
-            Connect your volunteer signup from SignUpGenius to see roles,
-            shifts, and arrivals here in your workspace.
-          </p>
+          <div>
+            <h2
+              className={cn("font-display text-3xl", ew.ink)}
+              data-testid="event-detail-tab-volunteers"
+            >
+              {showReplace ? "Replace signup link" : "No Signup Connected"}
+            </h2>
+            <p className={cn("mx-auto mt-3 text-sm leading-relaxed", ew.inksoft)}>
+              Connect your volunteer signup from SignupGenius or another source
+              to see roles, shifts, and arrivals here in your workspace.
+            </p>
+          </div>
           {error ? (
-            <p className="mt-3 text-sm text-[#a65a3a]">{error}</p>
+            <p className="text-sm text-[#a65a3a]">{error}</p>
           ) : null}
-          <input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://www.signupgenius.com/…"
-            className="mt-5 w-full rounded-2xl border border-[#e6dfd5] bg-white px-3.5 py-3 text-left text-sm text-[#1c352d]"
-          />
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+          <div className="space-y-3 pt-2">
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://www.signupgenius.com/…"
+              className="w-full rounded-2xl border border-[#e6dfd5] bg-white px-3.5 py-3 text-left text-sm text-[#1c352d]"
+            />
             <button
               type="button"
               disabled={
@@ -159,10 +152,11 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
               }
               onClick={showReplace ? handleReplace : handleConnect}
               className={cn(
-                "rounded-full px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50",
+                "flex w-full items-center justify-center gap-3 rounded-full py-4 text-sm font-semibold text-white shadow-sm disabled:opacity-50",
                 ew.fillInk,
               )}
             >
+              <Link2 className="h-5 w-5" aria-hidden />
               Connect SignupGenius
             </button>
             {showReplace ? (
@@ -182,7 +176,7 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
             ) : null}
           </div>
           {!(empty?.canManage ?? overview?.canManage) ? (
-            <p className={cn("mt-4 text-sm", ew.inksoft)}>
+            <p className={cn("text-sm", ew.inksoft)}>
               Ask a team admin to connect the signup link.
             </p>
           ) : null}

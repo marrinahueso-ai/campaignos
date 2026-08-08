@@ -190,6 +190,11 @@ interface CampaignBuilderContextValue {
   reorderMilestones: (fromIndex: number, toIndex: number) => void;
   moveMilestone: (id: string, direction: "up" | "down") => void;
   addMilestone: () => void;
+  /**
+   * Create a volunteer or thank-you post, select it, and return its id
+   * (for deep links from Event Volunteers).
+   */
+  createDirectedPost: (kind: "volunteer" | "thank_you") => string;
   updateMilestone: (id: string, patch: Partial<CampaignBuilderMilestone>) => void;
   removeMilestone: (id: string) => void;
   duplicateMilestone: (id: string) => void;
@@ -1617,6 +1622,52 @@ export function CampaignBuilderProvider({
     });
   }, [updateSession]);
 
+  const createDirectedPost = useCallback(
+    (kind: "volunteer" | "thank_you") => {
+      let createdId = "";
+      updateSession((prev) => {
+        const { milestone, preview } = buildNewMilestone(
+          prev.inspiration,
+          prev.milestones.length,
+        );
+        createdId = milestone.id;
+        const directed =
+          kind === "thank_you"
+            ? {
+                ...milestone,
+                name: "Thank you",
+                purpose: "Thank volunteers who helped staff this event",
+                captionNotes:
+                  "Warm thank-you to volunteers who signed up and showed up.",
+                artworkNotes:
+                  "Grateful, celebratory thank-you graphic for volunteers.",
+              }
+            : {
+                ...milestone,
+                name: "Volunteer post",
+                purpose: "Recruit volunteers for open roles at this event",
+                captionNotes:
+                  "Ask families to fill open volunteer spots and include the signup link.",
+                artworkNotes:
+                  "Friendly volunteer recruitment graphic highlighting open roles.",
+              };
+        const withNew: CampaignBuilderSession = {
+          ...prev,
+          milestones: [...prev.milestones, directed],
+          previewContents: [...prev.previewContents, preview],
+          selectedMilestoneId: createdId,
+        };
+        const sharedArt = resolveDisplayMainEventImage(prev);
+        if (!sharedArt) {
+          return withNew;
+        }
+        return seedMainEventImageAcrossPlan(withNew, sharedArt).session;
+      });
+      return createdId;
+    },
+    [updateSession],
+  );
+
   const updateMilestone = useCallback(
     (id: string, patch: Partial<CampaignBuilderMilestone>) => {
       updateSession((prev) => {
@@ -2478,6 +2529,7 @@ export function CampaignBuilderProvider({
       reorderMilestones,
       moveMilestone,
       addMilestone,
+      createDirectedPost,
       updateMilestone,
       removeMilestone,
       duplicateMilestone,
@@ -2533,6 +2585,7 @@ export function CampaignBuilderProvider({
       reorderMilestones,
       moveMilestone,
       addMilestone,
+      createDirectedPost,
       updateMilestone,
       removeMilestone,
       duplicateMilestone,

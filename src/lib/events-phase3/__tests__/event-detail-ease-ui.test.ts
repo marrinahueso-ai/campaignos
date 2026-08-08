@@ -107,6 +107,12 @@ describe("event detail ease UI contracts", () => {
     assert.match(roster, /Mark Arrived/);
     assert.match(roster, /Mark Received/);
     assert.match(roster, /Volunteers Fully Staffed/);
+    assert.match(roster, /Create Volunteer Post/);
+    assert.match(roster, /campaignBuilderCreatePostHref/);
+    assert.match(roster, /Still needed/);
+    assert.match(roster, /Sort/);
+    assert.match(roster, /Search volunteers/);
+    assert.match(roster, /getVolunteerFillRateBand/);
     assert.match(roster, /toggleEventVolunteerOpAction/);
     assert.match(roster, /title="Open signup"/);
     assert.doesNotMatch(roster, /Send Urgent Invite/);

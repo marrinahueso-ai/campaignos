@@ -112,6 +112,7 @@ export function PreviewStep() {
     canUseDeveloperTools,
     clearMilestoneGeneratedContent,
     flushSave,
+    createDirectedPost,
   } = useCampaignBuilder();
 
   useEffect(() => {
@@ -228,11 +229,27 @@ export function PreviewStep() {
     if (typeof window === "undefined") {
       return;
     }
+
+    const params = new URLSearchParams(window.location.search);
+    const createPost = params.get("createPost");
+    if (createPost === "volunteer" || createPost === "thank_you") {
+      handledMilestoneDeepLink.current = true;
+      const newId = createDirectedPost(createPost);
+      setSelectedMilestoneId(newId);
+      setEditInitialTab("artwork");
+      setEditModalOpen(true);
+      params.delete("createPost");
+      const search = params.toString();
+      const hash = window.location.hash || "#preview";
+      const nextUrl = `${window.location.pathname}${search ? `?${search}` : ""}${hash}`;
+      window.history.replaceState(window.history.state, "", nextUrl);
+      return;
+    }
+
     if (session.milestones.length === 0) {
       return;
     }
 
-    const params = new URLSearchParams(window.location.search);
     const milestoneId = params.get("milestone");
     if (!milestoneId) {
       return;
@@ -255,7 +272,11 @@ export function PreviewStep() {
     const hash = window.location.hash || "#preview";
     const nextUrl = `${window.location.pathname}${search ? `?${search}` : ""}${hash}`;
     window.history.replaceState(window.history.state, "", nextUrl);
-  }, [session.milestones, setSelectedMilestoneId]);
+  }, [
+    session.milestones,
+    setSelectedMilestoneId,
+    createDirectedPost,
+  ]);
 
   const progress = useMemo(
     () => countCompleteMilestones(session.milestones, session.previewContents),

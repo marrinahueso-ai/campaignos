@@ -111,7 +111,10 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Footer: SignUpGenius last update note; connect/refresh stay on each event’s Volunteers tab
 - **Event Volunteers tab** (`/events/[id]?tab=volunteers`) — **shipped** (writes sources/snapshots/participants; Master only reads aggregates)
   - Ease empty/overview + full Tab for pending review: SignUpGenius public URL connect → **verify dates before import** → confirm → sticky allowlist on refresh
-  - **Workspace roster:** Coverage / People / Items views; no-signup empty state; fully-staffed celebration when quantities complete and open spots are 0; Refresh + Open signup + Replace link (SignUpGenius sync unchanged)
+  - **Workspace roster:** Coverage / People / Items views with a shared search + filter + sort chrome; no-signup empty state; fully-staffed celebration (compact role grid + items footer) when quantities complete and open spots are 0; Refresh + Open signup + Replace link (SignUpGenius sync unchanged)
+  - **Create Volunteer Post** on underfilled Coverage roles opens Campaign Builder Preview for that event with a new volunteer post and artwork editor (`?createPost=volunteer`) — no second create click or event picker
+  - Filters: Still needed / Covered (Coverage); Arrived / Not arrived (People); Received / Not received (Items); people search against roster names
+  - Overall spots-filled bar uses shared fill-rate color bands (Critical → Fully Staffed)
   - People rows pull SignUpGenius public `participants` names; **no emails stored or shown**
   - **Arrived / Received** marks persist in Hey Ralli only (`event_volunteer_ops`) — not written back to SignUpGenius
   - Same fill-rate color bands as Volunteer Master; customer copy uses refresh/connect language

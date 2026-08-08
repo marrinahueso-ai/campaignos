@@ -61,6 +61,22 @@ export function campaignBuilderHref(
   return `/events/${eventId}/campaign-builder#${step}`;
 }
 
+/**
+ * Deep link that creates a new volunteer (or thank-you) post for this event and
+ * opens Preview with the artwork editor — no event picker or extra "Create" click.
+ */
+export type CampaignBuilderCreatePostKind = "volunteer" | "thank_you";
+
+export function campaignBuilderCreatePostHref(
+  eventId: string,
+  kind: CampaignBuilderCreatePostKind = "volunteer",
+): string {
+  const params = new URLSearchParams({
+    createPost: kind,
+  });
+  return `/events/${eventId}/campaign-builder?${params.toString()}#preview`;
+}
+
 /** Deep link that opens Preview with a milestone selected (edit caption/schedule/artwork). */
 export function campaignBuilderPreviewMilestoneHref(
   eventId: string,
