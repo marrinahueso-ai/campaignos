@@ -58,16 +58,17 @@ describe("event volunteers tenancy (source contract)", () => {
     assert.match(migration, /private\.is_active_org_member\(organization_id\)/);
   });
 
-  it("Ease roster clears client filters on event change and omits email UI", () => {
+  it("Ease roster resets ops state on event change and omits email UI", () => {
     assert.match(panel, /EventVolunteerRosterEase/);
     assert.match(panel, /\[event\.id\]/);
-    assert.match(roster, /setSearch\(""\)/);
-    assert.match(roster, /setRoleFilter\(null\)/);
-    assert.match(roster, /setExpandedRoles\(\{\}\)/);
+    assert.match(roster, /listEventVolunteerOpsAction/);
+    assert.match(roster, /toggleEventVolunteerOpAction/);
     assert.match(roster, /\[eventId\]/);
-    assert.match(roster, /List View/);
-    assert.match(roster, /Grouped View/);
-    assert.match(roster, /aria-expanded/);
+    assert.match(roster, /Coverage/);
+    assert.match(roster, /People/);
+    assert.match(roster, /Items/);
+    assert.match(roster, /Mark Arrived/);
+    assert.match(roster, /Mark Received/);
     assert.doesNotMatch(roster, /email|Email/);
     assert.doesNotMatch(panel, /email|Email/);
   });

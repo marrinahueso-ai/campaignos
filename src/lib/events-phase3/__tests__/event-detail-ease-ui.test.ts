@@ -14,14 +14,19 @@ describe("event detail ease UI contracts", () => {
     "../../../app/(dashboard)/events/[id]/render-planning-hub.tsx",
   );
 
-  it("uses ease hero and grouped Planning/Community tabs", () => {
-    assert.match(shell, /EventDetailEaseHero/);
+  it("uses workspace overview default with Planning/Community top-level nav", () => {
+    assert.match(shell, /EventWorkspaceOverviewPanel/);
+    assert.match(shell, /EventWorkspaceContextHeader/);
+    assert.match(shell, /EventPlanningShell/);
+    assert.match(shell, /EventCommunityPanel/);
     assert.match(shell, /role="tablist"/);
     assert.match(shell, /Planning/);
     assert.match(shell, /Community/);
     assert.match(shell, /responsibilities: "Team"/);
     assert.match(shell, /PLANNING_TABS/);
     assert.match(shell, /COMMUNITY_TABS/);
+    assert.match(shell, /return "overview"/);
+    assert.doesNotMatch(shell, /EventDetailEaseHero/);
     assert.doesNotMatch(shell, /<EventDetailHero[\s>]/);
   });
 
@@ -31,10 +36,9 @@ describe("event detail ease UI contracts", () => {
     assert.match(shell, /EventDetailCreateWithAiPanel/);
     assert.match(shell, /EventDetailVolunteersEasePanel/);
     assert.match(shell, /EventDetailInsightsEasePanel/);
-    assert.match(shell, /EventDetailTeamEasePanel/);
+    assert.match(shell, /EventCommunityPanel/);
     assert.match(shell, /EventDetailNotesEasePanel/);
     assert.match(shell, /EventDetailFilesEasePanel/);
-    assert.match(shell, /EventDetailVendorsEasePanel/);
     assert.match(shell, /EventDetailActivityEasePanel/);
 
     assert.doesNotMatch(shell, /ApprovalsSchedulingHub/);
@@ -64,22 +68,20 @@ describe("event detail ease UI contracts", () => {
     assert.doesNotMatch(panel, /EaseFocusCard/);
   });
 
-  it("event Approvals ease panel uses sort rail instead of pulse filters", () => {
+  it("event Approvals ease panel uses visual content cards and review drawer", () => {
     const panel = readSrc(
       "../../../components/events-phase3/EventDetailApprovalsEasePanel.tsx",
     );
-    const pulse = readSrc(
-      "../../approvals-scheduling/approvals-ease-pulse.ts",
-    );
+    assert.match(panel, /Needs Your Review/);
+    assert.match(panel, /All Event Content/);
+    assert.match(panel, /Everything reviewed/);
+    assert.match(panel, /No content yet/);
+    assert.match(panel, /ReviewDrawer/);
+    assert.match(panel, /RequestChangesModal/);
+    assert.match(panel, /approveUnifiedItemAction/);
+    assert.doesNotMatch(panel, /EaseListRail/);
     assert.doesNotMatch(panel, /EasePulseMini/);
     assert.doesNotMatch(panel, /APPROVALS_EASE_PULSE_OPTIONS/);
-    assert.match(panel, /EVENT_APPROVALS_EASE_SORT_OPTIONS/);
-    assert.match(panel, /EaseListRail/);
-    assert.match(pulse, /Needs you/);
-    assert.match(pulse, /Scheduled/);
-    assert.match(pulse, /Posted/);
-    assert.doesNotMatch(pulse, /label: "Drafts"/);
-    assert.doesNotMatch(panel, /label: "Drafts"/);
   });
 
   it("keeps Create with AI as an in-page doorway", () => {
@@ -87,7 +89,7 @@ describe("event detail ease UI contracts", () => {
     assert.doesNotMatch(shell, /window\.location\.replace\(createWithAiUrl\)/);
   });
 
-  it("ships Pilot Event Volunteers List + accordion Grouped roster without email", () => {
+  it("ships Volunteers Coverage/People/Items with Arrived/Received and no email", () => {
     const panel = readSrc(
       "../../../components/events-phase3/EventDetailVolunteersEasePanel.tsx",
     );
@@ -95,25 +97,18 @@ describe("event detail ease UI contracts", () => {
       "../../../components/events-phase3/EventVolunteerRosterEase.tsx",
     );
     assert.match(panel, /EventVolunteerRosterEase/);
-    assert.match(roster, /List View/);
-    assert.match(roster, /Grouped View/);
-    assert.match(roster, /Overall Health/);
-    assert.match(roster, /Filled Slots/);
-    assert.match(roster, /Search by name or role/);
-    assert.doesNotMatch(roster, /Role breakdown/);
+    assert.match(panel, /getEventVolunteerOverviewAction/);
+    assert.match(panel, /EventVolunteersTab/);
+    assert.match(panel, /No Signup Connected/);
+    assert.match(panel, /Connect SignupGenius/);
+    assert.match(roster, /Coverage/);
+    assert.match(roster, /People/);
+    assert.match(roster, /Items/);
+    assert.match(roster, /Mark Arrived/);
+    assert.match(roster, /Mark Received/);
+    assert.match(roster, /Volunteers Fully Staffed/);
+    assert.match(roster, /toggleEventVolunteerOpAction/);
     assert.match(roster, /title="Open signup"/);
-    assert.match(roster, /sortParticipants/);
-    assert.match(roster, /sortRosterRoles/);
-    assert.match(roster, /aria-sort/);
-    assert.match(roster, /GroupedRoleLine/);
-    assert.match(roster, /aria-expanded/);
-    assert.match(roster, /Assign Open Slot/);
-    assert.match(roster, /No volunteers assigned yet/);
-    assert.match(roster, /AvatarStack/);
-    assert.match(roster, /rosterProgressTone/);
-    assert.match(roster, /Filled/);
-    assert.match(roster, /Add \/ Import/);
-    assert.doesNotMatch(roster, /md:grid-cols-2/);
     assert.doesNotMatch(roster, /Send Urgent Invite/);
     assert.doesNotMatch(roster, /\b[Ee]mail\b/);
     assert.doesNotMatch(panel, /\b[Ee]mail\b/);
@@ -127,35 +122,26 @@ describe("event detail ease UI contracts", () => {
     assert.match(planningHub, /const approvalRequests = resolvedWorkspace\.approvalRequests \?\? \[\]/);
   });
 
-  it("calms event detail hero for soft launch", () => {
-    const hero = readSrc(
-      "../../../components/events-phase3/EventDetailEaseHero.tsx",
+  it("ships overview landing + condensed context header for non-overview tabs", () => {
+    const overview = readSrc(
+      "../../../components/events-phase3/EventWorkspaceOverviewPanel.tsx",
     );
-    const manageMenu = readSrc(
-      "../../../components/event-workspace/EventManageMenu.tsx",
+    const header = readSrc(
+      "../../../components/events-phase3/EventWorkspaceContextHeader.tsx",
     );
     const notes = readSrc(
       "../../../components/events-phase3/EventDetailNotesEasePanel.tsx",
     );
 
-    assert.doesNotMatch(
-      hero,
-      /Tasks, approvals, volunteers, and Create with AI/,
-    );
-    assert.doesNotMatch(hero, /EditEventDetailsButton/);
-    assert.match(hero, /Generate Event Plan/);
-    assert.match(hero, /createWithAiHref/);
-    assert.match(hero, /includeEditDetails/);
-    assert.match(hero, /iconOnly/);
-    assert.match(manageMenu, /Edit details/);
-    assert.match(hero, /Needs approval/);
-    assert.match(hero, /Quick Tasks/);
-    assert.match(hero, /Volunteer Staffing/);
-    assert.doesNotMatch(hero, /label: "Posts"/);
-    assert.match(hero, /h-32/);
-    assert.doesNotMatch(hero, /formatEventTime/);
-    assert.doesNotMatch(hero, /eventTypeLabel/);
-
+    assert.match(overview, /What Needs Your Attention/);
+    assert.match(overview, /Generate Event Plan/);
+    assert.match(overview, /createWithAiHref/);
+    assert.match(overview, /Event Workspace/);
+    assert.match(header, /Back to Workspace/);
+    assert.match(header, /Back to Events/);
+    assert.match(header, /includeEditDetails/);
+    assert.match(header, /iconOnly/);
+    assert.match(shell, /onBackToWorkspace/);
     assert.match(notes, /Shared Notes/);
     assert.match(notes, /Recent Scratchpads/);
     assert.match(notes, /New Note/);

@@ -123,11 +123,10 @@ export async function renderEventsPhase3Detail(
     { label: "Publishing", value: publisher },
   ];
 
-  // Approvals loads via the same client tab action as other lazy tabs.
-  // SSR-streaming it into the document forced k6 (and every bare event GET)
-  // to wait on the full approvals query+DTO before the response finished —
-  // the shell/hero already paint without it, and TabSkeleton covers the gap.
-  // Deep links still preload non-Approvals tabs (not the Approvals default path).
+  // Default tab is Overview (no SSR tab payload). Approvals and other panels
+  // load via the client tab action. SSR-streaming Approvals forced k6 (and every
+  // bare event GET) to wait on the full approvals query+DTO — Overview + shell
+  // paint first. Deep links still preload the requested non-default tabs.
   const lazyInitial =
     initialTab === "tasks" ||
     initialTab === "files" ||

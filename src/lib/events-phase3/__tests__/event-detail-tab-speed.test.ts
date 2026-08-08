@@ -123,7 +123,8 @@ describe("targeted event tab speed contracts", () => {
 
   it("Create with AI tab uses a doorway panel and hard-navigates into Social", () => {
     assert.match(shell, /EventDetailCreateWithAiPanel/);
-    assert.match(shell, /EventDetailEaseHero/);
+    assert.match(shell, /EventWorkspaceOverviewPanel/);
+    assert.match(shell, /EventWorkspaceContextHeader/);
     assert.doesNotMatch(shell, /CampaignBuilderProvider/);
     assert.doesNotMatch(shell, /CampaignBuilderShell/);
     assert.doesNotMatch(shell, /loadCampaignBuilderSession/);

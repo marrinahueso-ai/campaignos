@@ -214,7 +214,7 @@ Legacy dense shells (e.g. old Tasks Main Table, Insights KPI wall) may remain in
 
 ### 5.4 Event workspace
 
-`/events/[id]` is the event home (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Insights, Responsibilities, Notes, Files, Vendors, Activity; default Approvals). Phase 3 workspace is default; older planning-hub UI is fallback / partial.
+`/events/[id]` is the event home (tabs via `?tab=`: Overview default, Planning→Tasks/Notes/Files, Approvals, Volunteers, Community→Team/Vendors, Insights, Activity, Create with AI [handoff]). Phase 3 Event Workspace shell is default; older planning-hub UI is fallback / partial.
 
 Playbooks still seed milestone timelines and health; campaign creative generation is centered on **Create with AI** (`/create-with-ai` chooser → Social / composers, or event campaign builder).
 

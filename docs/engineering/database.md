@@ -66,6 +66,7 @@ Not exhaustive — skim filenames for the full list:
 | Google Calendar connections | `069` |
 | Volunteer SignUpGenius sticky dates | `071` (`included_assignment_dates` on `event_volunteer_sources`) |
 | Volunteer named participants (names only) | `20260801200000_event_volunteer_participants.sql` (`event_volunteer_participants` — no email) |
+| Volunteer Arrived/Received ops (Hey Ralli only) | `20260808140000_event_volunteer_ops.sql` (`event_volunteer_ops`) |
 | Value-first onboarding progress | `072` (`organizations.onboarding_state` jsonb — first event + skipped/completed calendar/brand/invite) |
 | Owner AI & APIs usage warehouse | `20260723220241_ai_api_usage_logs.sql` — `ai_usage_log`, `api_usage_log` (RLS on, no JWT policies; service_role only) |
 | Account notification preferences | `20260726150000_organization_users_notification_preferences.sql` — `organization_users.notification_preferences` jsonb (Settings Ease Account toggles) |

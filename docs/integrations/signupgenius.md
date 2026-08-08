@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 4, 2026  
+**Last updated:** August 8, 2026  
 **Related:** [Feature list](../product/feature-list.md) · [Volunteer Master](../product/volunteer-master.md) · [Database](../engineering/database.md) · [Access control](../engineering/access-control.md) · [Multi-tenant isolation](../security/multi-tenant-isolation.md)
 
 Public SignUpGenius **go** links can be connected on an event’s **Volunteers** tab. Hey Ralli imports aggregate role availability and, when the public API exposes them, **named participants** (`firstname` + `lastname`, or guest `nonmembername`). **Emails are not stored or shown** — even if the public payload includes an email field.
@@ -34,15 +34,16 @@ Confirm is disabled when nothing is selected or the selection matches zero assig
 | `event_volunteer_sources.included_assignment_dates` | Nullable `text[]`. Sticky allowlist of ISO start dates (`YYYY-MM-DD`) plus optional `__none__` for undated rows. **`null` = include all dates** (backward compatible with sources connected before this column). |
 | `event_volunteer_snapshots` / `event_volunteer_assignments` | Confirmed snapshot holds only the filtered assignments. |
 | `event_volunteer_participants` | Named roster rows per snapshot: `volunteer_name`, role, shift, location, status. **No email column.** Same sticky date allowlist as assignments on confirm/refresh. Org-member RLS via `organization_id`. |
+| `event_volunteer_ops` | Hey Ralli-only Arrived (participant) / Received (item) marks. **Not synced to SignUpGenius.** Org-member RLS via `organization_id`. |
 
-Migrations: `071_event_volunteer_included_assignment_dates.sql`, `20260801200000_event_volunteer_participants.sql`.
+Migrations: `071_event_volunteer_included_assignment_dates.sql`, `20260801200000_event_volunteer_participants.sql`, `20260808140000_event_volunteer_ops.sql`.
 
 ### Privacy
 
 - Persist **name only** from public `participants` when present (`firstname`/`lastname`, else `nonmembername` / `name`).
 - Never invent PII; never copy email into DB or UI.
 - When `shownames` is off / participants empty: empty named roster + quiet List empty-table copy; role fill health still comes from assignment quantities.
-- Event roster has **no Role breakdown** strip; List and Grouped views are sortable; header uses a small **Open signup** icon with tooltip.
+- Event roster uses Coverage / People / Items views; Arrived/Received toggles are local ops marks only.
 
 ---
 
@@ -51,7 +52,8 @@ Migrations: `071_event_volunteer_included_assignment_dates.sql`, `20260801200000
 | Area | Path |
 |------|------|
 | Review UI | `src/components/events-phase3/EventVolunteersTab.tsx` |
-| Ease named roster (List + accordion Grouped) | `src/components/events-phase3/EventDetailVolunteersEasePanel.tsx`, `EventVolunteerRosterEase.tsx` |
+| Ease named roster (Coverage / People / Items) | `src/components/events-phase3/EventDetailVolunteersEasePanel.tsx`, `EventVolunteerRosterEase.tsx` |
+| Arrived / Received ops | `src/lib/event-volunteers/ops.ts`, `ops-shared.ts`, `listEventVolunteerOpsAction` / `toggleEventVolunteerOpAction` |
 | Org Volunteer Master | `src/app/(dashboard)/volunteers/page.tsx`, `src/components/volunteers/VolunteersMasterShell.tsx`, `src/lib/event-volunteers/org-master.ts` |
 | Actions | `src/lib/event-volunteers/actions.ts` (`confirmVolunteerOverviewAction`, refresh path) |
 | Mutations | `src/lib/event-volunteers/mutations.ts` (`confirmVolunteerSnapshot`, `persistVolunteerSnapshot`, `upsertVolunteerSource`) |

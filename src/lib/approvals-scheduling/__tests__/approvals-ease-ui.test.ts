@@ -87,7 +87,7 @@ describe("approvals ease pulse contracts", () => {
     assert.equal(counts.needs, 0);
   });
 
-  it("org hub keeps pulse filters; event tab uses sort rail", () => {
+  it("org hub keeps pulse filters; event tab uses content cards", () => {
     const hub = readSrc(
       "../../../components/approvals-scheduling/ApprovalsSchedulingHub.tsx",
     );
@@ -99,8 +99,10 @@ describe("approvals ease pulse contracts", () => {
     assert.doesNotMatch(hub, /label: "Drafts"/);
     assert.doesNotMatch(panel, /EasePulseMini/);
     assert.doesNotMatch(panel, /APPROVALS_EASE_PULSE_OPTIONS/);
-    assert.match(panel, /EVENT_APPROVALS_EASE_SORT_OPTIONS/);
-    assert.match(panel, /EaseListRail/);
+    assert.doesNotMatch(panel, /EaseListRail/);
+    assert.match(panel, /Needs Your Review/);
+    assert.match(panel, /All Event Content/);
+    assert.match(panel, /ReviewDrawer/);
     assert.doesNotMatch(panel, /label: "Drafts"/);
   });
 

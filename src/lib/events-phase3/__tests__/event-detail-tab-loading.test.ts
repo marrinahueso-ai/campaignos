@@ -181,9 +181,13 @@ describe("event-scoped tab loaders (source contract)", () => {
     assert.match(shell, /Retry/);
     assert.doesNotMatch(shell, /Loading \{label\}/);
     assert.match(shell, /function TabSkeleton/);
-    // Vendors Ease panel lazy-loads directory picker on Add existing / Add new.
-    assert.match(shell, /EventDetailVendorsEasePanel/);
-    assert.match(shell, /directoryHref="\/vendors"/);
+    // Community wraps Team + Vendors (vendors panel still uses /vendors directory).
+    assert.match(shell, /EventCommunityPanel/);
+    const community = readSrc(
+      "../../../components/events-phase3/EventCommunityPanel.tsx",
+    );
+    assert.match(community, /EventDetailVendorsEasePanel/);
+    assert.match(community, /directoryHref="\/vendors"/);
   });
 
   it("defers Approvals to client load and preloads only non-default deep-linked tabs", () => {

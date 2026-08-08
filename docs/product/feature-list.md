@@ -90,15 +90,15 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Events list, create, edit — **shipped** (list thumbnails fall back to promoted approved-square artwork when the row is outside the upcoming/first-page prefetch window)
 - Events Home ease filters (soft pills: **Upcoming** default · **Next month** · **All**; Upcoming shows next-60-days focus/queue; counts scoped to school-year filter + search; status badges on cards only — not filter tabs; compact list thumbs use square transforms + `object-cover` for consistent filled squares; focus/lightbox keep `object-contain` so full poster art stays readable — **shipped**
 - Events list filtered PDF export (All Events header download; current list filters only — not upcoming carousel) — **shipped**
-- Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Insights, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
-- Event detail shell (UX Pilot Notes board): condensed hero + gold **Generate Event Plan** (Create with AI handoff) · compact Needs approval / Quick Tasks / Volunteer Staffing widgets · grouped nav (**Planning** → Tasks/Notes/Files · Approvals · Volunteers · **Community** → Team/Vendors · Insights · Activity); deep links `?tab=` unchanged including `create-with-ai` — **shipped**
+- Event detail workspace (tabs: Overview default, Planning→Tasks/Notes/Files, Approvals, Volunteers, Community→Team/Vendors, Insights, Activity, Create with AI [handoff]; deep links `?tab=` preserved) — **shipped**
+- Event detail shell (Event Workspace redesign): Overview landing (artwork hero · attention · workspace cards) · condensed context header on other tabs · top-level nav (**Planning** · Approvals · Volunteers · **Community** · Insights · Activity); Planning wraps existing Tasks/Notes/Files panels; Community combines Team + Vendors — **shipped**
 - Event Tasks tab: Pilot **Task List** card (Ask AI for tasks · New Task · Done/Task/Priority/Status/Due/Assignee table; icon-only delete with confirm; Overdue badge; empty Create with AI / Add manually) — **shipped**
 - Event detail **Notes** tab: Shared Notes + New Note, lined note-paper compose/view, Recent Scratchpads side list; icon-only delete (confirm) on the open note and scratchpad rows; create/delete/list gated by event access (`getEventById` + RLS); no unscoped note-draft localStorage — **shipped**
-- Event detail tab chrome uses local state + `history.replaceState` (no full RSC refetch on tab click); bare `/events/[id]` streams Approvals in a Suspense child so shell/hero paint first (lean org workspace projection; other deep-linked tabs still SSR-preload); Team Manage Assignments lazy-loads the org roster — **shipped** (perf)
+- Event detail tab chrome uses local state + `history.replaceState` (no full RSC refetch on tab click); bare `/events/[id]` defaults to Overview (no Approvals SSR stream); deep-linked tabs still SSR-preload; Team Manage Assignments lazy-loads the org roster — **shipped** (perf)
 - Event detail Insights tab — see **Insights** below (living: [event-insights.md](./event-insights.md))
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
-- Event detail hero stats (Pending Approvals, open Tasks, volunteer fills from latest confirmed snapshot) — clickable jump widgets; Generate Event Plan → Create with AI — **shipped**
-- Event detail brand accents (paper/ink/gold Pilot tokens on hero, widgets, tabs, Notes) — **shipped**
+- Event detail hero stats (Pending Approvals, open Tasks, volunteer fills from latest confirmed snapshot) — Overview attention + What’s Next; Generate Event Plan → Create with AI — **shipped**
+- Event detail brand accents (ink/sage/gold/ivory Event Workspace tokens on shell, Overview, Approvals cards, Volunteers) — **shipped**
 - Event Volunteers tab — see **Volunteers** below (living: [signupgenius.md](../integrations/signupgenius.md) · org overview: [volunteer-master.md](./volunteer-master.md))
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
 
@@ -111,9 +111,9 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Footer: SignUpGenius last update note; connect/refresh stay on each event’s Volunteers tab
 - **Event Volunteers tab** (`/events/[id]?tab=volunteers`) — **shipped** (writes sources/snapshots/participants; Master only reads aggregates)
   - Ease empty/overview + full Tab for pending review: SignUpGenius public URL connect → **verify dates before import** → confirm → sticky allowlist on refresh
-  - **Named roster (Pilot):** List View + Grouped View; KPIs (Overall Health, Filled Slots, Unfilled/Critical roles); search by name/role; role filter; sortable List columns (Volunteer · Role · Shift · Location · Status) and Grouped sort (Role · Fill · Shift · Location · People); header **Open signup** icon (tooltip); Refresh + Add/Import (Connect Signup · Add Volunteer opens signup — no in-app create API)
-  - List View rows pull SignUpGenius public `participants` names (`firstname`/`lastname`, or `nonmembername` for guests); **no emails stored or shown**; quiet empty-table copy when names aren’t public
-  - Grouped View (accordion): section headers (`groupName` or **Roles**) with On Track / Needs Attention + filled count; expandable role lines (slots, emerald/gold/rose progress, initials stack); expanded panel shows name-only chips + **Assign Open Slot** (no Role breakdown strip / no email / no Urgent Invite)
+  - **Workspace roster:** Coverage / People / Items views; no-signup empty state; fully-staffed celebration when quantities complete and open spots are 0; Refresh + Open signup + Replace link (SignUpGenius sync unchanged)
+  - People rows pull SignUpGenius public `participants` names; **no emails stored or shown**
+  - **Arrived / Received** marks persist in Hey Ralli only (`event_volunteer_ops`) — not written back to SignUpGenius
   - Same fill-rate color bands as Volunteer Master; customer copy uses refresh/connect language
   - SignUpGenius **URL connect is the long-term path** (no Settings OAuth tease). OAuth deferred until most orgs have SignUpGenius Pro; then may add as a second pull option alongside URL
 
@@ -191,7 +191,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Approvals Ease focus cards: primary forest **Open full view** opens the dimmed open-review pop-out (approve / request changes live there) — **shipped**
 - Approvals Ease hub (UX Pilot): forest **Needs you** pulse + Assigned to me / search · **Waiting on your review** focus card (Open full view) · **Also waiting** table (thumb · campaign · post · status · assignee · eye View; fixed column widths) · italic **How approvals work** guide; `?review=` deep-link reopens open view — **shipped**
 - Approvals **Post name** matches Create with AI / communication-plan milestone titles (Day Before, Announcement, …); renames in Social sync to pending approval rows and overlay on hub load — never show channel labels (Facebook) as the post name — **shipped**
-- Event detail Approvals tab: Ease pulse filters (Needs you / Scheduled / Posted / Failed / Changes) + open review Retry — **shipped**
+- Event detail Approvals tab: visual content cards (**Needs Your Review** + **All Event Content**); empty only when zero content; “Everything reviewed” when content exists but nothing pending; open review / Retry via existing ReviewDrawer — **shipped**
 - Approvals table / Ease queue Actions show **View** only (approve / request changes stay in the open review) — **shipped**
 - Change-requested items show the approver comment + **Edit Artwork** / **Change Date** CTAs (Approvals drawer + email; Edit Artwork → Create with AI Preview + edit-artwork modal for that milestone; Change Date → Preview Campaign for that milestone); Preview/Review banners keep caption / Change Date / artwork paths plus **Send for re-approval**; resubmit emails the Team Access approver again (`Resubmitted for approval: …`, with fallback to the prior assignee if the current role has no email; UI confirms the recipient address) — **shipped**
 - Legacy Publishing Center → redirects to Approvals

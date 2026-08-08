@@ -12,19 +12,21 @@ import {
   useTransition,
   type ReactNode,
 } from "react";
-import {
-  ArrowLeft,
-  ChevronDown,
-} from "lucide-react";
-import {
-  EventDetailEaseHero,
-  type EaseJumpTab,
-} from "@/components/events-phase3/EventDetailEaseHero";
+import { ArrowLeft } from "lucide-react";
+import { EventCommunityPanel } from "@/components/events-phase3/EventCommunityPanel";
 import { EventDetailCreateWithAiPanel } from "@/components/events-phase3/EventDetailCreateWithAiPanel";
 import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHero";
 import {
   EventDetailTabInvalidationProvider,
 } from "@/components/events-phase3/EventDetailTabInvalidation";
+import { EventPlanningShell } from "@/components/events-phase3/EventPlanningShell";
+import { EventWorkspaceContextHeader } from "@/components/events-phase3/EventWorkspaceContextHeader";
+import { EventWorkspaceOverviewPanel } from "@/components/events-phase3/EventWorkspaceOverviewPanel";
+import {
+  ew,
+  ewNavActive,
+  ewNavIdle,
+} from "@/components/events-phase3/event-workspace-tokens";
 import { OnboardingYoureSetToast } from "@/components/onboarding/OnboardingYoureSetToast";
 import { Button } from "@/components/ui/Button";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
@@ -63,7 +65,7 @@ const EventDetailApprovalsEasePanel = dynamic(
     ),
   {
     loading: () => (
-      <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
+      <div className="min-h-[16rem] animate-pulse rounded-xl bg-[#f4f0ea]" />
     ),
   },
 );
@@ -75,7 +77,7 @@ const EventDetailTasksEasePanel = dynamic(
     ),
   {
     loading: () => (
-      <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
+      <div className="min-h-[16rem] animate-pulse rounded-xl bg-[#f4f0ea]" />
     ),
   },
 );
@@ -87,7 +89,7 @@ const EventDetailFilesEasePanel = dynamic(
     ),
   {
     loading: () => (
-      <div className="min-h-[12rem] animate-pulse rounded-xl bg-cos-bg/60" />
+      <div className="min-h-[12rem] animate-pulse rounded-xl bg-[#f4f0ea]" />
     ),
   },
 );
@@ -99,19 +101,7 @@ const EventDetailNotesEasePanel = dynamic(
     ),
   {
     loading: () => (
-      <div className="min-h-[12rem] animate-pulse rounded-xl bg-cos-bg/60" />
-    ),
-  },
-);
-
-const EventDetailVendorsEasePanel = dynamic(
-  () =>
-    import("@/components/events-phase3/EventDetailVendorsEasePanel").then(
-      (mod) => mod.EventDetailVendorsEasePanel,
-    ),
-  {
-    loading: () => (
-      <div className="min-h-[12rem] animate-pulse rounded-xl bg-cos-bg/60" />
+      <div className="min-h-[12rem] animate-pulse rounded-xl bg-[#f4f0ea]" />
     ),
   },
 );
@@ -123,7 +113,7 @@ const EventDetailInsightsEasePanel = dynamic(
     ),
   {
     loading: () => (
-      <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
+      <div className="min-h-[16rem] animate-pulse rounded-xl bg-[#f4f0ea]" />
     ),
   },
 );
@@ -135,16 +125,9 @@ const EventDetailVolunteersEasePanel = dynamic(
     ),
   {
     loading: () => (
-      <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
+      <div className="min-h-[16rem] animate-pulse rounded-xl bg-[#f4f0ea]" />
     ),
   },
-);
-
-const EventDetailTeamEasePanel = dynamic(
-  () =>
-    import("@/components/events-phase3/EventDetailTeamEasePanel").then(
-      (mod) => mod.EventDetailTeamEasePanel,
-    ),
 );
 
 const EventDetailActivityEasePanel = dynamic(
@@ -155,6 +138,7 @@ const EventDetailActivityEasePanel = dynamic(
 );
 
 export type EventDetailTab =
+  | "overview"
   | "responsibilities"
   | "create-with-ai"
   | "approvals"
@@ -168,6 +152,7 @@ export type EventDetailTab =
 
 /** Flat labels for deep links / tests — Create with AI stays deep-linkable via hero CTA. */
 const TAB_LABELS: Record<EventDetailTab, string> = {
+  overview: "Overview",
   approvals: "Approvals",
   tasks: "Tasks",
   "create-with-ai": "Create with AI",
@@ -182,11 +167,22 @@ const TAB_LABELS: Record<EventDetailTab, string> = {
 
 const PLANNING_TABS: EventDetailTab[] = ["tasks", "notes", "files"];
 const COMMUNITY_TABS: EventDetailTab[] = ["responsibilities", "vendors"];
-const TOP_LEVEL_TABS: EventDetailTab[] = [
-  "approvals",
-  "volunteers",
-  "insights",
-  "activity",
+
+type TopLevelNavId =
+  | "planning"
+  | "approvals"
+  | "volunteers"
+  | "community"
+  | "insights"
+  | "activity";
+
+const TOP_LEVEL_NAV: { id: TopLevelNavId; label: string }[] = [
+  { id: "planning", label: "Planning" },
+  { id: "approvals", label: "Approvals" },
+  { id: "volunteers", label: "Volunteers" },
+  { id: "community", label: "Community" },
+  { id: "insights", label: "Insights" },
+  { id: "activity", label: "Activity" },
 ];
 
 const TAB_COUNTS: Partial<
@@ -243,7 +239,7 @@ interface EventDetailShellProps {
   canManageAssignments: boolean;
   onManageAssignments?: () => void;
   workspace?: EventDetailWorkspacePanels;
-  /** Server-streamed Approvals body (Suspense) for bare URL / Approvals tab. */
+  /** Server-streamed Approvals body (Suspense) for Approvals tab. */
   approvalsSlot?: ReactNode;
   initialTab?: string | null;
   /** Ease page-4 finale after Team+Meta — dismissible “You’re set” toast. */
@@ -252,7 +248,7 @@ interface EventDetailShellProps {
 
 function SkeletonBar({ className }: { className?: string }) {
   return (
-    <div className={cn("animate-pulse rounded-md bg-cos-bg/70", className)} />
+    <div className={cn("animate-pulse rounded-md bg-[#f4f0ea]", className)} />
   );
 }
 
@@ -260,7 +256,7 @@ function TabSkeleton({ tab }: { tab: EventDetailTab }) {
   switch (tab) {
     case "approvals":
       return (
-        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+        <div className="space-y-3 rounded-xl border border-[#e6dfd5] bg-white p-4">
           <div className="flex flex-wrap gap-2">
             <SkeletonBar className="h-8 w-24" />
             <SkeletonBar className="h-8 w-28" />
@@ -273,7 +269,7 @@ function TabSkeleton({ tab }: { tab: EventDetailTab }) {
       );
     case "tasks":
       return (
-        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+        <div className="space-y-3 rounded-xl border border-[#e6dfd5] bg-white p-4">
           <SkeletonBar className="h-9 w-48" />
           <SkeletonBar className="h-12 w-full" />
           <SkeletonBar className="h-12 w-full" />
@@ -282,7 +278,7 @@ function TabSkeleton({ tab }: { tab: EventDetailTab }) {
       );
     case "files":
       return (
-        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+        <div className="space-y-3 rounded-xl border border-[#e6dfd5] bg-white p-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <SkeletonBar className="h-24 w-full" />
             <SkeletonBar className="h-24 w-full" />
@@ -292,7 +288,7 @@ function TabSkeleton({ tab }: { tab: EventDetailTab }) {
       );
     case "notes":
       return (
-        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+        <div className="space-y-3 rounded-xl border border-[#e6dfd5] bg-white p-4">
           <SkeletonBar className="h-8 w-40" />
           <SkeletonBar className="h-20 w-full" />
           <SkeletonBar className="h-20 w-full" />
@@ -300,7 +296,7 @@ function TabSkeleton({ tab }: { tab: EventDetailTab }) {
       );
     case "vendors":
       return (
-        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+        <div className="space-y-3 rounded-xl border border-[#e6dfd5] bg-white p-4">
           <div className="flex gap-3">
             <SkeletonBar className="h-36 w-40" />
             <SkeletonBar className="h-36 w-40" />
@@ -309,7 +305,7 @@ function TabSkeleton({ tab }: { tab: EventDetailTab }) {
       );
     case "activity":
       return (
-        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+        <div className="space-y-3 rounded-xl border border-[#e6dfd5] bg-white p-4">
           <SkeletonBar className="h-5 w-28" />
           <SkeletonBar className="h-10 w-full" />
           <SkeletonBar className="h-10 w-full" />
@@ -331,7 +327,7 @@ function TabSkeleton({ tab }: { tab: EventDetailTab }) {
       );
     default:
       return (
-        <div className="rounded-xl border border-cos-border bg-cos-card p-4">
+        <div className="rounded-xl border border-[#e6dfd5] bg-white p-4">
           <SkeletonBar className="h-24 w-full" />
         </div>
       );
@@ -416,6 +412,27 @@ function seedTabCache(
   }
 }
 
+function resolveInitialTab(initialTab: string | null | undefined): EventDetailTab {
+  if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
+    return initialTab as EventDetailTab;
+  }
+  return "overview";
+}
+
+function topLevelForTab(tab: EventDetailTab): TopLevelNavId | null {
+  if (PLANNING_TABS.includes(tab)) return "planning";
+  if (COMMUNITY_TABS.includes(tab)) return "community";
+  if (
+    tab === "approvals" ||
+    tab === "volunteers" ||
+    tab === "insights" ||
+    tab === "activity"
+  ) {
+    return tab;
+  }
+  return null;
+}
+
 export function EventDetailShell({
   event,
   artwork,
@@ -430,12 +447,9 @@ export function EventDetailShell({
   initialTab = null,
   showYoureSet = false,
 }: EventDetailShellProps) {
-  const [tab, setTab] = useState<EventDetailTab>(() => {
-    if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
-      return initialTab as EventDetailTab;
-    }
-    return "approvals";
-  });
+  const [tab, setTab] = useState<EventDetailTab>(() =>
+    resolveInitialTab(initialTab),
+  );
   const [panelData, setPanelData] = useState<EventDetailWorkspacePanels>(workspace);
   const [loadedTabs, setLoadedTabs] = useState<Set<EventDetailTab>>(() =>
     loadedTabsFromWorkspace(workspace),
@@ -443,9 +457,6 @@ export function EventDetailShell({
   const [tabError, setTabError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [liveHeroStats, setLiveHeroStats] = useState(heroStats);
-  const [openTabGroup, setOpenTabGroup] = useState<"planning" | "community" | null>(
-    null,
-  );
   const [refreshingTab, setRefreshingTab] = useState<EventDetailLazyTab | null>(
     null,
   );
@@ -458,7 +469,7 @@ export function EventDetailShell({
     (nextTab: EventDetailTab) => {
       if (typeof window === "undefined") return;
       const params = new URLSearchParams(window.location.search);
-      if (nextTab === "approvals") {
+      if (nextTab === "overview") {
         params.delete("tab");
       } else {
         params.set("tab", nextTab);
@@ -521,7 +532,6 @@ export function EventDetailShell({
   const fetchInFlightRef = useRef<Set<string>>(new Set());
   const invalidateInFlightRef = useRef<Set<string>>(new Set());
 
-  // Isolate cache when navigating to a different event only.
   useEffect(() => {
     if (cacheEventIdRef.current === event.id) {
       if (tabCacheRef.current.size === 0) {
@@ -539,23 +549,19 @@ export function EventDetailShell({
     setTabError(null);
     setRefreshError(null);
     setRefreshingTab(null);
-    if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
-      setTab(initialTab as EventDetailTab);
-    } else {
-      setTab("approvals");
-    }
+    setTab(resolveInitialTab(initialTab));
   }, [event.id, initialTab]);
 
-  // Same-event deep links (?tab=) must update the active panel — cache effect above
-  // early-returns when event.id is unchanged, so sync tab separately.
   useEffect(() => {
     if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
       setTab(initialTab as EventDetailTab);
+    } else if (!initialTab) {
+      setTab("overview");
     }
   }, [initialTab]);
 
-  const selectHeroJumpTab = useCallback(
-    (nextTab: EaseJumpTab) => {
+  const selectTab = useCallback(
+    (nextTab: EventDetailTab) => {
       setTab(nextTab);
       syncTabUrl(nextTab);
     },
@@ -568,7 +574,6 @@ export function EventDetailShell({
         return;
       }
 
-      // Server-streamed Approvals slot owns first paint for the default tab.
       if (nextTab === "approvals" && approvalsSlot) {
         return;
       }
@@ -635,6 +640,10 @@ export function EventDetailShell({
 
   useEffect(() => {
     ensureTabLoaded(tab);
+    // Community always needs vendors data when open.
+    if (COMMUNITY_TABS.includes(tab)) {
+      ensureTabLoaded("vendors");
+    }
   }, [tab, ensureTabLoaded]);
 
   const invalidateEventTab = useCallback(
@@ -660,7 +669,6 @@ export function EventDetailShell({
           requestEventId,
           tabToRefresh,
         );
-        // Drop stale applies after School A → School B navigation.
         if (cacheEventIdRef.current !== requestEventId) {
           return { success: false as const, error: "Event changed." };
         }
@@ -717,7 +725,6 @@ export function EventDetailShell({
     [event.id, invalidateEventTab, refreshingTab, refreshError],
   );
 
-  // Warm Approvals/Tasks JS chunks only — do not prefetch tab data.
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -772,238 +779,139 @@ export function EventDetailShell({
     );
   }, [panelData.playbookActivity, panelData.workspaceTimeline]);
 
+  const isPlanning = PLANNING_TABS.includes(tab);
+  const isCommunity = COMMUNITY_TABS.includes(tab);
+  const activeTopLevel = topLevelForTab(tab);
+
   const showTabLoading =
     LAZY_TABS.has(tab) &&
     !loadedTabs.has(tab) &&
     !(tab === "approvals" && approvalsSlot) &&
+    !isCommunity &&
     (pending || !tabError);
+
+  const approvalsStatusLine =
+    liveHeroStats.pendingApprovals > 0
+      ? `${liveHeroStats.pendingApprovals} item${
+          liveHeroStats.pendingApprovals === 1 ? "" : "s"
+        } need review`
+      : null;
+
+  function selectTopLevel(navId: TopLevelNavId) {
+    if (navId === "planning") {
+      selectTab(isPlanning ? tab : "tasks");
+      return;
+    }
+    if (navId === "community") {
+      selectTab(isCommunity ? tab : "responsibilities");
+      return;
+    }
+    selectTab(navId);
+  }
 
   return (
     <EventDetailTabInvalidationProvider value={invalidationValue}>
-    <div className="studio-page relative space-y-6 pb-12 before:pointer-events-none before:absolute before:top-0 before:left-[-2rem] before:h-60 before:w-60 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:top-10 after:right-0 after:h-52 after:w-52 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']">
-      <Link
-        href="/events"
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-cos-muted hover:text-cos-text"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Events
-        <span className="text-cos-border">›</span>
-        <span className="truncate text-cos-text">{event.title}</span>
-      </Link>
+    <div className="studio-page relative space-y-6 pb-12">
+      {tab === "overview" ? (
+        <Link
+          href="/events"
+          className={cn(
+            "inline-flex items-center gap-1.5 text-sm font-medium",
+            ew.inksoft,
+            "hover:text-[#1c352d]",
+          )}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Events
+        </Link>
+      ) : null}
 
       {showYoureSet ? (
         <OnboardingYoureSetToast eventTitle={event.title} />
       ) : null}
 
-      <EventDetailEaseHero
-        event={event}
-        artwork={artwork}
-        stats={liveHeroStats}
-        onSelectTab={selectHeroJumpTab}
-      />
+      {tab === "overview" ? (
+        <EventWorkspaceOverviewPanel
+          event={event}
+          artwork={artwork}
+          stats={liveHeroStats}
+          responsibilities={responsibilities}
+          onSelectTab={selectTab}
+        />
+      ) : (
+        <>
+          <EventWorkspaceContextHeader
+            event={event}
+            artwork={artwork}
+            statusLine={tab === "approvals" ? approvalsStatusLine : null}
+            onBackToWorkspace={() => selectTab("overview")}
+          />
 
-      <nav
-        className="relative flex flex-wrap items-center gap-1 border-b border-[#e8e3da] sm:gap-2"
-        aria-label="Event sections"
-        role="tablist"
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-            setOpenTabGroup(null);
-          }
-        }}
-      >
-        <div className="relative">
-          <button
-            type="button"
-            aria-haspopup="menu"
-            aria-expanded={openTabGroup === "planning"}
-            data-testid="event-detail-tab-group-planning"
-            onClick={() =>
-              setOpenTabGroup((current) =>
-                current === "planning" ? null : "planning",
-              )
-            }
-            className={cn(
-              "inline-flex items-center gap-1.5 border-b-2 px-3 py-3 text-sm font-medium transition",
-              PLANNING_TABS.includes(tab)
-                ? "border-[#c4922e] text-[#2f4a3c]"
-                : "border-transparent text-[#6b8171] hover:text-[#2f4a3c]",
-            )}
+          <nav
+            className="relative flex flex-wrap items-center gap-1 border-b border-[#e6dfd5] sm:gap-2"
+            aria-label="Event sections"
+            role="tablist"
           >
-            Planning
-            <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-          </button>
-          {openTabGroup === "planning" ? (
-            <div
-              role="menu"
-              className="absolute top-full left-0 z-50 mt-1 w-48 rounded-xl border border-[#e8e3da] bg-white p-2 shadow-xl"
-            >
-              {PLANNING_TABS.map((id) => {
-                const isActive = tab === id;
-                const countFn = TAB_COUNTS[id];
-                const count = countFn ? countFn(liveHeroStats) : null;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    role="menuitem"
-                    data-testid={`event-detail-tab-${id}`}
-                    aria-current={isActive ? "page" : undefined}
-                    onClick={() => {
-                      setTab(id);
-                      syncTabUrl(id);
-                      setOpenTabGroup(null);
-                    }}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-lg px-4 py-2 text-left text-sm transition",
-                      isActive
-                        ? "bg-[#f6f2eb] font-semibold text-[#2f4a3c]"
-                        : "text-[#2f4a3c] hover:bg-[#f6f2eb]",
-                    )}
-                  >
-                    <span>{TAB_LABELS[id]}</span>
-                    {count !== null ? (
-                      <span className="tabular-nums text-[#6b8171]">{count}</span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
+            {TOP_LEVEL_NAV.map(({ id, label }) => {
+              const isActive = activeTopLevel === id;
+              const countTab: EventDetailTab | null =
+                id === "approvals"
+                  ? "approvals"
+                  : id === "volunteers"
+                    ? "volunteers"
+                    : id === "planning"
+                      ? "tasks"
+                      : null;
+              const countFn = countTab ? TAB_COUNTS[countTab] : null;
+              const count = countFn ? countFn(liveHeroStats) : null;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  data-testid={
+                    id === "planning"
+                      ? "event-detail-tab-group-planning"
+                      : id === "community"
+                        ? "event-detail-tab-group-community"
+                        : `event-detail-tab-${id}`
+                  }
+                  aria-selected={isActive}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => selectTopLevel(id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-3 text-sm transition",
+                    isActive ? ewNavActive : ewNavIdle,
+                  )}
+                >
+                  {label}
+                  {count !== null ? (
+                    <span className="tabular-nums text-[#5e6b65]">{count}</span>
+                  ) : null}
+                </button>
+              );
+            })}
 
-        {TOP_LEVEL_TABS.slice(0, 2).map((id) => {
-          const isActive = tab === id;
-          const countFn = TAB_COUNTS[id];
-          const count = countFn ? countFn(liveHeroStats) : null;
-          return (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              data-testid={`event-detail-tab-${id}`}
-              aria-selected={isActive}
-              aria-current={isActive ? "page" : undefined}
-              onClick={() => {
-                setTab(id);
-                syncTabUrl(id);
-                setOpenTabGroup(null);
-              }}
-              className={cn(
-                "inline-flex items-center gap-1.5 border-b-2 px-3 py-3 text-sm font-medium transition",
-                isActive
-                  ? "border-[#c4922e] text-[#2f4a3c]"
-                  : "border-transparent text-[#6b8171] hover:text-[#2f4a3c]",
-              )}
-            >
-              {TAB_LABELS[id]}
-              {count !== null ? (
-                <span className="tabular-nums text-[#6b8171]">{count}</span>
-              ) : null}
-            </button>
-          );
-        })}
+            {tab === "create-with-ai" ? (
+              <button
+                type="button"
+                role="tab"
+                data-testid="event-detail-tab-create-with-ai"
+                aria-selected
+                aria-current="page"
+                className={cn("ml-auto inline-flex items-center px-3 py-3 text-sm", ewNavActive)}
+              >
+                Create with AI
+              </button>
+            ) : null}
+          </nav>
+        </>
+      )}
 
-        <div className="relative">
-          <button
-            type="button"
-            aria-haspopup="menu"
-            aria-expanded={openTabGroup === "community"}
-            data-testid="event-detail-tab-group-community"
-            onClick={() =>
-              setOpenTabGroup((current) =>
-                current === "community" ? null : "community",
-              )
-            }
-            className={cn(
-              "inline-flex items-center gap-1.5 border-b-2 px-3 py-3 text-sm font-medium transition",
-              COMMUNITY_TABS.includes(tab)
-                ? "border-[#c4922e] text-[#2f4a3c]"
-                : "border-transparent text-[#6b8171] hover:text-[#2f4a3c]",
-            )}
-          >
-            Community
-            <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-          </button>
-          {openTabGroup === "community" ? (
-            <div
-              role="menu"
-              className="absolute top-full left-0 z-50 mt-1 w-48 rounded-xl border border-[#e8e3da] bg-white p-2 shadow-xl"
-            >
-              {COMMUNITY_TABS.map((id) => {
-                const isActive = tab === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    role="menuitem"
-                    data-testid={`event-detail-tab-${id}`}
-                    aria-current={isActive ? "page" : undefined}
-                    onClick={() => {
-                      setTab(id);
-                      syncTabUrl(id);
-                      setOpenTabGroup(null);
-                    }}
-                    className={cn(
-                      "block w-full rounded-lg px-4 py-2 text-left text-sm transition",
-                      isActive
-                        ? "bg-[#f6f2eb] font-semibold text-[#2f4a3c]"
-                        : "text-[#2f4a3c] hover:bg-[#f6f2eb]",
-                    )}
-                  >
-                    {TAB_LABELS[id]}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
-
-        {TOP_LEVEL_TABS.slice(2).map((id) => {
-          const isActive = tab === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              data-testid={`event-detail-tab-${id}`}
-              aria-selected={isActive}
-              aria-current={isActive ? "page" : undefined}
-              onClick={() => {
-                setTab(id);
-                syncTabUrl(id);
-                setOpenTabGroup(null);
-              }}
-              className={cn(
-                "inline-flex items-center border-b-2 px-3 py-3 text-sm font-medium transition",
-                isActive
-                  ? "border-[#c4922e] text-[#2f4a3c]"
-                  : "border-transparent text-[#6b8171] hover:text-[#2f4a3c]",
-              )}
-            >
-              {TAB_LABELS[id]}
-            </button>
-          );
-        })}
-
-        {/* Deep-link only — Create with AI lives on Generate Event Plan in the hero */}
-        {tab === "create-with-ai" ? (
-          <button
-            type="button"
-            role="tab"
-            data-testid="event-detail-tab-create-with-ai"
-            aria-selected
-            aria-current="page"
-            className="ml-auto inline-flex items-center border-b-2 border-[#c4922e] px-3 py-3 text-sm font-semibold text-[#2f4a3c]"
-          >
-            Create with AI
-          </button>
-        ) : null}
-      </nav>
-
+      {tab !== "overview" ? (
       <div>
-        {tabError && LAZY_TABS.has(tab) && !loadedTabs.has(tab) ? (
-          <div className="rounded-xl border border-cos-border bg-cos-card p-4">
+        {tabError && LAZY_TABS.has(tab) && !loadedTabs.has(tab) && !isCommunity ? (
+          <div className="rounded-xl border border-[#e6dfd5] bg-white p-4">
             <p className="text-sm text-red-600" role="alert">
               {tabError}
             </p>
@@ -1020,7 +928,7 @@ export function EventDetailShell({
         ) : null}
 
         {refreshError && LAZY_TABS.has(tab) && loadedTabs.has(tab) ? (
-          <div className="mb-3 rounded-xl border border-cos-border bg-cos-card p-3">
+          <div className="mb-3 rounded-xl border border-[#e6dfd5] bg-white p-3">
             <p className="text-sm text-red-600" role="alert">
               Saved, but this tab could not refresh. {refreshError}
             </p>
@@ -1039,7 +947,7 @@ export function EventDetailShell({
         ) : null}
 
         {refreshingTab === tab && LAZY_TABS.has(tab) ? (
-          <p className="mb-2 text-xs text-cos-muted" aria-live="polite">
+          <p className="mb-2 text-xs text-[#5e6b65]" aria-live="polite">
             Updating…
           </p>
         ) : null}
@@ -1053,11 +961,20 @@ export function EventDetailShell({
             />
           ) : null}
 
-          {tab === "responsibilities" ? (
-            <EventDetailTeamEasePanel
+          {isCommunity ? (
+            <EventCommunityPanel
+              section={tab === "vendors" ? "vendors" : "responsibilities"}
               responsibilities={responsibilities}
               canManageAssignments={canManageAssignments}
               onManageAssignments={onManageAssignments}
+              eventId={event.id}
+              vendorsData={
+                panelData.eventVendorsData ?? {
+                  vendors: [],
+                  canWrite: false,
+                }
+              }
+              vendorsReady={loadedTabs.has("vendors")}
             />
           ) : null}
 
@@ -1073,71 +990,79 @@ export function EventDetailShell({
             approvalsSlot
           ) : null}
 
-          {tab === "tasks" && loadedTabs.has("tasks") ? (
-            panelData.tasksV2Data ? (
-              <Suspense
-                fallback={
-                  <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
-                }
-              >
-                <EventDetailTasksEasePanel data={panelData.tasksV2Data} />
-              </Suspense>
-            ) : (
-              <div className="rounded-xl border border-cos-border bg-cos-card p-6">
-                <h3 className="font-display text-lg text-cos-text">
-                  Tasks unavailable
-                </h3>
-                <p className="mt-1 text-sm text-cos-muted">
-                  Task workspace data did not load for this event.
-                </p>
-              </div>
-            )
-          ) : null}
+          {isPlanning ? (
+            <EventPlanningShell
+              active={tab as "tasks" | "notes" | "files"}
+              taskCount={liveHeroStats.tasks}
+              noteCount={
+                loadedTabs.has("notes") ? (panelData.notes?.length ?? 0) : null
+              }
+              fileCount={
+                loadedTabs.has("files")
+                  ? (panelData.filesPageData?.files?.length ?? 0)
+                  : null
+              }
+              onSelect={(next) => selectTab(next)}
+            >
+              {tab === "tasks" && loadedTabs.has("tasks") ? (
+                panelData.tasksV2Data ? (
+                  <Suspense
+                    fallback={
+                      <div className="min-h-[16rem] animate-pulse rounded-xl bg-[#f4f0ea]" />
+                    }
+                  >
+                    <EventDetailTasksEasePanel data={panelData.tasksV2Data} />
+                  </Suspense>
+                ) : (
+                  <div className="rounded-xl border border-[#e6dfd5] bg-white p-6">
+                    <h3 className={cn("font-display text-lg", ew.ink)}>
+                      Tasks unavailable
+                    </h3>
+                    <p className={cn("mt-1 text-sm", ew.inksoft)}>
+                      Task workspace data did not load for this event.
+                    </p>
+                  </div>
+                )
+              ) : null}
 
-          {tab === "files" &&
-          panelData.filesPageData &&
-          loadedTabs.has("files") ? (
-            <EventDetailFilesEasePanel
-              eventId={event.id}
-              data={panelData.filesPageData}
-            />
-          ) : null}
+              {tab === "files" &&
+              panelData.filesPageData &&
+              loadedTabs.has("files") ? (
+                <EventDetailFilesEasePanel
+                  eventId={event.id}
+                  data={panelData.filesPageData}
+                />
+              ) : null}
 
-          {tab === "notes" && loadedTabs.has("notes") ? (
-            <EventDetailNotesEasePanel
-              eventId={event.id}
-              notes={panelData.notes ?? []}
-              tablesAvailable={panelData.tablesAvailable ?? false}
-            />
+              {tab === "notes" && loadedTabs.has("notes") ? (
+                <EventDetailNotesEasePanel
+                  eventId={event.id}
+                  notes={panelData.notes ?? []}
+                  tablesAvailable={panelData.tablesAvailable ?? false}
+                />
+              ) : null}
+            </EventPlanningShell>
           ) : null}
 
           {tab === "volunteers" ? (
             <EventDetailVolunteersEasePanel event={event} />
           ) : null}
 
-          {tab === "vendors" && loadedTabs.has("vendors") ? (
-            <EventDetailVendorsEasePanel
-              eventId={event.id}
-              data={
-                panelData.eventVendorsData ?? {
-                  vendors: [],
-                  canWrite: false,
-                }
-              }
-              directoryHref="/vendors"
-            />
-          ) : null}
-
           {tab === "activity" && loadedTabs.has("activity") ? (
-            <EventDetailActivityEasePanel items={activityItems} />
+            <div className="rounded-2xl border border-[#e6dfd5] bg-white p-4 sm:p-6">
+              <EventDetailActivityEasePanel items={activityItems} />
+            </div>
           ) : null}
 
           {tab === "insights" &&
           panelData.insightsData &&
           loadedTabs.has("insights") ? (
-            <EventDetailInsightsEasePanel data={panelData.insightsData} />
+            <div className="rounded-2xl border border-[#e6dfd5] bg-[#faf8f5] p-2 sm:p-4">
+              <EventDetailInsightsEasePanel data={panelData.insightsData} />
+            </div>
           ) : null}
       </div>
+      ) : null}
     </div>
     </EventDetailTabInvalidationProvider>
   );

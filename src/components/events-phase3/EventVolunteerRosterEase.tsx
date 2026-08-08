@@ -1,51 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  ChevronDown,
+  Check,
   ExternalLink,
+  PartyPopper,
+  RefreshCw,
   Users,
 } from "lucide-react";
 import {
-  EaseBtnPrimary,
-  EaseBtnSecondary,
-  EaseBox,
-  EaseChip,
-  EaseKpi,
-  EaseSectionLabel,
-} from "@/components/events-phase3/EventDetailEaseUi";
-import { EventContextFileUpload } from "@/components/campaign-files/EventContextFileUpload";
+  ew,
+  ewCard,
+} from "@/components/events-phase3/event-workspace-tokens";
 import { formatSyncTime } from "@/lib/event-volunteers/ai-summary";
 import {
-  DEFAULT_VOLUNTEER_LIST_SORT_FIELD,
-  DEFAULT_VOLUNTEER_SORT_DIRECTION,
+  listEventVolunteerOpsAction,
+  toggleEventVolunteerOpAction,
+} from "@/lib/event-volunteers/actions";
+import {
   formatParticipantShiftTime,
-  filterParticipantsByRole,
-  filterParticipantsBySearch,
-  nextVolunteerSortState,
-  paginateList,
-  sortParticipants,
   volunteerInitials,
-  type VolunteerListSortField,
-  type VolunteerSortDirection,
 } from "@/lib/event-volunteers/participant-list";
 import {
   buildVolunteerRosterSections,
-  DEFAULT_VOLUNTEER_GROUPED_SORT_FIELD,
-  rosterProgressTone,
-  rosterSectionBadgeLabel,
-  sortRosterRoles,
-  type RosterProgressTone,
-  type VolunteerGroupedSortField,
   type VolunteerRosterRoleCard,
 } from "@/lib/event-volunteers/roster-groups";
 import {
-  getVolunteerFillRateBand,
-  VOLUNTEER_FILL_RATE_LABELS,
-} from "@/lib/event-volunteers/org-master-shared";
+  participantOpsKey,
+  type VolunteerOpsMark,
+} from "@/lib/event-volunteers/ops-shared";
 import type {
   VolunteerAssignmentView,
   VolunteerParticipantView,
@@ -54,36 +37,7 @@ import type {
 } from "@/lib/event-volunteers/types";
 import { cn } from "@/lib/utils/cn";
 
-const PAGE_SIZE = 10;
-const AVATAR_STACK_MAX = 4;
-
-const PROGRESS_BAR_CLASS: Record<RosterProgressTone, string> = {
-  emerald: "bg-emerald-500",
-  gold: "bg-[#c4922e]",
-  rose: "bg-rose-500",
-  muted: "bg-[rgba(42,38,34,0.22)]",
-};
-
-const LIST_SORT_COLUMNS: { id: VolunteerListSortField; label: string }[] = [
-  { id: "volunteer", label: "Volunteer" },
-  { id: "role", label: "Role" },
-  { id: "shift", label: "Shift Time" },
-  { id: "location", label: "Location" },
-  { id: "status", label: "Status" },
-];
-
-const GROUPED_SORT_COLUMNS: {
-  id: VolunteerGroupedSortField;
-  label: string;
-}[] = [
-  { id: "role", label: "Role" },
-  { id: "fill", label: "Fill" },
-  { id: "shift", label: "Shift" },
-  { id: "location", label: "Location" },
-  { id: "people", label: "People" },
-];
-
-type RosterView = "list" | "grouped";
+type RosterView = "coverage" | "people" | "items";
 
 type Props = {
   eventId: string;
@@ -96,94 +50,12 @@ type Props = {
   onReplaceConnect?: () => void;
 };
 
-function SortIcon({
-  active,
-  direction,
-}: {
-  active: boolean;
-  direction: VolunteerSortDirection;
-}) {
-  if (!active) {
-    return <ArrowUpDown className="h-3 w-3 opacity-40" strokeWidth={1.5} />;
-  }
-  return direction === "asc" ? (
-    <ArrowUp className="h-3 w-3" strokeWidth={1.5} />
-  ) : (
-    <ArrowDown className="h-3 w-3" strokeWidth={1.5} />
-  );
-}
-
-function Avatar({
-  name,
-  size = "md",
-}: {
-  name: string;
-  size?: "sm" | "md";
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-[rgba(47,74,60,0.14)] font-extrabold tracking-wide text-[#2f4a3c]",
-        size === "sm"
-          ? "h-7 w-7 text-[10px]"
-          : "h-9 w-9 text-[11px]",
-      )}
-      aria-hidden
-    >
-      {volunteerInitials(name)}
-    </span>
-  );
-}
-
-function AvatarStack({ people }: { people: VolunteerParticipantView[] }) {
-  if (people.length === 0) return null;
-  const visible = people.slice(0, AVATAR_STACK_MAX);
-  const overflow = people.length - visible.length;
-  return (
-    <div className="flex items-center" aria-hidden>
-      {visible.map((person, index) => (
-        <span
-          key={`${person.assignmentExternalKey}:${person.participantKey}`}
-          className={cn(
-            "inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-cos-card bg-[rgba(47,74,60,0.14)] text-[10px] font-extrabold tracking-wide text-[#2f4a3c]",
-            index > 0 && "-ml-2",
-          )}
-        >
-          {volunteerInitials(person.name)}
-        </span>
-      ))}
-      {overflow > 0 ? (
-        <span className="-ml-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full border-2 border-cos-card bg-[rgba(42,38,34,0.08)] px-1.5 text-[10px] font-extrabold text-cos-muted">
-          +{overflow}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-function RoleProgressBar({ fillPercent }: { fillPercent: number | null }) {
-  const tone = rosterProgressTone(fillPercent);
-  const width = Math.min(100, Math.max(0, fillPercent ?? 0));
-  return (
-    <div className="mt-1.5 h-1 w-full max-w-[200px] overflow-hidden rounded-full bg-[rgba(42,38,34,0.08)]">
-      <i
-        className={cn("block h-full rounded-full", PROGRESS_BAR_CLASS[tone])}
-        style={{ width: `${width}%` }}
-      />
-    </div>
-  );
-}
-
-function participantStatusLabel(status: VolunteerParticipantView["status"]) {
-  return status === "confirmed" ? "Confirmed" : "Unknown";
-}
-
-function criticalRoleCount(assignments: VolunteerAssignmentView[]): number {
-  return assignments.filter(
-    (role) =>
-      role.availabilityStatus === "high_need" ||
-      role.availabilityStatus === "needs_help",
-  ).length;
+function fillPercent(role: VolunteerRosterRoleCard): number {
+  if (role.fillPercent != null) return role.fillPercent;
+  const requested = role.assignment.quantityRequested;
+  const filled = role.assignment.quantityFilled ?? 0;
+  if (!requested || requested <= 0) return 0;
+  return Math.min(100, Math.round((filled / requested) * 100));
 }
 
 function roleSlotsLabel(role: VolunteerRosterRoleCard): string {
@@ -192,150 +64,12 @@ function roleSlotsLabel(role: VolunteerRosterRoleCard): string {
   return `${filled}/${requested ?? "?"}`;
 }
 
-function GroupedRoleLine({
-  role,
-  expanded,
-  signupUrl,
-  onToggle,
-}: {
-  role: VolunteerRosterRoleCard;
-  expanded: boolean;
-  signupUrl: string | null;
-  onToggle: () => void;
-}) {
-  const panelId = `volunteer-role-${role.assignment.externalKey}`;
-  const shiftLabel = formatParticipantShiftTime(
-    role.assignment.startTime,
-    role.assignment.endTime,
-  );
-  const location = role.assignment.location?.trim() || "";
-  const subtitle = [shiftLabel !== "—" ? shiftLabel : null, location || null]
-    .filter(Boolean)
-    .join(" · ");
-  const hasPeople = role.people.length > 0;
-  const filledWithoutNames =
-    !hasPeople && (role.assignment.quantityFilled ?? 0) > 0;
-
-  return (
-    <div className="border-b border-[rgba(42,38,34,0.08)] last:border-0">
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        onClick={onToggle}
-        className="flex w-full items-center gap-3 px-1 py-3 text-left transition hover:bg-[rgba(255,252,247,0.55)]"
-      >
-        <span
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgba(47,74,60,0.1)] text-[#2f4a3c]"
-          aria-hidden
-        >
-          <Users className="h-4 w-4" strokeWidth={1.75} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-sm font-bold text-cos-text">
-              {role.assignment.name}
-            </span>
-            <span className="text-xs font-semibold tabular-nums text-cos-muted">
-              {roleSlotsLabel(role)}
-            </span>
-          </div>
-          <RoleProgressBar fillPercent={role.fillPercent} />
-        </div>
-        <AvatarStack people={role.people} />
-        <ChevronDown
-          className={cn(
-            "h-4 w-4 shrink-0 text-cos-muted transition-transform duration-200",
-            expanded && "rotate-180",
-          )}
-          aria-hidden
-        />
-      </button>
-
-      {expanded ? (
-        <div id={panelId} className="pb-3 pl-[3.25rem] pr-1">
-          {hasPeople ? (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {role.people.map((person) => {
-                const personShift = formatParticipantShiftTime(
-                  person.startTime,
-                  person.endTime,
-                );
-                const personSub = [
-                  personShift !== "—" ? personShift : null,
-                  person.location?.trim() || null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ");
-                return (
-                  <div
-                    key={`${person.assignmentExternalKey}:${person.participantKey}`}
-                    className="flex items-center gap-2.5 rounded-xl border border-cos-border bg-[rgba(255,252,247,0.55)] px-3 py-2.5"
-                  >
-                    <Avatar name={person.name} size="sm" />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-cos-text">
-                        {person.name}
-                      </p>
-                      {personSub || subtitle ? (
-                        <p className="truncate text-xs text-cos-muted">
-                          {personSub || subtitle}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
-              {Array.from({ length: role.openSlots }).map((_, index) => (
-                <a
-                  key={`open-${role.assignment.externalKey}-${index}`}
-                  href={signupUrl ?? undefined}
-                  className={cn(
-                    "flex items-center justify-center rounded-xl border border-dashed border-cos-border px-3 py-2.5 text-sm font-semibold",
-                    signupUrl
-                      ? "text-[#2f4a3c] hover:bg-[rgba(47,74,60,0.06)]"
-                      : "pointer-events-none text-cos-muted",
-                  )}
-                >
-                  {signupUrl
-                    ? "Assign Open Slot"
-                    : "Open slot · connect signup to recruit"}
-                </a>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-cos-border px-4 py-4">
-              <p className="text-sm text-cos-muted">
-                {filledWithoutNames
-                  ? "No names for this role yet. Refresh after SignUpGenius shares participant names."
-                  : "No volunteers assigned yet."}
-              </p>
-              {!filledWithoutNames && role.openSlots > 0 ? (
-                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {Array.from({
-                    length: Math.min(role.openSlots, 6),
-                  }).map((_, index) => (
-                    <a
-                      key={`empty-open-${role.assignment.externalKey}-${index}`}
-                      href={signupUrl ?? undefined}
-                      className={cn(
-                        "flex items-center justify-center rounded-xl border border-dashed border-cos-border px-3 py-2.5 text-sm font-semibold",
-                        signupUrl
-                          ? "text-[#2f4a3c] hover:bg-[rgba(47,74,60,0.06)]"
-                          : "pointer-events-none text-cos-muted",
-                      )}
-                    >
-                      Assign Open Slot
-                    </a>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          )}
-        </div>
-      ) : null}
-    </div>
-  );
+function isFullyStaffed(snapshot: VolunteerSnapshotRecord): boolean {
+  const { totalSpots, openSpots, filledSpots, quantitiesComplete } =
+    snapshot.summary;
+  if (!quantitiesComplete) return false;
+  if (totalSpots == null || totalSpots <= 0) return false;
+  return (openSpots ?? 0) === 0 && (filledSpots ?? 0) >= totalSpots;
 }
 
 export function EventVolunteerRosterEase({
@@ -348,493 +82,503 @@ export function EventVolunteerRosterEase({
   onRefresh,
   onReplaceConnect,
 }: Props) {
-  const [view, setView] = useState<RosterView>("list");
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [importOpen, setImportOpen] = useState(false);
-  const [expandedRoles, setExpandedRoles] = useState<Record<string, boolean>>(
-    {},
+  const [view, setView] = useState<RosterView>("coverage");
+  const [marks, setMarks] = useState<VolunteerOpsMark[]>([]);
+  const [opsError, setOpsError] = useState<string | null>(null);
+  const [opsPending, startOps] = useTransition();
+
+  const people = useMemo(
+    () => snapshot.participants ?? [],
+    [snapshot.participants],
   );
-  const [listSortField, setListSortField] = useState<VolunteerListSortField>(
-    DEFAULT_VOLUNTEER_LIST_SORT_FIELD,
+  const assignments = useMemo(
+    () => snapshot.assignments as VolunteerAssignmentView[],
+    [snapshot.assignments],
   );
-  const [listSortDirection, setListSortDirection] =
-    useState<VolunteerSortDirection>(DEFAULT_VOLUNTEER_SORT_DIRECTION);
-  const [groupedSortField, setGroupedSortField] =
-    useState<VolunteerGroupedSortField>(DEFAULT_VOLUNTEER_GROUPED_SORT_FIELD);
-  const [groupedSortDirection, setGroupedSortDirection] =
-    useState<VolunteerSortDirection>(DEFAULT_VOLUNTEER_SORT_DIRECTION);
-
-  // Clear client filter/sort state when switching events.
-  useEffect(() => {
-    setView("list");
-    setSearch("");
-    setRoleFilter(null);
-    setPage(1);
-    setImportOpen(false);
-    setExpandedRoles({});
-    setListSortField(DEFAULT_VOLUNTEER_LIST_SORT_FIELD);
-    setListSortDirection(DEFAULT_VOLUNTEER_SORT_DIRECTION);
-    setGroupedSortField(DEFAULT_VOLUNTEER_GROUPED_SORT_FIELD);
-    setGroupedSortDirection(DEFAULT_VOLUNTEER_SORT_DIRECTION);
-  }, [eventId]);
-
-  const participants = snapshot.participants ?? [];
-  const assignments = snapshot.assignments ?? [];
-  const summary = snapshot.summary;
-  const fill = summary.overallFilledPercent;
-  const criticalRoles = criticalRoleCount(assignments);
-  const signupUrl = source.sourceUrl;
-  const hasNamedRoster = participants.length > 0;
-  const filledSpots = summary.filledSpots ?? 0;
-
-  const roleOptions = useMemo(() => {
-    const names = new Set<string>();
-    for (const assignment of assignments) names.add(assignment.name);
-    for (const person of participants) names.add(person.roleName);
-    return [...names].sort((a, b) => a.localeCompare(b));
-  }, [assignments, participants]);
-
-  const filteredPeople = useMemo(() => {
-    let list = filterParticipantsBySearch(participants, search);
-    list = filterParticipantsByRole(list, roleFilter);
-    return sortParticipants(list, listSortField, listSortDirection);
-  }, [participants, search, roleFilter, listSortField, listSortDirection]);
-
-  const paged = useMemo(
-    () => paginateList(filteredPeople, page, PAGE_SIZE),
-    [filteredPeople, page],
+  const sections = useMemo(
+    () => buildVolunteerRosterSections(assignments, people),
+    [assignments, people],
+  );
+  const roles = useMemo(
+    () => sections.flatMap((section) => section.roles),
+    [sections],
   );
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, roleFilter, listSortField, listSortDirection]);
-
-  const groupedSections = useMemo(
-    () => buildVolunteerRosterSections(assignments, participants),
-    [assignments, participants],
-  );
-
-  const selectedRoleFill = useMemo(() => {
-    if (!roleFilter) return null;
-    const role = assignments.find((a) => a.name === roleFilter);
-    if (!role) return null;
-    if (
-      typeof role.quantityRequested !== "number" ||
-      role.quantityRequested <= 0 ||
-      typeof role.quantityFilled !== "number"
-    ) {
-      return null;
+  const markSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const mark of marks) {
+      set.add(`${mark.subjectType}:${mark.subjectKey}`);
     }
-    return Math.round((role.quantityFilled / role.quantityRequested) * 100);
-  }, [assignments, roleFilter]);
+    return set;
+  }, [marks]);
 
-  const band = getVolunteerFillRateBand(roleFilter ? selectedRoleFill : fill);
-  const healthLabel = band ? VOLUNTEER_FILL_RATE_LABELS[band] : "—";
-  const healthValue =
-    roleFilter && selectedRoleFill !== null
-      ? `${selectedRoleFill}%`
-      : fill !== null
-        ? `${fill}%`
-        : "—";
-
-  const activeFilterCount = roleFilter ? 1 : 0;
-  const updatedLabel = source.lastSuccessfulSyncAt
-    ? formatSyncTime(source.lastSuccessfulSyncAt)
-    : "not yet";
-
-  function toggleListSort(field: VolunteerListSortField) {
-    const next = nextVolunteerSortState(listSortField, listSortDirection, field);
-    setListSortField(next.field);
-    setListSortDirection(next.direction);
+  function reloadOps() {
+    startOps(async () => {
+      const result = await listEventVolunteerOpsAction(eventId);
+      if (!result.success) {
+        setOpsError(result.error ?? "Unable to load arrival marks.");
+        return;
+      }
+      setMarks(result.marks);
+      setOpsError(null);
+    });
   }
 
-  function toggleGroupedSort(field: VolunteerGroupedSortField) {
-    const next = nextVolunteerSortState(
-      groupedSortField,
-      groupedSortDirection,
-      field,
+  useEffect(() => {
+    reloadOps();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per event
+  }, [eventId]);
+
+  function toggleMark(
+    subjectType: "participant" | "item",
+    subjectKey: string,
+    currentlyMarked: boolean,
+  ) {
+    if (!canManage) return;
+    startOps(async () => {
+      const result = await toggleEventVolunteerOpAction({
+        eventId,
+        subjectType,
+        subjectKey,
+        marked: !currentlyMarked,
+      });
+      if (!result.success) {
+        setOpsError(result.error ?? "Unable to save that mark.");
+        return;
+      }
+      reloadOps();
+    });
+  }
+
+  const summary = snapshot.summary;
+  const filled = summary.filledSpots ?? 0;
+  const total = summary.totalSpots;
+  const fullyStaffed = isFullyStaffed(snapshot);
+  const syncLabel = source.lastSuccessfulSyncAt
+    ? `Synced ${formatSyncTime(source.lastSuccessfulSyncAt)}`
+    : "Not synced yet";
+
+  return (
+    <section className="space-y-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className={cn("font-display text-2xl", ew.ink)}>Volunteers</h2>
+          <p className={cn("mt-1 text-sm", ew.inksoft)}>
+            <span className={cn("font-semibold tabular-nums", ew.ink)}>
+              {filled}
+            </span>
+            {total != null ? (
+              <>
+                {" "}
+                of{" "}
+                <span className="tabular-nums">{total}</span> spots filled
+              </>
+            ) : (
+              " filled spots"
+            )}
+            <span className="mx-2 text-[#e6dfd5]">·</span>
+            {syncLabel}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={onRefresh}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full border border-[#e6dfd5] bg-white px-3.5 py-2 text-sm font-medium",
+              ew.ink,
+            )}
+          >
+            <RefreshCw
+              className={cn("h-4 w-4", pending && "animate-spin")}
+              aria-hidden
+            />
+            Refresh
+          </button>
+          {source.sourceUrl ? (
+            <a
+              href={source.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              title="Open signup"
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border border-[#e6dfd5] bg-white px-3.5 py-2 text-sm font-medium",
+                ew.ink,
+              )}
+            >
+              <ExternalLink className="h-4 w-4" aria-hidden />
+              Open signup
+            </a>
+          ) : null}
+          {canManage && onReplaceConnect ? (
+            <button
+              type="button"
+              onClick={onReplaceConnect}
+              className={cn("text-sm font-medium underline-offset-2 hover:underline", ew.inksoft)}
+            >
+              Replace link
+            </button>
+          ) : null}
+        </div>
+      </header>
+
+      {error || opsError ? (
+        <p className="text-sm text-[#a65a3a]" role="alert">
+          {error ?? opsError}
+        </p>
+      ) : null}
+
+      {fullyStaffed ? (
+        <div
+          className={cn(
+            ewCard,
+            "flex flex-wrap items-center gap-4 bg-[#e6efe9] px-6 py-5",
+          )}
+        >
+          <PartyPopper className={cn("h-8 w-8", ew.sageDeep)} aria-hidden />
+          <div>
+            <p className={cn("font-display text-xl", ew.ink)}>
+              Volunteers Fully Staffed
+            </p>
+            <p className={cn("text-sm", ew.inksoft)}>
+              {total != null
+                ? `All ${total} positions filled`
+                : "Operational goal reached"}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      <div
+        className="inline-flex rounded-full border border-[#e6dfd5] bg-white p-1"
+        role="tablist"
+        aria-label="Volunteer views"
+      >
+        {(
+          [
+            ["coverage", "Coverage"],
+            ["people", "People"],
+            ["items", "Items"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={view === id}
+            onClick={() => setView(id)}
+            className={cn(
+              "rounded-full px-4 py-1.5 text-sm font-semibold transition",
+              view === id
+                ? "bg-[#1c352d] text-white"
+                : "text-[#5e6b65] hover:text-[#1c352d]",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "coverage" ? (
+        <CoverageView
+          roles={roles}
+          signupUrl={source.sourceUrl}
+        />
+      ) : null}
+
+      {view === "people" ? (
+        <PeopleView
+          people={people}
+          markSet={markSet}
+          canManage={canManage}
+          pending={opsPending}
+          onToggle={(key, marked) =>
+            toggleMark("participant", key, marked)
+          }
+        />
+      ) : null}
+
+      {view === "items" ? (
+        <ItemsView
+          assignments={assignments}
+          people={people}
+          markSet={markSet}
+          canManage={canManage}
+          pending={opsPending}
+          onToggle={(key, marked) => toggleMark("item", key, marked)}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function CoverageView({
+  roles,
+  signupUrl,
+}: {
+  roles: VolunteerRosterRoleCard[];
+  signupUrl: string | null;
+}) {
+  if (roles.length === 0) {
+    return (
+      <p className={cn("text-sm", ew.inksoft)}>
+        No roles in the latest signup snapshot.
+      </p>
     );
-    setGroupedSortField(next.field);
-    setGroupedSortDirection(next.direction);
   }
 
   return (
-    <section>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <EaseSectionLabel hint={`Updated ${updatedLabel}`}>
-          Volunteers
-        </EaseSectionLabel>
-        <div className="flex flex-wrap items-center gap-2">
-          {signupUrl ? (
-            <a
-              href={signupUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open signup"
-              aria-label="Open signup"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-text transition hover:border-[rgba(47,74,60,0.35)] hover:bg-[rgba(47,74,60,0.06)]"
-            >
-              <ExternalLink className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-            </a>
-          ) : null}
-          <EventContextFileUpload
-            eventId={eventId}
-            uploadContext="volunteers"
-            disabled={pending}
-          />
-          <EaseBtnSecondary disabled={pending || !canManage} onClick={onRefresh}>
-            Refresh
-          </EaseBtnSecondary>
-          <div className="relative">
-            <EaseBtnPrimary
-              disabled={pending}
-              onClick={() => setImportOpen((open) => !open)}
-            >
-              Add / Import
-            </EaseBtnPrimary>
-            {importOpen ? (
-              <div className="absolute right-0 z-20 mt-2 min-w-[220px] rounded-2xl border border-cos-border bg-cos-card p-2 shadow-[0_12px_32px_rgba(28,36,48,0.12)]">
-                {signupUrl ? (
-                  <a
-                    href={signupUrl}
-                    className="block rounded-xl px-3 py-2.5 text-sm font-bold text-cos-text hover:bg-[rgba(255,252,247,0.8)]"
-                    onClick={() => setImportOpen(false)}
-                  >
-                    Connect Signup
-                  </a>
-                ) : null}
-                {onReplaceConnect ? (
-                  <button
-                    type="button"
-                    className="block w-full rounded-xl px-3 py-2.5 text-left text-sm font-bold text-cos-text hover:bg-[rgba(255,252,247,0.8)]"
-                    onClick={() => {
-                      setImportOpen(false);
-                      onReplaceConnect();
-                    }}
-                  >
-                    Replace signup link
-                  </button>
-                ) : null}
-                {signupUrl ? (
-                  <a
-                    href={signupUrl}
-                    className="block rounded-xl px-3 py-2.5 text-sm font-semibold text-cos-muted hover:bg-[rgba(255,252,247,0.8)]"
-                    onClick={() => setImportOpen(false)}
-                  >
-                    Add Volunteer
-                    <span className="mt-0.5 block text-xs font-normal">
-                      Opens signup — no in-app create
-                    </span>
-                  </a>
-                ) : (
-                  <p className="px-3 py-2.5 text-xs text-cos-muted">
-                    Add Volunteer isn’t available without a signup link.
-                  </p>
-                )}
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {roles.map((role) => {
+        const pct = fillPercent(role);
+        const underfilled = pct < 100;
+        const shift = formatParticipantShiftTime(
+          role.assignment.startTime,
+          role.assignment.endTime,
+        );
+        return (
+          <article
+            key={role.assignment.externalKey}
+            className={cn(ewCard, "flex flex-col gap-5 p-6")}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className={cn("font-display text-xl", ew.ink)}>
+                  {role.assignment.name}
+                </h3>
+                <p className={cn("mt-1 text-sm tabular-nums", ew.inksoft)}>
+                  {roleSlotsLabel(role)} filled
+                  {shift !== "—" ? ` · ${shift}` : null}
+                </p>
               </div>
+              {!underfilled ? (
+                <span className="rounded-full bg-[#e6efe9] px-2.5 py-1 text-[11px] font-bold text-[#5a7568]">
+                  Fully Staffed
+                </span>
+              ) : (
+                <span className="rounded-full bg-[#f4f0ea] px-2.5 py-1 text-[11px] font-bold text-[#1c352d]">
+                  Still Needed
+                </span>
+              )}
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-[#f4f0ea]">
+              <div
+                className={cn(
+                  "h-full rounded-full",
+                  underfilled ? "bg-[#c5a880]" : "bg-[#8ea89d]",
+                )}
+                style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+              />
+            </div>
+            {role.people.length > 0 ? (
+              <ul className="space-y-2">
+                {role.people.map((person) => (
+                  <li
+                    key={`${person.assignmentExternalKey}:${person.participantKey}`}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <span
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#e6efe9] text-[10px] font-extrabold text-[#1c352d]"
+                      aria-hidden
+                    >
+                      {volunteerInitials(person.name)}
+                    </span>
+                    <span className={ew.ink}>{person.name}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={cn("text-sm", ew.inksoft)}>
+                {(role.assignment.quantityFilled ?? 0) > 0
+                  ? "Names not shared publicly yet."
+                  : "No volunteers assigned yet."}
+              </p>
+            )}
+            {underfilled && signupUrl ? (
+              <a
+                href={signupUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={cn(
+                  "mt-auto inline-flex items-center gap-2 text-sm font-semibold",
+                  ew.sageDeep,
+                )}
+              >
+                <Users className="h-4 w-4" aria-hidden />
+                Open signup to fill
+              </a>
             ) : null}
-          </div>
-        </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function PeopleView({
+  people,
+  markSet,
+  canManage,
+  pending,
+  onToggle,
+}: {
+  people: VolunteerParticipantView[];
+  markSet: Set<string>;
+  canManage: boolean;
+  pending: boolean;
+  onToggle: (subjectKey: string, marked: boolean) => void;
+}) {
+  if (people.length === 0) {
+    return (
+      <p className={cn("text-sm", ew.inksoft)}>
+        No named volunteers yet. Refresh after SignUpGenius shares participant
+        names.
+      </p>
+    );
+  }
+
+  return (
+    <div className={cn(ewCard, "overflow-hidden")}>
+      <div className="hidden grid-cols-[1.2fr_1fr_auto] gap-4 border-b border-[#e6dfd5] px-5 py-3 text-xs font-bold tracking-wide text-[#5e6b65] uppercase sm:grid">
+        <span>Volunteer</span>
+        <span>Role & Shift</span>
+        <span>Status</span>
       </div>
+      <ul>
+        {people.map((person) => {
+          const key = participantOpsKey(
+            person.assignmentExternalKey,
+            person.participantKey,
+          );
+          const arrived = markSet.has(`participant:${key}`);
+          const shift = formatParticipantShiftTime(
+            person.startTime,
+            person.endTime,
+          );
+          return (
+            <li
+              key={key}
+              className="grid grid-cols-1 items-center gap-3 border-b border-[#e6dfd5] px-5 py-4 last:border-0 sm:grid-cols-[1.2fr_1fr_auto]"
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#e6efe9] text-[11px] font-extrabold text-[#1c352d]"
+                  aria-hidden
+                >
+                  {volunteerInitials(person.name)}
+                </span>
+                <span className={cn("font-medium", ew.ink)}>{person.name}</span>
+              </div>
+              <div className={cn("text-sm", ew.inksoft)}>
+                <p>{person.roleName}</p>
+                {shift !== "—" ? <p>{shift}</p> : null}
+              </div>
+              <button
+                type="button"
+                disabled={!canManage || pending}
+                onClick={() => onToggle(key, arrived)}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition",
+                  arrived
+                    ? "border-[#8ea89d] bg-[#e6efe9] text-[#5a7568]"
+                    : "border-[#e6dfd5] bg-white text-[#1c352d]",
+                )}
+              >
+                {arrived ? (
+                  <>
+                    <Check className="h-4 w-4" aria-hidden />
+                    Arrived
+                  </>
+                ) : (
+                  "Mark Arrived"
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 
-      {error ? (
-        <p className="mb-3 text-sm text-[#a65a3a]">{error}</p>
-      ) : null}
+function ItemsView({
+  assignments,
+  people,
+  markSet,
+  canManage,
+  pending,
+  onToggle,
+}: {
+  assignments: VolunteerAssignmentView[];
+  people: VolunteerParticipantView[];
+  markSet: Set<string>;
+  canManage: boolean;
+  pending: boolean;
+  onToggle: (subjectKey: string, marked: boolean) => void;
+}) {
+  if (assignments.length === 0) {
+    return (
+      <p className={cn("text-sm", ew.inksoft)}>
+        No signup items in the latest snapshot.
+      </p>
+    );
+  }
 
-      <div className="mb-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-        <EaseKpi value={healthValue} label={`Overall Health · ${healthLabel}`} />
-        <EaseKpi
-          value={summary.filledSpots != null ? String(summary.filledSpots) : "—"}
-          label="Filled Slots"
-        />
-        <EaseKpi
-          value={String(criticalRoles)}
-          label="Unfilled / Critical roles"
-        />
-      </div>
-
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div
-          className="inline-flex rounded-full border border-cos-border bg-[rgba(255,252,247,0.65)] p-1"
-          role="tablist"
-          aria-label="Volunteer roster view"
-        >
-          {(
-            [
-              ["list", "List View"],
-              ["grouped", "Grouped View"],
-            ] as const
-          ).map(([id, label]) => (
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {assignments.map((assignment) => {
+        const key = assignment.externalKey;
+        const received = markSet.has(`item:${key}`);
+        const helpers = people
+          .filter((p) => p.assignmentExternalKey === key)
+          .map((p) => p.name)
+          .slice(0, 2);
+        const qty =
+          assignment.quantityFilled != null
+            ? `${assignment.quantityFilled}${
+                assignment.quantityRequested != null
+                  ? ` / ${assignment.quantityRequested}`
+                  : ""
+              }`
+            : null;
+        return (
+          <article
+            key={key}
+            className={cn(ewCard, "flex items-start justify-between gap-3 p-5")}
+          >
+            <div>
+              <h3 className={cn("font-display text-lg", ew.ink)}>
+                {assignment.name}
+              </h3>
+              <p className={cn("mt-1 text-sm", ew.inksoft)}>
+                {[qty, helpers.join(", ")].filter(Boolean).join(" · ") ||
+                  "Signup item"}
+              </p>
+            </div>
             <button
-              key={id}
               type="button"
-              role="tab"
-              aria-selected={view === id}
-              onClick={() => setView(id)}
+              disabled={!canManage || pending}
+              onClick={() => onToggle(key, received)}
               className={cn(
-                "rounded-full px-3.5 py-1.5 text-xs font-bold transition",
-                view === id
-                  ? "bg-cos-card text-cos-text shadow-[0_4px_14px_rgba(28,36,48,0.08)]"
-                  : "text-cos-muted hover:text-cos-text",
+                "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold",
+                received
+                  ? "border-[#8ea89d] bg-[#e6efe9] text-[#5a7568]"
+                  : "border-[#e6dfd5] bg-white text-[#1c352d]",
               )}
             >
-              {label}
+              {received ? (
+                <>
+                  <Check className="h-4 w-4" aria-hidden />
+                  Received
+                </>
+              ) : (
+                "Mark Received"
+              )}
             </button>
-          ))}
-        </div>
-
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or role"
-          className="min-w-[200px] flex-1 rounded-full border border-cos-border bg-cos-card px-3.5 py-2 text-sm text-cos-text"
-        />
-
-        <label className="flex items-center gap-2 text-xs font-semibold text-cos-muted">
-          <span>Filter</span>
-          <select
-            value={roleFilter ?? ""}
-            onChange={(e) => setRoleFilter(e.target.value || null)}
-            className="rounded-full border border-cos-border bg-cos-card px-3 py-1.5 text-xs font-bold text-cos-text"
-          >
-            <option value="">All roles</option>
-            {roleOptions.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {roleFilter ? (
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <EaseChip tone="forest">Role: {roleFilter}</EaseChip>
-          <span className="text-xs font-semibold text-cos-muted">
-            {activeFilterCount} Filter Active
-          </span>
-          <button
-            type="button"
-            className="text-xs font-bold text-cos-text underline-offset-2 hover:underline"
-            onClick={() => setRoleFilter(null)}
-          >
-            Clear
-          </button>
-        </div>
-      ) : null}
-
-      {view === "list" ? (
-        <EaseBox className="overflow-hidden p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-cos-border text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
-                  {LIST_SORT_COLUMNS.map((column) => {
-                    const active = listSortField === column.id;
-                    return (
-                      <th key={column.id} className="px-4 py-3" scope="col">
-                        <button
-                          type="button"
-                          onClick={() => toggleListSort(column.id)}
-                          aria-sort={
-                            active
-                              ? listSortDirection === "asc"
-                                ? "ascending"
-                                : "descending"
-                              : "none"
-                          }
-                          className="inline-flex items-center gap-1.5 uppercase tracking-[0.06em] transition hover:text-cos-text"
-                        >
-                          {column.label}
-                          <SortIcon
-                            active={active}
-                            direction={listSortDirection}
-                          />
-                        </button>
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody>
-                {paged.pageItems.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-4 py-8 text-center text-sm text-cos-muted"
-                    >
-                      {hasNamedRoster
-                        ? "No volunteers match this search or filter."
-                        : filledSpots > 0
-                          ? "No names yet from SignUpGenius. Turn on “Show names” on the public signup, then Refresh."
-                          : "No volunteers yet. Names appear here after SignUpGenius shares them."}
-                    </td>
-                  </tr>
-                ) : (
-                  paged.pageItems.map((person) => (
-                    <tr
-                      key={`${person.assignmentExternalKey}:${person.participantKey}`}
-                      className="border-b border-[rgba(42,38,34,0.06)] last:border-0"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <Avatar name={person.name} />
-                          <span className="font-bold text-cos-text">
-                            {person.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-cos-text">{person.roleName}</td>
-                      <td className="px-4 py-3 text-cos-muted">
-                        {formatParticipantShiftTime(
-                          person.startTime,
-                          person.endTime,
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-cos-muted">
-                        {person.location || "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <EaseChip tone="forest">
-                          {participantStatusLabel(person.status)}
-                        </EaseChip>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          {paged.total > PAGE_SIZE ? (
-            <div className="flex items-center justify-between gap-3 border-t border-cos-border px-4 py-3 text-xs font-semibold text-cos-muted">
-              <span>
-                Page {paged.page} of {paged.pageCount} · {paged.total} volunteers
-              </span>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={paged.page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="rounded-full border border-cos-border px-3 py-1 font-bold text-cos-text disabled:opacity-40"
-                >
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  disabled={paged.page >= paged.pageCount}
-                  onClick={() =>
-                    setPage((p) => Math.min(paged.pageCount, p + 1))
-                  }
-                  className="rounded-full border border-cos-border px-3 py-1 font-bold text-cos-text disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </EaseBox>
-      ) : (
-        <div className="flex flex-col gap-5">
-          <div
-            className="flex flex-wrap items-center gap-1 rounded-2xl border border-cos-border bg-[rgba(255,252,247,0.65)] p-1"
-            role="toolbar"
-            aria-label="Sort grouped roles"
-          >
-            {GROUPED_SORT_COLUMNS.map((column) => {
-              const active = groupedSortField === column.id;
-              return (
-                <button
-                  key={column.id}
-                  type="button"
-                  onClick={() => toggleGroupedSort(column.id)}
-                  aria-pressed={active}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-extrabold tracking-[0.06em] uppercase transition",
-                    active
-                      ? "bg-cos-card text-cos-text shadow-[0_4px_14px_rgba(28,36,48,0.08)]"
-                      : "text-cos-muted hover:text-cos-text",
-                  )}
-                >
-                  {column.label}
-                  <SortIcon
-                    active={active}
-                    direction={groupedSortDirection}
-                  />
-                </button>
-              );
-            })}
-          </div>
-
-          {groupedSections.map((section) => {
-            const sectionRoles = sortRosterRoles(
-              section.roles.filter(
-                (role) => !roleFilter || role.assignment.name === roleFilter,
-              ),
-              groupedSortField,
-              groupedSortDirection,
-            );
-            if (sectionRoles.length === 0) return null;
-            return (
-              <div key={section.id}>
-                <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <h3 className="font-display text-lg font-semibold text-cos-text">
-                    {section.title}
-                  </h3>
-                  <div
-                    className="mx-1 h-px min-w-[2rem] flex-1 bg-[rgba(42,38,34,0.12)]"
-                    aria-hidden
-                  />
-                  <EaseChip
-                    tone={
-                      section.badge === "needs_attention" ? "warn" : "forest"
-                    }
-                  >
-                    {rosterSectionBadgeLabel(section.badge)}
-                  </EaseChip>
-                  <span className="text-xs font-semibold tabular-nums text-cos-muted">
-                    {section.filledSpots != null && section.totalSpots != null
-                      ? `${section.filledSpots}/${section.totalSpots} Filled`
-                      : "Fill n/a"}
-                  </span>
-                </div>
-                <EaseBox className="overflow-hidden p-2 sm:p-3">
-                  {sectionRoles.map((role) => (
-                    <GroupedRoleLine
-                      key={role.assignment.externalKey}
-                      role={role}
-                      expanded={Boolean(
-                        expandedRoles[role.assignment.externalKey],
-                      )}
-                      signupUrl={signupUrl}
-                      onToggle={() =>
-                        setExpandedRoles((current) => ({
-                          ...current,
-                          [role.assignment.externalKey]:
-                            !current[role.assignment.externalKey],
-                        }))
-                      }
-                    />
-                  ))}
-                </EaseBox>
-              </div>
-            );
-          })}
-          {groupedSections.every(
-            (section) =>
-              section.roles.filter(
-                (role) => !roleFilter || role.assignment.name === roleFilter,
-              ).length === 0,
-          ) ? (
-            <EaseBox>
-              <p className="text-sm text-cos-muted">
-                No roles match this filter.
-              </p>
-            </EaseBox>
-          ) : null}
-        </div>
-      )}
-    </section>
+          </article>
+        );
+      })}
+    </div>
   );
 }

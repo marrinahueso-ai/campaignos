@@ -33,6 +33,11 @@ import { readSignUpGeniusSignup } from "@/lib/event-volunteers/signupgenius-read
 import { validateSignUpGeniusUrl } from "@/lib/event-volunteers/url";
 import { buildVolunteerAiSummary } from "@/lib/event-volunteers/ai-summary";
 import type { AssignmentDateAllowlist } from "@/lib/event-volunteers/assignment-list";
+import {
+  listEventVolunteerOps,
+  setEventVolunteerOp,
+  type VolunteerOpsSubjectType,
+} from "@/lib/event-volunteers/ops";
 
 const STALE_MS = 30 * 60 * 1000;
 
@@ -581,4 +586,69 @@ export async function cancelVolunteerReviewAction(input: {
   eventId: string;
 }) {
   return disconnectVolunteerSourceAction(input);
+}
+
+export async function listEventVolunteerOpsAction(eventId: string) {
+  const ctx = await requireVolunteerContext(eventId);
+  if ("error" in ctx) {
+    return { success: false as const, error: ctx.error };
+  }
+
+  try {
+    const marks = await listEventVolunteerOps(
+      ctx.event.id,
+      ctx.organization.id,
+    );
+    return {
+      success: true as const,
+      marks,
+      canManage: canManageVolunteerStats(ctx.role),
+    };
+  } catch {
+    return {
+      success: false as const,
+      error: "Unable to load arrival marks.",
+    };
+  }
+}
+
+export async function toggleEventVolunteerOpAction(input: {
+  eventId: string;
+  subjectType: VolunteerOpsSubjectType;
+  subjectKey: string;
+  marked: boolean;
+}) {
+  const ctx = await requireVolunteerContext(input.eventId);
+  if ("error" in ctx) {
+    return { success: false as const, error: ctx.error };
+  }
+  if (!canManageVolunteerStats(ctx.role)) {
+    return {
+      success: false as const,
+      error: "You do not have permission to update volunteer arrivals.",
+    };
+  }
+
+  const subjectKey = input.subjectKey.trim();
+  if (!subjectKey || subjectKey.length > 240) {
+    return { success: false as const, error: "Invalid volunteer key." };
+  }
+  if (input.subjectType !== "participant" && input.subjectType !== "item") {
+    return { success: false as const, error: "Invalid subject type." };
+  }
+
+  const result = await setEventVolunteerOp({
+    eventId: ctx.event.id,
+    organizationId: ctx.organization.id,
+    userId: ctx.user.id,
+    subjectType: input.subjectType,
+    subjectKey,
+    marked: input.marked,
+  });
+
+  if (!result.success) {
+    return result;
+  }
+
+  return { success: true as const };
 }
