@@ -26,6 +26,8 @@ export function ArtworkLightboxThumbnail({
 }: ArtworkLightboxThumbnailProps) {
   const [open, setOpen] = useState(false);
   const url = src?.trim() || null;
+  // Story frames are 9:16; cover crops square/feed art. Contain shows the full image.
+  const fit = variant === "story" ? "contain" : "cover";
 
   return (
     <div className={cn("flex flex-col gap-2", wrapperClassName)}>
@@ -51,10 +53,10 @@ export function ArtworkLightboxThumbnail({
               fill
               preset="card"
               displayWidth={360}
-              displayHeight={360}
-              resize="cover"
+              displayHeight={variant === "story" ? 640 : 360}
+              resize={fit}
               sizes="(max-width: 768px) 45vw, 220px"
-              className="object-cover"
+              className={fit === "contain" ? "object-contain" : "object-cover"}
             />
           </button>
           {open && (
