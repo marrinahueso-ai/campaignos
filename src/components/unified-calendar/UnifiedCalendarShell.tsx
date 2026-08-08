@@ -430,6 +430,12 @@ export function UnifiedCalendarShell({
             />
             <PlanningCalendarDetailPanel
               item={selectedEnriched}
+              relatedItems={enrichedItems.filter(
+                (entry) =>
+                  entry.eventId === selectedEnriched.eventId &&
+                  entry.id !== selectedEnriched.id,
+              )}
+              onSelectItem={(next) => setSelectedItem(next)}
               onClose={() => setSelectedItem(null)}
             />
           </>

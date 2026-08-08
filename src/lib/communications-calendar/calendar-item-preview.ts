@@ -18,6 +18,15 @@ export type CalendarItemPreview = {
   scheduleLabel: string | null;
   platforms: string[];
   deliveryMethod: string | null;
+  /** Resolved Create with AI milestone id when known (for Open Post deep links). */
+  campaignMilestoneId: string | null;
+};
+
+export type CalendarEventDrawerDetail = {
+  location: string | null;
+  time: string | null;
+  status: string;
+  communicationPlanLabel: string | null;
 };
 
 function relativeDayFromSourceId(
@@ -54,6 +63,7 @@ export async function loadCalendarItemPreview(input: {
     scheduleLabel: input.scheduledAt ? formatDateTime(input.scheduledAt) : null,
     platforms: ["facebook", "instagram"],
     deliveryMethod: "publish-now",
+    campaignMilestoneId: input.campaignMilestoneId ?? null,
   };
 
   const relativeDay = relativeDayFromSourceId(input.sourceId, input.eventId);
@@ -137,6 +147,10 @@ export async function loadCalendarItemPreview(input: {
       platforms: platforms.length > 0 ? platforms : empty.platforms,
       deliveryMethod:
         (schedulingRow.delivery_method as string | null) ?? empty.deliveryMethod,
+      campaignMilestoneId:
+        (schedulingRow.campaign_milestone_id as string | null) ??
+        resolvedArtwork?.campaignMilestoneId ??
+        empty.campaignMilestoneId,
     };
   }
 
@@ -149,6 +163,8 @@ export async function loadCalendarItemPreview(input: {
         feedArtworkUrl: resolvedArtwork.feedArtworkUrl,
         storyArtworkUrl: resolvedArtwork.storyArtworkUrl,
       },
+      campaignMilestoneId:
+        resolvedArtwork.campaignMilestoneId ?? empty.campaignMilestoneId,
     };
   }
 
@@ -173,6 +189,12 @@ export async function loadCalendarItemPreview(input: {
     .filter(([, enabled]) => enabled)
     .map(([platform]) => platform);
 
+  const bundleMilestoneId =
+    relativeDay === null
+      ? null
+      : (sessionMilestones.find((entry) => entry.relativeDay === relativeDay)
+          ?.id ?? null);
+
   return {
     preview: {
       captionText: bundle.captionPreview,
@@ -185,5 +207,29 @@ export async function loadCalendarItemPreview(input: {
       : empty.scheduleLabel,
     platforms: platforms.length > 0 ? platforms : empty.platforms,
     deliveryMethod: "publish-now",
+    campaignMilestoneId: bundleMilestoneId ?? empty.campaignMilestoneId,
+  };
+}
+
+export async function loadCalendarEventDrawerDetail(
+  eventId: string,
+): Promise<CalendarEventDrawerDetail | null> {
+  const event = await getEventById(eventId);
+  if (!event) return null;
+
+  const { COMMUNICATION_STRATEGY_LABELS } = await import(
+    "@/lib/events/communication-strategy"
+  );
+  const { getEventPlaybookData } = await import("@/lib/playbooks/queries");
+  const playbookData = await getEventPlaybookData(eventId);
+
+  return {
+    location: event.location,
+    time: event.time,
+    status: event.status,
+    communicationPlanLabel:
+      playbookData?.playbook.name ??
+      COMMUNICATION_STRATEGY_LABELS[event.communicationStrategy] ??
+      null,
   };
 }

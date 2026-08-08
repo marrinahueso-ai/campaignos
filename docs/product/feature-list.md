@@ -206,7 +206,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Calendar chrome (shell, import, review, Google/subscribe feed) customer copy — org/team/year + refresh language; Settings **School year** feature name retained — **shipped**
 - School-year calendar (month / week / agenda) — **shipped**
 - Layer toggles, detail panel — **shipped**
-- Calendar detail panel **Archive** / **Delete** for school events (confirm dialog; permanent delete requires typing DELETE) — reuses event archive/delete actions + membership/`getEventById` gates; Meta post chips stay open-planning-hub only — **shipped**
+- Calendar detail drawer (right-side pop-out; Event / Scheduled Post / Published Post from calendar chips; Escape/X; switch item in place; real artwork/caption/platforms/schedule; Open Event → Event Workspace; Open Post / View Post Details → Create with AI preview; View Insights → event Insights when available) — **shipped**
+- Calendar detail panel **Archive** / **Delete** for school events (confirm dialog; permanent delete requires typing DELETE) — reuses event archive/delete actions + membership/`getEventById` gates; Meta post chips open Create with AI preview — **shipped**
 - Show-layer color pickers (Events / Scheduled posts / Published): click the color swatch on each Show chip (not the label — label toggles visibility); calendar cards for that layer update to match; per-user via `organization_users.calendar_layout` — **shipped**
 - Drag-and-drop Meta posts: schedule-only (approval preserved); Graph reschedule when a native schedule id exists — **shipped** (QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md); not school-event import)
 - Posting heatmap (Calendar week view + planning suggestions; prefs + published Meta history; gated on org Meta connection) — **shipped**

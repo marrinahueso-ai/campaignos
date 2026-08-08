@@ -221,6 +221,12 @@ export function PlanningCalendarShell({ data }: PlanningCalendarShellProps) {
           />
           <PlanningCalendarDetailPanel
             item={selectedEnriched}
+            relatedItems={filteredItems.filter(
+              (entry) =>
+                entry.eventId === selectedEnriched.eventId &&
+                entry.id !== selectedEnriched.id,
+            )}
+            onSelectItem={(next) => setSelectedItem(next)}
             onClose={() => setSelectedItem(null)}
           />
         </>
