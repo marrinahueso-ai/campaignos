@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 8, 2026 — Resources marketing page
+**Last updated:** August 8, 2026 — About marketing page
 
 ---
 
@@ -17,7 +17,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Pricing page ($49 / $79 / $129 · Starter / Professional / Premium + AI Reserve) — **shipped** (catalog features; Stripe Checkout / sign-in → billing CTAs)
 - Why Hey Ralli (`/why-hey-ralli`) — **shipped** (fragmentation → connected-workflow story: PLAN → CREATE → COORDINATE → APPROVE → PUBLISH → MEASURE; concise Connected-vs-Fragmented comparison; top-level marketing nav item on Home/Pricing/Why Hey Ralli via shared `MARKETING_WOW_NAV_LINKS`)
 - Resources (`/resources`) — **shipped** (public learning/help hub: hero + client-side search over on-page Topics/Tutorials/Guides, quick-start paths, Featured Tutorials linking to real `/features` live demos (no fabricated screenshots/durations), Browse by Topic grid, dark Step-by-Step Guides band, support CTA to `hello@heyralli.com`; replaces `/features` as the shared nav "Resources" destination — `/features` itself is unchanged)
-- About — **shipped**
+- About (`/about`) — **shipped** (founder-led story on the shared marketing-wow shell: “Born from the work, not a software company,” real founder photo, dark school-year workflow band, restrained principles, trial + Why Hey Ralli CTAs; replaces legacy `StudioAboutPage`)
 - Email deep links (`/go/...`) — **shipped**
 - Public Privacy (`/privacy`) / Terms (`/terms`) + footer legal links — **shipped** (mockup chrome; living notes: [privacy-and-data.md](../security/privacy-and-data.md))
 - Invite landing (`/invite`) — **shipped** (tokenless guidance; real accept stays at `/invite/[token]`)

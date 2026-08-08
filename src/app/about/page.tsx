@@ -1,11 +1,11 @@
 import { getAuthUser } from "@/lib/auth/queries";
 import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
-import { StudioAboutPage } from "@/components/marketing/StudioAboutPage";
+import { MarketingWowAboutPage } from "@/components/marketing-wow/MarketingWowAboutPage";
 
 export const metadata = {
   title: "About",
   description:
-    "How Hey Ralli was created to help busy PTO volunteers manage school communications in one place.",
+    "Hey Ralli was born from PTO board work — not a software company. Learn why one mom built a calm, connected workspace for school volunteers.",
 };
 
 export default async function AboutPage() {
@@ -13,7 +13,7 @@ export default async function AboutPage() {
   const workspaceHref = user ? await getAuthenticatedAppPath() : "/dashboard";
 
   return (
-    <StudioAboutPage
+    <MarketingWowAboutPage
       userEmail={user?.email ?? null}
       workspaceHref={workspaceHref}
     />
