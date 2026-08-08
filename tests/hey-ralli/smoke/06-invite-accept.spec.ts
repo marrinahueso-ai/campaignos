@@ -32,19 +32,27 @@ test.describe("Invite accept / password setup", () => {
     await page.goto(`/invite/${encodeURIComponent(token!)}`);
     await expectNoBlankScreen(page);
     await expect(page).toHaveURL(new RegExp(`/invite/`));
-    await expect(
-      page.getByRole("heading", {
-        name: /you’ve been invited|you've been invited|sign in to join|invite expired/i,
-      }),
-    ).toBeVisible({ timeout: 20_000 });
-    // New accounts: password setup. Existing accounts: sign-in CTA (no password fields).
-    const createPassword = page.getByLabel(/create password/i);
-    if (await createPassword.isVisible().catch(() => false)) {
-      await expect(createPassword).toBeVisible();
-      await expect(page.getByLabel(/confirm password/i)).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/invite/`));
+    await expectNoBlankScreen(page);
+
+    const expired = page.getByRole("heading", { name: /invite expired/i });
+    const invited = page.getByRole("heading", {
+      name: /you’ve been invited|you've been invited/i,
+    });
+    await expect(expired.or(invited)).toBeVisible({ timeout: 20_000 });
+
+    if (await expired.isVisible()) {
       await expect(
-        page.getByRole("button", { name: /join /i }),
+        page.getByRole("link", { name: /back to log in|log in/i }).first(),
       ).toBeVisible();
+      return;
+    }
+
+    // New accounts: password setup. Existing accounts: sign-in CTA.
+    const createPassword = page.getByLabel(/create password/i);
+    if (await createPassword.isVisible()) {
+      await expect(page.getByLabel(/confirm password/i)).toBeVisible();
+      await expect(page.getByRole("button", { name: /join /i })).toBeVisible();
     } else {
       await expect(
         page.getByRole("link", { name: /sign in to join/i }),
