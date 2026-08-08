@@ -1,5 +1,5 @@
-import { StudioPricingPage } from "@/components/marketing/StudioPricingPage";
-import type { PricingCtaMode } from "@/components/marketing/StudioPricingPage";
+import { MarketingWowPricingPage } from "@/components/marketing-wow/MarketingWowPricingPage";
+import type { PricingCtaMode } from "@/components/marketing-wow/MarketingWowPricingPage";
 import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getAuthUser } from "@/lib/auth/queries";
 import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
@@ -63,7 +63,7 @@ export default async function PricingPage({
   }
 
   return (
-    <StudioPricingPage
+    <MarketingWowPricingPage
       userEmail={user?.email ?? null}
       workspaceHref={workspaceHref}
       stripeConfigured={stripeConfigured}

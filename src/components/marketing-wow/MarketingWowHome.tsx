@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { BrandLogo } from "@/components/brand/BrandLogo";
 import { MarketingCookieConsent } from "@/components/marketing-wow/MarketingCookieConsent";
+import { MarketingWowFooter } from "@/components/marketing-wow/MarketingWowFooter";
+import { MarketingWowHeader } from "@/components/marketing-wow/MarketingWowHeader";
 import { Button } from "@/components/ui/Button";
 import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path";
 import { PAID_PLANS } from "@/lib/billing/plan-catalog";
@@ -12,15 +13,6 @@ interface MarketingWowHomeProps {
   userEmail?: string | null;
   workspaceHref?: string;
 }
-
-/** Header nav — matches the approved homepage design (Pricing · Resources · About). */
-const NAV_LINKS = [
-  { href: "/pricing", label: "Pricing" },
-  // No standalone /resources page yet — points to the closest shipped
-  // equivalent (product tour) until Resources ships as its own page.
-  { href: "/features", label: "Resources" },
-  { href: "/about", label: "About" },
-] as const;
 
 const TOUR_ITEMS = [
   {
@@ -53,60 +45,7 @@ export function MarketingWowHome({
 
   return (
     <div className="bg-cos-bg">
-      {/* ============ Header ============ */}
-      <header className="relative z-20">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-7 lg:px-10">
-          <BrandLogo href="/" variant="full" size="nav" />
-
-          <nav
-            className="hidden items-center gap-9 text-[13px] font-semibold tracking-wide text-cos-muted uppercase md:flex"
-            aria-label="Marketing"
-          >
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="transition-colors hover:text-cos-text"
-              >
-                {link.label}
-              </Link>
-            ))}
-            {!isSignedIn && (
-              <Link href="/login" className="transition-colors hover:text-cos-text">
-                Log in
-              </Link>
-            )}
-          </nav>
-
-          <div className="flex items-center gap-3">
-            {isSignedIn ? (
-              <Button
-                href={workspaceHref}
-                variant="primary"
-                className="h-auto rounded-full px-4 py-3 text-sm sm:px-6"
-              >
-                {dashboardCtaLabel}
-              </Button>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="hidden text-[13px] font-semibold tracking-wide text-cos-muted uppercase transition-colors hover:text-cos-text sm:inline md:hidden"
-                >
-                  Log in
-                </Link>
-                <Button
-                  href="/signup"
-                  variant="primary"
-                  className="h-auto rounded-full px-4 py-3 text-sm sm:px-6"
-                >
-                  Get Started
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <MarketingWowHeader userEmail={userEmail} workspaceHref={workspaceHref} />
 
       {/* ============ Hero ============ */}
       <section className="relative overflow-hidden px-6 pt-10 pb-28 sm:pt-16 sm:pb-36">
@@ -316,55 +255,7 @@ export function MarketingWowHome({
         </div>
       </section>
 
-      {/* ============ Footer ============ */}
-      <footer className="bg-cos-dark px-6 py-14 text-[#f6f2eb]/78 sm:py-16">
-        <div className="mx-auto grid max-w-6xl gap-10 sm:grid-cols-[1.2fr_1fr_1fr]">
-          <div>
-            <p className="font-display text-2xl text-[#f6f2eb]">Hey Ralli</p>
-            <p className="mt-2 text-xs font-semibold tracking-[0.16em] text-cos-brand-sage uppercase">
-              Organize · Create · Connect
-            </p>
-          </div>
-          <div>
-            <h4 className="text-xs font-semibold tracking-[0.14em] text-cos-brand-sage uppercase">
-              Product
-            </h4>
-            <div className="mt-4 flex flex-col gap-2.5 text-sm">
-              <a href="#tour" className="hover:text-[#f6f2eb]">
-                Product tour
-              </a>
-              <Link href="/pricing" className="hover:text-[#f6f2eb]">
-                Pricing
-              </Link>
-              <Link href="/signup" className="hover:text-[#f6f2eb]">
-                Start organization
-              </Link>
-              <Link href="/login" className="hover:text-[#f6f2eb]">
-                Log in
-              </Link>
-            </div>
-          </div>
-          <div>
-            <h4 className="text-xs font-semibold tracking-[0.14em] text-cos-brand-sage uppercase">
-              Legal &amp; help
-            </h4>
-            <div className="mt-4 flex flex-col gap-2.5 text-sm">
-              <Link href="/privacy" className="hover:text-[#f6f2eb]">
-                Privacy
-              </Link>
-              <Link href="/terms" className="hover:text-[#f6f2eb]">
-                Terms
-              </Link>
-              <a href="mailto:hello@heyralli.com" className="hover:text-[#f6f2eb]">
-                Contact · hello@heyralli.com
-              </a>
-            </div>
-          </div>
-        </div>
-        <div className="mx-auto mt-10 max-w-6xl border-t border-[#f6f2eb]/12 pt-6 text-xs text-[#f6f2eb]/50">
-          © {new Date().getFullYear()} Hey Ralli
-        </div>
-      </footer>
+      <MarketingWowFooter />
 
       <MarketingCookieConsent />
     </div>
