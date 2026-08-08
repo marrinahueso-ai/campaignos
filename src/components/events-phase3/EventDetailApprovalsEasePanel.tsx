@@ -21,6 +21,7 @@ import type {
   UnifiedApprovalItem,
   UnifiedApprovalsPageData,
 } from "@/lib/approvals-scheduling/types";
+import { getUnifiedApprovalPreview } from "@/lib/approvals-scheduling/types";
 import { createWithAiHref } from "@/lib/events/event-responsibility";
 import { isFlyerComposerMilestoneId } from "@/lib/flyer-composer/approval";
 import { cn } from "@/lib/utils/cn";
@@ -56,10 +57,11 @@ function needsReview(item: UnifiedApprovalItem): boolean {
 }
 
 function thumbUrl(item: UnifiedApprovalItem): string | null {
+  const preview = getUnifiedApprovalPreview(item);
   return (
-    item.thumbnailUrl ||
-    item.preview?.feedArtworkUrl ||
-    item.preview?.storyArtworkUrl ||
+    item.thumbnailUrl?.trim() ||
+    preview.feedArtworkUrl?.trim() ||
+    preview.storyArtworkUrl?.trim() ||
     null
   );
 }
@@ -182,45 +184,57 @@ function ContentCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "group flex cursor-pointer flex-col overflow-hidden rounded-2xl border bg-white text-left transition",
+        "group block w-full cursor-pointer overflow-hidden rounded-2xl border bg-white text-left transition",
         highlight
           ? "border-2 border-[#c5a880]/30 shadow-sm"
           : "border-[#e6dfd5]",
         muted && "opacity-90",
       )}
     >
-      <div className="relative aspect-[4/3] overflow-hidden border-b border-[#e6dfd5] bg-[#faf8f5]">
-        {art ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={art}
-            alt=""
-            className={cn(
-              "absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105",
-              (muted || published) && "opacity-80 grayscale-[0.35]",
-            )}
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-[#8ea89d]">
-            <ImageIcon className="h-10 w-10 opacity-50" aria-hidden />
-          </div>
-        )}
+      {/*
+        Padding-top spacer (not flex/aspect-ratio): buttons + flex children
+        were collapsing the 4:3 media frame to 0 height in production.
+      */}
+      <span className="relative block w-full overflow-hidden border-b border-[#e6dfd5] bg-[#faf8f5]">
+        <span
+          aria-hidden
+          className="block w-full"
+          style={{ paddingTop: "75%" }}
+        />
+        <span className="absolute inset-0 flex items-center justify-center">
+          {art ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={art}
+              alt=""
+              className={cn(
+                "h-full w-full object-cover transition-transform duration-500 group-hover:scale-105",
+                (muted || published) && "opacity-80 grayscale-[0.35]",
+              )}
+            />
+          ) : (
+            <ImageIcon
+              className="h-10 w-10 text-[#8ea89d] opacity-50"
+              aria-hidden
+            />
+          )}
+        </span>
         {badge ? (
-          <div className="absolute top-3 left-3 rounded bg-white/90 px-2 py-1 text-[9px] font-bold tracking-wider text-[#1c352d] uppercase backdrop-blur">
+          <span className="absolute top-3 left-3 z-10 rounded bg-white/90 px-2 py-1 text-[9px] font-bold tracking-wider text-[#1c352d] uppercase backdrop-blur">
             {badge}
-          </div>
+          </span>
         ) : null}
-      </div>
-      <div className="flex flex-1 flex-col gap-3 p-5">
-        <div className="flex flex-col gap-1">
-          <h4 className={cn("font-display text-xl leading-tight", ew.ink)}>
+      </span>
+      <span className="flex flex-col gap-3 p-5">
+        <span className="flex flex-col gap-1">
+          <span className={cn("font-display text-xl leading-tight", ew.ink)}>
             {displayApprovalPostName(item.milestoneName)}
-          </h4>
-          <p className={cn("text-[11px] font-medium", ew.inksoft)}>
+          </span>
+          <span className={cn("text-[11px] font-medium", ew.inksoft)}>
             {cardSubtitle(item)}
-          </p>
-        </div>
-        <div className="mt-1 flex items-center justify-between gap-2">
+          </span>
+        </span>
+        <span className="mt-1 flex items-center justify-between gap-2">
           <span className="text-[10px] font-bold tracking-wider text-[#5e6b65] uppercase">
             {platformLabel(item)}
           </span>
@@ -232,8 +246,8 @@ function ContentCard({
           >
             {status.label}
           </span>
-        </div>
-      </div>
+        </span>
+      </span>
     </button>
   );
 }

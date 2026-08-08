@@ -79,7 +79,7 @@ describe("event detail ease UI contracts", () => {
     assert.match(panel, /No content yet/);
     assert.match(panel, /Create Content/);
     assert.match(panel, /Create First Item/);
-    assert.match(panel, /aspect-\[4\/3\]/);
+    assert.match(panel, /paddingTop/);
     assert.match(panel, /Needs Approval/);
     assert.match(panel, /ReviewDrawer/);
     assert.match(panel, /RequestChangesModal/);
