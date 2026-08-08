@@ -2,36 +2,44 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { FilePlus2, ImageIcon } from "lucide-react";
+import { AlertCircle, ImageIcon, MousePointerClick } from "lucide-react";
 import { revisionPath } from "@/components/approvals-revision/map-item";
 import { RequestChangesModal } from "@/components/approvals-scheduling/RequestChangesModal";
 import { ReviewDrawer } from "@/components/approvals-scheduling/ReviewDrawer";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
-import {
-  ew,
-  ewCard,
-} from "@/components/events-phase3/event-workspace-tokens";
+import { ew } from "@/components/events-phase3/event-workspace-tokens";
 import { ApprovalClearedCelebration } from "@/components/motion/ApprovalClearedCelebration";
 import {
   approveUnifiedItemAction,
   retryFailedUnifiedApprovalAction,
 } from "@/lib/approvals-scheduling/actions";
-import {
-  approvalOutcomeChip,
-  canRetryFailedApproval,
-} from "@/lib/approvals-scheduling/outcome-display";
+import { canRetryFailedApproval } from "@/lib/approvals-scheduling/outcome-display";
+import { displayApprovalPostName } from "@/lib/approvals-scheduling/milestone-display-names";
 import { canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
 import type {
   UnifiedApprovalItem,
   UnifiedApprovalsPageData,
 } from "@/lib/approvals-scheduling/types";
 import { createWithAiHref } from "@/lib/events/event-responsibility";
+import { isFlyerComposerMilestoneId } from "@/lib/flyer-composer/approval";
 import { cn } from "@/lib/utils/cn";
+import type { ReactNode } from "react";
+
+function isFlyerItem(item: UnifiedApprovalItem): boolean {
+  return (
+    item.channel === "flyer" ||
+    isFlyerComposerMilestoneId(item.campaignMilestoneId)
+  );
+}
 
 function platformLabel(item: UnifiedApprovalItem): string {
+  if (isFlyerItem(item)) return "Print + Digital";
   const platforms = item.platforms ?? [];
-  if (platforms.length === 0) return "Social";
+  if (platforms.length === 0) {
+    if (item.channel === "email") return "Email";
+    return "Social";
+  }
   return platforms
     .map((p) =>
       p === "facebook" ? "Facebook" : p === "instagram" ? "Instagram" : "Email",
@@ -56,62 +64,175 @@ function thumbUrl(item: UnifiedApprovalItem): string | null {
   );
 }
 
+/** Timing pill on artwork — maps Meta relative day to Pilot labels. */
+function timingBadge(item: UnifiedApprovalItem): string | null {
+  const day = item.metaRelativeDay;
+  if (typeof day !== "number" || !Number.isFinite(day)) return null;
+  if (day === 0) return "Day Of";
+  if (day === -1) return "Day Before";
+  if (day === 1) return "Thank You";
+  if (day < 0) return `${Math.abs(day)} Days Out`;
+  return `${day} Days After`;
+}
+
+function cardSubtitle(item: UnifiedApprovalItem): string {
+  if (isFlyerItem(item)) return "Flyer";
+  return item.scheduleLabel?.trim() || "Schedule TBD";
+}
+
+/** Pilot-style status text (uppercase tracking, not pill chips). */
+function pilotStatus(item: UnifiedApprovalItem): {
+  label: string;
+  className: string;
+} {
+  if (item.workflowStatus === "failed") {
+    return { label: "Failed", className: "text-[#a65a3a]" };
+  }
+  if (item.deliveryMethod === "draft-only") {
+    return { label: "Draft", className: "text-[#5e6b65]" };
+  }
+  switch (item.workflowStatus) {
+    case "assigned_to_me":
+    case "in_queue":
+      return { label: "Needs Approval", className: "text-[#c5a880]" };
+    case "changes_requested":
+      return { label: "Changes Requested", className: "text-[#c5a880]" };
+    case "scheduled":
+      return isFlyerItem(item)
+        ? { label: "Approved", className: "text-[#5a7568]" }
+        : { label: "Scheduled", className: "text-[#5e6b65]" };
+    case "posted":
+    case "published":
+      return isFlyerItem(item)
+        ? { label: "Approved", className: "text-[#5a7568]" }
+        : { label: "Published", className: "text-[#5e6b65] opacity-60" };
+    default:
+      return {
+        label: item.statusDetail || "In Review",
+        className: "text-[#5e6b65]",
+      };
+  }
+}
+
+function SectionRule({
+  title,
+  tone = "inksoft",
+}: {
+  title: string;
+  tone?: "gold" | "inksoft";
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <h3
+        className={cn(
+          "text-[10px] font-bold tracking-[0.2em] uppercase",
+          tone === "gold" ? "text-[#c5a880]" : ew.inksoft,
+        )}
+      >
+        {title}
+      </h3>
+      <span className="h-px flex-1 bg-[#e6dfd5]/50" aria-hidden />
+    </div>
+  );
+}
+
+function CreateContentButton({
+  href,
+  children,
+  variant = "filled",
+}: {
+  href: string;
+  children: ReactNode;
+  variant?: "filled" | "outline";
+}) {
+  return (
+    <a
+      href={href}
+      className={cn(
+        "inline-flex items-center justify-center rounded-full px-6 py-3.5 text-xs font-bold tracking-widest uppercase transition",
+        variant === "filled"
+          ? "bg-[#1c352d] text-white hover:bg-[#5e6b65]"
+          : "border border-[#e6dfd5] bg-white text-[#1c352d] hover:bg-[#faf8f5]",
+      )}
+    >
+      {children}
+    </a>
+  );
+}
+
 function ContentCard({
   item,
   highlight,
+  muted,
   onClick,
 }: {
   item: UnifiedApprovalItem;
   highlight?: boolean;
+  muted?: boolean;
   onClick: () => void;
 }) {
-  const chip = approvalOutcomeChip(item);
+  const status = pilotStatus(item);
   const art = thumbUrl(item);
+  const badge = timingBadge(item);
+  const published =
+    item.workflowStatus === "published" || item.workflowStatus === "posted";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        ewCard,
-        "group flex cursor-pointer flex-col overflow-hidden text-left transition hover:-translate-y-0.5 hover:shadow-md",
-        highlight && "border-2 border-[#c5a880]/50",
+        "group flex cursor-pointer flex-col overflow-hidden rounded-2xl border bg-white text-left transition",
+        highlight
+          ? "border-2 border-[#c5a880]/30 shadow-sm"
+          : "border-[#e6dfd5]",
+        muted && "opacity-90",
       )}
     >
-      <div className="relative aspect-[4/3] bg-[#f4f0ea]">
+      <div className="relative aspect-[4/3] overflow-hidden border-b border-[#e6dfd5] bg-[#faf8f5]">
         {art ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={art}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className={cn(
+              "absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105",
+              (muted || published) && "opacity-80 grayscale-[0.35]",
+            )}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-[#8ea89d]">
             <ImageIcon className="h-10 w-10 opacity-50" aria-hidden />
           </div>
         )}
+        {badge ? (
+          <div className="absolute top-3 left-3 rounded bg-white/90 px-2 py-1 text-[9px] font-bold tracking-wider text-[#1c352d] uppercase backdrop-blur">
+            {badge}
+          </div>
+        ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <p className={cn("text-xs font-semibold uppercase", ew.inksoft)}>
-          {item.milestoneName || "Content"}
-        </p>
-        <h3 className={cn("font-display text-lg leading-snug", ew.ink)}>
-          {item.campaignName || item.eventTitle}
-        </h3>
-        <p className={cn("text-sm", ew.inksoft)}>
-          {item.scheduleLabel || "Schedule TBD"}
-          {" · "}
-          {platformLabel(item)}
-        </p>
-        <span
-          className={cn(
-            "mt-auto inline-flex w-fit rounded-full px-2.5 py-1 text-[11px] font-bold",
-            chip.className,
-          )}
-        >
-          {chip.label}
-        </span>
+      <div className="flex flex-1 flex-col gap-3 p-5">
+        <div className="flex flex-col gap-1">
+          <h4 className={cn("font-display text-xl leading-tight", ew.ink)}>
+            {displayApprovalPostName(item.milestoneName)}
+          </h4>
+          <p className={cn("text-[11px] font-medium", ew.inksoft)}>
+            {cardSubtitle(item)}
+          </p>
+        </div>
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold tracking-wider text-[#5e6b65] uppercase">
+            {platformLabel(item)}
+          </span>
+          <span
+            className={cn(
+              "text-[9px] font-black tracking-widest uppercase",
+              status.className,
+            )}
+          >
+            {status.label}
+          </span>
+        </div>
       </div>
     </button>
   );
@@ -163,6 +284,7 @@ export function EventDetailApprovalsEasePanel({
   );
 
   const createHref = createWithAiHref(lockedEventId);
+  const everythingReviewed = scoped.length > 0 && needsYourReview.length === 0;
 
   const openReview = (item: UnifiedApprovalItem) => {
     if (item.workflowStatus === "changes_requested") {
@@ -231,128 +353,8 @@ export function EventDetailApprovalsEasePanel({
     }
   };
 
-  if (scoped.length === 0) {
-    return (
-      <section className="space-y-6">
-        <header className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className={cn("font-display text-2xl", ew.ink)} data-testid="event-detail-tab-approvals">
-              Approvals
-            </h2>
-            <p className={cn("mt-1 text-sm", ew.inksoft)}>
-              Flyers and posts for this event will appear here once they are
-              drafted.
-            </p>
-          </div>
-          <a
-            href={createHref}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium text-white",
-              ew.fillInk,
-            )}
-          >
-            <FilePlus2 className="h-4 w-4" />
-            Create First Item
-          </a>
-        </header>
-        <div
-          className={cn(
-            ewCard,
-            "px-6 py-14 text-center",
-            ew.bgIvory,
-          )}
-        >
-          <p className={cn("font-display text-xl", ew.ink)}>No content yet</p>
-          <p className={cn("mx-auto mt-2 max-w-md text-sm", ew.inksoft)}>
-            Generate an event plan or create communications to build this
-            overview.
-          </p>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="space-y-8">
-      <CalendarActionToast
-        message={actionError ?? actionWarning}
-        variant={actionError ? "error" : "warning"}
-        onDismiss={() => {
-          setActionError(null);
-          setActionWarning(null);
-        }}
-      />
-
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className={cn("font-display text-2xl", ew.ink)} data-testid="event-detail-tab-approvals">
-            Approvals
-          </h2>
-          <p className={cn("mt-1 text-sm", ew.inksoft)}>
-            {scoped.length} communication{scoped.length === 1 ? "" : "s"}
-            {" · "}
-            {needsYourReview.length === 0
-              ? "Everything reviewed"
-              : `${needsYourReview.length} need${
-                  needsYourReview.length === 1 ? "s" : ""
-                } your review`}
-          </p>
-        </div>
-        <a
-          href={createHref}
-          className={cn(
-            "inline-flex items-center gap-2 rounded-full border border-[#e6dfd5] bg-white px-4 py-2.5 text-sm font-medium",
-            ew.ink,
-          )}
-        >
-          <FilePlus2 className="h-4 w-4" />
-          Create Content
-        </a>
-      </header>
-
-      {needsYourReview.length > 0 ? (
-        <div className="space-y-4">
-          <h3 className={cn("font-display text-xl", ew.ink)}>
-            Needs Your Review · {needsYourReview.length}
-          </h3>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {needsYourReview.map((item) => (
-              <ContentCard
-                key={item.id}
-                item={item}
-                highlight
-                onClick={() => openReview(item)}
-              />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div
-          className={cn(
-            ewCard,
-            "flex items-center gap-3 px-5 py-4",
-            ew.bgSageSoft,
-          )}
-        >
-          <p className={cn("text-sm font-medium", ew.sageDeep)}>
-            Everything reviewed — your communication plan is still listed below.
-          </p>
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <h3 className={cn("font-display text-xl", ew.ink)}>All Event Content</h3>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {scoped.map((item) => (
-            <ContentCard
-              key={item.id}
-              item={item}
-              onClick={() => openReview(item)}
-            />
-          ))}
-        </div>
-      </div>
-
+  const drawers = (
+    <>
       <ReviewDrawer
         item={reviewItem}
         open={Boolean(reviewItem)}
@@ -403,6 +405,141 @@ export function EventDetailApprovalsEasePanel({
           }
         }}
       />
+    </>
+  );
+
+  if (scoped.length === 0) {
+    return (
+      <section className="flex flex-col gap-10">
+        <header className="flex flex-col justify-between gap-4 border-b border-[#e6dfd5] pb-8 sm:flex-row sm:items-end">
+          <div>
+            <h2
+              className={cn("font-display text-4xl", ew.ink)}
+              data-testid="event-detail-tab-approvals"
+            >
+              Approvals
+            </h2>
+            <p className={cn("mt-1 max-w-lg text-sm italic", ew.inksoft)}>
+              The page always shows your event communication plan, even when
+              everything is reviewed.
+            </p>
+          </div>
+          <CreateContentButton href={createHref}>
+            Create Content
+          </CreateContentButton>
+        </header>
+
+        <div className="border-t border-dashed border-[#e6dfd5]/50 py-24">
+          <div className="mx-auto flex max-w-sm flex-col items-center text-center">
+            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f4f0ea] text-[#c5a880]">
+              <MousePointerClick className="h-8 w-8" aria-hidden />
+            </div>
+            <h3 className={cn("font-display text-2xl", ew.ink)}>
+              No content yet
+            </h3>
+            <p className={cn("mt-2 mb-8 text-sm leading-relaxed", ew.inksoft)}>
+              Flyers and posts created for this event will appear here once they
+              are drafted.
+            </p>
+            <CreateContentButton href={createHref} variant="outline">
+              Create First Item
+            </CreateContentButton>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="flex flex-col gap-16">
+      <CalendarActionToast
+        message={actionError ?? actionWarning}
+        variant={actionError ? "error" : "warning"}
+        onDismiss={() => {
+          setActionError(null);
+          setActionWarning(null);
+        }}
+      />
+
+      <header className="flex flex-col gap-6 border-b border-[#e6dfd5] pb-8">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <h2
+              className={cn("mb-1 font-display text-4xl", ew.ink)}
+              data-testid="event-detail-tab-approvals"
+            >
+              Approvals
+            </h2>
+            {everythingReviewed ? (
+              <p className={cn("max-w-lg text-sm italic", ew.inksoft)}>
+                The page always shows your event communication plan, even when
+                everything is reviewed.
+              </p>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <span className={cn("font-semibold", ew.ink)}>
+                  {scoped.length} communication
+                  {scoped.length === 1 ? "" : "s"}
+                </span>
+                <span
+                  className="h-1 w-1 rounded-full bg-[#e6dfd5]"
+                  aria-hidden
+                />
+                <span className="flex items-center gap-1.5 font-bold text-[#c5a880]">
+                  <AlertCircle className="h-3.5 w-3.5" aria-hidden />
+                  {needsYourReview.length} need
+                  {needsYourReview.length === 1 ? "s" : ""} your review
+                </span>
+              </div>
+            )}
+          </div>
+          <CreateContentButton href={createHref}>
+            Create Content
+          </CreateContentButton>
+        </div>
+      </header>
+
+      {needsYourReview.length > 0 ? (
+        <div className="flex flex-col gap-8">
+          <SectionRule
+            title={`Needs Your Review · ${needsYourReview.length}`}
+            tone="gold"
+          />
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {needsYourReview.map((item) => (
+              <ContentCard
+                key={item.id}
+                item={item}
+                highlight
+                onClick={() => openReview(item)}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="flex flex-col gap-8">
+        <SectionRule
+          title={
+            everythingReviewed ? "Communication Overview" : "All Event Content"
+          }
+        />
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {scoped.map((item) => (
+            <ContentCard
+              key={item.id}
+              item={item}
+              muted={everythingReviewed}
+              onClick={() => openReview(item)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Keep phrase for UI contracts / empty-adjacent copy */}
+      <span className="sr-only">Everything reviewed</span>
+
+      {drawers}
     </section>
   );
 }
