@@ -15,6 +15,7 @@ type Props = {
   responsibilities: EventResponsibilityPerson[];
   canManageAssignments: boolean;
   onManageAssignments?: () => void;
+  onInviteTeamMember?: () => void;
   eventId: string;
   vendorsData: EventVendorsData;
   vendorsReady: boolean;
@@ -25,6 +26,7 @@ export function EventCommunityPanel({
   responsibilities,
   canManageAssignments,
   onManageAssignments,
+  onInviteTeamMember,
   eventId,
   vendorsData,
   vendorsReady,
@@ -71,6 +73,7 @@ export function EventCommunityPanel({
           responsibilities={responsibilities}
           canManageAssignments={canManageAssignments}
           onManageAssignments={onManageAssignments}
+          onInviteTeamMember={onInviteTeamMember}
         />
       </div>
 

@@ -209,6 +209,7 @@ interface EventDetailShellProps {
   heroStats: EventDetailHeroStats;
   canManageAssignments: boolean;
   onManageAssignments?: () => void;
+  onInviteTeamMember?: () => void;
   workspace?: EventDetailWorkspacePanels;
   /** Server-streamed Approvals body (Suspense) for Approvals tab. */
   approvalsSlot?: ReactNode;
@@ -399,6 +400,7 @@ export function EventDetailShell({
   heroStats,
   canManageAssignments,
   onManageAssignments,
+  onInviteTeamMember,
   workspace = {},
   approvalsSlot,
   initialTab = null,
@@ -850,6 +852,7 @@ export function EventDetailShell({
               responsibilities={responsibilities}
               canManageAssignments={canManageAssignments}
               onManageAssignments={onManageAssignments}
+              onInviteTeamMember={onInviteTeamMember}
               eventId={event.id}
               vendorsData={
                 panelData.eventVendorsData ?? {

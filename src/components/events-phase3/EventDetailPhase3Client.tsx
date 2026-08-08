@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { EventDetailShell } from "@/components/events-phase3/EventDetailShell";
 import { EventManageAssignmentsModal } from "@/components/events-phase3/EventManageAssignmentsModal";
+import { InviteEventMemberDrawer } from "@/components/events-phase3/InviteEventMemberDrawer";
 import type { EventApprovalFlowStep } from "@/components/events-phase3/EventDetailShell";
 import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHero";
 import type { EventDetailWorkspacePanels } from "@/components/events-phase3/EventDetailShell";
@@ -57,6 +58,7 @@ export function EventDetailPhase3Client({
   committeeName,
 }: EventDetailPhase3ClientProps) {
   const [manageOpen, setManageOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [members, setMembers] = useState<ManageMember[] | null>(null);
   const [liveAssignments, setLiveAssignments] = useState<ManageAssignment[]>(
@@ -71,6 +73,7 @@ export function EventDetailPhase3Client({
   // Drop roster/modal state when navigating School A → School B (same client tree).
   useEffect(() => {
     setManageOpen(false);
+    setInviteOpen(false);
     setMembers(null);
     setLiveAssignments([]);
     setLiveCommitteeId(committeeId);
@@ -114,11 +117,26 @@ export function EventDetailPhase3Client({
         heroStats={heroStats}
         canManageAssignments={canManageAssignments}
         onManageAssignments={openManageAssignments}
+        onInviteTeamMember={
+          canManageAssignments ? () => setInviteOpen(true) : undefined
+        }
         workspace={workspace}
         approvalsSlot={approvalsSlot}
         initialTab={initialTab}
         showYoureSet={showYoureSet}
       />
+      {canManageAssignments ? (
+        <InviteEventMemberDrawer
+          open={inviteOpen}
+          onOpenChange={setInviteOpen}
+          event={{
+            id: event.id,
+            title: event.title,
+            date: event.date,
+            imageUrl: artwork?.imageUrl ?? null,
+          }}
+        />
+      ) : null}
       {manageOpen ? (
         members ? (
           <EventManageAssignmentsModal

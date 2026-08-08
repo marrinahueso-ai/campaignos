@@ -20,10 +20,12 @@ export function EventDetailTeamEasePanel({
   responsibilities,
   canManageAssignments,
   onManageAssignments,
+  onInviteTeamMember,
 }: {
   responsibilities: EventResponsibilityPerson[];
   canManageAssignments: boolean;
   onManageAssignments?: () => void;
+  onInviteTeamMember?: () => void;
 }) {
   const people = ROLE_ORDER.flatMap((label) =>
     responsibilities
@@ -66,11 +68,18 @@ export function EventDetailTeamEasePanel({
         </div>
       )}
 
-      {canManageAssignments && onManageAssignments ? (
+      {canManageAssignments && (onManageAssignments || onInviteTeamMember) ? (
         <EaseSoftActions>
-          <EaseBtnSecondary onClick={onManageAssignments}>
-            Manage assignments
-          </EaseBtnSecondary>
+          {onInviteTeamMember ? (
+            <EaseBtnSecondary onClick={onInviteTeamMember}>
+              Invite team member
+            </EaseBtnSecondary>
+          ) : null}
+          {onManageAssignments ? (
+            <EaseBtnSecondary onClick={onManageAssignments}>
+              Manage assignments
+            </EaseBtnSecondary>
+          ) : null}
         </EaseSoftActions>
       ) : null}
     </section>
