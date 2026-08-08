@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/Button";
 
 const STORAGE_KEY = "heyralli-cookie-consent";
 
@@ -33,32 +34,37 @@ export function MarketingCookieConsent() {
   if (!visible) return null;
 
   return (
-    <div className="cookie-bar show" role="dialog" aria-label="Cookie notice">
-      <p>
-        We use essential cookies to keep you signed in, plus optional analytics
-        to improve Hey Ralli. See{" "}
-        <Link href="/privacy" className="btn-text">
+    <div
+      role="dialog"
+      aria-label="Cookie notice"
+      className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-lg rounded-2xl border border-cos-border bg-cos-card p-4 shadow-2xl sm:p-5"
+    >
+      <p className="text-sm leading-relaxed text-cos-muted">
+        We use essential cookies to keep you signed in, plus optional
+        analytics to improve Hey Ralli. See{" "}
+        <Link
+          href="/privacy"
+          className="font-semibold text-cos-text underline underline-offset-2"
+        >
           Privacy
         </Link>{" "}
         for details.
       </p>
-      <div className="actions">
-        <button
-          type="button"
-          className="btn btn-primary"
-          style={{ padding: "10px 16px", fontSize: 14 }}
+      <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
+        <Button
+          variant="primary"
+          className="h-auto rounded-full px-4 py-2.5 text-[13px]"
           onClick={() => choose("accepted")}
         >
           Accept
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost-dark"
-          style={{ padding: "10px 16px", fontSize: 14 }}
+        </Button>
+        <Button
+          variant="secondary"
+          className="h-auto rounded-full px-4 py-2.5 text-[13px]"
           onClick={() => choose("essential")}
         >
           Essential only
-        </button>
+        </Button>
       </div>
     </div>
   );

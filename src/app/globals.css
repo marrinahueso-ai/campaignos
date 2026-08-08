@@ -274,6 +274,17 @@ body {
     }
   }
 
+  /* Homepage hero — subtle drift on the screenshot "peek" cards (motion-safe only). */
+  @keyframes marketing-home-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
   .studio-eyebrow {
     font-size: 0.6875rem;
     font-weight: 500;
