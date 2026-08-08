@@ -320,9 +320,11 @@ export function EventsEaseQueueRow({
 export function EventsEaseEmpty({
   title,
   body,
+  onNewEvent,
 }: {
   title: string;
   body: string;
+  onNewEvent?: () => void;
 }) {
   return (
     <div className="rounded-[22px] border border-cos-border bg-[rgba(255,252,247,0.55)] px-6 py-12 text-center">
@@ -339,12 +341,22 @@ export function EventsEaseEmpty({
         >
           Create with AI
         </Link>
-        <Link
-          href="/events/create"
-          className="inline-flex rounded-full border border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-text"
-        >
-          New event
-        </Link>
+        {onNewEvent ? (
+          <button
+            type="button"
+            onClick={onNewEvent}
+            className="inline-flex rounded-full border border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-text"
+          >
+            New event
+          </button>
+        ) : (
+          <Link
+            href="/events/create"
+            className="inline-flex rounded-full border border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-text"
+          >
+            New event
+          </Link>
+        )}
       </div>
     </div>
   );

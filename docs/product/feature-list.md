@@ -88,6 +88,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Events
 - Customer-facing calendar/events copy uses organization/team/year language (not school-only or sync/ICS jargon); review categories display as Team/Organization event — **shipped**
 - Events list, create, edit — **shipped** (list thumbnails fall back to promoted approved-square artwork when the row is outside the upcoming/first-page prefetch window)
+- Events Home **New event** opens Pilot **Create Event** modal (basics · communication strategy cards · plan picker · optional details); still uses `createEvent` → event workspace; `/events/create` remains for onboarding / direct links — **shipped**
 - Events Home ease filters (soft pills: **Upcoming** default · **Next month** · **All**; Upcoming shows next-60-days focus/queue; counts scoped to school-year filter + search; status badges on cards only — not filter tabs; compact list thumbs use square transforms + `object-cover` for consistent filled squares; focus/lightbox keep `object-contain` so full poster art stays readable — **shipped**
 - Events list filtered PDF export (All Events header download; current list filters only — not upcoming carousel) — **shipped**
 - Event detail workspace (tabs: Overview default, Planning→Tasks/Notes/Files, Approvals, Volunteers, Community→Team/Vendors, Insights, Activity, Create with AI [handoff]; deep links `?tab=` preserved) — **shipped**

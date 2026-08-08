@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import {
+  CreateEventModal,
+  type CreateEventPlaybookOption,
+} from "@/components/events/CreateEventModal";
+import {
   EventsEaseAheadCard,
   EventsEaseEmpty,
   EventsEaseFocusCard,
@@ -33,6 +37,7 @@ interface EventsHomeContentProps {
   artworkByEventId: Record<string, HeroArtworkSelection | null>;
   responsibleByEventId: Record<string, EventsHomeResponsiblePerson>;
   playbookNameByEventId?: Record<string, string | null>;
+  playbookOptions?: CreateEventPlaybookOption[];
   schoolYears?: Array<{ id: string; label: string }>;
   activeSchoolYearId?: string | null;
   /** Kept for page compatibility; KPI card layout is unused in ease UI. */
@@ -52,6 +57,7 @@ export function EventsHomeContent({
   today,
   artworkByEventId,
   responsibleByEventId,
+  playbookOptions = [],
   schoolYears = [],
   activeSchoolYearId = null,
 }: EventsHomeContentProps) {
@@ -61,6 +67,7 @@ export function EventsHomeContent({
     activeSchoolYearId ?? "all",
   );
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const eventsForCounts = useMemo(() => {
     if (schoolYearFilter === "all") return events;
@@ -221,12 +228,13 @@ export function EventsHomeContent({
           >
             Create with AI
           </Link>
-          <Link
-            href="/events/create"
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
             className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
           >
             New event
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -310,6 +318,7 @@ export function EventsHomeContent({
           <EventsEaseEmpty
             title={emptyCopy.upcoming.title}
             body={emptyCopy.upcoming.body}
+            onNewEvent={() => setCreateOpen(true)}
           />
         ) : (
           <div className="space-y-9">
@@ -388,6 +397,7 @@ export function EventsHomeContent({
               body={
                 hasSearch ? "Try a different search." : emptyCopy[lens].body
               }
+              onNewEvent={() => setCreateOpen(true)}
             />
           ) : (
             <div className="flex flex-col gap-2">
@@ -406,6 +416,12 @@ export function EventsHomeContent({
       )}
 
       <EventsEaseSuiteStrip />
+
+      <CreateEventModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        playbookOptions={playbookOptions}
+      />
     </div>
   );
 }

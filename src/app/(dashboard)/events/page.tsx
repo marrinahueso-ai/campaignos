@@ -13,6 +13,7 @@ import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
 import { listCommitteeAssignmentsByOrg } from "@/lib/organization-workspace/roster-assignments";
 import { buildEventRosterOwnershipMap } from "@/lib/organization-workspace/resolve-event-roster-ownership";
+import { getPlaybooksForOrganization } from "@/lib/playbooks/queries";
 import {
   getActiveSchoolYear,
   getSchoolYearsForOrganization,
@@ -47,6 +48,7 @@ export default async function EventsPage() {
     activeSchoolYear,
     committeeAssignments,
     summaryLayout,
+    playbooks,
   ] = await Promise.all([
     getCampaignPageEvents(organization?.id ?? null),
     getArchivedCampaignPageEvents(organization?.id ?? null),
@@ -61,6 +63,7 @@ export default async function EventsPage() {
       ? listCommitteeAssignmentsByOrg(organization.id)
       : Promise.resolve([]),
     getEventsHomeLayoutForCurrentUser(),
+    getPlaybooksForOrganization(organization?.id ?? null),
   ]);
 
   const eventIds = events.map((event) => event.id);
@@ -168,6 +171,11 @@ export default async function EventsPage() {
       artworkByEventId={artworkRecord}
       responsibleByEventId={responsibleByEventId}
       playbookNameByEventId={playbookNameByEventId}
+      playbookOptions={playbooks.map((playbook) => ({
+        id: playbook.id,
+        name: playbook.name,
+        eventType: playbook.eventType,
+      }))}
       schoolYears={schoolYears.map((year) => ({
         id: year.id,
         label: year.label,

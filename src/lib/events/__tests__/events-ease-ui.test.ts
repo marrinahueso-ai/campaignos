@@ -14,6 +14,13 @@ describe("events ease UI contracts", () => {
     "../../../components/events-phase3/EventsEaseList.tsx",
   );
 
+  it("opens Create Event as a modal popout from New event", () => {
+    assert.match(home, /CreateEventModal/);
+    assert.match(home, /setCreateOpen\(true\)/);
+    assert.match(home, /playbookOptions/);
+    assert.doesNotMatch(home, /href="\/events\/create"/);
+  });
+
   it("uses ease focus/queue instead of KPI summary cards", () => {
     assert.match(home, /Create with AI/);
     assert.match(home, /EventsEaseFocusCard/);
