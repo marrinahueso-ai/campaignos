@@ -161,10 +161,23 @@ describe("volunteers master shared helpers", () => {
   });
 
   it("filters by search and chip", () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const pastStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const futureStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`;
+
     const events = [
       eventRow({
         id: "1",
         title: "Ozark Forest Ralli",
+        date: futureStr,
         roleNames: ["Check-in", "Gate"],
         isUpcoming60: true,
         needsPeople: true,
@@ -172,6 +185,7 @@ describe("volunteers master shared helpers", () => {
       eventRow({
         id: "2",
         title: "High Country Ralli",
+        date: futureStr,
         roleNames: ["Course Marshal"],
         isUpcoming60: true,
         needsPeople: false,
@@ -180,8 +194,17 @@ describe("volunteers master shared helpers", () => {
       eventRow({
         id: "3",
         title: "Past Picnic",
+        date: pastStr,
         roleNames: ["Setup"],
         isUpcoming60: false,
+        needsPeople: true,
+      }),
+      eventRow({
+        id: "4",
+        title: "Today Shortfall",
+        date: todayStr,
+        roleNames: ["Greeter"],
+        isUpcoming60: true,
         needsPeople: true,
       }),
     ];
@@ -199,8 +222,14 @@ describe("volunteers master shared helpers", () => {
     });
     assert.deepEqual(
       needsPeople.map((row) => row.id),
-      ["1", "3"],
+      ["1", "4"],
     );
+
+    const all = filterVolunteersMasterEvents(events, {
+      filter: "all",
+      search: "",
+    });
+    assert.equal(all.some((row) => row.id === "3"), true);
 
     const upcoming = filterVolunteersMasterEvents(events, {
       filter: "upcoming",

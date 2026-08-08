@@ -1,6 +1,7 @@
 import type { VolunteerAssignmentView } from "@/lib/event-volunteers/types";
 import {
   addDaysToDateOnly,
+  getEventCountdown,
   getTodayDateString,
   parseLocalDate,
 } from "@/lib/utils/dates";
@@ -282,6 +283,18 @@ export function eventMatchesVolunteersSearch(
   return event.roleNames.some((name) => name.toLowerCase().includes(needle));
 }
 
+/** Calendar-date past using shared countdown semantics (today is still active). */
+export function isVolunteersMasterEventPast(date: string): boolean {
+  return getEventCountdown(date).isPast;
+}
+
+/** Needs People pulse: underfilled and not past. */
+export function eventMatchesNeedsPeopleFilter(
+  event: VolunteersMasterEventRow,
+): boolean {
+  return event.needsPeople && !isVolunteersMasterEventPast(event.date);
+}
+
 export function filterVolunteersMasterEvents(
   events: VolunteersMasterEventRow[],
   input: { filter: VolunteersMasterFilter; search: string },
@@ -295,7 +308,7 @@ export function filterVolunteersMasterEvents(
         return event.isUpcoming60;
       case "needs_people":
       case "underfilled":
-        return event.needsPeople;
+        return eventMatchesNeedsPeopleFilter(event);
       case "covered":
         return event.isCovered;
       case "all":

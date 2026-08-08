@@ -107,7 +107,13 @@ function ArtTile({
   );
 }
 
-function topNeedLabel(event: VolunteersMasterEventRow): string {
+function topNeedLabel(
+  event: VolunteersMasterEventRow,
+  isPast: boolean,
+): string {
+  if (isPast) {
+    return "Event completed";
+  }
   const top = event.underfilledRoles[0];
   if (top) {
     return `Top need: ${top.name}`;
@@ -130,22 +136,29 @@ export function VolunteersFocusCard({
   onNext?: () => void;
   hasNext?: boolean;
 }) {
-  const band = getVolunteerFillRateBand(event.fillRatePercent);
-  const chip = band
-    ? BAND_CHIP[band]
-    : {
-        label: event.needsPeople ? "Needs people" : "In view",
-        className: "bg-cos-bg-alt text-cos-muted",
-      };
   const countdown = getEventCountdown(event.date);
+  const isPast = countdown.isPast;
+  const band = getVolunteerFillRateBand(event.fillRatePercent);
+  const chip = isPast
+    ? {
+        label: "Event completed",
+        className: "bg-cos-bg-alt text-cos-muted",
+      }
+    : band
+      ? BAND_CHIP[band]
+      : {
+          label: event.needsPeople ? "Needs people" : "In view",
+          className: "bg-cos-bg-alt text-cos-muted",
+        };
   const fillPercent = event.fillRatePercent;
   const fillLabel =
     fillPercent === null ? "—" : `${fillPercent}% filled`;
   const fillWidth =
     fillPercent === null ? 0 : Math.max(0, Math.min(100, fillPercent));
   const openRoleCount = event.underfilledRoleCount;
-  const story =
-    openRoleCount > 0
+  const story = isPast
+    ? "This event has ended. Open Event volunteers to review roles and history."
+    : openRoleCount > 0
       ? `${openRoleCount} role${openRoleCount === 1 ? "" : "s"} still open. Share the signup before the week fills up.`
       : event.isCovered
         ? "All roles are covered for this event."
@@ -172,33 +185,35 @@ export function VolunteersFocusCard({
           >
             {chip.label}
           </span>
-          <span>{fillLabel}</span>
-          {!countdown.isPast ? (
+          {!isPast ? <span>{fillLabel}</span> : null}
+          {!isPast ? (
             <>
               <span aria-hidden>·</span>
               <span>{countdown.label}</span>
             </>
           ) : null}
         </div>
-        <div
-          className="max-w-xs"
-          title={getVolunteerFillRateLabel(fillPercent) ?? undefined}
-          aria-label={
-            fillPercent === null
-              ? "Fill rate unavailable"
-              : `Fill rate ${fillPercent}%`
-          }
-        >
-          <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(42,38,34,0.08)]">
-            <div
-              className={cn(
-                "h-full rounded-full transition-[width]",
-                band ? BAND_BAR[band] : "bg-cos-border",
-              )}
-              style={{ width: `${fillWidth}%` }}
-            />
+        {!isPast ? (
+          <div
+            className="max-w-xs"
+            title={getVolunteerFillRateLabel(fillPercent) ?? undefined}
+            aria-label={
+              fillPercent === null
+                ? "Fill rate unavailable"
+                : `Fill rate ${fillPercent}%`
+            }
+          >
+            <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(42,38,34,0.08)]">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-[width]",
+                  band ? BAND_BAR[band] : "bg-cos-border",
+                )}
+                style={{ width: `${fillWidth}%` }}
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
         <div>
           <h2 className="font-display text-2xl tracking-[-0.02em] text-cos-text sm:text-[28px]">
             {event.title}
@@ -208,7 +223,7 @@ export function VolunteersFocusCard({
           </p>
         </div>
         <p className="text-sm leading-relaxed text-cos-muted">{story}</p>
-        {event.underfilledRoles.length > 0 ? (
+        {!isPast && event.underfilledRoles.length > 0 ? (
           <ul className="mt-0.5">
             {event.underfilledRoles.map((role) => (
               <li
@@ -226,7 +241,7 @@ export function VolunteersFocusCard({
           </ul>
         ) : null}
         <div className="mt-auto flex flex-wrap gap-2 pt-2.5">
-          {event.signupUrl ? (
+          {!isPast && event.signupUrl ? (
             <a
               href={event.signupUrl}
               target="_blank"
@@ -241,7 +256,7 @@ export function VolunteersFocusCard({
             href={eventVolunteersHref(event.id)}
             className={cn(
               "inline-flex items-center rounded-full px-[18px] py-[11px] text-[13px] font-bold transition hover:-translate-y-px",
-              event.signupUrl
+              !isPast && event.signupUrl
                 ? "border-[1.5px] border-cos-border bg-cos-card text-cos-text"
                 : "bg-cos-text text-cos-card hover:bg-[#1a1714]",
             )}
@@ -268,6 +283,7 @@ export function VolunteersQueueRow({
 }: {
   event: VolunteersMasterEventRow;
 }) {
+  const isPast = getEventCountdown(event.date).isPast;
   const band = getVolunteerFillRateBand(event.fillRatePercent);
   const fillLabel =
     event.fillRatePercent === null ? "—" : `${event.fillRatePercent}%`;
@@ -293,46 +309,61 @@ export function VolunteersQueueRow({
         <p className="mt-0.5 truncate text-xs text-cos-muted">
           {formatLocalDate(event.date, { month: "short", day: "numeric" })}
           {" · "}
-          {topNeedLabel(event)}
+          {topNeedLabel(event, isPast)}
         </p>
       </span>
-      <span
-        className="hidden min-w-0 sm:block"
-        title={statusLabel ?? undefined}
-        aria-label={
-          event.fillRatePercent === null
-            ? "Fill rate unavailable"
-            : `Fill rate ${fillLabel}${statusLabel ? `, ${statusLabel}` : ""}`
-        }
-      >
-        <p
-          className={cn(
-            "mb-1 flex items-center gap-1 text-[13px] font-bold tabular-nums",
-            band ? BAND_PCT[band] : "text-cos-muted",
-          )}
+      {!isPast ? (
+        <span
+          className="hidden min-w-0 sm:block"
+          title={statusLabel ?? undefined}
+          aria-label={
+            event.fillRatePercent === null
+              ? "Fill rate unavailable"
+              : `Fill rate ${fillLabel}${statusLabel ? `, ${statusLabel}` : ""}`
+          }
         >
-          {fillLabel}
-          {band === "fully_staffed" ? (
-            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          ) : null}
-        </p>
-        <span className="block h-1 overflow-hidden rounded-full bg-[rgba(42,38,34,0.08)]">
-          <span
+          <p
             className={cn(
-              "block h-full rounded-full",
-              band ? BAND_BAR[band] : "bg-cos-border",
+              "mb-1 flex items-center gap-1 text-[13px] font-bold tabular-nums",
+              band ? BAND_PCT[band] : "text-cos-muted",
             )}
-            style={{ width: `${fillWidth}%` }}
-          />
+          >
+            {fillLabel}
+            {band === "fully_staffed" ? (
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            ) : null}
+          </p>
+          <span className="block h-1 overflow-hidden rounded-full bg-[rgba(42,38,34,0.08)]">
+            <span
+              className={cn(
+                "block h-full rounded-full",
+                band ? BAND_BAR[band] : "bg-cos-border",
+              )}
+              style={{ width: `${fillWidth}%` }}
+            />
+          </span>
         </span>
-      </span>
+      ) : (
+        <span className="hidden sm:block" aria-hidden />
+      )}
       <span
         className={cn(
           "hidden text-right text-xs font-bold whitespace-nowrap sm:block",
-          covered ? "text-[#2f4a3c]" : "text-cos-muted",
+          isPast
+            ? "text-cos-muted"
+            : covered
+              ? "text-[#2f4a3c]"
+              : "text-cos-muted",
         )}
       >
-        {covered ? (
+        {isPast ? (
+          <>
+            Past
+            <span className="mt-0.5 block font-semibold text-cos-muted">
+              Event completed
+            </span>
+          </>
+        ) : covered ? (
           <>
             Covered
             <span className="mt-0.5 block font-semibold text-cos-muted">

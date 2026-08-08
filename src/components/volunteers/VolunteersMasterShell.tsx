@@ -9,6 +9,7 @@ import {
   VolunteersQueueRow,
 } from "@/components/volunteers/VolunteersEaseList";
 import {
+  eventMatchesNeedsPeopleFilter,
   eventMatchesVolunteersSearch,
   filterVolunteersMasterEvents,
   type VolunteersMasterFilter,
@@ -50,7 +51,8 @@ export function VolunteersMasterShell({
 
   const pulseCounts = useMemo(() => {
     return {
-      needs_people: searchedEvents.filter((event) => event.needsPeople).length,
+      needs_people: searchedEvents.filter(eventMatchesNeedsPeopleFilter)
+        .length,
       upcoming: searchedEvents.filter((event) => event.isUpcoming60).length,
       covered: searchedEvents.filter((event) => event.isCovered).length,
       all: searchedEvents.length,
@@ -84,10 +86,10 @@ export function VolunteersMasterShell({
 
   const emptyCopy: Record<EaseFilter, { title: string; body: string }> = {
     needs_people: {
-      title: data.events.some((event) => event.needsPeople)
+      title: data.events.some(eventMatchesNeedsPeopleFilter)
         ? "No matches in this search"
         : "Everyone looks covered",
-      body: data.events.some((event) => event.needsPeople)
+      body: data.events.some(eventMatchesNeedsPeopleFilter)
         ? "Try a different search, or switch to Upcoming to scan all events."
         : "When a role still needs people, the soonest shortfall shows up here with a signup link.",
     },

@@ -29,6 +29,13 @@ describe("volunteers ease UI contracts", () => {
     assert.match(ease, /Event volunteers/);
   });
 
+  it("presents past events as historical without active recruitment UI", () => {
+    assert.match(ease, /countdown\.isPast|isPast = countdown\.isPast/);
+    assert.match(ease, /getEventCountdown\(event\.date\)\.isPast/);
+    assert.match(ease, /Event completed/);
+    assert.match(shell, /eventMatchesNeedsPeopleFilter/);
+  });
+
   it("insets focus art with rounded rails while queue thumbs stay compact", () => {
     assert.match(
       ease,
