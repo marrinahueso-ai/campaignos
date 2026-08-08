@@ -5,7 +5,6 @@ import type { AuthUserSummary } from "@/types/auth";
 const AUTH_DISPLAY_NAME_KEYS = [
   "full_name",
   "name",
-  "first_name",
   "display_name",
 ] as const;
 
@@ -23,7 +22,16 @@ export function resolveAuthUserDisplayName(
     }
   }
 
-  return null;
+  const first =
+    typeof userMetadata.first_name === "string"
+      ? userMetadata.first_name.trim()
+      : "";
+  const last =
+    typeof userMetadata.last_name === "string"
+      ? userMetadata.last_name.trim()
+      : "";
+  const composed = [first, last].filter(Boolean).join(" ").trim();
+  return composed || null;
 }
 
 export const getAuthUser = cache(async (): Promise<AuthUserSummary | null> => {

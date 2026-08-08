@@ -11,6 +11,7 @@ import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
 interface DashboardShellProps {
   children: React.ReactNode;
   userEmail?: string | null;
+  userDisplayName?: string | null;
   /** @deprecated Prefer badgeCountsPromise so layout can stream counts. */
   assignedApprovalsCount?: number;
   /** @deprecated Prefer badgeCountsPromise so layout can stream counts. */
@@ -118,6 +119,7 @@ function ShellSidebar({
 export function DashboardShell({
   children,
   userEmail,
+  userDisplayName = null,
   assignedApprovalsCount = 0,
   changeRequestsCount = 0,
   inboxUnreadCount = 0,
@@ -174,6 +176,7 @@ export function DashboardShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader
           userEmail={userEmail}
+          userDisplayName={userDisplayName}
           mobileOpen={mobileOpen}
           onToggleMobile={() => setMobileOpen((open) => !open)}
           organizations={organizations}

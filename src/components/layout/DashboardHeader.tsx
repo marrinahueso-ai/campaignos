@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils/cn";
 
 interface DashboardHeaderProps {
   userEmail?: string | null;
+  /** Preferred header label — first + last / display name. Falls back to email. */
+  userDisplayName?: string | null;
   mobileOpen: boolean;
   onToggleMobile: () => void;
   organizations?: ActiveOrganizationOption[];
@@ -47,12 +49,15 @@ function UtilityIconLink({
 
 export function DashboardHeader({
   userEmail,
+  userDisplayName = null,
   mobileOpen,
   onToggleMobile,
   organizations = [],
   activeOrganizationId = null,
 }: DashboardHeaderProps) {
   const pathname = usePathname();
+  const accountLabel =
+    userDisplayName?.trim() || userEmail?.trim() || null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-cos-border/80 bg-cos-card/90 backdrop-blur-md">
@@ -93,9 +98,11 @@ export function DashboardHeader({
             <Settings className="h-4 w-4" strokeWidth={1.5} />
           </UtilityIconLink>
 
-          {userEmail && (
+          {accountLabel && (
             <div className="hidden border-l border-cos-border pl-3 text-right sm:block">
-              <p className="max-w-[12rem] truncate text-xs text-cos-muted">{userEmail}</p>
+              <p className="max-w-[12rem] truncate text-xs text-cos-muted">
+                {accountLabel}
+              </p>
               <SignOutForm>
                 <button
                   type="submit"

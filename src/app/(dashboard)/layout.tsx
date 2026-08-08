@@ -29,6 +29,11 @@ export default async function DashboardLayout({
   const activeOrganizationId =
     normalizeOrganizationId(activeMembership?.organizationId) ?? null;
 
+  const userDisplayName =
+    activeMembership?.user.displayName?.trim() ||
+    user?.displayName?.trim() ||
+    null;
+
   // This may perform billing and balance writes. Keep it off the page body’s
   // critical path; the sidebar already has a loading state.
   const aiCreditsPromise = getOrgAiCreditsWidgetData(activeOrganizationId);
@@ -37,6 +42,7 @@ export default async function DashboardLayout({
   return (
     <DashboardShell
       userEmail={user?.email ?? null}
+      userDisplayName={userDisplayName}
       badgeCountsPromise={badgeCountsPromise}
       organizations={organizations}
       activeOrganizationId={activeOrganizationId}
