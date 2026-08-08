@@ -11,7 +11,7 @@ import {
 } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 import { redirect } from "next/navigation";
-import { MarketingWowAuthShell } from "@/components/marketing-wow/MarketingWowAuthShell";
+import { MarketingAuthCardShell } from "@/components/marketing-wow/MarketingAuthCardShell";
 import { MarketingWowLoginForm } from "@/components/marketing-wow/MarketingWowLoginForm";
 import { marketingAuthErrorMessage } from "@/components/marketing-wow/auth-messages";
 
@@ -36,11 +36,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     const qs = new URLSearchParams();
     if (params.error) qs.set("error", params.error);
     if (params.next) qs.set("next", params.next);
-    redirect(`/signup${qs.toString() ? `?${qs}` : ""}`);
+    redirect(`/get-started${qs.toString() ? `?${qs}` : ""}`);
   }
 
-  const nextPath =
-    safeNextPath(params.next) ?? null;
+  const nextPath = safeNextPath(params.next) ?? null;
 
   const user = await getAuthUser();
   const pendingCode = user ? await getPendingFoundingAccessCode() : null;
@@ -84,11 +83,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       : null;
 
   return (
-    <MarketingWowAuthShell
-      imageSrc="/images/spring-carnival-campaign.png"
-      visualTitle="Welcome back to calm."
-      visualSupport="Pick up the year where your team left off — approvals, calendar, and Create with AI waiting."
-    >
+    <MarketingAuthCardShell>
       <MarketingWowLoginForm
         inviteToken={params.invite ?? null}
         defaultEmail={
@@ -102,6 +97,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         authErrorMessage={authErrorMessage}
         authNoticeMessage={authNoticeMessage}
       />
-    </MarketingWowAuthShell>
+    </MarketingAuthCardShell>
   );
 }

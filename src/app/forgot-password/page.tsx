@@ -1,4 +1,4 @@
-import { MarketingWowAuthShell } from "@/components/marketing-wow/MarketingWowAuthShell";
+import { MarketingAuthCardShell } from "@/components/marketing-wow/MarketingAuthCardShell";
 import { MarketingWowForgotForm } from "@/components/marketing-wow/MarketingWowForgotForm";
 
 export const metadata = {
@@ -7,12 +7,8 @@ export const metadata = {
 
 export default function ForgotPasswordPage() {
   return (
-    <MarketingWowAuthShell
-      imageSrc="/images/pricing-community.png"
-      visualTitle="We’ll get you back in."
-      visualSupport="A short reset link — no drama, no group-chat password hunts."
-    >
+    <MarketingAuthCardShell>
       <MarketingWowForgotForm />
-    </MarketingWowAuthShell>
+    </MarketingAuthCardShell>
   );
 }

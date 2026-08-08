@@ -34,14 +34,21 @@ test.describe("Invite accept / password setup", () => {
     await expect(page).toHaveURL(new RegExp(`/invite/`));
     await expect(
       page.getByRole("heading", {
-        name: /create your password|set your password/i,
+        name: /you’ve been invited|you've been invited|sign in to join|invite expired/i,
       }),
     ).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByLabel(/^email$/i)).toBeVisible();
-    await expect(page.getByLabel(/^password$/i)).toBeVisible();
-    await expect(page.getByLabel(/confirm password/i)).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /accept invite/i }),
-    ).toBeVisible();
+    // New accounts: password setup. Existing accounts: sign-in CTA (no password fields).
+    const createPassword = page.getByLabel(/create password/i);
+    if (await createPassword.isVisible().catch(() => false)) {
+      await expect(createPassword).toBeVisible();
+      await expect(page.getByLabel(/confirm password/i)).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /join /i }),
+      ).toBeVisible();
+    } else {
+      await expect(
+        page.getByRole("link", { name: /sign in to join/i }),
+      ).toBeVisible();
+    }
   });
 });

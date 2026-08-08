@@ -5,7 +5,7 @@ import { MarketingCookieConsent } from "@/components/marketing-wow/MarketingCook
 import { MarketingWowFooter } from "@/components/marketing-wow/MarketingWowFooter";
 import { MarketingWowHeader } from "@/components/marketing-wow/MarketingWowHeader";
 import { Button } from "@/components/ui/Button";
-import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path";
+import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path-shared";
 import { PAID_PLANS } from "@/lib/billing/plan-catalog";
 import { cn } from "@/lib/utils/cn";
 
@@ -40,7 +40,7 @@ export function MarketingWowHome({
   const isSignedIn = Boolean(userEmail);
   const needsSchoolSetup = workspaceHref === ONBOARDING_PATH;
   const dashboardCtaLabel = needsSchoolSetup ? "Continue setup" : "Open your dashboard";
-  const heroPrimaryHref = isSignedIn ? workspaceHref : "/signup";
+  const heroPrimaryHref = isSignedIn ? workspaceHref : "/get-started";
   const heroPrimaryLabel = isSignedIn ? dashboardCtaLabel : "Get Started";
 
   return (

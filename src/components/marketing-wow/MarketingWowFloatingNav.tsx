@@ -7,9 +7,12 @@ const NAV_ITEMS = [
   { href: "/", label: "Home", match: (path: string) => path === "/" },
   { href: "/login", label: "Log in", match: (path: string) => path === "/login" },
   {
-    href: "/signup",
-    label: "Sign up",
-    match: (path: string) => path === "/signup",
+    href: "/get-started",
+    label: "Get started",
+    match: (path: string) =>
+      path === "/get-started" ||
+      path === "/signup" ||
+      path.startsWith("/signup/"),
   },
   {
     href: "/forgot-password",

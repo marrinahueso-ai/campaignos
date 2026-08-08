@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { MarketingWowAuthShell } from "@/components/marketing-wow/MarketingWowAuthShell";
+import { MarketingAuthCardShell } from "@/components/marketing-wow/MarketingAuthCardShell";
 import { MarketingWowInviteForm } from "@/components/marketing-wow/MarketingWowInviteForm";
-import { MarketingWowLegalLinks } from "@/components/marketing-wow/MarketingWowAuthShell";
+import {
+  authSubClassName,
+  authTitleClassName,
+} from "@/components/marketing-wow/marketing-auth-ui";
 import { campaignRoleLabel, isCampaignRole } from "@/lib/auth/campaign-roles";
 import { authUserExistsForEmail } from "@/lib/auth/invite-credentials";
 import { getInvitePreview } from "@/lib/auth/invite-preview";
@@ -25,23 +28,18 @@ export default async function InviteAcceptPage({ params }: InvitePageProps) {
 
   if (!preview) {
     return (
-      <MarketingWowAuthShell
-        imageSrc="/images/fall-festival-campaign.png"
-        visualTitle="You’re invited."
-        visualSupport="Join this organization on Hey Ralli with the role your admin chose."
-      >
-        <h1>Invite not found</h1>
-        <p className="sub">
+      <MarketingAuthCardShell>
+        <h1 className={authTitleClassName}>Invite not found</h1>
+        <p className={authSubClassName}>
           This invite link is invalid or was already used. Ask your admin to
           resend the invitation.
         </p>
-        <p className="auth-alt">
-          <Link href="/login" className="btn-text">
+        <p className="mt-8 text-center text-sm text-cos-muted">
+          <Link href="/login" className="font-bold text-cos-text hover:underline">
             Go to sign in
           </Link>
         </p>
-        <MarketingWowLegalLinks />
-      </MarketingWowAuthShell>
+      </MarketingAuthCardShell>
     );
   }
 
@@ -62,11 +60,7 @@ export default async function InviteAcceptPage({ params }: InvitePageProps) {
     : preview.roleName ?? "team member";
 
   return (
-    <MarketingWowAuthShell
-      imageSrc="/images/fall-festival-campaign.png"
-      visualTitle="You’re invited."
-      visualSupport="Join this organization on Hey Ralli with the role your admin chose."
-    >
+    <MarketingAuthCardShell maxWidthClassName="max-w-[460px]">
       <MarketingWowInviteForm
         inviteToken={token}
         email={preview.email}
@@ -75,6 +69,6 @@ export default async function InviteAcceptPage({ params }: InvitePageProps) {
         expired={preview.expired}
         accountExists={accountExists}
       />
-    </MarketingWowAuthShell>
+    </MarketingAuthCardShell>
   );
 }

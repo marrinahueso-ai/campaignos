@@ -11,7 +11,7 @@ import {
   shouldAllowAuthenticatedLoginView,
 } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
-import { MarketingWowAuthShell } from "@/components/marketing-wow/MarketingWowAuthShell";
+import { MarketingAuthCardShell } from "@/components/marketing-wow/MarketingAuthCardShell";
 import { MarketingWowSignupForm } from "@/components/marketing-wow/MarketingWowSignupForm";
 import { marketingAuthErrorMessage } from "@/components/marketing-wow/auth-messages";
 import { isPaidPlanId } from "@/lib/billing/plan-catalog";
@@ -25,6 +25,7 @@ interface SignupPageProps {
     error?: string;
     next?: string;
     plan?: string;
+    founding?: string;
   }>;
 }
 
@@ -32,6 +33,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
   const params = await searchParams;
   const nextPath = safeNextPath(params.next) ?? ONBOARDING_PATH;
   const selectedPlanId = isPaidPlanId(params.plan) ? params.plan : null;
+  const foundingFocused = params.founding === "1";
 
   const user = await getAuthUser();
   const pendingCode = user ? await getPendingFoundingAccessCode() : null;
@@ -56,25 +58,17 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
   const showCheckout = needsFoundingCodeRetry || Boolean(selectedPlanId);
 
   return (
-    <MarketingWowAuthShell
-      imageSrc="/images/back-to-school-fair-campaign.png"
-      visualTitle={
-        showCheckout ? "Checkout & start." : "Start your organization."
-      }
-      visualSupport={
-        showCheckout
-          ? "Founding partners enter an access code here — it waives billing for your workspace."
-          : "Pick a plan that fits your year — founding partners apply their access code at checkout."
-      }
-      wide={!showCheckout}
+    <MarketingAuthCardShell
+      maxWidthClassName={showCheckout ? "max-w-[440px]" : "max-w-[480px]"}
     >
       <MarketingWowSignupForm
         defaultEmail={needsFoundingCodeRetry ? user?.email ?? "" : ""}
         nextPath={nextPath}
         selectedPlanId={selectedPlanId}
         foundingCodeRetry={needsFoundingCodeRetry}
+        foundingFocused={foundingFocused}
         authErrorMessage={authErrorMessage}
       />
-    </MarketingWowAuthShell>
+    </MarketingAuthCardShell>
   );
 }

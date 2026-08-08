@@ -52,7 +52,7 @@ export function MarketingWowAboutPage({
   const isSignedIn = Boolean(userEmail);
   const needsSchoolSetup = workspaceHref === ONBOARDING_PATH;
   const dashboardCtaLabel = needsSchoolSetup ? "Continue setup" : "Open your dashboard";
-  const setupHref = `/signup?next=${encodeURIComponent(ONBOARDING_PATH)}`;
+  const setupHref = `/get-started`;
   const trialHref = isSignedIn ? workspaceHref : setupHref;
   const trialLabel = isSignedIn ? dashboardCtaLabel : "Start your 14-day trial";
 

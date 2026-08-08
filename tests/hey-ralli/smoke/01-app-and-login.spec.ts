@@ -12,7 +12,7 @@ test.describe("App load", () => {
   test("A user can reach the login page", async ({ page }) => {
     await page.goto("/login");
     await expectNoBlankScreen(page);
-    await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /welcome back/i })).toBeVisible();
     await expect(page.getByLabel(/email/i)).toBeVisible();
   });
 });

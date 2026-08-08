@@ -50,7 +50,9 @@ describe("Onboarding Ease page 1 — Create your first event", () => {
 
   it("routes first-time users to event Ease; bootstrap only when no membership", () => {
     assert.match(onboardingPage, /redirect\("\/events\/create\?onboarding=1"\)/);
-    assert.match(welcome, /Continue to first event/);
+    assert.match(welcome, /Let.s set up your school/);
+    assert.match(welcome, /Continue/);
+    assert.match(welcome, /startValueFirstOnboardingAction/);
     assert.match(welcome, /data-onboarding-ease="bootstrap"/);
     assert.doesNotMatch(welcome, /OnboardingProgress/);
     assert.doesNotMatch(welcome, /What event are you planning first/);

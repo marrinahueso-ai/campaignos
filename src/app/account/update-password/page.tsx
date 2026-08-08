@@ -6,8 +6,18 @@ import {
   updatePasswordFromRecoveryAction,
   type AuthActionState,
 } from "@/lib/auth/actions";
-import { MarketingWowAuthShell } from "@/components/marketing-wow/MarketingWowAuthShell";
-import { MarketingWowLegalLinks } from "@/components/marketing-wow/MarketingWowAuthShell";
+import {
+  MarketingAuthBackLink,
+  MarketingAuthCardShell,
+} from "@/components/marketing-wow/MarketingAuthCardShell";
+import {
+  AuthErrorMessage,
+  authInputClassName,
+  authLabelClassName,
+  authPrimaryButtonClassName,
+  authSubClassName,
+  authTitleClassName,
+} from "@/components/marketing-wow/marketing-auth-ui";
 
 const initialState: AuthActionState = {
   error: null,
@@ -22,59 +32,61 @@ export default function UpdatePasswordPage() {
   );
 
   return (
-    <MarketingWowAuthShell
-      imageSrc="/images/pricing-community.png"
-      visualTitle="Choose a new password."
-      visualSupport="You’re in via a secure reset link. Set something you’ll remember — then get back to calm."
-    >
-      <h1>Set new password</h1>
-      <p className="sub">
-        Pick a new password for your Hey Ralli account. Use at least 8
-        characters.
+    <MarketingAuthCardShell>
+      <MarketingAuthBackLink href="/login" label="Back to login" />
+
+      <h1 className={`${authTitleClassName} mt-4`}>Create new password.</h1>
+      <p className={`${authSubClassName} mb-8`}>
+        Choose a strong, unique password.
       </p>
 
-      <form action={action}>
-        <div className="field">
-          <label htmlFor="new-password">New password</label>
+      <form action={action} className="space-y-5">
+        <div>
+          <label htmlFor="new-password" className={authLabelClassName}>
+            New password
+          </label>
           <input
             id="new-password"
             name="password"
             type="password"
             autoComplete="new-password"
-            placeholder="At least 8 characters"
+            placeholder="••••••••"
             required
             minLength={8}
+            className={authInputClassName}
           />
         </div>
-        <div className="field">
-          <label htmlFor="confirm-password">Confirm password</label>
+        <div>
+          <label htmlFor="confirm-password" className={authLabelClassName}>
+            Confirm password
+          </label>
           <input
             id="confirm-password"
             name="confirmPassword"
             type="password"
             autoComplete="new-password"
-            placeholder="Re-enter password"
+            placeholder="••••••••"
             required
             minLength={8}
+            className={authInputClassName}
           />
         </div>
         <button
           type="submit"
-          className="btn btn-primary auth-submit"
+          className={authPrimaryButtonClassName}
           disabled={pending}
         >
-          {pending ? "Saving…" : "Save password & continue"}
+          {pending ? "Saving…" : "Update password"}
         </button>
       </form>
 
-      {state.error ? <p className="mw-msg-error">{state.error}</p> : null}
+      <AuthErrorMessage>{state.error}</AuthErrorMessage>
 
-      <p className="auth-alt">
-        <Link href="/login" className="btn-text">
+      <p className="mt-8 text-center text-sm text-cos-muted">
+        <Link href="/login" className="font-bold text-cos-text hover:underline">
           Back to log in
         </Link>
       </p>
-      <MarketingWowLegalLinks />
-    </MarketingWowAuthShell>
+    </MarketingAuthCardShell>
   );
 }

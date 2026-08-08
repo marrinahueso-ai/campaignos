@@ -18,7 +18,7 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { MarketingWowFooter } from "@/components/marketing-wow/MarketingWowFooter";
 import { MarketingWowHeader } from "@/components/marketing-wow/MarketingWowHeader";
 import { Button } from "@/components/ui/Button";
-import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path";
+import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path-shared";
 import { cn } from "@/lib/utils/cn";
 
 interface MarketingWowWhyPageProps {
@@ -111,7 +111,7 @@ export function MarketingWowWhyPage({
   const isSignedIn = Boolean(userEmail);
   const needsSchoolSetup = workspaceHref === ONBOARDING_PATH;
   const dashboardCtaLabel = needsSchoolSetup ? "Continue setup" : "Open your dashboard";
-  const setupHref = `/signup?next=${encodeURIComponent(ONBOARDING_PATH)}`;
+  const setupHref = `/get-started`;
   const trialHref = isSignedIn ? workspaceHref : setupHref;
   const trialLabel = isSignedIn ? dashboardCtaLabel : "Start your 14-day trial";
 

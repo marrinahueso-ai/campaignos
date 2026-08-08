@@ -61,7 +61,7 @@ export function MarketingWowHeader({
                 Log in
               </Link>
               <Button
-                href="/signup"
+                href="/get-started"
                 variant="primary"
                 className="h-auto rounded-full px-4 py-3 text-sm sm:px-6"
               >

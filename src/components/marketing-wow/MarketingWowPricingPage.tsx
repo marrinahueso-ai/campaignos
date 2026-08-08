@@ -8,7 +8,7 @@ import { MarketingWowFooter } from "@/components/marketing-wow/MarketingWowFoote
 import { MarketingWowHeader } from "@/components/marketing-wow/MarketingWowHeader";
 import { Button } from "@/components/ui/Button";
 import { ARTWORK_REGEN_CAPS, PLAN_MONTHLY_CREDITS } from "@/lib/ai/credit-constants";
-import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path";
+import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path-shared";
 import { entitlementsForEffectiveTier } from "@/lib/billing/entitlements";
 import {
   BILLING_TRIAL,
@@ -300,7 +300,7 @@ export function MarketingWowPricingPage({
   const isSignedIn = Boolean(userEmail);
   const needsSchoolSetup = workspaceHref === ONBOARDING_PATH;
   const dashboardCtaLabel = needsSchoolSetup ? "Continue setup" : "Open your dashboard";
-  const setupHref = `/signup?next=${encodeURIComponent(ONBOARDING_PATH)}`;
+  const setupHref = `/get-started`;
 
   return (
     <div className="bg-cos-bg">

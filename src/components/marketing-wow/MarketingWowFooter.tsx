@@ -22,7 +22,7 @@ export function MarketingWowFooter() {
             <Link href="/pricing" className="hover:text-[#f6f2eb]">
               Pricing
             </Link>
-            <Link href="/signup" className="hover:text-[#f6f2eb]">
+            <Link href="/get-started" className="hover:text-[#f6f2eb]">
               Start organization
             </Link>
             <Link href="/login" className="hover:text-[#f6f2eb]">

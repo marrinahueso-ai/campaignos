@@ -40,7 +40,7 @@ interface MarketingWowResourcesPageProps {
  * accurately. There is no dedicated public tutorial-video or FAQ system yet.
  */
 const TOPICS = [
-  { id: "getting-started", label: "Getting Started", icon: Flag, href: "/signup" },
+  { id: "getting-started", label: "Getting Started", icon: Flag, href: "/get-started" },
   { id: "calendar", label: "Calendar & Events", icon: CalendarDays, href: "/features#plan-your-year" },
   { id: "create-with-ai", label: "Create with AI", icon: Sparkles, href: "/features#create-with-ai" },
   { id: "volunteers", label: "Volunteers", icon: HeartHandshake, href: "/features#volunteer-intelligence" },
@@ -63,7 +63,7 @@ const FEATURED_TUTORIALS = [
     icon: Rocket,
     title: "Getting started with Hey Ralli",
     description: "Create your first event, then finish calendar, brand, and team setup.",
-    href: "/signup",
+    href: "/get-started",
   },
   {
     id: "create-with-ai",
@@ -260,7 +260,7 @@ export function MarketingWowResourcesPage({
           <section className="px-6 pb-16 sm:pb-20">
             <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
               <Link
-                href="/signup"
+                href="/get-started"
                 className="group relative flex flex-col overflow-hidden rounded-[28px] bg-cos-primary p-9 text-[#f6f2eb] shadow-md transition-transform hover:-translate-y-1"
               >
                 <Rocket className="absolute -right-6 -bottom-6 h-40 w-40 text-[#f6f2eb]/10" aria-hidden />
@@ -455,7 +455,7 @@ export function MarketingWowResourcesPage({
               Message Support
             </a>
             <Button
-              href={isSignedIn ? workspaceHref : "/signup"}
+              href={isSignedIn ? workspaceHref : "/get-started"}
               variant="secondary"
               className="h-auto rounded-full px-10 py-4 text-sm"
             >

@@ -8,6 +8,7 @@ const PUBLIC_PATHS = [
   "/features",
   "/about",
   "/pricing",
+  "/get-started",
   "/login",
   "/signup",
   "/forgot-password",
