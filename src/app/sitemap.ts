@@ -4,6 +4,7 @@ import { DEFAULT_SITE_URL } from "@/lib/site/url";
 const PUBLIC_PATHS = [
   "/",
   "/why-hey-ralli",
+  "/resources",
   "/features",
   "/about",
   "/pricing",

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Button } from "@/components/ui/Button";
-import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path";
+import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path-shared";
 import { MARKETING_WOW_NAV_LINKS } from "@/components/marketing-wow/nav-links";
 
 interface MarketingWowHeaderProps {
