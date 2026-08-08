@@ -12,7 +12,7 @@ import {
   useTransition,
   type ReactNode,
 } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, UserPlus } from "lucide-react";
 import { EventCommunityPanel } from "@/components/events-phase3/EventCommunityPanel";
 import { EventDetailCreateWithAiPanel } from "@/components/events-phase3/EventDetailCreateWithAiPanel";
 import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHero";
@@ -26,6 +26,7 @@ import { ew } from "@/components/events-phase3/event-workspace-tokens";
 import { OnboardingYoureSetToast } from "@/components/onboarding/OnboardingYoureSetToast";
 import { Button } from "@/components/ui/Button";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
+import type { EventInviteCollaboratorPreview } from "@/lib/events-phase3/invite-event-member";
 import type { EventResponsibilityPerson } from "@/lib/events/event-responsibility";
 import {
   loadEventDetailTabAction,
@@ -210,6 +211,8 @@ interface EventDetailShellProps {
   canManageAssignments: boolean;
   onManageAssignments?: () => void;
   onInviteTeamMember?: () => void;
+  /** Local invite/add collaborator previews for Event Team UI. */
+  inviteCollaborators?: EventInviteCollaboratorPreview[];
   workspace?: EventDetailWorkspacePanels;
   /** Server-streamed Approvals body (Suspense) for Approvals tab. */
   approvalsSlot?: ReactNode;
@@ -401,6 +404,7 @@ export function EventDetailShell({
   canManageAssignments,
   onManageAssignments,
   onInviteTeamMember,
+  inviteCollaborators = [],
   workspace = {},
   approvalsSlot,
   initialTab = null,
@@ -751,24 +755,37 @@ export function EventDetailShell({
   return (
     <EventDetailTabInvalidationProvider value={invalidationValue}>
     <div className="studio-page relative space-y-6 pb-12">
-      {tab === "overview" ? (
-        <Link
-          href="/events"
-          className={cn(
-            "inline-flex items-center gap-1.5 text-sm font-medium",
-            ew.inksoft,
-            "hover:text-[#1c352d]",
-          )}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Events
-        </Link>
-      ) : (
-        <EventWorkspaceContextHeader
-          eventTitle={event.title}
-          onBackToEvent={() => selectTab("overview")}
-        />
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {tab === "overview" ? (
+          <Link
+            href="/events"
+            className={cn(
+              "inline-flex items-center gap-1.5 text-sm font-medium",
+              ew.inksoft,
+              "hover:text-[#1c352d]",
+            )}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Events
+          </Link>
+        ) : (
+          <EventWorkspaceContextHeader
+            eventTitle={event.title}
+            onBackToEvent={() => selectTab("overview")}
+          />
+        )}
+        {onInviteTeamMember ? (
+          <button
+            type="button"
+            onClick={onInviteTeamMember}
+            data-testid="event-invite-team-member"
+            className="inline-flex items-center gap-2 rounded-full bg-[#e6efe9] px-5 py-2 text-xs font-semibold text-[#5a7568] shadow-sm transition-all hover:bg-[#8ea89d] hover:text-white"
+          >
+            <UserPlus className="h-3.5 w-3.5" aria-hidden />
+            Invite Team
+          </button>
+        ) : null}
+      </div>
 
       {showYoureSet ? (
         <OnboardingYoureSetToast eventTitle={event.title} />
@@ -780,7 +797,9 @@ export function EventDetailShell({
           artwork={artwork}
           stats={liveHeroStats}
           responsibilities={responsibilities}
+          inviteCollaborators={inviteCollaborators}
           onSelectTab={selectTab}
+          onInviteTeamMember={onInviteTeamMember}
         />
       ) : null}
 
@@ -850,6 +869,7 @@ export function EventDetailShell({
             <EventCommunityPanel
               section={tab === "vendors" ? "vendors" : "responsibilities"}
               responsibilities={responsibilities}
+              inviteCollaborators={inviteCollaborators}
               canManageAssignments={canManageAssignments}
               onManageAssignments={onManageAssignments}
               onInviteTeamMember={onInviteTeamMember}

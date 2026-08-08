@@ -25,6 +25,7 @@ import {
   inviteMemberInitials,
   isValidInviteEmail,
   validateInviteEventMemberForm,
+  type InviteEventMemberAddedResult,
   type InviteEventMemberLookup,
   type InviteEventMemberRoleOption,
   type InviteEventMemberSuccessKind,
@@ -49,7 +50,7 @@ interface InviteEventMemberDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   event: InviteEventMemberDrawerEvent;
-  onMemberAdded?: () => void;
+  onMemberAdded?: (result: InviteEventMemberAddedResult) => void;
 }
 
 const fieldLabelClass =
@@ -225,7 +226,12 @@ export function InviteEventMemberDrawer({
         result.roleLabel ?? selectedRole?.label ?? "Team member",
       );
       setView("success");
-      onMemberAdded?.();
+      onMemberAdded?.({
+        kind: "invited",
+        displayName: result.inviteeName ?? name.trim(),
+        roleLabel: result.roleLabel ?? selectedRole?.label ?? "Team member",
+        email: email.trim(),
+      });
       router.refresh();
     });
   }
@@ -247,7 +253,13 @@ export function InviteEventMemberDrawer({
       setSuccessName(result.memberName ?? lookup.displayName ?? lookup.email);
       setSuccessRoleLabel(result.roleLabel ?? lookup.roleLabel);
       setView("success");
-      onMemberAdded?.();
+      onMemberAdded?.({
+        kind: "added",
+        displayName:
+          result.memberName ?? lookup.displayName ?? lookup.email,
+        roleLabel: result.roleLabel ?? lookup.roleLabel,
+        email: lookup.email,
+      });
       router.refresh();
     });
   }

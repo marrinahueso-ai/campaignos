@@ -11,6 +11,10 @@ import type { EventDetailWorkspacePanels } from "@/components/events-phase3/Even
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import type { EventResponsibilityPerson } from "@/lib/events/event-responsibility";
 import { loadEventManageAssignmentsAction } from "@/lib/events-phase3/actions";
+import type {
+  EventInviteCollaboratorPreview,
+  InviteEventMemberAddedResult,
+} from "@/lib/events-phase3/invite-event-member";
 import type { CommitteeAssignmentRole } from "@/lib/organization-workspace/roster-first";
 import type { Event } from "@/types";
 
@@ -59,6 +63,9 @@ export function EventDetailPhase3Client({
 }: EventDetailPhase3ClientProps) {
   const [manageOpen, setManageOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteCollaborators, setInviteCollaborators] = useState<
+    EventInviteCollaboratorPreview[]
+  >([]);
   const [pending, startTransition] = useTransition();
   const [members, setMembers] = useState<ManageMember[] | null>(null);
   const [liveAssignments, setLiveAssignments] = useState<ManageAssignment[]>(
@@ -74,12 +81,31 @@ export function EventDetailPhase3Client({
   useEffect(() => {
     setManageOpen(false);
     setInviteOpen(false);
+    setInviteCollaborators([]);
     setMembers(null);
     setLiveAssignments([]);
     setLiveCommitteeId(committeeId);
     setLiveCommitteeName(committeeName);
     setLoadError(null);
   }, [event.id, committeeId, committeeName]);
+
+  // Drop local active invite previews once server responsibilities include the same names.
+  useEffect(() => {
+    const names = new Set(
+      responsibilities
+        .map((row) => row.displayName?.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    setInviteCollaborators((current) => {
+      if (current.length === 0) return current;
+      const next = current.filter(
+        (row) =>
+          row.status === "pending" ||
+          !names.has(row.displayName.trim().toLowerCase()),
+      );
+      return next.length === current.length ? current : next;
+    });
+  }, [responsibilities]);
 
   function openManageAssignments() {
     setManageOpen(true);
@@ -105,6 +131,23 @@ export function EventDetailPhase3Client({
     });
   }
 
+  function handleMemberAdded(result: InviteEventMemberAddedResult) {
+    const preview: EventInviteCollaboratorPreview = {
+      id: `${result.kind}-${result.email ?? result.displayName}-${Date.now()}`,
+      displayName: result.displayName,
+      roleLabel: result.roleLabel,
+      status: result.kind === "invited" ? "pending" : "active",
+    };
+    setInviteCollaborators((current) => {
+      const withoutDup = current.filter(
+        (row) =>
+          row.displayName.trim().toLowerCase() !==
+          preview.displayName.trim().toLowerCase(),
+      );
+      return [preview, ...withoutDup];
+    });
+  }
+
   return (
     <>
       <EventDetailShell
@@ -120,6 +163,7 @@ export function EventDetailPhase3Client({
         onInviteTeamMember={
           canManageAssignments ? () => setInviteOpen(true) : undefined
         }
+        inviteCollaborators={inviteCollaborators}
         workspace={workspace}
         approvalsSlot={approvalsSlot}
         initialTab={initialTab}
@@ -135,6 +179,7 @@ export function EventDetailPhase3Client({
             date: event.date,
             imageUrl: artwork?.imageUrl ?? null,
           }}
+          onMemberAdded={handleMemberAdded}
         />
       ) : null}
       {manageOpen ? (

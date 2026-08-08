@@ -25,6 +25,7 @@ import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-art
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import { createWithAiHref } from "@/lib/events/event-responsibility";
 import type { EventResponsibilityPerson } from "@/lib/events/event-responsibility";
+import type { EventInviteCollaboratorPreview } from "@/lib/events-phase3/invite-event-member";
 import {
   formatEventDate,
   formatEventTime,
@@ -60,7 +61,9 @@ type Props = {
   artwork: HeroArtworkSelection | null;
   stats: EventDetailHeroStats;
   responsibilities: EventResponsibilityPerson[];
+  inviteCollaborators?: EventInviteCollaboratorPreview[];
   onSelectTab: (tab: OverviewJumpTab) => void;
+  onInviteTeamMember?: () => void;
 };
 
 function statusChipLabel(status: Event["status"]): string {
@@ -239,7 +242,9 @@ export function EventWorkspaceOverviewPanel({
   artwork,
   stats,
   responsibilities,
+  inviteCollaborators = [],
   onSelectTab,
+  onInviteTeamMember,
 }: Props) {
   const imageUrl =
     hasDisplayableArtwork(artwork) && artwork?.imageUrl
@@ -306,6 +311,8 @@ export function EventWorkspaceOverviewPanel({
     .filter(Boolean)
     .slice(0, 3) as string[];
   const teamExtra = Math.max(0, responsibilities.length - teamPreview.length);
+  const pendingInvite =
+    inviteCollaborators.find((row) => row.status === "pending") ?? null;
 
   return (
     <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-10">
@@ -716,42 +723,140 @@ export function EventWorkspaceOverviewPanel({
             }
             onClick={() => onSelectTab("volunteers")}
           />
-          <WorkspaceCard
-            icon={<UsersRound className="h-5 w-5" />}
-            title="Community"
-            subtitle="Team & Vendors"
-            meta={
-              teamPreview.length > 0 ? (
-                <div className="flex -space-x-2">
-                  {teamPreview.map((name) => (
-                    <span
-                      key={name}
-                      className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#ece2d4] text-[10px] font-bold text-[#1c352d]"
-                      title={name}
-                    >
-                      {name
-                        .split(/\s+/)
-                        .map((p) => p[0]?.toUpperCase() ?? "")
-                        .slice(0, 2)
-                        .join("")}
-                    </span>
-                  ))}
-                  {teamExtra > 0 ? (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#f4f0ea] text-[10px] font-bold text-[#1c352d]">
-                      +{teamExtra}
-                    </span>
-                  ) : null}
-                </div>
-              ) : (
-                <span className="rounded bg-[#faf8f5] px-2 py-1 text-xs font-medium text-[#5e6b65]">
-                  Add team
-                </span>
-              )
-            }
-            onClick={() => onSelectTab("responsibilities")}
+          <CommunityWorkspaceCard
+            teamPreview={teamPreview}
+            teamExtra={teamExtra}
+            pendingInvite={pendingInvite}
+            onOpenCommunity={() => onSelectTab("responsibilities")}
+            onInviteTeamMember={onInviteTeamMember}
           />
         </div>
       </section>
+    </div>
+  );
+}
+
+function CommunityWorkspaceCard({
+  teamPreview,
+  teamExtra,
+  pendingInvite,
+  onOpenCommunity,
+  onInviteTeamMember,
+}: {
+  teamPreview: string[];
+  teamExtra: number;
+  pendingInvite: EventInviteCollaboratorPreview | null;
+  onOpenCommunity: () => void;
+  onInviteTeamMember?: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        ewCard,
+        "group flex flex-col gap-6 p-8 text-left transition-all hover:-translate-y-1 hover:shadow-md",
+      )}
+    >
+      <button
+        type="button"
+        onClick={onOpenCommunity}
+        className="flex flex-col gap-6 text-left"
+      >
+        <div
+          className={cn(
+            "flex h-12 w-12 items-center justify-center rounded-full border border-[#e6dfd5] bg-[#faf8f5] transition-colors group-hover:bg-[#f4f0ea]",
+            ew.ink,
+          )}
+        >
+          <UsersRound className="h-5 w-5" />
+        </div>
+        <div>
+          <h3 className={cn("font-display text-lg", ew.ink)}>Community</h3>
+          <p className={cn("mt-1 text-xs", ew.inksoft)}>Team & Vendors</p>
+        </div>
+      </button>
+
+      <div className="mt-auto flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-2">
+          {teamPreview.length > 0 ? (
+            <button
+              type="button"
+              onClick={onOpenCommunity}
+              className="flex -space-x-2"
+              aria-label="Open Community team"
+            >
+              {teamPreview.map((name) => (
+                <span
+                  key={name}
+                  className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#ece2d4] text-[10px] font-bold text-[#1c352d]"
+                  title={name}
+                >
+                  {name
+                    .split(/\s+/)
+                    .map((p) => p[0]?.toUpperCase() ?? "")
+                    .slice(0, 2)
+                    .join("")}
+                </span>
+              ))}
+              {teamExtra > 0 ? (
+                <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#f4f0ea] text-[10px] font-bold text-[#1c352d]">
+                  +{teamExtra}
+                </span>
+              ) : null}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenCommunity}
+              className="rounded bg-[#faf8f5] px-2 py-1 text-xs font-medium text-[#5e6b65]"
+            >
+              Add team
+            </button>
+          )}
+
+          {onInviteTeamMember ? (
+            <button
+              type="button"
+              onClick={onInviteTeamMember}
+              data-testid="event-invite-team-member-community"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#1c352d] px-4 py-2 text-[10px] font-bold tracking-wider text-white uppercase transition-colors hover:bg-[#5e6b65]"
+            >
+              <span aria-hidden>+</span> Invite
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenCommunity}
+              className="text-[#e6dfd5] transition-colors group-hover:text-[#c5a880]"
+              aria-label="Open Community"
+            >
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </button>
+          )}
+        </div>
+
+        {pendingInvite ? (
+          <div className="flex items-center gap-3 border-t border-[#e6dfd5]/30 pt-3">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full border border-[#e6dfd5] bg-[#faf8f5] text-[10px] font-bold text-[#5e6b65]">
+              {pendingInvite.displayName
+                .split(/\s+/)
+                .map((part) => part[0]?.toUpperCase() ?? "")
+                .slice(0, 2)
+                .join("") || "?"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[11px] leading-tight font-semibold text-[#1c352d]">
+                {pendingInvite.displayName}
+              </p>
+              <p className="text-[10px] text-[#5e6b65]">
+                {pendingInvite.roleLabel} ·{" "}
+                <span className="font-medium italic text-[#c5a880]">
+                  Invite pending
+                </span>
+              </p>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

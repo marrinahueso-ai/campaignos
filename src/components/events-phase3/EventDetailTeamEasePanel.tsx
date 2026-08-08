@@ -5,6 +5,7 @@ import {
   EaseSectionLabel,
   EaseSoftActions,
 } from "@/components/events-phase3/EventDetailEaseUi";
+import type { EventInviteCollaboratorPreview } from "@/lib/events-phase3/invite-event-member";
 import type { EventResponsibilityPerson } from "@/lib/events/event-responsibility";
 
 const ROLE_ORDER = [
@@ -18,11 +19,14 @@ const ROLE_ORDER = [
 
 export function EventDetailTeamEasePanel({
   responsibilities,
+  inviteCollaborators = [],
   canManageAssignments,
   onManageAssignments,
   onInviteTeamMember,
 }: {
   responsibilities: EventResponsibilityPerson[];
+  /** Local invite/add previews until server responsibilities refresh. */
+  inviteCollaborators?: EventInviteCollaboratorPreview[];
   canManageAssignments: boolean;
   onManageAssignments?: () => void;
   onInviteTeamMember?: () => void;
@@ -37,8 +41,21 @@ export function EventDetailTeamEasePanel({
         key: `${row.responsibility}-${row.memberId}`,
         role: row.responsibility,
         name: row.displayName.trim(),
+        pending: false as boolean,
       })),
   );
+
+  const existingNames = new Set(people.map((person) => person.name.toLowerCase()));
+  const inviteRows = inviteCollaborators
+    .filter((row) => !existingNames.has(row.displayName.trim().toLowerCase()))
+    .map((row) => ({
+      key: row.id,
+      role: row.roleLabel,
+      name: row.displayName.trim(),
+      pending: row.status === "pending",
+    }));
+
+  const rows = [...people, ...inviteRows];
 
   return (
     <section>
@@ -46,16 +63,19 @@ export function EventDetailTeamEasePanel({
         Who owns what
       </EaseSectionLabel>
 
-      {people.length === 0 ? (
-        <p className="text-sm text-cos-muted">
-          No roles assigned yet.
-        </p>
+      {rows.length === 0 ? (
+        <p className="text-sm text-cos-muted">No roles assigned yet.</p>
       ) : (
         <div className="grid gap-2.5 sm:grid-cols-2">
-          {people.map((person) => (
+          {rows.map((person) => (
             <div
               key={person.key}
               className="rounded-2xl bg-[rgba(255,252,247,0.65)] p-3.5"
+              data-testid={
+                person.pending
+                  ? "event-team-invite-pending"
+                  : "event-team-collaborator"
+              }
             >
               <div className="mb-1 text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
                 {person.role}
@@ -63,6 +83,13 @@ export function EventDetailTeamEasePanel({
               <strong className="text-sm font-bold text-cos-text">
                 {person.name}
               </strong>
+              {person.pending ? (
+                <p className="mt-1 text-[11px] text-[#5e6b65]">
+                  <span className="font-medium italic text-[#c5a880]">
+                    Invite pending
+                  </span>
+                </p>
+              ) : null}
             </div>
           ))}
         </div>
@@ -72,7 +99,7 @@ export function EventDetailTeamEasePanel({
         <EaseSoftActions>
           {onInviteTeamMember ? (
             <EaseBtnSecondary onClick={onInviteTeamMember}>
-              Invite team member
+              + Invite team member
             </EaseBtnSecondary>
           ) : null}
           {onManageAssignments ? (

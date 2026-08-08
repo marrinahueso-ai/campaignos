@@ -33,6 +33,21 @@ export type InviteEventMemberLookup = {
 
 export type InviteEventMemberSuccessKind = "invited" | "added";
 
+/** Local Event page collaborator preview after invite/add (not a second membership model). */
+export type EventInviteCollaboratorPreview = {
+  id: string;
+  displayName: string;
+  roleLabel: string;
+  status: "pending" | "active";
+};
+
+export type InviteEventMemberAddedResult = {
+  kind: InviteEventMemberSuccessKind;
+  displayName: string;
+  roleLabel: string;
+  email?: string;
+};
+
 export function isValidInviteEmail(email: string): boolean {
   const trimmed = email.trim();
   if (!trimmed) return false;

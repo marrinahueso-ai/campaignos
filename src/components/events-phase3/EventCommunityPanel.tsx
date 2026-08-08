@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { EventDetailTeamEasePanel } from "@/components/events-phase3/EventDetailTeamEasePanel";
 import { EventDetailVendorsEasePanel } from "@/components/events-phase3/EventDetailVendorsEasePanel";
 import { ew, ewCard } from "@/components/events-phase3/event-workspace-tokens";
+import type { EventInviteCollaboratorPreview } from "@/lib/events-phase3/invite-event-member";
 import type { EventResponsibilityPerson } from "@/lib/events/event-responsibility";
 import type { EventVendorsData } from "@/types/vendors";
 import { cn } from "@/lib/utils/cn";
@@ -13,6 +14,7 @@ type CommunitySection = "responsibilities" | "vendors";
 type Props = {
   section: CommunitySection;
   responsibilities: EventResponsibilityPerson[];
+  inviteCollaborators?: EventInviteCollaboratorPreview[];
   canManageAssignments: boolean;
   onManageAssignments?: () => void;
   onInviteTeamMember?: () => void;
@@ -24,6 +26,7 @@ type Props = {
 export function EventCommunityPanel({
   section,
   responsibilities,
+  inviteCollaborators = [],
   canManageAssignments,
   onManageAssignments,
   onInviteTeamMember,
@@ -71,6 +74,7 @@ export function EventCommunityPanel({
         </div>
         <EventDetailTeamEasePanel
           responsibilities={responsibilities}
+          inviteCollaborators={inviteCollaborators}
           canManageAssignments={canManageAssignments}
           onManageAssignments={onManageAssignments}
           onInviteTeamMember={onInviteTeamMember}
