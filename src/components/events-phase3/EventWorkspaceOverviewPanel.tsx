@@ -3,8 +3,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
+  AlertOctagon,
+  ArrowRight,
+  Calendar,
   CalendarCheck,
   CheckCircle2,
+  CheckSquare,
   ClipboardList,
   FileStack,
   Sparkles,
@@ -25,6 +29,7 @@ import {
   formatEventDate,
   formatEventTime,
   getEventCountdown,
+  parseLocalDate,
 } from "@/lib/utils/dates";
 import type { Event } from "@/types";
 import { cn } from "@/lib/utils/cn";
@@ -46,6 +51,8 @@ type AttentionItem = {
   title: string;
   detail: string;
   tab: OverviewJumpTab;
+  tone: "gold" | "sage";
+  icon: "alert" | "check" | "users";
 };
 
 type Props = {
@@ -56,15 +63,44 @@ type Props = {
   onSelectTab: (tab: OverviewJumpTab) => void;
 };
 
-function statusLabel(status: Event["status"]): string {
+function statusChipLabel(status: Event["status"]): string {
   if (status === "draft") return "Needs setup";
   if (status === "scheduled") return "Ready";
   if (status === "published") return "Published";
   return "Archived";
 }
 
+function trackLabel(stats: EventDetailHeroStats, status: Event["status"]): string {
+  if (status === "archived") return "Archived";
+  if (stats.pendingApprovals > 0 || stats.tasks > 0) return "Needs attention";
+  if (status === "draft") return "Getting ready";
+  return "On track";
+}
+
+function seasonEyebrow(date: string): string {
+  const d = parseLocalDate(date);
+  const month = d.getMonth();
+  const year = d.getFullYear();
+  let season = "School year";
+  if (month >= 2 && month <= 4) season = "Spring";
+  else if (month >= 5 && month <= 7) season = "Summer";
+  else if (month >= 8 && month <= 10) season = "Fall";
+  else season = "Winter";
+  return `${season} ${year} · Event`;
+}
+
 function buildAttentionItems(stats: EventDetailHeroStats): AttentionItem[] {
   const items: AttentionItem[] = [];
+  if (stats.tasks > 0) {
+    items.push({
+      id: "tasks",
+      title: `${stats.tasks} open task${stats.tasks === 1 ? "" : "s"}`,
+      detail: "Jump into Planning to clear the list.",
+      tab: "tasks",
+      tone: "gold",
+      icon: "alert",
+    });
+  }
   if (stats.pendingApprovals > 0) {
     items.push({
       id: "approvals",
@@ -73,26 +109,129 @@ function buildAttentionItems(stats: EventDetailHeroStats): AttentionItem[] {
       } awaiting approval`,
       detail: "Review content before it goes out.",
       tab: "approvals",
+      tone: "sage",
+      icon: "check",
     });
   }
-  if (stats.tasks > 0) {
+  if (stats.openSpots != null && stats.openSpots > 0) {
     items.push({
-      id: "tasks",
-      title: `${stats.tasks} open task${stats.tasks === 1 ? "" : "s"}`,
-      detail: "Jump into Planning to clear the list.",
-      tab: "tasks",
+      id: "volunteers-open",
+      title: `${stats.openSpots} volunteer spot${
+        stats.openSpots === 1 ? "" : "s"
+      } still open`,
+      detail: "Review coverage and still-needed roles.",
+      tab: "volunteers",
+      tone: "gold",
+      icon: "users",
     });
-  }
-  // Filled spots alone don't imply open spots — still nudge when no fills yet.
-  if (stats.filledSpots === 0) {
+  } else if (stats.filledSpots === 0 && (stats.totalSpots == null || stats.totalSpots === 0)) {
     items.push({
       id: "volunteers-empty",
       title: "Volunteer staffing needs attention",
       detail: "Connect a signup or review open roles.",
       tab: "volunteers",
+      tone: "gold",
+      icon: "users",
     });
   }
   return items;
+}
+
+function AttentionIcon({
+  icon,
+  tone,
+}: {
+  icon: AttentionItem["icon"];
+  tone: AttentionItem["tone"];
+}) {
+  const wrap =
+    tone === "sage"
+      ? "bg-[#e6efe9] text-[#5a7568]"
+      : "bg-[#f4f0ea] text-[#c5a880]";
+  const Icon =
+    icon === "check" ? CheckSquare : icon === "users" ? Users : AlertOctagon;
+  return (
+    <div
+      className={cn(
+        "flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
+        wrap,
+      )}
+    >
+      <Icon className="h-5 w-5" aria-hidden />
+    </div>
+  );
+}
+
+function StaffingDonut({
+  filled,
+  open,
+  pending,
+}: {
+  filled: number;
+  open: number;
+  pending: number;
+}) {
+  const total = filled + open + pending;
+  const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
+  const r = 42;
+  const c = 2 * Math.PI * r;
+  const filledLen = total > 0 ? (filled / total) * c : 0;
+  const pendingLen = total > 0 ? (pending / total) * c : 0;
+  const openLen = total > 0 ? (open / total) * c : 0;
+
+  return (
+    <div className="relative mx-auto h-[200px] w-[200px]">
+      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+        <circle
+          cx="60"
+          cy="60"
+          r={r}
+          fill="none"
+          stroke="#e6dfd5"
+          strokeWidth="14"
+        />
+        {total > 0 ? (
+          <>
+            <circle
+              cx="60"
+              cy="60"
+              r={r}
+              fill="none"
+              stroke="#1c352d"
+              strokeWidth="14"
+              strokeDasharray={`${filledLen} ${c - filledLen}`}
+              strokeDashoffset={0}
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r={r}
+              fill="none"
+              stroke="#c5a880"
+              strokeWidth="14"
+              strokeDasharray={`${pendingLen} ${c - pendingLen}`}
+              strokeDashoffset={-filledLen}
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r={r}
+              fill="none"
+              stroke="#e6dfd5"
+              strokeWidth="14"
+              strokeDasharray={`${openLen} ${c - openLen}`}
+              strokeDashoffset={-(filledLen + pendingLen)}
+            />
+          </>
+        ) : null}
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className={cn("font-display text-[28px] leading-none", ew.ink)}>
+          {total > 0 ? `${pct}%` : "—"}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export function EventWorkspaceOverviewPanel({
@@ -111,213 +250,430 @@ export function EventWorkspaceOverviewPanel({
   const createHref = createWithAiHref(event.id);
   const attention = buildAttentionItems(stats);
   const lead =
-    responsibilities.find((row) => row.responsibility === "Event Lead")
-      ?.displayName ?? null;
+    responsibilities.find((row) => row.responsibility === "Event Lead") ??
+    null;
   const filled = stats.filledSpots;
-  const eventStatus = statusLabel(event.status);
+  const total = stats.totalSpots;
+  const open =
+    stats.openSpots ??
+    (total != null && total >= filled ? total - filled : 0);
+  const pendingApprovals = stats.pendingApprovals;
+  const fillPct =
+    total != null && total > 0 ? Math.min(100, Math.round((filled / total) * 100)) : 0;
+  const chip = statusChipLabel(event.status);
+  const track = trackLabel(stats, event.status);
+
+  const nextItems: Array<{
+    when: string;
+    title: string;
+    detail: string;
+    tab: OverviewJumpTab;
+    tone: "sage" | "gold" | "rule";
+  }> = [];
+  if (pendingApprovals > 0) {
+    nextItems.push({
+      when: "Today",
+      title: "Approve pending content",
+      detail: `${pendingApprovals} item${pendingApprovals === 1 ? "" : "s"} waiting in Approvals.`,
+      tab: "approvals",
+      tone: "sage",
+    });
+  }
+  if (stats.tasks > 0) {
+    nextItems.push({
+      when: countdown.isPast ? "Up next" : "Tomorrow",
+      title: "Work open tasks",
+      detail: `${stats.tasks} task${stats.tasks === 1 ? "" : "s"} in Planning.`,
+      tab: "tasks",
+      tone: "gold",
+    });
+  }
+  nextItems.push({
+    when: !countdown.isPast ? countdown.label : "Staffing",
+    title: "Review volunteer coverage",
+    detail:
+      total != null && total > 0
+        ? `${filled} of ${total} spots filled on the latest signup snapshot.`
+        : filled > 0
+          ? `${filled} filled spots on the latest signup snapshot.`
+          : "Connect or refresh your signup to see fill.",
+    tab: "volunteers",
+    tone: "rule",
+  });
+
+  const teamPreview = responsibilities
+    .map((r) => r.displayName?.trim())
+    .filter(Boolean)
+    .slice(0, 3) as string[];
+  const teamExtra = Math.max(0, responsibilities.length - teamPreview.length);
 
   return (
-    <div className="space-y-10">
+    <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-10">
+      {/* Hero — matches approved Event Workspace HTML structure */}
       <section className={cn(ewCard, "relative overflow-hidden")}>
-        <div className="relative min-h-[220px] sm:min-h-[260px]">
-          <div
-            className="absolute inset-0 bg-gradient-to-br from-[#1c352d] via-[#5a7568] to-[#c5a880]"
-            aria-hidden
-          >
-            {imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover opacity-85"
-              />
-            ) : null}
-            <div className="absolute inset-0 bg-gradient-to-r from-[rgba(28,53,45,0.92)] via-[rgba(28,53,45,0.55)] to-transparent" />
-          </div>
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.05]"
+          aria-hidden
+        >
+          {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+          ) : null}
+        </div>
 
-          <div className="relative z-10 flex h-full flex-col justify-between gap-6 px-6 py-7 sm:px-10 sm:py-9">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-medium tracking-wide text-white/75 uppercase">
-                  Event Workspace
-                </p>
-                <h1 className="mt-2 max-w-2xl font-display text-4xl leading-tight text-white md:text-5xl">
-                  {event.title}
-                </h1>
-                <p className="mt-3 text-sm text-white/85">
-                  {formatEventDate(event.date)}
-                  {timeLabel ? ` · ${timeLabel}` : null}
-                  {event.location ? ` · ${event.location}` : null}
-                </p>
+        <div className="relative flex flex-col xl:flex-row xl:items-stretch">
+          <div className="flex w-full flex-col items-start gap-10 p-8 lg:flex-row xl:w-2/3 xl:p-12">
+            <div className="w-full shrink-0 lg:w-1/4">
+              <div className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-[#e6dfd5] bg-white shadow-md">
+                {imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={imageUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1c352d] via-[#5a7568] to-[#c5a880] px-4 text-center text-sm font-medium text-white/90">
+                    Official artwork appears here after Create with AI
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-[#1c352d]/5 transition-colors group-hover:bg-transparent" />
               </div>
-              <EventManageMenu
-                event={event}
-                size="sm"
-                includeEditDetails
-                iconOnly
-                triggerClassName="border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div className="flex flex-wrap gap-3 text-sm text-white/90">
-                <span className="rounded-full border border-white/35 px-3 py-1">
-                  {eventStatus}
-                </span>
-                {!countdown.isPast ? (
-                  <span className="rounded-full border border-white/35 px-3 py-1">
-                    {countdown.label}
-                  </span>
-                ) : null}
-                <span className="rounded-full border border-white/35 px-3 py-1">
-                  Staffing · {filled} filled
-                </span>
-              </div>
-              <Link
-                href={createHref}
-                prefetch={false}
-                onClick={(clickEvent) => {
-                  clickEvent.preventDefault();
-                  window.location.assign(createHref);
-                }}
-                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium text-[#1c352d] shadow-sm transition hover:bg-[#f4f0ea]"
+              <p
+                className={cn(
+                  "mt-3 text-center text-[10px] font-medium tracking-[0.2em] uppercase lg:text-left",
+                  ew.inksoft,
+                )}
               >
-                <Sparkles className="h-4 w-4" aria-hidden />
-                Generate Event Plan
-              </Link>
+                Official Artwork
+              </p>
+            </div>
+
+            <div className="flex w-full flex-1 flex-col gap-8">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p
+                    className={cn(
+                      "mb-2 text-xs font-medium tracking-[0.2em] uppercase",
+                      ew.gold,
+                    )}
+                  >
+                    {seasonEyebrow(event.date)}
+                  </p>
+                  <h1
+                    className={cn(
+                      "font-display text-4xl leading-tight md:text-5xl",
+                      ew.ink,
+                    )}
+                  >
+                    {event.title}
+                  </h1>
+                  <p
+                    className={cn(
+                      "mt-4 flex flex-wrap items-center gap-2 text-sm italic",
+                      ew.inksoft,
+                    )}
+                  >
+                    <Calendar className="h-4 w-4 shrink-0 not-italic" aria-hidden />
+                    <span>
+                      {formatEventDate(event.date)}
+                      {timeLabel ? ` · ${timeLabel}` : null}
+                      {event.location ? ` · ${event.location}` : null}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border border-[#ece2d4] bg-[#f4f0ea] px-4 py-2 text-xs font-medium",
+                      ew.ink,
+                    )}
+                  >
+                    <CheckCircle2
+                      className={cn("h-3.5 w-3.5", ew.sageDeep)}
+                      aria-hidden
+                    />
+                    {chip}
+                  </span>
+                  <EventManageMenu
+                    event={event}
+                    size="sm"
+                    includeEditDetails
+                    iconOnly
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+                <div className="border-l-2 border-[#c5a880] pl-5">
+                  <p
+                    className={cn(
+                      "mb-1 text-xs font-semibold tracking-wider uppercase",
+                      ew.inksoft,
+                    )}
+                  >
+                    Event Status
+                  </p>
+                  <p className={cn("font-display text-4xl", ew.ink)}>{track}</p>
+                </div>
+                <div className="flex flex-col justify-center gap-2 border-l-2 border-[#e6dfd5] pl-5">
+                  <p className={cn("text-xs", ew.inksoft)}>Staffing Goal</p>
+                  <p className={cn("text-base font-medium tabular-nums", ew.ink)}>
+                    {filled}{" "}
+                    <span className={cn("text-xs font-normal", ew.inksoft)}>
+                      {total != null && total > 0
+                        ? `of ${total} filled`
+                        : "filled"}
+                    </span>
+                  </p>
+                  <div className="h-1 w-full overflow-hidden rounded-full bg-[#faf8f5]">
+                    <div
+                      className="h-full rounded-full bg-[#8ea89d]"
+                      style={{ width: `${total != null && total > 0 ? fillPct : filled > 0 ? 40 : 0}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 pt-2">
+                <Link
+                  href={createHref}
+                  prefetch={false}
+                  onClick={(clickEvent) => {
+                    clickEvent.preventDefault();
+                    window.location.assign(createHref);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#1c352d] px-7 py-3 text-sm font-medium text-white transition hover:bg-[#5e6b65]"
+                >
+                  <Sparkles className="h-4 w-4" aria-hidden />
+                  Generate Event Plan
+                </Link>
+              </div>
             </div>
           </div>
+
+          <aside className="flex flex-col gap-8 border-t border-[#e6dfd5] bg-[#faf8f5]/30 p-8 xl:w-1/3 xl:border-t-0 xl:border-l xl:p-12">
+            <div>
+              <h3 className={cn("mb-2 font-display text-lg", ew.ink)}>
+                Lead Coordinator
+              </h3>
+              <div className="flex items-center gap-4 pt-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#ece2d4] text-sm font-semibold text-[#1c352d] ring-2 ring-[#ece2d4] ring-offset-2">
+                  {(lead?.displayName ?? "?")
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((p) => p[0]?.toUpperCase() ?? "")
+                    .join("") || "?"}
+                </div>
+                <div>
+                  <p className={cn("text-sm font-medium", ew.ink)}>
+                    {lead?.displayName?.trim() || "Not assigned yet"}
+                  </p>
+                  <p className={cn("text-xs italic", ew.inksoft)}>
+                    {lead ? "Event Lead" : "Assign from Community"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-auto border-t border-[#e6dfd5] pt-6">
+              <p
+                className={cn(
+                  "text-[10px] font-bold tracking-[0.2em] uppercase",
+                  ew.inksoft,
+                )}
+              >
+                Upcoming Milestone
+              </p>
+              <p className={cn("mt-2 text-sm", ew.ink)}>
+                {pendingApprovals > 0
+                  ? `Approve ${pendingApprovals} pending post${pendingApprovals === 1 ? "" : "s"}`
+                  : stats.tasks > 0
+                    ? `Clear ${stats.tasks} open task${stats.tasks === 1 ? "" : "s"}`
+                    : open > 0
+                      ? `Fill ${open} remaining volunteer spot${open === 1 ? "" : "s"}`
+                      : !countdown.isPast
+                        ? countdown.label
+                        : "Event plan is current"}
+              </p>
+            </div>
+          </aside>
         </div>
       </section>
 
+      {/* Attention + Staffing */}
       <section className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className={cn(ewCard, "p-8 lg:col-span-2")}>
+          <div className="mb-6 flex items-center justify-between gap-3">
             <h2 className={cn("font-display text-2xl", ew.ink)}>
               What Needs Your Attention
             </h2>
-            <span className={cn("text-sm", ew.inksoft)}>
+            <span className={cn("text-xs", ew.inksoft)}>
               {attention.length === 0
                 ? "You’re clear"
-                : `${attention.length} open item${
-                    attention.length === 1 ? "" : "s"
-                  }`}
+                : `${attention.length} open item${attention.length === 1 ? "" : "s"}`}
             </span>
           </div>
 
           {attention.length === 0 ? (
-            <div
-              className={cn(
-                ewCard,
-                "flex items-start gap-3 px-5 py-6",
-                ew.bgIvory,
-              )}
-            >
-              <CheckCircle2
-                className={cn("mt-0.5 h-5 w-5 shrink-0", ew.sageDeep)}
-              />
+            <div className="flex items-center gap-6 py-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#e6efe9] text-[#5a7568]">
+                <CheckCircle2 className="h-5 w-5" aria-hidden />
+              </div>
               <div>
-                <p className={cn("font-medium", ew.ink)}>Nothing urgent</p>
-                <p className={cn("mt-1 text-sm", ew.inksoft)}>
+                <p className={cn("text-base font-medium", ew.ink)}>
+                  Nothing urgent
+                </p>
+                <p className={cn("text-sm", ew.inksoft)}>
                   Approvals, tasks, and volunteer fill look calm for now.
                 </p>
               </div>
             </div>
           ) : (
-            <ul className="space-y-3">
+            <div className="flex flex-col divide-y divide-[#e6dfd5]/50">
               {attention.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectTab(item.tab)}
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onSelectTab(item.tab)}
+                  className="group flex items-center gap-6 py-5 text-left"
+                >
+                  <AttentionIcon icon={item.icon} tone={item.tone} />
+                  <div className="min-w-0 flex-1">
+                    <p className={cn("text-base font-medium", ew.ink)}>
+                      {item.title}
+                    </p>
+                    <p className={cn("truncate text-sm", ew.inksoft)}>
+                      {item.detail}
+                    </p>
+                  </div>
+                  <ArrowRight
                     className={cn(
-                      ewCard,
-                      "flex w-full items-start gap-3 px-5 py-4 text-left transition hover:border-[#c5a880]/70",
+                      "h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1",
+                      ew.inksoft,
                     )}
-                  >
-                    <span
-                      className={cn(
-                        "mt-1 h-2 w-2 shrink-0 rounded-full",
-                        ew.fillGold,
-                      )}
-                      aria-hidden
-                    />
-                    <span>
-                      <span className={cn("block font-medium", ew.ink)}>
-                        {item.title}
-                      </span>
-                      <span className={cn("mt-0.5 block text-sm", ew.inksoft)}>
-                        {item.detail}
-                      </span>
-                    </span>
-                  </button>
-                </li>
+                    aria-hidden
+                  />
+                </button>
               ))}
-            </ul>
+            </div>
           )}
         </div>
 
-        <aside className={cn(ewCard, "space-y-5 p-6")}>
-          <div>
-            <h3 className={cn("font-display text-lg", ew.ink)}>
-              Lead Coordinator
-            </h3>
-            <p className={cn("mt-2 text-sm", ew.inksoft)}>
-              {lead?.trim() || "Not assigned yet"}
-            </p>
+        <div className={cn(ewCard, "flex flex-col gap-6 p-8")}>
+          <h2 className={cn("font-display text-2xl", ew.ink)}>Staffing Status</h2>
+          <StaffingDonut
+            filled={filled}
+            open={Math.max(0, open)}
+            pending={pendingApprovals}
+          />
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className={cn("flex items-center gap-2", ew.inksoft)}>
+                <span className="h-2.5 w-2.5 rounded-full bg-[#1c352d]" />
+                Filled
+              </span>
+              <span className={cn("font-medium tabular-nums", ew.ink)}>
+                {filled}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={cn("flex items-center gap-2", ew.inksoft)}>
+                <span className="h-2.5 w-2.5 rounded-full bg-[#c5a880]" />
+                Pending review
+              </span>
+              <span className={cn("font-medium tabular-nums", ew.ink)}>
+                {pendingApprovals}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={cn("flex items-center gap-2", ew.inksoft)}>
+                <span className="h-2.5 w-2.5 rounded-full bg-[#e6dfd5]" />
+                Open
+              </span>
+              <span className={cn("font-medium tabular-nums", ew.ink)}>
+                {Math.max(0, open)}
+              </span>
+            </div>
           </div>
-          <div className="border-t border-[#e6dfd5] pt-5">
-            <h3 className={cn("font-display text-lg", ew.ink)}>
-              Staffing Status
-            </h3>
-            <dl className="mt-3 space-y-2 text-sm">
-              <div className="flex justify-between gap-3">
-                <dt className={ew.inksoft}>Filled</dt>
-                <dd className={cn("font-semibold tabular-nums", ew.ink)}>
-                  {filled}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className={ew.inksoft}>Pending approvals</dt>
-                <dd className={cn("font-semibold tabular-nums", ew.ink)}>
-                  {stats.pendingApprovals}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className={ew.inksoft}>Open tasks</dt>
-                <dd className={cn("font-semibold tabular-nums", ew.ink)}>
-                  {stats.tasks}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </aside>
+        </div>
       </section>
 
+      {/* What's Next */}
+      <section className={cn(ewCard, "relative overflow-hidden p-10 shadow-sm")}>
+        <CalendarCheck
+          className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-[180px] w-[180px] text-[#1c352d] opacity-[0.03]"
+          aria-hidden
+        />
+        <h2 className={cn("mb-10 font-display text-2xl", ew.ink)}>What’s Next</h2>
+        <div className="relative grid grid-cols-1 gap-12 md:grid-cols-3">
+          {nextItems.slice(0, 3).map((item) => (
+            <button
+              key={`${item.when}-${item.title}`}
+              type="button"
+              onClick={() => onSelectTab(item.tab)}
+              className="relative border-l border-[#e6dfd5]/60 pl-8 text-left md:pl-8"
+            >
+              <span
+                className={cn(
+                  "absolute top-1 left-[-6px] h-3 w-3 rounded-full",
+                  item.tone === "sage"
+                    ? "bg-[#8ea89d] shadow-[0_0_0_6px_rgba(142,168,157,0.1)]"
+                    : item.tone === "gold"
+                      ? "bg-[#c5a880] shadow-[0_0_0_6px_rgba(197,168,128,0.1)]"
+                      : "bg-[#e6dfd5] shadow-[0_0_0_6px_rgba(230,223,213,0.2)]",
+                )}
+                aria-hidden
+              />
+              <p
+                className={cn(
+                  "mb-2 text-[10px] font-bold tracking-[0.2em] uppercase",
+                  item.tone === "rule" ? ew.inksoft : ew.gold,
+                )}
+              >
+                {item.when}
+              </p>
+              <p className={cn("text-base font-medium", ew.ink)}>{item.title}</p>
+              <p className={cn("mt-1 text-xs leading-relaxed", ew.inksoft)}>
+                {item.detail}
+              </p>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Workspace hub cards */}
       <section>
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-8 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
-            <h2 className={cn("font-display text-2xl", ew.ink)}>
+            <h2 className={cn("font-display text-3xl", ew.ink)}>
               Event Workspace
             </h2>
             <p className={cn("mt-1 text-sm", ew.inksoft)}>
               Manage the core logistics and volunteer operations
             </p>
           </div>
-          <div className="flex gap-4 text-xs font-semibold">
+          <div className="flex items-center gap-6 rounded-full border border-[#e6dfd5] bg-white px-6 py-3 shadow-sm">
             <button
               type="button"
               onClick={() => onSelectTab("insights")}
-              className={cn(ew.inksoft, "hover:text-[#1c352d]")}
+              className={cn(
+                "flex items-center gap-2 text-xs font-semibold transition hover:text-[#1c352d]",
+                ew.inksoft,
+              )}
             >
-              Insights
+              <span className={ew.gold}>↗</span> Insights
             </button>
+            <span className="h-3 w-px bg-[#e6dfd5]" aria-hidden />
             <button
               type="button"
               onClick={() => onSelectTab("activity")}
-              className={cn(ew.inksoft, "hover:text-[#1c352d]")}
+              className={cn(
+                "flex items-center gap-2 text-xs font-semibold transition hover:text-[#1c352d]",
+                ew.inksoft,
+              )}
             >
-              Activity
+              <span className={ew.gold}>↺</span> Activity
             </button>
           </div>
         </div>
@@ -327,7 +683,11 @@ export function EventWorkspaceOverviewPanel({
             icon={<ClipboardList className="h-5 w-5" />}
             title="Planning"
             subtitle="Tasks, Notes, & Files"
-            meta={`${stats.tasks} open task${stats.tasks === 1 ? "" : "s"}`}
+            meta={
+              <span className="rounded bg-[#e6efe9] px-2 py-1 text-xs font-medium text-[#5a7568]">
+                {stats.tasks} Open Task{stats.tasks === 1 ? "" : "s"}
+              </span>
+            }
             onClick={() => onSelectTab("tasks")}
           />
           <WorkspaceCard
@@ -335,9 +695,11 @@ export function EventWorkspaceOverviewPanel({
             title="Approvals"
             subtitle="Content requiring review"
             meta={
-              stats.pendingApprovals === 0
-                ? "All clear"
-                : `${stats.pendingApprovals} pending review`
+              <span className="rounded bg-[#f4f0ea] px-2 py-1 text-xs font-medium text-[#c5a880]">
+                {pendingApprovals === 0
+                  ? "All clear"
+                  : `${pendingApprovals} Pending Review`}
+              </span>
             }
             onClick={() => onSelectTab("approvals")}
           />
@@ -345,83 +707,50 @@ export function EventWorkspaceOverviewPanel({
             icon={<Users className="h-5 w-5" />}
             title="Volunteers"
             subtitle="Shifts & Signups"
-            meta={`${filled} filled`}
+            meta={
+              <span className="rounded bg-[#faf8f5] px-2 py-1 text-xs font-medium text-[#5e6b65]">
+                {total != null && total > 0
+                  ? `${filled}/${total} Filled`
+                  : `${filled} Filled`}
+              </span>
+            }
             onClick={() => onSelectTab("volunteers")}
           />
           <WorkspaceCard
             icon={<UsersRound className="h-5 w-5" />}
             title="Community"
             subtitle="Team & Vendors"
-            meta="People & partners"
+            meta={
+              teamPreview.length > 0 ? (
+                <div className="flex -space-x-2">
+                  {teamPreview.map((name) => (
+                    <span
+                      key={name}
+                      className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#ece2d4] text-[10px] font-bold text-[#1c352d]"
+                      title={name}
+                    >
+                      {name
+                        .split(/\s+/)
+                        .map((p) => p[0]?.toUpperCase() ?? "")
+                        .slice(0, 2)
+                        .join("")}
+                    </span>
+                  ))}
+                  {teamExtra > 0 ? (
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#f4f0ea] text-[10px] font-bold text-[#1c352d]">
+                      +{teamExtra}
+                    </span>
+                  ) : null}
+                </div>
+              ) : (
+                <span className="rounded bg-[#faf8f5] px-2 py-1 text-xs font-medium text-[#5e6b65]">
+                  Add team
+                </span>
+              )
+            }
             onClick={() => onSelectTab("responsibilities")}
           />
         </div>
-      </section>
-
-      <section className={cn(ewCard, "relative overflow-hidden p-8 sm:p-10")}>
-        <CalendarCheck
-          className="pointer-events-none absolute top-6 right-6 h-16 w-16 text-[#e6dfd5]"
-          aria-hidden
-        />
-        <h2 className={cn("font-display text-2xl", ew.ink)}>What’s Next</h2>
-        <ul className="mt-6 space-y-4 border-l border-[#e6dfd5] pl-6">
-          {stats.pendingApprovals > 0 ? (
-            <li>
-              <button
-                type="button"
-                onClick={() => onSelectTab("approvals")}
-                className="text-left"
-              >
-                <p className={cn("text-xs font-semibold uppercase", ew.sageDeep)}>
-                  Today
-                </p>
-                <p className={cn("font-medium", ew.ink)}>
-                  Approve pending content
-                </p>
-                <p className={cn("text-sm", ew.inksoft)}>
-                  {stats.pendingApprovals} item
-                  {stats.pendingApprovals === 1 ? "" : "s"} waiting in Approvals.
-                </p>
-              </button>
-            </li>
-          ) : null}
-          {stats.tasks > 0 ? (
-            <li>
-              <button
-                type="button"
-                onClick={() => onSelectTab("tasks")}
-                className="text-left"
-              >
-                <p className={cn("text-xs font-semibold uppercase", ew.sageDeep)}>
-                  Up next
-                </p>
-                <p className={cn("font-medium", ew.ink)}>Work open tasks</p>
-                <p className={cn("text-sm", ew.inksoft)}>
-                  {stats.tasks} task{stats.tasks === 1 ? "" : "s"} in Planning.
-                </p>
-              </button>
-            </li>
-          ) : null}
-          <li>
-            <button
-              type="button"
-              onClick={() => onSelectTab("volunteers")}
-              className="text-left"
-            >
-              <p className={cn("text-xs font-semibold uppercase", ew.sageDeep)}>
-                Staffing
-              </p>
-              <p className={cn("font-medium", ew.ink)}>
-                Review volunteer coverage
-              </p>
-              <p className={cn("text-sm", ew.inksoft)}>
-                {filled > 0
-                  ? `${filled} filled spots on the latest signup snapshot.`
-                  : "Connect or refresh your signup to see fill."}
-              </p>
-            </button>
-          </li>
-        </ul>
       </section>
     </div>
   );
@@ -437,7 +766,7 @@ function WorkspaceCard({
   icon: ReactNode;
   title: string;
   subtitle: string;
-  meta: string;
+  meta: ReactNode;
   onClick: () => void;
 }) {
   return (
@@ -446,12 +775,12 @@ function WorkspaceCard({
       onClick={onClick}
       className={cn(
         ewCard,
-        "group flex flex-col gap-5 p-7 text-left transition hover:-translate-y-0.5 hover:shadow-md",
+        "group flex flex-col gap-6 p-8 text-left transition-all hover:-translate-y-1 hover:shadow-md",
       )}
     >
       <div
         className={cn(
-          "flex h-12 w-12 items-center justify-center rounded-full border border-[#e6dfd5] bg-[#faf8f5]",
+          "flex h-12 w-12 items-center justify-center rounded-full border border-[#e6dfd5] bg-[#faf8f5] transition-colors group-hover:bg-[#f4f0ea]",
           ew.ink,
         )}
       >
@@ -459,9 +788,15 @@ function WorkspaceCard({
       </div>
       <div>
         <h3 className={cn("font-display text-lg", ew.ink)}>{title}</h3>
-        <p className={cn("mt-1 text-sm", ew.inksoft)}>{subtitle}</p>
+        <p className={cn("mt-1 text-xs", ew.inksoft)}>{subtitle}</p>
       </div>
-      <p className={cn("mt-auto text-sm font-medium", ew.sageDeep)}>{meta}</p>
+      <div className="mt-auto flex items-center justify-between gap-2">
+        {meta}
+        <ArrowRight
+          className="h-4 w-4 text-[#e6dfd5] transition-colors group-hover:text-[#c5a880]"
+          aria-hidden
+        />
+      </div>
     </button>
   );
 }

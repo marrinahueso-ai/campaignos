@@ -13,6 +13,9 @@ export type EventDetailHeroStats = {
   scheduledPosts: number;
   tasks: number;
   filledSpots: number;
+  /** From latest confirmed volunteer snapshot when quantities are known. */
+  totalSpots: number | null;
+  openSpots: number | null;
 };
 
 export type EventDetailHeroStatTab = "approvals" | "tasks" | "volunteers";

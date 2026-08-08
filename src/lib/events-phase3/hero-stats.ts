@@ -4,7 +4,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { areEventPlaybookTablesAvailable } from "@/lib/event-playbooks/queries";
-import { getLatestConfirmedVolunteerFilledSpots } from "@/lib/event-volunteers/queries";
+import { getLatestConfirmedVolunteerStaffingCounts } from "@/lib/event-volunteers/queries";
 import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHeroStatsStrip";
 import {
   countMilestonesFromSessionData,
@@ -30,7 +30,7 @@ export const getEventDetailHeroStats = cache(
       schedulingApprovalsResult,
       scheduledPostsResult,
       tasksResult,
-      filledSpots,
+      staffing,
     ] = await Promise.all([
       // Focused select only — avoids full session load + scheduling sync side effects.
       supabase
@@ -67,7 +67,11 @@ export const getEventDetailHeroStats = cache(
             .select("id", { count: "exact", head: true })
             .eq("event_id", eventId)
         : Promise.resolve({ count: 0, error: null }),
-      getLatestConfirmedVolunteerFilledSpots(eventId).catch(() => 0),
+      getLatestConfirmedVolunteerStaffingCounts(eventId).catch(() => ({
+        filledSpots: 0,
+        totalSpots: null,
+        openSpots: null,
+      })),
     ]);
 
     let sessionMilestoneCount: number | null = null;
@@ -119,7 +123,9 @@ export const getEventDetailHeroStats = cache(
       pendingApprovals: classicApprovals + schedulingApprovals,
       scheduledPosts,
       tasks,
-      filledSpots,
+      filledSpots: staffing.filledSpots,
+      totalSpots: staffing.totalSpots,
+      openSpots: staffing.openSpots,
     };
   },
 );

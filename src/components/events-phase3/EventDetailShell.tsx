@@ -22,11 +22,7 @@ import {
 import { EventPlanningShell } from "@/components/events-phase3/EventPlanningShell";
 import { EventWorkspaceContextHeader } from "@/components/events-phase3/EventWorkspaceContextHeader";
 import { EventWorkspaceOverviewPanel } from "@/components/events-phase3/EventWorkspaceOverviewPanel";
-import {
-  ew,
-  ewNavActive,
-  ewNavIdle,
-} from "@/components/events-phase3/event-workspace-tokens";
+import { ew } from "@/components/events-phase3/event-workspace-tokens";
 import { OnboardingYoureSetToast } from "@/components/onboarding/OnboardingYoureSetToast";
 import { Button } from "@/components/ui/Button";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
@@ -167,31 +163,6 @@ const TAB_LABELS: Record<EventDetailTab, string> = {
 
 const PLANNING_TABS: EventDetailTab[] = ["tasks", "notes", "files"];
 const COMMUNITY_TABS: EventDetailTab[] = ["responsibilities", "vendors"];
-
-type TopLevelNavId =
-  | "planning"
-  | "approvals"
-  | "volunteers"
-  | "community"
-  | "insights"
-  | "activity";
-
-const TOP_LEVEL_NAV: { id: TopLevelNavId; label: string }[] = [
-  { id: "planning", label: "Planning" },
-  { id: "approvals", label: "Approvals" },
-  { id: "volunteers", label: "Volunteers" },
-  { id: "community", label: "Community" },
-  { id: "insights", label: "Insights" },
-  { id: "activity", label: "Activity" },
-];
-
-const TAB_COUNTS: Partial<
-  Record<EventDetailTab, (stats: EventDetailHeroStats) => number>
-> = {
-  approvals: (stats) => stats.pendingApprovals,
-  tasks: (stats) => stats.tasks,
-  volunteers: (stats) => stats.filledSpots,
-};
 
 const VALID_TABS = new Set<EventDetailTab>(
   Object.keys(TAB_LABELS) as EventDetailTab[],
@@ -417,20 +388,6 @@ function resolveInitialTab(initialTab: string | null | undefined): EventDetailTa
     return initialTab as EventDetailTab;
   }
   return "overview";
-}
-
-function topLevelForTab(tab: EventDetailTab): TopLevelNavId | null {
-  if (PLANNING_TABS.includes(tab)) return "planning";
-  if (COMMUNITY_TABS.includes(tab)) return "community";
-  if (
-    tab === "approvals" ||
-    tab === "volunteers" ||
-    tab === "insights" ||
-    tab === "activity"
-  ) {
-    return tab;
-  }
-  return null;
 }
 
 export function EventDetailShell({
@@ -781,7 +738,6 @@ export function EventDetailShell({
 
   const isPlanning = PLANNING_TABS.includes(tab);
   const isCommunity = COMMUNITY_TABS.includes(tab);
-  const activeTopLevel = topLevelForTab(tab);
 
   const showTabLoading =
     LAZY_TABS.has(tab) &&
@@ -789,25 +745,6 @@ export function EventDetailShell({
     !(tab === "approvals" && approvalsSlot) &&
     !isCommunity &&
     (pending || !tabError);
-
-  const approvalsStatusLine =
-    liveHeroStats.pendingApprovals > 0
-      ? `${liveHeroStats.pendingApprovals} item${
-          liveHeroStats.pendingApprovals === 1 ? "" : "s"
-        } need review`
-      : null;
-
-  function selectTopLevel(navId: TopLevelNavId) {
-    if (navId === "planning") {
-      selectTab(isPlanning ? tab : "tasks");
-      return;
-    }
-    if (navId === "community") {
-      selectTab(isCommunity ? tab : "responsibilities");
-      return;
-    }
-    selectTab(navId);
-  }
 
   return (
     <EventDetailTabInvalidationProvider value={invalidationValue}>
@@ -824,7 +761,12 @@ export function EventDetailShell({
           <ArrowLeft className="h-4 w-4" />
           Back to Events
         </Link>
-      ) : null}
+      ) : (
+        <EventWorkspaceContextHeader
+          eventTitle={event.title}
+          onBackToEvent={() => selectTab("overview")}
+        />
+      )}
 
       {showYoureSet ? (
         <OnboardingYoureSetToast eventTitle={event.title} />
@@ -838,78 +780,19 @@ export function EventDetailShell({
           responsibilities={responsibilities}
           onSelectTab={selectTab}
         />
-      ) : (
-        <>
-          <EventWorkspaceContextHeader
-            event={event}
-            artwork={artwork}
-            statusLine={tab === "approvals" ? approvalsStatusLine : null}
-            onBackToWorkspace={() => selectTab("overview")}
-          />
-
-          <nav
-            className="relative flex flex-wrap items-center gap-1 border-b border-[#e6dfd5] sm:gap-2"
-            aria-label="Event sections"
-            role="tablist"
-          >
-            {TOP_LEVEL_NAV.map(({ id, label }) => {
-              const isActive = activeTopLevel === id;
-              const countTab: EventDetailTab | null =
-                id === "approvals"
-                  ? "approvals"
-                  : id === "volunteers"
-                    ? "volunteers"
-                    : id === "planning"
-                      ? "tasks"
-                      : null;
-              const countFn = countTab ? TAB_COUNTS[countTab] : null;
-              const count = countFn ? countFn(liveHeroStats) : null;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  data-testid={
-                    id === "planning"
-                      ? "event-detail-tab-group-planning"
-                      : id === "community"
-                        ? "event-detail-tab-group-community"
-                        : `event-detail-tab-${id}`
-                  }
-                  aria-selected={isActive}
-                  aria-current={isActive ? "page" : undefined}
-                  onClick={() => selectTopLevel(id)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-3 text-sm transition",
-                    isActive ? ewNavActive : ewNavIdle,
-                  )}
-                >
-                  {label}
-                  {count !== null ? (
-                    <span className="tabular-nums text-[#5e6b65]">{count}</span>
-                  ) : null}
-                </button>
-              );
-            })}
-
-            {tab === "create-with-ai" ? (
-              <button
-                type="button"
-                role="tab"
-                data-testid="event-detail-tab-create-with-ai"
-                aria-selected
-                aria-current="page"
-                className={cn("ml-auto inline-flex items-center px-3 py-3 text-sm", ewNavActive)}
-              >
-                Create with AI
-              </button>
-            ) : null}
-          </nav>
-        </>
-      )}
+      ) : null}
 
       {tab !== "overview" ? (
       <div>
+        {tab === "create-with-ai" ? (
+          <p
+            className={cn("mb-4 font-display text-2xl", ew.ink)}
+            data-testid="event-detail-tab-create-with-ai"
+          >
+            Create with AI
+          </p>
+        ) : null}
+
         {tabError && LAZY_TABS.has(tab) && !loadedTabs.has(tab) && !isCommunity ? (
           <div className="rounded-xl border border-[#e6dfd5] bg-white p-4">
             <p className="text-sm text-red-600" role="alert">
@@ -1049,7 +932,10 @@ export function EventDetailShell({
           ) : null}
 
           {tab === "activity" && loadedTabs.has("activity") ? (
-            <div className="rounded-2xl border border-[#e6dfd5] bg-white p-4 sm:p-6">
+            <div
+              className="rounded-2xl border border-[#e6dfd5] bg-white p-4 sm:p-6"
+              data-testid="event-detail-tab-activity"
+            >
               <EventDetailActivityEasePanel items={activityItems} />
             </div>
           ) : null}
@@ -1057,7 +943,10 @@ export function EventDetailShell({
           {tab === "insights" &&
           panelData.insightsData &&
           loadedTabs.has("insights") ? (
-            <div className="rounded-2xl border border-[#e6dfd5] bg-[#faf8f5] p-2 sm:p-4">
+            <div
+              className="rounded-2xl border border-[#e6dfd5] bg-[#faf8f5] p-2 sm:p-4"
+              data-testid="event-detail-tab-insights"
+            >
               <EventDetailInsightsEasePanel data={panelData.insightsData} />
             </div>
           ) : null}

@@ -123,7 +123,9 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
     return (
       <section className="space-y-6">
         <div>
-          <h2 className={cn("font-display text-2xl", ew.ink)}>Volunteers</h2>
+          <h2 className={cn("font-display text-2xl", ew.ink)} data-testid="event-detail-tab-volunteers">
+            Volunteers
+          </h2>
           <p className={cn("mt-1 text-sm", ew.inksoft)}>
             Connect a public SignUpGenius link to see roles, shifts, and
             arrivals here.
@@ -192,7 +194,9 @@ export function EventDetailVolunteersEasePanel({ event }: { event: Event }) {
   if (!overview?.snapshot) {
     return (
       <section>
-        <h2 className={cn("font-display text-2xl", ew.ink)}>Volunteers</h2>
+        <h2 className={cn("font-display text-2xl", ew.ink)} data-testid="event-detail-tab-volunteers">
+          Volunteers
+        </h2>
         <p className={cn("mt-2 text-sm", ew.inksoft)}>
           {error ?? "Volunteer numbers aren’t available yet."}
         </p>

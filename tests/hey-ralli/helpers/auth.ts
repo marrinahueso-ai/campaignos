@@ -52,7 +52,10 @@ async function loginWithCredentials(
   await page.goto("/login");
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill(password);
-  await page.getByRole("button", { name: /^sign in$/i }).click();
+  // Marketing auth shell uses "Log in"; older copy was "Sign in".
+  await page
+    .getByRole("button", { name: /^(log in|sign in)$/i })
+    .click();
   await page.waitForURL((url) => !url.pathname.startsWith("/login"), {
     timeout: 30_000,
   });

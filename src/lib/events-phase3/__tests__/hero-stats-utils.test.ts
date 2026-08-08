@@ -68,8 +68,10 @@ describe("getEventDetailHeroStats source wiring", () => {
     assert.match(heroStats, /"assigned_to_me"/);
   });
 
-  it("reads filled spots from volunteer snapshot helper", () => {
-    assert.match(heroStats, /getLatestConfirmedVolunteerFilledSpots/);
+  it("reads volunteer staffing from snapshot helper", () => {
+    assert.match(heroStats, /getLatestConfirmedVolunteerStaffingCounts/);
+    assert.match(heroStats, /totalSpots: staffing\.totalSpots/);
+    assert.match(heroStats, /openSpots: staffing\.openSpots/);
     assert.doesNotMatch(heroStats, /event_playbook_files/);
   });
 });

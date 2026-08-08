@@ -110,14 +110,25 @@ export async function getLatestConfirmedVolunteerSnapshot(
   return getVolunteerSnapshotById(String(data.id), organizationId);
 }
 
+export type VolunteerStaffingCounts = {
+  filledSpots: number;
+  totalSpots: number | null;
+  openSpots: number | null;
+};
+
 /**
- * Lightweight filled-spot count for event hero stats.
+ * Lightweight staffing counts for event hero / landing stats.
  * Same snapshot preference as getLatestConfirmedVolunteerSnapshot, without
- * loading assignments. Returns 0 when disconnected or quantities unknown.
+ * loading assignments.
  */
-export async function getLatestConfirmedVolunteerFilledSpots(
+export async function getLatestConfirmedVolunteerStaffingCounts(
   eventId: string,
-): Promise<number> {
+): Promise<VolunteerStaffingCounts> {
+  const empty: VolunteerStaffingCounts = {
+    filledSpots: 0,
+    totalSpots: null,
+    openSpots: null,
+  };
   const supabase = await createClient();
 
   const { data: source } = await supabase
@@ -132,33 +143,58 @@ export async function getLatestConfirmedVolunteerFilledSpots(
       ? source.latest_confirmed_snapshot_id
       : null;
 
+  const selectCols = "filled_spots, total_spots, open_spots";
+
+  let row: {
+    filled_spots: unknown;
+    total_spots: unknown;
+    open_spots: unknown;
+  } | null = null;
+
   if (snapshotId) {
     const { data, error } = await supabase
       .from("event_volunteer_snapshots")
-      .select("filled_spots")
+      .select(selectCols)
       .eq("id", snapshotId)
       .maybeSingle();
-    if (!error && data) {
-      const filled = data.filled_spots;
-      return typeof filled === "number" && Number.isFinite(filled) ? filled : 0;
-    }
+    if (!error && data) row = data;
   }
 
-  const { data, error } = await supabase
-    .from("event_volunteer_snapshots")
-    .select("filled_spots")
-    .eq("event_id", eventId)
-    .eq("confirmed", true)
-    .order("captured_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error || !data) {
-    return 0;
+  if (!row) {
+    const { data, error } = await supabase
+      .from("event_volunteer_snapshots")
+      .select(selectCols)
+      .eq("event_id", eventId)
+      .eq("confirmed", true)
+      .order("captured_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return empty;
+    row = data;
   }
 
-  const filled = data.filled_spots;
-  return typeof filled === "number" && Number.isFinite(filled) ? filled : 0;
+  const filled =
+    typeof row.filled_spots === "number" && Number.isFinite(row.filled_spots)
+      ? row.filled_spots
+      : 0;
+  const total =
+    typeof row.total_spots === "number" && Number.isFinite(row.total_spots)
+      ? row.total_spots
+      : null;
+  const open =
+    typeof row.open_spots === "number" && Number.isFinite(row.open_spots)
+      ? row.open_spots
+      : null;
+
+  return { filledSpots: filled, totalSpots: total, openSpots: open };
+}
+
+/** @deprecated Prefer getLatestConfirmedVolunteerStaffingCounts for new callers. */
+export async function getLatestConfirmedVolunteerFilledSpots(
+  eventId: string,
+): Promise<number> {
+  const staffing = await getLatestConfirmedVolunteerStaffingCounts(eventId);
+  return staffing.filledSpots;
 }
 
 export async function getPendingVolunteerSnapshot(

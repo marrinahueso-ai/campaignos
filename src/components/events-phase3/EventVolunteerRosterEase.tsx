@@ -162,7 +162,9 @@ export function EventVolunteerRosterEase({
     <section className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className={cn("font-display text-2xl", ew.ink)}>Volunteers</h2>
+          <h2 className={cn("font-display text-2xl", ew.ink)} data-testid="event-detail-tab-volunteers">
+            Volunteers
+          </h2>
           <p className={cn("mt-1 text-sm", ew.inksoft)}>
             <span className={cn("font-semibold tabular-nums", ew.ink)}>
               {filled}

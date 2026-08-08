@@ -236,7 +236,9 @@ export function EventDetailApprovalsEasePanel({
       <section className="space-y-6">
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className={cn("font-display text-2xl", ew.ink)}>Approvals</h2>
+            <h2 className={cn("font-display text-2xl", ew.ink)} data-testid="event-detail-tab-approvals">
+              Approvals
+            </h2>
             <p className={cn("mt-1 text-sm", ew.inksoft)}>
               Flyers and posts for this event will appear here once they are
               drafted.
@@ -283,7 +285,9 @@ export function EventDetailApprovalsEasePanel({
 
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className={cn("font-display text-2xl", ew.ink)}>Approvals</h2>
+          <h2 className={cn("font-display text-2xl", ew.ink)} data-testid="event-detail-tab-approvals">
+            Approvals
+          </h2>
           <p className={cn("mt-1 text-sm", ew.inksoft)}>
             {scoped.length} communication{scoped.length === 1 ? "" : "s"}
             {" · "}

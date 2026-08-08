@@ -14,18 +14,18 @@ describe("event detail ease UI contracts", () => {
     "../../../app/(dashboard)/events/[id]/render-planning-hub.tsx",
   );
 
-  it("uses workspace overview default with Planning/Community top-level nav", () => {
+  it("uses workspace overview default; Planning/Community are hub cards not a top rail", () => {
     assert.match(shell, /EventWorkspaceOverviewPanel/);
     assert.match(shell, /EventWorkspaceContextHeader/);
     assert.match(shell, /EventPlanningShell/);
     assert.match(shell, /EventCommunityPanel/);
-    assert.match(shell, /role="tablist"/);
-    assert.match(shell, /Planning/);
-    assert.match(shell, /Community/);
     assert.match(shell, /responsibilities: "Team"/);
     assert.match(shell, /PLANNING_TABS/);
     assert.match(shell, /COMMUNITY_TABS/);
     assert.match(shell, /return "overview"/);
+    assert.match(shell, /onBackToEvent/);
+    assert.doesNotMatch(shell, /TOP_LEVEL_NAV/);
+    assert.doesNotMatch(shell, /event-detail-tab-group-planning/);
     assert.doesNotMatch(shell, /EventDetailEaseHero/);
     assert.doesNotMatch(shell, /<EventDetailHero[\s>]/);
   });
@@ -122,7 +122,7 @@ describe("event detail ease UI contracts", () => {
     assert.match(planningHub, /const approvalRequests = resolvedWorkspace\.approvalRequests \?\? \[\]/);
   });
 
-  it("ships overview landing + condensed context header for non-overview tabs", () => {
+  it("ships overview landing + Back to [Event] interior chrome (no event-wide rail)", () => {
     const overview = readSrc(
       "../../../components/events-phase3/EventWorkspaceOverviewPanel.tsx",
     );
@@ -137,11 +137,16 @@ describe("event detail ease UI contracts", () => {
     assert.match(overview, /Generate Event Plan/);
     assert.match(overview, /createWithAiHref/);
     assert.match(overview, /Event Workspace/);
-    assert.match(header, /Back to Workspace/);
-    assert.match(header, /Back to Events/);
-    assert.match(header, /includeEditDetails/);
-    assert.match(header, /iconOnly/);
-    assert.match(shell, /onBackToWorkspace/);
+    assert.match(overview, /Official Artwork/);
+    assert.match(overview, /aspect-\[3\/4\]/);
+    assert.match(overview, /Staffing Status/);
+    assert.match(overview, /Lead Coordinator/);
+    assert.match(header, /Back to \{eventTitle\}/);
+    assert.match(header, /onBackToEvent/);
+    assert.match(header, /event-workspace-back-to-event/);
+    assert.doesNotMatch(header, /Generate Event Plan/);
+    assert.doesNotMatch(header, /Back to Workspace/);
+    assert.match(shell, /onBackToEvent/);
     assert.match(notes, /Shared Notes/);
     assert.match(notes, /Recent Scratchpads/);
     assert.match(notes, /New Note/);
