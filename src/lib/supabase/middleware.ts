@@ -27,6 +27,7 @@ const PUBLIC_PATHS = [
   "/about",
   "/pricing",
   "/features",
+  "/why-hey-ralli",
   "/login",
   "/signup",
   "/forgot-password",

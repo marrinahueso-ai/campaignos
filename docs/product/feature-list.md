@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 7, 2026 — Background Library vision metadata
+**Last updated:** August 8, 2026 — Why Hey Ralli marketing page
 
 ---
 
@@ -15,6 +15,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Calendar product demo — **in progress** (recorded Month / Week / **Best times** DnD → **Bring in calendar** / View imported items → Google → Subscribe → Upload; video [`public/demos/calendar-demo.webm`](../../public/demos/calendar-demo.webm); cinematic Ease mockup [`public/calendar-demo-ease-mockup.html`](../../public/calendar-demo-ease-mockup.html); IA cleanup mockup [`public/calendar-ease-cleanup-mockup.html`](../../public/calendar-ease-cleanup-mockup.html); re-record via `node scripts/capture-calendar-demo.mjs`)
 - Features (`/features`) — **shipped** (“See Hey Ralli in Action”: Create with AI modules band — Home Page · Social Media · Newsletter — plus live Motion demos for Social campaigns, Calendar / Plan Your Year, Approvals, Volunteer Master, Communications Hub / Meta inbox, Ask Ralli; private harness at `/dev/motion-engine`)
 - Pricing page ($49 / $79 / $129 · Starter / Professional / Premium + AI Reserve) — **shipped** (catalog features; Stripe Checkout / sign-in → billing CTAs)
+- Why Hey Ralli (`/why-hey-ralli`) — **shipped** (fragmentation → connected-workflow story: PLAN → CREATE → COORDINATE → APPROVE → PUBLISH → MEASURE; concise Connected-vs-Fragmented comparison; top-level marketing nav item on Home/Pricing/Why Hey Ralli via shared `MARKETING_WOW_NAV_LINKS`)
 - About — **shipped**
 - Email deep links (`/go/...`) — **shipped**
 - Public Privacy (`/privacy`) / Terms (`/terms`) + footer legal links — **shipped** (mockup chrome; living notes: [privacy-and-data.md](../security/privacy-and-data.md))
