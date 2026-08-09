@@ -206,6 +206,81 @@ describe("main event image reuse", () => {
     );
   });
 
+  it("waterfalls on first fill even when source mode was custom but art was cleared", () => {
+    const base = withRelativeDay(buildDefaultSession("e1", "Fair", "2026-09-01"), [
+      -14, -7, -1,
+    ]);
+    const art = {
+      feedUrl: "https://cdn.example/after-clear.png",
+      storyUrl: null,
+    };
+    const stuckCustomEmpty = {
+      ...base,
+      previewContents: base.previewContents.map((row) =>
+        row.milestoneId === "ms--14"
+          ? {
+              ...row,
+              artwork: { feedUrl: null, storyUrl: null },
+              artworkMode: "custom" as const,
+            }
+          : row,
+      ),
+    };
+    const { session } = applyArtworkWithMainEventReuse(
+      stuckCustomEmpty,
+      "ms--14",
+      art,
+    );
+    for (const id of ["ms--14", "ms--7", "ms--1"]) {
+      assert.equal(
+        session.previewContents.find((p) => p.milestoneId === id)?.artwork
+          .feedUrl,
+        art.feedUrl,
+      );
+      assert.equal(
+        session.previewContents.find((p) => p.milestoneId === id)?.artworkMode,
+        "shared",
+      );
+    }
+  });
+
+  it("keeps Apply-without-asCustom local after other posts already have art", () => {
+    const base = withRelativeDay(buildDefaultSession("e1", "Fair", "2026-09-01"), [
+      -14, -7, -1,
+    ]);
+    const first = {
+      feedUrl: "https://cdn.example/shared.png",
+      storyUrl: null,
+    };
+    let { session } = applyArtworkWithMainEventReuse(base, "ms--14", first);
+    const regen = {
+      feedUrl: "https://cdn.example/only-one.png",
+      storyUrl: null,
+    };
+    // Same call path as Edit Apply (no asCustom) after a shared fill.
+    ({ session } = applyArtworkWithMainEventReuse(session, "ms--7", regen));
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms--7")?.artwork
+        .feedUrl,
+      regen.feedUrl,
+    );
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms--7")
+        ?.artworkMode,
+      "custom",
+    );
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms--14")?.artwork
+        .feedUrl,
+      first.feedUrl,
+    );
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms--1")?.artwork
+        .feedUrl,
+      first.feedUrl,
+    );
+  });
+
   it("reapplies event image onto empty posts after a plan change", () => {
     const previous = withRelativeDay(
       buildDefaultSession("e1", "Fair", "2026-09-01"),

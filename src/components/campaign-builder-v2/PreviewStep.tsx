@@ -101,6 +101,7 @@ export function PreviewStep() {
     setSelectedMilestoneId,
     setPreviewTab,
     updatePreviewContent,
+    applyMilestoneArtwork,
     duplicateMilestone,
     removeMilestone,
     playbookOptions,
@@ -390,19 +391,8 @@ export function PreviewStep() {
     if (!selectedPreview) {
       return;
     }
-    const currentStatus = resolveMilestoneGenerationStatus(
-      selectedPreview,
-      selectedMilestone?.platformFormats,
-    );
     const milestoneId = selectedPreview.milestoneId;
-    updatePreviewContent(milestoneId, {
-      artwork,
-      status: "needs-review",
-      generationStatus: preserveApprovalWorkflowStatus(
-        currentStatus,
-        "needs_review",
-      ),
-    });
+    const changedIds = applyMilestoneArtwork(milestoneId, artwork);
     setEditModalOpen(false);
 
     // Flush session to server before sync/revalidate. Apply used to only update
@@ -410,17 +400,20 @@ export function PreviewStep() {
     // stale server snapshot that tied on artwork richness and reverted URLs.
     try {
       await flushSave();
-      const syncResult = await syncAppliedMilestoneArtworkAction({
-        eventId: session.eventId,
-        milestones: session.milestones,
-        milestoneId,
-        artwork,
-      });
-      if (!syncResult.success) {
-        console.error(
-          "Failed to sync applied artwork to event assets:",
-          syncResult.message,
-        );
+      const syncIds = changedIds.length > 0 ? changedIds : [milestoneId];
+      for (const syncId of syncIds) {
+        const syncResult = await syncAppliedMilestoneArtworkAction({
+          eventId: session.eventId,
+          milestones: session.milestones,
+          milestoneId: syncId,
+          artwork,
+        });
+        if (!syncResult.success) {
+          console.error(
+            "Failed to sync applied artwork to event assets:",
+            syncResult.message,
+          );
+        }
       }
       router.refresh();
     } catch (error) {

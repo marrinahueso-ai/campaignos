@@ -1216,10 +1216,12 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     if (!selectedPreview) {
       return;
     }
+    // First fill of an empty plan waterfalls onto every empty post. Applying
+    // again after other posts already have art (or on a custom override) stays
+    // on this post only — no forced asCustom on first Apply.
     const changedIds = applyMilestoneArtwork(
       selectedPreview.milestoneId,
       artwork,
-      { asCustom: true },
     );
     setEditModalOpen(false);
     try {

@@ -74,6 +74,8 @@ export function clearMilestonePreviewContent(
   const nextBase: MilestonePreviewContent = {
     ...preview,
     artwork: emptyMilestoneArtwork(),
+    // Drop shared/custom so a later first fill can waterfall again.
+    artworkMode: undefined,
     captions: preview.captions.map((caption) => ({
       ...caption,
       text: "",

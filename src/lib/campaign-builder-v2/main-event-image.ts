@@ -165,7 +165,11 @@ export function applyArtworkWithMainEventReuse(
   const sourcePreview = session.previewContents.find(
     (row) => row.milestoneId === sourceMilestoneId,
   );
-  const sourceWasCustom = sourcePreview?.artworkMode === "custom";
+  // Cleared posts may still carry artworkMode "custom" — only treat as an
+  // override when this post still has reusable art.
+  const sourceWasCustom =
+    sourcePreview?.artworkMode === "custom" &&
+    isReusableArtwork(sourcePreview.artwork);
   const othersAlreadyHaveArt = session.previewContents.some(
     (row) =>
       row.milestoneId !== sourceMilestoneId && isReusableArtwork(row.artwork),
