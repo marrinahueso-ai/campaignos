@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -14,6 +16,7 @@ import {
   HeartHandshake,
   HelpCircle,
   MailOpen,
+  Play,
   PlayCircle,
   Rocket,
   Search,
@@ -23,8 +26,15 @@ import {
 } from "lucide-react";
 import { MarketingWowFooter } from "@/components/marketing-wow/MarketingWowFooter";
 import { MarketingWowHeader } from "@/components/marketing-wow/MarketingWowHeader";
+import { ResourceTutorialViewer } from "@/components/marketing-wow/ResourceTutorialViewer";
 import { Button } from "@/components/ui/Button";
 import { HELP_SUPPORT_EMAIL } from "@/lib/help-center/articles";
+import {
+  RESOURCE_TUTORIALS,
+  RESOURCE_TUTORIAL_QUERY_PARAM,
+  getResourceTutorial,
+  type ResourceTutorialId,
+} from "@/lib/marketing/resource-tutorials";
 
 interface MarketingWowResourcesPageProps {
   userEmail?: string | null;
@@ -53,33 +63,45 @@ const TOPICS = [
 ] as const;
 
 /**
- * "Featured Tutorials" — no recorded tutorial videos exist yet, so these link to
- * the real live demos on `/features` instead of a fabricated video player. No
- * invented durations/view counts; badge says what it actually is (a live demo).
+ * Featured Tutorials — mix of narrated Resource videos (reusable registry) and
+ * live `/features` demos. Video cards never autoplay; MP4 loads only in the viewer.
  */
-const FEATURED_TUTORIALS = [
+type FeaturedLinkTutorial = {
+  kind: "link";
+  id: string;
+  icon: typeof Rocket;
+  title: string;
+  description: string;
+  href: string;
+};
+
+type FeaturedVideoTutorial = {
+  kind: "video";
+  tutorialId: ResourceTutorialId;
+};
+
+const FEATURED_TUTORIALS: ReadonlyArray<
+  FeaturedVideoTutorial | FeaturedLinkTutorial
+> = [
+  { kind: "video", tutorialId: "create-an-event" },
   {
-    id: "getting-started",
-    icon: Rocket,
-    title: "Getting started with Hey Ralli",
-    description: "Create your first event, then finish calendar, brand, and team setup.",
-    href: "/get-started",
-  },
-  {
+    kind: "link",
     id: "create-with-ai",
     icon: Sparkles,
     title: "Creating social posts with AI",
-    description: "See Create with AI turn one event into artwork, captions, and milestones.",
+    description:
+      "See Create with AI turn one event into artwork, captions, and milestones.",
     href: "/features#create-with-ai",
   },
   {
+    kind: "link",
     id: "volunteers",
     icon: HeartHandshake,
     title: "Coordinating your volunteers",
     description: "See how Volunteer Master tracks fill rate and underfilled roles.",
     href: "/features#volunteer-intelligence",
   },
-] as const;
+];
 
 /** Step-by-Step Guides — every title maps to real, shipped functionality. */
 const GUIDES = [
@@ -116,6 +138,7 @@ interface SearchableItem {
   description?: string;
   href: string;
   icon: typeof Search;
+  tutorialId?: ResourceTutorialId;
 }
 
 const SEARCH_INDEX: SearchableItem[] = [
@@ -126,14 +149,28 @@ const SEARCH_INDEX: SearchableItem[] = [
     href: topic.href,
     icon: topic.icon,
   })),
-  ...FEATURED_TUTORIALS.map((tutorial) => ({
-    id: `tutorial-${tutorial.id}`,
-    section: "Tutorial",
-    title: tutorial.title,
-    description: tutorial.description,
-    href: tutorial.href,
-    icon: tutorial.icon,
-  })),
+  ...FEATURED_TUTORIALS.map((tutorial) => {
+    if (tutorial.kind === "video") {
+      const video = RESOURCE_TUTORIALS[tutorial.tutorialId];
+      return {
+        id: `tutorial-${video.id}`,
+        section: "Tutorial",
+        title: video.title,
+        description: video.description,
+        href: `/resources?${RESOURCE_TUTORIAL_QUERY_PARAM}=${video.id}`,
+        icon: PlayCircle,
+        tutorialId: video.id,
+      };
+    }
+    return {
+      id: `tutorial-${tutorial.id}`,
+      section: "Tutorial",
+      title: tutorial.title,
+      description: tutorial.description,
+      href: tutorial.href,
+      icon: tutorial.icon,
+    };
+  }),
   ...GUIDES.map((guide) => ({
     id: `guide-${guide.id}`,
     section: "Guide",
@@ -149,8 +186,43 @@ export function MarketingWowResourcesPage({
   workspaceHref = "/dashboard",
   dashboardCtaLabel = "Open your dashboard",
 }: MarketingWowResourcesPageProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
+  const [activeTutorialId, setActiveTutorialId] =
+    useState<ResourceTutorialId | null>(null);
   const isSignedIn = Boolean(userEmail);
+
+  const openTutorial = useCallback(
+    (tutorialId: ResourceTutorialId) => {
+      setActiveTutorialId(tutorialId);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set(RESOURCE_TUTORIAL_QUERY_PARAM, tutorialId);
+      router.replace(`/resources?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  const closeTutorial = useCallback(() => {
+    setActiveTutorialId(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(RESOURCE_TUTORIAL_QUERY_PARAM);
+    const next = params.toString();
+    router.replace(next ? `/resources?${next}` : "/resources", {
+      scroll: false,
+    });
+  }, [router, searchParams]);
+
+  useEffect(() => {
+    const fromUrl = getResourceTutorial(
+      searchParams.get(RESOURCE_TUTORIAL_QUERY_PARAM),
+    );
+    setActiveTutorialId(fromUrl?.id ?? null);
+  }, [searchParams]);
+
+  const activeTutorial = activeTutorialId
+    ? RESOURCE_TUTORIALS[activeTutorialId]
+    : null;
 
   const trimmedQuery = query.trim();
   const results = useMemo(() => {
@@ -229,27 +301,67 @@ export function MarketingWowResourcesPage({
               </p>
             ) : (
               <div className="mt-6 divide-y divide-cos-border rounded-[24px] border border-cos-border bg-cos-card">
-                {results.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className="flex items-center gap-4 px-6 py-5 transition-colors hover:bg-cos-bg-alt/50"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cos-brand-sage-soft text-cos-brand-sage">
-                      <item.icon className="h-4 w-4" aria-hidden />
-                    </span>
-                    <span className="flex-1 text-left">
-                      <span className="block text-[10px] font-bold tracking-widest text-cos-muted uppercase">
-                        {item.section}
+                {results.map((item) =>
+                  item.tutorialId ? (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setQuery("");
+                        openTutorial(item.tutorialId!);
+                      }}
+                      className="flex w-full items-center gap-4 px-6 py-5 text-left transition-colors hover:bg-cos-bg-alt/50"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cos-brand-sage-soft text-cos-brand-sage">
+                        <item.icon className="h-4 w-4" aria-hidden />
                       </span>
-                      <span className="block font-semibold text-cos-text">{item.title}</span>
-                      {item.description ? (
-                        <span className="block text-sm text-cos-muted">{item.description}</span>
-                      ) : null}
-                    </span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-cos-muted" aria-hidden />
-                  </Link>
-                ))}
+                      <span className="flex-1 text-left">
+                        <span className="block text-[10px] font-bold tracking-widest text-cos-muted uppercase">
+                          {item.section}
+                        </span>
+                        <span className="block font-semibold text-cos-text">
+                          {item.title}
+                        </span>
+                        {item.description ? (
+                          <span className="block text-sm text-cos-muted">
+                            {item.description}
+                          </span>
+                        ) : null}
+                      </span>
+                      <ChevronRight
+                        className="h-4 w-4 shrink-0 text-cos-muted"
+                        aria-hidden
+                      />
+                    </button>
+                  ) : (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      className="flex items-center gap-4 px-6 py-5 transition-colors hover:bg-cos-bg-alt/50"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cos-brand-sage-soft text-cos-brand-sage">
+                        <item.icon className="h-4 w-4" aria-hidden />
+                      </span>
+                      <span className="flex-1 text-left">
+                        <span className="block text-[10px] font-bold tracking-widest text-cos-muted uppercase">
+                          {item.section}
+                        </span>
+                        <span className="block font-semibold text-cos-text">
+                          {item.title}
+                        </span>
+                        {item.description ? (
+                          <span className="block text-sm text-cos-muted">
+                            {item.description}
+                          </span>
+                        ) : null}
+                      </span>
+                      <ChevronRight
+                        className="h-4 w-4 shrink-0 text-cos-muted"
+                        aria-hidden
+                      />
+                    </Link>
+                  ),
+                )}
               </div>
             )}
           </div>
@@ -335,24 +447,71 @@ export function MarketingWowResourcesPage({
               </div>
 
               <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                {FEATURED_TUTORIALS.map((tutorial) => (
-                  <Link key={tutorial.id} href={tutorial.href} className="group">
-                    <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl border border-cos-border bg-cos-brand-sage-soft/70 shadow-sm transition-shadow group-hover:shadow-lg">
-                      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform group-hover:scale-110">
-                        <tutorial.icon className="h-6 w-6 text-cos-primary" aria-hidden />
-                      </span>
-                      <span className="absolute bottom-4 left-4 rounded bg-cos-primary/80 px-2 py-1 text-[10px] font-bold tracking-widest text-[#f6f2eb] uppercase backdrop-blur-md">
-                        Live demo
-                      </span>
-                    </div>
-                    <h4 className="mt-6 font-bold text-cos-text transition-colors group-hover:text-cos-brand-sage">
-                      {tutorial.title}
-                    </h4>
-                    <p className="mt-2 text-xs leading-relaxed text-cos-muted">
-                      {tutorial.description}
-                    </p>
-                  </Link>
-                ))}
+                {FEATURED_TUTORIALS.map((tutorial) => {
+                  if (tutorial.kind === "video") {
+                    const video = RESOURCE_TUTORIALS[tutorial.tutorialId];
+                    return (
+                      <button
+                        key={video.id}
+                        type="button"
+                        onClick={() => openTutorial(video.id)}
+                        className="group text-left"
+                        aria-label={`Watch tutorial: ${video.label}`}
+                      >
+                        <div className="relative aspect-video overflow-hidden rounded-2xl border border-cos-border bg-cos-bg shadow-sm transition-shadow group-hover:shadow-lg">
+                          <Image
+                            src={video.poster}
+                            alt=""
+                            fill
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            className="object-cover"
+                            priority={false}
+                          />
+                          <span className="absolute inset-0 bg-cos-primary/15 transition-colors group-hover:bg-cos-primary/25" />
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 shadow-lg transition-transform group-hover:scale-110">
+                              <Play
+                                className="ml-0.5 h-6 w-6 text-cos-primary"
+                                aria-hidden
+                              />
+                            </span>
+                          </span>
+                          <span className="absolute bottom-4 left-4 rounded bg-cos-primary/80 px-2 py-1 text-[10px] font-bold tracking-widest text-[#f6f2eb] uppercase backdrop-blur-md">
+                            Tutorial
+                          </span>
+                        </div>
+                        <h4 className="mt-6 font-bold text-cos-text transition-colors group-hover:text-cos-brand-sage">
+                          {video.title}
+                        </h4>
+                        <p className="mt-2 text-xs leading-relaxed text-cos-muted">
+                          {video.description}
+                        </p>
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <Link key={tutorial.id} href={tutorial.href} className="group">
+                      <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl border border-cos-border bg-cos-brand-sage-soft/70 shadow-sm transition-shadow group-hover:shadow-lg">
+                        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform group-hover:scale-110">
+                          <tutorial.icon
+                            className="h-6 w-6 text-cos-primary"
+                            aria-hidden
+                          />
+                        </span>
+                        <span className="absolute bottom-4 left-4 rounded bg-cos-primary/80 px-2 py-1 text-[10px] font-bold tracking-widest text-[#f6f2eb] uppercase backdrop-blur-md">
+                          Live demo
+                        </span>
+                      </div>
+                      <h4 className="mt-6 font-bold text-cos-text transition-colors group-hover:text-cos-brand-sage">
+                        {tutorial.title}
+                      </h4>
+                      <p className="mt-2 text-xs leading-relaxed text-cos-muted">
+                        {tutorial.description}
+                      </p>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -466,6 +625,13 @@ export function MarketingWowResourcesPage({
       </section>
 
       <MarketingWowFooter />
+
+      {activeTutorial ? (
+        <ResourceTutorialViewer
+          tutorial={activeTutorial}
+          onClose={closeTutorial}
+        />
+      ) : null}
     </div>
   );
 }
