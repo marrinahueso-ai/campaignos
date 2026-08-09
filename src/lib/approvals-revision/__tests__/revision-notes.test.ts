@@ -41,11 +41,12 @@ describe("revision notes encode/decode", () => {
 });
 
 describe("deriveAiInstructionsFromNote", () => {
-  it("turns approver questions into imperative instructions", () => {
+  it("turns approver questions into framed revision instructions", () => {
     const out = deriveAiInstructionsFromNote(
       "Can we warm up the headline and move the date to Aug 12? Logo feels small.",
     );
-    assert.match(out, /^Warm up the headline/i);
+    assert.match(out, /^Revision direction \(interpret intent; do not paste into the caption\):/i);
+    assert.match(out, /Warm up the headline/i);
     assert.match(out, /\.$/);
     assert.doesNotMatch(out, /\?/);
   });
@@ -55,6 +56,16 @@ describe("deriveAiInstructionsFromNote", () => {
       deriveAiInstructionsFromNote("   "),
       /approver's requested changes/i,
     );
+    assert.match(
+      deriveAiInstructionsFromNote("   "),
+      /do not paste their note into the caption/i,
+    );
+  });
+
+  it("does not double-prefix already framed instructions", () => {
+    const framed =
+      "Revision direction (interpret intent; do not paste into the caption): Make it warmer.";
+    assert.equal(deriveAiInstructionsFromNote(framed), framed);
   });
 
   it("uses flyer checklist defaults when empty tags", () => {

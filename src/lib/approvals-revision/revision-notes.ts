@@ -1,4 +1,4 @@
-import type { RevisionTag } from "@/components/approvals-revision/types";
+import type { RevisionTag } from "../../components/approvals-revision/types.ts";
 
 const TAG_PREFIX = "@@hr-rev:";
 const TAG_SUFFIX = "@@";
@@ -70,11 +70,20 @@ export function parseRevisionNotes(raw: string | null | undefined): {
 /**
  * Turn approver change-request prose into imperative AI instructions.
  * Prefills the Revision "Instruct AI" box; "Use note as-is" resets here.
+ * Output is revision direction for the model — not candidate caption copy.
  */
 export function deriveAiInstructionsFromNote(noteBody: string): string {
   const text = noteBody.trim();
   if (!text) {
-    return "Apply the approver's requested changes.";
+    return "Apply the approver's requested changes as revision direction. Do not paste their note into the caption.";
+  }
+
+  // Already framed (e.g. user edited after a prior derive) — keep as-is.
+  if (
+    /^revision direction\b/i.test(text) ||
+    /\bdo not paste\b/i.test(text)
+  ) {
+    return text;
   }
 
   let out = text
@@ -88,7 +97,9 @@ export function deriveAiInstructionsFromNote(noteBody: string): string {
     out = `${out}.`;
   }
 
-  return out.charAt(0).toUpperCase() + out.slice(1);
+  out = out.charAt(0).toUpperCase() + out.slice(1);
+
+  return `Revision direction (interpret intent; do not paste into the caption): ${out}`;
 }
 
 export function checklistFromTags(

@@ -8,7 +8,7 @@
     "analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "eslint src",
-    "test:campaign-builder-v2": "node --experimental-strip-types --test 'src/lib/campaign-builder-v2/__tests__/*.test.ts'",
+    "test:campaign-builder-v2": "node --experimental-strip-types --test $(find src/lib/campaign-builder-v2/__tests__ -name '*.test.ts' ! -name 'caption-prompts-revision.test.ts' | sort) && npx tsx --test src/lib/campaign-builder-v2/__tests__/caption-prompts-revision.test.ts",
     "test:communications-calendar": "node --experimental-strip-types --test 'src/lib/communications-calendar/__tests__/*.test.ts'",
     "test:calendar-import": "npx tsx --test 'src/lib/calendar-import/__tests__/*.test.ts'",
     "test:meta-publishing": "node --experimental-strip-types --test 'src/lib/meta-publishing/__tests__/*.test.ts'",

@@ -1,15 +1,19 @@
-import {
-  CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
-  CAMPAIGN_BUILDER_CAPTION_ARTWORK_RULES,
-  CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
-  shouldIncludeOrganizationName,
-} from "@/lib/campaign-builder-v2/prompt-guardrails";
 import { resolveCampaignStage } from "@/lib/ai-strategy/campaign-stage";
 import {
   describeAudienceFacingTiming,
   playbookRelativeDay,
 } from "@/lib/campaign-builder-v2/campaign-timing";
 import { isFirstCampaignMilestone } from "@/lib/campaign-builder-v2/first-milestone";
+import {
+  buildCaptionRevisionGuide,
+  isDuplicateCaptionDirection,
+} from "@/lib/campaign-builder-v2/caption-revision-prompt";
+import {
+  CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
+  CAMPAIGN_BUILDER_CAPTION_ARTWORK_RULES,
+  CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
+  shouldIncludeOrganizationName,
+} from "@/lib/campaign-builder-v2/prompt-guardrails";
 import {
   buildMetaCaptionSystemPrompt,
   buildMetaCaptionUserPrompt,
@@ -19,6 +23,12 @@ import type {
   CampaignBuilderInspiration,
   CampaignBuilderMilestone,
 } from "@/lib/campaign-builder-v2/types";
+
+export {
+  buildCaptionRevisionGuide,
+  isDuplicateCaptionDirection,
+  normalizeCaptionDirectionText,
+} from "@/lib/campaign-builder-v2/caption-revision-prompt";
 
 function mapVoiceToneToMetaTone(voiceTone: string): MetaCaptionTone {
   if (!voiceTone.trim()) {
@@ -116,22 +126,25 @@ export function buildCampaignBuilderCaptionPrompts(input: {
   const hasArtworkImage = Boolean(input.artworkImageUrl?.trim());
   const factsBlock = buildCampaignBuilderCaptionFactsBlock(input);
   const tone = mapVoiceToneToMetaTone(input.inspiration.voiceTone);
-  const captionNotes = input.milestone.captionNotes.trim();
+  const captionNotesRaw = input.milestone.captionNotes.trim();
   const userRevisionInstructions = input.revisionInstructions?.trim() ?? "";
   const existingCaptionDraft = input.existingCaption?.trim() ?? "";
 
-  const campaignRevisionGuide =
-    userRevisionInstructions && existingCaptionDraft
-      ? [
-          "",
-          "Revise the draft below per the user's instructions.",
-          "Improve clarity and tone — do not preserve invented logistics, hashtags, or wording the user did not intend.",
-          `User instructions: ${userRevisionInstructions}`,
-          `Draft to revise:\n"${existingCaptionDraft}"`,
-        ].join("\n")
-      : userRevisionInstructions
-        ? `User instructions: ${userRevisionInstructions}`
-        : null;
+  // Prefer the regenerate "What should change?" channel when it duplicates
+  // milestone captionNotes — avoid injecting the same direction twice.
+  const captionNotes =
+    captionNotesRaw &&
+    userRevisionInstructions &&
+    isDuplicateCaptionDirection(captionNotesRaw, userRevisionInstructions)
+      ? ""
+      : captionNotesRaw;
+
+  const campaignRevisionGuide = userRevisionInstructions
+    ? buildCaptionRevisionGuide({
+        revisionInstructions: userRevisionInstructions,
+        existingCaption: existingCaptionDraft,
+      })
+    : null;
 
   const platformGuide =
     input.platform === "facebook"
