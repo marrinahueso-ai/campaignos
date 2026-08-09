@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MarketingProductDemoVideo } from "@/components/marketing/MarketingProductDemoVideo";
-import type { MarketingProductDemoId } from "@/lib/marketing/product-demo-videos";
+import {
+  warmMarketingDemo,
+  warmMarketingDemos,
+  type MarketingProductDemoId,
+} from "@/lib/marketing/product-demo-videos";
 import { cn } from "@/lib/utils/cn";
 
 type TourStep = {
@@ -54,22 +58,57 @@ export const PRODUCT_TOUR_STEPS: TourStep[] = [
 ];
 
 const DEFAULT_STEP: MarketingProductDemoId = "create-with-ai";
+const TOUR_DEMO_IDS = PRODUCT_TOUR_STEPS.map((step) => step.id);
 
 /**
  * Homepage Product Tour — one real Screen Studio demo at a time.
  * Visitors pick a workflow; only that video plays (calm, not six at once).
  */
 export function MarketingProductTour() {
+  const sectionRef = useRef<HTMLElement>(null);
   const [activeId, setActiveId] = useState<MarketingProductDemoId>(DEFAULT_STEP);
   const active =
     PRODUCT_TOUR_STEPS.find((step) => step.id === activeId) ?? PRODUCT_TOUR_STEPS[2]!;
 
+  // Warm clips as soon as the tour mounts (idle), then again when near viewport.
+  useEffect(() => {
+    warmMarketingDemo(DEFAULT_STEP);
+    const warmRest = () => warmMarketingDemos(TOUR_DEMO_IDS);
+    const idleId =
+      "requestIdleCallback" in window
+        ? window.requestIdleCallback(warmRest, { timeout: 1500 })
+        : null;
+    const timeoutId =
+      idleId == null ? window.setTimeout(warmRest, 400) : null;
+
+    const node = sectionRef.current;
+    let observer: IntersectionObserver | null = null;
+    if (node && typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry?.isIntersecting) return;
+          warmMarketingDemos(TOUR_DEMO_IDS);
+          observer?.disconnect();
+        },
+        { rootMargin: "800px 0px", threshold: 0.01 },
+      );
+      observer.observe(node);
+    }
+
+    return () => {
+      if (idleId != null) window.cancelIdleCallback(idleId);
+      if (timeoutId != null) window.clearTimeout(timeoutId);
+      observer?.disconnect();
+    };
+  }, []);
+
   return (
     <section
+      ref={sectionRef}
       id="tour"
       className="scroll-mt-20 border-t border-cos-border px-6 py-20 sm:py-28"
     >
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-7xl">
         <p className="studio-eyebrow">Product tour</p>
         <h2 className="font-display mt-3 max-w-2xl text-3xl leading-tight text-cos-text sm:text-4xl lg:text-5xl">
           Hey Ralli puts the school year in one place.
@@ -79,7 +118,7 @@ export function MarketingProductTour() {
           volunteers. Keep everyone on the same page.
         </p>
 
-        <div className="mt-12 grid gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start lg:gap-12">
+        <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-start lg:gap-10">
           <ol className="order-2 grid gap-0 lg:order-1">
             {PRODUCT_TOUR_STEPS.map((step, index) => {
               const selected = step.id === activeId;
@@ -94,9 +133,11 @@ export function MarketingProductTour() {
                   <button
                     type="button"
                     onClick={() => setActiveId(step.id)}
+                    onPointerEnter={() => warmMarketingDemo(step.id)}
+                    onFocus={() => warmMarketingDemo(step.id)}
                     aria-pressed={selected}
                     className={cn(
-                      "w-full py-5 text-left transition-colors sm:py-6",
+                      "w-full py-4 text-left transition-colors sm:py-5",
                       selected
                         ? "bg-cos-brand-sage-soft/40"
                         : "hover:bg-cos-card/80",
@@ -130,12 +171,14 @@ export function MarketingProductTour() {
             })}
           </ol>
 
-          <div className="order-1 lg:sticky lg:top-24 lg:order-2">
-            <div className="overflow-hidden rounded-[18px] border border-cos-border/70 bg-cos-card p-1 shadow-[0_24px_60px_-28px_rgba(42,38,34,0.28)] sm:rounded-[20px] sm:p-1.5">
+          <div className="order-1 lg:sticky lg:top-20 lg:order-2">
+            <div className="overflow-hidden rounded-[16px] border border-cos-border/70 bg-cos-card shadow-[0_24px_60px_-28px_rgba(42,38,34,0.28)] sm:rounded-[18px]">
               <MarketingProductDemoVideo
                 demoId={active.id}
+                cropStudioChrome
+                preload="auto"
                 aspectClassName="aspect-[1960/1080]"
-                sizes="(max-width: 1024px) 100vw, 640px"
+                sizes="(max-width: 1024px) 100vw, 820px"
               />
             </div>
             <p className="mt-4 text-sm leading-relaxed text-cos-muted lg:hidden">

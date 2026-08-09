@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   MARKETING_PRODUCT_DEMOS,
+  warmMarketingDemo,
   type MarketingProductDemoId,
 } from "@/lib/marketing/product-demo-videos";
 import { cn } from "@/lib/utils/cn";
@@ -38,13 +39,20 @@ export interface MarketingProductDemoVideoProps {
   sizes?: string;
   /** object-fit for the video/poster */
   objectFit?: "contain" | "cover";
+  /**
+   * Screen Studio exports include soft cream margins around the app window.
+   * When true, crop those margins so the product UI reads larger.
+   */
+  cropStudioChrome?: boolean;
+  /** Override video preload. Tour clips should use "auto" once near-viewport. */
+  preload?: "none" | "metadata" | "auto";
 }
 
 /**
  * Passive product demo clip — muted, looping, playsInline, no native controls.
- * Respects prefers-reduced-motion (static poster). Plays only while near viewport
- * and yields to other demos so the marketing page never feels like a wall of motion.
- * When `demoId` changes (Product Tour), the poster stays visible until the new clip is ready.
+ * Respects prefers-reduced-motion (static poster). Loads early when near the
+ * viewport, but only autoplays when substantially on-screen so hero + tour
+ * demos do not fight each other.
  */
 export function MarketingProductDemoVideo({
   demoId,
@@ -53,15 +61,21 @@ export function MarketingProductDemoVideo({
   priority = false,
   sizes = "(max-width: 1024px) 100vw, 1152px",
   objectFit = "contain",
+  cropStudioChrome = false,
+  preload,
 }: MarketingProductDemoVideoProps) {
   const demo = MARKETING_PRODUCT_DEMOS[demoId];
   const ownerId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const [inView, setInView] = useState(false);
+  const [shouldPlay, setShouldPlay] = useState(false);
   const [shouldLoad, setShouldLoad] = useState(priority);
   const [showPosterOverlay, setShowPosterOverlay] = useState(true);
+  const shouldPlayRef = useRef(false);
+  shouldPlayRef.current = shouldPlay;
+
+  const resolvedPreload = preload ?? (priority ? "metadata" : "none");
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
@@ -86,6 +100,10 @@ export function MarketingProductDemoVideo({
     });
   }, [reducedMotion]);
 
+  const revealVideo = useCallback(() => {
+    setShowPosterOverlay(false);
+  }, []);
+
   useEffect(() => {
     demoPlayback.setPause(ownerId, pauseVideo);
     return () => demoPlayback.clear(ownerId);
@@ -94,28 +112,44 @@ export function MarketingProductDemoVideo({
   useEffect(() => {
     const node = rootRef.current;
     if (!node || typeof IntersectionObserver === "undefined") {
-      setInView(true);
       setShouldLoad(true);
+      setShouldPlay(true);
       return;
     }
 
-    const observer = new IntersectionObserver(
+    // Prefetch / mount media early — does not autoplay by itself.
+    const loadObserver = new IntersectionObserver(
       ([entry]) => {
-        const visible = Boolean(entry?.isIntersecting);
-        setInView(visible);
-        if (visible) {
+        if (entry?.isIntersecting) {
           setShouldLoad(true);
+          warmMarketingDemo(demoId);
         }
       },
-      { rootMargin: "200px 0px", threshold: 0.2 },
+      { rootMargin: "600px 0px", threshold: 0.01 },
     );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+
+    // Play only when the clip is substantially visible (avoids hero↔tour thrash).
+    const playObserver = new IntersectionObserver(
+      ([entry]) => {
+        const visible =
+          Boolean(entry?.isIntersecting) && (entry?.intersectionRatio ?? 0) >= 0.35;
+        setShouldPlay(visible);
+      },
+      { rootMargin: "0px", threshold: [0, 0.35, 0.5, 0.75, 1] },
+    );
+
+    loadObserver.observe(node);
+    playObserver.observe(node);
+    return () => {
+      loadObserver.disconnect();
+      playObserver.disconnect();
+    };
+  }, [demoId]);
 
   // When the tour swaps clips, show the poster until the new source can play.
   useEffect(() => {
     setShowPosterOverlay(true);
+    warmMarketingDemo(demoId);
   }, [demoId]);
 
   useEffect(() => {
@@ -125,14 +159,14 @@ export function MarketingProductDemoVideo({
     }
     if (!shouldLoad) return;
 
-    if (inView) {
+    if (shouldPlay) {
       demoPlayback.requestPlay(ownerId, playVideo);
     } else {
       pauseVideo();
     }
   }, [
     demoId,
-    inView,
+    shouldPlay,
     shouldLoad,
     reducedMotion,
     ownerId,
@@ -140,14 +174,21 @@ export function MarketingProductDemoVideo({
     pauseVideo,
   ]);
 
-  const objectClass =
-    objectFit === "cover" ? "object-cover object-top" : "object-contain object-top";
+  const fitClass =
+    objectFit === "cover" || cropStudioChrome
+      ? "object-cover object-top"
+      : "object-contain object-top";
+  // Screen Studio soft margins ~8–12% — mild zoom keeps UI readable without hard crop.
+  const mediaClass = cn(
+    fitClass,
+    cropStudioChrome && "scale-[1.14] origin-center",
+  );
 
   return (
     <div
       ref={rootRef}
       className={cn(
-        "relative w-full overflow-hidden bg-cos-bg bg-contain bg-top bg-no-repeat",
+        "relative w-full overflow-hidden bg-cos-bg bg-cover bg-top bg-no-repeat",
         aspectClassName,
         className,
       )}
@@ -160,7 +201,7 @@ export function MarketingProductDemoVideo({
         priority={priority}
         sizes={sizes}
         className={cn(
-          objectClass,
+          mediaClass,
           showPosterOverlay || reducedMotion ? "opacity-100" : "opacity-0",
         )}
       />
@@ -171,18 +212,21 @@ export function MarketingProductDemoVideo({
           ref={videoRef}
           className={cn(
             "absolute inset-0 h-full w-full",
-            objectClass,
+            mediaClass,
             showPosterOverlay ? "opacity-0" : "opacity-100",
           )}
           muted
           loop
           playsInline
-          preload={priority ? "metadata" : "none"}
+          preload={resolvedPreload}
           poster={demo.poster}
           aria-hidden
           tabIndex={-1}
-          onLoadedData={() => setShowPosterOverlay(false)}
-          onPlaying={() => setShowPosterOverlay(false)}
+          onCanPlay={() => {
+            revealVideo();
+            if (shouldPlayRef.current) playVideo();
+          }}
+          onPlaying={revealVideo}
         >
           <source src={demo.src} type="video/mp4" />
         </video>

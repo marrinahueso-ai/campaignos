@@ -69,3 +69,35 @@ export const MARKETING_PRODUCT_DEMOS: Record<
       "Hey Ralli Volunteers — staffing fill status and coordination by event",
   },
 };
+
+const warmedDemoSrcs = new Set<string>();
+
+/**
+ * Warm HTTP cache for a demo MP4 so tab switches start quickly.
+ * Safe to call repeatedly; does not autoplay or attach to the DOM visibly.
+ */
+export function warmMarketingDemo(demoId: MarketingProductDemoId): void {
+  if (typeof window === "undefined") return;
+  const src = MARKETING_PRODUCT_DEMOS[demoId]?.src;
+  if (!src || warmedDemoSrcs.has(src)) return;
+  warmedDemoSrcs.add(src);
+
+  const link = document.createElement("link");
+  link.rel = "prefetch";
+  link.as = "video";
+  link.href = src;
+  document.head.appendChild(link);
+
+  // Fetch into the HTTP cache so the visible <video> can start from disk/memory.
+  void fetch(src, { credentials: "same-origin", mode: "same-origin" }).catch(
+    () => {
+      warmedDemoSrcs.delete(src);
+    },
+  );
+}
+
+export function warmMarketingDemos(
+  demoIds: readonly MarketingProductDemoId[],
+): void {
+  for (const id of demoIds) warmMarketingDemo(id);
+}

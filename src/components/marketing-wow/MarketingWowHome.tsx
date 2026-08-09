@@ -64,13 +64,15 @@ export function MarketingWowHome({
         </div>
 
         {/* Dashboard demo — tight frame; video is the focus (16:9 Screen Studio). */}
-        <div className="relative mx-auto mt-16 w-full max-w-6xl sm:mt-20">
-          <div className="overflow-hidden rounded-[18px] border border-cos-border/60 bg-cos-card p-1 shadow-[0_40px_90px_-30px_rgba(42,38,34,0.28)] sm:rounded-[22px] sm:p-1.5">
+        <div className="relative mx-auto mt-16 w-full max-w-7xl sm:mt-20">
+          <div className="overflow-hidden rounded-[16px] border border-cos-border/60 bg-cos-card shadow-[0_40px_90px_-30px_rgba(42,38,34,0.28)] sm:rounded-[20px]">
             <MarketingProductDemoVideo
               demoId="dashboard"
               priority
+              cropStudioChrome
+              preload="metadata"
               aspectClassName="aspect-[1960/1080]"
-              sizes="(max-width: 1024px) 100vw, 1152px"
+              sizes="(max-width: 1024px) 100vw, 1280px"
             />
           </div>
         </div>
