@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 8, 2026 — About marketing page
+**Last updated:** August 8, 2026 — Events selected-event workspace release checkpoint
 
 ---
 
@@ -71,6 +71,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Role simulator (dev/test, gated) — **shipped**
 
 ## Dashboard (Today)
+- Dashboard header account label shows **display name** when available (membership / composed first+last), with **email fallback** — **shipped**
 - **Ease redesign mockup** — calm first viewport (greeting + Create with AI / Calendar CTAs + weather chip), quieter View / Edit layout mode, Ease-styled widget cards with soft drag reorder; HTML mockup at `public/dashboard-ease-mockup.html` — **in progress** (do not ship product UI until GO)
 - **Your overview** board: greeting · Add/Edit controls (no section title) · 2-col main (**Up Next** (soonest upcoming event by date — not campaign-strategy priority; action steps stay in Waiting on me), **Attention**, **Waiting on me** (open steps for events that have not happened yet), **Good news**) + right rail (**Weather**, **Calendar**, **This week**) · cream widget cards · per-user `organization_users.dashboard_layout` jsonb — **shipped**
 - Customer-facing Dashboard copy uses org/team language (weather city, event titles — not school-only, workspace, or “Open campaign” jargon); Attention / Tasks-this-week deep links use Tasks Ease `?scope=mine&pulse=week` — **shipped** (Jul 28)
@@ -89,13 +90,19 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Customer-facing calendar/events copy uses organization/team/year language (not school-only or sync/ICS jargon); review categories display as Team/Organization event — **shipped**
 - Events list, create, edit — **shipped** (list thumbnails fall back to promoted approved-square artwork when the row is outside the upcoming/first-page prefetch window)
 - Events Home **New event** opens Pilot **Create Event** modal (basics · communication strategy cards · plan picker · optional details); still uses `createEvent` → event workspace; `/events/create` remains for onboarding / direct links — **shipped**
-- Events Home ease filters (soft pills: **Upcoming** default · **Next month** · **All**; Upcoming shows next-60-days focus/queue; counts scoped to school-year filter + search; status badges on cards only — not filter tabs; compact list thumbs use square transforms + `object-cover` for consistent filled squares; focus/lightbox keep `object-contain` so full poster art stays readable — **shipped**
-- Events Home **selected-event workspace** (`?event=`; full-width hero · Also Ahead · operational summary · Attention Needed · Staffing · Event Workspace cards; no What's Next / Next Best Action; deep tabs still on `/events/[id]?tab=`) — **shipped**
+- Events Home ease filters (soft pills: **Upcoming** default · **Next month** · **All** · **Archived**; counts scoped to school-year filter + search; status badges on cards/rows — not filter tabs) — **shipped**
+- Events Home **selected-event workspace** — **shipped** (living eng: [architecture.md §5.4](../engineering/architecture.md); QA checkpoint: [release-checkpoint-2026-08-08-events-workspace.md](../qa/release-checkpoint-2026-08-08-events-workspace.md))
+  - Selection via `?event=` (`replace`); inaccessible ids fall back; default = soonest upcoming in current lens
+  - Hierarchy: compact featured hero (`AppImage` hero preset, ~380px desktop) · **Also Ahead** (excludes selected; collapse 4 / Show all) · operational summary · **Attention Needed** · **Staffing Status** (volunteer **spots**, empty when not configured) · **Event Workspace** cards with muted top accents
+  - Workspace meanings: Planning = Tasks, Notes & Files · Approvals = Content requiring review · Volunteers = Shifts & Signups · Community = Team & Vendors → `/events/[id]?tab=…`
+  - Invite Team Member on home when `manage_people`; `(...)` **Edit / Archive event / Delete event**
+  - **No What’s Next** on home; **Next Best Action not implemented**; Event ID overview still has What’s Next
+  - Does **not** delete or auto-redirect all `/events/[id]` deep links
 - Events list filtered PDF export (All Events header download; current list filters only — not upcoming carousel) — **shipped**
 - Event detail workspace (tabs: Overview default, Planning→Tasks/Notes/Files, Approvals, Volunteers, Community→Team/Vendors, Insights, Activity, Create with AI [handoff]; deep links `?tab=` preserved) — **shipped**
 - Event detail **Invite team member** drawer (Community → Team; new org invite via existing `inviteTeamMemberAction` with current event pre-assigned, or add existing active member to this event without changing org role; roles from access templates / campaign roles; Manage advanced access → Team & Access) — **shipped**
-- Event detail **Invite Team** entry points (header secondary CTA + Community workspace card **+ Invite**; authorized via `manage_people`; stays on Event ID; local pending/active collaborator preview until refresh) — **shipped**
-- Event detail shell (Event Workspace redesign): Overview landing (artwork hero · attention · workspace cards) · condensed context header on other tabs · top-level nav (**Planning** · Approvals · Volunteers · **Community** · Insights · Activity); Planning wraps existing Tasks/Notes/Files panels; Community combines Team + Vendors — **shipped**
+- Event **Invite Team** entry points (Events home ops strip + Community **+ Invite**; Event ID header secondary CTA + Community **+ Invite**; authorized via `manage_people`; local pending/active collaborator preview until refresh) — **shipped**
+- Event detail shell (Event Workspace redesign): Overview landing (artwork hero · attention · workspace cards · What’s Next) · condensed context header on other tabs · top-level nav (**Planning** · Approvals · Volunteers · **Community** · Insights · Activity); Planning wraps existing Tasks/Notes/Files panels; Community combines Team + Vendors — **shipped**
 - Event Tasks tab: Pilot **Task List** card (Ask AI for tasks · New Task · Done/Task/Priority/Status/Due/Assignee table; icon-only delete with confirm; Overdue badge; empty Create with AI / Add manually) — **shipped**
 - Event detail **Notes** tab: Shared Notes + New Note, lined note-paper compose/view, Recent Scratchpads side list; icon-only delete (confirm) on the open note and scratchpad rows; create/delete/list gated by event access (`getEventById` + RLS); no unscoped note-draft localStorage — **shipped**
 - Event detail tab chrome uses local state + `history.replaceState` (no full RSC refetch on tab click); bare `/events/[id]` defaults to Overview (no Approvals SSR stream); deep-linked tabs still SSR-preload; Team Manage Assignments lazy-loads the org roster — **shipped** (perf)

@@ -6,7 +6,7 @@
 **Vercel project:** `campignos/campaignos` (`prj_3i9wZXYqe5OOjCQpH0vRzCranfEg`)  
 **Certified source:** Launch Certification Report §10 (`launch-security-assessment-2026-08.md`)  
 **Audit date:** August 7, 2026  
-**Last amended:** August 7, 2026 (Calendar SSRF Production-path smoke closed)  
+**Last amended:** August 8, 2026 (pre-regression checkpoint pointer for Events workspace round — does not invalidate Aug 7 VERIFIED controls)
 **Auditor posture:** Independent release auditor — evidence only; no guesses  
 
 ### Final recommendation
@@ -139,3 +139,21 @@ No contradictory Production failures against prior VERIFIED controls. SSRF smoke
 | Load / performance certification | **Ready to proceed** |
 
 **Auditor:** Automated/runtime/database evidence + human Production smoke + Calendar SSRF Production UI smoke, August 7, 2026.
+
+---
+
+## 8. Amendment — pre-regression checkpoint (2026-08-08)
+
+**Does not reopen or invalidate** §1–§7 VERIFIED controls for the **prior** Production lineage.
+
+A new product round landed on `main` through `bbae97a` (Events selected-event workspace, Invite Team drawer, Event Volunteers Arrived/Received, Calendar detail drawer, Auth Get Started package, marketing pages, dashboard display-name header). Those surfaces are **implemented** and documented in [release-checkpoint-2026-08-08-events-workspace.md](../qa/release-checkpoint-2026-08-08-events-workspace.md).
+
+| Concern | Status as of 2026-08-08 |
+|---------|-------------------------|
+| Prior core platform Production approval | **Still stands** for unchanged controls evidenced Aug 7 |
+| New Events home `?event=` / invite / manage / stats refresh | **NOT VERIFIED** on Production — requires security + functional regression |
+| New volunteer ops (`event_volunteer_ops`) | **NOT VERIFIED** — requires security + functional regression |
+| Auth Get Started / marketing public routes | **NOT VERIFIED** as part of this checkpoint’s Production smokes |
+| Performance / load vs Phase 1 k6 | Phase 1 remains valid for **prior** surfaces; Events home merge **requires performance regression** (do not treat Phase 1 alone as verification of the merge) |
+
+**Next:** marketing screenshots → security regression → load testing per the release checkpoint lists — not yet executed in this docs-only update.

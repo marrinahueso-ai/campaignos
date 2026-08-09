@@ -2,10 +2,12 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 1, 2026  
-**Related:** [Feature list](./feature-list.md) · [SignUpGenius import](../integrations/signupgenius.md) · [Access control](../engineering/access-control.md)
+**Last updated:** August 8, 2026  
+**Related:** [Feature list](./feature-list.md) · [SignUpGenius import](../integrations/signupgenius.md) · [Access control](../engineering/access-control.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 Org-wide volunteer staffing overview at `/volunteers`. Aggregate fill rates and open spots only — **no volunteer names or contact details** on this page. Named people (names only, no emails) live on each event’s Volunteers tab when SignUpGenius exposes public participants.
+
+**Event Volunteers ops (not Master):** People **Arrived** / Items **Received** marks persist in Hey Ralli only (`event_volunteer_ops` + RLS). They are **not** written back to SignUpGenius and do **not** appear as Dashboard widgets.
 
 ---
 

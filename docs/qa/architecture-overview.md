@@ -3,11 +3,11 @@
 **Audience:** QA engineers reviewing the application  
 **Product brand:** Hey Ralli (codebase / deploy project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
-**Last updated:** July 25, 2026  
+**Last updated:** August 8, 2026  
 
 This document is a short orientation guide: what the product does, how it is built, how the main AI → publish path works, how systems connect, and what is still incomplete.
 
-Related detail: [architecture.md](../engineering/architecture.md) (engineering structure), [Ask Ralli Assistant](../engineering/ask-ralli-assistant.md) (coach routing + QA matrix; Playwright `tests/hey-ralli/smoke/12-ask-ralli-assistant.spec.ts`), [feature-list.md](../product/feature-list.md), [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md).
+Related detail: [architecture.md](../engineering/architecture.md) (engineering structure), [Ask Ralli Assistant](../engineering/ask-ralli-assistant.md) (coach routing + QA matrix; Playwright `tests/hey-ralli/smoke/12-ask-ralli-assistant.spec.ts`), [feature-list.md](../product/feature-list.md), [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md), [release checkpoint 2026-08-08](./release-checkpoint-2026-08-08-events-workspace.md).
 
 ---
 
@@ -72,12 +72,12 @@ Appears on Calendar / Approvals “published” · feeds Insights & heatmap hist
 
 | Step | What the user does | What the system does | Where to test |
 |------|--------------------|----------------------|---------------|
-| **1. Value-first onboarding** | Welcome → create first event → skippable Calendar / Brand / Team overlay (or finish later from Get started) | Bootstraps org + school year; persists progress on `organizations.onboarding_state`; brand at `/onboarding/brand` | `/onboarding` → event `?onboarding=…`; checklist: Settings → **Get started** (`/settings/school-setup`) |
+| **1. Value-first onboarding** | `/get-started` / Welcome → create first event → optional Essentials (Calendar+Brand) + Connect (Team+Meta) | Bootstraps org + school year; persists progress on `organizations.onboarding_state` | `/get-started` → `/signup/welcome` → `/onboarding` → `/events/create?onboarding=1` → `/onboarding/essentials` → `/onboarding/connect` |
 | **2. Connect Meta** (required to publish) | Settings → Meta → Connect | OAuth → stores Page + tokens on `organization_meta_connections` | `/settings/meta` |
 | **3. Import calendar** | Sign in with Google, ICS subscribe URL, or upload file (same screen as onboarding calendar CTA) | Parses / syncs into `calendar_imports` → review | Canonical: `/calendar/import` → `/calendar/review`; connect/manage: `/settings/integrations/calendar` |
 | **4. Review dates** | Edit categories / strategies; confirm import | Inserts rows into `events` (view-only school dates) | `/calendar/review` |
 | **5. See the year** | Open Calendar (month / week / agenda) | Reads `events` + scheduled Meta slots; week view may show posting heatmap if Meta connected | `/calendar` |
-| **6. Open an event** | Events list or Calendar → event workspace | Loads event + tabs (Create with AI, Approvals, Tasks, …) | `/events/[id]` |
+| **6. Open an event** | Events home selects in place (`/events?event=`) or open Event ID / Calendar drawer → Event Workspace | Home loads lean list + **one** event’s hero stats; deep tabs on `/events/[id]?tab=` | `/events`, `/events/[id]` |
 | **7. Create with AI** | Opens Creative Setup for a default event (or empty hub if none); 4 steps: Creative Setup → Milestones → Preview → Review & Approve; generate artwork + captions | OpenAI text + image APIs; assets in Supabase Storage | `/create-with-ai` → event builder, or event **Create with AI** |
 | **8. Human edit** | Regenerate, edit caption, adjust artwork | AI is assistive — nothing posts without later approval/publish | Campaign builder Preview / Review |
 | **9. Send to Approvals** | Send for approval from Review | Creates / updates `approval_scheduling_items`; **Sent for approval** notice then back to Review tabs (Pending Review pills) | Campaign builder `#review` / notice; `/approvals` |

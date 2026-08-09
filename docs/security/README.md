@@ -1,13 +1,13 @@
 # Security
 
 **Purpose:** Auth model, multi-tenant isolation, privacy notes.  
-**Last updated:** August 7, 2026
+**Last updated:** August 8, 2026
 
 | Doc | Status |
 |-----|--------|
 | [launch-security-assessment-2026-08.md](./launch-security-assessment-2026-08.md) | **Living** — Launch Certification Report (core platform vs integrations vs third-party approval) |
-| [production-readiness-verification-2026-08.md](./production-readiness-verification-2026-08.md) | **Living** — Production operational audit (evidence-only VERIFIED / NOT VERIFIED) |
-| [access-and-onboarding.md](./access-and-onboarding.md) | **Living** — signup, invites, org switcher, roles, gates |
+| [production-readiness-verification-2026-08.md](./production-readiness-verification-2026-08.md) | **Living** — Production operational audit (evidence-only VERIFIED / NOT VERIFIED); §8 points at Events-round pre-regression |
+| [access-and-onboarding.md](./access-and-onboarding.md) | **Living** — signup, invites, org switcher, roles, gates (+ Get Started / Ease onboarding) |
 | [multi-tenant-isolation.md](./multi-tenant-isolation.md) | **Living** — isolation guarantees (short) |
 | [overview.md](./overview.md) | Planned stub |
 | [privacy-and-data.md](./privacy-and-data.md) | Planned stub |

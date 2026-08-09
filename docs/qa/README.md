@@ -1,10 +1,11 @@
 # QA
 
 **Purpose:** How to test Hey Ralli, QA architecture orientation, investigation notes.  
-**Last updated:** August 7, 2026
+**Last updated:** August 8, 2026
 
 | Doc | Status |
 |-----|--------|
+| [release-checkpoint-2026-08-08-events-workspace.md](./release-checkpoint-2026-08-08-events-workspace.md) | **Living** — pre-regression checkpoint for Events workspace / auth / invite round (`bbae97a`) |
 | [performance-engineering-phase1-complete.md](./performance-engineering-phase1-complete.md) | **COMPLETE** — multi-tenant k6 Phase 1 handoff; Medium tier; 75-VU near-miss; no 100 VU for close |
 | [k6-load-test-findings.md](./k6-load-test-findings.md) | **Living** — chronological k6 capacity log (20-school → 75-VU) |
 | [100-school-75vu-latency-rca.md](./100-school-75vu-latency-rca.md) | **Closed with Phase 1** — 75-VU dual-bottleneck RCA |

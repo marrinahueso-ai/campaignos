@@ -2,8 +2,8 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 27, 2026  
-**Related:** [Access control (templates / RLS)](../engineering/access-control.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md) · [Feature list](../product/feature-list.md) · [Owner AI & APIs](../product/ai-and-apis.md) · [Architecture](../engineering/architecture.md)
+**Last updated:** August 8, 2026  
+**Related:** [Access control (templates / RLS)](../engineering/access-control.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md) · [Feature list](../product/feature-list.md) · [Owner AI & APIs](../product/ai-and-apis.md) · [Architecture](../engineering/architecture.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 How a person gets into **Hey Ralli** (CampaignOS), joins an organization (tenant), switches tenants, and what blocks access.
 
@@ -28,11 +28,14 @@ There is **no open self-serve “create org without a code”** path when foundi
 
 | Path | Who | What they do |
 |------|-----|----------------|
+| **Get Started / marketing** | Prospective schools | `/get-started` → `/signup/welcome` (Start a new school · Join my team · Founding school code) → existing signup or invite routes |
 | **Founding / new org** | First admin for a new workspace | `/signup` plan chooser → checkout (`/signup?plan=…`) with founding access code + email → magic-link → `/onboarding` → bootstrap org (admin seat; code waives billing) |
 | **Team invite** | Seat provisioned by an org admin | Email / link → `/invite/[token]` → set password (or sign in if account exists) → membership becomes `active` |
-| **Returning sign-in** | Existing auth user with ≥1 active membership | Password, magic link, or OAuth (Google / Facebook) → post-auth routing → app |
+| **Returning sign-in** | Existing auth user with ≥1 active membership | Password, magic link, or Google OAuth → post-auth routing → app (**no Facebook OAuth** on the current auth-card shell) |
 
 Stripe / paid plan gates: **shipped** (live in Production; see [billing-and-access.md](../ops/billing-and-access.md)). Valid founding codes set `billing_exempt_at` on the org when used.
+
+Auth chrome: centered cream **auth-card** shell shared across Get Started, Welcome, founding activation, login, recovery, invite, and New School Handoff — **no parallel auth or setup systems**.
 
 ---
 
@@ -47,7 +50,7 @@ Stripe / paid plan gates: **shipped** (live in Production; see [billing-and-acce
    - Inserts `organizations` (+ optional billing exemption from the code)
    - Creates **active** membership with `campaign_role = admin`
    - Seeds playbooks / workspace / active school year / default brand assets
-6. Redirect → create first event (`/events/create?onboarding=1`), then skippable overlay steps (Calendar → Brand → Team → Meta). Progress on `organizations.onboarding_state`.
+6. Redirect → create first event (`/events/create?onboarding=1`) — **required**. Then optional Ease screens: Calendar + Brand at `/onboarding/essentials`, Team + Meta at `/onboarding/connect` (each section and footer are skippable). Progress on `organizations.onboarding_state`. Old `?onboarding=calendar|brand|invite|meta` deep links redirect into those combined pages.
 
 **If founding code is required and missing/invalid:** stay on signup checkout (`error=code_required`) — plan selection is not gated by the code.  
 **If user already has an active membership and tries setup:** `/login?error=existing_org` (cannot found a second org via this path while already a member).  

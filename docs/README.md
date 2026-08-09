@@ -2,7 +2,7 @@
 
 **Status:** Living index  
 **Owner:** Engineering  
-**Last updated:** August 7, 2026  
+**Last updated:** August 8, 2026  
 **Production:** [heyralli.com](https://heyralli.com)
 
 This is the documentation hub. Start here.
@@ -53,6 +53,7 @@ This is the documentation hub. Start here.
 | Event Insights | [product/event-insights.md](./product/event-insights.md) |
 | Product completion master | [qa/product-completion-master.md](./qa/product-completion-master.md) |
 | Launch QA checklist | [qa/launch-checklist.md](./qa/launch-checklist.md) |
+| Release checkpoint (Events workspace round, 2026-08-08) | [qa/release-checkpoint-2026-08-08-events-workspace.md](./qa/release-checkpoint-2026-08-08-events-workspace.md) |
 | QA overview | [qa/architecture-overview.md](./qa/architecture-overview.md) |
 | Meta Connect | [integrations/meta.md](./integrations/meta.md) |
 | Meta App Review use cases | [ops/meta-app-review-use-cases.md](./ops/meta-app-review-use-cases.md) |
