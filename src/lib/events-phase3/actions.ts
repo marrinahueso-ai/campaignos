@@ -17,6 +17,10 @@ import {
   type EventDetailLazyTab,
   type EventDetailTabData,
 } from "@/lib/events-phase3/tab-loaders";
+import {
+  loadEventWorkspaceShellPayload,
+  type EventWorkspaceShellPayload,
+} from "@/lib/events-phase3/workspace-shell";
 import { getVendorDirectoryPickerData } from "@/lib/vendors/queries";
 import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHeroStatsStrip";
 
@@ -91,6 +95,44 @@ export async function loadEventDetailTabAction(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unable to load tab.",
+    };
+  }
+}
+
+/**
+ * Bootstrap Event Workspace shell for Events home in-shell navigation.
+ * Auth + event access checked server-side; does not load heavy tab panels.
+ */
+export async function loadEventWorkspaceShellAction(
+  eventId: string,
+): Promise<
+  | { success: true; data: EventWorkspaceShellPayload }
+  | { success: false; error: string }
+> {
+  const user = await getAuthUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated." };
+  }
+
+  const membership = await getActiveMembership();
+  if (!membership) {
+    return { success: false, error: "No active organization membership." };
+  }
+
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { success: false, error: "Event not found." };
+  }
+
+  try {
+    const data = await loadEventWorkspaceShellPayload(event);
+    return { success: true, data };
+  } catch (error) {
+    console.error("Failed to load event workspace shell:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Unable to load workspace.",
     };
   }
 }

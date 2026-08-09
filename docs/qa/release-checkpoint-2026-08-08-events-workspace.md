@@ -22,6 +22,7 @@ This document records **what is actually implemented** on `main` at the checkpoi
 
 ### Known limitations (implemented)
 
+- Deep work still lives on Event ID for bookmarks; **Events home cards** open the same shell in-place on `/events?event=&tab=` (no Event Detail remount per card).
 - Events home manage menu uses **event** noun; Event ID overview manage menu still defaults to **campaign** noun (backend actions unchanged).
 - Also Ahead **excludes** the selected event (not an Active highlight row in the list).
 - Staffing counts **volunteer spots** (not Pilot “Roles”); empty staffing shows “isn't set up yet” / no fake `0%` goal when totals are unknown.

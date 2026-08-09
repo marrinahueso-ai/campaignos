@@ -58,7 +58,8 @@ describe("marketing product demo videos", () => {
     assert.match(home, /MarketingProductTour/);
     assert.doesNotMatch(home, /ScreenshotPeekCard/);
     assert.match(home, /aspect-\[1960\/1080\]/);
-    assert.match(home, /cropStudioChrome/);
+    assert.match(home, /objectFit="contain"/);
+    assert.doesNotMatch(home, /cropStudioChrome/);
     assert.match(home, /demoId="dashboard"/);
 
     for (const id of [
@@ -75,7 +76,8 @@ describe("marketing product demo videos", () => {
     assert.match(tour, /DEFAULT_STEP.*=.*"create-with-ai"/);
     assert.match(tour, /warmMarketingDemos/);
     assert.match(tour, /preload="auto"/);
-    assert.match(tour, /cropStudioChrome/);
+    assert.match(tour, /objectFit="contain"/);
+    assert.doesNotMatch(tour, /cropStudioChrome/);
     assert.match(tour, /See the school year in one place/);
     assert.match(tour, /Turn an event into ready-to-share communications/);
     assert.doesNotMatch(tour, /quiet ops studio/);

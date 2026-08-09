@@ -5,7 +5,7 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel · Stripe  
-**Last updated:** August 8, 2026 — Events selected-event workspace + release checkpoint  
+**Last updated:** August 9, 2026 — Events home in-shell workspace navigation  
 **Related:** [Feature list](../product/feature-list.md) · [Image architecture](./image-architecture.md) · [Storage RLS](./storage-rls.md) · [Access control](./access-control.md) · [Billing & access](../ops/billing-and-access.md) · [Stripe integration](./stripe-integration.md) · [QA architecture overview](../qa/architecture-overview.md) · [Launch checklist](../qa/launch-checklist.md) · [Ask Ralli Assistant](./ask-ralli-assistant.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
@@ -220,12 +220,13 @@ Legacy dense shells (e.g. old Tasks Main Table, Insights KPI wall) may remain in
 |---------|----------|
 | Selection | `/events?event=<id>` (`router.replace`). Untrusted id must appear in org-scoped accessible lens list (`resolveSelectedEventsHomeEvent`); else fallback to preferred / first. |
 | Hierarchy | Header → compact featured hero → Also Ahead (excludes selected; collapse 4) → operational summary → Attention Needed + Staffing → Event Workspace cards |
-| Stats | SSR: one `getEventDetailHeroStats` for resolved selection. Client: `refreshEventDetailHeroStatsAction` on switch with `selectedEventIdRef` stale-response guard. No full tab datasets on home. |
-| Deep work | Workspace / attention jumps → `/events/[id]?tab=…` (Planning/Tasks/Notes/Files, Approvals, Volunteers, Community/Team & Vendors, Insights, Activity). Create with AI → campaign-builder hard nav. |
+| Stats | SSR: one `getEventDetailHeroStats` for resolved selection. Client: `refreshEventDetailHeroStatsAction` on switch with `selectedEventIdRef` stale-response guard. |
+| Workspace areas | Cards open **in-shell** on `/events?event=<id>&tab=…` via `SelectedEventWorkspaceHost` + shared `loadEventWorkspaceShellPayload` (once per selected event). Tab switches reuse `EventDetailShell` (no Event Detail SSR remount). Create with AI → campaign-builder hard nav. |
+| Deep links | `/events/[id]?tab=…` remains supported for bookmarks/external links. |
 | Not on home | What’s Next (Event ID overview only). Next Best Action (not implemented). |
 | Invite / manage | `manage_people` → `InviteEventMemberDrawer`. Home `(...)` menu uses **event** noun (archive/delete/edit). |
 
-**Event ID (`/events/[id]`):** still required for deep tabs. Overview default (`EventWorkspaceOverviewPanel` detail variant) includes What’s Next; interior tabs use **Back to Events** → `/events` (Events home), not back to this event’s overview. Phase 3 shell is default; older planning-hub UI is fallback / partial.
+**Event ID (`/events/[id]`):** Overview default (`EventWorkspaceOverviewPanel` detail variant) includes What’s Next; interior tabs use **Back to Events** → `/events?event=<id>` (preserves selection). Phase 3 shell is default; older planning-hub UI is fallback / partial.
 
 Playbooks still seed milestone timelines and health; campaign creative generation is centered on **Create with AI** (`/create-with-ai` chooser → Social / composers, or event campaign builder).
 

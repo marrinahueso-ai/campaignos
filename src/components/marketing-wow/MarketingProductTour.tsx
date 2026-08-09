@@ -172,10 +172,11 @@ export function MarketingProductTour() {
           </ol>
 
           <div className="order-1 lg:sticky lg:top-20 lg:order-2">
+            {/* Frame follows source 1960×1080 — full recording visible (object-contain), no zoom crop. */}
             <div className="overflow-hidden rounded-[16px] border border-cos-border/70 bg-cos-card shadow-[0_24px_60px_-28px_rgba(42,38,34,0.28)] sm:rounded-[18px]">
               <MarketingProductDemoVideo
                 demoId={active.id}
-                cropStudioChrome
+                objectFit="contain"
                 preload="auto"
                 aspectClassName="aspect-[1960/1080]"
                 sizes="(max-width: 1024px) 100vw, 820px"

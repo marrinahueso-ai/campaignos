@@ -44,6 +44,10 @@ interface EventDetailPhase3ClientProps {
   showYoureSet?: boolean;
   committeeId: string | null;
   committeeName: string | null;
+  navigationMode?: "event-detail" | "events-home";
+  onSyncTabUrl?: (
+    tab: import("@/components/events-phase3/EventDetailShell").EventDetailTab,
+  ) => void;
 }
 
 export function EventDetailPhase3Client({
@@ -60,6 +64,8 @@ export function EventDetailPhase3Client({
   showYoureSet = false,
   committeeId,
   committeeName,
+  navigationMode = "event-detail",
+  onSyncTabUrl,
 }: EventDetailPhase3ClientProps) {
   const [manageOpen, setManageOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -168,6 +174,8 @@ export function EventDetailPhase3Client({
         approvalsSlot={approvalsSlot}
         initialTab={initialTab}
         showYoureSet={showYoureSet}
+        navigationMode={navigationMode}
+        onSyncTabUrl={onSyncTabUrl}
       />
       {canManageAssignments ? (
         <InviteEventMemberDrawer

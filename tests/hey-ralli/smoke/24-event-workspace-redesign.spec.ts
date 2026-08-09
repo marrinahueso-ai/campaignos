@@ -70,7 +70,8 @@ test.describe("Event Workspace redesign paths", () => {
     await expect(page.getByTestId("event-detail-tab-group-planning")).toHaveCount(0);
 
     await page.getByTestId("event-workspace-back-to-events").click();
-    await expect(page).toHaveURL(/\/events\/?(\?|$)/);
+    await expect(page).toHaveURL(/\/events\/?(?:\?|$)/);
+    await expect(page).toHaveURL(/[?&]event=/);
   });
 
   test("Planning shell: Tasks / Notes / Files deep links + sub-tabs", async () => {
@@ -105,7 +106,8 @@ test.describe("Event Workspace redesign paths", () => {
     );
 
     await page.getByTestId("event-workspace-back-to-events").click();
-    await expect(page).toHaveURL(/\/events\/?(\?|$)/);
+    await expect(page).toHaveURL(/\/events\/?(?:\?|$)/);
+    await expect(page).toHaveURL(/[?&]event=/);
   });
 
   test("Approvals card workspace loads (content or empty)", async () => {

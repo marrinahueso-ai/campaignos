@@ -191,8 +191,11 @@ describe("event-scoped tab loaders (source contract)", () => {
   });
 
   it("defers Approvals to client load and preloads only non-default deep-linked tabs", () => {
+    const shellPayload = readSrc("../workspace-shell.ts");
     assert.match(render, /approvalsSlot=\{undefined\}/);
-    assert.match(render, /getOrganizationWorkspaceDataLean/);
+    assert.match(render, /loadEventWorkspaceShellPayload/);
+    assert.match(shellPayload, /getOrganizationWorkspaceDataLean/);
+    assert.match(shellPayload, /listCommitteeAssignmentsForCommittee/);
     assert.match(render, /loadEventDetailTabData\(/);
     assert.match(render, /lazyInitial/);
     assert.doesNotMatch(render, /EventDetailApprovalsStream/);
@@ -200,8 +203,7 @@ describe("event-scoped tab loaders (source contract)", () => {
     assert.doesNotMatch(render, /getTasksV2PageData\(\)/);
     assert.doesNotMatch(render, /getEventPlaybookHubData/);
     assert.doesNotMatch(render, /getVendorDirectoryPageData/);
-    assert.doesNotMatch(render, /listCommitteeAssignmentsByOrg/);
-    assert.match(render, /listCommitteeAssignmentsForCommittee/);
+    assert.doesNotMatch(shellPayload, /listCommitteeAssignmentsByOrg/);
   });
 
   it("does not alter create/edit vendor mutation action wiring", () => {

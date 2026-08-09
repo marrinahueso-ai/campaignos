@@ -218,6 +218,16 @@ interface EventDetailShellProps {
   initialTab?: string | null;
   /** Ease page-4 finale after Team+Meta — dismissible “You’re set” toast. */
   showYoureSet?: boolean;
+  /**
+   * `event-detail` = `/events/[id]?tab=` deep links.
+   * `events-home` = `/events?event=&tab=` in-shell workspace on Events home.
+   */
+  navigationMode?: "event-detail" | "events-home";
+  /**
+   * When set (Events home), tab URL sync goes through the parent so
+   * `useSearchParams` stays in sync. Event Detail keeps replaceState.
+   */
+  onSyncTabUrl?: (tab: EventDetailTab) => void;
 }
 
 function SkeletonBar({ className }: { className?: string }) {
@@ -408,6 +418,8 @@ export function EventDetailShell({
   approvalsSlot,
   initialTab = null,
   showYoureSet = false,
+  navigationMode = "event-detail",
+  onSyncTabUrl,
 }: EventDetailShellProps) {
   const [tab, setTab] = useState<EventDetailTab>(() =>
     resolveInitialTab(initialTab),
@@ -427,9 +439,32 @@ export function EventDetailShell({
   const cacheEventIdRef = useRef(event.id);
   const tabLoadAbortRef = useRef<AbortController | null>(null);
 
+  const eventsHomeHref = `/events?event=${encodeURIComponent(event.id)}`;
+
   const syncTabUrl = useCallback(
     (nextTab: EventDetailTab) => {
+      if (onSyncTabUrl) {
+        onSyncTabUrl(nextTab);
+        return;
+      }
       if (typeof window === "undefined") return;
+      if (navigationMode === "events-home") {
+        const params = new URLSearchParams(window.location.search);
+        params.set("event", event.id);
+        if (nextTab === "overview") {
+          params.delete("tab");
+        } else {
+          params.set("tab", nextTab);
+        }
+        const query = params.toString();
+        window.history.replaceState(
+          window.history.state,
+          "",
+          query ? `/events?${query}` : "/events",
+        );
+        return;
+      }
+
       const params = new URLSearchParams(window.location.search);
       if (nextTab === "overview") {
         params.delete("tab");
@@ -442,7 +477,7 @@ export function EventDetailShell({
         : `/events/${encodeURIComponent(event.id)}`;
       window.history.replaceState(window.history.state, "", href);
     },
-    [event.id],
+    [event.id, navigationMode, onSyncTabUrl],
   );
 
   useEffect(() => {
@@ -722,6 +757,15 @@ export function EventDetailShell({
     };
   }, [event.id]);
 
+  // Events home: quietly warm Approvals data into the tab cache after first paint.
+  useEffect(() => {
+    if (navigationMode !== "events-home") return;
+    const timeoutId = window.setTimeout(() => {
+      ensureTabLoaded("approvals");
+    }, 1600);
+    return () => window.clearTimeout(timeoutId);
+  }, [event.id, navigationMode, ensureTabLoaded]);
+
   const activityItems = useMemo(() => {
     const fromPlaybook = (panelData.playbookActivity ?? []).map((entry) => ({
       id: `playbook-${entry.id}`,
@@ -755,18 +799,34 @@ export function EventDetailShell({
     <EventDetailTabInvalidationProvider value={invalidationValue}>
     <div className="studio-page relative space-y-6 pb-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/events"
-          className={cn(
-            "inline-flex max-w-full items-center gap-1.5 text-sm font-medium",
-            ew.inksoft,
-            "hover:text-[#1c352d]",
-          )}
-          data-testid="event-workspace-back-to-events"
-        >
-          <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="truncate">Back to Events</span>
-        </Link>
+        {navigationMode === "events-home" ? (
+          <button
+            type="button"
+            onClick={() => selectTab("overview")}
+            className={cn(
+              "inline-flex max-w-full items-center gap-1.5 text-sm font-medium",
+              ew.inksoft,
+              "hover:text-[#1c352d]",
+            )}
+            data-testid="event-workspace-back-to-events"
+          >
+            <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="truncate">Back to Events</span>
+          </button>
+        ) : (
+          <Link
+            href={eventsHomeHref}
+            className={cn(
+              "inline-flex max-w-full items-center gap-1.5 text-sm font-medium",
+              ew.inksoft,
+              "hover:text-[#1c352d]",
+            )}
+            data-testid="event-workspace-back-to-events"
+          >
+            <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="truncate">Back to Events</span>
+          </Link>
+        )}
         {onInviteTeamMember ? (
           <button
             type="button"
@@ -784,7 +844,7 @@ export function EventDetailShell({
         <OnboardingYoureSetToast eventTitle={event.title} />
       ) : null}
 
-      {tab === "overview" ? (
+      {tab === "overview" && navigationMode !== "events-home" ? (
         <EventWorkspaceOverviewPanel
           event={event}
           artwork={artwork}

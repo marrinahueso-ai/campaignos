@@ -37,11 +37,14 @@ export interface MarketingProductDemoVideoProps {
   /** Prefer LCP: show next/image poster with priority before video mounts play */
   priority?: boolean;
   sizes?: string;
-  /** object-fit for the video/poster */
+  /**
+   * object-fit for the video/poster.
+   * Product UI recordings should use "contain" so the full frame stays visible.
+   */
   objectFit?: "contain" | "cover";
   /**
-   * Screen Studio exports include soft cream margins around the app window.
-   * When true, crop those margins so the product UI reads larger.
+   * @deprecated Prefer objectFit="contain". When true, zooms ~14% with
+   * object-cover — crops product chrome. Kept only for non-homepage experiments.
    */
   cropStudioChrome?: boolean;
   /** Override video preload. Tour clips should use "auto" once near-viewport. */
@@ -177,8 +180,9 @@ export function MarketingProductDemoVideo({
   const fitClass =
     objectFit === "cover" || cropStudioChrome
       ? "object-cover object-top"
-      : "object-contain object-top";
-  // Screen Studio soft margins ~8–12% — mild zoom keeps UI readable without hard crop.
+      : "object-contain object-center";
+  // Avoid zoom-cropping product UI. cropStudioChrome remains available but is
+  // unused on the homepage — full-frame contain is the marketing default.
   const mediaClass = cn(
     fitClass,
     cropStudioChrome && "scale-[1.14] origin-center",

@@ -27,6 +27,7 @@ import {
   type OverviewJumpTab,
 } from "@/components/events-phase3/EventWorkspaceOverviewPanel";
 import { InviteEventMemberDrawer } from "@/components/events-phase3/InviteEventMemberDrawer";
+import { SelectedEventWorkspaceHost } from "@/components/events-phase3/SelectedEventWorkspaceHost";
 import { filterEventsHomeBySearch } from "@/lib/events/events-home-search";
 import {
   EVENTS_ALSO_AHEAD_COLLAPSED_COUNT,
@@ -88,12 +89,18 @@ const PULSE_TABS: Array<{ id: EventsEaseLens; label: string }> = [
   { id: "archived", label: "Archived" },
 ];
 
-function overviewTabHref(eventId: string, tab: OverviewJumpTab): string {
-  if (tab === "create-with-ai") {
-    return createWithAiHref(eventId);
-  }
-  return `/events/${encodeURIComponent(eventId)}?tab=${encodeURIComponent(tab)}`;
-}
+/** Tabs that open the Event Workspace shell on Events home (not overview). */
+const HOME_WORKSPACE_TABS = new Set<string>([
+  "approvals",
+  "tasks",
+  "notes",
+  "files",
+  "volunteers",
+  "responsibilities",
+  "vendors",
+  "insights",
+  "activity",
+]);
 
 function leadAsResponsibilities(
   person: EventsHomeResponsiblePerson | undefined,
@@ -159,6 +166,14 @@ export function EventsHomeContent({
   );
   const [statsPendingId, setStatsPendingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  /** Once set, keep EventDetailShell mounted for this event while it stays selected. */
+  const [workspaceEventId, setWorkspaceEventId] = useState<string | null>(null);
+  /**
+   * In-shell workspace tab. Kept in React state (not useSearchParams) so tab
+   * switches do not re-run Events page SSR — URL is synced via replaceState.
+   */
+  const [workspaceTab, setWorkspaceTab] = useState<string | null>(null);
+  const workspaceTabInitRef = useRef(false);
 
   const urlEventId = searchParams.get("event")?.trim() || null;
   const searchQuery = searchParams.toString();
@@ -261,12 +276,30 @@ export function EventsHomeContent({
     setInviteCollaborators([]);
   }, [selectedId]);
 
+  // Deep-link: honor ?tab= once when the page loads with a workspace tab.
+  useEffect(() => {
+    if (workspaceTabInitRef.current) return;
+    const urlTab = searchParams.get("tab")?.trim() || null;
+    if (!urlTab || !HOME_WORKSPACE_TABS.has(urlTab) || !selectedId) return;
+    workspaceTabInitRef.current = true;
+    setWorkspaceTab(urlTab);
+    setWorkspaceEventId(selectedId);
+  }, [searchParams, selectedId]);
+
+  useEffect(() => {
+    if (workspaceEventId && selectedId !== workspaceEventId) {
+      setWorkspaceEventId(null);
+      setWorkspaceTab(null);
+    }
+  }, [selectedId, workspaceEventId]);
+
   // Keep ?event= in sync with the resolved selection (replace, no remount).
   useEffect(() => {
     if (!selectedId) {
       if (!urlEventId) return;
       const params = new URLSearchParams(searchQuery);
       params.delete("event");
+      params.delete("tab");
       const query = params.toString();
       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
       return;
@@ -346,19 +379,46 @@ export function EventsHomeContent({
   };
 
   function selectEvent(eventId: string) {
+    setWorkspaceTab(null);
     const params = new URLSearchParams(searchParams.toString());
     params.set("event", eventId);
+    params.delete("tab");
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
+  function writeWorkspaceUrl(eventId: string, tab: string | null) {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    params.set("event", eventId);
+    if (!tab || tab === "overview") {
+      params.delete("tab");
+    } else {
+      params.set("tab", tab);
+    }
+    const query = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      query ? `${pathname}?${query}` : pathname,
+    );
   }
 
   function handleSelectTab(tab: OverviewJumpTab) {
     if (!selectedEvent) return;
-    const href = overviewTabHref(selectedEvent.id, tab);
     if (tab === "create-with-ai") {
-      window.location.assign(href);
+      window.location.assign(createWithAiHref(selectedEvent.id));
       return;
     }
-    router.push(href);
+    setWorkspaceEventId(selectedEvent.id);
+    setWorkspaceTab(tab);
+    writeWorkspaceUrl(selectedEvent.id, tab);
+  }
+
+  function syncWorkspaceTabUrl(tab: string) {
+    if (!selectedEvent) return;
+    const next = tab === "overview" ? null : tab;
+    setWorkspaceTab(next);
+    writeWorkspaceUrl(selectedEvent.id, next);
   }
 
   function handleMemberAdded(result: InviteEventMemberAddedResult) {
@@ -394,9 +454,19 @@ export function EventsHomeContent({
   const statsPending = Boolean(
     selectedEvent && statsPendingId === selectedEvent.id,
   );
+  const showWorkspaceHost = Boolean(
+    selectedEvent && workspaceEventId === selectedEvent.id,
+  );
+  const interiorTab =
+    workspaceTab && HOME_WORKSPACE_TABS.has(workspaceTab)
+      ? workspaceTab
+      : null;
+  const showHomeOverview = !interiorTab;
 
   return (
     <div className="studio-page relative space-y-8 pb-12 before:pointer-events-none before:absolute before:top-0 before:left-[-2rem] before:h-60 before:w-60 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:top-10 after:right-0 after:h-52 after:w-52 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']">
+      {showHomeOverview ? (
+        <>
       <header className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-4xl tracking-[-0.02em] text-cos-text sm:text-5xl">
@@ -540,6 +610,17 @@ export function EventsHomeContent({
       )}
 
       <EventsEaseSuiteStrip />
+        </>
+      ) : null}
+
+      {showWorkspaceHost && selectedEvent ? (
+        <SelectedEventWorkspaceHost
+          eventId={selectedEvent.id}
+          initialTab={interiorTab ?? "overview"}
+          active={Boolean(interiorTab)}
+          onSyncTabUrl={syncWorkspaceTabUrl}
+        />
+      ) : null}
 
       <CreateEventModal
         open={createOpen}

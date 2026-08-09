@@ -22,10 +22,10 @@ describe("event detail ease UI contracts", () => {
     assert.match(shell, /PLANNING_TABS/);
     assert.match(shell, /COMMUNITY_TABS/);
     assert.match(shell, /return "overview"/);
-    // Interior + overview escape to Events home — not event overview / ID page.
+    // Interior + overview escape to Events home with selected event preserved.
     assert.match(shell, /event-workspace-back-to-events/);
     assert.match(shell, /Back to Events/);
-    assert.match(shell, /href="\/events"/);
+    assert.match(shell, /events\?event=/);
     assert.doesNotMatch(shell, /EventWorkspaceContextHeader/);
     assert.doesNotMatch(shell, /onBackToEvent/);
     assert.doesNotMatch(shell, /TOP_LEVEL_NAV/);
