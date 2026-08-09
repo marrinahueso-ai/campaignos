@@ -73,7 +73,7 @@ export function StudioFeaturesPage({
                 <div className="overflow-hidden rounded-xl">
                   <MarketingProductDemoVideo
                     demoId={story.productDemoId}
-                    aspectClassName="aspect-[1024/665]"
+                    aspectClassName="aspect-[1960/1080]"
                     sizes="(max-width: 1024px) 100vw, 560px"
                   />
                 </div>

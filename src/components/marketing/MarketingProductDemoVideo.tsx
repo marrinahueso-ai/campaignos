@@ -31,7 +31,7 @@ const demoPlayback = {
 export interface MarketingProductDemoVideoProps {
   demoId: MarketingProductDemoId;
   className?: string;
-  /** Aspect ratio utility, e.g. aspect-[1024/665] */
+  /** Aspect ratio utility — Screen Studio exports are ~1960×1080 */
   aspectClassName?: string;
   /** Prefer LCP: show next/image poster with priority before video mounts play */
   priority?: boolean;
@@ -44,11 +44,12 @@ export interface MarketingProductDemoVideoProps {
  * Passive product demo clip — muted, looping, playsInline, no native controls.
  * Respects prefers-reduced-motion (static poster). Plays only while near viewport
  * and yields to other demos so the marketing page never feels like a wall of motion.
+ * When `demoId` changes (Product Tour), the poster stays visible until the new clip is ready.
  */
 export function MarketingProductDemoVideo({
   demoId,
   className,
-  aspectClassName = "aspect-[1024/665]",
+  aspectClassName = "aspect-[1960/1080]",
   priority = false,
   sizes = "(max-width: 1024px) 100vw, 1152px",
   objectFit = "contain",
@@ -112,6 +113,11 @@ export function MarketingProductDemoVideo({
     return () => observer.disconnect();
   }, []);
 
+  // When the tour swaps clips, show the poster until the new source can play.
+  useEffect(() => {
+    setShowPosterOverlay(true);
+  }, [demoId]);
+
   useEffect(() => {
     if (reducedMotion) {
       pauseVideo();
@@ -124,7 +130,15 @@ export function MarketingProductDemoVideo({
     } else {
       pauseVideo();
     }
-  }, [inView, shouldLoad, reducedMotion, ownerId, playVideo, pauseVideo]);
+  }, [
+    demoId,
+    inView,
+    shouldLoad,
+    reducedMotion,
+    ownerId,
+    playVideo,
+    pauseVideo,
+  ]);
 
   const objectClass =
     objectFit === "cover" ? "object-cover object-top" : "object-contain object-top";
@@ -133,10 +147,11 @@ export function MarketingProductDemoVideo({
     <div
       ref={rootRef}
       className={cn(
-        "relative w-full overflow-hidden bg-cos-bg",
+        "relative w-full overflow-hidden bg-cos-bg bg-contain bg-top bg-no-repeat",
         aspectClassName,
         className,
       )}
+      style={{ backgroundImage: `url(${demo.poster})` }}
     >
       <Image
         src={demo.poster}
@@ -152,6 +167,7 @@ export function MarketingProductDemoVideo({
 
       {!reducedMotion && shouldLoad ? (
         <video
+          key={demo.src}
           ref={videoRef}
           className={cn(
             "absolute inset-0 h-full w-full",

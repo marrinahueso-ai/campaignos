@@ -259,7 +259,7 @@ export function MarketingWowWhyPage({
               <div className="overflow-hidden rounded-2xl">
                 <MarketingProductDemoVideo
                   demoId="event-planning"
-                  aspectClassName="aspect-[1024/665]"
+                  aspectClassName="aspect-[1960/1080]"
                   sizes="(max-width: 1024px) 100vw, 600px"
                 />
               </div>
