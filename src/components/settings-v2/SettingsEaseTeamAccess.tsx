@@ -1,77 +1,50 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
-import { OrganizationRosterImportPanel } from "@/components/organization-workspace/OrganizationRosterImportPanel";
-import {
-  SettingsEaseTeamAccessPersonDrawer,
-  type EasePersonDrawerTab,
-} from "@/components/settings-v2/SettingsEaseTeamAccessPersonDrawer";
-import { TeamAccessAccessTemplatesPanel } from "@/components/settings-v2/team-access/TeamAccessAccessTemplatesPanel";
+import { ChevronRight, Plus, Search, Shield } from "lucide-react";
 import { TeamAccessEditMemberModal } from "@/components/settings-v2/team-access/TeamAccessEditMemberModal";
-import { TeamAccessGiveAppAccessModal } from "@/components/settings-v2/team-access/TeamAccessGiveAppAccessModal";
-import { TeamAccessInviteModal } from "@/components/settings-v2/team-access/TeamAccessInviteModal";
-import { TeamAccessMultiOrgCallout } from "@/components/settings-v2/team-access/TeamAccessMultiOrgCallout";
+import { TeamAccessPilotAddMemberModal } from "@/components/settings-v2/team-access/TeamAccessPilotAddMemberModal";
+import {
+  TeamAccessPilotConfirmDialog,
+  type PilotConfirmKind,
+} from "@/components/settings-v2/team-access/TeamAccessPilotConfirmDialog";
+import { TeamAccessPilotMemberDrawer } from "@/components/settings-v2/team-access/TeamAccessPilotMemberDrawer";
+import {
+  AVATAR_TONES,
+  pilotBtnGhost,
+  pilotBtnPrimary,
+  pilotSerif,
+} from "@/components/settings-v2/team-access/team-access-pilot-theme";
 import {
   accessLevelLabel,
-  activeSeatsEaseSubLabel,
   buildUnifiedTeamMembers,
   canResendTeamInvite,
-  formatLastLoggedInLabel,
   isCurrentUserTeamMember,
-  pendingInvitesEaseSubLabel,
-  peopleEaseRoleLine,
+  memberMatchesPeopleSearch,
   peopleLoginStatus,
   peopleRelatedEventIds,
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
 import {
-  claimOrganizationAccessAction,
+  cancelTeamInviteAction,
   removeTeamMemberAction,
   replaceMemberEventAssignmentsAction,
   resendTeamInviteAction,
   setOrganizationUserEventAssignmentsAction,
   updateTeamMemberAction,
 } from "@/lib/auth/actions";
+import { isInviteExpired } from "@/lib/auth/invite-constants";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import { accessTemplateLabelMap } from "@/lib/access-templates/merge";
-import {
-  ACCESS_PERMISSION_LABELS,
-  type AccessPermissionKey,
-  type AccessTemplate,
-} from "@/lib/access-templates/types";
+import type { AccessTemplate } from "@/lib/access-templates/types";
 import type { TeamAccessWorkloadIndex } from "@/lib/organization-workspace/team-access-workload";
 import type { OrganizationUser } from "@/types/auth";
 import type { OrganizationWorkspaceData } from "@/types/organization-workspace";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 
-const btnPrimaryClassName =
-  "inline-flex items-center gap-1.5 rounded-full border-none bg-[#2a2622] px-[18px] py-[11px] text-[13px] font-bold text-[#fffcf7] transition-transform duration-100 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60";
-
-const btnSecondaryClassName =
-  "inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[rgba(42,38,34,0.1)] bg-[#fffcf7] px-[18px] py-[11px] text-[13px] font-bold text-[#2a2622] transition-transform duration-100 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60";
-
-const btnGhostClassName =
-  "inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-transparent bg-transparent px-3 py-2 text-[13px] font-bold text-[#5c554c] transition-colors duration-100 hover:text-[#2a2622] disabled:cursor-not-allowed disabled:opacity-60";
-
-const btnSmClassName = "px-3.5 py-2 text-xs";
-
-const AVATAR_TONES = [
-  "bg-[#2f4a3c] text-[#f6f2eb]",
-  "bg-[#c4922e] text-[#2a2622]",
-  "bg-[#2a7a86] text-[#fffcf7]",
-  "bg-[#6b8171] text-[#fffcf7]",
-] as const;
-
-/** Soft summary chips — matches mockup’s six capability rows. */
-const SUMMARY_PERMISSION_KEYS: AccessPermissionKey[] = [
-  "view_all_events",
-  "draft_edit",
-  "approve_comms",
-  "publish_social",
-  "manage_people",
-  "manage_billing",
-];
+type PeopleTab = "all" | "active" | "pending" | "inactive";
 
 interface SettingsEaseTeamAccessProps {
   members: OrganizationUser[];
@@ -94,115 +67,68 @@ interface SettingsEaseTeamAccessProps {
   planLabel: string;
 }
 
-function SoftCard({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`rounded-[22px] border border-[rgba(42,38,34,0.1)] bg-[#fffcf7] px-[22px] py-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)] ${className}`}
-    >
-      {children}
-    </div>
-  );
-}
-
-function StatCard({
-  eyebrow,
-  value,
-  description,
-}: {
-  eyebrow: string;
-  value: string;
-  description: string;
-}) {
-  return (
-    <SoftCard>
-      <div className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#7a7166]">
-        {eyebrow}
-      </div>
-      <div
-        className="mt-1.5 text-[32px] font-semibold leading-none tracking-[-0.02em] text-[#2a2622]"
-        style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
-      >
-        {value}
-      </div>
-      <p className="mt-1 mb-0 text-[13px] leading-snug text-[#5c554c]">
-        {description}
-      </p>
-    </SoftCard>
-  );
-}
-
-function parseDrawerTab(value: string | null): EasePersonDrawerTab {
-  if (value === "events" || value === "access" || value === "overview") {
-    return value;
-  }
-  if (value === "responsibilities") return "events";
-  return "overview";
-}
-
-/** Deep-link keys: member id, email local-part, or unique first name. */
-function personDeepLinkKeys(member: UnifiedTeamMember): string[] {
-  const keys = new Set<string>();
-  keys.add(member.id);
-  const emailLocal = member.email?.split("@")[0]?.trim().toLowerCase();
-  if (emailLocal) keys.add(emailLocal);
-  const first = member.displayName.trim().split(/\s+/)[0]?.toLowerCase();
-  if (first) keys.add(first);
-  return Array.from(keys);
-}
-
-function findMemberByPersonParam(
-  people: UnifiedTeamMember[],
-  person: string | null,
-): UnifiedTeamMember | null {
-  if (!person) return null;
-  const needle = person.trim().toLowerCase();
-  if (!needle) return null;
-
-  const byId = people.find((member) => member.id === person);
-  if (byId) return byId;
-
-  const matches = people.filter((member) =>
-    personDeepLinkKeys(member).some((key) => key === needle),
-  );
-  return matches.length === 1 ? matches[0]! : matches[0] ?? null;
-}
-
-function personQueryValue(
+function inviteExpiryLabel(
   member: UnifiedTeamMember,
-  people: UnifiedTeamMember[],
-): string {
-  const first = member.displayName.trim().split(/\s+/)[0]?.toLowerCase();
-  if (first) {
-    const firstMatches = people.filter((entry) => {
-      const entryFirst = entry.displayName.trim().split(/\s+/)[0]?.toLowerCase();
-      return entryFirst === first;
-    });
-    if (firstMatches.length === 1) return first;
-  }
-  const emailLocal = member.email?.split("@")[0]?.trim().toLowerCase();
-  if (emailLocal) return emailLocal;
-  return member.id;
+  nowMs = Date.now(),
+): string | null {
+  if (peopleLoginStatus(member) !== "invited") return null;
+  const expiresAt = member.raw?.inviteExpiresAt;
+  if (!expiresAt) return null;
+  if (isInviteExpired(expiresAt)) return "Expired";
+  const ms = Date.parse(expiresAt) - nowMs;
+  if (Number.isNaN(ms) || ms <= 0) return "Expired";
+  const days = Math.ceil(ms / (1000 * 60 * 60 * 24));
+  if (days <= 1) return "Expires today";
+  return `Expires in ${days}d`;
 }
 
-function syncPersonQuery(
-  person: string | null,
-  tab: EasePersonDrawerTab,
-) {
+function rowStatus(member: UnifiedTeamMember): {
+  label: string;
+  className: string;
+  pendingStyle: boolean;
+  pausedStyle: boolean;
+} {
+  const login = peopleLoginStatus(member);
+  if (login === "invited") {
+    const expired = isInviteExpired(member.raw?.inviteExpiresAt);
+    return {
+      label: expired ? "Invite expired" : "Pending",
+      className: expired
+        ? "bg-[#f9f2f0] text-[#c07a67]"
+        : "bg-yellow-50 text-[#d4af37]",
+      pendingStyle: true,
+      pausedStyle: false,
+    };
+  }
+  if (login === "inactive") {
+    return {
+      label: "Paused",
+      className: "bg-[#f9f2f0] text-[#c07a67]",
+      pendingStyle: false,
+      pausedStyle: true,
+    };
+  }
+  return {
+    label: "Active",
+    className: "bg-[#eef2f0] text-[#586c63]",
+    pendingStyle: false,
+    pausedStyle: false,
+  };
+}
+
+function matchesTab(member: UnifiedTeamMember, tab: PeopleTab): boolean {
+  const login = peopleLoginStatus(member);
+  if (tab === "all") return true;
+  if (tab === "active") return login === "active";
+  if (tab === "pending") return login === "invited";
+  return login === "inactive";
+}
+
+function syncPersonQuery(person: string | null) {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
   if (person) {
     url.searchParams.set("person", person);
-    if (tab === "overview") {
-      url.searchParams.delete("tab");
-    } else {
-      url.searchParams.set("tab", tab);
-    }
   } else {
     url.searchParams.delete("person");
     url.searchParams.delete("tab");
@@ -218,7 +144,6 @@ export function SettingsEaseTeamAccess({
   canManage,
   canEditAccessTemplates = false,
   accessTemplates,
-  showClaimBanner,
   currentUserEmail,
   canProvisionAccounts,
   events,
@@ -227,17 +152,15 @@ export function SettingsEaseTeamAccess({
 }: SettingsEaseTeamAccessProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [importOpen, setImportOpen] = useState(false);
-  const [inviteOpen, setInviteOpen] = useState(false);
+  const [peopleTab, setPeopleTab] = useState<PeopleTab>("all");
+  const [search, setSearch] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editMember, setEditMember] = useState<UnifiedTeamMember | null>(null);
-  const [giveAppAccessOpen, setGiveAppAccessOpen] = useState(false);
-  const [giveAppAccessMember, setGiveAppAccessMember] =
-    useState<UnifiedTeamMember | null>(null);
-  const [rolesEditorOpen, setRolesEditorOpen] = useState(false);
-  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [drawerMemberId, setDrawerMemberId] = useState<string | null>(null);
-  const [drawerTab, setDrawerTab] = useState<EasePersonDrawerTab>("overview");
+  const [localMembers, setLocalMembers] = useState<UnifiedTeamMember[] | null>(
+    null,
+  );
   const [inviteFeedback, setInviteFeedback] = useState<{
     tone: "success" | "warning" | "error";
     message: string;
@@ -246,14 +169,23 @@ export function SettingsEaseTeamAccess({
   const [resendingMemberId, setResendingMemberId] = useState<string | null>(
     null,
   );
-  const [localMembers, setLocalMembers] = useState<UnifiedTeamMember[] | null>(
-    null,
-  );
+  const [confirm, setConfirm] = useState<{
+    kind: PilotConfirmKind;
+    member: UnifiedTeamMember;
+  } | null>(null);
 
   const accessLabels = useMemo(
     () => accessTemplateLabelMap(accessTemplates),
     [accessTemplates],
   );
+
+  const eventTitlesById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const event of events) {
+      map.set(event.id, event.title);
+    }
+    return map;
+  }, [events]);
 
   const unifiedMembers = useMemo(() => {
     const built = buildUnifiedTeamMembers(
@@ -304,41 +236,31 @@ export function SettingsEaseTeamAccess({
     setLocalMembers(null);
   }, [unifiedMembers]);
 
-  const roleCounts = useMemo(() => {
-    const counts = new Map<string, number>();
+  const counts = useMemo(() => {
+    let active = 0;
+    let pending = 0;
+    let inactive = 0;
     for (const member of loginPeople) {
-      const key = member.accessTemplateId ?? member.accessLevel;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
+      const status = peopleLoginStatus(member);
+      if (status === "active") active += 1;
+      else if (status === "invited") pending += 1;
+      else inactive += 1;
     }
-    return counts;
+    return {
+      all: loginPeople.length,
+      active,
+      pending,
+      inactive,
+    };
   }, [loginPeople]);
 
-  const rolePills = useMemo(() => {
-    const used = accessTemplates.filter(
-      (template) => (roleCounts.get(template.id) ?? 0) > 0,
+  const visiblePeople = useMemo(() => {
+    return loginPeople.filter(
+      (member) =>
+        matchesTab(member, peopleTab) &&
+        memberMatchesPeopleSearch(member, search, eventTitlesById),
     );
-    const base =
-      used.length > 0
-        ? used
-        : accessTemplates.filter(
-            (template) =>
-              template.id !== "developer" && template.id !== "tester",
-          );
-    return base.length > 0 ? base : accessTemplates;
-  }, [accessTemplates, roleCounts]);
-
-  const activeRoleId = selectedRoleId ?? rolePills[0]?.id ?? null;
-  const activeRole =
-    accessTemplates.find((template) => template.id === activeRoleId) ??
-    rolePills[0] ??
-    null;
-
-  const activeCount = loginPeople.filter(
-    (member) => peopleLoginStatus(member) === "active",
-  ).length;
-  const pendingCount = loginPeople.filter(
-    (member) => peopleLoginStatus(member) === "invited",
-  ).length;
+  }, [loginPeople, peopleTab, search, eventTitlesById]);
 
   const drawerMember = useMemo(
     () =>
@@ -359,59 +281,27 @@ export function SettingsEaseTeamAccess({
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const person = params.get("person");
-    const tab = parseDrawerTab(params.get("tab"));
-    const match = findMemberByPersonParam(loginPeople, person);
-    if (match) {
-      setDrawerMemberId(match.id);
-      setDrawerTab(tab);
-    }
+    if (!person) return;
+    const match =
+      loginPeople.find((member) => member.id === person) ??
+      loginPeople.find((member) =>
+        member.displayName.toLowerCase().startsWith(person.toLowerCase()),
+      ) ??
+      null;
+    if (match) setDrawerMemberId(match.id);
   }, [loginPeople]);
 
-  function openPerson(member: UnifiedTeamMember, tab: EasePersonDrawerTab = "overview") {
+  function openPerson(member: UnifiedTeamMember) {
     setInviteFeedback(null);
     setDrawerMemberId(member.id);
-    setDrawerTab(tab);
-    syncPersonQuery(personQueryValue(member, loginPeople), tab);
+    syncPersonQuery(member.id);
   }
 
   function closePerson() {
     setInviteFeedback(null);
     setResendingMemberId(null);
     setDrawerMemberId(null);
-    setDrawerTab("overview");
-    syncPersonQuery(null, "overview");
-  }
-
-  function handleDrawerTabChange(tab: EasePersonDrawerTab) {
-    setDrawerTab(tab);
-    if (drawerMember) {
-      syncPersonQuery(personQueryValue(drawerMember, loginPeople), tab);
-    }
-  }
-
-  function openInvite() {
-    setInviteOpen(true);
-  }
-
-  function openEdit(member: UnifiedTeamMember) {
-    setEditMember(member);
-    setEditOpen(true);
-  }
-
-  function openGiveAccess(member: UnifiedTeamMember) {
-    if (!member.organizationMemberId && !member.raw) {
-      setInviteOpen(true);
-      return;
-    }
-    setGiveAppAccessMember(member);
-    setGiveAppAccessOpen(true);
-  }
-
-  function handleClaim() {
-    startTransition(async () => {
-      await claimOrganizationAccessAction();
-      router.refresh();
-    });
+    syncPersonQuery(null);
   }
 
   function handleResendInvite(member: UnifiedTeamMember) {
@@ -422,25 +312,16 @@ export function SettingsEaseTeamAccess({
       try {
         const result = await resendTeamInviteAction(member.raw!.id);
         if (result.error) {
-          setInviteFeedback({
-            tone: "error",
-            message: result.error,
-          });
+          setInviteFeedback({ tone: "error", message: result.error });
           return;
         }
-        if (result.warning) {
-          setInviteFeedback({
-            tone: "warning",
-            message: [result.message, result.warning].filter(Boolean).join(" "),
-            inviteUrl: result.inviteUrl,
-          });
-        } else {
-          setInviteFeedback({
-            tone: "success",
-            message: result.message ?? "Invite email sent.",
-            inviteUrl: result.inviteUrl,
-          });
-        }
+        setInviteFeedback({
+          tone: result.warning ? "warning" : "success",
+          message:
+            [result.message, result.warning].filter(Boolean).join(" ") ||
+            "Invite email sent.",
+          inviteUrl: result.inviteUrl,
+        });
         router.refresh();
       } finally {
         setResendingMemberId(null);
@@ -448,29 +329,52 @@ export function SettingsEaseTeamAccess({
     });
   }
 
-  function handleRemove(member: UnifiedTeamMember) {
-    if (!canManage || !member.raw) return;
-    if (isCurrentUserTeamMember(member, currentUserEmail)) return;
-    if (
-      !window.confirm(
-        `Remove ${member.displayName} from the team? This can’t be undone.`,
-      )
-    ) {
-      return;
-    }
+  function runConfirm() {
+    if (!confirm?.member.raw) return;
+    const { kind, member } = confirm;
     startTransition(async () => {
-      const result = await removeTeamMemberAction(member.raw!.id);
-      if (result.error) {
-        window.alert(result.error);
-        return;
+      if (kind === "cancel_invite") {
+        const result = await cancelTeamInviteAction(member.raw!.id);
+        if (result.error) {
+          window.alert(result.error);
+          return;
+        }
+        setLocalMembers((current) => {
+          const base = current ?? unifiedMembers;
+          return base.filter((entry) => entry.id !== member.id);
+        });
+        if (drawerMemberId === member.id) closePerson();
+      } else if (kind === "remove") {
+        const result = await removeTeamMemberAction(member.raw!.id);
+        if (result.error) {
+          window.alert(result.error);
+          return;
+        }
+        setLocalMembers((current) => {
+          const base = current ?? unifiedMembers;
+          return base.filter((entry) => entry.id !== member.id);
+        });
+        if (drawerMemberId === member.id) closePerson();
+      } else if (kind === "pause") {
+        const result = await updateTeamMemberAction(member.raw!.id, {
+          status: "deactivated",
+        });
+        if (result.error) {
+          window.alert(result.error);
+          return;
+        }
+        router.refresh();
+      } else if (kind === "restore") {
+        const result = await updateTeamMemberAction(member.raw!.id, {
+          status: "active",
+        });
+        if (result.error) {
+          window.alert(result.error);
+          return;
+        }
+        router.refresh();
       }
-      setLocalMembers((current) => {
-        const base = current ?? unifiedMembers;
-        return base.filter((entry) => entry.id !== member.id);
-      });
-      if (drawerMemberId === member.id) {
-        closePerson();
-      }
+      setConfirm(null);
       router.refresh();
     });
   }
@@ -480,43 +384,12 @@ export function SettingsEaseTeamAccess({
     campaignRole: CampaignRole | string,
   ): Promise<string | null> {
     if (member.isRosterOnly || !member.raw) {
-      return "Use Give access to grant login for people who are not invited yet.";
+      return "Invite this person first to set their access role.";
     }
     const result = await updateTeamMemberAction(member.raw.id, {
       campaignRole,
     });
     if (result.error) return result.error;
-
-    const template =
-      accessTemplates.find((entry) => entry.id === campaignRole) ?? null;
-    const nextAccessLevel =
-      template?.baseRole ?? (campaignRole as CampaignRole);
-    const nextTemplateId = template?.id ?? String(campaignRole);
-
-    setLocalMembers((current) => {
-      const base = current ?? unifiedMembers;
-      return base.map((entry) =>
-        entry.id === member.id
-          ? {
-              ...entry,
-              accessLevel: nextAccessLevel,
-              accessTemplateId: nextTemplateId,
-              accessLabel: accessLevelLabel(
-                nextTemplateId,
-                false,
-                accessLabels,
-              ),
-              raw: entry.raw
-                ? {
-                    ...entry.raw,
-                    campaignRole: nextAccessLevel,
-                    accessTemplateId: nextTemplateId,
-                  }
-                : entry.raw,
-            }
-          : entry,
-      );
-    });
     router.refresh();
     return null;
   }
@@ -540,408 +413,336 @@ export function SettingsEaseTeamAccess({
     } else {
       return "Unable to link events for this person yet.";
     }
-
-    setLocalMembers((current) => {
-      const base = current ?? unifiedMembers;
-      return base.map((entry) =>
-        entry.id === member.id
-          ? {
-              ...entry,
-              assignedEventIds: eventIds,
-              raw: entry.raw
-                ? { ...entry.raw, assignedEventIds: eventIds }
-                : entry.raw,
-            }
-          : entry,
-      );
-    });
     router.refresh();
     return null;
   }
 
+  const seatHint =
+    seatLimit == null
+      ? `${counts.active} active on ${planLabel}`
+      : `${counts.active} of ${seatLimit} seats on ${planLabel}`;
+
+  const tabs: Array<{ id: PeopleTab; label: string; count: number }> = [
+    { id: "all", label: "All", count: counts.all },
+    { id: "active", label: "Active", count: counts.active },
+    { id: "pending", label: "Pending", count: counts.pending },
+    { id: "inactive", label: "Inactive", count: counts.inactive },
+  ];
+
   return (
     <section
-      className="settings-ease-team-access"
+      className="settings-ease-team-access -mx-1"
       data-settings-ease="team-access"
+      data-team-access-pilot="v1"
     >
-      <div className="mb-[18px] flex flex-wrap items-end justify-between gap-3.5">
-        <div>
+      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-2">
           <h1
-            className="m-0 text-[clamp(30px,3.6vw,42px)] font-semibold leading-[1.05] tracking-[-0.02em] text-[#2a2622]"
-            style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+            className="m-0 text-[clamp(28px,3.6vw,48px)] font-bold leading-[1.05] tracking-tight text-[#201b17]"
+            style={{ fontFamily: pilotSerif }}
           >
             Team & Access
           </h1>
-          <p className="mt-1.5 mb-0 max-w-[48ch] text-sm leading-snug text-[#5c554c]">
-            People, roles, and what each person can do — link events and adjust
-            access from one place.
+          <p className="m-0 max-w-xl text-base font-medium text-[#737373] sm:text-lg">
+            Manage the people helping our school. Invite volunteers and set who
+            can do what.
+          </p>
+          <p className="m-0 text-xs font-medium text-[#737373]/80">
+            {seatHint}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {canEditAccessTemplates ? (
+            <Link
+              href="/settings/team-access/roles"
+              className="inline-flex items-center gap-2 rounded-2xl border border-[#e5e1d8] bg-white px-4 py-2.5 text-sm font-bold text-[#737373] shadow-sm transition hover:bg-[#f5f2eb] hover:text-[#201b17]"
+            >
+              <Shield className="h-3.5 w-3.5" aria-hidden />
+              Manage roles
+            </Link>
+          ) : null}
           {canManage ? (
-            <>
-              <button
-                type="button"
-                className={btnSecondaryClassName}
-                onClick={() => setImportOpen((open) => !open)}
-                aria-expanded={importOpen}
-              >
-                Import roster
-              </button>
-              <button
-                type="button"
-                className={btnPrimaryClassName}
-                onClick={openInvite}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  aria-hidden
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Invite
-              </button>
-            </>
+            <button
+              type="button"
+              className={pilotBtnPrimary}
+              onClick={() => setAddOpen(true)}
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              Add team member
+            </button>
           ) : null}
         </div>
       </div>
 
-      {canManage ? <TeamAccessMultiOrgCallout /> : null}
-
-      {showClaimBanner ? (
-        <SoftCard className="mb-3.5 border-[rgba(196,146,46,0.28)] bg-[rgba(196,146,46,0.1)]">
-          <h3
-            className="m-0 text-xl font-semibold tracking-[-0.01em] text-[#2a2622]"
-            style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
-          >
-            Link your account
-          </h3>
-          <p className="mt-1 mb-0 text-[13px] leading-snug text-[#5c554c]">
-            This organization exists but has no signed-in users yet. Claim
-            admin access as{" "}
-            <span className="font-semibold text-[#2a2622]">
-              {currentUserEmail}
-            </span>{" "}
-            to manage the team.
-          </p>
-          <div className="mt-3.5">
-            <button
-              type="button"
-              className={btnPrimaryClassName}
-              disabled={isPending}
-              onClick={handleClaim}
-            >
-              Claim admin access
-            </button>
-          </div>
-        </SoftCard>
-      ) : null}
-
-      <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-        <StatCard
-          eyebrow="Active seats"
-          value={String(activeCount)}
-          description={activeSeatsEaseSubLabel(seatLimit, planLabel)}
-        />
-        <StatCard
-          eyebrow="Pending invites"
-          value={String(pendingCount)}
-          description={pendingInvitesEaseSubLabel(loginPeople)}
-        />
+      <div className="mb-6 flex flex-col gap-4 border-b border-[#e5e1d8] sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-5 overflow-x-auto sm:gap-8" role="tablist">
+          {tabs.map((tab) => {
+            const active = peopleTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={`relative shrink-0 pb-3 text-sm font-bold transition ${
+                  active
+                    ? "text-[#201b17] after:absolute after:right-0 after:bottom-[-1px] after:left-0 after:h-0.5 after:bg-[#201b17]"
+                    : "text-[#737373] hover:text-[#201b17]"
+                }`}
+                onClick={() => setPeopleTab(tab.id)}
+              >
+                {tab.label}{" "}
+                <span className="ml-1 font-medium text-[#737373]/60">
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="relative mb-3 w-full sm:mb-4 sm:w-72">
+          <Search className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#737373]/50" />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search team by name or role…"
+            className="w-full rounded-2xl border-none bg-[#f5f2eb]/50 py-2.5 pr-4 pl-11 text-sm font-medium outline-none ring-[#586c63]/20 focus:ring-2"
+          />
+        </div>
       </div>
 
-      {importOpen && canManage ? (
-        <SoftCard className="mb-3.5">
-          <div className="mb-3.5 flex flex-wrap items-start justify-between gap-2.5">
-            <div>
-              <h3
-                className="m-0 text-xl font-semibold tracking-[-0.01em] text-[#2a2622]"
-                style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
-              >
-                Import roster
-              </h3>
-              <p className="mt-1 mb-0 text-[13px] leading-snug text-[#5c554c]">
-                Upload or paste leadership roles and teams for this
-                organization.{" "}
-                <a
-                  href="/templates/board-roster-import.xlsx"
-                  download
-                  className="font-semibold text-[#2a2622] underline-offset-2 hover:underline"
-                >
-                  Download Excel template
-                </a>
-              </p>
-            </div>
-            <button
-              type="button"
-              className={btnGhostClassName}
-              onClick={() => setImportOpen(false)}
-            >
-              Close
-            </button>
+      {loginPeople.length === 0 ? (
+        <div className="mx-auto flex min-h-[50vh] max-w-md flex-col items-center justify-center space-y-6 text-center">
+          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#f5f2eb] text-3xl text-[#737373]">
+            ◯
           </div>
-          <OrganizationRosterImportPanel embedded />
-        </SoftCard>
-      ) : null}
-
-      <SoftCard className="mb-3.5">
-        <div className="mb-3.5 flex flex-wrap items-start justify-between gap-2.5">
           <div>
             <h3
-              className="m-0 text-xl font-semibold tracking-[-0.01em] text-[#2a2622]"
-              style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+              className="mb-2 text-2xl font-bold text-[#201b17]"
+              style={{ fontFamily: pilotSerif }}
             >
-              Roles & permissions
+              No members yet
             </h3>
-            <p className="mt-1 mb-0 text-[13px] leading-snug text-[#5c554c]">
-              What each role can do in your organization.
+            <p className="font-medium text-[#737373]">
+              {canManage
+                ? "Start building your team by inviting your first volunteer."
+                : "Ask an admin to invite you to this organization."}
             </p>
           </div>
-          {canEditAccessTemplates ? (
+          {canManage ? (
             <button
               type="button"
-              className={`${btnSecondaryClassName} ${btnSmClassName}`}
-              onClick={() => setRolesEditorOpen(true)}
+              className={pilotBtnPrimary}
+              onClick={() => setAddOpen(true)}
             >
-              Edit roles
+              Add your first member
             </button>
           ) : null}
         </div>
+      ) : visiblePeople.length === 0 ? (
+        <p className="py-16 text-center text-sm font-medium text-[#737373]">
+          No people match your search or filters.
+        </p>
+      ) : (
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:gap-4">
+          {visiblePeople.map((member, index) => {
+            const status = rowStatus(member);
+            const tone = AVATAR_TONES[index % AVATAR_TONES.length];
+            const linked = peopleRelatedEventIds(member)
+              .map((id) => eventTitlesById.get(id))
+              .filter(Boolean) as string[];
+            const expiry = inviteExpiryLabel(member);
+            const isSelf = isCurrentUserTeamMember(member, currentUserEmail);
 
-        {rolePills.length === 0 ? (
-          <p className="m-0 text-sm text-[#5c554c]">
-            No access roles configured yet.
-          </p>
-        ) : (
-          <>
-            <div
-              className="mb-4 flex flex-wrap gap-2"
-              role="tablist"
-              aria-label="Access roles"
-            >
-              {rolePills.map((template) => {
-                const active = template.id === activeRoleId;
-                const count = roleCounts.get(template.id) ?? 0;
-                return (
-                  <button
-                    key={template.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    data-role={template.id}
-                    className={`rounded-full border-[1.5px] px-3.5 py-2 text-[13px] font-bold transition-all duration-100 hover:-translate-y-px ${
-                      active
-                        ? "border-[#2f4a3c] bg-[#2f4a3c] text-[#f6f2eb]"
-                        : "border-[rgba(42,38,34,0.1)] bg-[rgba(246,242,235,0.7)] text-[#5c554c] hover:text-[#2a2622]"
-                    }`}
-                    onClick={() => setSelectedRoleId(template.id)}
-                  >
-                    {template.displayName}
-                    <span className="ml-1.5 text-xs font-semibold opacity-70">
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            {activeRole ? (
-              <div>
-                <p className="mb-3 text-[13px] leading-snug text-[#5c554c]">
-                  {activeRole.description ||
-                    "Permissions for this role."}
-                </p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {SUMMARY_PERMISSION_KEYS.map((key) => {
-                    const on = Boolean(activeRole.permissions[key]);
-                    const assignedOnlyHint =
-                      key === "view_all_events" &&
-                      !on &&
-                      (activeRole.permissions.view_assigned_events_only ||
-                        activeRole.permissions.access_assigned_events_only)
-                        ? "Assigned events only"
-                        : null;
-                    return (
-                      <div
-                        key={key}
-                        className={`flex items-center gap-2.5 rounded-2xl border px-3.5 py-3 ${
-                          on
-                            ? "border-[rgba(47,74,60,0.12)] bg-[rgba(47,74,60,0.08)]"
-                            : "border-transparent bg-[rgba(246,242,235,0.55)]"
-                        }`}
-                      >
-                        <span
-                          className={`grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full text-xs font-extrabold ${
-                            on
-                              ? "bg-[#2f4a3c] text-[#f6f2eb]"
-                              : "bg-[rgba(122,113,102,0.14)] text-[#7a7166]"
-                          }`}
-                        >
-                          {on ? "✓" : "–"}
-                        </span>
-                        <span>
-                          <span
-                            className={`text-[13px] ${
-                              on
-                                ? "font-bold text-[#2a2622]"
-                                : "font-semibold text-[#7a7166]"
-                            }`}
-                          >
-                            {ACCESS_PERMISSION_LABELS[key]}
-                          </span>
-                          {assignedOnlyHint ? (
-                            <span className="mt-0.5 block text-[11px] font-medium text-[#7a7166]">
-                              {assignedOnlyHint}
-                            </span>
-                          ) : null}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
-          </>
-        )}
-      </SoftCard>
-
-      <SoftCard>
-        <div className="mb-3.5">
-          <h3
-            className="m-0 text-xl font-semibold tracking-[-0.01em] text-[#2a2622]"
-            style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
-          >
-            People
-          </h3>
-          <p className="mt-1 mb-0 text-[13px] leading-snug text-[#5c554c]">
-            Open anyone to link events and give access.
-          </p>
-        </div>
-
-        {loginPeople.length === 0 ? (
-          <p className="m-0 text-sm text-[#5c554c]">
-            No team members with login yet.{" "}
-            {canManage
-              ? "Invite your team or import a roster to get started."
-              : "Ask an admin to invite you."}
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {loginPeople.map((member, index) => {
-              const isSelf = isCurrentUserTeamMember(
-                member,
-                currentUserEmail,
-              );
-              const status = peopleLoginStatus(member);
-              const tone = AVATAR_TONES[index % AVATAR_TONES.length];
-              const linkedCount = peopleRelatedEventIds(member).length;
-              const canDelete = canManage && Boolean(member.raw) && !isSelf;
-
-              return (
+            return (
+              <button
+                key={member.id}
+                type="button"
+                onClick={() => openPerson(member)}
+                className={`group flex w-full flex-col gap-4 rounded-[2rem] border p-4 text-left transition hover:shadow-[0_4px_24px_-2px_rgba(32,27,23,0.04)] sm:flex-row sm:items-center sm:justify-between sm:rounded-[2.5rem] sm:p-5 ${
+                  status.pendingStyle
+                    ? "border-dashed border-[#e5e1d8] bg-white/60 hover:border-[#d4af37]/30 hover:bg-white"
+                    : status.pausedStyle
+                      ? "border-[#e5e1d8] bg-[#f9f2f0]/30 hover:border-[#c07a67]/30 hover:bg-white"
+                      : "border-[#e5e1d8] bg-white hover:border-[#586c63]/30"
+                }`}
+              >
                 <div
-                  key={member.id}
-                  className="group flex items-center gap-1 rounded-2xl border border-transparent bg-[rgba(246,242,235,0.55)] transition-all duration-100 hover:-translate-y-px hover:border-[rgba(47,74,60,0.14)] hover:bg-[rgba(246,242,235,0.95)]"
+                  className={`flex min-w-0 flex-1 items-center gap-4 sm:gap-6 ${
+                    status.pendingStyle
+                      ? "grayscale"
+                      : status.pausedStyle
+                        ? "opacity-60"
+                        : ""
+                  }`}
                 >
-                  <button
-                    type="button"
-                    data-person={personDeepLinkKeys(member)[1] ?? member.id}
-                    className="flex min-w-0 flex-1 items-center gap-3 px-3.5 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f4a3c]"
-                    onClick={() => openPerson(member)}
+                  <div
+                    className={`grid h-12 w-12 shrink-0 place-items-center rounded-full text-sm font-extrabold sm:h-14 sm:w-14 sm:text-base ${tone}`}
+                    aria-hidden
                   >
-                    <div
-                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xs font-extrabold ${tone}`}
-                      aria-hidden
+                    {member.initials}
+                  </div>
+                  <div className="min-w-0">
+                    <h3
+                      className={`truncate text-base font-bold text-[#201b17] sm:text-lg ${
+                        status.pausedStyle
+                          ? "line-through decoration-[#c07a67]/30"
+                          : "group-hover:text-[#586c63]"
+                      }`}
                     >
-                      {member.initials}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-bold text-[#2a2622]">
-                        {member.displayName}
-                      </div>
-                      <div className="mt-0.5 truncate text-xs text-[#7a7166]">
-                        {peopleEaseRoleLine(member)}
-                      </div>
-                      <div className="mt-0.5 truncate text-xs leading-snug text-[#7a7166]">
-                        {formatLastLoggedInLabel(member.lastActive)}
-                      </div>
-                      {linkedCount > 0 ? (
-                        <div className="mt-1 text-[11px] font-bold text-[#2a7a86]">
-                          {linkedCount} event{linkedCount === 1 ? "" : "s"}{" "}
-                          linked
-                        </div>
+                      {member.displayName}
+                      {isSelf ? (
+                        <span className="ml-2 text-xs font-bold text-[#586c63]">
+                          You
+                        </span>
+                      ) : null}
+                    </h3>
+                    <p
+                      className={`truncate text-sm font-medium text-[#737373] ${
+                        status.pendingStyle ? "italic" : ""
+                      }`}
+                    >
+                      {member.organizationRoleName?.trim() ||
+                        member.orgRoleLabel?.trim() ||
+                        "Team member"}
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className={`min-w-0 flex-1 px-0 sm:px-4 ${
+                    status.pausedStyle ? "opacity-60" : ""
+                  }`}
+                >
+                  <p className="truncate text-sm font-bold text-[#201b17]">
+                    {member.accessLabel}
+                  </p>
+                  <p className="truncate text-xs font-medium text-[#737373]">
+                    {member.email || "No email"}
+                  </p>
+                </div>
+
+                <div
+                  className={`min-w-0 flex-1 px-0 sm:px-4 ${
+                    status.pendingStyle || status.pausedStyle
+                      ? "opacity-50"
+                      : ""
+                  }`}
+                >
+                  <p className="mb-1 text-[10px] font-bold tracking-widest text-[#737373]/60 uppercase">
+                    Assigned to
+                  </p>
+                  {linked.length === 0 ? (
+                    <span className="text-xs font-medium italic text-[#737373]">
+                      {status.pendingStyle ? "Assign later" : "No events linked"}
+                    </span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="rounded-full bg-[#f5f2eb] px-2.5 py-1 text-[11px] font-bold text-[#201b17]">
+                        {linked[0]}
+                      </span>
+                      {linked.length > 1 ? (
+                        <span className="rounded-full bg-[#f5f2eb] px-2.5 py-1 text-[11px] font-bold text-[#201b17]">
+                          +{linked.length - 1} others
+                        </span>
                       ) : null}
                     </div>
-                    <div className="flex-1" />
-                    {isSelf ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(47,74,60,0.1)] px-2.5 py-1 text-xs font-bold text-[#2f4a3c]">
-                        You
-                      </span>
-                    ) : status === "invited" ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(196,146,46,0.16)] px-2.5 py-1 text-xs font-bold text-[#7a5a12]">
-                        Pending
-                      </span>
-                    ) : (
-                      <span className={btnGhostClassName}>Open</span>
-                    )}
-                  </button>
-                  {canDelete ? (
-                    <button
-                      type="button"
-                      disabled={isPending}
-                      onClick={() => handleRemove(member)}
-                      aria-label={`Delete ${member.displayName}`}
-                      title="Delete"
-                      className="mr-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#7a7166] opacity-70 transition hover:bg-[rgba(166,90,58,0.12)] hover:text-[#a65a3a] hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a65a3a] disabled:opacity-40 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                    </button>
-                  ) : null}
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </SoftCard>
 
-      <SettingsEaseTeamAccessPersonDrawer
+                <div className="flex items-center gap-3 sm:gap-6 sm:pr-2">
+                  {expiry && !isInviteExpired(member.raw?.inviteExpiresAt) ? (
+                    <div className="hidden text-right sm:block">
+                      <span className="mb-0.5 block text-[10px] font-bold tracking-tighter text-[#d4af37] uppercase">
+                        Invited
+                      </span>
+                      <span className="whitespace-nowrap text-[11px] font-bold text-[#737373]/60">
+                        {expiry}
+                      </span>
+                    </div>
+                  ) : null}
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-bold tracking-wider uppercase ${status.className}`}
+                  >
+                    {status.label}
+                  </span>
+                  <span className={`${pilotBtnGhost} hidden opacity-0 group-hover:opacity-100 sm:inline-flex`}>
+                    <ChevronRight className="h-4 w-4" aria-hidden />
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {canEditAccessTemplates ? (
+        <footer className="mt-10 rounded-[2rem] border border-[#e5e1d8] bg-white p-6 sm:mt-12 sm:rounded-[2.5rem] sm:p-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4 text-[#737373]">
+              <Shield className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+              <div>
+                <p className="text-sm font-bold text-[#201b17]">
+                  Role definitions
+                </p>
+                <p className="text-xs font-medium">
+                  Control the underlying permissions for each role in Hey Ralli.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/settings/team-access/roles"
+              className="inline-flex items-center gap-2 rounded-2xl border border-[#e5e1d8] px-6 py-3 text-sm font-bold text-[#201b17] transition hover:bg-[#f5f2eb]"
+            >
+              Advanced role settings
+              <ChevronRight className="h-3 w-3" aria-hidden />
+            </Link>
+          </div>
+        </footer>
+      ) : null}
+
+      <TeamAccessPilotMemberDrawer
         member={drawerMember}
         open={Boolean(drawerMember)}
         onClose={closePerson}
-        activeTab={drawerTab}
-        onTabChange={handleDrawerTabChange}
         events={events}
         accessTemplates={accessTemplates}
         canManage={canManage}
-        canEditAccessTemplates={canEditAccessTemplates}
         avatarToneIndex={drawerAvatarIndex}
-        onEditProfile={() => {
-          if (!drawerMember) return;
-          openEdit(drawerMember);
-        }}
-        onGiveAccess={() => {
-          if (!drawerMember) return;
-          openGiveAccess(drawerMember);
-        }}
-        onResendInvite={() => {
-          if (!drawerMember) return;
-          handleResendInvite(drawerMember);
-        }}
+        currentUserEmail={currentUserEmail}
         inviteFeedback={inviteFeedback}
         onDismissInviteFeedback={() => setInviteFeedback(null)}
         resendPending={
           Boolean(drawerMember) && resendingMemberId === drawerMember?.id
         }
-        onRemove={
-          drawerMember &&
-          canManage &&
-          Boolean(drawerMember.raw) &&
-          !isCurrentUserTeamMember(drawerMember, currentUserEmail)
-            ? () => handleRemove(drawerMember)
-            : undefined
-        }
+        actionPending={isPending}
+        onEditProfile={() => {
+          if (!drawerMember) return;
+          setEditMember(drawerMember);
+          setEditOpen(true);
+        }}
+        onResendInvite={() => {
+          if (drawerMember) handleResendInvite(drawerMember);
+        }}
+        onCancelInvite={() => {
+          if (drawerMember) {
+            setConfirm({ kind: "cancel_invite", member: drawerMember });
+          }
+        }}
+        onCopyInviteLink={(url) => {
+          void copyToClipboard(url);
+        }}
+        onPause={() => {
+          if (drawerMember) setConfirm({ kind: "pause", member: drawerMember });
+        }}
+        onRestore={() => {
+          if (drawerMember) {
+            setConfirm({ kind: "restore", member: drawerMember });
+          }
+        }}
+        onRemove={() => {
+          if (drawerMember) setConfirm({ kind: "remove", member: drawerMember });
+        }}
         onSaveAccessLevel={(templateId) =>
           drawerMember
             ? handleSaveAccessLevel(drawerMember, templateId)
@@ -954,67 +755,16 @@ export function SettingsEaseTeamAccess({
         }
       />
 
-      {rolesEditorOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,38,34,0.28)] p-4 backdrop-blur-[2px]">
-          <button
-            type="button"
-            aria-label="Close roles editor"
-            className="absolute inset-0"
-            onClick={() => setRolesEditorOpen(false)}
-          />
-          <div className="relative z-10 flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-[22px] border border-[rgba(42,38,34,0.1)] bg-[#f6f2eb] shadow-[0_20px_48px_rgba(42,38,34,0.12)]">
-            <div className="flex items-start justify-between gap-3 border-b border-[rgba(42,38,34,0.1)] px-[22px] py-5">
-              <div>
-                <h2
-                  className="m-0 text-2xl font-semibold tracking-[-0.01em] text-[#2a2622]"
-                  style={{
-                    fontFamily: "var(--font-fraunces), Georgia, serif",
-                  }}
-                >
-                  Edit roles
-                </h2>
-                <p className="mt-1 mb-0 text-[13px] text-[#5c554c]">
-                  Roles control what each person can do when they sign in.
-                </p>
-              </div>
-              <button
-                type="button"
-                className={btnGhostClassName}
-                onClick={() => setRolesEditorOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-[22px] py-5">
-              <TeamAccessAccessTemplatesPanel
-                templates={accessTemplates}
-                canEdit={canEditAccessTemplates}
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <TeamAccessInviteModal
-        open={inviteOpen}
-        onClose={() => setInviteOpen(false)}
-        roles={workspace.roles}
-        committees={workspace.committees}
+      <TeamAccessPilotAddMemberModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
         events={events}
+        accessTemplates={accessTemplates}
         canProvisionAccounts={canProvisionAccounts}
-        accessLabels={accessLabels}
-        accessTemplates={accessTemplates}
-      />
-
-      <TeamAccessGiveAppAccessModal
-        open={giveAppAccessOpen}
-        onClose={() => {
-          setGiveAppAccessOpen(false);
-          setGiveAppAccessMember(null);
-        }}
-        member={giveAppAccessMember}
-        accessLabels={accessLabels}
-        accessTemplates={accessTemplates}
+        organizationRoles={workspace.roles.map((role) => ({
+          id: role.id,
+          name: role.name,
+        }))}
       />
 
       <TeamAccessEditMemberModal
@@ -1030,6 +780,15 @@ export function SettingsEaseTeamAccess({
         accessLabels={accessLabels}
         accessTemplates={accessTemplates}
         currentUserEmail={currentUserEmail}
+      />
+
+      <TeamAccessPilotConfirmDialog
+        open={Boolean(confirm)}
+        kind={confirm?.kind ?? "remove"}
+        memberName={confirm?.member.displayName ?? "this person"}
+        pending={isPending}
+        onConfirm={runConfirm}
+        onClose={() => setConfirm(null)}
       />
     </section>
   );

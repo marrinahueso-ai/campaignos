@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 9, 2026 — Team Access Edit person saves display name
+**Last updated:** August 9, 2026 — Team & Access UX Pilot complete-flow redesign
 
 ---
 
@@ -379,11 +379,11 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Organization (profile with full mailing address · weather location · preferences · posting — Ease cream/Fraunces panels; Branding home → `/settings/branding`; Save changes + Edit schedule wired) — **shipped** (Phase 2)
 - School year (active year · subscribe URL save/sync · close & begin next — Ease cream/Fraunces panels; nested under Branding + standalone `/settings/school-year`) — **shipped** (Phase 3)
 - Board roster / committees / responsibility matrix — **partial** (Import roster on Team & Access Ease with Excel template download at `/templates/board-roster-import.xlsx`; `.xlsx` + paste parsing restored; visual Board & committees + responsibility matrix UI not mounted on Ease after shell cutover)
-- Team & Access (seats · people · invites · Import roster · Invite — Ease cream/Fraunces panels; edit/invite modals + roster import wired with Excel template + file/paste preview; person profiles still at `/settings/team-access/people/[id]`) — **shipped** (Phase 4)
-- Team & Access **Edit person** Full name saves to login-seat `display_name` (and roster / role contact when linked) so renames stick in the people list — **shipped**
+- Team & Access (People-first UX Pilot redesign: All/Active/Pending/Inactive tabs · search · member rows with status chips · Add team member invite/create-login wizard · person drawer Person/Access/Events/Account · confirm dialogs for pause/restore/remove/cancel invite · Advanced role settings at `/settings/team-access/roles` with visible **+ Create role**) — **shipped**
   - **Permissions + person access drawer** (roles & permissions soft pills / chips from real access templates; cream/Fraunces person drawer with Overview · Events · Access — event link toggles, access role, permission switches, Give/Resend access; icon-only delete with confirm on People rows + drawer header — `removeTeamMemberAction`, not for self; `?person=` / `?tab=` via local state + `history.replaceState`; Edit roles reuses Access templates editor) — **shipped** (mockup: [`/settings-team-access-ease-mockup.html`](../../public/settings-team-access-ease-mockup.html); full-page person profiles remain as deep links)
   - **Last logged in** on People rows + person drawer (Supabase Auth `last_sign_in_at` via org-scoped admin `getUserById`; shows `Never` when null) — **shipped**
   - Customer-facing copy on Ease Team Access (list, invite, drawer, roles, permission chips) — **shipped** (org/team language; Jul 27 sweep)
+  - **UX Pilot Team & Access complete flow** — People tabs + search; Add member (Invite by email · Create login via email+temp password, not username); member drawer without per-person permission edits; multi-event picker with search/upcoming/past; Roles & permissions page with Create role (event access modes + communication/admin toggles); cancel invite + pause/restore confirmations — **shipped**
 - Integrations hub (Ease cream/Fraunces list: Facebook & Instagram · Google Calendar · Canva; Monday + Gmail/Dropbox hidden until needed) — **shipped** (Phase 5)
 - Meta detail (honest App Review copy · Page/IG chips · Reconnect/Disconnect) — **shipped** (Phase 5; `/settings/meta`)
 - Google Calendar detail (Sign-in · Sync · Open Import · Disconnect · subscribe URL Save feed) — **shipped** (Phase 5; `/settings/integrations/calendar`)

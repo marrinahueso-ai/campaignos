@@ -26,6 +26,7 @@ import {
 
 function revalidateTeamAccess() {
   revalidatePath("/settings/team-access");
+  revalidatePath("/settings/team-access/roles");
   revalidatePath("/settings/team-access", "layout");
 }
 
@@ -130,6 +131,8 @@ export async function createOrganizationAccessTemplateAction(input: {
   /** Clone permissions / base role from this template. */
   cloneFromTemplateId?: string;
   baseRole?: string;
+  /** When set, used instead of cloning permissions (Create Role UX). */
+  permissions?: Record<string, boolean>;
 }): Promise<{ error: string | null; success: boolean; templateId?: string }> {
   const gate = await requireTemplateEditor();
   if (gate.error || !gate.membership) {
@@ -170,17 +173,24 @@ export async function createOrganizationAccessTemplateAction(input: {
     baseRole === "admin" || baseRole === "president" ? "contributor" : baseRole;
 
   const templateId = buildCustomTemplateId(displayName);
+  const sourcePermissions = input.permissions
+    ? normalizePermissions(input.permissions, {
+        ...cloneFrom.permissions,
+        manage_people: false,
+      })
+    : { ...cloneFrom.permissions, manage_people: false };
+
+  const description =
+    input.description?.trim() ||
+    (input.permissions
+      ? "Custom access role for your organization."
+      : `Custom role based on ${cloneFrom.displayName}.`);
+
   const template: AccessTemplate = {
     id: templateId,
     displayName,
-    description:
-      input.description?.trim() ||
-      `Custom role based on ${cloneFrom.displayName}.`,
-    permissions: applySafetyLocks(
-      templateId,
-      { ...cloneFrom.permissions, manage_people: false },
-      safeBase,
-    ),
+    description,
+    permissions: applySafetyLocks(templateId, sourcePermissions, safeBase),
     baseRole: safeBase,
     isCustom: true,
   };

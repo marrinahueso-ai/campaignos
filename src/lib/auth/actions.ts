@@ -189,6 +189,7 @@ export interface AuthActionState {
   inviteUrl?: string | null;
   provisionedEmail?: string | null;
   provisionedPassword?: string | null;
+  membershipId?: string | null;
 }
 
 export async function setOrganizationUserEventAssignmentsAction(input: {
@@ -882,15 +883,17 @@ export async function createTeamMemberAccountAction(
   if (!isSupabaseAdminConfigured()) {
     return {
       error:
-        "Add SUPABASE_SERVICE_ROLE_KEY to .env.local to create tester accounts from the app.",
+        "Account provisioning is not configured on this server. Use Invite by email instead.",
       success: false,
     };
   }
 
   const email = formData.get("email")?.toString()?.trim() ?? "";
   const password = formData.get("password")?.toString() ?? "";
+  const displayName = formData.get("fullName")?.toString()?.trim() || null;
   const organizationRoleId = formData.get("organizationRoleId")?.toString() || null;
   const accessRoleRaw = formData.get("campaignRole")?.toString() ?? "";
+  const eventIds = parseEventIdsFromForm(formData);
 
   if (!email) {
     return { error: "Email is required.", success: false };
@@ -898,6 +901,21 @@ export async function createTeamMemberAccountAction(
 
   if (!password) {
     return { error: "Choose a temporary password for this person.", success: false };
+  }
+
+  const { countActiveTeamMembers } = await import("@/lib/billing/capacity-usage");
+  const seatCount = await countActiveTeamMembers(organization.id);
+  const { assertOrgCapacity } = await import("@/lib/billing/gates");
+  const seatGate = await assertOrgCapacity(
+    organization.id,
+    "teamMembers",
+    seatCount,
+  );
+  if (!seatGate.ok) {
+    return {
+      error: `${seatGate.message} ${seatGate.upgradeHint}`,
+      success: false,
+    };
   }
 
   let roleKind = null as import("@/types/organization-workspace").OrganizationRoleKind | null;
@@ -911,16 +929,41 @@ export async function createTeamMemberAccountAction(
     roleKind = (data?.role_kind as typeof roleKind) ?? null;
   }
 
+  const accessTemplates = await getOrganizationAccessTemplates(organization.id);
+  const templateSelection = resolveAccessTemplateSelection(
+    accessTemplates,
+    accessRoleRaw,
+  );
+  const resolvedCampaignRole =
+    templateSelection?.campaignRole ??
+    resolveCampaignRoleForInvite(accessRoleRaw, roleKind);
+  const accessTemplateId =
+    templateSelection?.templateId ?? resolvedCampaignRole;
+
   const result = await provisionTeamMemberAccount({
     organizationId: organization.id,
     email,
     password,
+    displayName,
     organizationRoleId,
-    campaignRole: resolveCampaignRoleForInvite(accessRoleRaw, roleKind),
+    campaignRole: resolvedCampaignRole,
+    accessTemplateId,
   });
 
   if ("error" in result) {
     return { error: result.error, success: false };
+  }
+
+  let assignmentWarning: string | null = null;
+  if (result.membershipId && eventIds.length > 0) {
+    const assignmentResult = await replaceOrganizationUserEventAssignments({
+      organizationId: organization.id,
+      organizationUserId: result.membershipId,
+      eventIds,
+    });
+    if ("error" in assignmentResult) {
+      assignmentWarning = `Event assignment failed: ${assignmentResult.error}`;
+    }
   }
 
   revalidatePath("/settings/team-access");
@@ -929,6 +972,8 @@ export async function createTeamMemberAccountAction(
     success: true,
     provisionedEmail: email,
     provisionedPassword: password,
+    membershipId: result.membershipId ?? null,
+    warning: assignmentWarning,
     message: `Account ready for ${email}. Share the sign-in details below — no email required.`,
   };
 }

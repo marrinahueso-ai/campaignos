@@ -16,9 +16,11 @@ async function activateOrganizationMembership(input: {
   organizationId: string;
   userId: string;
   email: string;
+  displayName?: string | null;
   organizationRoleId?: string | null;
   campaignRole: CampaignRole;
-}): Promise<{ error: string } | { success: true }> {
+  accessTemplateId?: string | null;
+}): Promise<{ error: string } | { success: true; membershipId: string }> {
   const supabase = await createClient();
   const email = normalizeEmail(input.email);
 
@@ -39,6 +41,8 @@ async function activateOrganizationMembership(input: {
         status: "active",
         organization_role_id: input.organizationRoleId ?? null,
         campaign_role: input.campaignRole,
+        access_template_id: input.accessTemplateId ?? input.campaignRole,
+        display_name: input.displayName ?? undefined,
         joined_at: now,
         invite_token: null,
       })
@@ -48,7 +52,7 @@ async function activateOrganizationMembership(input: {
       return { error: error.message };
     }
 
-    return { success: true };
+    return { success: true, membershipId: existing.id };
   }
 
   const created = await createOrganizationMembership({
@@ -64,16 +68,30 @@ async function activateOrganizationMembership(input: {
     return { error: created.error };
   }
 
-  return { success: true };
+  if (input.displayName || input.accessTemplateId) {
+    await supabase
+      .from("organization_users")
+      .update({
+        display_name: input.displayName ?? null,
+        access_template_id: input.accessTemplateId ?? input.campaignRole,
+      })
+      .eq("id", created.id);
+  }
+
+  return { success: true, membershipId: created.id };
 }
 
 export async function provisionTeamMemberAccount(input: {
   organizationId: string;
   email: string;
   password: string;
+  displayName?: string | null;
   organizationRoleId?: string | null;
   campaignRole: CampaignRole;
-}): Promise<{ email: string } | { error: string }> {
+  accessTemplateId?: string | null;
+}): Promise<
+  { email: string; membershipId: string } | { error: string }
+> {
   if (!isSupabaseAdminConfigured()) {
     return {
       error:
@@ -126,13 +144,15 @@ export async function provisionTeamMemberAccount(input: {
     organizationId: input.organizationId,
     userId,
     email,
+    displayName: input.displayName,
     organizationRoleId: input.organizationRoleId,
     campaignRole: input.campaignRole,
+    accessTemplateId: input.accessTemplateId,
   });
 
   if ("error" in membership) {
     return { error: membership.error };
   }
 
-  return { email };
+  return { email, membershipId: membership.membershipId };
 }

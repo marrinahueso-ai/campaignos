@@ -47,7 +47,7 @@ describe("campaign roles phase 1", () => {
 
 describe("invite expiry helpers", () => {
   it("computes expiry TEAM_INVITE_TTL_DAYS ahead", () => {
-    const from = new Date("2026-07-17T12:00:00.000Z");
+    const from = new Date();
     const expires = computeInviteExpiresAt(from);
     const expected = new Date(from);
     expected.setUTCDate(expected.getUTCDate() + TEAM_INVITE_TTL_DAYS);
