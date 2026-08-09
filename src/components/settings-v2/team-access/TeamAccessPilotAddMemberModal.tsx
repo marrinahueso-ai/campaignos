@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Copy, Mail, UserPlus } from "lucide-react";
 import { TeamAccessPilotEventPicker } from "@/components/settings-v2/team-access/TeamAccessPilotEventPicker";
 import {
@@ -161,8 +161,14 @@ export function TeamAccessPilotAddMemberModal({
   const isFirstStep = stepIndex <= 0;
   const isSuccess = step === "success";
 
+  // Reset only when the modal opens. Do not depend on accessTemplates — after
+  // create/invite, revalidatePath + router.refresh() pass a new array reference
+  // and would wipe the success step (temporary password / invite link).
+  const wasOpenRef = useRef(false);
   useEffect(() => {
-    if (!open) return;
+    const justOpened = open && !wasOpenRef.current;
+    wasOpenRef.current = open;
+    if (!justOpened) return;
     setStep("method");
     setMethod("invite");
     setFullName("");

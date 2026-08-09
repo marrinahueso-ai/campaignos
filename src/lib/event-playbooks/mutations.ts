@@ -225,6 +225,46 @@ export async function createEventPlaybookNote(
   return { id: data.id as string, error: null };
 }
 
+export async function updateEventPlaybookNote(
+  noteId: string,
+  eventId: string,
+  input: {
+    content: string;
+    authorName?: string | null;
+  },
+): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createClient();
+  const updates: Record<string, unknown> = {
+    content: input.content,
+  };
+  if (input.authorName !== undefined) {
+    updates.author_name = input.authorName;
+  }
+
+  const { error } = await supabase
+    .from("event_playbook_notes")
+    .update(updates)
+    .eq("id", noteId)
+    .eq("event_id", eventId);
+
+  if (error) {
+    console.error("Failed to update event playbook note:", error.message);
+    if (isMissingSchemaError(error)) {
+      return {
+        success: false,
+        error: "Notes are unavailable. Run migration 031_event_playbook_tables.sql.",
+      };
+    }
+    return {
+      success: false,
+      error: error.message?.trim() || "Unable to update note.",
+    };
+  }
+
+  await logActivity(eventId, "Updated a note");
+  return { success: true, error: null };
+}
+
 export async function deleteEventPlaybookNote(
   noteId: string,
   eventId: string,

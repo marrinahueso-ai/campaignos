@@ -11,9 +11,11 @@ import {
   deleteEventPlaybookTask,
   deleteEventPlaybookTaskGroup,
   persistEventPlaybookTaskOrder,
+  updateEventPlaybookNote,
   updateEventPlaybookTaskGroupCollapsed,
   updateEventPlaybookTaskStatus,
 } from "@/lib/event-playbooks/mutations";
+import { getAuthUser } from "@/lib/auth/queries";
 import { generateEventPlaybookInsights } from "@/lib/event-playbooks/insights";
 import { EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION } from "@/lib/event-playbooks/constants";
 import {
@@ -220,11 +222,23 @@ export async function addPlaybookTaskFromRecommendationAction(
   return { success: true, error: null, duplicate: false };
 }
 
+async function resolveNoteAuthorName(): Promise<string> {
+  const user = await getAuthUser();
+  if (user?.displayName?.trim()) {
+    return user.displayName.trim();
+  }
+  if (user?.email) {
+    const local = user.email.split("@")[0]?.trim();
+    if (local) return local;
+  }
+  return "You";
+}
+
 export async function createEventPlaybookNoteAction(
   eventId: string,
   content: string,
   noteType: EventPlaybookNoteType,
-): Promise<{ success: boolean; error: string | null }> {
+): Promise<{ success: boolean; error: string | null; noteId?: string | null }> {
   const trimmed = content.trim();
   if (!trimmed) {
     return { success: false, error: "Note content is required." };
@@ -241,14 +255,51 @@ export async function createEventPlaybookNoteAction(
     return { success: false, error: "Event not found." };
   }
 
+  const authorName = await resolveNoteAuthorName();
   const result = await createEventPlaybookNote(event.id, {
     content: trimmed,
     noteType,
+    authorName,
   });
   if (!result.id) {
     return {
       success: false,
       error: result.error ?? "Unable to save note.",
+    };
+  }
+
+  revalidatePlaybookPaths(event.id);
+  return { success: true, error: null, noteId: result.id };
+}
+
+export async function updateEventPlaybookNoteAction(
+  eventId: string,
+  noteId: string,
+  content: string,
+): Promise<{ success: boolean; error: string | null }> {
+  const trimmedId = noteId.trim();
+  const trimmed = content.trim();
+  if (!trimmedId) {
+    return { success: false, error: "Note is required." };
+  }
+  if (!trimmed) {
+    return { success: false, error: "Note content is required." };
+  }
+
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { success: false, error: "Event not found." };
+  }
+
+  const authorName = await resolveNoteAuthorName();
+  const result = await updateEventPlaybookNote(trimmedId, event.id, {
+    content: trimmed,
+    authorName,
+  });
+  if (!result.success) {
+    return {
+      success: false,
+      error: result.error ?? "Unable to update note.",
     };
   }
 

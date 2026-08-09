@@ -13,7 +13,7 @@ describe("event playbook notes tenancy (source contract)", () => {
       "export async function createEventPlaybookNoteAction",
     );
     const fnEnd = source.indexOf(
-      "export async function deleteEventPlaybookNoteAction",
+      "export async function updateEventPlaybookNoteAction",
     );
     assert.ok(fnStart >= 0, "createEventPlaybookNoteAction not found");
     assert.ok(fnEnd > fnStart, "end of create note action not found");
@@ -25,6 +25,27 @@ describe("event playbook notes tenancy (source contract)", () => {
     assert.ok(gateIdx >= 0);
     assert.ok(mutateIdx > gateIdx, "getEventById must run before note insert");
     assert.match(fn, /createEventPlaybookNote\(event\.id/);
+    assert.match(fn, /authorName/);
+  });
+
+  it("updateEventPlaybookNoteAction gates with getEventById before update", () => {
+    const source = readFileSync(join(here, "../actions.ts"), "utf8");
+    const fnStart = source.indexOf(
+      "export async function updateEventPlaybookNoteAction",
+    );
+    const fnEnd = source.indexOf(
+      "export async function deleteEventPlaybookNoteAction",
+    );
+    assert.ok(fnStart >= 0, "updateEventPlaybookNoteAction not found");
+    assert.ok(fnEnd > fnStart, "end of update note action not found");
+    const fn = source.slice(fnStart, fnEnd);
+
+    assert.match(fn, /getEventById\(eventId\)/);
+    const gateIdx = fn.indexOf("getEventById(eventId)");
+    const mutateIdx = fn.indexOf("updateEventPlaybookNote(");
+    assert.ok(gateIdx >= 0);
+    assert.ok(mutateIdx > gateIdx, "getEventById must run before note update");
+    assert.match(fn, /updateEventPlaybookNote\([\s\S]*event\.id/);
   });
 
   it("deleteEventPlaybookNoteAction gates with getEventById before delete", () => {
@@ -45,6 +66,15 @@ describe("event playbook notes tenancy (source contract)", () => {
     assert.ok(gateIdx >= 0);
     assert.ok(mutateIdx > gateIdx, "getEventById must run before note delete");
     assert.match(fn, /deleteEventPlaybookNote\([\s\S]*event\.id/);
+  });
+
+  it("notes update mutation scopes by id and event_id", () => {
+    const mutations = readFileSync(join(here, "../mutations.ts"), "utf8");
+    assert.match(mutations, /export async function updateEventPlaybookNote/);
+    assert.match(
+      mutations,
+      /\.from\("event_playbook_notes"\)[\s\S]*\.update\([\s\S]*\.eq\("id", noteId\)[\s\S]*\.eq\("event_id", eventId\)/,
+    );
   });
 
   it("notes delete mutation scopes by id and event_id", () => {
@@ -99,7 +129,14 @@ describe("event playbook notes tenancy (source contract)", () => {
     assert.doesNotMatch(panel, /localStorage/);
     assert.doesNotMatch(panel, /sessionStorage/);
     assert.match(panel, /deleteEventPlaybookNoteAction/);
-    assert.match(panel, /window\.confirm/);
-    assert.match(panel, /aria-label=\{`Delete \$\{noteTitle/);
+    assert.match(panel, /updateEventPlaybookNoteAction/);
+    assert.match(panel, /event-notes-delete-confirm/);
+    assert.doesNotMatch(panel, /window\.confirm/);
+    assert.match(panel, /aria-label=\{`Delete \$\{noteDisplayTitle/);
+    assert.doesNotMatch(panel, /Recent Scratchpads/);
+    assert.doesNotMatch(panel, /repeating-linear-gradient/);
+    assert.match(panel, /No notes for this event yet/);
+    assert.match(panel, /New note/);
+    assert.match(panel, /Shared Notes/);
   });
 });
