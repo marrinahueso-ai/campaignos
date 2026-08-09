@@ -80,6 +80,7 @@ import {
 import {
   applyArtworkWithMainEventReuse,
   detachMainEventImage,
+  healSharedFeedArtworkGaps,
   isReusableArtwork,
   reapplyMainEventImageAfterPlanChange,
   resolveDisplayMainEventImage,
@@ -478,9 +479,10 @@ function hydrateWithArtworkBackup(
     restoredFromServer,
   );
   const withArtwork = applyArtworkBackup(hydrated, loadArtworkBackup(eventId));
+  const healed = healSharedFeedArtworkGaps(withArtwork).session;
   // Always re-apply org approvers after local merge so persisted "Sarah M."
   // (or other stale demo names) cannot win over Team Access resolution.
-  return applyResolvedApproverToSession(withArtwork, resolvedWorkflowApprover);
+  return applyResolvedApproverToSession(healed, resolvedWorkflowApprover);
 }
 
 function stepSessionKey(eventId: string): string {

@@ -4,6 +4,7 @@ import { buildDefaultSession } from "../seed-data.ts";
 import {
   applyArtworkWithMainEventReuse,
   detachMainEventImage,
+  healSharedFeedArtworkGaps,
   reapplyMainEventImageAfterPlanChange,
   resolveDisplayMainEventImage,
   seedMainEventImageAcrossPlan,
@@ -203,6 +204,121 @@ describe("main event image reuse", () => {
       session.previewContents.find((p) => p.milestoneId === "ms-new")
         ?.artworkMode,
       "shared",
+    );
+  });
+
+  it("waterfalls feed art even when siblings only have story leftovers", () => {
+    const base = withRelativeDay(buildDefaultSession("e1", "Fair", "2026-09-01"), [
+      -14, -7, -1,
+    ]);
+    const withStoryOnlySiblings = {
+      ...base,
+      previewContents: base.previewContents.map((row) =>
+        row.milestoneId === "ms--14"
+          ? row
+          : {
+              ...row,
+              artwork: {
+                feedUrl: null,
+                storyUrl: "https://cdn.example/old-story.png",
+              },
+              artworkMode: undefined,
+            },
+      ),
+    };
+    const art = {
+      feedUrl: "https://cdn.example/announcement-feed.png",
+      storyUrl: "https://cdn.example/announcement-story.png",
+    };
+    const { session } = applyArtworkWithMainEventReuse(
+      withStoryOnlySiblings,
+      "ms--14",
+      art,
+    );
+    for (const id of ["ms--14", "ms--7", "ms--1"]) {
+      const row = session.previewContents.find((p) => p.milestoneId === id);
+      assert.equal(row?.artwork.feedUrl, art.feedUrl);
+      assert.equal(row?.artwork.storyUrl, art.storyUrl);
+      assert.equal(row?.artworkMode, "shared");
+    }
+  });
+
+  it("re-waterfalls from a stuck custom source when siblings still lack feed art", () => {
+    const base = withRelativeDay(buildDefaultSession("e1", "Fair", "2026-09-01"), [
+      -14, -7, -1,
+    ]);
+    const stuck = {
+      ...base,
+      previewContents: base.previewContents.map((row) =>
+        row.milestoneId === "ms--14"
+          ? {
+              ...row,
+              artwork: {
+                feedUrl: "https://cdn.example/announcement.png",
+                storyUrl: null,
+              },
+              artworkMode: "custom" as const,
+            }
+          : {
+              ...row,
+              artwork: { feedUrl: null, storyUrl: null },
+              artworkMode: undefined,
+            },
+      ),
+    };
+    const art = {
+      feedUrl: "https://cdn.example/announcement.png",
+      storyUrl: null,
+    };
+    const { session } = applyArtworkWithMainEventReuse(stuck, "ms--14", art);
+    for (const id of ["ms--14", "ms--7", "ms--1"]) {
+      assert.equal(
+        session.previewContents.find((p) => p.milestoneId === id)?.artwork
+          .feedUrl,
+        art.feedUrl,
+      );
+      assert.equal(
+        session.previewContents.find((p) => p.milestoneId === id)?.artworkMode,
+        "shared",
+      );
+    }
+  });
+
+  it("heals sibling Missing feed image gaps from an existing announcement feed", () => {
+    const base = withRelativeDay(buildDefaultSession("e1", "Fair", "2026-09-01"), [
+      -14, -7, -1,
+    ]);
+    const stuck = {
+      ...base,
+      previewContents: base.previewContents.map((row) =>
+        row.milestoneId === "ms--14"
+          ? {
+              ...row,
+              artwork: {
+                feedUrl: "https://cdn.example/announcement.png",
+                storyUrl: null,
+              },
+              artworkMode: "custom" as const,
+            }
+          : {
+              ...row,
+              artwork: { feedUrl: null, storyUrl: null },
+              artworkMode: undefined,
+            },
+      ),
+    };
+    const { session, changedMilestoneIds } = healSharedFeedArtworkGaps(stuck);
+    assert.ok(changedMilestoneIds.includes("ms--7"));
+    assert.ok(changedMilestoneIds.includes("ms--1"));
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms--7")?.artwork
+        .feedUrl,
+      "https://cdn.example/announcement.png",
+    );
+    assert.equal(
+      session.previewContents.find((p) => p.milestoneId === "ms--14")
+        ?.artworkMode,
+      "custom",
     );
   });
 

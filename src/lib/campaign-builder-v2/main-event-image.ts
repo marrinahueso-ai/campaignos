@@ -30,6 +30,15 @@ export function isReusableArtwork(
   );
 }
 
+/** Feed slot is what Preview treats as the shared Event Image. */
+export function hasReusableFeedArtwork(
+  artwork: MilestoneArtwork | null | undefined,
+): boolean {
+  if (!artwork) return false;
+  const feed = artwork.feedUrl?.trim() || null;
+  return Boolean(feed) && !isPlaceholderArtworkUrl(feed);
+}
+
 export function cloneArtwork(artwork: MilestoneArtwork): MilestoneArtwork {
   return normalizeMilestoneArtwork({
     feedUrl: artwork.feedUrl,
@@ -97,8 +106,11 @@ function patchPreviewArtwork(
 }
 
 /**
- * Copy main artwork onto every empty or already-shared post.
- * Custom overrides (Change image) are left alone. Captions never change.
+ * Copy main artwork onto every non-custom post (empty, shared, or incomplete).
+ * Custom overrides are left alone. Captions never change.
+ *
+ * Story-only leftovers must not block a feed fill — Preview still shows
+ * "Missing feed image" until feedUrl is set.
  */
 export function seedMainEventImageAcrossPlan(
   session: CampaignBuilderSession,
@@ -111,24 +123,15 @@ export function seedMainEventImageAcrossPlan(
 
   const changedMilestoneIds: string[] = [];
   const previewContents = session.previewContents.map((preview) => {
-    if (
-      preview.artworkMode === "custom" &&
-      isReusableArtwork(preview.artwork)
-    ) {
+    if (preview.artworkMode === "custom") {
       return preview;
     }
-    if (
-      preview.artworkMode === "shared" ||
-      !isReusableArtwork(preview.artwork)
-    ) {
-      return patchPreviewArtwork(
-        preview,
-        normalized,
-        "shared",
-        changedMilestoneIds,
-      );
-    }
-    return preview;
+    return patchPreviewArtwork(
+      preview,
+      normalized,
+      "shared",
+      changedMilestoneIds,
+    );
   });
 
   return {
@@ -144,8 +147,8 @@ export function seedMainEventImageAcrossPlan(
 /**
  * Set / refresh artwork for one post. First fill of an empty plan still
  * waterfalls onto empty posts. Regenerating a post after others already have
- * art updates **only that post** (marks it custom) so Edit Post → Apply never
- * overwrites the rest of the timeline.
+ * feed art updates **only that post** (marks it custom) so Edit Post → Apply
+ * never overwrites the rest of the timeline.
  */
 export function applyArtworkWithMainEventReuse(
   session: CampaignBuilderSession,
@@ -162,22 +165,19 @@ export function applyArtworkWithMainEventReuse(
   }
 
   const asCustom = Boolean(options?.asCustom);
-  const sourcePreview = session.previewContents.find(
-    (row) => row.milestoneId === sourceMilestoneId,
-  );
-  // Cleared posts may still carry artworkMode "custom" — only treat as an
-  // override when this post still has reusable art.
-  const sourceWasCustom =
-    sourcePreview?.artworkMode === "custom" &&
-    isReusableArtwork(sourcePreview.artwork);
+  // Story-only leftovers must not block first-fill waterfall (feed is what
+  // clears "Missing feed image" on the campaign list).
   const othersAlreadyHaveArt = session.previewContents.some(
     (row) =>
-      row.milestoneId !== sourceMilestoneId && isReusableArtwork(row.artwork),
+      row.milestoneId !== sourceMilestoneId &&
+      hasReusableFeedArtwork(row.artwork),
   );
 
-  // Independent post, explicit custom apply, or regeneration after waterfall:
-  // only that row changes.
-  if (asCustom || sourceWasCustom || othersAlreadyHaveArt) {
+  // Explicit custom apply, or regeneration after other posts already have feed
+  // art: only that row changes. Do not block on source artworkMode alone — a
+  // stuck "custom" Announcement with empty siblings must still be able to
+  // waterfall on the next Generate/Apply.
+  if (asCustom || othersAlreadyHaveArt) {
     const changedMilestoneIds: string[] = [];
     return {
       session: {
@@ -274,4 +274,40 @@ export function resolveDisplayMainEventImage(
     }
   }
   return null;
+}
+
+/**
+ * If one post already has feed art but siblings still show "Missing feed image",
+ * copy the donor feed onto every non-custom empty/incomplete post.
+ * Safe to run on hydrate — no-ops when the plan is already consistent.
+ */
+export function healSharedFeedArtworkGaps(
+  session: CampaignBuilderSession,
+): ApplyMainEventImageResult {
+  const donorFromMain = hasReusableFeedArtwork(session.mainEventImage)
+    ? cloneArtwork(session.mainEventImage!)
+    : null;
+  const donorFromPosts = [...session.milestones]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((milestone) =>
+      session.previewContents.find((row) => row.milestoneId === milestone.id),
+    )
+    .find((preview) => hasReusableFeedArtwork(preview?.artwork));
+  const donor =
+    donorFromMain ??
+    (donorFromPosts ? cloneArtwork(donorFromPosts.artwork) : null);
+  if (!donor) {
+    return { session, changedMilestoneIds: [] };
+  }
+
+  const needsHeal = session.previewContents.some(
+    (preview) =>
+      preview.artworkMode !== "custom" &&
+      !hasReusableFeedArtwork(preview.artwork),
+  );
+  if (!needsHeal) {
+    return { session, changedMilestoneIds: [] };
+  }
+
+  return seedMainEventImageAcrossPlan(session, donor);
 }
