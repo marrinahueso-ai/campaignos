@@ -1,22 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { Search } from "lucide-react";
 import {
   CreateEventModal,
   type CreateEventPlaybookOption,
 } from "@/components/events/CreateEventModal";
+import { EventsAlsoAheadList } from "@/components/events-phase3/EventsAlsoAheadList";
 import {
-  EventsEaseAheadCard,
   EventsEaseEmpty,
-  EventsEaseFocusCard,
-  EventsEaseQueueRow,
   EventsEaseSuiteStrip,
   type EventsEaseLens,
   type EventsHomeResponsiblePerson,
 } from "@/components/events-phase3/EventsEaseList";
+import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHeroStatsStrip";
+import {
+  EventWorkspaceOverviewPanel,
+  type OverviewJumpTab,
+} from "@/components/events-phase3/EventWorkspaceOverviewPanel";
+import { InviteEventMemberDrawer } from "@/components/events-phase3/InviteEventMemberDrawer";
 import { filterEventsHomeBySearch } from "@/lib/events/events-home-search";
+import {
+  EVENTS_ALSO_AHEAD_COLLAPSED_COUNT,
+  eventsHomeAlsoAheadEvents,
+  resolveSelectedEventsHomeEvent,
+  sliceAlsoAheadEvents,
+} from "@/lib/events/events-home-selection";
 import {
   countEventsHomeSummary,
   filterEventsHomeByLens,
@@ -24,11 +41,26 @@ import {
   shouldApplyEventsHomeLensFilter,
 } from "@/lib/events/events-home-summary";
 import type { EventsHomeLayout } from "@/lib/events/events-home-layout";
+import type { EventResponsibilityPerson } from "@/lib/events/event-responsibility";
+import { createWithAiHref } from "@/lib/events/event-responsibility";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
+import { refreshEventDetailHeroStatsAction } from "@/lib/events-phase3/actions";
+import type { EventInviteCollaboratorPreview } from "@/lib/events-phase3/invite-event-member";
+import type { InviteEventMemberAddedResult } from "@/lib/events-phase3/invite-event-member";
 import type { Event } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
 export type { EventsHomeResponsiblePerson };
+
+const EMPTY_STATS: EventDetailHeroStats = {
+  milestones: 0,
+  pendingApprovals: 0,
+  scheduledPosts: 0,
+  tasks: 0,
+  filledSpots: 0,
+  totalSpots: null,
+  openSpots: null,
+};
 
 interface EventsHomeContentProps {
   events: Event[];
@@ -42,6 +74,11 @@ interface EventsHomeContentProps {
   activeSchoolYearId?: string | null;
   /** Kept for page compatibility; KPI card layout is unused in ease UI. */
   initialSummaryLayout: EventsHomeLayout;
+  /** Untrusted URL `?event=` — only applied when present in accessible lists. */
+  initialEventId?: string | null;
+  /** Hero stats for the server-resolved initial selection (one event only). */
+  initialSelectedStats?: EventDetailHeroStats | null;
+  canManagePeople?: boolean;
 }
 
 const PULSE_TABS: Array<{ id: EventsEaseLens; label: string }> = [
@@ -50,6 +87,33 @@ const PULSE_TABS: Array<{ id: EventsEaseLens; label: string }> = [
   { id: "all", label: "All" },
   { id: "archived", label: "Archived" },
 ];
+
+function overviewTabHref(eventId: string, tab: OverviewJumpTab): string {
+  if (tab === "create-with-ai") {
+    return createWithAiHref(eventId);
+  }
+  return `/events/${encodeURIComponent(eventId)}?tab=${encodeURIComponent(tab)}`;
+}
+
+function leadAsResponsibilities(
+  person: EventsHomeResponsiblePerson | undefined,
+): EventResponsibilityPerson[] {
+  if (!person?.displayName?.trim()) {
+    return [];
+  }
+  return [
+    {
+      responsibility: "Event Lead",
+      displayName: person.displayName,
+      organizationTitle: person.organizationTitle,
+      committeeName: null,
+      memberId: null,
+      campaignRole: null,
+      active: true,
+      source: "routing",
+    },
+  ];
+}
 
 export function EventsHomeContent({
   events,
@@ -60,14 +124,47 @@ export function EventsHomeContent({
   playbookOptions = [],
   schoolYears = [],
   activeSchoolYearId = null,
+  initialEventId = null,
+  initialSelectedStats = null,
+  canManagePeople = false,
 }: EventsHomeContentProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
-  const [lens, setLens] = useState<EventsEaseLens>("upcoming");
+  const [lens, setLens] = useState<EventsEaseLens>(() => {
+    if (
+      initialEventId &&
+      archivedEvents.some((event) => event.id === initialEventId)
+    ) {
+      return "archived";
+    }
+    return "upcoming";
+  });
   const [schoolYearFilter, setSchoolYearFilter] = useState<string>(
     activeSchoolYearId ?? "all",
   );
-  const [focusId, setFocusId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [alsoAheadExpanded, setAlsoAheadExpanded] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteCollaborators, setInviteCollaborators] = useState<
+    EventInviteCollaboratorPreview[]
+  >([]);
+  const [statsByEventId, setStatsByEventId] = useState<
+    Record<string, EventDetailHeroStats>
+  >(() =>
+    initialEventId && initialSelectedStats
+      ? { [initialEventId]: initialSelectedStats }
+      : {},
+  );
+  const [statsPendingId, setStatsPendingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  const urlEventId = searchParams.get("event")?.trim() || null;
+  const searchQuery = searchParams.toString();
+  const selectedEventIdRef = useRef<string | null>(null);
+  const statsByEventIdRef = useRef(statsByEventId);
+  statsByEventIdRef.current = statsByEventId;
 
   const eventsForCounts = useMemo(() => {
     if (schoolYearFilter === "all") return events;
@@ -133,36 +230,84 @@ export function EventsHomeContent({
     [searched, lens, today, applyLensFilter],
   );
 
-  const upcomingSorted = useMemo(
+  const selectedEvent = useMemo(
     () =>
-      filterEventsHomeByLens(searched, "upcoming", today, {
-        applyLens: applyLensFilter,
+      resolveSelectedEventsHomeEvent({
+        accessibleEvents: lensEvents,
+        requestedEventId: urlEventId,
+        preferredEventId: selectedEventIdRef.current,
       }),
-    [searched, today, applyLensFilter],
+    [lensEvents, urlEventId],
+  );
+
+  selectedEventIdRef.current = selectedEvent?.id ?? null;
+  const selectedId = selectedEvent?.id ?? null;
+
+  const alsoAheadAll = useMemo(
+    () => eventsHomeAlsoAheadEvents(lensEvents, selectedId),
+    [lensEvents, selectedId],
+  );
+  const alsoAheadVisible = useMemo(
+    () => sliceAlsoAheadEvents(alsoAheadAll, alsoAheadExpanded),
+    [alsoAheadAll, alsoAheadExpanded],
   );
 
   useEffect(() => {
-    setFocusId(null);
+    setAlsoAheadExpanded(false);
+    setInviteOpen(false);
   }, [lens, search, schoolYearFilter]);
 
-  const focusEvent =
-    lens === "upcoming"
-      ? (upcomingSorted.find((event) => event.id === focusId) ??
-        upcomingSorted[0] ??
-        null)
-      : null;
-  const aheadEvents =
-    lens === "upcoming" && focusEvent
-      ? upcomingSorted.filter((event) => event.id !== focusEvent.id).slice(0, 3)
-      : [];
-  const queueEvents =
-    lens === "upcoming" && focusEvent
-      ? upcomingSorted
-          .filter((event) => event.id !== focusEvent.id)
-          .slice(aheadEvents.length)
-      : lens === "upcoming"
-        ? []
-        : lensEvents;
+  useEffect(() => {
+    setInviteCollaborators([]);
+  }, [selectedId]);
+
+  // Keep ?event= in sync with the resolved selection (replace, no remount).
+  useEffect(() => {
+    if (!selectedId) {
+      if (!urlEventId) return;
+      const params = new URLSearchParams(searchQuery);
+      params.delete("event");
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      return;
+    }
+    if (urlEventId === selectedId) return;
+    const params = new URLSearchParams(searchQuery);
+    params.set("event", selectedId);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [selectedId, urlEventId, pathname, router, searchQuery]);
+
+  // Load selected-event stats; ignore stale responses after rapid switches.
+  useEffect(() => {
+    if (!selectedId) return;
+    if (statsByEventIdRef.current[selectedId]) return;
+
+    const requestEventId = selectedId;
+    setStatsPendingId(requestEventId);
+    let cancelled = false;
+
+    startTransition(async () => {
+      const result = await refreshEventDetailHeroStatsAction(requestEventId);
+      if (cancelled) return;
+      // Same identity check as EventDetailPhase3Client / EventDetailShell.
+      if (requestEventId !== selectedEventIdRef.current) {
+        return;
+      }
+      if (result.success) {
+        setStatsByEventId((current) => ({
+          ...current,
+          [requestEventId]: result.data,
+        }));
+      }
+      setStatsPendingId((current) =>
+        current === requestEventId ? null : current,
+      );
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId]);
 
   const pulseCounts: Record<EventsEaseLens, number> = {
     upcoming: summaryCounts.next_60_days,
@@ -200,14 +345,55 @@ export function EventsHomeContent({
     },
   };
 
-  function personFor(eventId: string): EventsHomeResponsiblePerson {
-    return (
-      responsibleByEventId[eventId] ?? {
-        displayName: "Unassigned",
-        organizationTitle: null,
-      }
-    );
+  function selectEvent(eventId: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("event", eventId);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }
+
+  function handleSelectTab(tab: OverviewJumpTab) {
+    if (!selectedEvent) return;
+    const href = overviewTabHref(selectedEvent.id, tab);
+    if (tab === "create-with-ai") {
+      window.location.assign(href);
+      return;
+    }
+    router.push(href);
+  }
+
+  function handleMemberAdded(result: InviteEventMemberAddedResult) {
+    const preview: EventInviteCollaboratorPreview = {
+      id: `${result.kind}-${result.email ?? result.displayName}-${Date.now()}`,
+      displayName: result.displayName,
+      roleLabel: result.roleLabel,
+      status: result.kind === "invited" ? "pending" : "active",
+    };
+    setInviteCollaborators((current) => {
+      const withoutDup = current.filter(
+        (row) =>
+          row.displayName.trim().toLowerCase() !==
+          preview.displayName.trim().toLowerCase(),
+      );
+      return [preview, ...withoutDup];
+    });
+  }
+
+  const alsoAheadHeading =
+    lens === "upcoming" && !hasSearch
+      ? "Also Ahead · Next 60 Days"
+      : hasSearch
+        ? "Also in results"
+        : lens === "next_month"
+          ? "Also Ahead · Next Month"
+          : lens === "archived"
+            ? "Also Archived"
+            : "Also Ahead";
+
+  const selectedStats =
+    (selectedEvent ? statsByEventId[selectedEvent.id] : null) ?? EMPTY_STATS;
+  const statsPending = Boolean(
+    selectedEvent && statsPendingId === selectedEvent.id,
+  );
 
   return (
     <div className="studio-page relative space-y-8 pb-12 before:pointer-events-none before:absolute before:top-0 before:left-[-2rem] before:h-60 before:w-60 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:top-10 after:right-0 after:h-52 after:w-52 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']">
@@ -217,8 +403,7 @@ export function EventsHomeContent({
             Events
           </h1>
           <p className="mt-3 max-w-xl text-base leading-relaxed text-cos-muted">
-            See what&apos;s coming for your organization — then open an event or
-            make something with AI.
+            Manage your active PTA initiatives and volunteer cycles.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -313,106 +498,45 @@ export function EventsHomeContent({
         </div>
       </div>
 
-      {lens === "upcoming" && !hasSearch ? (
-        upcomingSorted.length === 0 ? (
-          <EventsEaseEmpty
-            title={emptyCopy.upcoming.title}
-            body={emptyCopy.upcoming.body}
-            onNewEvent={() => setCreateOpen(true)}
-          />
-        ) : (
-          <div className="space-y-9">
-            <section className="space-y-3">
-              <p className="flex flex-wrap items-baseline justify-between gap-2 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-                <span>Coming up · next 60 days</span>
-                <span className="font-semibold tracking-normal normal-case">
-                  See what’s ahead
-                </span>
-              </p>
-              <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.35fr)_minmax(240px,0.85fr)]">
-                {focusEvent ? (
-                  <EventsEaseFocusCard
-                    key={focusEvent.id}
-                    event={focusEvent}
-                    today={today}
-                    artwork={artworkByEventId[focusEvent.id] ?? null}
-                  />
-                ) : null}
-                {aheadEvents.length > 0 ? (
-                  <div className="flex flex-col gap-2.5">
-                    {aheadEvents.map((event) => (
-                      <EventsEaseAheadCard
-                        key={event.id}
-                        event={event}
-                        today={today}
-                        artwork={artworkByEventId[event.id] ?? null}
-                        onSelect={() => setFocusId(event.id)}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </section>
-
-            {queueEvents.length > 0 ? (
-              <section className="space-y-3">
-                <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-                  Also ahead · {queueEvents.length} more
-                </p>
-                <div className="flex flex-col gap-2">
-                  {queueEvents.map((event) => (
-                    <EventsEaseQueueRow
-                      key={event.id}
-                      event={event}
-                      today={today}
-                      artwork={artworkByEventId[event.id] ?? null}
-                      responsible={personFor(event.id)}
-                    />
-                  ))}
-                </div>
-              </section>
-            ) : null}
-          </div>
-        )
+      {lensEvents.length === 0 || !selectedEvent ? (
+        <EventsEaseEmpty
+          title={hasSearch ? "No matches" : emptyCopy[lens].title}
+          body={hasSearch ? "Try a different search." : emptyCopy[lens].body}
+          onNewEvent={() => setCreateOpen(true)}
+        />
       ) : (
-        <section className="space-y-3">
-          <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-            {hasSearch
-              ? "Search results"
-              : lens === "next_month"
-                ? "Next month"
-                : lens === "archived"
-                  ? "Archived events"
-                  : "All events"}
-            <span className="ml-2 font-semibold tracking-normal normal-case text-cos-muted">
-              {lensEvents.length === 1
-                ? "· 1 event"
-                : `· ${lensEvents.length} events`}
-            </span>
-          </p>
-
-          {lensEvents.length === 0 ? (
-            <EventsEaseEmpty
-              title={hasSearch ? "No matches" : emptyCopy[lens].title}
-              body={
-                hasSearch ? "Try a different search." : emptyCopy[lens].body
-              }
-              onNewEvent={() => setCreateOpen(true)}
-            />
-          ) : (
-            <div className="flex flex-col gap-2">
-              {lensEvents.map((event) => (
-                <EventsEaseQueueRow
-                  key={event.id}
-                  event={event}
-                  today={today}
-                  artwork={artworkByEventId[event.id] ?? null}
-                  responsible={personFor(event.id)}
-                />
-              ))}
-            </div>
+        <EventWorkspaceOverviewPanel
+          variant="home"
+          event={selectedEvent}
+          artwork={artworkByEventId[selectedEvent.id] ?? null}
+          stats={selectedStats}
+          statsPending={statsPending}
+          responsibilities={leadAsResponsibilities(
+            responsibleByEventId[selectedEvent.id],
           )}
-        </section>
+          inviteCollaborators={inviteCollaborators}
+          onSelectTab={handleSelectTab}
+          onInviteTeamMember={
+            canManagePeople ? () => setInviteOpen(true) : undefined
+          }
+          showWhatsNext={false}
+          attentionTitle="Attention Needed"
+          showOperationalSummary
+          manageEntityNoun="event"
+          afterHeroSlot={
+            <EventsAlsoAheadList
+              events={alsoAheadVisible}
+              today={today}
+              artworkByEventId={artworkByEventId}
+              responsibleByEventId={responsibleByEventId}
+              heading={alsoAheadHeading}
+              expanded={alsoAheadExpanded}
+              canExpand={alsoAheadAll.length > EVENTS_ALSO_AHEAD_COLLAPSED_COUNT}
+              onToggleExpand={() => setAlsoAheadExpanded((value) => !value)}
+              onSelect={selectEvent}
+            />
+          }
+        />
       )}
 
       <EventsEaseSuiteStrip />
@@ -422,6 +546,20 @@ export function EventsHomeContent({
         onClose={() => setCreateOpen(false)}
         playbookOptions={playbookOptions}
       />
+
+      {canManagePeople && selectedEvent ? (
+        <InviteEventMemberDrawer
+          open={inviteOpen}
+          onOpenChange={setInviteOpen}
+          event={{
+            id: selectedEvent.id,
+            title: selectedEvent.title,
+            date: selectedEvent.date,
+            imageUrl: artworkByEventId[selectedEvent.id]?.imageUrl ?? null,
+          }}
+          onMemberAdded={handleMemberAdded}
+        />
+      ) : null}
     </div>
   );
 }

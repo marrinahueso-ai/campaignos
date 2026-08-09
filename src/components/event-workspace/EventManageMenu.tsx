@@ -34,6 +34,11 @@ interface EventManageMenuProps {
   includeEditDetails?: boolean;
   iconOnly?: boolean;
   triggerClassName?: string;
+  /**
+   * User-facing noun for archive/delete/restore copy.
+   * Backend actions remain unchanged.
+   */
+  entityNoun?: "event" | "campaign";
 }
 
 export function EventManageMenu({
@@ -42,6 +47,7 @@ export function EventManageMenu({
   includeEditDetails = false,
   iconOnly = false,
   triggerClassName,
+  entityNoun = "campaign",
 }: EventManageMenuProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -57,6 +63,8 @@ export function EventManageMenu({
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const archived = isArchivedEvent(event);
+  const noun = entityNoun;
+  const nounTitle = noun === "event" ? "event" : "campaign";
 
   useEffect(() => {
     setMounted(true);
@@ -157,25 +165,31 @@ export function EventManageMenu({
   const confirmCopy =
     confirmAction === "archive"
       ? {
-          title: "Archive this campaign?",
+          title: `Archive this ${nounTitle}?`,
           message:
-            "Recommended when you're done with active work. The campaign stays available by direct link and can be restored anytime. It will be hidden from Dashboard, Campaigns, Calendar, and Campaign Director.",
-          confirmLabel: "Archive campaign",
+            noun === "event"
+              ? "Recommended when you're done with active work. The event stays available by direct link and can be restored anytime. It will be hidden from Dashboard, Events, and Calendar."
+              : "Recommended when you're done with active work. The campaign stays available by direct link and can be restored anytime. It will be hidden from Dashboard, Campaigns, Calendar, and Campaign Director.",
+          confirmLabel: `Archive ${nounTitle}`,
           variant: "primary" as const,
         }
       : confirmAction === "restore"
         ? {
-            title: "Restore this campaign?",
+            title: `Restore this ${nounTitle}?`,
             message:
-              "It will reappear on Dashboard, Campaigns, Calendar, and Campaign Director.",
-            confirmLabel: "Restore campaign",
+              noun === "event"
+                ? "It will reappear on Dashboard, Events, and Calendar."
+                : "It will reappear on Dashboard, Campaigns, Calendar, and Campaign Director.",
+            confirmLabel: `Restore ${nounTitle}`,
             variant: "primary" as const,
           }
         : confirmAction === "delete"
           ? {
-              title: "Delete this campaign permanently?",
+              title: `Delete this ${nounTitle} permanently?`,
               message:
-                "This removes the campaign and all workspace data (drafts, versions, timeline steps, assets, approvals, schedules, and activity). This cannot be undone. Prefer archive unless you need permanent removal.",
+                noun === "event"
+                  ? "This removes the event and related workspace data. This cannot be undone. Prefer archive unless you need permanent removal."
+                  : "This removes the campaign and all workspace data (drafts, versions, timeline steps, assets, approvals, schedules, and activity). This cannot be undone. Prefer archive unless you need permanent removal.",
               confirmLabel: "Delete permanently",
               variant: "danger" as const,
             }
@@ -241,7 +255,7 @@ export function EventManageMenu({
                       onClick={() => openConfirm("restore")}
                     >
                       <ArchiveRestore className="h-4 w-4 shrink-0" />
-                      Restore campaign
+                      Restore {nounTitle}
                     </button>
                   ) : (
                     <button
@@ -252,7 +266,7 @@ export function EventManageMenu({
                     >
                       <span className="flex items-center gap-2">
                         <Archive className="h-4 w-4 shrink-0" />
-                        Archive campaign
+                        Archive {nounTitle}
                       </span>
                       <span className="rounded-full bg-cos-info px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-cos-info-text">
                         Recommended
@@ -267,7 +281,7 @@ export function EventManageMenu({
                     onClick={() => openConfirm("delete")}
                   >
                     <Trash2 className="h-4 w-4 shrink-0" />
-                    Delete campaign
+                    Delete {nounTitle}
                   </button>
                 </div>
               </>,

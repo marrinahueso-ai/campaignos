@@ -12,6 +12,7 @@ import {
   ClipboardList,
   FileStack,
   Sparkles,
+  UserPlus,
   Users,
   UsersRound,
 } from "lucide-react";
@@ -21,11 +22,13 @@ import {
   ew,
   ewCard,
 } from "@/components/events-phase3/event-workspace-tokens";
+import { AppImage } from "@/components/images/AppImage";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import { createWithAiHref } from "@/lib/events/event-responsibility";
 import type { EventResponsibilityPerson } from "@/lib/events/event-responsibility";
 import type { EventInviteCollaboratorPreview } from "@/lib/events-phase3/invite-event-member";
+import { EVENT_TYPE_LABELS } from "@/lib/playbooks/constants";
 import {
   formatEventDate,
   formatEventTime,
@@ -33,6 +36,7 @@ import {
   parseLocalDate,
 } from "@/lib/utils/dates";
 import type { Event } from "@/types";
+import type { EventType } from "@/types/playbooks";
 import { cn } from "@/lib/utils/cn";
 
 export type OverviewJumpTab =
@@ -64,6 +68,23 @@ type Props = {
   inviteCollaborators?: EventInviteCollaboratorPreview[];
   onSelectTab: (tab: OverviewJumpTab) => void;
   onInviteTeamMember?: () => void;
+  /**
+   * `home` = Events workspace (Pilot hierarchy).
+   * `detail` = Event ID overview (default).
+   */
+  variant?: "detail" | "home";
+  /** When false, hides What's Next (Events home). Default true. */
+  showWhatsNext?: boolean;
+  /** Attention heading. Events home uses "Attention Needed". */
+  attentionTitle?: string;
+  /** Rendered after the hero (Also Ahead on Events home). */
+  afterHeroSlot?: ReactNode;
+  /** Events home: status / staffing / lead / milestone + Invite strip. */
+  showOperationalSummary?: boolean;
+  /** Manage menu archive/delete noun. */
+  manageEntityNoun?: "event" | "campaign";
+  /** Soft loading state for async selected-event stats. */
+  statsPending?: boolean;
 };
 
 function statusChipLabel(status: Event["status"]): string {
@@ -130,8 +151,8 @@ function buildAttentionItems(stats: EventDetailHeroStats): AttentionItem[] {
   } else if (stats.filledSpots === 0 && (stats.totalSpots == null || stats.totalSpots === 0)) {
     items.push({
       id: "volunteers-empty",
-      title: "Volunteer staffing needs attention",
-      detail: "Connect a signup or review open roles.",
+      title: "Volunteer staffing isn't set up yet",
+      detail: "Connect a signup or review open spots.",
       tab: "volunteers",
       tone: "gold",
       icon: "users",
@@ -237,6 +258,57 @@ function StaffingDonut({
   );
 }
 
+function leadInitials(name: string | null | undefined): string {
+  return (
+    (name ?? "?")
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "?"
+  );
+}
+
+function eventTypeLabel(event: Event): string | null {
+  if (event.eventType) {
+    return (
+      EVENT_TYPE_LABELS[event.eventType as EventType] ?? event.eventType
+    );
+  }
+  return event.category;
+}
+
+function milestoneCopy(input: {
+  pendingApprovals: number;
+  tasks: number;
+  open: number;
+  countdown: ReturnType<typeof getEventCountdown>;
+}): { title: string; detail: string | null } {
+  const { pendingApprovals, tasks, open, countdown } = input;
+  if (pendingApprovals > 0) {
+    return {
+      title: `Approve ${pendingApprovals} pending post${pendingApprovals === 1 ? "" : "s"}`,
+      detail: "Today",
+    };
+  }
+  if (tasks > 0) {
+    return {
+      title: `Clear ${tasks} open task${tasks === 1 ? "" : "s"}`,
+      detail: countdown.isPast ? "Up next" : "Soon",
+    };
+  }
+  if (open > 0) {
+    return {
+      title: `Fill ${open} remaining volunteer spot${open === 1 ? "" : "s"}`,
+      detail: "Staffing",
+    };
+  }
+  if (!countdown.isPast) {
+    return { title: countdown.label, detail: null };
+  }
+  return { title: "Event plan is current", detail: null };
+}
+
 export function EventWorkspaceOverviewPanel({
   event,
   artwork,
@@ -245,7 +317,15 @@ export function EventWorkspaceOverviewPanel({
   inviteCollaborators = [],
   onSelectTab,
   onInviteTeamMember,
+  variant = "detail",
+  showWhatsNext = true,
+  attentionTitle = "What Needs Your Attention",
+  afterHeroSlot,
+  showOperationalSummary = false,
+  manageEntityNoun = "campaign",
+  statsPending = false,
 }: Props) {
+  const isHome = variant === "home";
   const imageUrl =
     hasDisplayableArtwork(artwork) && artwork?.imageUrl
       ? artwork.imageUrl
@@ -256,17 +336,26 @@ export function EventWorkspaceOverviewPanel({
   const attention = buildAttentionItems(stats);
   const lead =
     responsibilities.find((row) => row.responsibility === "Event Lead") ??
+    responsibilities[0] ??
     null;
   const filled = stats.filledSpots;
   const total = stats.totalSpots;
+  const staffingConfigured = total != null && total > 0;
   const open =
     stats.openSpots ??
     (total != null && total >= filled ? total - filled : 0);
   const pendingApprovals = stats.pendingApprovals;
   const fillPct =
-    total != null && total > 0 ? Math.min(100, Math.round((filled / total) * 100)) : 0;
+    staffingConfigured ? Math.min(100, Math.round((filled / total) * 100)) : null;
   const chip = statusChipLabel(event.status);
   const track = trackLabel(stats, event.status);
+  const typeLabel = eventTypeLabel(event);
+  const milestone = milestoneCopy({
+    pendingApprovals,
+    tasks: stats.tasks,
+    open: Math.max(0, open),
+    countdown,
+  });
 
   const nextItems: Array<{
     when: string;
@@ -297,7 +386,7 @@ export function EventWorkspaceOverviewPanel({
     when: !countdown.isPast ? countdown.label : "Staffing",
     title: "Review volunteer coverage",
     detail:
-      total != null && total > 0
+      staffingConfigured
         ? `${filled} of ${total} spots filled on the latest signup snapshot.`
         : filled > 0
           ? `${filled} filled spots on the latest signup snapshot.`
@@ -315,84 +404,64 @@ export function EventWorkspaceOverviewPanel({
     inviteCollaborators.find((row) => row.status === "pending") ?? null;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-10">
-      {/* Hero — matches approved Event Workspace HTML structure */}
-      <section className={cn(ewCard, "relative overflow-hidden")}>
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.05]"
-          aria-hidden
-        >
-          {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="" className="h-full w-full object-cover" />
-          ) : null}
-        </div>
-
-        <div className="relative flex flex-col xl:flex-row xl:items-stretch">
-          <div className="flex w-full flex-col items-start gap-10 p-8 lg:flex-row xl:w-2/3 xl:p-12">
-            <div className="w-full shrink-0 lg:w-1/4">
-              <div className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-[#e6dfd5] bg-white shadow-md">
-                {imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={imageUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1c352d] via-[#5a7568] to-[#c5a880] px-4 text-center text-sm font-medium text-white/90">
-                    Official artwork appears here after Create with AI
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-[#1c352d]/5 transition-colors group-hover:bg-transparent" />
-              </div>
-              <p
-                className={cn(
-                  "mt-3 text-center text-[10px] font-medium tracking-[0.2em] uppercase lg:text-left",
-                  ew.inksoft,
-                )}
-              >
-                Official Artwork
-              </p>
+    <div
+      className={cn(
+        "mx-auto flex w-full flex-col gap-10",
+        isHome ? "max-w-none" : "max-w-[1240px]",
+        statsPending ? "opacity-90" : null,
+      )}
+      aria-busy={statsPending || undefined}
+    >
+      {isHome ? (
+        <section className={cn(ewCard, "relative overflow-hidden")}>
+          <div className="relative flex flex-col lg:flex-row lg:items-stretch">
+            <div className="relative min-h-[240px] w-full overflow-hidden bg-[#f4f0ea] lg:w-3/5 lg:min-h-[420px]">
+              {imageUrl ? (
+                <AppImage
+                  src={imageUrl}
+                  alt=""
+                  fill
+                  preset="hero"
+                  className="object-cover object-center"
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  priority
+                />
+              ) : (
+                <div className="flex h-full min-h-[240px] w-full items-center justify-center bg-gradient-to-br from-[#1c352d] via-[#5a7568] to-[#c5a880] px-6 text-center text-sm font-medium text-white/90 lg:min-h-[420px]">
+                  Official artwork appears here after Create with AI
+                </div>
+              )}
             </div>
 
-            <div className="flex w-full flex-1 flex-col gap-8">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p
-                    className={cn(
-                      "mb-2 text-xs font-medium tracking-[0.2em] uppercase",
-                      ew.gold,
-                    )}
-                  >
-                    {seasonEyebrow(event.date)}
-                  </p>
-                  <h1
-                    className={cn(
-                      "font-display text-4xl leading-tight md:text-5xl",
-                      ew.ink,
-                    )}
-                  >
-                    {event.title}
-                  </h1>
-                  <p
-                    className={cn(
-                      "mt-4 flex flex-wrap items-center gap-2 text-sm italic",
-                      ew.inksoft,
-                    )}
-                  >
-                    <Calendar className="h-4 w-4 shrink-0 not-italic" aria-hidden />
-                    <span>
-                      {formatEventDate(event.date)}
-                      {timeLabel ? ` · ${timeLabel}` : null}
-                      {event.location ? ` · ${event.location}` : null}
-                    </span>
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
+            <div className="flex w-full flex-col justify-between gap-10 p-8 lg:w-2/5 lg:p-12">
+              <div className="space-y-6">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p
+                      className={cn(
+                        "text-[10px] font-bold tracking-[0.2em] uppercase",
+                        ew.gold,
+                      )}
+                    >
+                      Featured Event
+                    </p>
+                    <h2
+                      className={cn(
+                        "mt-2 font-display text-3xl leading-tight md:text-4xl",
+                        ew.ink,
+                      )}
+                    >
+                      {event.title}
+                    </h2>
+                    <p className={cn("mt-2 text-sm italic", ew.inksoft)}>
+                      {[typeLabel, formatEventDate(event.date)]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  </div>
                   <span
                     className={cn(
-                      "inline-flex items-center gap-2 rounded-full border border-[#ece2d4] bg-[#f4f0ea] px-4 py-2 text-xs font-medium",
+                      "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#ece2d4] bg-[#f4f0ea] px-3 py-1.5 text-[11px] font-medium",
                       ew.ink,
                     )}
                   >
@@ -402,47 +471,80 @@ export function EventWorkspaceOverviewPanel({
                     />
                     {chip}
                   </span>
-                  <EventManageMenu
-                    event={event}
-                    size="sm"
-                    includeEditDetails
-                    iconOnly
-                  />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-                <div className="border-l-2 border-[#c5a880] pl-5">
-                  <p
-                    className={cn(
-                      "mb-1 text-xs font-semibold tracking-wider uppercase",
-                      ew.inksoft,
-                    )}
-                  >
-                    Event Status
+                {event.description?.trim() ? (
+                  <p className={cn("text-sm leading-relaxed", ew.inksoft)}>
+                    {event.description.trim()}
                   </p>
-                  <p className={cn("font-display text-4xl", ew.ink)}>{track}</p>
-                </div>
-                <div className="flex flex-col justify-center gap-2 border-l-2 border-[#e6dfd5] pl-5">
-                  <p className={cn("text-xs", ew.inksoft)}>Staffing Goal</p>
-                  <p className={cn("text-base font-medium tabular-nums", ew.ink)}>
-                    {filled}{" "}
-                    <span className={cn("text-xs font-normal", ew.inksoft)}>
-                      {total != null && total > 0
-                        ? `of ${total} filled`
-                        : "filled"}
-                    </span>
-                  </p>
-                  <div className="h-1 w-full overflow-hidden rounded-full bg-[#faf8f5]">
-                    <div
-                      className="h-full rounded-full bg-[#8ea89d]"
-                      style={{ width: `${total != null && total > 0 ? fillPct : filled > 0 ? 40 : 0}%` }}
-                    />
+                ) : null}
+
+                <div className="grid grid-cols-2 gap-8 pt-2">
+                  <div>
+                    <p
+                      className={cn(
+                        "text-[10px] font-bold tracking-wider uppercase",
+                        ew.inksoft,
+                      )}
+                    >
+                      Time
+                    </p>
+                    <p className={cn("mt-1 text-sm font-semibold", ew.ink)}>
+                      {timeLabel || "TBD"}
+                    </p>
+                  </div>
+                  <div>
+                    <p
+                      className={cn(
+                        "text-[10px] font-bold tracking-wider uppercase",
+                        ew.inksoft,
+                      )}
+                    >
+                      Location
+                    </p>
+                    <p className={cn("mt-1 text-sm font-semibold", ew.ink)}>
+                      {event.location?.trim() || "TBD"}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 pt-2">
+              <div className="flex flex-col gap-4 border-t border-[#e6dfd5] pt-8">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#e6dfd5] bg-[#f4f0ea] text-xs font-semibold text-[#1c352d]">
+                      {leadInitials(lead?.displayName)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className={cn("truncate text-xs font-semibold", ew.ink)}>
+                        {lead?.displayName?.trim() || "Not assigned yet"}
+                      </p>
+                      <p className={cn("text-[10px]", ew.inksoft)}>
+                        {lead?.organizationTitle?.trim() || "Lead Person"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="hidden items-center gap-1.5 sm:inline-flex">
+                      <span className="h-2 w-2 rounded-full bg-[#8ea89d]" />
+                      <span
+                        className={cn(
+                          "text-[10px] font-bold tracking-widest uppercase",
+                          ew.inksoft,
+                        )}
+                      >
+                        {track}
+                      </span>
+                    </span>
+                    <EventManageMenu
+                      event={event}
+                      size="sm"
+                      includeEditDetails
+                      iconOnly
+                      entityNoun={manageEntityNoun}
+                    />
+                  </div>
+                </div>
                 <Link
                   href={createHref}
                   prefetch={false}
@@ -450,7 +552,7 @@ export function EventWorkspaceOverviewPanel({
                     clickEvent.preventDefault();
                     window.location.assign(createHref);
                   }}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#1c352d] px-7 py-3 text-sm font-medium text-white transition hover:bg-[#5e6b65]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1c352d] px-7 py-4 text-xs font-bold tracking-wide text-white uppercase transition hover:bg-[#5e6b65]"
                 >
                   <Sparkles className="h-4 w-4" aria-hidden />
                   Generate Event Plan
@@ -458,62 +560,309 @@ export function EventWorkspaceOverviewPanel({
               </div>
             </div>
           </div>
+        </section>
+      ) : (
+        <section className={cn(ewCard, "relative overflow-hidden")}>
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.05]"
+            aria-hidden
+          >
+            {imageUrl ? (
+              <AppImage
+                src={imageUrl}
+                alt=""
+                fill
+                preset="hero"
+                className="object-cover object-center"
+                sizes="100vw"
+              />
+            ) : null}
+          </div>
 
-          <aside className="flex flex-col gap-8 border-t border-[#e6dfd5] bg-[#faf8f5]/30 p-8 xl:w-1/3 xl:border-t-0 xl:border-l xl:p-12">
-            <div>
-              <h3 className={cn("mb-2 font-display text-lg", ew.ink)}>
-                Lead Coordinator
-              </h3>
-              <div className="flex items-center gap-4 pt-2">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#ece2d4] text-sm font-semibold text-[#1c352d] ring-2 ring-[#ece2d4] ring-offset-2">
-                  {(lead?.displayName ?? "?")
-                    .split(/\s+/)
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((p) => p[0]?.toUpperCase() ?? "")
-                    .join("") || "?"}
+          <div className="relative flex flex-col xl:flex-row xl:items-stretch">
+            <div className="flex w-full flex-col items-start gap-10 p-8 lg:flex-row xl:w-2/3 xl:p-12">
+              <div className="w-full shrink-0 lg:w-1/4">
+                <div className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-[#e6dfd5] bg-white shadow-md">
+                  {imageUrl ? (
+                    <AppImage
+                      src={imageUrl}
+                      alt=""
+                      fill
+                      preset="card"
+                      className="object-cover object-center"
+                      sizes="(max-width: 1024px) 40vw, 20vw"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1c352d] via-[#5a7568] to-[#c5a880] px-4 text-center text-sm font-medium text-white/90">
+                      Official artwork appears here after Create with AI
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-[#1c352d]/5 transition-colors group-hover:bg-transparent" />
                 </div>
-                <div>
-                  <p className={cn("text-sm font-medium", ew.ink)}>
-                    {lead?.displayName?.trim() || "Not assigned yet"}
-                  </p>
-                  <p className={cn("text-xs italic", ew.inksoft)}>
-                    {lead ? "Event Lead" : "Assign from Community"}
-                  </p>
+                <p
+                  className={cn(
+                    "mt-3 text-center text-[10px] font-medium tracking-[0.2em] uppercase lg:text-left",
+                    ew.inksoft,
+                  )}
+                >
+                  Official Artwork
+                </p>
+              </div>
+
+              <div className="flex w-full flex-1 flex-col gap-8">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p
+                      className={cn(
+                        "mb-2 text-xs font-medium tracking-[0.2em] uppercase",
+                        ew.gold,
+                      )}
+                    >
+                      {seasonEyebrow(event.date)}
+                    </p>
+                    <h1
+                      className={cn(
+                        "font-display text-4xl leading-tight md:text-5xl",
+                        ew.ink,
+                      )}
+                    >
+                      {event.title}
+                    </h1>
+                    <p
+                      className={cn(
+                        "mt-4 flex flex-wrap items-center gap-2 text-sm italic",
+                        ew.inksoft,
+                      )}
+                    >
+                      <Calendar className="h-4 w-4 shrink-0 not-italic" aria-hidden />
+                      <span>
+                        {formatEventDate(event.date)}
+                        {timeLabel ? ` · ${timeLabel}` : null}
+                        {event.location ? ` · ${event.location}` : null}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-full border border-[#ece2d4] bg-[#f4f0ea] px-4 py-2 text-xs font-medium",
+                        ew.ink,
+                      )}
+                    >
+                      <CheckCircle2
+                        className={cn("h-3.5 w-3.5", ew.sageDeep)}
+                        aria-hidden
+                      />
+                      {chip}
+                    </span>
+                    <EventManageMenu
+                      event={event}
+                      size="sm"
+                      includeEditDetails
+                      iconOnly
+                      entityNoun={manageEntityNoun}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+                  <div className="border-l-2 border-[#c5a880] pl-5">
+                    <p
+                      className={cn(
+                        "mb-1 text-xs font-semibold tracking-wider uppercase",
+                        ew.inksoft,
+                      )}
+                    >
+                      Event Status
+                    </p>
+                    <p className={cn("font-display text-4xl", ew.ink)}>{track}</p>
+                  </div>
+                  <div className="flex flex-col justify-center gap-2 border-l-2 border-[#e6dfd5] pl-5">
+                    <p className={cn("text-xs", ew.inksoft)}>Staffing Goal</p>
+                    {staffingConfigured ? (
+                      <>
+                        <p className={cn("text-base font-medium tabular-nums", ew.ink)}>
+                          {filled}{" "}
+                          <span className={cn("text-xs font-normal", ew.inksoft)}>
+                            of {total} filled
+                          </span>
+                        </p>
+                        <div className="h-1 w-full overflow-hidden rounded-full bg-[#faf8f5]">
+                          <div
+                            className="h-full rounded-full bg-[#8ea89d]"
+                            style={{ width: `${fillPct ?? 0}%` }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <p className={cn("text-sm", ew.inksoft)}>
+                        Volunteer staffing isn&apos;t set up yet
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <Link
+                    href={createHref}
+                    prefetch={false}
+                    onClick={(clickEvent) => {
+                      clickEvent.preventDefault();
+                      window.location.assign(createHref);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#1c352d] px-7 py-3 text-sm font-medium text-white transition hover:bg-[#5e6b65]"
+                  >
+                    <Sparkles className="h-4 w-4" aria-hidden />
+                    Generate Event Plan
+                  </Link>
                 </div>
               </div>
             </div>
-            <div className="mt-auto border-t border-[#e6dfd5] pt-6">
-              <p
-                className={cn(
-                  "text-[10px] font-bold tracking-[0.2em] uppercase",
-                  ew.inksoft,
+
+            <aside className="flex flex-col gap-8 border-t border-[#e6dfd5] bg-[#faf8f5]/30 p-8 xl:w-1/3 xl:border-t-0 xl:border-l xl:p-12">
+              <div>
+                <h3 className={cn("mb-2 font-display text-lg", ew.ink)}>
+                  Lead Coordinator
+                </h3>
+                <div className="flex items-center gap-4 pt-2">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#ece2d4] text-sm font-semibold text-[#1c352d] ring-2 ring-[#ece2d4] ring-offset-2">
+                    {leadInitials(lead?.displayName)}
+                  </div>
+                  <div>
+                    <p className={cn("text-sm font-medium", ew.ink)}>
+                      {lead?.displayName?.trim() || "Not assigned yet"}
+                    </p>
+                    <p className={cn("text-xs italic", ew.inksoft)}>
+                      {lead ? "Event Lead" : "Assign from Community"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-auto border-t border-[#e6dfd5] pt-6">
+                <p
+                  className={cn(
+                    "text-[10px] font-bold tracking-[0.2em] uppercase",
+                    ew.inksoft,
+                  )}
+                >
+                  Upcoming Milestone
+                </p>
+                <p className={cn("mt-2 text-sm", ew.ink)}>{milestone.title}</p>
+              </div>
+            </aside>
+          </div>
+        </section>
+      )}
+
+      {afterHeroSlot}
+
+      {showOperationalSummary ? (
+        <section className={cn(ewCard, "p-8 shadow-sm")}>
+          <div className="flex flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:gap-10">
+            <div className="grid w-full flex-1 grid-cols-2 gap-8 md:grid-cols-4">
+              <div>
+                <p
+                  className={cn(
+                    "text-[10px] font-bold tracking-widest uppercase",
+                    ew.inksoft,
+                  )}
+                >
+                  Event Status
+                </p>
+                <p className={cn("mt-1 font-display text-3xl", ew.ink)}>{track}</p>
+              </div>
+              <div>
+                <p
+                  className={cn(
+                    "text-[10px] font-bold tracking-widest uppercase",
+                    ew.inksoft,
+                  )}
+                >
+                  Staffing Goal
+                </p>
+                {staffingConfigured ? (
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className={cn("font-display text-3xl", ew.ink)}>
+                      {fillPct}%
+                    </span>
+                    <span className={cn("text-xs font-medium", ew.inksoft)}>
+                      {filled} of {total} filled
+                    </span>
+                  </div>
+                ) : (
+                  <p className={cn("mt-2 text-sm", ew.inksoft)}>
+                    Not set up yet
+                  </p>
                 )}
-              >
-                Upcoming Milestone
-              </p>
-              <p className={cn("mt-2 text-sm", ew.ink)}>
-                {pendingApprovals > 0
-                  ? `Approve ${pendingApprovals} pending post${pendingApprovals === 1 ? "" : "s"}`
-                  : stats.tasks > 0
-                    ? `Clear ${stats.tasks} open task${stats.tasks === 1 ? "" : "s"}`
-                    : open > 0
-                      ? `Fill ${open} remaining volunteer spot${open === 1 ? "" : "s"}`
-                      : !countdown.isPast
-                        ? countdown.label
-                        : "Event plan is current"}
-              </p>
+              </div>
+              <div>
+                <p
+                  className={cn(
+                    "text-[10px] font-bold tracking-widest uppercase",
+                    ew.inksoft,
+                  )}
+                >
+                  Lead Coordinator
+                </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e6dfd5] bg-[#f4f0ea] text-[10px] font-bold text-[#1c352d]">
+                    {leadInitials(lead?.displayName)}
+                  </div>
+                  <span className={cn("truncate text-xs font-semibold", ew.ink)}>
+                    {lead?.displayName?.trim() || "Not assigned"}
+                  </span>
+                </div>
+              </div>
+              <div className="min-w-0">
+                <p
+                  className={cn(
+                    "text-[10px] font-bold tracking-widest uppercase",
+                    ew.inksoft,
+                  )}
+                >
+                  Upcoming Milestone
+                </p>
+                <p className={cn("mt-1 truncate text-sm font-semibold", ew.ink)}>
+                  {milestone.title}
+                </p>
+                {milestone.detail ? (
+                  <p
+                    className={cn(
+                      "mt-1 text-[10px] font-bold tracking-wider uppercase",
+                      ew.sageDeep,
+                    )}
+                  >
+                    {milestone.detail}
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </aside>
-        </div>
-      </section>
+            {onInviteTeamMember ? (
+              <button
+                type="button"
+                onClick={onInviteTeamMember}
+                data-testid="event-invite-team-member-ops"
+                className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-[#e6dfd5] bg-[#faf8f5] px-5 py-3 text-sm font-semibold text-[#1c352d] transition hover:bg-[#f4f0ea] lg:w-auto"
+              >
+                <UserPlus className="h-4 w-4" aria-hidden />
+                Invite Team Member
+              </button>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       {/* Attention + Staffing */}
-      <section className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className={cn(ewCard, "p-8 lg:col-span-2")}>
+      <section
+        className={cn(
+          "grid grid-cols-1 gap-8",
+          isHome ? "md:grid-cols-2" : "lg:grid-cols-3",
+        )}
+      >
+        <div className={cn(ewCard, "p-8", isHome ? null : "lg:col-span-2")}>
           <div className="mb-6 flex items-center justify-between gap-3">
             <h2 className={cn("font-display text-2xl", ew.ink)}>
-              What Needs Your Attention
+              {attentionTitle}
             </h2>
             <span className={cn("text-xs", ew.inksoft)}>
               {attention.length === 0
@@ -569,85 +918,105 @@ export function EventWorkspaceOverviewPanel({
 
         <div className={cn(ewCard, "flex flex-col gap-6 p-8")}>
           <h2 className={cn("font-display text-2xl", ew.ink)}>Staffing Status</h2>
-          <StaffingDonut
-            filled={filled}
-            open={Math.max(0, open)}
-            pending={pendingApprovals}
-          />
-          <div className="space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className={cn("flex items-center gap-2", ew.inksoft)}>
-                <span className="h-2.5 w-2.5 rounded-full bg-[#1c352d]" />
-                Filled
-              </span>
-              <span className={cn("font-medium tabular-nums", ew.ink)}>
-                {filled}
-              </span>
+          {staffingConfigured ? (
+            <>
+              <StaffingDonut
+                filled={filled}
+                open={Math.max(0, open)}
+                pending={pendingApprovals}
+              />
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className={cn("flex items-center gap-2", ew.inksoft)}>
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#1c352d]" />
+                    Filled
+                  </span>
+                  <span className={cn("font-medium tabular-nums", ew.ink)}>
+                    {filled} spots
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className={cn("flex items-center gap-2", ew.inksoft)}>
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#c5a880]" />
+                    Pending review
+                  </span>
+                  <span className={cn("font-medium tabular-nums", ew.ink)}>
+                    {pendingApprovals}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className={cn("flex items-center gap-2", ew.inksoft)}>
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#e6dfd5]" />
+                    Open
+                  </span>
+                  <span className={cn("font-medium tabular-nums", ew.ink)}>
+                    {Math.max(0, open)} spots
+                  </span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-1 flex-col justify-center gap-4 py-4">
+              <p className={cn("text-sm leading-relaxed", ew.inksoft)}>
+                Volunteer staffing isn&apos;t set up yet. Connect a signup to
+                track filled and open spots.
+              </p>
+              <button
+                type="button"
+                onClick={() => onSelectTab("volunteers")}
+                className="inline-flex items-center justify-center rounded-full bg-[#1c352d] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5e6b65]"
+              >
+                Set up volunteers
+              </button>
             </div>
-            <div className="flex items-center justify-between">
-              <span className={cn("flex items-center gap-2", ew.inksoft)}>
-                <span className="h-2.5 w-2.5 rounded-full bg-[#c5a880]" />
-                Pending review
-              </span>
-              <span className={cn("font-medium tabular-nums", ew.ink)}>
-                {pendingApprovals}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className={cn("flex items-center gap-2", ew.inksoft)}>
-                <span className="h-2.5 w-2.5 rounded-full bg-[#e6dfd5]" />
-                Open
-              </span>
-              <span className={cn("font-medium tabular-nums", ew.ink)}>
-                {Math.max(0, open)}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* What's Next */}
-      <section className={cn(ewCard, "relative overflow-hidden p-10 shadow-sm")}>
-        <CalendarCheck
-          className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-[180px] w-[180px] text-[#1c352d] opacity-[0.03]"
-          aria-hidden
-        />
-        <h2 className={cn("mb-10 font-display text-2xl", ew.ink)}>What’s Next</h2>
-        <div className="relative grid grid-cols-1 gap-12 md:grid-cols-3">
-          {nextItems.slice(0, 3).map((item) => (
-            <button
-              key={`${item.when}-${item.title}`}
-              type="button"
-              onClick={() => onSelectTab(item.tab)}
-              className="relative border-l border-[#e6dfd5]/60 pl-8 text-left md:pl-8"
-            >
-              <span
-                className={cn(
-                  "absolute top-1 left-[-6px] h-3 w-3 rounded-full",
-                  item.tone === "sage"
-                    ? "bg-[#8ea89d] shadow-[0_0_0_6px_rgba(142,168,157,0.1)]"
-                    : item.tone === "gold"
-                      ? "bg-[#c5a880] shadow-[0_0_0_6px_rgba(197,168,128,0.1)]"
-                      : "bg-[#e6dfd5] shadow-[0_0_0_6px_rgba(230,223,213,0.2)]",
-                )}
-                aria-hidden
-              />
-              <p
-                className={cn(
-                  "mb-2 text-[10px] font-bold tracking-[0.2em] uppercase",
-                  item.tone === "rule" ? ew.inksoft : ew.gold,
-                )}
+      {/* What's Next — Event ID overview only */}
+      {showWhatsNext ? (
+        <section className={cn(ewCard, "relative overflow-hidden p-10 shadow-sm")}>
+          <CalendarCheck
+            className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-[180px] w-[180px] text-[#1c352d] opacity-[0.03]"
+            aria-hidden
+          />
+          <h2 className={cn("mb-10 font-display text-2xl", ew.ink)}>What’s Next</h2>
+          <div className="relative grid grid-cols-1 gap-12 md:grid-cols-3">
+            {nextItems.slice(0, 3).map((item) => (
+              <button
+                key={`${item.when}-${item.title}`}
+                type="button"
+                onClick={() => onSelectTab(item.tab)}
+                className="relative border-l border-[#e6dfd5]/60 pl-8 text-left md:pl-8"
               >
-                {item.when}
-              </p>
-              <p className={cn("text-base font-medium", ew.ink)}>{item.title}</p>
-              <p className={cn("mt-1 text-xs leading-relaxed", ew.inksoft)}>
-                {item.detail}
-              </p>
-            </button>
-          ))}
-        </div>
-      </section>
+                <span
+                  className={cn(
+                    "absolute top-1 left-[-6px] h-3 w-3 rounded-full",
+                    item.tone === "sage"
+                      ? "bg-[#8ea89d] shadow-[0_0_0_6px_rgba(142,168,157,0.1)]"
+                      : item.tone === "gold"
+                        ? "bg-[#c5a880] shadow-[0_0_0_6px_rgba(197,168,128,0.1)]"
+                        : "bg-[#e6dfd5] shadow-[0_0_0_6px_rgba(230,223,213,0.2)]",
+                  )}
+                  aria-hidden
+                />
+                <p
+                  className={cn(
+                    "mb-2 text-[10px] font-bold tracking-[0.2em] uppercase",
+                    item.tone === "rule" ? ew.inksoft : ew.gold,
+                  )}
+                >
+                  {item.when}
+                </p>
+                <p className={cn("text-base font-medium", ew.ink)}>{item.title}</p>
+                <p className={cn("mt-1 text-xs leading-relaxed", ew.inksoft)}>
+                  {item.detail}
+                </p>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* Workspace hub cards */}
       <section>
@@ -716,9 +1085,11 @@ export function EventWorkspaceOverviewPanel({
             subtitle="Shifts & Signups"
             meta={
               <span className="rounded bg-[#faf8f5] px-2 py-1 text-xs font-medium text-[#5e6b65]">
-                {total != null && total > 0
+                {staffingConfigured
                   ? `${filled}/${total} Filled`
-                  : `${filled} Filled`}
+                  : filled > 0
+                    ? `${filled} Filled`
+                    : "Not set up"}
               </span>
             }
             onClick={() => onSelectTab("volunteers")}

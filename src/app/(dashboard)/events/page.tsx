@@ -1,8 +1,15 @@
+import { Suspense } from "react";
 import { CampaignsPageContent } from "@/components/campaigns/CampaignsPageContent";
 import { EventsHomeContent } from "@/components/events-phase3/EventsHomeContent";
+import {
+  accessHasPermission,
+  getEffectiveAccess,
+} from "@/lib/access-templates/effective-access";
 import { getCampaignPageEvents, getArchivedCampaignPageEvents } from "@/lib/events/campaign-page-queries";
 import { collectEventsHomeArtworkEventIds } from "@/lib/events/events-home-artwork-ids";
 import { getEventsHomeLayoutForCurrentUser } from "@/lib/events/events-home-layout-queries";
+import { resolveSelectedEventsHomeEvent } from "@/lib/events/events-home-selection";
+import { filterEventsHomeByLens } from "@/lib/events/events-home-summary";
 import { isEventsPhase3UiEnabled } from "@/lib/events/events-phase3-flag";
 import {
   resolveResponsiblePersonForEvent,
@@ -18,6 +25,7 @@ import {
   getActiveSchoolYear,
   getSchoolYearsForOrganization,
 } from "@/lib/school-years/queries";
+import { getEventDetailHeroStats } from "@/lib/events-phase3/hero-stats";
 import { getTodayDateString } from "@/lib/utils/dates";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import type { Event } from "@/types";
@@ -35,7 +43,13 @@ function toEventsHomeEvent(event: Event): Event {
   };
 }
 
-export default async function EventsPage() {
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ event?: string }>;
+}) {
+  const params = await searchParams;
+  const requestedEventId = params.event?.trim() || null;
   const today = getTodayDateString();
   const organization = await getCurrentOrganization();
   const phase3 = isEventsPhase3UiEnabled();
@@ -49,6 +63,7 @@ export default async function EventsPage() {
     committeeAssignments,
     summaryLayout,
     playbooks,
+    access,
   ] = await Promise.all([
     getCampaignPageEvents(organization?.id ?? null),
     getArchivedCampaignPageEvents(organization?.id ?? null),
@@ -64,6 +79,7 @@ export default async function EventsPage() {
       : Promise.resolve([]),
     getEventsHomeLayoutForCurrentUser(),
     getPlaybooksForOrganization(organization?.id ?? null),
+    getEffectiveAccess(),
   ]);
 
   const eventIds = events.map((event) => event.id);
@@ -163,25 +179,63 @@ export default async function EventsPage() {
     artworkRecord[eventId] = artwork;
   }
 
+  // Resolve initial selection against accessible lists only (untrusted URL id).
+  const requestedInArchived =
+    requestedEventId != null &&
+    leanArchivedEvents.some((event) => event.id === requestedEventId);
+  const accessibleForDefault = requestedInArchived
+    ? leanArchivedEvents
+    : filterEventsHomeByLens(leanEvents, "upcoming", today);
+  const fallbackList =
+    accessibleForDefault.length > 0
+      ? accessibleForDefault
+      : leanEvents.length > 0
+        ? leanEvents
+        : leanArchivedEvents;
+  const initialSelected = resolveSelectedEventsHomeEvent({
+    accessibleEvents: fallbackList,
+    requestedEventId,
+  });
+
+  const initialSelectedStats = initialSelected
+    ? await getEventDetailHeroStats(initialSelected.id)
+    : null;
+
+  const canManagePeople = Boolean(
+    access && accessHasPermission(access, "manage_people"),
+  );
+
   return (
-    <EventsHomeContent
-      events={leanEvents}
-      archivedEvents={leanArchivedEvents}
-      today={today}
-      artworkByEventId={artworkRecord}
-      responsibleByEventId={responsibleByEventId}
-      playbookNameByEventId={playbookNameByEventId}
-      playbookOptions={playbooks.map((playbook) => ({
-        id: playbook.id,
-        name: playbook.name,
-        eventType: playbook.eventType,
-      }))}
-      schoolYears={schoolYears.map((year) => ({
-        id: year.id,
-        label: year.label,
-      }))}
-      activeSchoolYearId={activeSchoolYear?.id ?? null}
-      initialSummaryLayout={summaryLayout}
-    />
+    <Suspense
+      fallback={
+        <div className="studio-page space-y-8 pb-12">
+          <div className="h-12 w-48 animate-pulse rounded bg-cos-border/40" />
+          <div className="h-64 animate-pulse rounded-[22px] bg-cos-border/30" />
+        </div>
+      }
+    >
+      <EventsHomeContent
+        events={leanEvents}
+        archivedEvents={leanArchivedEvents}
+        today={today}
+        artworkByEventId={artworkRecord}
+        responsibleByEventId={responsibleByEventId}
+        playbookNameByEventId={playbookNameByEventId}
+        playbookOptions={playbooks.map((playbook) => ({
+          id: playbook.id,
+          name: playbook.name,
+          eventType: playbook.eventType,
+        }))}
+        schoolYears={schoolYears.map((year) => ({
+          id: year.id,
+          label: year.label,
+        }))}
+        activeSchoolYearId={activeSchoolYear?.id ?? null}
+        initialSummaryLayout={summaryLayout}
+        initialEventId={initialSelected?.id ?? null}
+        initialSelectedStats={initialSelectedStats}
+        canManagePeople={canManagePeople}
+      />
+    </Suspense>
   );
 }

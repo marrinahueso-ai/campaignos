@@ -13,6 +13,16 @@ describe("events ease UI contracts", () => {
   const ease = readSrc(
     "../../../components/events-phase3/EventsEaseList.tsx",
   );
+  const alsoAhead = readSrc(
+    "../../../components/events-phase3/EventsAlsoAheadList.tsx",
+  );
+  const overview = readSrc(
+    "../../../components/events-phase3/EventWorkspaceOverviewPanel.tsx",
+  );
+  const manageMenu = readSrc(
+    "../../../components/event-workspace/EventManageMenu.tsx",
+  );
+  const page = readSrc("../../../app/(dashboard)/events/page.tsx");
 
   it("opens Create Event as a modal popout from New event", () => {
     assert.match(home, /CreateEventModal/);
@@ -21,12 +31,29 @@ describe("events ease UI contracts", () => {
     assert.doesNotMatch(home, /href="\/events\/create"/);
   });
 
-  it("uses ease focus/queue instead of KPI summary cards", () => {
+  it("hosts selected-event workspace instead of focus/queue stack", () => {
     assert.match(home, /Create with AI/);
-    assert.match(home, /EventsEaseFocusCard/);
+    assert.match(home, /EventWorkspaceOverviewPanel/);
+    assert.match(home, /EventsAlsoAheadList/);
+    assert.match(home, /variant="home"/);
+    assert.match(home, /showWhatsNext=\{false\}/);
+    assert.doesNotMatch(home, /EventsEaseFocusCard/);
     assert.doesNotMatch(home, /EventsHomeSummaryCards/);
     assert.doesNotMatch(home, /EventsUpcomingSection/);
     assert.doesNotMatch(home, /EventsEaseMonthGlance/);
+    assert.doesNotMatch(home, /Next Best Action/i);
+    assert.doesNotMatch(home, /Open Workspace/i);
+  });
+
+  it("selects via untrusted ?event= and loads one event's stats with stale guard", () => {
+    assert.match(home, /searchParams\.get\("event"\)/);
+    assert.match(home, /resolveSelectedEventsHomeEvent/);
+    assert.match(home, /refreshEventDetailHeroStatsAction/);
+    assert.match(home, /selectedEventIdRef/);
+    assert.match(home, /requestEventId !== selectedEventIdRef\.current/);
+    assert.match(page, /getEventDetailHeroStats/);
+    assert.match(page, /initialSelectedStats/);
+    assert.match(page, /requestedEventId/);
   });
 
   it("keeps simplified filter pills and full calendar link", () => {
@@ -39,19 +66,38 @@ describe("events ease UI contracts", () => {
     assert.doesNotMatch(home, /Needs setup|Ready to run|Follow-up|Month at a glance/i);
   });
 
-  it("keeps the focus card calm with two CTAs", () => {
-    const focusCard = ease.match(
-      /export function EventsEaseFocusCard\([\s\S]*?(?=export function EventsEaseAheadCard)/,
-    )?.[0];
-    assert.ok(focusCard);
-    assert.match(focusCard, /Open event/);
-    assert.match(focusCard, />\s*Social\s*</);
-    assert.doesNotMatch(focusCard, /Artwork and social may still be open/);
-    assert.doesNotMatch(focusCard, /homepage-composer/);
-    assert.doesNotMatch(focusCard, /newsletter-composer/);
+  it("expands Also Ahead and uses AppImage thumbs", () => {
+    assert.match(alsoAhead, /Show all events/);
+    assert.match(alsoAhead, /Show less/);
+    assert.match(alsoAhead, /AppImage/);
+    assert.match(alsoAhead, /preset="thumb"/);
+    assert.match(home, /EVENTS_ALSO_AHEAD_COLLAPSED_COUNT/);
   });
 
-  it("exposes artwork enlarge and download on list thumbnails", () => {
+  it("wires invite drawer + event manage copy on Events home", () => {
+    assert.match(home, /InviteEventMemberDrawer/);
+    assert.match(home, /canManagePeople/);
+    assert.match(home, /manageEntityNoun="event"/);
+    assert.match(manageMenu, /entityNoun/);
+    assert.match(manageMenu, /Archive \$\{nounTitle\}/);
+    assert.match(manageMenu, /Delete \{nounTitle\}/);
+  });
+
+  it("keeps Event ID overview What's Next while home strips it", () => {
+    assert.match(overview, /showWhatsNext/);
+    assert.match(overview, /What’s Next/);
+    assert.match(overview, /Attention Needed/);
+    assert.match(overview, / Volunteer staffing isn't set up yet|Volunteer staffing isn&apos;t set up yet|isn&apos;t set up yet/);
+    assert.match(overview, /preset="hero"/);
+    assert.doesNotMatch(overview, /\b9 Roles\b/);
+  });
+
+  it("navigates workspace cards to Event ID deep tabs", () => {
+    assert.match(home, /\/events\/\$\{encodeURIComponent\(eventId\)\}\?tab=/);
+    assert.match(home, /handleSelectTab/);
+  });
+
+  it("exposes artwork enlarge and download on list thumbnails helpers", () => {
     const artworkHover = readSrc(
       "../../../components/artwork/ArtworkHoverThumbnail.tsx",
     );
@@ -59,35 +105,9 @@ describe("events ease UI contracts", () => {
     assert.match(ease, /ArtworkPreviewActions/);
     assert.match(artworkHover, /Enlarge artwork/);
     assert.match(artworkHover, /Download artwork/);
-    assert.doesNotMatch(artworkHover, /Click to enlarge/);
-  });
-
-  it("fills compact list thumbs edge-to-edge while focus keeps full poster", () => {
-    const artworkHover = readSrc(
-      "../../../components/artwork/ArtworkHoverThumbnail.tsx",
-    );
-    // Compact queue thumbs use cover; focus/non-compact keeps contain.
-    assert.match(artworkHover, /resize=\{compact \? "cover" : "contain"\}/);
-    assert.match(artworkHover, /objectFit: compact \? "cover" : "contain"/);
-    assert.match(artworkHover, /object-cover object-center/);
-    assert.match(artworkHover, /object-contain object-center p-0\.5/);
-    assert.match(ease, /h-\[88px\] w-\[88px\] shrink-0 rounded-\[14px\]/);
-    assert.match(
-      ease,
-      /EventsEaseAheadCard[\s\S]*?grid-cols-\[88px_1fr\][\s\S]*?gap-3[\s\S]*?p-3/,
-    );
-    assert.match(artworkHover, /Compact list/);
   });
 
   it("requests square Supabase transforms for poster thumbs (no sliced/squished art)", () => {
-    // Regression: Supabase's render/image transform only crops to whichever
-    // single axis is given and leaves the other axis at native source size
-    // (e.g. a 128-wide request against a 1024x1024 source came back
-    // 128x1024, not proportionally 128x128). That squished/sliced the
-    // EventsEaseQueueRow ("Also ahead") thumbs into thin vertical strips
-    // bleeding past the rounded rail. displayHeight must always be sent
-    // alongside displayWidth so Supabase returns a real square; compact
-    // list presentation then uses cover (focus/lightbox keep contain).
     const artworkHover = readSrc(
       "../../../components/artwork/ArtworkHoverThumbnail.tsx",
     );
