@@ -8,7 +8,7 @@
 
 | UI surface | Source |
 |------------|--------|
-| Event **Volunteers** tab people list | `event_volunteer_participants.volunteer_name` on the source’s **latest confirmed** snapshot (`event_volunteer_sources.latest_confirmed_snapshot_id` → `58fe33e6-…`) |
+| Event **Volunteers** tab people list | `event_volunteer_participants.volunteer_name` on the source’s **latest confirmed** snapshot (`event_volunteer_sources.latest_confirmed_snapshot_id`; was `58fe33e6-…`, now `c3e892c7-…` after SUG sync) |
 | Arrived marks | `event_volunteer_ops.subject_key` (embeds the same name as `participant_key`) |
 | Event lead / owner text | `events.event_owner` |
 | Org `/volunteers` master | Aggregates only — **no person names** (unchanged) |
@@ -31,7 +31,7 @@ This event’s SignUpGenius source is still **connected**. A successful auto-syn
 
 ## Status
 
-**Rolled back** 2026-08-09T03:31:00Z — original volunteer names, arrived `subject_key`s, and `event_owner` (`John Kidd`) restored on snapshot `58fe33e6-…` (still latest confirmed).
+**Rolled back** 2026-08-09T22:40:27Z — real volunteer names, arrived `subject_key`s, and `event_owner` (`John Kidd`) restored on latest snapshot `c3e892c7-…`. Earlier: demo names re-applied 2026-08-09T22:33:47Z on that snapshot; first rollback 2026-08-09T03:31:00Z on `58fe33e6-…`.
 
 ## Rollback procedure
 
