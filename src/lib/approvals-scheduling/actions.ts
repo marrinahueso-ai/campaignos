@@ -947,7 +947,7 @@ export async function reassignUnifiedItemAction(input: {
 }
 
 export async function getReassignableUsersAction(): Promise<
-  Array<{ id: string; email: string; roleName: string | null }>
+  Array<{ id: string; email: string | null; roleName: string | null }>
 > {
   const { getCurrentOrganization } = await import("@/lib/auth/organization-context");
   const organization = await getCurrentOrganization();

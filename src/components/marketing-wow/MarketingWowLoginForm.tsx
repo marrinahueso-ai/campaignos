@@ -88,14 +88,14 @@ export function MarketingWowLoginForm({
 
         <div>
           <label htmlFor="login-email" className={authLabelClassName}>
-            Email address
+            Email or username
           </label>
           <input
             id="login-email"
             name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@school.edu"
+            type="text"
+            autoComplete="username"
+            placeholder="you@school.edu or jamie.smith"
             defaultValue={defaultEmail}
             required
             className={authInputClassName}

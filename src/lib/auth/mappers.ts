@@ -7,6 +7,7 @@ export function mapOrganizationUserRow(
   row: OrganizationUserRow,
   organizationRoleName: string | null = null,
   assignedEventIds: string[] = [],
+  username: string | null = null,
 ): OrganizationUser {
   return {
     id: row.id,
@@ -28,5 +29,6 @@ export function mapOrganizationUserRow(
     joinedAt: row.joined_at,
     createdAt: row.created_at,
     assignedEventIds,
+    username,
   };
 }

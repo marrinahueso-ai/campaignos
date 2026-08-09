@@ -220,14 +220,27 @@ export const getOrganizationUsers = cache(
     const assignmentsByUser =
       await listOrganizationUserEventAssignmentsByOrg(organizationId);
 
+    const { getUsernamesByUserIds } = await import(
+      "@/lib/auth/username-queries"
+    );
+    const usernameByUserId = await getUsernamesByUserIds(
+      (data ?? []).map(
+        (row) => (row as OrganizationUserRow).user_id,
+      ),
+    );
+
     return (data ?? []).map((row) => {
       const userRow = row as OrganizationUserRow & {
         organization_roles: { name: string } | null;
       };
+      const username = userRow.user_id
+        ? (usernameByUserId[userRow.user_id] ?? null)
+        : null;
       return mapOrganizationUserRow(
         userRow,
         userRow.organization_roles?.name ?? null,
         assignmentsByUser[userRow.id] ?? [],
+        username,
       );
     });
   },
@@ -356,6 +369,9 @@ export async function acceptPendingInvitesForUser(
   if (inviteToken) {
     const invite = await getInviteByToken(inviteToken);
     if (invite) {
+      if (!invite.email) {
+        return { accepted: 0 };
+      }
       if (invite.email.trim().toLowerCase() !== normalizedEmail.toLowerCase()) {
         return { accepted: 0, emailMismatch: invite.email };
       }

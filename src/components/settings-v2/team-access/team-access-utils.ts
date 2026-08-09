@@ -29,6 +29,8 @@ export interface UnifiedTeamMember {
   id: string;
   email: string;
   emailMissing: boolean;
+  /** Login username when provisioned via Create Login (no contact email). */
+  username: string | null;
   phone: string | null;
   phoneMissing: boolean;
   displayName: string;
@@ -1019,7 +1021,10 @@ function collectRosterPeople(
   for (const user of members) {
     const displayName =
       user.displayName?.trim() ||
-      resolveDisplayNameFromWorkspace(user.email, workspace);
+      (user.username?.trim() ? user.username.trim() : null) ||
+      (user.email
+        ? resolveDisplayNameFromWorkspace(user.email, workspace)
+        : "Team member");
     mergePersonSeed(people, {
       displayName,
       email: user.email,
@@ -1185,6 +1190,7 @@ function finalizeUnifiedMember(
         : `roster:${person.dedupeKey}`),
     email: person.email ?? "",
     emailMissing,
+    username: person.organizationUser?.username ?? null,
     phone: person.phone,
     phoneMissing,
     displayName: person.displayName,
@@ -1421,8 +1427,21 @@ export function countMembersForRole(
 }
 
 export function formatMemberEmail(member: UnifiedTeamMember): string {
-  if (member.emailMissing) {
+  if (member.username) {
+    return member.username;
+  }
+  if (member.emailMissing || !member.email) {
     return "No email";
+  }
+  return member.email;
+}
+
+export function formatMemberLoginIdentity(member: UnifiedTeamMember): string {
+  if (member.username) {
+    return member.username;
+  }
+  if (member.emailMissing || !member.email) {
+    return "—";
   }
   return member.email;
 }

@@ -41,7 +41,6 @@ import {
   createInvitedMemberAccount,
   userMustChangePassword,
 } from "@/lib/auth/invite-credentials";
-import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
 import { revokeUserSessionsIfNoActiveMembership } from "@/lib/auth/revoke-sessions";
 import { sendOrganizationWelcomeEmail } from "@/lib/email/send-organization-welcome";
 import {
@@ -189,6 +188,7 @@ export interface AuthActionState {
   inviteUrl?: string | null;
   provisionedEmail?: string | null;
   provisionedPassword?: string | null;
+  provisionedUsername?: string | null;
   membershipId?: string | null;
 }
 
@@ -295,47 +295,86 @@ export async function signInWithPasswordAction(
   _prev: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const email = formData.get("email")?.toString()?.trim() ?? "";
+  const identifier =
+    formData.get("email")?.toString()?.trim() ||
+    formData.get("identifier")?.toString()?.trim() ||
+    "";
   const password = formData.get("password")?.toString() ?? "";
   const inviteToken = formData.get("inviteToken")?.toString()?.trim() || null;
 
-  if (!email || !password) {
-    return { error: "Enter your email and password.", success: false };
+  if (!identifier || !password) {
+    return {
+      error: "Enter your email or username and password.",
+      success: false,
+    };
   }
 
   const ip = await getRequestIp();
-  const [byEmail, byIp] = await Promise.all([
+  const rateKey = identifier.toLowerCase();
+  const [byId, byIp] = await Promise.all([
     checkRateLimit({
-      key: `login:email:${email.toLowerCase()}`,
+      key: `login:id:${rateKey}`,
       windowSeconds: 15 * 60,
       max: 10,
     }),
     checkRateLimit({ key: `login:ip:${ip}`, windowSeconds: 15 * 60, max: 30 }),
   ]);
-  if (!byEmail.allowed || !byIp.allowed) {
-    const retryAfter = Math.max(byEmail.retryAfterSeconds, byIp.retryAfterSeconds);
+  if (!byId.allowed || !byIp.allowed) {
+    const retryAfter = Math.max(byId.retryAfterSeconds, byIp.retryAfterSeconds);
     return { error: rateLimitMessage(retryAfter, "sign-in attempts"), success: false };
+  }
+
+  const { resolveAuthEmailForLoginIdentifier } = await import(
+    "@/lib/auth/username-queries"
+  );
+  const { isEmailLoginIdentifier } = await import("@/lib/auth/usernames");
+
+  let authEmail: string | null = null;
+  if (isEmailLoginIdentifier(identifier)) {
+    authEmail = identifier.toLowerCase();
+  } else {
+    authEmail = await resolveAuthEmailForLoginIdentifier(identifier);
+  }
+
+  // Generic failure — do not reveal whether a username exists.
+  const genericAuthError = {
+    error: "Incorrect username/email or password.",
+    success: false as const,
+  };
+
+  if (!authEmail) {
+    return genericAuthError;
   }
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({
-    email,
+    email: authEmail,
     password,
   });
 
   if (error) {
-    return { error: error.message, success: false };
+    return genericAuthError;
   }
 
   if (data.user?.email) {
-    const claim = await acceptPendingInvitesForUser(
-      data.user.id,
-      data.user.email,
-      { inviteToken },
-    );
-    if (claim.emailMismatch) {
+    const { isSyntheticAuthEmail } = await import("@/lib/auth/usernames");
+    // Username seats use synthetic Auth email — never claim email invites with it.
+    if (!isSyntheticAuthEmail(data.user.email)) {
+      const claim = await acceptPendingInvitesForUser(
+        data.user.id,
+        data.user.email,
+        { inviteToken },
+      );
+      if (claim.emailMismatch) {
+        return {
+          error: `This invite is for ${claim.emailMismatch}. Sign in with that email.`,
+          success: false,
+        };
+      }
+    } else if (inviteToken) {
       return {
-        error: `This invite is for ${claim.emailMismatch}. Sign in with that email.`,
+        error:
+          "This invite requires an email login. Sign in with the invited email address.",
         success: false,
       };
     }
@@ -390,6 +429,15 @@ export async function completeInviteSetupAction(
     };
   }
 
+  if (!lookup.invite.email) {
+    return {
+      error: "This invite link is invalid or already used.",
+      success: false,
+    };
+  }
+
+  const inviteEmail = lookup.invite.email;
+
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters.", success: false };
   }
@@ -398,7 +446,7 @@ export async function completeInviteSetupAction(
   }
 
   const created = await createInvitedMemberAccount({
-    email: lookup.invite.email,
+    email: inviteEmail,
     password,
   });
   if ("error" in created) {
@@ -407,7 +455,7 @@ export async function completeInviteSetupAction(
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: lookup.invite.email,
+    email: inviteEmail,
     password,
   });
   if (error || !data.user?.email) {
@@ -888,16 +936,15 @@ export async function createTeamMemberAccountAction(
     };
   }
 
-  const email = formData.get("email")?.toString()?.trim() ?? "";
   const password = formData.get("password")?.toString() ?? "";
   const displayName = formData.get("fullName")?.toString()?.trim() || null;
+  const usernameRaw = formData.get("username")?.toString()?.trim() || "";
+  const email = formData.get("email")?.toString()?.trim() ?? "";
   const organizationRoleId = formData.get("organizationRoleId")?.toString() || null;
   const accessRoleRaw = formData.get("campaignRole")?.toString() ?? "";
   const eventIds = parseEventIdsFromForm(formData);
-
-  if (!email) {
-    return { error: "Email is required.", success: false };
-  }
+  const createMode =
+    formData.get("createMode")?.toString() === "username" || Boolean(usernameRaw);
 
   if (!password) {
     return { error: "Choose a temporary password for this person.", success: false };
@@ -940,6 +987,93 @@ export async function createTeamMemberAccountAction(
   const accessTemplateId =
     templateSelection?.templateId ?? resolvedCampaignRole;
 
+  if (createMode) {
+    if (!displayName) {
+      return { error: "Full name is required.", success: false };
+    }
+    if (!usernameRaw) {
+      return { error: "Username is required.", success: false };
+    }
+
+    const { allocateAvailableUsername } = await import(
+      "@/lib/auth/username-queries"
+    );
+    const { provisionUsernameTeamMemberAccount } = await import(
+      "@/lib/auth/provision-team-account"
+    );
+
+    // If the requested username is taken, allocateAvailableUsername finds next.
+    // Prefer exact requested username when free.
+    const { usernameExists } = await import("@/lib/auth/username-queries");
+    const { normalizeUsername, validateUsernameCandidate } = await import(
+      "@/lib/auth/usernames"
+    );
+    const desired = normalizeUsername(usernameRaw);
+    const formatError = validateUsernameCandidate(desired);
+    if (formatError) {
+      return { error: formatError, success: false };
+    }
+
+    const username = desired;
+    if (await usernameExists(desired)) {
+      const allocated = await allocateAvailableUsername(desired);
+      if ("error" in allocated) {
+        return { error: allocated.error, success: false };
+      }
+      // Don't silently rename if admin typed an exact taken name — tell them.
+      return {
+        error: `The username “${desired}” isn’t available. Try “${allocated.username}”.`,
+        success: false,
+      };
+    }
+
+    const result = await provisionUsernameTeamMemberAccount({
+      organizationId: organization.id,
+      username,
+      password,
+      displayName,
+      organizationRoleId,
+      campaignRole: resolvedCampaignRole,
+      accessTemplateId,
+    });
+
+    if ("error" in result) {
+      return { error: result.error, success: false };
+    }
+
+    let assignmentWarning: string | null = null;
+    if (result.membershipId && eventIds.length > 0) {
+      const assignmentResult = await replaceOrganizationUserEventAssignments({
+        organizationId: organization.id,
+        organizationUserId: result.membershipId,
+        eventIds,
+      });
+      if ("error" in assignmentResult) {
+        assignmentWarning = `Event assignment failed: ${assignmentResult.error}`;
+      }
+    }
+
+    revalidatePath("/settings/team-access");
+    return {
+      error: null,
+      success: true,
+      provisionedUsername: result.username,
+      provisionedPassword: password,
+      membershipId: result.membershipId,
+      warning: assignmentWarning,
+      message: `${displayName.split(/\s+/)[0] ?? "They"} is ready to sign in`,
+    };
+  }
+
+  // Legacy email+password provision path (kept for compatibility).
+  if (!email) {
+    return { error: "Email is required.", success: false };
+  }
+
+  const { provisionTeamMemberAccount } = await import(
+    "@/lib/auth/provision-team-account"
+  );
+
   const result = await provisionTeamMemberAccount({
     organizationId: organization.id,
     email,
@@ -976,6 +1110,95 @@ export async function createTeamMemberAccountAction(
     warning: assignmentWarning,
     message: `Account ready for ${email}. Share the sign-in details below — no email required.`,
   };
+}
+
+export async function resetUsernameLoginAction(input: {
+  membershipId: string;
+  password?: string;
+}): Promise<AuthActionState> {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
+    return {
+      error: "You do not have permission to reset login credentials.",
+      success: false,
+    };
+  }
+
+  const orgMembership = await requireMembershipInCurrentOrg(input.membershipId);
+  if ("error" in orgMembership) {
+    return { error: orgMembership.error, success: false };
+  }
+
+  if (!isSupabaseAdminConfigured()) {
+    return {
+      error: "Account provisioning is not configured on this server.",
+      success: false,
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: membership } = await supabase
+    .from("organization_users")
+    .select("user_id")
+    .eq("id", input.membershipId)
+    .maybeSingle();
+
+  const userId = membership?.user_id;
+  if (!userId) {
+    return { error: "This member does not have a login yet.", success: false };
+  }
+
+  const { getUsernameForUserId } = await import("@/lib/auth/username-queries");
+  const username = await getUsernameForUserId(userId);
+  if (!username) {
+    return {
+      error: "Reset login is only available for username-created accounts.",
+      success: false,
+    };
+  }
+
+  const password =
+    input.password?.trim() ||
+    `ralli-${Math.random().toString(36).slice(2, 10)}${Math.random()
+      .toString(36)
+      .slice(2, 6)}`;
+
+  const { adminResetUsernamePassword } = await import(
+    "@/lib/auth/provision-team-account"
+  );
+  const result = await adminResetUsernamePassword({ userId, password });
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath("/settings/team-access");
+  return {
+    error: null,
+    success: true,
+    provisionedUsername: username,
+    provisionedPassword: password,
+    message: "New temporary password created. Share it once, then discard it.",
+  };
+}
+
+export async function suggestUsernameAction(
+  fullName: string,
+): Promise<{ username: string | null; error: string | null }> {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
+    return { username: null, error: "Not allowed." };
+  }
+
+  const { generateUsernameFromFullName } = await import("@/lib/auth/usernames");
+  const { allocateAvailableUsername } = await import(
+    "@/lib/auth/username-queries"
+  );
+  const base = generateUsernameFromFullName(fullName);
+  const allocated = await allocateAvailableUsername(base);
+  if ("error" in allocated) {
+    return { username: null, error: allocated.error };
+  }
+  return { username: allocated.username, error: null };
 }
 
 export async function inviteTeamMemberAction(

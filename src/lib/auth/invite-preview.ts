@@ -21,6 +21,10 @@ export async function getInvitePreview(
 
   const invite = lookup.invite;
 
+  if (!invite.email) {
+    return null;
+  }
+
   return {
     organizationName: lookup.organizationName ?? "your organization",
     email: invite.email,

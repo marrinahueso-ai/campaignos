@@ -31,6 +31,7 @@ import {
   cancelTeamInviteAction,
   removeTeamMemberAction,
   replaceMemberEventAssignmentsAction,
+  resetUsernameLoginAction,
   resendTeamInviteAction,
   setOrganizationUserEventAssignmentsAction,
   updateTeamMemberAction,
@@ -172,6 +173,10 @@ export function SettingsEaseTeamAccess({
   const [confirm, setConfirm] = useState<{
     kind: PilotConfirmKind;
     member: UnifiedTeamMember;
+  } | null>(null);
+  const [resetCredentials, setResetCredentials] = useState<{
+    username: string;
+    password: string;
   } | null>(null);
 
   const accessLabels = useMemo(
@@ -371,6 +376,21 @@ export function SettingsEaseTeamAccess({
         if (result.error) {
           window.alert(result.error);
           return;
+        }
+        router.refresh();
+      } else if (kind === "reset_login") {
+        const result = await resetUsernameLoginAction({
+          membershipId: member.raw!.id,
+        });
+        if (result.error) {
+          window.alert(result.error);
+          return;
+        }
+        if (result.provisionedUsername && result.provisionedPassword) {
+          setResetCredentials({
+            username: result.provisionedUsername,
+            password: result.provisionedPassword,
+          });
         }
         router.refresh();
       }
@@ -618,7 +638,7 @@ export function SettingsEaseTeamAccess({
                     {member.accessLabel}
                   </p>
                   <p className="truncate text-xs font-medium text-[#737373]">
-                    {member.email || "No email"}
+                    {member.username || member.email || "No email"}
                   </p>
                 </div>
 
@@ -676,31 +696,6 @@ export function SettingsEaseTeamAccess({
         </div>
       )}
 
-      {canEditAccessTemplates ? (
-        <footer className="mt-10 rounded-[2rem] border border-[#e5e1d8] bg-white p-6 sm:mt-12 sm:rounded-[2.5rem] sm:p-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-4 text-[#737373]">
-              <Shield className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
-              <div>
-                <p className="text-sm font-bold text-[#201b17]">
-                  Role definitions
-                </p>
-                <p className="text-xs font-medium">
-                  Control the underlying permissions for each role in Hey Ralli.
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/settings/team-access/roles"
-              className="inline-flex items-center gap-2 rounded-2xl border border-[#e5e1d8] px-6 py-3 text-sm font-bold text-[#201b17] transition hover:bg-[#f5f2eb]"
-            >
-              Advanced role settings
-              <ChevronRight className="h-3 w-3" aria-hidden />
-            </Link>
-          </div>
-        </footer>
-      ) : null}
-
       <TeamAccessPilotMemberDrawer
         member={drawerMember}
         open={Boolean(drawerMember)}
@@ -743,6 +738,11 @@ export function SettingsEaseTeamAccess({
         onRemove={() => {
           if (drawerMember) setConfirm({ kind: "remove", member: drawerMember });
         }}
+        onResetLogin={
+          drawerMember?.username
+            ? () => setConfirm({ kind: "reset_login", member: drawerMember })
+            : undefined
+        }
         onSaveAccessLevel={(templateId) =>
           drawerMember
             ? handleSaveAccessLevel(drawerMember, templateId)
@@ -790,6 +790,67 @@ export function SettingsEaseTeamAccess({
         onConfirm={runConfirm}
         onClose={() => setConfirm(null)}
       />
+
+      {resetCredentials ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close"
+            className="absolute inset-0 bg-[rgba(32,27,23,0.4)] backdrop-blur-[4px]"
+            onClick={() => setResetCredentials(null)}
+          />
+          <div className="relative z-10 w-full max-w-md rounded-[2.5rem] border border-[#e5e1d8] bg-white p-10 shadow-2xl">
+            <h2
+              className="mb-2 text-2xl font-bold tracking-tight text-[#201b17]"
+              style={{ fontFamily: pilotSerif }}
+            >
+              New login details
+            </h2>
+            <p className="mb-6 text-sm font-medium text-[#737373]">
+              Share once, then discard. They&apos;ll create a new password on
+              next sign-in.
+            </p>
+            <dl className="space-y-3 rounded-2xl bg-[#f5f2eb] p-5 text-sm">
+              <div>
+                <dt className="text-xs font-bold tracking-widest text-[#737373] uppercase">
+                  Username
+                </dt>
+                <dd className="mt-1 font-mono font-bold text-[#201b17]">
+                  {resetCredentials.username}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-bold tracking-widest text-[#737373] uppercase">
+                  Temporary password
+                </dt>
+                <dd className="mt-1 font-mono font-bold text-[#201b17]">
+                  {resetCredentials.password}
+                </dd>
+              </div>
+            </dl>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                className={pilotBtnPrimary}
+                onClick={() => {
+                  void copyToClipboard(
+                    `Username: ${resetCredentials.username}\nTemporary password: ${resetCredentials.password}`,
+                  );
+                }}
+              >
+                Copy login details
+              </button>
+              <button
+                type="button"
+                className={pilotBtnGhost}
+                onClick={() => setResetCredentials(null)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

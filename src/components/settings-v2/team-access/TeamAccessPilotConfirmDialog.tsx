@@ -6,7 +6,12 @@ import {
   pilotSerif,
 } from "@/components/settings-v2/team-access/team-access-pilot-theme";
 
-export type PilotConfirmKind = "pause" | "restore" | "remove" | "cancel_invite";
+export type PilotConfirmKind =
+  | "pause"
+  | "restore"
+  | "remove"
+  | "cancel_invite"
+  | "reset_login";
 
 interface TeamAccessPilotConfirmDialogProps {
   open: boolean;
@@ -52,6 +57,13 @@ const COPY: Record<
     body: () =>
       "Their invitation link will stop working. You can invite them again later.",
     confirm: "Cancel invitation",
+    destructive: true,
+  },
+  reset_login: {
+    title: (name) => `Reset ${name}'s login?`,
+    body: (name) =>
+      `${name}'s current password will stop working. A new temporary password will be generated and they'll need to create a new password on next sign-in.`,
+    confirm: "Reset login",
     destructive: true,
   },
 };

@@ -24,7 +24,13 @@ function resolveMemberDisplayName(user: OrganizationUser): string {
   if (user.displayName?.trim()) {
     return user.displayName.trim();
   }
-  return formatEmailAsName(user.email);
+  if (user.username?.trim()) {
+    return user.username.trim();
+  }
+  if (user.email) {
+    return formatEmailAsName(user.email);
+  }
+  return "Team member";
 }
 
 /**

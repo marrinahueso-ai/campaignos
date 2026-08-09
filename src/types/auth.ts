@@ -6,7 +6,8 @@ export interface OrganizationUser {
   id: string;
   organizationId: string;
   userId: string | null;
-  email: string;
+  /** Contact email; null for username-provisioned seats without a mailbox. */
+  email: string | null;
   displayName: string | null;
   organizationRoleId: string | null;
   organizationRoleName: string | null;
@@ -24,13 +25,15 @@ export interface OrganizationUser {
   createdAt: string;
   /** Assigned campaign/event ids for this membership. */
   assignedEventIds: string[];
+  /** Global login username when this seat was created via Create Login. */
+  username?: string | null;
 }
 
 export interface OrganizationUserRow {
   id: string;
   organization_id: string;
   user_id: string | null;
-  email: string;
+  email: string | null;
   display_name?: string | null;
   organization_role_id: string | null;
   organization_member_id?: string | null;

@@ -71,6 +71,8 @@ interface TeamAccessPilotMemberDrawerProps {
   onPause: () => void;
   onRestore: () => void;
   onRemove: () => void;
+  onResetLogin?: () => void;
+  resetLoginPending?: boolean;
   onSaveAccessLevel: (templateId: string) => Promise<string | null>;
   onSaveEventAssignments: (eventIds: string[]) => Promise<string | null>;
 }
@@ -144,14 +146,14 @@ function resolvePilotMemberStatus(member: UnifiedTeamMember): PilotMemberStatus 
 }
 
 function signInMethodLabel(member: UnifiedTeamMember): string {
+  if (member.username) {
+    return "Username & password";
+  }
   const login = peopleLoginStatus(member);
   if (login === "invited" || member.status === "invited") {
     return "Email invite";
   }
-  if (login === "active") {
-    return "Email & password / Google";
-  }
-  if (login === "inactive") {
+  if (login === "active" || login === "inactive") {
     return "Email & password / Google";
   }
   return "—";
@@ -205,6 +207,8 @@ export function TeamAccessPilotMemberDrawer({
   onPause,
   onRestore,
   onRemove,
+  onResetLogin,
+  resetLoginPending = false,
   onSaveAccessLevel,
   onSaveEventAssignments,
 }: TeamAccessPilotMemberDrawerProps) {
@@ -611,6 +615,14 @@ export function TeamAccessPilotMemberDrawer({
                         {signInMethodLabel(member)}
                       </dd>
                     </div>
+                    {member.username ? (
+                      <div className="flex justify-between gap-4">
+                        <dt className="font-medium text-[#737373]">Username</dt>
+                        <dd className="text-right font-bold text-[#201b17]">
+                          {member.username}
+                        </dd>
+                      </div>
+                    ) : null}
                     {inviteExpiryLabel ? (
                       <div className="flex justify-between gap-4">
                         <dt className="font-medium text-[#737373]">Invite</dt>
@@ -620,6 +632,16 @@ export function TeamAccessPilotMemberDrawer({
                       </div>
                     ) : null}
                   </dl>
+                  {canManage && member.username && onResetLogin ? (
+                    <button
+                      type="button"
+                      className={cn(pilotBtnSecondary, "mt-4 w-full py-3 text-sm")}
+                      disabled={actionPending || resetLoginPending}
+                      onClick={onResetLogin}
+                    >
+                      {resetLoginPending ? "Resetting…" : "Reset login"}
+                    </button>
+                  ) : null}
                 </Section>
               ) : null}
             </div>

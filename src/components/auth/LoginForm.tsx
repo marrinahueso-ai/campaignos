@@ -194,12 +194,12 @@ export function LoginForm({
 
         <Input
           name="email"
-          label="Email"
-          type="email"
+          label="Email or username"
+          type="text"
           defaultValue={defaultEmail}
-          placeholder="you@yourorg.com"
+          placeholder="you@yourorg.com or jamie.smith"
           required
-          autoComplete="email"
+          autoComplete="username"
           variant={isStudio ? "studio" : "default"}
         />
 
@@ -235,7 +235,7 @@ export function LoginForm({
         <p className="text-center text-xs leading-relaxed text-cos-muted">
           {inviteToken
             ? "New to Hey Ralli? Open your invite link to create a password first. Already have an account? Sign in here to join."
-            : "Your admin creates accounts in Settings → Team and shares email + password with you."}
+            : "Your admin creates accounts in Settings → Team & Access and shares sign-in details with you."}
         </p>
       </form>
 

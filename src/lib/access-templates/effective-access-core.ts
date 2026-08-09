@@ -16,7 +16,7 @@ import {
 export interface EffectiveAccess {
   organizationId: string;
   membershipId: string;
-  email: string;
+  email: string | null;
   templateId: string;
   baseRole: CampaignRole;
   permissions: AccessTemplatePermissions;

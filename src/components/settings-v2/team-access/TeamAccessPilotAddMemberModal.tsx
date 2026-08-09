@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Copy, Eye, EyeOff, Mail, RefreshCw, UserPlus } from "lucide-react";
+import { Copy, Mail, UserPlus } from "lucide-react";
 import { TeamAccessPilotEventPicker } from "@/components/settings-v2/team-access/TeamAccessPilotEventPicker";
 import {
   pilotBtnPrimary,
@@ -20,6 +20,7 @@ import type { AccessTemplate } from "@/lib/access-templates/types";
 import {
   createTeamMemberAccountAction,
   inviteTeamMemberAction,
+  suggestUsernameAction,
 } from "@/lib/auth/actions";
 import { copyToClipboard } from "@/lib/utils/clipboard";
 
@@ -79,7 +80,7 @@ function stepTitle(step: WizardStep, method: AddMethod): string {
     case "events":
       return "Link events";
     case "success":
-      return method === "invite" ? "Invite sent" : "Account ready";
+      return method === "invite" ? "Invite sent" : "Ready to sign in";
   }
 }
 
@@ -90,7 +91,7 @@ function stepSubtitle(step: WizardStep, method: AddMethod): string {
     case "person":
       return "Who are you adding to the team?";
     case "login":
-      return "They sign in with email and this temporary password.";
+      return "Choose the username they will use to sign in.";
     case "role":
       return "What can they do in Hey Ralli?";
     case "events":
@@ -121,9 +122,7 @@ export function TeamAccessPilotAddMemberModal({
   const [phone, setPhone] = useState("");
   const [ptoTitleText, setPtoTitleText] = useState("");
   const [organizationRoleId, setOrganizationRoleId] = useState("");
-
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [username, setUsername] = useState("");
 
   const [selectedTemplateId, setSelectedTemplateId] = useState(() =>
     defaultTemplateId(accessTemplates),
@@ -134,7 +133,9 @@ export function TeamAccessPilotAddMemberModal({
   const [warning, setWarning] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
-  const [provisionedEmail, setProvisionedEmail] = useState<string | null>(null);
+  const [provisionedUsername, setProvisionedUsername] = useState<string | null>(
+    null,
+  );
   const [provisionedPassword, setProvisionedPassword] = useState<string | null>(
     null,
   );
@@ -169,23 +170,16 @@ export function TeamAccessPilotAddMemberModal({
     setPhone("");
     setPtoTitleText("");
     setOrganizationRoleId("");
-    setPassword(generateTempPassword());
-    setShowPassword(false);
+    setUsername("");
     setSelectedTemplateId(defaultTemplateId(accessTemplates));
     setSelectedEventIds([]);
     setError(null);
     setWarning(null);
     setSuccessMessage(null);
     setInviteUrl(null);
-    setProvisionedEmail(null);
+    setProvisionedUsername(null);
     setProvisionedPassword(null);
   }, [open, accessTemplates]);
-
-  useEffect(() => {
-    if (step === "login" && !password) {
-      setPassword(generateTempPassword());
-    }
-  }, [step, password]);
 
   if (!open) return null;
 
@@ -208,9 +202,9 @@ export function TeamAccessPilotAddMemberModal({
       case "method":
         return method === "invite" || (method === "create" && canProvisionAccounts);
       case "person":
-        return email.trim().length > 0;
+        return fullName.trim().length > 0 && (method === "create" || email.trim().length > 0);
       case "login":
-        return password.length >= 8;
+        return username.trim().length > 0;
       case "role":
         return selectedTemplateId.length > 0;
       case "events":
@@ -226,21 +220,43 @@ export function TeamAccessPilotAddMemberModal({
       void submit();
       return;
     }
+
+    if (step === "person" && method === "create") {
+      void advanceToUsername();
+      return;
+    }
+
     const next = wizardSteps[stepIndex + 1];
     if (next) setStep(next);
   }
 
+  async function advanceToUsername() {
+    const name = fullName.trim();
+    if (!name) return;
+
+    setError(null);
+    try {
+      const result = await suggestUsernameAction(name);
+      if (result.username) {
+        setUsername(result.username);
+      }
+    } catch {
+      // The username remains editable; the server validates it on creation.
+    }
+    setStep("login");
+  }
+
   async function submit() {
     const formData = new FormData();
-    formData.set("email", email.trim());
     formData.set("fullName", fullName.trim());
     formData.set("campaignRole", selectedTemplateId);
     formData.set("eventIdsCsv", selectedEventIds.join(","));
-    formData.set("committeeId", "");
     formData.set("organizationRoleId", organizationRoleId);
 
     startTransition(async () => {
       if (method === "invite") {
+        formData.set("email", email.trim());
+        formData.set("committeeId", "");
         formData.set("message", "");
         formData.set("sendEmail", "true");
 
@@ -259,14 +275,17 @@ export function TeamAccessPilotAddMemberModal({
         setWarning(result.warning ?? null);
         setSuccessMessage(result.message ?? null);
         setInviteUrl(result.inviteUrl ?? null);
-        setProvisionedEmail(null);
+        setProvisionedUsername(null);
         setProvisionedPassword(null);
         setStep("success");
         router.refresh();
         return;
       }
 
-      formData.set("password", password);
+      const temporaryPassword = generateTempPassword();
+      formData.set("createMode", "username");
+      formData.set("username", username.trim());
+      formData.set("password", temporaryPassword);
 
       const result = await createTeamMemberAccountAction(
         { error: null, success: false },
@@ -283,8 +302,8 @@ export function TeamAccessPilotAddMemberModal({
       setWarning(result.warning ?? null);
       setSuccessMessage(result.message ?? null);
       setInviteUrl(null);
-      setProvisionedEmail(result.provisionedEmail ?? email.trim());
-      setProvisionedPassword(result.provisionedPassword ?? password);
+      setProvisionedUsername(result.provisionedUsername ?? username.trim());
+      setProvisionedPassword(result.provisionedPassword ?? temporaryPassword);
       setStep("success");
       router.refresh();
     });
@@ -300,24 +319,16 @@ export function TeamAccessPilotAddMemberModal({
   }
 
   async function copySignInDetails() {
-    if (!provisionedEmail || !provisionedPassword) return;
+    if (!provisionedUsername || !provisionedPassword) return;
     const text = [
       "Hey Ralli sign-in",
-      `Email: ${provisionedEmail}`,
-      `Password: ${provisionedPassword}`,
+      `Username: ${provisionedUsername}`,
+      `Temporary password: ${provisionedPassword}`,
     ].join("\n");
     try {
       await copyToClipboard(text);
     } catch {
       setError("Could not copy sign-in details.");
-    }
-  }
-
-  async function copyPasswordOnly() {
-    try {
-      await copyToClipboard(password);
-    } catch {
-      setError("Could not copy password.");
     }
   }
 
@@ -365,7 +376,8 @@ export function TeamAccessPilotAddMemberModal({
           <div className="min-w-0 flex-1">
             <p className="text-lg font-bold text-[#201b17]">Create login</p>
             <p className="mt-1 text-sm font-medium text-[#737373]">
-              Set up email-and-password access now. Share the credentials yourself.
+              Create a username and temporary password they can use today — no
+              email needed.
             </p>
             {!canProvisionAccounts ? (
               <p className="mt-2 text-sm font-medium text-amber-900">
@@ -379,18 +391,22 @@ export function TeamAccessPilotAddMemberModal({
           ) : null}
         </button>
 
-        <p className="rounded-2xl bg-[#f5f2eb]/80 px-4 py-3 text-sm font-medium text-[#737373]">
-          Already on Hey Ralli in another organization? Invite the same email —
-          they keep one login and can switch organizations from the header.
-        </p>
+          {method === "invite" ? (
+            <p className="rounded-2xl bg-[#f5f2eb]/80 px-4 py-3 text-sm font-medium text-[#737373]">
+              Already on Hey Ralli in another organization? Invite the same email —
+              they keep one login and can switch organizations from the header.
+            </p>
+          ) : (
+            <p className="rounded-2xl bg-[#f5f2eb]/80 px-4 py-3 text-sm font-medium text-[#737373]">
+              Create login is for people without an email on file. They sign in
+              with a username and temporary password you share with them.
+            </p>
+          )}
       </div>
     );
   }
 
   function renderPersonStep() {
-    const emailLabel =
-      method === "create" ? "Email / login" : "Email address";
-
     return (
       <div className="space-y-5">
         <div className="space-y-2">
@@ -405,30 +421,27 @@ export function TeamAccessPilotAddMemberModal({
             placeholder="Jamie Smith"
             className={pilotInput}
             autoComplete="name"
+            required
           />
         </div>
 
-        <div className="space-y-2">
-          <label className={pilotLabel} htmlFor="add-member-email">
-            {emailLabel}
-          </label>
-          <input
-            id="add-member-email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="name@email.com"
-            className={pilotInput}
-            required
-            autoComplete="email"
-          />
-          {method === "create" ? (
-            <p className="px-1 text-xs font-medium text-[#737373]">
-              Hey Ralli signs in with email. Username-only accounts are not
-              supported yet.
-            </p>
-          ) : null}
-        </div>
+        {method === "invite" ? (
+          <div className="space-y-2">
+            <label className={pilotLabel} htmlFor="add-member-email">
+              Email address
+            </label>
+            <input
+              id="add-member-email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="name@email.com"
+              className={pilotInput}
+              required
+              autoComplete="email"
+            />
+          </div>
+        ) : null}
 
         <div className="space-y-2">
           <label className={pilotLabel} htmlFor="add-member-pto-title">
@@ -460,20 +473,22 @@ export function TeamAccessPilotAddMemberModal({
           )}
         </div>
 
-        <div className="space-y-2">
-          <label className={pilotLabel} htmlFor="add-member-phone">
-            Phone (optional)
-          </label>
-          <input
-            id="add-member-phone"
-            type="tel"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            placeholder="(555) 555-5555"
-            className={pilotInput}
-            autoComplete="tel"
-          />
-        </div>
+        {method === "invite" ? (
+          <div className="space-y-2">
+            <label className={pilotLabel} htmlFor="add-member-phone">
+              Phone (optional)
+            </label>
+            <input
+              id="add-member-phone"
+              type="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="(555) 555-5555"
+              className={pilotInput}
+              autoComplete="tel"
+            />
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -481,64 +496,25 @@ export function TeamAccessPilotAddMemberModal({
   function renderLoginStep() {
     return (
       <div className="space-y-5">
-        <div className="rounded-2xl border border-[#e5e1d8] bg-[#f5f2eb]/50 px-5 py-4">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#737373]">
-            Login email
-          </p>
-          <p className="mt-1 text-base font-bold text-[#201b17]">
-            {email.trim() || "—"}
-          </p>
-        </div>
-
         <div className="space-y-2">
-          <label className={pilotLabel} htmlFor="add-member-password">
-            Temporary password
+          <label className={pilotLabel} htmlFor="add-member-username">
+            Username
           </label>
-          <div className="flex gap-2">
-            <input
-              id="add-member-password"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className={`${pilotInput} min-w-0 flex-1 font-mono text-sm`}
-              minLength={8}
-              required
-            />
-            <button
-              type="button"
-              className="grid h-[3.25rem] w-12 shrink-0 place-items-center rounded-2xl border-2 border-[#e5e1d8] bg-white text-[#737373] hover:bg-[#f5f2eb] hover:text-[#201b17]"
-              onClick={() => setShowPassword((value) => !value)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          </div>
+          <input
+            id="add-member-username"
+            type="text"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            placeholder="jamie.smith"
+            className={`${pilotInput} font-mono text-sm`}
+            autoCapitalize="none"
+            autoComplete="username"
+            spellCheck={false}
+            required
+          />
           <p className="px-1 text-xs font-medium text-[#737373]">
-            At least 8 characters. They can change it after signing in.
+            Generated from their name; it must be unique.
           </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-2xl border border-[#e5e1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#201b17] hover:bg-[#f5f2eb]"
-            onClick={() => void copyPasswordOnly()}
-          >
-            <Copy className="h-3.5 w-3.5" />
-            Copy password
-          </button>
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-2xl border border-[#e5e1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#201b17] hover:bg-[#f5f2eb]"
-            onClick={() => setPassword(generateTempPassword())}
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Generate another
-          </button>
         </div>
       </div>
     );
@@ -643,7 +619,7 @@ export function TeamAccessPilotAddMemberModal({
       );
     }
 
-    if (provisionedEmail && provisionedPassword) {
+    if (provisionedUsername && provisionedPassword) {
       return (
         <div className="space-y-4">
           {successMessage ? (
@@ -655,14 +631,17 @@ export function TeamAccessPilotAddMemberModal({
             </p>
           ) : null}
           <p className="text-sm font-medium text-[#737373]">
-            Share these credentials. They sign in with email and password.
+            They&apos;ll be asked to create a new password the first time they
+            sign in.
           </p>
           <dl className="space-y-3 rounded-2xl bg-[#f5f2eb] px-5 py-4 text-sm">
             <div>
               <dt className="text-xs font-bold uppercase tracking-widest text-[#737373]">
-                Email / login
+                Username
               </dt>
-              <dd className="mt-1 font-bold text-[#201b17]">{provisionedEmail}</dd>
+              <dd className="mt-1 font-mono font-bold text-[#201b17]">
+                {provisionedUsername}
+              </dd>
             </div>
             <div>
               <dt className="text-xs font-bold uppercase tracking-widest text-[#737373]">
@@ -679,7 +658,7 @@ export function TeamAccessPilotAddMemberModal({
             onClick={() => void copySignInDetails()}
           >
             <Copy className="h-4 w-4" />
-            Copy sign-in details
+            Copy login details
           </button>
         </div>
       );
@@ -710,7 +689,15 @@ export function TeamAccessPilotAddMemberModal({
   }
 
   const nextLabel =
-    step === "events" ? (isPending ? "Adding…" : "Add member") : "Next";
+    step === "events"
+      ? isPending
+        ? method === "invite"
+          ? "Sending…"
+          : "Creating…"
+        : method === "invite"
+          ? "Send invite"
+          : "Create login"
+      : "Next";
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
