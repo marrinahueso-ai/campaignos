@@ -15,6 +15,7 @@ describe("dashboard ease UI contracts", () => {
   const weather = readSrc("../../../components/today/widgets/WeatherWidget.tsx");
   const catalog = readSrc("../dashboard-widgets.ts");
   const todayData = readSrc("../build-today-data.ts");
+  const todayQueries = readSrc("../queries.ts");
 
   it("routes authenticated home through DashboardOverview + TodayHero", () => {
     assert.match(page, /DashboardOverview/);
@@ -34,6 +35,14 @@ describe("dashboard ease UI contracts", () => {
     assert.match(hero, /getTimeOfDayGreeting/);
     assert.match(hero, /font-display text-4xl/);
     assert.doesNotMatch(hero, /\{attentionCount\}/);
+  });
+
+  it("prefers edit-profile membership display name for the greeting", () => {
+    assert.match(
+      todayQueries,
+      /membership\?\.user\.displayName\?\.trim\(\)\s*\|\|/,
+    );
+    assert.match(todayQueries, /authUser\?\.displayName\?\.trim\(\)/);
   });
 
   it("keeps Add / Edit layout controls without a dense section title", () => {

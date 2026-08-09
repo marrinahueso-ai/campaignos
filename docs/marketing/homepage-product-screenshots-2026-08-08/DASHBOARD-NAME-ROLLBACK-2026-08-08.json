@@ -1,0 +1,222 @@
+{
+  "createdAt": "2026-08-09T03:25:46.375Z",
+  "purpose": "TEMPORARY marketing dashboard greeting / display name",
+  "userId": "222cf7a8-7ed5-42bf-9093-ef8e430f0400",
+  "email": "marrina@huesoinvestments.com",
+  "demoName": "Sarah Walker",
+  "originals": {
+    "auth_user_metadata": {
+      "full_name": "Marrina Hueso",
+      "name": "Marrina Hueso",
+      "display_name": "Sarah Walker",
+      "first_name": null,
+      "last_name": null,
+      "nickname": "Sarah Walker"
+    },
+    "organization_users": [
+      {
+        "id": "54ffa747-a730-4d02-af57-67125142f2e9",
+        "display_name": "Sarah Walker",
+        "email": "marrina@huesoinvestments.com"
+      }
+    ],
+    "organization_members": [
+      {
+        "id": "ddd6b554-5050-4809-8a30-5d863c63f37a",
+        "name": "Marrina Hueso",
+        "email": "marrina@huesoinvestments.com",
+        "organization_id": "0bafe608-072c-4abb-9f9e-bb08c1f2a2d3"
+      },
+      {
+        "id": "fa6f4e8e-a6bd-4e4b-940c-764b2964f6c0",
+        "name": "Sarah Walker",
+        "email": "marrina@huesoinvestments.com",
+        "organization_id": "d88b2f96-b924-4bd5-b6e2-40ad8ee84592"
+      }
+    ]
+  },
+  "note": "Dashboard greeting uses auth JWT user_metadata (getClaims), not organization_users alone. Google login can overwrite metadata with the Google profile name. After this patch, refresh session via Settings → Account → Save (or hard refresh after Account save) without Google re-consent if possible.",
+  "appliedAt": "2026-08-09T03:25:56.319Z",
+  "applied": {
+    "auth_user_metadata": {
+      "full_name": "Sarah Walker",
+      "name": "Sarah Walker",
+      "display_name": "Sarah Walker",
+      "first_name": "Sarah",
+      "last_name": "Walker",
+      "nickname": "Sarah Walker"
+    },
+    "rootCause": "Greeting uses resolveAuthUserDisplayName which prefers user_metadata.full_name then name before display_name. Google login set full_name/name to Marrina Hueso while display_name stayed Sarah Walker.",
+    "sessionNote": "Browser JWT may still embed old claims until session refresh. Open Settings → Account → Save on display name, or soft-reload after updateUser, without a full Google OAuth re-login if possible.",
+    "sessionRefreshedAt": "2026-08-09T03:28:30.000Z",
+    "sessionRefreshMethod": "Client PUT /auth/v1/user + refresh_token grant; wrote updated base64-chunked sb-*-auth-token cookies. After refresh, dashboard greeting showed Good evening, Sarah."
+  },
+  "rolledBackAt": "2026-08-09T03:32:21.025Z",
+  "rollbackResult": {
+    "mode": "remove_all_sarah_dashboard_identity",
+    "auth_user_metadata": {
+      "full_name": "Marrina Hueso",
+      "name": "Marrina Hueso",
+      "display_name": "Marrina Hueso",
+      "first_name": null,
+      "last_name": null,
+      "nickname": "Marrina Hueso"
+    },
+    "organization_users": [
+      {
+        "id": "54ffa747-a730-4d02-af57-67125142f2e9",
+        "organization_id": "d88b2f96-b924-4bd5-b6e2-40ad8ee84592",
+        "user_id": "222cf7a8-7ed5-42bf-9093-ef8e430f0400",
+        "email": "marrina@huesoinvestments.com",
+        "organization_role_id": "291265da-310c-41e6-8ed8-bd386d3bdc5c",
+        "campaign_role": "admin",
+        "status": "active",
+        "invite_token": null,
+        "invited_by_user_id": null,
+        "invited_at": "2026-07-17T16:50:31.599656+00:00",
+        "joined_at": "2026-07-17T21:45:27.283+00:00",
+        "created_at": "2026-06-30T20:03:36.007529+00:00",
+        "display_name": "Marrina Hueso",
+        "committee_id": null,
+        "invite_message": null,
+        "organization_member_id": null,
+        "access_template_id": "admin",
+        "invite_expires_at": null,
+        "dashboard_layout": {
+          "main": [
+            "volunteers",
+            "up_next",
+            "waiting_me",
+            "posts_week",
+            "event_coverage"
+          ],
+          "rail": [
+            "weather",
+            "calendar",
+            "this_week"
+          ],
+          "colors": {
+            "volunteers": "#263e0f"
+          },
+          "version": 1
+        },
+        "events_home_layout": {
+          "order": [
+            "needs_setup",
+            "needs_follow_up",
+            "next_60_days",
+            "ready_to_run",
+            "done"
+          ],
+          "colors": {
+            "done": "#263e0f",
+            "needs_setup": "#263e0f",
+            "next_60_days": "#263e0f",
+            "ready_to_run": "#263e0f",
+            "needs_follow_up": "#cc9c48"
+          },
+          "version": 1
+        },
+        "volunteers_master_layout": {
+          "order": [
+            "total_volunteers",
+            "upcoming",
+            "fill_rate",
+            "underfilled"
+          ],
+          "colors": {
+            "upcoming": "#cc9c48",
+            "fill_rate": "#cc9c48",
+            "underfilled": "#cc9c48",
+            "total_volunteers": "#263e0f"
+          },
+          "version": 1
+        },
+        "approvals_layout": {
+          "order": [
+            "assigned_to_me",
+            "changes_requested",
+            "in_queue",
+            "scheduled",
+            "published"
+          ],
+          "colors": {
+            "in_queue": "#cc9c48",
+            "published": "#cc9c48",
+            "scheduled": "#cc9c48",
+            "assigned_to_me": "#263e0f",
+            "changes_requested": "#d06650"
+          },
+          "version": 1
+        },
+        "files_layout": {
+          "order": [
+            "all",
+            "08ddc3de-3b45-46f1-8503-f40e0d6270d2",
+            "dbe5a372-07e2-461e-b1da-6930e1400ae6",
+            "723f85ce-e44f-43f6-97b5-723aa33ba7f8",
+            "46fe062e-0e3c-4736-8109-2cdc1d44f08c",
+            "2366807f-94d3-439d-8f5a-08e8902cff49"
+          ],
+          "colors": {
+            "all": "#263e0f",
+            "08ddc3de-3b45-46f1-8503-f40e0d6270d2": "#cc9c48",
+            "723f85ce-e44f-43f6-97b5-723aa33ba7f8": "#cc9c48",
+            "dbe5a372-07e2-461e-b1da-6930e1400ae6": "#cc9c48"
+          },
+          "version": 1
+        },
+        "insights_layout": {
+          "order": [
+            "views",
+            "reach",
+            "engagement",
+            "likes",
+            "comments"
+          ],
+          "colors": {
+            "likes": "#18243b",
+            "reach": "#18243b",
+            "views": "#263e0f",
+            "comments": "#18243b",
+            "engagement": "#18243b"
+          },
+          "version": 1
+        },
+        "calendar_layout": {
+          "colors": {
+            "events": "#6b8171",
+            "published": "#263e0f",
+            "scheduled": "#d9eb37"
+          },
+          "version": 1
+        },
+        "notification_preferences": {}
+      }
+    ],
+    "organization_members": [
+      {
+        "id": "ddd6b554-5050-4809-8a30-5d863c63f37a",
+        "organization_id": "0bafe608-072c-4abb-9f9e-bb08c1f2a2d3",
+        "name": "Marrina Hueso",
+        "email": "marrina@huesoinvestments.com",
+        "organization_role_id": "c8a1a93f-664e-44ba-ba16-1ecaf9c10905",
+        "active": true,
+        "created_at": "2026-07-15T21:06:27.631672+00:00",
+        "campaign_role": null,
+        "phone": null
+      },
+      {
+        "id": "fa6f4e8e-a6bd-4e4b-940c-764b2964f6c0",
+        "organization_id": "d88b2f96-b924-4bd5-b6e2-40ad8ee84592",
+        "name": "Marrina Hueso",
+        "email": "marrina@huesoinvestments.com",
+        "organization_role_id": "8d5ed51e-f0c3-4b32-8750-e49f1a44ba91",
+        "active": true,
+        "created_at": "2026-07-15T21:06:27.631672+00:00",
+        "campaign_role": "admin",
+        "phone": null
+      }
+    ]
+  }
+}

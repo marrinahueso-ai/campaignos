@@ -1,5 +1,6 @@
 import { APPROVER_ROLES } from "@/lib/auth/campaign-roles";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
+import { resolveApprovalAssigneeLabel } from "@/lib/approvals-scheduling/assignee-display-name";
 import { contactNameMatchesEmail } from "@/lib/event-workspace/approval-actor-matching";
 import { getOrganizationWorkspaceDataLean } from "@/lib/organization-workspace/queries";
 import type { OrganizationRole } from "@/types/organization-workspace";
@@ -15,26 +16,17 @@ export type ApprovalAssignee = {
 
 function formatAssigneeDisplayName(
   role: OrganizationRole | undefined,
+  userDisplayName: string | null,
   userEmail: string | null,
   userOrgRoleName: string | null,
 ): string {
-  if (role?.contactName?.trim()) {
-    return role.contactName.trim();
-  }
-
-  if (userEmail) {
-    return userEmail;
-  }
-
-  if (role?.name) {
-    return role.name;
-  }
-
-  if (userOrgRoleName) {
-    return userOrgRoleName;
-  }
-
-  return "Board";
+  return resolveApprovalAssigneeLabel({
+    userDisplayName,
+    userEmail,
+    roleContactName: role?.contactName ?? null,
+    roleName: role?.name ?? null,
+    userOrgRoleName,
+  });
 }
 
 export async function resolveApprovalAssignee(
@@ -87,6 +79,7 @@ export async function resolveApprovalAssignee(
 
   const assigneeDisplayName = formatAssigneeDisplayName(
     role,
+    preferredMember?.displayName ?? null,
     preferredMember?.email ?? null,
     preferredMember?.organizationRoleName ?? null,
   );

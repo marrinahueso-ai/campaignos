@@ -1,4 +1,5 @@
 import { displayDraftContent } from "@/lib/ai/content";
+import { resolveApprovalAssigneeLabel } from "@/lib/approvals-scheduling/assignee-display-name";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { isActorAssignedToApproval } from "@/lib/event-workspace/approval-actor-matching";
 import { dedupePendingApprovalQueueRows } from "@/lib/event-workspace/approval-request-dedupe";
@@ -48,28 +49,19 @@ type ApprovalQueueRow = ApprovalRequestRow & {
   } | null;
   assigned_user: {
     email: string | null;
+    display_name: string | null;
     organization_roles: { name: string | null } | null;
   } | null;
 };
 
 function resolveAssigneeDisplayName(row: ApprovalQueueRow): string {
-  if (row.assigned_role?.contact_name?.trim()) {
-    return row.assigned_role.contact_name.trim();
-  }
-
-  if (row.assigned_user?.email) {
-    return row.assigned_user.email;
-  }
-
-  if (row.assigned_role?.name) {
-    return row.assigned_role.name;
-  }
-
-  if (row.assigned_user?.organization_roles?.name) {
-    return row.assigned_user.organization_roles.name;
-  }
-
-  return "Board";
+  return resolveApprovalAssigneeLabel({
+    userDisplayName: row.assigned_user?.display_name ?? null,
+    userEmail: row.assigned_user?.email ?? null,
+    roleContactName: row.assigned_role?.contact_name ?? null,
+    roleName: row.assigned_role?.name ?? null,
+    userOrgRoleName: row.assigned_user?.organization_roles?.name ?? null,
+  });
 }
 
 function isAssignedToActor(
@@ -152,6 +144,7 @@ async function fetchApprovalQueueRows(eventId?: string): Promise<ApprovalQueueRo
       ),
       assigned_user:organization_users!approval_requests_assigned_user_id_fkey (
         email,
+        display_name,
         organization_roles ( name )
       )
     `,

@@ -62,6 +62,7 @@ export const WORKSPACE_APPROVAL_REQUEST_WITH_RELATIONS_SELECT = `
   ),
   assigned_user:organization_users!approval_requests_assigned_user_id_fkey (
     email,
+    display_name,
     organization_roles ( name )
   )
 `;

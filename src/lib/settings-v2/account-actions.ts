@@ -81,6 +81,7 @@ export async function updateAccountProfileAction(
   }
 
   revalidatePath("/settings/account");
+  revalidatePath("/dashboard");
   return { error: null, success: true };
 }
 

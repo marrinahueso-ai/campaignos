@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 8, 2026 — Events selected-event workspace release checkpoint
+**Last updated:** August 9, 2026 — Dashboard greeting uses edit-profile display name
 
 ---
 
@@ -72,6 +72,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Dashboard (Today)
 - Dashboard header account label shows **display name** when available (membership / composed first+last), with **email fallback** — **shipped**
+- Dashboard greeting (**Good morning/afternoon/evening, {name}**) uses Account / edit-profile **display name** (membership), not stale auth JWT / Google full_name — **shipped**
 - **Ease redesign mockup** — calm first viewport (greeting + Create with AI / Calendar CTAs + weather chip), quieter View / Edit layout mode, Ease-styled widget cards with soft drag reorder; HTML mockup at `public/dashboard-ease-mockup.html` — **in progress** (do not ship product UI until GO)
 - **Your overview** board: greeting · Add/Edit controls (no section title) · 2-col main (**Up Next** (soonest upcoming event by date — not campaign-strategy priority; action steps stay in Waiting on me), **Attention**, **Waiting on me** (open steps for events that have not happened yet), **Good news**) + right rail (**Weather**, **Calendar**, **This week**) · cream widget cards · per-user `organization_users.dashboard_layout` jsonb — **shipped**
 - Customer-facing Dashboard copy uses org/team language (weather city, event titles — not school-only, workspace, or “Open campaign” jargon); Attention / Tasks-this-week deep links use Tasks Ease `?scope=mine&pulse=week` — **shipped** (Jul 28)
@@ -200,6 +201,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Approvals hub: unused Filters button removed; broad search (events, people, dates, captions, status labels) replaces campaign dropdown filter — **shipped**
 - Approvals customer copy: hub + event Approvals tab + open review + approve/request/retry errors + change-request email use org/Page/team language — **shipped**
 - Approvals **open review** (dimmed pop-out over grayed backdrop): forest-green identity (top strip + sage header wash + **Open review** chip) so it reads as review at a glance; campaign title + post title, Social feed · 1:1 + story · 9:16 (or Flyer print preview), review history, caption/schedule/channels/visibility sidebar; forest **Approve for {date}** / **Request changes** in header — **shipped** (mockup: [`public/approvals-open-view-mockup.html`](../../public/approvals-open-view-mockup.html))
+- Approvals **Assigned to** label uses Account / edit-profile **display name** (not email) when the assignee has a login seat — **shipped**
 - Approvals **Request changes** (approver pop-out): quiet warm hero only (soft gold/amber strip + wash + outline **Change request** chip) so it differs from forest open review without alarm-red; body/tags/Send stay calm cream + forest; **← Back to review** reopens open view — **shipped**
 - Final approve celebration: **Ready to Ralli** headline + brand confetti after successful **Approve & schedule** (Approvals hub + event Approvals tab); **Done** / backdrop dismiss + ~5.5s auto-dismiss with gentle fade; approve persists DB status first then returns (Meta schedule + Resend + Create with AI session sync run in `after()` so celebration is not blocked); follow-up warnings that still arrive with the response wait until after celebration and show as amber; reduced motion shows static headline + check, still dismissable — **shipped** (mockup: [`public/approvals-celebration-motions-mockup.html`](../../public/approvals-celebration-motions-mockup.html))
 - Approvals Ease focus cards: primary forest **Open full view** opens the dimmed open-review pop-out (approve / request changes live there) — **shipped**

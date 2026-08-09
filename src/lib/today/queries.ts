@@ -63,7 +63,12 @@ async function getTodayGreetingName(
   );
 
   const currentUserEmail = authUser?.email ?? membership?.user.email ?? null;
-  const currentUserDisplayName = authUser?.displayName ?? null;
+  // Account / edit-profile name (organization_users.display_name) wins over
+  // auth JWT metadata, which can lag Google login full_name / stale claims.
+  const currentUserDisplayName =
+    membership?.user.displayName?.trim() ||
+    authUser?.displayName?.trim() ||
+    null;
 
   return resolveTodayGreetingName({
     currentUser: currentUserEmail

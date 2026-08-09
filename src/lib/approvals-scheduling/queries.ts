@@ -312,7 +312,7 @@ async function loadAssigneeLookups(
     userIds.length > 0
       ? supabase
           .from("organization_users")
-          .select("id, email, organization_roles ( name )")
+          .select("id, email, display_name, organization_roles ( name )")
           .in("id", userIds)
       : Promise.resolve({ data: [] as Array<Record<string, unknown>> }),
     roleIds.length > 0
@@ -327,6 +327,7 @@ async function loadAssigneeLookups(
     const data = row as {
       id: string;
       email?: string | null;
+      display_name?: string | null;
       organization_roles?:
         | { name: string | null }
         | Array<{ name: string | null }>
@@ -336,8 +337,9 @@ async function loadAssigneeLookups(
     const roleName = Array.isArray(orgRole)
       ? orgRole[0]?.name
       : orgRole?.name;
+    const displayName = data.display_name?.trim();
     byUserId.set(data.id, {
-      name: data.email ?? "Approver",
+      name: displayName || data.email || "Approver",
       role: roleName ?? "Committee Chair",
     });
   }

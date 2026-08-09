@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { displayDraftContent } from "@/lib/ai/content";
+import { resolveApprovalAssigneeLabel } from "@/lib/approvals-scheduling/assignee-display-name";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 import { getHubCommunicationItems } from "@/lib/event-workspace/communication-items";
@@ -34,6 +35,7 @@ type ApprovalRequestWithRelations = ApprovalRequestRow & {
   assigned_role: { name: string | null; contact_name: string | null } | null;
   assigned_user: {
     email: string | null;
+    display_name: string | null;
     organization_roles: { name: string | null } | null;
   } | null;
 };
@@ -42,27 +44,23 @@ function resolveAssigneeDisplayName(
   row: ApprovalRequestWithRelations,
   fallbackName: string | null,
 ): string | null {
-  if (row.assigned_role?.contact_name?.trim()) {
-    return row.assigned_role.contact_name.trim();
+  const hasAssignee =
+    Boolean(row.assigned_organization_role_id) ||
+    Boolean(row.assigned_user_id) ||
+    Boolean(row.assigned_user) ||
+    Boolean(row.assigned_role);
+
+  if (!hasAssignee) {
+    return fallbackName;
   }
 
-  if (row.assigned_user?.email) {
-    return row.assigned_user.email;
-  }
-
-  if (row.assigned_role?.name) {
-    return row.assigned_role.name;
-  }
-
-  if (row.assigned_user?.organization_roles?.name) {
-    return row.assigned_user.organization_roles.name;
-  }
-
-  if (row.assigned_organization_role_id || row.assigned_user_id) {
-    return "Board";
-  }
-
-  return fallbackName;
+  return resolveApprovalAssigneeLabel({
+    userDisplayName: row.assigned_user?.display_name ?? null,
+    userEmail: row.assigned_user?.email ?? null,
+    roleContactName: row.assigned_role?.contact_name ?? null,
+    roleName: row.assigned_role?.name ?? null,
+    userOrgRoleName: row.assigned_user?.organization_roles?.name ?? null,
+  });
 }
 
 async function mapApprovalRequestRows(
