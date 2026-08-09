@@ -16,14 +16,18 @@ describe("event detail ease UI contracts", () => {
 
   it("uses workspace overview default; Planning/Community are hub cards not a top rail", () => {
     assert.match(shell, /EventWorkspaceOverviewPanel/);
-    assert.match(shell, /EventWorkspaceContextHeader/);
     assert.match(shell, /EventPlanningShell/);
     assert.match(shell, /EventCommunityPanel/);
     assert.match(shell, /responsibilities: "Team"/);
     assert.match(shell, /PLANNING_TABS/);
     assert.match(shell, /COMMUNITY_TABS/);
     assert.match(shell, /return "overview"/);
-    assert.match(shell, /onBackToEvent/);
+    // Interior + overview escape to Events home — not event overview / ID page.
+    assert.match(shell, /event-workspace-back-to-events/);
+    assert.match(shell, /Back to Events/);
+    assert.match(shell, /href="\/events"/);
+    assert.doesNotMatch(shell, /EventWorkspaceContextHeader/);
+    assert.doesNotMatch(shell, /onBackToEvent/);
     assert.doesNotMatch(shell, /TOP_LEVEL_NAV/);
     assert.doesNotMatch(shell, /event-detail-tab-group-planning/);
     assert.doesNotMatch(shell, /EventDetailEaseHero/);
@@ -133,7 +137,7 @@ describe("event detail ease UI contracts", () => {
     assert.match(planningHub, /const approvalRequests = resolvedWorkspace\.approvalRequests \?\? \[\]/);
   });
 
-  it("ships overview landing + Back to [Event] interior chrome (no event-wide rail)", () => {
+  it("ships overview landing + Back to Events chrome (exits event ID page)", () => {
     const overview = readSrc(
       "../../../components/events-phase3/EventWorkspaceOverviewPanel.tsx",
     );
@@ -152,16 +156,15 @@ describe("event detail ease UI contracts", () => {
     assert.match(overview, /aspect-\[3\/4\]/);
     assert.match(overview, /Staffing Status/);
     assert.match(overview, /Lead Coordinator/);
+    // Legacy interior header kept for reuse; shell no longer mounts it.
     assert.match(header, /Back to \{eventTitle\}/);
     assert.match(header, /onBackToEvent/);
     assert.match(header, /event-workspace-back-to-event/);
     assert.doesNotMatch(header, /Generate Event Plan/);
     assert.doesNotMatch(header, /Back to Workspace/);
-    assert.match(shell, /onBackToEvent/);
-    // Planning exits the event (same as overview), not back to overview.
-    assert.match(shell, /tab === "overview" \|\| isPlanning/);
     assert.match(shell, /event-workspace-back-to-events/);
     assert.match(shell, /Back to Events/);
+    assert.doesNotMatch(shell, /onBackToEvent/);
     assert.match(notes, /Shared Notes/);
     assert.doesNotMatch(notes, /Recent Scratchpads/);
     assert.match(notes, /New note/);

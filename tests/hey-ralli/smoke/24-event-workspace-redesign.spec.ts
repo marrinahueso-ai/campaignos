@@ -62,15 +62,15 @@ test.describe("Event Workspace redesign paths", () => {
 
     await main.getByRole("heading", { name: /^approvals$/i }).click();
     await expect(page).toHaveURL(/[?&]tab=approvals/);
-    await expect(page.getByTestId("event-workspace-back-to-event")).toBeVisible();
+    await expect(page.getByTestId("event-workspace-back-to-events")).toBeVisible();
+    await expect(page.getByTestId("event-workspace-back-to-event")).toHaveCount(0);
     await expect(main.getByRole("heading", { name: /^approvals$/i })).toBeVisible({
       timeout: 30_000,
     });
     await expect(page.getByTestId("event-detail-tab-group-planning")).toHaveCount(0);
 
-    await page.getByTestId("event-workspace-back-to-event").click();
-    await expect(page).not.toHaveURL(/[?&]tab=/);
-    await expect(main.getByText(/^event workspace$/i).first()).toBeVisible();
+    await page.getByTestId("event-workspace-back-to-events").click();
+    await expect(page).toHaveURL(/\/events\/?(\?|$)/);
   });
 
   test("Planning shell: Tasks / Notes / Files deep links + sub-tabs", async () => {
@@ -111,7 +111,7 @@ test.describe("Event Workspace redesign paths", () => {
   test("Approvals card workspace loads (content or empty)", async () => {
     const { main } = await openEvent("?tab=approvals");
 
-    await expect(page.getByTestId("event-workspace-back-to-event")).toBeVisible();
+    await expect(page.getByTestId("event-workspace-back-to-events")).toBeVisible();
     await expect(main.getByRole("heading", { name: /^approvals$/i })).toBeVisible({
       timeout: 30_000,
     });
@@ -129,7 +129,7 @@ test.describe("Event Workspace redesign paths", () => {
   test("Volunteers workspace loads (connected or empty connect state)", async () => {
     const { main } = await openEvent("?tab=volunteers");
 
-    await expect(page.getByTestId("event-workspace-back-to-event")).toBeVisible();
+    await expect(page.getByTestId("event-workspace-back-to-events")).toBeVisible();
 
     const connected = main.getByRole("heading", { name: /^volunteers$/i });
     const empty = main.getByText(/no signup connected|connect signupgenius/i);
@@ -150,7 +150,7 @@ test.describe("Event Workspace redesign paths", () => {
   test("Community: Team + Vendors deep links and sections", async () => {
     const { main } = await openEvent("?tab=responsibilities");
 
-    await expect(page.getByTestId("event-workspace-back-to-event")).toBeVisible();
+    await expect(page.getByTestId("event-workspace-back-to-events")).toBeVisible();
     await expect(main.getByRole("heading", { name: /^community$/i })).toBeVisible({
       timeout: 30_000,
     });
@@ -161,7 +161,7 @@ test.describe("Event Workspace redesign paths", () => {
 
   test("Insights and Activity load inside Event shell", async () => {
     const { main } = await openEvent("?tab=insights");
-    await expect(page.getByTestId("event-workspace-back-to-event")).toBeVisible();
+    await expect(page.getByTestId("event-workspace-back-to-events")).toBeVisible();
     await expect(
       page
         .getByTestId("event-insights-panel")
@@ -171,7 +171,7 @@ test.describe("Event Workspace redesign paths", () => {
     ).toBeVisible({ timeout: 45_000 });
 
     await openEvent("?tab=activity");
-    await expect(page.getByTestId("event-workspace-back-to-event")).toBeVisible();
+    await expect(page.getByTestId("event-workspace-back-to-events")).toBeVisible();
     await expect(mainContent(page)).not.toContainText("Internal Server Error");
   });
 

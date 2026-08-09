@@ -20,7 +20,6 @@ import {
   EventDetailTabInvalidationProvider,
 } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { EventPlanningShell } from "@/components/events-phase3/EventPlanningShell";
-import { EventWorkspaceContextHeader } from "@/components/events-phase3/EventWorkspaceContextHeader";
 import { EventWorkspaceOverviewPanel } from "@/components/events-phase3/EventWorkspaceOverviewPanel";
 import { ew } from "@/components/events-phase3/event-workspace-tokens";
 import { OnboardingYoureSetToast } from "@/components/onboarding/OnboardingYoureSetToast";
@@ -756,25 +755,18 @@ export function EventDetailShell({
     <EventDetailTabInvalidationProvider value={invalidationValue}>
     <div className="studio-page relative space-y-6 pb-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {tab === "overview" || isPlanning ? (
-          <Link
-            href="/events"
-            className={cn(
-              "inline-flex items-center gap-1.5 text-sm font-medium",
-              ew.inksoft,
-              "hover:text-[#1c352d]",
-            )}
-            data-testid="event-workspace-back-to-events"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Events
-          </Link>
-        ) : (
-          <EventWorkspaceContextHeader
-            eventTitle={event.title}
-            onBackToEvent={() => selectTab("overview")}
-          />
-        )}
+        <Link
+          href="/events"
+          className={cn(
+            "inline-flex max-w-full items-center gap-1.5 text-sm font-medium",
+            ew.inksoft,
+            "hover:text-[#1c352d]",
+          )}
+          data-testid="event-workspace-back-to-events"
+        >
+          <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="truncate">Back to Events</span>
+        </Link>
         {onInviteTeamMember ? (
           <button
             type="button"

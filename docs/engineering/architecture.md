@@ -225,7 +225,7 @@ Legacy dense shells (e.g. old Tasks Main Table, Insights KPI wall) may remain in
 | Not on home | What’s Next (Event ID overview only). Next Best Action (not implemented). |
 | Invite / manage | `manage_people` → `InviteEventMemberDrawer`. Home `(...)` menu uses **event** noun (archive/delete/edit). |
 
-**Event ID (`/events/[id]`):** still required for deep tabs. Overview default (`EventWorkspaceOverviewPanel` detail variant) includes What’s Next; condensed context header + Back to [Event] on interior tabs. Phase 3 shell is default; older planning-hub UI is fallback / partial.
+**Event ID (`/events/[id]`):** still required for deep tabs. Overview default (`EventWorkspaceOverviewPanel` detail variant) includes What’s Next; interior tabs use **Back to Events** → `/events` (Events home), not back to this event’s overview. Phase 3 shell is default; older planning-hub UI is fallback / partial.
 
 Playbooks still seed milestone timelines and health; campaign creative generation is centered on **Create with AI** (`/create-with-ai` chooser → Social / composers, or event campaign builder).
 
