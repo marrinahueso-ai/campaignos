@@ -414,8 +414,8 @@ export function EventWorkspaceOverviewPanel({
     >
       {isHome ? (
         <section className={cn(ewCard, "relative overflow-hidden")}>
-          <div className="relative flex flex-col lg:flex-row lg:items-stretch">
-            <div className="relative min-h-[240px] w-full overflow-hidden bg-[#f4f0ea] lg:w-3/5 lg:min-h-[420px]">
+          <div className="relative flex flex-col lg:h-[380px] lg:flex-row lg:items-stretch">
+            <div className="relative min-h-[180px] w-full overflow-hidden bg-[#f4f0ea] lg:h-full lg:min-h-0 lg:w-3/5">
               {imageUrl ? (
                 <AppImage
                   src={imageUrl}
@@ -427,14 +427,14 @@ export function EventWorkspaceOverviewPanel({
                   priority
                 />
               ) : (
-                <div className="flex h-full min-h-[240px] w-full items-center justify-center bg-gradient-to-br from-[#1c352d] via-[#5a7568] to-[#c5a880] px-6 text-center text-sm font-medium text-white/90 lg:min-h-[420px]">
+                <div className="flex h-full min-h-[180px] w-full items-center justify-center bg-gradient-to-br from-[#1c352d] via-[#5a7568] to-[#c5a880] px-6 text-center text-sm font-medium text-white/90 lg:min-h-0">
                   Official artwork appears here after Create with AI
                 </div>
               )}
             </div>
 
-            <div className="flex w-full flex-col justify-between gap-10 p-8 lg:w-2/5 lg:p-12">
-              <div className="space-y-6">
+            <div className="flex w-full flex-col justify-between gap-5 p-5 lg:w-2/5 lg:px-7 lg:py-6">
+              <div className="min-h-0 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p
@@ -447,13 +447,13 @@ export function EventWorkspaceOverviewPanel({
                     </p>
                     <h2
                       className={cn(
-                        "mt-2 font-display text-3xl leading-tight md:text-4xl",
+                        "mt-1.5 font-display text-3xl leading-tight md:text-[2.15rem]",
                         ew.ink,
                       )}
                     >
                       {event.title}
                     </h2>
-                    <p className={cn("mt-2 text-sm italic", ew.inksoft)}>
+                    <p className={cn("mt-1.5 text-sm italic", ew.inksoft)}>
                       {[typeLabel, formatEventDate(event.date)]
                         .filter(Boolean)
                         .join(" · ")}
@@ -474,12 +474,17 @@ export function EventWorkspaceOverviewPanel({
                 </div>
 
                 {event.description?.trim() ? (
-                  <p className={cn("text-sm leading-relaxed", ew.inksoft)}>
+                  <p
+                    className={cn(
+                      "line-clamp-2 text-sm leading-snug",
+                      ew.inksoft,
+                    )}
+                  >
                     {event.description.trim()}
                   </p>
                 ) : null}
 
-                <div className="grid grid-cols-2 gap-8 pt-2">
+                <div className="grid grid-cols-2 gap-5 pt-0.5">
                   <div>
                     <p
                       className={cn(
@@ -489,7 +494,7 @@ export function EventWorkspaceOverviewPanel({
                     >
                       Time
                     </p>
-                    <p className={cn("mt-1 text-sm font-semibold", ew.ink)}>
+                    <p className={cn("mt-0.5 text-sm font-semibold", ew.ink)}>
                       {timeLabel || "TBD"}
                     </p>
                   </div>
@@ -502,17 +507,17 @@ export function EventWorkspaceOverviewPanel({
                     >
                       Location
                     </p>
-                    <p className={cn("mt-1 text-sm font-semibold", ew.ink)}>
+                    <p className={cn("mt-0.5 text-sm font-semibold", ew.ink)}>
                       {event.location?.trim() || "TBD"}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4 border-t border-[#e6dfd5] pt-8">
+              <div className="flex shrink-0 flex-col gap-3 border-t border-[#e6dfd5] pt-4">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#e6dfd5] bg-[#f4f0ea] text-xs font-semibold text-[#1c352d]">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e6dfd5] bg-[#f4f0ea] text-xs font-semibold text-[#1c352d]">
                       {leadInitials(lead?.displayName)}
                     </div>
                     <div className="min-w-0">
@@ -552,7 +557,7 @@ export function EventWorkspaceOverviewPanel({
                     clickEvent.preventDefault();
                     window.location.assign(createHref);
                   }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1c352d] px-7 py-4 text-xs font-bold tracking-wide text-white uppercase transition hover:bg-[#5e6b65]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1c352d] px-6 py-3 text-xs font-bold tracking-wide text-white uppercase transition hover:bg-[#5e6b65]"
                 >
                   <Sparkles className="h-4 w-4" aria-hidden />
                   Generate Event Plan
