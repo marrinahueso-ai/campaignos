@@ -1,6 +1,8 @@
+import type { MarketingProductDemoId } from "@/lib/marketing/product-demo-videos";
+
 /**
  * Public Features page (“See Hey Ralli in Action”) — copy + demo registry ids.
- * All stories use Motion Engine demos; copy matches shipped product behavior.
+ * Product Screen Studio demos replace Motion Engine visuals where mapped.
  */
 
 export type FeaturesInActionStoryId =
@@ -13,8 +15,13 @@ export type FeaturesInActionStoryId =
 
 export interface FeaturesInActionStory {
   id: FeaturesInActionStoryId;
-  /** Registry id in MARKETING_DEMO_REGISTRY */
+  /** Registry id in MARKETING_DEMO_REGISTRY (Motion demo fallback) */
   demoId: string;
+  /**
+   * When set, Features renders the Screen Studio product demo instead of the
+   * Motion Engine demo for this story.
+   */
+  productDemoId?: MarketingProductDemoId;
   eyebrow: string;
   heading: string;
   body: string;
@@ -79,6 +86,7 @@ export const FEATURES_IN_ACTION_STORIES: FeaturesInActionStory[] = [
   {
     id: "create-with-ai",
     demoId: "create-ai",
+    productDemoId: "create-with-ai",
     eyebrow: "Create with AI · Social Media",
     heading: "Turn one event into a complete social campaign.",
     body: "From Create with AI, open Social Media and start from the event your team already entered. Hey Ralli drafts coordinated artwork, captions, and communication milestones so the campaign is ready to send for approval — alongside Home Page and Newsletter composers on the same hub.",
@@ -91,6 +99,7 @@ export const FEATURES_IN_ACTION_STORIES: FeaturesInActionStory[] = [
   {
     id: "plan-your-year",
     demoId: "plan-your-year",
+    productDemoId: "calendar",
     eyebrow: "Plan Your Year",
     heading: "See the school year on one calendar.",
     body: "Bring events, Meta post schedules, and deadlines into month, week, and agenda views. Import from Google Calendar, ICS, or a file, review duplicates, then open an event for the next communication.",
@@ -103,6 +112,7 @@ export const FEATURES_IN_ACTION_STORIES: FeaturesInActionStory[] = [
   {
     id: "approvals",
     demoId: "approvals",
+    productDemoId: "approvals",
     eyebrow: "Approvals",
     heading: "Keep reviews moving without chasing people.",
     body: "The Approvals hub shows what is assigned to you, waiting in queue, scheduled, or already published. Approve or request changes while every item stays connected to its event.",
@@ -115,6 +125,7 @@ export const FEATURES_IN_ACTION_STORIES: FeaturesInActionStory[] = [
   {
     id: "volunteer-intelligence",
     demoId: "volunteer-intelligence",
+    productDemoId: "volunteers",
     eyebrow: "Volunteer Intelligence",
     heading: "Know what is filled—and what still needs help.",
     body: "Volunteer Master turns SignUpGenius signup data into fill rate, underfilled roles, and upcoming events—without exposing volunteer personal details on the org view.",

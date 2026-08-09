@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { CreateWithAiModulesSection } from "@/components/marketing/features-in-action/CreateWithAiModulesSection";
 import { MarketingPublicDemo } from "@/components/marketing/features-in-action/MarketingPublicDemo";
 import { ProductStorySection } from "@/components/marketing/features-in-action/ProductStorySection";
+import { MarketingProductDemoVideo } from "@/components/marketing/MarketingProductDemoVideo";
 import { StudioMarketingShell } from "@/components/marketing/StudioMarketingShell";
 import { Button } from "@/components/ui/Button";
 import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path";
@@ -66,7 +67,21 @@ export function StudioFeaturesPage({
           body={story.body}
           benefits={story.benefits}
           reverse={index % 2 === 1}
-          visual={<MarketingPublicDemo demoId={story.demoId} />}
+          visual={
+            story.productDemoId ? (
+              <div className="overflow-hidden rounded-2xl border border-cos-border bg-cos-card p-2 shadow-sm">
+                <div className="overflow-hidden rounded-xl">
+                  <MarketingProductDemoVideo
+                    demoId={story.productDemoId}
+                    aspectClassName="aspect-[1024/665]"
+                    sizes="(max-width: 1024px) 100vw, 560px"
+                  />
+                </div>
+              </div>
+            ) : (
+              <MarketingPublicDemo demoId={story.demoId} />
+            )
+          }
         />
       ))}
 

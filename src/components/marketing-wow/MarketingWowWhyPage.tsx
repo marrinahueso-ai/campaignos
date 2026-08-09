@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   CalendarDays,
@@ -15,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { MarketingProductDemoVideo } from "@/components/marketing/MarketingProductDemoVideo";
 import { MarketingWowFooter } from "@/components/marketing-wow/MarketingWowFooter";
 import { MarketingWowHeader } from "@/components/marketing-wow/MarketingWowHeader";
 import { Button } from "@/components/ui/Button";
@@ -256,13 +256,11 @@ export function MarketingWowWhyPage({
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-14 lg:grid-cols-2 lg:items-center lg:gap-20">
             <div className="order-2 overflow-hidden rounded-[28px] border border-cos-border bg-cos-card p-3 shadow-[0_40px_90px_-25px_rgba(42,38,34,0.22)] lg:order-1">
-              <div className="relative aspect-[1024/665] w-full overflow-hidden rounded-2xl bg-cos-bg">
-                <Image
-                  src="/images/marketing-home/home-screenshot-dashboard.png"
-                  alt="Hey Ralli dashboard showing an event's Up Next card, volunteer status, approvals, posts, and calendar together"
-                  fill
+              <div className="overflow-hidden rounded-2xl">
+                <MarketingProductDemoVideo
+                  demoId="event-planning"
+                  aspectClassName="aspect-[1024/665]"
                   sizes="(max-width: 1024px) 100vw, 600px"
-                  className="object-contain"
                 />
               </div>
             </div>

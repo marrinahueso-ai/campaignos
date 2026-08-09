@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { MarketingProductDemoVideo } from "@/components/marketing/MarketingProductDemoVideo";
 import { MarketingCookieConsent } from "@/components/marketing-wow/MarketingCookieConsent";
 import { MarketingWowFooter } from "@/components/marketing-wow/MarketingWowFooter";
 import { MarketingWowHeader } from "@/components/marketing-wow/MarketingWowHeader";
@@ -79,17 +80,15 @@ export function MarketingWowHome({
           </div>
         </div>
 
-        {/* Dashboard screenshot — real Hey Ralli product UI, no placeholder art. */}
+        {/* Dashboard product demo — poster paints first for LCP; video is passive. */}
         <div className="relative mx-auto mt-20 w-full max-w-6xl px-2 sm:mt-24">
           <div className="relative rounded-[28px] border border-cos-border/60 bg-cos-card p-3 shadow-[0_50px_100px_-25px_rgba(42,38,34,0.25)] sm:p-4">
-            <div className="relative aspect-[1024/665] w-full overflow-hidden rounded-[18px] bg-cos-bg">
-              <Image
-                src="/images/marketing-home/home-screenshot-dashboard.png"
-                alt="Hey Ralli dashboard showing today's schedule, volunteer status, and posts for Lincoln Elementary"
-                fill
+            <div className="overflow-hidden rounded-[18px]">
+              <MarketingProductDemoVideo
+                demoId="dashboard"
                 priority
+                aspectClassName="aspect-[1024/665]"
                 sizes="(max-width: 1024px) 100vw, 1152px"
-                className="object-contain"
               />
             </div>
           </div>
@@ -124,13 +123,11 @@ export function MarketingWowHome({
 
           <div className="mt-12 grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
             <div className="overflow-hidden rounded-[22px] border border-cos-border bg-cos-card p-2 shadow-sm">
-              <div className="relative aspect-[1024/592] w-full overflow-hidden rounded-2xl bg-cos-bg">
-                <Image
-                  src="/images/marketing-home/home-screenshot-create-with-ai.png"
-                  alt="Create with AI campaign editor showing a scheduled post preview and caption"
-                  fill
+              <div className="overflow-hidden rounded-2xl">
+                <MarketingProductDemoVideo
+                  demoId="create-with-ai"
+                  aspectClassName="aspect-[1024/592]"
                   sizes="(max-width: 1024px) 100vw, 600px"
-                  className="object-contain"
                 />
               </div>
             </div>
