@@ -1064,6 +1064,7 @@ export function EventWorkspaceOverviewPanel({
             icon={<ClipboardList className="h-5 w-5" />}
             title="Planning"
             subtitle="Tasks, Notes, & Files"
+            accent="planning"
             meta={
               <span className="rounded bg-[#e6efe9] px-2 py-1 text-xs font-medium text-[#5a7568]">
                 {stats.tasks} Open Task{stats.tasks === 1 ? "" : "s"}
@@ -1075,6 +1076,7 @@ export function EventWorkspaceOverviewPanel({
             icon={<FileStack className="h-5 w-5" />}
             title="Approvals"
             subtitle="Content requiring review"
+            accent="approvals"
             meta={
               <span className="rounded bg-[#f4f0ea] px-2 py-1 text-xs font-medium text-[#c5a880]">
                 {pendingApprovals === 0
@@ -1088,8 +1090,9 @@ export function EventWorkspaceOverviewPanel({
             icon={<Users className="h-5 w-5" />}
             title="Volunteers"
             subtitle="Shifts & Signups"
+            accent="volunteers"
             meta={
-              <span className="rounded bg-[#faf8f5] px-2 py-1 text-xs font-medium text-[#5e6b65]">
+              <span className="rounded bg-[#f0f4f5] px-2 py-1 text-xs font-medium text-[#5a7179]">
                 {staffingConfigured
                   ? `${filled}/${total} Filled`
                   : filled > 0
@@ -1129,7 +1132,7 @@ function CommunityWorkspaceCard({
     <div
       className={cn(
         ewCard,
-        "group flex flex-col gap-6 p-8 text-left transition-all hover:-translate-y-1 hover:shadow-md",
+        "group flex flex-col gap-6 border-t-[3px] border-t-[#a8968e] p-8 text-left transition-all hover:-translate-y-1 hover:border-[#e0d6d0] hover:border-t-[#a8968e] hover:shadow-md",
       )}
     >
       <button
@@ -1139,8 +1142,8 @@ function CommunityWorkspaceCard({
       >
         <div
           className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-full border border-[#e6dfd5] bg-[#faf8f5] transition-colors group-hover:bg-[#f4f0ea]",
-            ew.ink,
+            "flex h-12 w-12 items-center justify-center rounded-full border border-[#e0d6d0] bg-[#f7f4f2] transition-colors group-hover:bg-[#f0ebe8]",
+            "text-[#7a6a63]",
           )}
         >
           <UsersRound className="h-5 w-5" />
@@ -1183,7 +1186,7 @@ function CommunityWorkspaceCard({
             <button
               type="button"
               onClick={onOpenCommunity}
-              className="rounded bg-[#faf8f5] px-2 py-1 text-xs font-medium text-[#5e6b65]"
+              className="rounded bg-[#f7f4f2] px-2 py-1 text-xs font-medium text-[#7a6a63]"
             >
               Add team
             </button>
@@ -1202,7 +1205,7 @@ function CommunityWorkspaceCard({
             <button
               type="button"
               onClick={onOpenCommunity}
-              className="text-[#e6dfd5] transition-colors group-hover:text-[#c5a880]"
+              className="text-[#e6dfd5] transition-colors group-hover:text-[#a8968e]"
               aria-label="Open Community"
             >
               <ArrowRight className="h-4 w-4" aria-hidden />
@@ -1237,19 +1240,38 @@ function CommunityWorkspaceCard({
   );
 }
 
+/** Muted top-stroke + icon tint per workspace (cards stay warm white). */
+const WORKSPACE_CARD_ACCENT = {
+  planning: {
+    card: "border-t-[3px] border-t-[#8ea89d] hover:border-[#d5ddd8] hover:border-t-[#8ea89d]",
+    icon: "border-[#c5d4ce] bg-[#e6efe9]/55 text-[#5a7568] group-hover:bg-[#e6efe9]",
+  },
+  approvals: {
+    card: "border-t-[3px] border-t-[#c5a880] hover:border-[#e8dfd4] hover:border-t-[#c5a880]",
+    icon: "border-[#ece2d4] bg-[#f4f0ea]/80 text-[#b8956a] group-hover:bg-[#f4f0ea]",
+  },
+  volunteers: {
+    card: "border-t-[3px] border-t-[#78959e] hover:border-[#d5e0e3] hover:border-t-[#78959e]",
+    icon: "border-[#d5e0e3] bg-[#f0f4f5] text-[#5a7179] group-hover:bg-[#e8eef0]",
+  },
+} as const;
+
 function WorkspaceCard({
   icon,
   title,
   subtitle,
   meta,
   onClick,
+  accent,
 }: {
   icon: ReactNode;
   title: string;
   subtitle: string;
   meta: ReactNode;
   onClick: () => void;
+  accent: keyof typeof WORKSPACE_CARD_ACCENT;
 }) {
+  const tone = WORKSPACE_CARD_ACCENT[accent];
   return (
     <button
       type="button"
@@ -1257,12 +1279,13 @@ function WorkspaceCard({
       className={cn(
         ewCard,
         "group flex flex-col gap-6 p-8 text-left transition-all hover:-translate-y-1 hover:shadow-md",
+        tone.card,
       )}
     >
       <div
         className={cn(
-          "flex h-12 w-12 items-center justify-center rounded-full border border-[#e6dfd5] bg-[#faf8f5] transition-colors group-hover:bg-[#f4f0ea]",
-          ew.ink,
+          "flex h-12 w-12 items-center justify-center rounded-full border transition-colors",
+          tone.icon,
         )}
       >
         {icon}
