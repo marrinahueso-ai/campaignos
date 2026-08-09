@@ -65,3 +65,4 @@ tmp-*.html
 
 # Local migration scratch (never commit)
 .tmp-mig/
+*.png

@@ -1176,6 +1176,11 @@ export async function updateTeamMemberAction(
   }
 
   revalidatePath("/settings/team-access");
+  if (input.displayName !== undefined) {
+    revalidatePath("/dashboard");
+    revalidatePath("/settings/account");
+    revalidatePath("/approvals");
+  }
   return { error: null, success: true };
 }
 

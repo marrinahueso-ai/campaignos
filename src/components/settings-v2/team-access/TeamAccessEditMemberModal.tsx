@@ -123,33 +123,36 @@ export function TeamAccessEditMemberModal({
     startTransition(async () => {
       const { source } = activeEditContext;
 
+      if (activeEditContext.canEditName && !fullName) {
+        setError("Full name is required.");
+        return;
+      }
+
       if (!selection && canEditAccessRole) {
         setError("Choose a role.");
         return;
       }
 
-      // Login seat: Role = access template (assigns real permissions).
-      if (activeMember.raw && selection) {
-        const result = await updateTeamMemberAction(activeMember.raw.id, {
-          campaignRole: selection.templateId,
+      const membershipId =
+        activeMember.raw?.id ??
+        (source.kind === "org_user" ? source.membershipId : null);
+
+      // Login seat: persist edit-profile display name + access/status.
+      // Roster-only name updates alone look like they failed because the
+      // unified people list prefers organization_users.display_name.
+      if (membershipId) {
+        const result = await updateTeamMemberAction(membershipId, {
+          ...(selection && canEditAccessRole
+            ? { campaignRole: selection.templateId }
+            : {}),
           status: canEditStatus
             ? status === "deactivated"
               ? "deactivated"
               : "active"
             : undefined,
-        });
-        if (result.error) {
-          setError(result.error);
-          return;
-        }
-      } else if (source.kind === "org_user" && selection) {
-        const result = await updateTeamMemberAction(source.membershipId, {
-          campaignRole: selection.templateId,
-          status: canEditStatus
-            ? status === "deactivated"
-              ? "deactivated"
-              : "active"
-            : undefined,
+          ...(activeEditContext.canEditName
+            ? { displayName: fullName }
+            : {}),
         });
         if (result.error) {
           setError(result.error);
@@ -182,6 +185,38 @@ export function TeamAccessEditMemberModal({
         if (result.error) {
           setError(result.error);
           return;
+        }
+      }
+
+      // Keep board-role contact name in sync when this person is that contact,
+      // otherwise Team Access merge overwrites the renamed display name.
+      const roleId =
+        source.kind === "org_role"
+          ? null
+          : (activeMember.organizationRoleId ??
+            activeMember.vpPortfolioId ??
+            null);
+      if (roleId && activeEditContext.canEditName) {
+        const role = workspace.roles.find((entry) => entry.id === roleId);
+        const previousName = activeMember.displayName.trim();
+        const contactName = role?.contactName?.trim() ?? "";
+        const contactEmail = role?.contactEmail?.trim().toLowerCase() ?? "";
+        const memberEmail = activeMember.email?.trim().toLowerCase() ?? "";
+        const shouldSyncContact =
+          Boolean(role) &&
+          (contactName.length === 0 ||
+            contactName.toLowerCase() === previousName.toLowerCase() ||
+            (memberEmail.length > 0 && contactEmail === memberEmail));
+        if (shouldSyncContact) {
+          const result = await updateOrganizationRoleAction(roleId, {
+            contactName: fullName,
+            contactEmail: email ?? role?.contactEmail ?? null,
+            contactPhone: phone ?? role?.contactPhone ?? null,
+          });
+          if (result.error) {
+            setError(result.error);
+            return;
+          }
         }
       }
 

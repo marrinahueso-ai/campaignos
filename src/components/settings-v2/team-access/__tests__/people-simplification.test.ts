@@ -332,6 +332,22 @@ describe("Team & Access people simplification", () => {
     assert.match(shellSource, /Manage Event Assignments|openPersonProfile\(moreActionsMember, "events"\)/);
   });
 
+  it("13c. Edit person Full name persists login-seat display_name", () => {
+    const editModal = readFileSync(
+      join(here, "../TeamAccessEditMemberModal.tsx"),
+      "utf8",
+    );
+    const editUtils = readFileSync(join(here, "../member-edit-utils.ts"), "utf8");
+    assert.match(editModal, /displayName:\s*fullName/);
+    assert.match(editModal, /updateTeamMemberAction\(membershipId/);
+    assert.match(editUtils, /canEditName:\s*true/);
+    // Login-seat-only people must be able to rename (not forced read-only).
+    assert.match(
+      editUtils,
+      /kind: "org_user"[\s\S]*?canEditName:\s*true/,
+    );
+  });
+
   it("13b. Access templates tab is available without removing People hub", () => {
     assert.match(shellSource, /Access templates/);
     assert.match(shellSource, /TeamAccessAccessTemplatesPanel/);

@@ -137,7 +137,8 @@ export function resolveMemberEditContext(
   if (member.raw) {
     return {
       source: { kind: "org_user", membershipId: member.raw.id },
-      canEditName: false,
+      // Login-seat display name is what Team Access / dashboard show; allow edits.
+      canEditName: true,
       canEditEmail: false,
       canEditPhone: false,
       canEditRole: true,
