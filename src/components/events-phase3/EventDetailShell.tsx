@@ -756,7 +756,7 @@ export function EventDetailShell({
     <EventDetailTabInvalidationProvider value={invalidationValue}>
     <div className="studio-page relative space-y-6 pb-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {tab === "overview" ? (
+        {tab === "overview" || isPlanning ? (
           <Link
             href="/events"
             className={cn(
@@ -764,6 +764,7 @@ export function EventDetailShell({
               ew.inksoft,
               "hover:text-[#1c352d]",
             )}
+            data-testid="event-workspace-back-to-events"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Events

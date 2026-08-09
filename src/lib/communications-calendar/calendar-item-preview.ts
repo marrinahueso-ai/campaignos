@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils/dates";
 import { getEventById } from "@/lib/events/queries";
 import type { UnifiedApprovalPreview } from "@/lib/approvals-scheduling/types";
+import { pickPreviewScheduleSource } from "@/lib/communications-calendar/calendar-item-preview-schedule";
 
 export type CalendarItemPreview = {
   preview: UnifiedApprovalPreview;
@@ -141,9 +142,17 @@ export async function loadCalendarItemPreview(input: {
         feedArtworkUrl: (schedulingRow.feed_artwork_url as string | null) ?? null,
         storyArtworkUrl: (schedulingRow.story_artwork_url as string | null) ?? null,
       },
-      scheduleLabel: schedulingRow.schedule_at
-        ? formatDateTime(String(schedulingRow.schedule_at))
-        : empty.scheduleLabel,
+      // Calendar chip / Meta slot is source of truth after DnD; Approvals
+      // schedule_at can lag until the reschedule mutation syncs it.
+      scheduleLabel: (() => {
+        const source = pickPreviewScheduleSource({
+          chipScheduledAt: input.scheduledAt,
+          approvalScheduleAt: schedulingRow.schedule_at
+            ? String(schedulingRow.schedule_at)
+            : null,
+        });
+        return source ? formatDateTime(source) : null;
+      })(),
       platforms: platforms.length > 0 ? platforms : empty.platforms,
       deliveryMethod:
         (schedulingRow.delivery_method as string | null) ?? empty.deliveryMethod,
@@ -202,9 +211,13 @@ export async function loadCalendarItemPreview(input: {
       feedArtworkUrl: bundle.feedArtworkUrl,
       storyArtworkUrl: bundle.storyArtworkUrl,
     },
-    scheduleLabel: bundle.scheduledFor
-      ? formatDateTime(bundle.scheduledFor)
-      : empty.scheduleLabel,
+    scheduleLabel: (() => {
+      const source = pickPreviewScheduleSource({
+        chipScheduledAt: input.scheduledAt,
+        bundleScheduledFor: bundle.scheduledFor,
+      });
+      return source ? formatDateTime(source) : null;
+    })(),
     platforms: platforms.length > 0 ? platforms : empty.platforms,
     deliveryMethod: "publish-now",
     campaignMilestoneId: bundleMilestoneId ?? empty.campaignMilestoneId,

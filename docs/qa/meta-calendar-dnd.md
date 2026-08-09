@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 24, 2026  
+**Last updated:** August 9, 2026  
 **Related:** [feature-list.md](../product/feature-list.md) · [meta.md](../integrations/meta.md) · [testing-guide.md](./testing-guide.md) · [architecture.md](../engineering/architecture.md)
 
 > **Not the same as school calendar import.** This doc covers **Meta publication slots** on the communications calendar (Approve → Graph schedule → drag to reschedule). Importing school dates (ICS / Google / PDF) is separate — see [calendar-import-dedupe.md](./calendar-import-dedupe.md).
@@ -12,7 +12,7 @@
 ## What shipped
 
 - On **Approve** (CB2 Approvals or Meta “Approve scheduled”): Facebook **Page feed** slots get a Meta-native unpublished scheduled photo (`published=false` + `scheduled_publish_time`) when the org Meta connection is healthy and the time is inside Graph’s window (~10 minutes–75 days). Ids stored on `meta_publication_slots.graph_schedule_id`.
-- **Calendar drag-and-drop** for Meta milestones updates CampignOS `scheduled_for` (+ related step `due_date`) **without** clearing approval or regenerating artwork. UI moves the chip **optimistically** on drop; DB write returns before Meta Graph sync (`after()`). When `graph_schedule_id` exists, Graph `scheduled_publish_time` is updated in the background (or delete+recreate if update fails). Graph failure → **DB stays updated**; sync issues are logged/reported (not blocking DnD).
+- **Calendar drag-and-drop** for Meta milestones updates CampignOS `scheduled_for` (+ related step `due_date`, and matching Approvals `schedule_at`) **without** clearing approval or regenerating artwork. UI moves the chip **optimistically** on drop; DB write returns before Meta Graph sync (`after()`). When `graph_schedule_id` exists, Graph `scheduled_publish_time` is updated in the background (or delete+recreate if update fails). Graph failure → **DB stays updated**; sync issues are logged/reported (not blocking DnD). Calendar detail drawer prefers the chip/Meta slot time over a lagging Approvals `schedule_at`.
 - Publish-when-due cron **skips** slots that already have `graph_schedule_id` (Meta owns delivery); after due time CampignOS marks them `published` without re-posting. Legacy slots without a Graph id still publish via CampignOS cron.
 
 **Surfaces:** Approvals hub / event Approvals → `/calendar` (unified calendar Meta chips).
@@ -26,7 +26,7 @@
 | Action | CampignOS | Meta (Business Suite) |
 |--------|-----------|------------------------|
 | Approve (CB2 Approvals or Meta “Approve scheduled”) | Slots → `approved` + `scheduled_for` | **Facebook feed:** creates unpublished scheduled photo (`published=false` + `scheduled_publish_time`); stores `graph_schedule_id` |
-| Calendar drag-and-drop | Updates `scheduled_for` (+ step `due_date`) only — **never** clears approval / never regenerates artwork | If `graph_schedule_id` exists: updates Graph `scheduled_publish_time` (or delete+recreate). On Graph failure: **DB stays updated** + warning toast |
+| Calendar drag-and-drop | Updates `scheduled_for` (+ step `due_date` + Approvals `schedule_at`) only — **never** clears approval / never regenerates artwork | If `graph_schedule_id` exists: updates Graph `scheduled_publish_time` (or delete+recreate). On Graph failure: **DB stays updated** + warning toast |
 | Publish-when-due cron | Still publishes slots **without** `graph_schedule_id` (legacy + Instagram + stories) | Slots **with** `graph_schedule_id` are owned by Meta; after due time CampignOS marks them `published` without re-posting |
 
 Published / posting chips stay non-draggable (`isPlanningItemDraggable` → false when display status is `published`).
@@ -56,7 +56,7 @@ Adds `meta_publication_slots.graph_schedule_id` and `graph_schedule_error` (soft
 ## QA checklist
 
 1. Approve a future Facebook feed post with Meta connected → slot has `graph_schedule_id` (DB) / post appears scheduled in Business Suite when Graph succeeds.
-2. Drag that chip on Calendar → time moves in CampignOS **and** (when Graph id present) in Meta; status stays approved (not back in Approvals queue).
+2. Drag that chip on Calendar → time moves in CampignOS **and** (when Graph id present) in Meta; status stays approved (not back in Approvals queue). Opening the calendar detail drawer shows the **new** Scheduled Date (does not flash back to the pre-drag time).
 3. Force a Graph failure (invalid token / offline mock) → calendar still shows new time immediately (optimistic); approval unchanged; Graph sync issues are logged/reported in the background (DnD response does not wait on Meta).
 4. Legacy slot without `graph_schedule_id` → DnD only changes CampignOS time; cron still publishes when due.
 5. Instagram-only / story-manual milestones → approve still works; no Graph schedule id required; `graph_schedule_error` may record the soft-fail reason.
@@ -77,7 +77,8 @@ npm run test:meta-publishing
 | `src/lib/meta-publishing/__tests__/native-schedule-utils.test.ts` | Window bounds, FB feed-only support, cron skip when Graph id present, schedule-only reschedule payload |
 | `src/lib/meta-publishing/__tests__/graph-native-schedule.test.ts` | Graph id candidates / update path |
 | `src/lib/meta-publishing/__tests__/slot-status.test.ts` | Committed orphan slots survive sync; Meta bundles merge orphan days |
-| `src/lib/communications-calendar/__tests__/meta-milestone-reschedule.test.ts` | DnD payload never flips `status`; wires to `rescheduleNativeMetaSchedulesForMilestone` |
+| `src/lib/communications-calendar/__tests__/meta-milestone-reschedule.test.ts` | DnD payload never flips `status`; wires to `rescheduleNativeMetaSchedulesForMilestone`; Approvals `schedule_at` sync |
+| `src/lib/communications-calendar/__tests__/calendar-item-preview-schedule.test.ts` | Detail drawer prefers chip/Meta slot time over stale Approvals `schedule_at` |
 | `src/lib/communications-calendar/__tests__/build-unified-calendar-items.test.ts` | Calendar chips for Publish Now / custom-day committed slots |
 
 ---

@@ -76,7 +76,8 @@ test.describe("Event Workspace redesign paths", () => {
   test("Planning shell: Tasks / Notes / Files deep links + sub-tabs", async () => {
     const { main } = await openEvent("?tab=tasks");
 
-    await expect(page.getByTestId("event-workspace-back-to-event")).toBeVisible();
+    await expect(page.getByTestId("event-workspace-back-to-events")).toBeVisible();
+    await expect(page.getByTestId("event-workspace-back-to-event")).toHaveCount(0);
     await expect(main.getByRole("heading", { name: /^planning$/i })).toBeVisible({
       timeout: 30_000,
     });
@@ -102,6 +103,9 @@ test.describe("Event Workspace redesign paths", () => {
       "aria-selected",
       "true",
     );
+
+    await page.getByTestId("event-workspace-back-to-events").click();
+    await expect(page).toHaveURL(/\/events\/?(\?|$)/);
   });
 
   test("Approvals card workspace loads (content or empty)", async () => {

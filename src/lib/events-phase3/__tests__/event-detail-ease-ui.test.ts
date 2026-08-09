@@ -158,6 +158,10 @@ describe("event detail ease UI contracts", () => {
     assert.doesNotMatch(header, /Generate Event Plan/);
     assert.doesNotMatch(header, /Back to Workspace/);
     assert.match(shell, /onBackToEvent/);
+    // Planning exits the event (same as overview), not back to overview.
+    assert.match(shell, /tab === "overview" \|\| isPlanning/);
+    assert.match(shell, /event-workspace-back-to-events/);
+    assert.match(shell, /Back to Events/);
     assert.match(notes, /Shared Notes/);
     assert.doesNotMatch(notes, /Recent Scratchpads/);
     assert.match(notes, /New note/);

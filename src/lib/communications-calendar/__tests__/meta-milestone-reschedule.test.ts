@@ -27,9 +27,20 @@ describe("meta_milestone calendar DnD — no re-approval", () => {
 
     assert.match(metaCase, /buildMetaMilestoneRescheduleSlotUpdate/);
     assert.match(metaCase, /Schedule-only: never touch status/);
+    assert.match(metaCase, /syncApprovalScheduleAtForMetaMilestone/);
     assert.doesNotMatch(metaCase, /status:\s*["']draft["']/);
     assert.doesNotMatch(metaCase, /status:\s*["']scheduled["']/);
     assert.doesNotMatch(metaCase, /status:\s*["']approved["']/);
+  });
+
+  it("calendar preview prefers chip scheduledAt over Approvals schedule_at", () => {
+    const source = readSource("../calendar-item-preview.ts");
+    assert.match(source, /pickPreviewScheduleSource/);
+    assert.match(source, /chipScheduledAt: input\.scheduledAt/);
+    assert.match(
+      source,
+      /Calendar chip \/ Meta slot is source of truth after DnD/,
+    );
   });
 
   it("planning-actions syncs Graph after DB success without blocking the DnD response", () => {

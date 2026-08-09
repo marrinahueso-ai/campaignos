@@ -1,9 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { playbookRelativeDay } from "@/lib/campaign-builder-v2/campaign-timing";
+import { milestoneNameMatchKey } from "@/lib/campaign-builder-v2/milestone-names";
+import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { resyncCampaignPlanDownstream } from "@/lib/campaign-plan/plan-milestones";
+import { ASSET_CHANNEL_MAP } from "@/lib/communications-calendar/channel-styles";
+import { getEventById } from "@/lib/events/queries";
+import { buildMetaMilestoneRescheduleSlotUpdate } from "@/lib/meta-publishing/native-schedule-utils";
 import { computeDueDate } from "@/lib/playbooks/mappers";
 import { localDateHourToIso } from "@/lib/posting-analytics/timezone-utils";
-import { ASSET_CHANNEL_MAP } from "@/lib/communications-calendar/channel-styles";
-import { buildMetaMilestoneRescheduleSlotUpdate } from "@/lib/meta-publishing/native-schedule-utils";
+import { createClient } from "@/lib/supabase/server";
 import type { PlanningItemType } from "@/types/communications-calendar";
 import type { EventAssetType } from "@/types/event-workspace";
 
@@ -47,6 +52,88 @@ function buildRescheduledTimestamp(
   }
 
   return `${newDate}T10:00:00.000Z`;
+}
+
+/**
+ * Keep Approvals `schedule_at` aligned with Meta slot time after calendar DnD.
+ * Best-effort — slot update remains the calendar source of truth.
+ */
+export async function syncApprovalScheduleAtForMetaMilestone(
+  supabase: SupabaseClient,
+  input: {
+    eventId: string;
+    relativeDay: number;
+    scheduledFor: string;
+    now: string;
+  },
+): Promise<void> {
+  const [schedulingResult, session, event, stepsResult] = await Promise.all([
+    supabase
+      .from("approval_scheduling_items")
+      .select("id, campaign_milestone_id, milestone_name")
+      .eq("event_id", input.eventId),
+    loadCampaignBuilderSession(input.eventId),
+    getEventById(input.eventId),
+    supabase
+      .from("event_communication_steps")
+      .select("title")
+      .eq("event_id", input.eventId)
+      .eq("relative_day", input.relativeDay),
+  ]);
+
+  const schedulingRows = schedulingResult.data ?? [];
+  if (!schedulingRows.length) {
+    return;
+  }
+
+  const matchingMilestoneIds = new Set(
+    (session?.milestones ?? [])
+      .filter(
+        (milestone) =>
+          Boolean(event?.date) &&
+          Boolean(milestone.suggestedDate) &&
+          playbookRelativeDay(event!.date, milestone.suggestedDate!) ===
+            input.relativeDay,
+      )
+      .map((milestone) => milestone.id),
+  );
+
+  const matchingNameKeys = new Set<string>();
+  for (const milestone of session?.milestones ?? []) {
+    if (
+      event?.date &&
+      milestone.suggestedDate &&
+      playbookRelativeDay(event.date, milestone.suggestedDate) ===
+        input.relativeDay
+    ) {
+      const key = milestoneNameMatchKey(milestone.name);
+      if (key) matchingNameKeys.add(key);
+    }
+  }
+  for (const step of stepsResult.data ?? []) {
+    const key = milestoneNameMatchKey(String(step.title ?? ""));
+    if (key) matchingNameKeys.add(key);
+  }
+
+  const rowIds = schedulingRows
+    .filter((row) => {
+      const milestoneId = row.campaign_milestone_id as string | null;
+      if (milestoneId && matchingMilestoneIds.has(milestoneId)) {
+        return true;
+      }
+      const key = milestoneNameMatchKey(String(row.milestone_name ?? ""));
+      return Boolean(key && matchingNameKeys.has(key));
+    })
+    .map((row) => row.id as string);
+
+  if (!rowIds.length) {
+    return;
+  }
+
+  await supabase
+    .from("approval_scheduling_items")
+    .update({ schedule_at: input.scheduledFor, updated_at: input.now })
+    .in("id", rowIds);
 }
 
 export async function reschedulePlanningItem(
@@ -290,7 +377,27 @@ export async function reschedulePlanningItem(
         .eq("relative_day", relativeDay)
         .in("status", [...RESCHEDULABLE_META_SLOT_STATUSES]);
 
-      return !updateError;
+      if (updateError) {
+        return false;
+      }
+
+      // Align Approvals drawer/list dates with the moved Meta slot.
+      // Best-effort: slot update already succeeded (calendar source of truth).
+      try {
+        await syncApprovalScheduleAtForMetaMilestone(supabase, {
+          eventId,
+          relativeDay,
+          scheduledFor,
+          now,
+        });
+      } catch (error) {
+        console.error(
+          "[calendar-dnd] Approvals schedule_at sync failed:",
+          error,
+        );
+      }
+
+      return true;
     }
     default:
       return false;
