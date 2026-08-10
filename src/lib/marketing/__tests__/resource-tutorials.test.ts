@@ -39,6 +39,22 @@ describe("resource-tutorials registry", () => {
     assert.equal(tutorial.captionsSrc, null);
   });
 
+  it("exports approvals-scheduling as the third narrated tutorial", () => {
+    assert.ok(RESOURCE_TUTORIAL_IDS.includes("approvals-scheduling"));
+    const tutorial = RESOURCE_TUTORIALS["approvals-scheduling"];
+    assert.equal(tutorial.title, "Approving & scheduling content");
+    assert.match(tutorial.description, /approves posts/i);
+    assert.equal(
+      tutorial.src,
+      "/videos/resources/approvals-scheduling-tutorial.mp4",
+    );
+    assert.equal(
+      tutorial.poster,
+      "/images/resources/tutorials/approvals-scheduling-tutorial.jpg",
+    );
+    assert.equal(tutorial.captionsSrc, null);
+  });
+
   it("has on-disk video and poster assets for every tutorial", () => {
     for (const id of RESOURCE_TUTORIAL_IDS) {
       const tutorial = RESOURCE_TUTORIALS[id];
@@ -56,6 +72,10 @@ describe("resource-tutorials registry", () => {
   it("resolves tutorials by id and documents captions status", () => {
     assert.equal(getResourceTutorial("create-an-event")?.id, "create-an-event");
     assert.equal(getResourceTutorial("create-with-ai")?.id, "create-with-ai");
+    assert.equal(
+      getResourceTutorial("approvals-scheduling")?.id,
+      "approvals-scheduling",
+    );
     assert.equal(getResourceTutorial("missing"), null);
     assert.equal(RESOURCE_TUTORIAL_QUERY_PARAM, "tutorial");
     assert.match(RESOURCE_TUTORIALS_CAPTIONS_STATUS, /No caption/i);

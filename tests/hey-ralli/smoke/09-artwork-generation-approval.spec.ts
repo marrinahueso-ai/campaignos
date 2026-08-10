@@ -513,39 +513,39 @@ test.describe("Artwork generation → request changes / re-approval", () => {
 
       // Safe when the staging event has few ready milestones (this suite's event has 1).
       await sendApproval.click();
-      // Success shows Sent-for-approval notice (#published view); failures stay on Review.
+      // Success navigates to Approvals filtered to this event; failures stay on Review.
       const sendOutcome = main.getByText(
         /\d+\s+milestones?\s+sent for approval|unable to create approval|generate artwork before sending|campaign session not found/i,
       );
-      const sentNotice = main.getByRole("heading", {
-        name: /sent for approval/i,
-      });
-      const reviewReturnCta = main.getByRole("button", {
-        name: /view milestones in review/i,
-      });
       await Promise.race([
         sendOutcome.first().waitFor({ state: "visible", timeout: 90_000 }),
+        page
+          .waitForURL(
+            new RegExp(`/approvals\\?event=${eventId}`),
+            { timeout: 90_000 },
+          )
+          .catch(() => undefined),
         page.waitForURL(/#published/, { timeout: 90_000 }).catch(() => undefined),
-        sentNotice.first().waitFor({ state: "visible", timeout: 90_000 }),
-        reviewReturnCta.first().waitFor({ state: "visible", timeout: 90_000 }),
       ]);
       const feedbackText = (await sendOutcome.first().innerText().catch(() => "")).trim();
-      const onSentNotice =
-        /#published/i.test(page.url()) ||
-        (await sentNotice.count()) > 0 ||
-        (await reviewReturnCta.count()) > 0;
+      const onApprovals =
+        /\/approvals/i.test(page.url()) &&
+        page.url().includes(`event=${eventId}`);
+      const onSentNotice = /#published/i.test(page.url());
       observations.push(
         `- Clicked Send for approval — ${
           feedbackText
             ? `message: ${feedbackText}`
-            : onSentNotice
-              ? "showed Sent for approval notice (success path)"
-              : "no explicit success message (item may already be scheduled — resubmit keeps status)"
+            : onApprovals
+              ? "navigated to Approvals for this event (success path)"
+              : onSentNotice
+                ? "showed Sent for approval notice (legacy success path)"
+                : "no explicit success message (item may already be scheduled — resubmit keeps status)"
         }`,
       );
       note(
         page,
-        `Send for approval: ${feedbackText || (onSentNotice ? "sent-notice" : "unclear")}`,
+        `Send for approval: ${feedbackText || (onApprovals ? "approvals-redirect" : onSentNotice ? "sent-notice" : "unclear")}`,
       );
     }
 

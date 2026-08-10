@@ -62,7 +62,7 @@ Hub outcomes sync back into the campaign session (`sync-session-from-scheduling.
 - Initial `workflow_status`:
   - `assigned_to_me` if org/event approval assignee resolves to a user
   - else `in_queue`
-- Client sets submitted milestones to `generationStatus: "awaiting_approval"` (Review pill **Pending Review**) and navigates to the **Sent for approval** notice (`#published` — not a stepper step).
+- Client sets submitted milestones to `generationStatus: "awaiting_approval"` (Review pill **Pending Review**) and navigates to `/approvals?event={id}` so the Approvals queue shows that campaign immediately (Everyone scope when permitted). The in-composer **Sent for Approval** notice (`#published`) remains as a confirmation surface when opened via deep link / Back flows.
 - **Resubmit / re-approval** when an existing row is in `in_queue` | `assigned_to_me` | `changes_requested`: full row refresh + status reset to assignee-based pending status, `notes`/`resolved_at` cleared, `requested_at` bumped.
 - If row is already `scheduled` / `posted` / `published`: status is kept; display snapshot (artwork/caption) may still refresh.
 
@@ -183,7 +183,7 @@ See also `test-results/hey-ralli/hey-ralli-report.txt` (and observations markdow
 |-------|--------|-------|
 | Spec `09` | **PASS** (~23s this run) | Staging artwork already present; send + Approvals observe path |
 | Spec `05` | **PASS** | Approvals routing + badges + calendar intact |
-| Send for approval | **success** | Expect **Sent for approval** notice (`#published`); not a stepper step |
+| Send for approval | **success** | Expect navigation to `/approvals?event={id}` (campaign filtered); legacy `#published` confirmation still exists |
 | Approvals drawer | **PASS** | Soft-skip when row already Approved/scheduled (do not match disabled “Approved” as act buttons) |
 | Approve | **not clicked** | Avoids Meta / manual kit side effects |
 

@@ -15,6 +15,7 @@ User-initiated narrated walkthroughs on `/resources` Featured Tutorials. Separat
 |----|-------|-----|--------|
 | `create-an-event` | Create your first event | `create-an-event-tutorial.mp4` | `create-an-event-tutorial.jpg` |
 | `create-with-ai` | Creating social posts with AI | `create-with-ai-tutorial.mp4` | `create-with-ai-tutorial.jpg` |
+| `approvals-scheduling` | Approving & scheduling content | `approvals-scheduling-tutorial.mp4` | `approvals-scheduling-tutorial.jpg` |
 
 ## Assets
 

@@ -7,7 +7,10 @@
  * Distinct from silent homepage marketing demos in `product-demo-videos.ts`.
  */
 
-export type ResourceTutorialId = "create-an-event" | "create-with-ai";
+export type ResourceTutorialId =
+  | "create-an-event"
+  | "create-with-ai"
+  | "approvals-scheduling";
 
 export type ResourceTutorial = {
   id: ResourceTutorialId;
@@ -45,6 +48,16 @@ export const RESOURCE_TUTORIALS: Record<ResourceTutorialId, ResourceTutorial> = 
     src: "/videos/resources/create-with-ai-tutorial.mp4",
     poster: "/images/resources/tutorials/create-with-ai-tutorial.jpg",
     label: "Creating social posts with AI — narrated Hey Ralli tutorial",
+    captionsSrc: null,
+  },
+  "approvals-scheduling": {
+    id: "approvals-scheduling",
+    title: "Approving & scheduling content",
+    description:
+      "See how your team sends content for review, requests changes, approves posts, and keeps scheduled communications on track.",
+    src: "/videos/resources/approvals-scheduling-tutorial.mp4",
+    poster: "/images/resources/tutorials/approvals-scheduling-tutorial.jpg",
+    label: "Approving & scheduling content — narrated Hey Ralli tutorial",
     captionsSrc: null,
   },
 };

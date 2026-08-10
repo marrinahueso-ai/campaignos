@@ -113,9 +113,14 @@ export function ApprovalsSchedulingHub({
   const [activeFilter, setActiveFilter] = useState<ApprovalsEasePulse>(
     DEFAULT_APPROVALS_EASE_PULSE,
   );
-  const [viewScope, setViewScope] = useState<UnifiedViewScope>(
-    (lockedId || embedded) && canViewAll ? "all" : "assigned_to_me",
-  );
+  const [viewScope, setViewScope] = useState<UnifiedViewScope>(() => {
+    // Event deep-links (e.g. after Create with AI Send for approval) should
+    // surface the campaign immediately — not hide it behind Assigned-to-me.
+    if (initialEventFilter?.trim() && canViewAll) {
+      return "all";
+    }
+    return (lockedId || embedded) && canViewAll ? "all" : "assigned_to_me";
+  });
   const [searchQuery, setSearchQuery] = useState(() =>
     initialSearchFromEventFilter(initialEventFilter, campaigns, lockedId),
   );

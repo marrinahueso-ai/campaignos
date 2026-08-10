@@ -85,14 +85,7 @@ const FEATURED_TUTORIALS: ReadonlyArray<
 > = [
   { kind: "video", tutorialId: "create-an-event" },
   { kind: "video", tutorialId: "create-with-ai" },
-  {
-    kind: "link",
-    id: "volunteers",
-    icon: HeartHandshake,
-    title: "Coordinating your volunteers",
-    description: "See how Volunteer Master tracks fill rate and underfilled roles.",
-    href: "/features#volunteer-intelligence",
-  },
+  { kind: "video", tutorialId: "approvals-scheduling" },
 ];
 
 /** Step-by-Step Guides — every title maps to real, shipped functionality. */

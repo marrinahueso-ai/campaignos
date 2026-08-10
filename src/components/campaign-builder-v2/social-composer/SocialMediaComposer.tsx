@@ -21,7 +21,6 @@ const smcSerif = Fraunces({
   variable: "--smc-serif",
 });
 import {
-  approveAllAndScheduleAction,
   sendForApprovalAction,
   syncAppliedMilestoneArtworkAction,
 } from "@/lib/campaign-builder-v2/actions";
@@ -2026,6 +2025,7 @@ function ReviewPanel({
     flushSave,
     hasExternalReviewer,
   } = useCampaignBuilder();
+  const router = useRouter();
   const [isSending, setIsSending] = useState(false);
   const [peekMode, setPeekMode] = useState<"feed" | "story">("feed");
 
@@ -2103,11 +2103,9 @@ function ReviewPanel({
         resolveMilestoneGenerationStatus(preview) === "changes_requested",
     );
 
-  const primaryCtaLabel = hasExternalReviewer
-    ? bulkIsReapprovalOnly
-      ? "Send for re-approval"
-      : "Send for approval"
-    : "Approve all & schedule";
+  const primaryCtaLabel = bulkIsReapprovalOnly
+    ? "Send for re-approval"
+    : "Send for approval";
 
   const feedUrl = displayArtworkUrlForView(selectedPreview?.artwork, "feed");
   const storyUrl = displayArtworkUrlForView(selectedPreview?.artwork, "story");
@@ -2151,6 +2149,7 @@ function ReviewPanel({
     }
     setIsSending(true);
     try {
+      await flushSave();
       const result = await sendForApprovalAction({
         eventId: session.eventId,
         campaignName: session.inspiration.campaignName,
@@ -2169,35 +2168,12 @@ function ReviewPanel({
           notifiedEmail: result.notifiedEmail ?? null,
           emailSkippedReason: result.emailSkippedReason ?? null,
         });
-        goToStep("published");
-      }
-    } finally {
-      setIsSending(false);
-    }
-  }
-
-  async function handleApproveAll() {
-    if (!canHandoff) {
-      if (toastHandoffBlockers()) {
+        // Land on Approvals filtered to this campaign so demos don't stall on
+        // the in-composer confirmation screen.
+        router.push(
+          `/approvals?event=${encodeURIComponent(session.eventId)}`,
+        );
         return;
-      }
-      onToast("Finish every post in Preview before approving.");
-      return;
-    }
-    setIsSending(true);
-    try {
-      await flushSave();
-      const result = await approveAllAndScheduleAction(session.eventId);
-      onToast(result.message);
-      if (result.success) {
-        onHandoff({
-          outcome: "approved",
-          postCount: milestones.length,
-          reviewerName: reviewerName ?? "You",
-          notifiedEmail: null,
-          emailSkippedReason: null,
-        });
-        goToStep("published");
       }
     } finally {
       setIsSending(false);
@@ -2215,18 +2191,10 @@ function ReviewPanel({
             <button
               type="button"
               className="btn btn-forest"
-              onClick={() =>
-                void (hasExternalReviewer
-                  ? handleSendForApproval()
-                  : handleApproveAll())
-              }
+              onClick={() => void handleSendForApproval()}
               disabled={isSending || !canHandoff}
             >
-              {isSending
-                ? hasExternalReviewer
-                  ? "Sending…"
-                  : "Scheduling…"
-                : primaryCtaLabel}
+              {isSending ? "Sending…" : primaryCtaLabel}
             </button>
             <button
               type="button"
@@ -2401,9 +2369,7 @@ function ReviewPanel({
             </button>
           ) : (
             <div className="review-clear">
-              <strong>
-                {hasExternalReviewer ? "Ready to send" : "Ready to approve"}
-              </strong>
+              <strong>Ready to send</strong>
               <span>All posts have artwork, caption, and timing.</span>
             </div>
           )}
@@ -2420,7 +2386,7 @@ function ReviewPanel({
             <p className="review-reviewer-meta">
               {hasExternalReviewer
                 ? `${approverStep?.role ? `${approverStep.role} · ` : ""}From Team Access · gets an approval email`
-                : "No separate reviewer in Team Access — approve & schedule here"}
+                : "You’ll review these on Approvals after you send"}
             </p>
           </div>
         </aside>
