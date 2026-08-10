@@ -12,7 +12,7 @@ import {
   regenerateMilestoneArtworkAction,
 } from "@/lib/campaign-builder-v2/actions";
 import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
-import { isPlaceholderArtworkUrl } from "@/lib/campaign-builder-v2/platform-utils";
+import { displayArtworkUrlForView } from "@/lib/campaign-builder-v2/platform-utils";
 import { rejectArtworkView } from "@/lib/campaign-builder-v2/reject-artwork";
 import {
   readStyleLocked,
@@ -105,10 +105,7 @@ export function EditMilestoneModal({
     captionNotes ?? "",
   );
   const initialHasArtwork = Boolean(
-    (previewContent.artwork.feedUrl &&
-      !isPlaceholderArtworkUrl(previewContent.artwork.feedUrl)) ||
-      (previewContent.artwork.storyUrl &&
-        !isPlaceholderArtworkUrl(previewContent.artwork.storyUrl)),
+    displayArtworkUrlForView(previewContent.artwork, "feed"),
   );
   const [styleLocked, setStyleLocked] = useState(() =>
     readStyleLocked(eventId, milestoneId, initialHasArtwork),
@@ -136,14 +133,8 @@ export function EditMilestoneModal({
   const canRegenerate = willRegenerateArtwork || willRegenerateCaption;
 
   const handle = handleize(inspiration.campaignName);
-  const feedUrl =
-    previewArtwork.feedUrl && !isPlaceholderArtworkUrl(previewArtwork.feedUrl)
-      ? previewArtwork.feedUrl
-      : null;
-  const storyUrl =
-    previewArtwork.storyUrl && !isPlaceholderArtworkUrl(previewArtwork.storyUrl)
-      ? previewArtwork.storyUrl
-      : null;
+  const feedUrl = displayArtworkUrlForView(previewArtwork, "feed");
+  const storyUrl = displayArtworkUrlForView(previewArtwork, "story");
   const hasExistingArtwork = Boolean(feedUrl || storyUrl);
   const hasExistingCaption = previewCaption.trim().length > 0;
   const hasExistingContent = hasExistingArtwork || hasExistingCaption;

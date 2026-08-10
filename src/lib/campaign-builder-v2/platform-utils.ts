@@ -104,6 +104,25 @@ export function emptyMilestoneArtwork(): MilestoneArtwork {
   };
 }
 
+/**
+ * Display URL for the Feed or Story phone. Prefers the matching slot, then
+ * falls back to the other so list thumbs (feed || story) and the phone stay
+ * consistent when only one slot is filled.
+ * Gap / Ready checks still use the strict per-slot URLs.
+ */
+export function displayArtworkUrlForView(
+  artwork: { feedUrl?: string | null; storyUrl?: string | null } | null | undefined,
+  view: "feed" | "story",
+): string | null {
+  if (!artwork) return null;
+  const feed = sanitizeArtworkUrl(artwork.feedUrl);
+  const story = sanitizeArtworkUrl(artwork.storyUrl);
+  if (view === "feed") {
+    return feed ?? story;
+  }
+  return story ?? feed;
+}
+
 /** Demo / legacy placeholder URLs that must never count as generated artwork. */
 export function isPlaceholderArtworkUrl(url: string | null | undefined): boolean {
   if (!url?.trim()) {

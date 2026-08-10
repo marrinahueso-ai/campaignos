@@ -28,6 +28,7 @@ import {
   syncCaptionsToPlatforms,
 } from "@/lib/campaign-builder-v2/caption-utils";
 import { removeMilestoneArtworkBackup } from "@/lib/campaign-builder-v2/artwork-backup";
+import { resolveSelectedMilestoneId } from "@/lib/campaign-builder-v2/normalize-session";
 import {
   allMilestonesGenerated,
   canResendMilestoneForApproval,
@@ -216,8 +217,10 @@ export function PreviewStep() {
     }
   }
 
-  const selectedId =
-    session.selectedMilestoneId ?? session.milestones[0]?.id ?? null;
+  const selectedId = resolveSelectedMilestoneId(
+    session.selectedMilestoneId,
+    session.milestones,
+  );
   const selectedMilestone = session.milestones.find((m) => m.id === selectedId);
   const selectedPreview = session.previewContents.find(
     (c) => c.milestoneId === selectedId,

@@ -35,6 +35,24 @@ import type {
   PreviewTabId,
 } from "./types.ts";
 
+/**
+ * Keep selection pointing at a real plan post. Stale IDs (after plan rebuild /
+ * local merge) leave Preview showing the empty "Post" placeholder and block
+ * Edit Post because the modal requires selectedMilestone + selectedPreview.
+ */
+export function resolveSelectedMilestoneId(
+  selectedMilestoneId: string | null | undefined,
+  milestones: ReadonlyArray<{ id: string }>,
+): string | null {
+  if (
+    selectedMilestoneId &&
+    milestones.some((milestone) => milestone.id === selectedMilestoneId)
+  ) {
+    return selectedMilestoneId;
+  }
+  return milestones[0]?.id ?? null;
+}
+
 function buildEmptyPreviewContent(
   milestone: CampaignBuilderMilestone,
 ): MilestonePreviewContent {
@@ -726,6 +744,11 @@ export function normalizeCampaignBuilderSession(
     ? rawMain
     : defaults.mainEventImage;
 
+  const selectedMilestoneId = resolveSelectedMilestoneId(
+    raw.selectedMilestoneId ?? defaults.selectedMilestoneId,
+    milestones,
+  );
+
   const normalized: CampaignBuilderSession = {
     ...defaults,
     ...raw,
@@ -735,6 +758,7 @@ export function normalizeCampaignBuilderSession(
     milestonesPlaybookId: raw.milestonesPlaybookId ?? defaults.milestonesPlaybookId ?? null,
     mainEventImage,
     previewContents,
+    selectedMilestoneId,
     approvalWorkflow,
     expandedReviewMilestoneIds: raw.expandedReviewMilestoneIds ?? [],
     previewTab: normalizePreviewTab(raw.previewTab),

@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { DM_Sans, Fraunces } from "next/font/google";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { BackgroundLibraryPicker } from "@/components/background-library/BackgroundLibraryPicker";
@@ -42,9 +42,10 @@ import {
   resolveMilestoneGenerationStatus,
 } from "@/lib/campaign-builder-v2/milestone-status";
 import { isPublishNowDelivery } from "@/lib/campaign-builder-v2/delivery-method";
+import { resolveSelectedMilestoneId } from "@/lib/campaign-builder-v2/normalize-session";
 import {
   PLATFORM_FORMAT_OPTIONS,
-  isPlaceholderArtworkUrl,
+  displayArtworkUrlForView,
 } from "@/lib/campaign-builder-v2/platform-utils";
 import {
   buildArtworkDownloadFilename,
@@ -1073,11 +1074,20 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
     () => [...session.milestones].sort((a, b) => a.sortOrder - b.sortOrder),
     [session.milestones],
   );
-  const selectedId = session.selectedMilestoneId ?? milestones[0]?.id ?? null;
+  const selectedId = resolveSelectedMilestoneId(
+    session.selectedMilestoneId,
+    milestones,
+  );
   const selectedIndex = milestones.findIndex((m) => m.id === selectedId);
   const selectedMilestone = milestones.find((m) => m.id === selectedId) ?? null;
   const selectedPreview =
     session.previewContents.find((c) => c.milestoneId === selectedId) ?? null;
+
+  useEffect(() => {
+    if (selectedId && selectedId !== session.selectedMilestoneId) {
+      setSelectedMilestoneId(selectedId);
+    }
+  }, [selectedId, session.selectedMilestoneId, setSelectedMilestoneId]);
 
   const status = resolveMilestoneGenerationStatus(
     selectedPreview,
@@ -1088,14 +1098,8 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
   const isGenerating = generatingMilestoneId === selectedId || status === "generating";
 
   const gradient = gradientForIndex(selectedIndex);
-  const feedUrl =
-    selectedPreview?.artwork.feedUrl && !isPlaceholderArtworkUrl(selectedPreview.artwork.feedUrl)
-      ? selectedPreview.artwork.feedUrl
-      : null;
-  const storyUrl =
-    selectedPreview?.artwork.storyUrl && !isPlaceholderArtworkUrl(selectedPreview.artwork.storyUrl)
-      ? selectedPreview.artwork.storyUrl
-      : null;
+  const feedUrl = displayArtworkUrlForView(selectedPreview?.artwork, "feed");
+  const storyUrl = displayArtworkUrlForView(selectedPreview?.artwork, "story");
 
   const sharedCaption = selectedPreview ? getSharedCaptionText(selectedPreview.captions) : "";
   const enabledFormats = selectedPreview?.enabledFormats ?? [];
@@ -1358,12 +1362,7 @@ function PreviewPanel({ onToast }: { onToast: (message: string) => void }) {
             const preview =
               session.previewContents.find((c) => c.milestoneId === milestone.id) ?? null;
             const meta = previewListMeta(preview, milestone.platformFormats);
-            const thumb =
-              preview?.artwork.feedUrl && !isPlaceholderArtworkUrl(preview.artwork.feedUrl)
-                ? preview.artwork.feedUrl
-                : preview?.artwork.storyUrl && !isPlaceholderArtworkUrl(preview.artwork.storyUrl)
-                  ? preview.artwork.storyUrl
-                  : null;
+            const thumb = displayArtworkUrlForView(preview?.artwork, "feed");
             const isRenaming = renamingId === milestone.id;
             return (
               <div
@@ -2053,11 +2052,20 @@ function ReviewPanel({
     null;
   const reviewerName = approverStep?.assigneeName?.trim() || null;
 
-  const selectedId = session.selectedMilestoneId ?? milestones[0]?.id ?? null;
+  const selectedId = resolveSelectedMilestoneId(
+    session.selectedMilestoneId,
+    milestones,
+  );
   const selectedMilestone = milestones.find((m) => m.id === selectedId) ?? null;
   const selectedPreview =
     session.previewContents.find((c) => c.milestoneId === selectedId) ?? null;
   const selectedIndex = milestones.findIndex((m) => m.id === selectedId);
+
+  useEffect(() => {
+    if (selectedId && selectedId !== session.selectedMilestoneId) {
+      setSelectedMilestoneId(selectedId);
+    }
+  }, [selectedId, session.selectedMilestoneId, setSelectedMilestoneId]);
 
   const blockers = useMemo(() => {
     const items: Array<{ milestoneId: string; name: string; gap: string }> = [];
@@ -2101,16 +2109,8 @@ function ReviewPanel({
       : "Send for approval"
     : "Approve all & schedule";
 
-  const feedUrl =
-    selectedPreview?.artwork.feedUrl &&
-    !isPlaceholderArtworkUrl(selectedPreview.artwork.feedUrl)
-      ? selectedPreview.artwork.feedUrl
-      : null;
-  const storyUrl =
-    selectedPreview?.artwork.storyUrl &&
-    !isPlaceholderArtworkUrl(selectedPreview.artwork.storyUrl)
-      ? selectedPreview.artwork.storyUrl
-      : null;
+  const feedUrl = displayArtworkUrlForView(selectedPreview?.artwork, "feed");
+  const storyUrl = displayArtworkUrlForView(selectedPreview?.artwork, "story");
   const sharedCaption = selectedPreview
     ? getSharedCaptionText(selectedPreview.captions)
     : "";
@@ -2247,12 +2247,7 @@ function ReviewPanel({
               session.previewContents.find((c) => c.milestoneId === milestone.id) ?? null;
             const meta = previewListMeta(preview, milestone.platformFormats);
             const dateLabel = reviewPostDateLabel(milestone, preview);
-            const thumb =
-              preview?.artwork.feedUrl && !isPlaceholderArtworkUrl(preview.artwork.feedUrl)
-                ? preview.artwork.feedUrl
-                : preview?.artwork.storyUrl && !isPlaceholderArtworkUrl(preview.artwork.storyUrl)
-                  ? preview.artwork.storyUrl
-                  : null;
+            const thumb = displayArtworkUrlForView(preview?.artwork, "feed");
             return (
               <button
                 key={milestone.id}

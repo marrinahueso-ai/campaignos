@@ -6,8 +6,10 @@ import {
   hydrateCampaignBuilderSession,
   mergeCampaignBuilderSessions,
   normalizeCampaignBuilderSession,
+  resolveSelectedMilestoneId,
 } from "../normalize-session.ts";
 import { buildDefaultSession, localSessionKey } from "../seed-data.ts";
+import { displayArtworkUrlForView } from "../platform-utils.ts";
 import { toCreativeConfiguration } from "../creative-config.ts";
 import {
   isStaleDemoCaption,
@@ -384,6 +386,34 @@ describe("normalizeCampaignBuilderSession", () => {
     assert.ok(twoWeek);
     // Default seed: two-week reminder is 14 days before the event.
     assert.equal(twoWeek.suggestedDate, "2026-07-22");
+  });
+
+  it("heals a stale selectedMilestoneId to the first plan post", () => {
+    const defaults = buildDefaultSession("evt-1", "Fall Picnic", "2026-10-16");
+    const first = defaults.milestones[0];
+    assert.ok(first);
+
+    const normalized = normalizeCampaignBuilderSession(
+      {
+        milestones: defaults.milestones,
+        previewContents: defaults.previewContents,
+        selectedMilestoneId: "milestone-that-no-longer-exists",
+      },
+      "evt-1",
+      "Fall Picnic",
+      "2026-10-16",
+    );
+
+    assert.equal(normalized.selectedMilestoneId, first.id);
+  });
+
+  it("resolveSelectedMilestoneId falls back when the id is missing from the plan", () => {
+    assert.equal(
+      resolveSelectedMilestoneId("gone", [{ id: "a" }, { id: "b" }]),
+      "a",
+    );
+    assert.equal(resolveSelectedMilestoneId("b", [{ id: "a" }, { id: "b" }]), "b");
+    assert.equal(resolveSelectedMilestoneId(null, []), null);
   });
 
   it("forces the first milestone category to awareness", () => {
@@ -1100,6 +1130,32 @@ describe("prompt guardrails for artwork generation", () => {
     assert.match(
       CAMPAIGN_BUILDER_STYLE_LOCK_RULES,
       /Apply ONLY the user's explicit change list/,
+    );
+  });
+});
+
+describe("displayArtworkUrlForView", () => {
+  it("falls back across feed and story so thumbs and phone stay aligned", () => {
+    assert.equal(
+      displayArtworkUrlForView(
+        { feedUrl: null, storyUrl: "https://cdn.example/story.png" },
+        "feed",
+      ),
+      "https://cdn.example/story.png",
+    );
+    assert.equal(
+      displayArtworkUrlForView(
+        { feedUrl: "https://cdn.example/feed.png", storyUrl: null },
+        "story",
+      ),
+      "https://cdn.example/feed.png",
+    );
+    assert.equal(
+      displayArtworkUrlForView(
+        { feedUrl: "https://cdn.example/feed.png", storyUrl: "https://cdn.example/story.png" },
+        "feed",
+      ),
+      "https://cdn.example/feed.png",
     );
   });
 });
