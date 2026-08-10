@@ -218,34 +218,45 @@ export function NewsletterComposer({
   }, [monthOptions, monthFilter]);
 
   /**
-   * Fire-and-forget durable save to the `newsletters` row (best-effort). Once
-   * a newsletter id exists, saves go through `editContentRequiringReapproval`
-   * instead of plain `saveDraft` so that editing an already-approved/scheduled
-   * newsletter automatically rolls it back to `draft` when content changed
-   * (no-op for newsletters that aren't approved yet).
+   * Durable save to the `newsletters` row. Returns the newsletter id on
+   * success, or an error message when the save fails.
    */
-  const flushDurableDraft = useCallback(async (snapshot: NewsletterComposerState) => {
+  const flushDurableDraft = useCallback(async (snapshot: NewsletterComposerState): Promise<{
+    ok: true;
+    newsletterId: string;
+  } | { ok: false; error: string } | { ok: true; newsletterId: null }> => {
     const orgId = organizationIdRef.current;
-    if (!orgId) return;
+    if (!orgId) {
+      return { ok: false, error: "No organization selected — refresh and try again." };
+    }
     const fields = {
       title: snapshot.issueName?.trim() || snapshot.subject?.trim() || "Untitled newsletter",
       subject: snapshot.subject,
+      fromDisplayName: snapshot.fromName,
       composerState: snapshot,
     };
     try {
       if (newsletterIdRef.current) {
-        await editNewsletterContentRequiringReapprovalAction({
+        const result = await editNewsletterContentRequiringReapprovalAction({
           newsletterId: newsletterIdRef.current,
           fields,
         });
-        return;
+        if (!result.ok) {
+          return { ok: false, error: result.error };
+        }
+        return { ok: true, newsletterId: result.newsletterId };
       }
       const result = await saveNewsletterDraftAction({ newsletterId: null, fields });
-      if (result.ok) {
-        setNewsletterId(result.newsletterId);
+      if (!result.ok) {
+        return { ok: false, error: result.error };
       }
-    } catch {
-      /* durable save is best-effort — local draft already covers offline resilience */
+      setNewsletterId(result.newsletterId);
+      return { ok: true, newsletterId: result.newsletterId };
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : "Could not save the draft.",
+      };
     }
   }, [setNewsletterId]);
 
@@ -257,8 +268,12 @@ export function NewsletterComposer({
     setDraftStatus({ kind: "saving" });
     try {
       await saveComposerDraft(orgId, snapshot);
-      await flushDurableDraft(snapshot);
+      const durable = await flushDurableDraft(snapshot);
       if (seq !== saveSeqRef.current) return;
+      if (durable.ok === false) {
+        setDraftStatus({ kind: "error", message: durable.error });
+        return;
+      }
       setDraftStatus({ kind: "saved", at: Date.now() });
     } catch {
       if (seq !== saveSeqRef.current) return;
@@ -437,8 +452,29 @@ export function NewsletterComposer({
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
-    await flushDraft();
-    return newsletterIdRef.current;
+    if (!hydratedRef.current) {
+      hydratedRef.current = true;
+      setHydrated(true);
+    }
+    const snapshot = stateRef.current;
+    const orgId = organizationIdRef.current;
+    try {
+      await saveComposerDraft(orgId, snapshot);
+    } catch {
+      /* local draft is best-effort */
+    }
+    const durable = await flushDurableDraft(snapshot);
+    if (!durable.ok) {
+      setDraftStatus({ kind: "error", message: durable.error });
+      window.alert(durable.error || "Could not save the draft — try again.");
+      return null;
+    }
+    if (!durable.newsletterId) {
+      window.alert("Could not save the draft — try again.");
+      return null;
+    }
+    setDraftStatus({ kind: "saved", at: Date.now() });
+    return durable.newsletterId;
   }
 
   async function onSendTest(emails: string[]) {
@@ -470,10 +506,7 @@ export function NewsletterComposer({
     setSendingApproval(true);
     try {
       const id = await ensureDurableSave();
-      if (!id) {
-        window.alert("Could not save the draft — try again.");
-        return;
-      }
+      if (!id) return;
       router.push(`/newsletters/${id}?prepare=approval`);
     } finally {
       setSendingApproval(false);

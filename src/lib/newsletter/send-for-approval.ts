@@ -221,7 +221,7 @@ export async function sendNewsletterForApproval(
 
   const versionResult = await createVersionFromNewsletter({
     newsletter,
-    createdBy: membership?.user.id ?? null,
+    createdBy: membership?.user.userId ?? null,
   });
   if (!versionResult.ok) {
     return {
@@ -260,6 +260,7 @@ export async function sendNewsletterForApproval(
     workflow_status: workflowStatus,
     assigned_organization_role_id: assignee.organizationRoleId,
     assigned_user_id: assignee.assignedUserId,
+    // approval_scheduling_items.requested_by_user_id → organization_users.id
     requested_by_user_id: membership?.user.id ?? null,
     delivery_method: "draft-only",
     platforms: [] as string[],
@@ -306,8 +307,9 @@ export async function sendNewsletterForApproval(
     .from("newsletters")
     .update({
       status: "needs_approval",
+      current_version_id: versionResult.version.id,
       approval_scheduling_item_id: schedulingItemId,
-      submitted_by: membership?.user.id ?? null,
+      submitted_by: membership?.user.userId ?? null,
       submitted_at: now,
       change_request_note: null,
       updated_at: now,
@@ -326,7 +328,7 @@ export async function sendNewsletterForApproval(
   await logNewsletterAuditEvent({
     organizationId: organization.id,
     newsletterId: newsletter.id,
-    actorUserId: membership?.user.id ?? null,
+    actorUserId: membership?.user.userId ?? null,
     eventType: "submitted_for_approval",
     detail: { schedulingItemId, versionId: versionResult.version.id },
   });

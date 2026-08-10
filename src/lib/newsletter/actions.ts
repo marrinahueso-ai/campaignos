@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { hasPermission, requirePermission } from "@/lib/access-templates/effective-access";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
+import { getAuthUser } from "@/lib/auth/queries";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import type { NewsletterComposerState } from "@/lib/newsletter-composer/types";
 import {
@@ -43,7 +44,20 @@ function revalidateNewsletter(newsletterId?: string | null) {
   revalidatePath("/newsletter-composer");
   if (newsletterId) {
     revalidatePath(`/newsletter-composer?newsletterId=${newsletterId}`);
+    revalidatePath(`/newsletters/${newsletterId}`);
   }
+  revalidatePath("/newsletters");
+}
+
+/**
+ * Auth user id for FKs that reference `auth.users` (created_by, approved_by, …).
+ * Do NOT use EffectiveAccess.membershipId — that is `organization_users.id`.
+ */
+async function resolveAuthActorUserId(): Promise<string | null> {
+  const authUser = await getAuthUser();
+  if (authUser?.id) return authUser.id;
+  const membership = await getActiveMembership();
+  return membership?.user.userId ?? null;
 }
 
 async function requireNewsletterContext(): Promise<
@@ -54,8 +68,8 @@ async function requireNewsletterContext(): Promise<
   if (!organization) {
     return { ok: false, error: "Sign in and set up your organization first." };
   }
-  const membership = await getActiveMembership();
-  return { ok: true, organizationId: organization.id, actorUserId: membership?.user.id ?? null };
+  const actorUserId = await resolveAuthActorUserId();
+  return { ok: true, organizationId: organization.id, actorUserId };
 }
 
 export interface NewsletterDraftFieldsInput {
@@ -98,6 +112,7 @@ export async function saveDraft(input: {
     return { ok: false, error: access.error };
   }
 
+  const actorUserId = await resolveAuthActorUserId();
   const supabase = await createClient();
   const now = new Date().toISOString();
 
@@ -106,21 +121,22 @@ export async function saveDraft(input: {
       .from("newsletters")
       .insert({
         organization_id: access.organizationId,
-        created_by: access.membershipId,
-        updated_by: access.membershipId,
+        created_by: actorUserId,
+        updated_by: actorUserId,
         ...draftFieldsToPatch(input.fields),
       })
       .select("id")
       .maybeSingle();
 
     if (error || !data?.id) {
+      console.error("newsletter saveDraft create failed:", error?.message);
       return { ok: false, error: error?.message ?? "Unable to create newsletter draft." };
     }
 
     await logNewsletterAuditEvent({
       organizationId: access.organizationId,
       newsletterId: data.id,
-      actorUserId: access.membershipId,
+      actorUserId,
       eventType: "draft_saved",
       detail: { created: true },
     });
@@ -132,20 +148,21 @@ export async function saveDraft(input: {
     .from("newsletters")
     .update({
       ...draftFieldsToPatch(input.fields),
-      updated_by: access.membershipId,
+      updated_by: actorUserId,
       updated_at: now,
     })
     .eq("id", input.newsletterId)
     .eq("organization_id", access.organizationId);
 
   if (error) {
+    console.error("newsletter saveDraft update failed:", error.message);
     return { ok: false, error: error.message };
   }
 
   await logNewsletterAuditEvent({
     organizationId: access.organizationId,
     newsletterId: input.newsletterId,
-    actorUserId: access.membershipId,
+    actorUserId,
     eventType: "draft_saved",
     detail: { created: false },
   });
@@ -313,7 +330,7 @@ export async function approveNewsletter(
   return applyNewsletterApproval({
     organizationId: access.organizationId,
     newsletterId,
-    actorUserId: access.membershipId,
+    actorUserId: await resolveAuthActorUserId(),
   });
 }
 
@@ -334,12 +351,11 @@ export async function approveNewsletterForApprovalsHub(
   if (!organization) {
     return { ok: false, error: "Sign in and set up your organization first." };
   }
-  const membership = await getActiveMembership();
 
   return applyNewsletterApproval({
     organizationId: organization.id,
     newsletterId,
-    actorUserId: membership?.user.id ?? null,
+    actorUserId: await resolveAuthActorUserId(),
   });
 }
 
@@ -360,7 +376,6 @@ export async function requestNewsletterChangesForApprovalsHub(input: {
   if (!organization) {
     return { ok: false, error: "Sign in and set up your organization first." };
   }
-  const membership = await getActiveMembership();
 
   const newsletter = await getNewsletterById(organization.id, input.newsletterId);
   if (!newsletter) {
@@ -387,7 +402,7 @@ export async function requestNewsletterChangesForApprovalsHub(input: {
   await logNewsletterAuditEvent({
     organizationId: organization.id,
     newsletterId: input.newsletterId,
-    actorUserId: membership?.user.id ?? null,
+    actorUserId: await resolveAuthActorUserId(),
     eventType: "changes_requested",
     detail: { note },
   });
@@ -421,7 +436,7 @@ export async function sendNow(input: {
   const result = await sendNewsletterNow({
     organizationId: access.organizationId,
     newsletterId: input.newsletterId,
-    actorUserId: access.membershipId,
+    actorUserId: await resolveAuthActorUserId(),
     hasSendPermission: true,
     idempotencyKey: input.idempotencyKey,
   });
@@ -445,7 +460,7 @@ export async function schedule(input: {
     organizationId: access.organizationId,
     newsletterId: input.newsletterId,
     scheduledFor: input.scheduledFor,
-    actorUserId: access.membershipId,
+    actorUserId: await resolveAuthActorUserId(),
     hasSendPermission: true,
   });
 
@@ -465,7 +480,7 @@ export async function cancelSchedule(
   const result = await cancelNewsletterSchedule({
     organizationId: access.organizationId,
     newsletterId,
-    actorUserId: access.membershipId,
+    actorUserId: await resolveAuthActorUserId(),
   });
   revalidateNewsletter(newsletterId);
   return result;
@@ -483,7 +498,7 @@ export async function reschedule(input: {
     organizationId: access.organizationId,
     newsletterId: input.newsletterId,
     scheduledFor: input.scheduledFor,
-    actorUserId: access.membershipId,
+    actorUserId: await resolveAuthActorUserId(),
   });
   revalidateNewsletter(input.newsletterId);
   return result;
@@ -533,9 +548,10 @@ export async function addContact(input: {
     firstName: input.firstName,
     lastName: input.lastName,
     consentNote: input.consentNote,
-    actorUserId: access.membershipId,
+    actorUserId: await resolveAuthActorUserId(),
   });
   revalidatePath("/newsletter-composer");
+  revalidatePath("/newsletter-contacts");
   return result;
 }
 
@@ -560,10 +576,11 @@ export async function importContactsCsv(input: {
     organizationId: access.organizationId,
     rows: input.rows,
     filename: input.filename,
-    importedBy: access.membershipId,
+    importedBy: await resolveAuthActorUserId(),
     attested: input.attested,
   });
   revalidatePath("/newsletter-composer");
+  revalidatePath("/newsletter-contacts");
   return result;
 }
 
@@ -579,9 +596,10 @@ export async function createAudience(input: {
     organizationId: access.organizationId,
     name: input.name,
     description: input.description,
-    createdBy: access.membershipId,
+    createdBy: await resolveAuthActorUserId(),
   });
   revalidatePath("/newsletter-composer");
+  revalidatePath("/newsletter-contacts");
   return result.ok ? { ok: true, audienceId: result.audience.id } : result;
 }
 
