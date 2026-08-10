@@ -84,15 +84,7 @@ const FEATURED_TUTORIALS: ReadonlyArray<
   FeaturedVideoTutorial | FeaturedLinkTutorial
 > = [
   { kind: "video", tutorialId: "create-an-event" },
-  {
-    kind: "link",
-    id: "create-with-ai",
-    icon: Sparkles,
-    title: "Creating social posts with AI",
-    description:
-      "See Create with AI turn one event into artwork, captions, and milestones.",
-    href: "/features#create-with-ai",
-  },
+  { kind: "video", tutorialId: "create-with-ai" },
   {
     kind: "link",
     id: "volunteers",

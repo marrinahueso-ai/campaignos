@@ -9,6 +9,13 @@
 
 User-initiated narrated walkthroughs on `/resources` Featured Tutorials. Separate from silent homepage Product Tour demos (`product-demo-videos.ts`).
 
+## Shipped tutorials
+
+| Id | Title | MP4 | Poster |
+|----|-------|-----|--------|
+| `create-an-event` | Create your first event | `create-an-event-tutorial.mp4` | `create-an-event-tutorial.jpg` |
+| `create-with-ai` | Creating social posts with AI | `create-with-ai-tutorial.mp4` | `create-with-ai-tutorial.jpg` |
+
 ## Assets
 
 | Kind | Path |

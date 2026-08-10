@@ -26,6 +26,19 @@ describe("resource-tutorials registry", () => {
     assert.equal(tutorial.captionsSrc, null);
   });
 
+  it("exports create-with-ai as the second narrated tutorial", () => {
+    assert.ok(RESOURCE_TUTORIAL_IDS.includes("create-with-ai"));
+    const tutorial = RESOURCE_TUTORIALS["create-with-ai"];
+    assert.equal(tutorial.title, "Creating social posts with AI");
+    assert.match(tutorial.description, /Create with AI/i);
+    assert.equal(tutorial.src, "/videos/resources/create-with-ai-tutorial.mp4");
+    assert.equal(
+      tutorial.poster,
+      "/images/resources/tutorials/create-with-ai-tutorial.jpg",
+    );
+    assert.equal(tutorial.captionsSrc, null);
+  });
+
   it("has on-disk video and poster assets for every tutorial", () => {
     for (const id of RESOURCE_TUTORIAL_IDS) {
       const tutorial = RESOURCE_TUTORIALS[id];
@@ -42,6 +55,7 @@ describe("resource-tutorials registry", () => {
 
   it("resolves tutorials by id and documents captions status", () => {
     assert.equal(getResourceTutorial("create-an-event")?.id, "create-an-event");
+    assert.equal(getResourceTutorial("create-with-ai")?.id, "create-with-ai");
     assert.equal(getResourceTutorial("missing"), null);
     assert.equal(RESOURCE_TUTORIAL_QUERY_PARAM, "tutorial");
     assert.match(RESOURCE_TUTORIALS_CAPTIONS_STATUS, /No caption/i);

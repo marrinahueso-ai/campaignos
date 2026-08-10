@@ -7,7 +7,7 @@
  * Distinct from silent homepage marketing demos in `product-demo-videos.ts`.
  */
 
-export type ResourceTutorialId = "create-an-event";
+export type ResourceTutorialId = "create-an-event" | "create-with-ai";
 
 export type ResourceTutorial = {
   id: ResourceTutorialId;
@@ -35,6 +35,16 @@ export const RESOURCE_TUTORIALS: Record<ResourceTutorialId, ResourceTutorial> = 
     src: "/videos/resources/create-an-event-tutorial.mp4",
     poster: "/images/resources/tutorials/create-an-event-tutorial.jpg",
     label: "Create your first event — narrated Hey Ralli tutorial",
+    captionsSrc: null,
+  },
+  "create-with-ai": {
+    id: "create-with-ai",
+    title: "Creating social posts with AI",
+    description:
+      "Turn one event into ready-to-share artwork, captions, and a coordinated social campaign with Create with AI.",
+    src: "/videos/resources/create-with-ai-tutorial.mp4",
+    poster: "/images/resources/tutorials/create-with-ai-tutorial.jpg",
+    label: "Creating social posts with AI — narrated Hey Ralli tutorial",
     captionsSrc: null,
   },
 };
