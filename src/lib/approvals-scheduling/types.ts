@@ -45,6 +45,13 @@ export interface UnifiedApprovalPreview {
   storyCaptionSnippet: string | null;
   feedArtworkUrl: string | null;
   storyArtworkUrl: string | null;
+  /** Newsletter-only: frozen rendered HTML for Approvals preview. */
+  newsletterHtml?: string | null;
+  /** Newsletter-only: composer snapshot for in-app email preview chrome. */
+  newsletterSnapshot?: unknown | null;
+  /** Newsletter-only: proposed (or approved) audience for Visibility. */
+  newsletterAudienceId?: string | null;
+  newsletterAudienceName?: string | null;
 }
 
 export const EMPTY_UNIFIED_APPROVAL_PREVIEW: UnifiedApprovalPreview = {
@@ -52,6 +59,10 @@ export const EMPTY_UNIFIED_APPROVAL_PREVIEW: UnifiedApprovalPreview = {
   storyCaptionSnippet: null,
   feedArtworkUrl: null,
   storyArtworkUrl: null,
+  newsletterHtml: null,
+  newsletterSnapshot: null,
+  newsletterAudienceId: null,
+  newsletterAudienceName: null,
 };
 
 export interface UnifiedApprovalHistoryEntry {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -29,8 +30,11 @@ import {
 import {
   isNewsletterMilestoneId,
   newsletterComposerHref,
+  newsletterDetailHref,
   parseNewsletterIdFromMilestoneId,
 } from "@/lib/newsletter/approval";
+import { NewsletterApprovalReviewPreview } from "@/components/newsletters/NewsletterApprovalPreview";
+import type { NewsletterComposerState } from "@/lib/newsletter-composer/types";
 import {
   campaignBuilderEditArtworkHref,
   campaignBuilderPreviewMilestoneHref,
@@ -389,20 +393,14 @@ export function ReviewDrawer({
             </p>
 
             {isNewsletter ? (
-              <div className="mb-6 flex items-start gap-3 rounded-[14px] border border-cos-border bg-white/70 px-4 py-3.5">
-                <Mail
-                  className="mt-0.5 h-5 w-5 shrink-0 text-[#6b8171]"
-                  strokeWidth={1.75}
-                />
-                <div>
-                  <p className="text-sm font-semibold text-cos-text">
-                    {caption || "No subject line yet"}
-                  </p>
-                  <p className="mt-1 text-xs text-cos-muted">
-                    Open the newsletter composer to review the full draft.
-                  </p>
-                </div>
-              </div>
+              <NewsletterApprovalReviewPreview
+                subject={caption}
+                html={preview.newsletterHtml}
+                snapshot={
+                  (preview.newsletterSnapshot as NewsletterComposerState | null) ??
+                  null
+                }
+              />
             ) : isFlyer ? (
               <div className="mb-6 max-w-[280px]">
                 <p className="mb-2 text-[10px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
@@ -552,13 +550,39 @@ export function ReviewDrawer({
                   className="mt-0.5 h-4 w-4 shrink-0 text-[#6b8171]"
                   strokeWidth={1.75}
                 />
-                <p>
-                  {isNewsletter
-                    ? "Sent to your saved newsletter audience"
-                    : isFlyer
-                      ? "Shared as a downloadable / printable flyer"
-                      : "Public (Anyone on or off Facebook)"}
-                </p>
+                <div className="min-w-0 space-y-1.5">
+                  {isNewsletter ? (
+                    <>
+                      <p>
+                        {preview.newsletterAudienceName
+                          ? `Proposed audience: ${preview.newsletterAudienceName}`
+                          : "Proposed newsletter audience"}
+                      </p>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold">
+                        {preview.newsletterAudienceId ? (
+                          <Link
+                            href={`/newsletter-contacts?tab=audiences&audienceId=${encodeURIComponent(preview.newsletterAudienceId)}`}
+                            className="text-[#2f4a3c] underline-offset-2 hover:underline"
+                          >
+                            View / edit members
+                          </Link>
+                        ) : null}
+                        {newsletterId ? (
+                          <Link
+                            href={newsletterDetailHref(newsletterId)}
+                            className="text-[#2f4a3c] underline-offset-2 hover:underline"
+                          >
+                            Open newsletter details
+                          </Link>
+                        ) : null}
+                      </div>
+                    </>
+                  ) : isFlyer ? (
+                    <p>Shared as a downloadable / printable flyer</p>
+                  ) : (
+                    <p>Public (Anyone on or off Facebook)</p>
+                  )}
+                </div>
               </div>
             </section>
 

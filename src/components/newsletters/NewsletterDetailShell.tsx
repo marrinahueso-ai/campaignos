@@ -210,12 +210,31 @@ function PrepareForApprovalModal({
           {audiences.length === 0 ? (
             <span className="mt-1 block text-xs text-cos-muted">
               No audiences yet —{" "}
-              <Link href="/newsletter-contacts" className="font-semibold underline-offset-2 hover:underline">
+              <Link
+                href={`/newsletter-contacts?tab=audiences&returnTo=${encodeURIComponent(`/newsletters/${newsletter.id}?prepare=approval`)}`}
+                className="font-semibold underline-offset-2 hover:underline"
+              >
                 create one in Newsletter Contacts
               </Link>
               .
             </span>
-          ) : null}
+          ) : (
+            <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-cos-muted">
+              <Link
+                href={`/newsletter-contacts?tab=audiences${audienceId ? `&audienceId=${encodeURIComponent(audienceId)}` : ""}&returnTo=${encodeURIComponent(`/newsletters/${newsletter.id}?prepare=approval`)}`}
+                className="font-semibold text-cos-text underline-offset-2 hover:underline"
+              >
+                {audienceId ? "View / edit audience members" : "Manage audiences & members"}
+              </Link>
+              <span aria-hidden>·</span>
+              <Link
+                href={`/newsletter-contacts?tab=contacts&returnTo=${encodeURIComponent(`/newsletters/${newsletter.id}?prepare=approval`)}`}
+                className="underline-offset-2 hover:underline"
+              >
+                Add contacts
+              </Link>
+            </span>
+          )}
         </label>
         <label className="block text-sm">
           <span className="mb-1 block font-semibold text-cos-text">
@@ -395,10 +414,14 @@ export function NewsletterDetailShell({
         </div>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_1.1fr]">
-        <div className="space-y-5">
-          <SettingsBox title="Details" description="Who this is from and who it's going to.">
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 text-sm">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
+        <div className="space-y-4">
+          <SettingsBox
+            title="Details"
+            description="Who this is from and who it's going to."
+            compact
+          >
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
               <dt className="text-cos-muted">From</dt>
               <dd className="text-cos-text">
                 {newsletter.fromDisplayName || "—"}
@@ -409,29 +432,83 @@ export function NewsletterDetailShell({
               <dt className="text-cos-muted">Reply-to</dt>
               <dd className="text-cos-text">{newsletter.replyToEmail || "—"}</dd>
               <dt className="text-cos-muted">Created by</dt>
-              <dd className="text-cos-text">{creatorName ?? "—"}</dd>
-              {submittedByName ? (
-                <>
-                  <dt className="text-cos-muted">Submitted by</dt>
-                  <dd className="text-cos-text">{submittedByName}</dd>
-                </>
-              ) : null}
-              {approvedByName ? (
+              <dd className="text-cos-text">
+                {creatorName ?? "—"}
+                <span className="text-cos-muted">
+                  {" "}
+                  · {formatDateTime(newsletter.createdAt)}
+                </span>
+              </dd>
+              <dt className="text-cos-muted">Submitted by</dt>
+              <dd className="text-cos-text">
+                {submittedByName || newsletter.submittedAt ? (
+                  <>
+                    {submittedByName ?? "—"}
+                    {newsletter.submittedAt ? (
+                      <span className="text-cos-muted">
+                        {" "}
+                        · {formatDateTime(newsletter.submittedAt)}
+                      </span>
+                    ) : null}
+                  </>
+                ) : (
+                  "—"
+                )}
+              </dd>
+              {approvedByName || newsletter.approvedAt ? (
                 <>
                   <dt className="text-cos-muted">Approved by</dt>
-                  <dd className="text-cos-text">{approvedByName}</dd>
+                  <dd className="text-cos-text">
+                    {approvedByName ?? "—"}
+                    {newsletter.approvedAt ? (
+                      <span className="text-cos-muted">
+                        {" "}
+                        · {formatDateTime(newsletter.approvedAt)}
+                      </span>
+                    ) : null}
+                  </dd>
                 </>
               ) : null}
-              {sentByName ? (
+              {sentByName || newsletter.sentAt ? (
                 <>
                   <dt className="text-cos-muted">Sent by</dt>
-                  <dd className="text-cos-text">{sentByName}</dd>
+                  <dd className="text-cos-text">
+                    {sentByName ?? "—"}
+                    {newsletter.sentAt ? (
+                      <span className="text-cos-muted">
+                        {" "}
+                        · {formatDateTime(newsletter.sentAt)}
+                      </span>
+                    ) : null}
+                  </dd>
                 </>
               ) : null}
               <dt className="text-cos-muted">Proposed audience</dt>
-              <dd className="text-cos-text">{proposedAudience?.name ?? "—"}</dd>
+              <dd className="text-cos-text">
+                {proposedAudience ? (
+                  <Link
+                    href={`/newsletter-contacts?tab=audiences&audienceId=${encodeURIComponent(proposedAudience.id)}&returnTo=${encodeURIComponent(`/newsletters/${newsletter.id}`)}`}
+                    className="font-medium underline-offset-2 hover:underline"
+                  >
+                    {proposedAudience.name}
+                  </Link>
+                ) : (
+                  "—"
+                )}
+              </dd>
               <dt className="text-cos-muted">Approved audience</dt>
-              <dd className="text-cos-text">{approvedAudience?.name ?? "—"}</dd>
+              <dd className="text-cos-text">
+                {approvedAudience ? (
+                  <Link
+                    href={`/newsletter-contacts?tab=audiences&audienceId=${encodeURIComponent(approvedAudience.id)}&returnTo=${encodeURIComponent(`/newsletters/${newsletter.id}`)}`}
+                    className="font-medium underline-offset-2 hover:underline"
+                  >
+                    {approvedAudience.name}
+                  </Link>
+                ) : (
+                  "—"
+                )}
+              </dd>
               <dt className="text-cos-muted">Proposed send time</dt>
               <dd className="text-cos-text">
                 {newsletter.proposedSendAt ? formatDateTime(newsletter.proposedSendAt) : "—"}
@@ -440,12 +517,6 @@ export function NewsletterDetailShell({
               <dd className="text-cos-text">
                 {newsletter.scheduledSendAt ? formatDateTime(newsletter.scheduledSendAt) : "—"}
               </dd>
-              {newsletter.sentAt ? (
-                <>
-                  <dt className="text-cos-muted">Sent at</dt>
-                  <dd className="text-cos-text">{formatDateTime(newsletter.sentAt)}</dd>
-                </>
-              ) : null}
               {newsletter.lastFailureReason ? (
                 <>
                   <dt className="text-cos-muted">Last failure</dt>
@@ -455,14 +526,14 @@ export function NewsletterDetailShell({
             </dl>
           </SettingsBox>
 
-          <SettingsBox title="Workflow history" description="Newest first.">
+          <SettingsBox title="Workflow history" description="Newest first." compact>
             {auditEvents.length === 0 ? (
               <p className="text-sm text-cos-muted">No activity yet.</p>
             ) : (
-              <ul className="space-y-3">
+              <ul className="max-h-[22rem] space-y-2.5 overflow-y-auto pr-1">
                 {auditEvents.map((event) => (
                   <li key={event.id} className="flex items-start justify-between gap-3 text-sm">
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-medium text-cos-text">{auditEventLabel(event.eventType)}</p>
                       {event.actorName ? (
                         <p className="text-xs text-cos-muted">{event.actorName}</p>

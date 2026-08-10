@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Upload, X } from "lucide-react";
+import { ArrowLeft, Plus, Upload, X } from "lucide-react";
 
 import { SettingsBox } from "@/components/homepage-composer/SettingsBox";
 import { TeamAccessModal } from "@/components/settings-v2/team-access/TeamAccessModal";
@@ -33,6 +34,9 @@ interface NewsletterContactsShellProps {
   contacts: NewsletterContact[];
   audiences: NewsletterAudience[];
   memberIdsByAudience: Record<string, string[]>;
+  initialTab?: "contacts" | "audiences";
+  initialAudienceId?: string | null;
+  returnTo?: string | null;
 }
 
 const STATUS_BADGE: Record<
@@ -426,15 +430,25 @@ function AudiencesPanel({
   audiences,
   contacts,
   memberIdsByAudience,
+  initialAudienceId,
   onChanged,
 }: {
   audiences: NewsletterAudience[];
   contacts: NewsletterContact[];
   memberIdsByAudience: Record<string, string[]>;
+  initialAudienceId?: string | null;
   onChanged: () => void;
 }) {
   const [selectedAudienceId, setSelectedAudienceId] = useState<string | null>(
-    audiences[0]?.id ?? null,
+    () => {
+      if (
+        initialAudienceId &&
+        audiences.some((audience) => audience.id === initialAudienceId)
+      ) {
+        return initialAudienceId;
+      }
+      return audiences[0]?.id ?? null;
+    },
   );
   const [newAudienceOpen, setNewAudienceOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -577,7 +591,10 @@ function AudiencesPanel({
         <div className="space-y-4">
           <SettingsBox
             title={`Members — ${selectedAudience.name}`}
-            description={selectedAudience.description ?? undefined}
+            description={
+              selectedAudience.description?.trim() ||
+              "Review who is on this list. Remove anyone who shouldn’t receive this newsletter."
+            }
             compact
           >
             {members.length === 0 ? (
@@ -673,12 +690,20 @@ export function NewsletterContactsShell({
   contacts,
   audiences,
   memberIdsByAudience,
+  initialTab = "contacts",
+  initialAudienceId = null,
+  returnTo = null,
 }: NewsletterContactsShellProps) {
   const router = useRouter();
-  const [tab, setTab] = useState<"contacts" | "audiences">("contacts");
+  const [tab, setTab] = useState<"contacts" | "audiences">(initialTab);
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+
+  const safeReturnTo =
+    returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")
+      ? returnTo
+      : null;
 
   const filteredContacts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -696,6 +721,18 @@ export function NewsletterContactsShell({
 
   return (
     <div className="studio-page space-y-6">
+      {safeReturnTo ? (
+        <div>
+          <Link
+            href={safeReturnTo}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-cos-muted transition hover:text-cos-text"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to newsletter
+          </Link>
+        </div>
+      ) : null}
+
       <header className="flex flex-wrap items-end justify-between gap-3.5">
         <div className="min-w-0">
           <p className="studio-eyebrow">Hey Ralli</p>
@@ -785,6 +822,7 @@ export function NewsletterContactsShell({
           audiences={audiences}
           contacts={contacts}
           memberIdsByAudience={memberIdsByAudience}
+          initialAudienceId={initialAudienceId}
           onChanged={refresh}
         />
       )}

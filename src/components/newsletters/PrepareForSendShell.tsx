@@ -286,6 +286,14 @@ export function PrepareForSendShell({
             <p className="text-sm text-cos-text">
               Approved audience: <strong>{approvedAudience?.name ?? "—"}</strong>
             </p>
+            {audienceId ? (
+              <Link
+                href={`/newsletter-contacts?tab=audiences&audienceId=${encodeURIComponent(audienceId)}&returnTo=${encodeURIComponent(`/newsletters/${newsletter.id}/send`)}`}
+                className="inline-block text-xs font-semibold text-cos-text underline-offset-2 hover:underline"
+              >
+                View / edit audience members
+              </Link>
+            ) : null}
             {eligibility ? (
               <p className="text-sm text-cos-muted">
                 {eligibility.eligible} eligible · {eligibility.excluded} excluded ·{" "}

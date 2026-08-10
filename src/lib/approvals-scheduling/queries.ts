@@ -4,6 +4,10 @@ import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { isNewsletterMilestoneId } from "@/lib/newsletter/approval";
 import {
+  attachNewsletterPreviewsToItems,
+  loadNewsletterApprovalPreviews,
+} from "@/lib/newsletter/approval-previews";
+import {
   mapClassicApprovalItem,
   mapSchedulingItemRow,
 } from "@/lib/approvals-scheduling/map-items";
@@ -621,13 +625,16 @@ async function mapSchedulingRowsToUnifiedItems(input: {
     ? deduped
     : applyLiveMilestoneNames(deduped, liveNames);
 
-  return (
+  const withMeta = (
     leanEnrich
       ? named
       : named.map((item) =>
           applyMetaSlotOutcomesToApprovalItem(item, slotOutcomes),
         )
   ).sort((left, right) => right.requestedAt.localeCompare(left.requestedAt));
+
+  const newsletterPreviews = await loadNewsletterApprovalPreviews(withMeta);
+  return attachNewsletterPreviewsToItems(withMeta, newsletterPreviews);
 }
 
 async function buildUnifiedApprovalsPageData(options?: {
@@ -1124,9 +1131,12 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
     liveNames,
   );
 
-  const items = named
+  const withMeta = named
     .map((item) => applyMetaSlotOutcomesToApprovalItem(item, slotOutcomes))
     .sort((left, right) => right.requestedAt.localeCompare(left.requestedAt));
+
+  const newsletterPreviews = await loadNewsletterApprovalPreviews(withMeta);
+  const items = attachNewsletterPreviewsToItems(withMeta, newsletterPreviews);
 
   const counts = summarizeCounts(items);
   const campaigns = [

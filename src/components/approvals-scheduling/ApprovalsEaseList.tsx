@@ -11,6 +11,8 @@ import {
   type UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
 import { AppImage } from "@/components/images/AppImage";
+import { NewsletterApprovalCardPreview } from "@/components/newsletters/NewsletterApprovalPreview";
+import type { NewsletterComposerState } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
 
 function artBackground(item: UnifiedApprovalItem): string {
@@ -119,29 +121,48 @@ export function ApprovalsFocusCard({
   const chip = approvalOutcomeChip(item);
   const showRetry = canRetryFailedApproval(item) && Boolean(onRetry);
   const preview = getUnifiedApprovalPreview(item);
+  const isNewsletter =
+    item.channel === "newsletter" ||
+    item.campaignMilestoneId?.startsWith("newsletter:");
 
   return (
-    <article className="grid gap-3 rounded-[22px] border border-cos-border bg-cos-card p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:grid-cols-[minmax(240px,300px)_1fr] md:gap-4 md:p-3.5">
-      <ArtTile
-        item={item}
-        className="aspect-square w-full overflow-hidden rounded-[14px]"
-        width={800}
-        priority
-        label={
-          preview.feedArtworkUrl
-            ? "Feed"
-            : preview.storyArtworkUrl
-              ? "Story"
-              : item.channel === "flyer" ||
-                  item.campaignMilestoneId?.startsWith("flyer-composer:")
-                ? "Flyer"
-                : item.channel === "newsletter" ||
-                    item.campaignMilestoneId?.startsWith("newsletter:")
-                  ? "Newsletter"
+    <article
+      className={cn(
+        "grid gap-3 rounded-[22px] border border-cos-border bg-cos-card p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:gap-4 md:p-3.5",
+        isNewsletter
+          ? "md:grid-cols-[minmax(160px,200px)_1fr]"
+          : "md:grid-cols-[minmax(240px,300px)_1fr]",
+      )}
+    >
+      {isNewsletter ? (
+        <NewsletterApprovalCardPreview
+          subject={preview.captionText}
+          html={preview.newsletterHtml}
+          snapshot={
+            (preview.newsletterSnapshot as NewsletterComposerState | null) ??
+            null
+          }
+          className="aspect-[3/4] w-full min-h-[160px] max-h-[260px]"
+        />
+      ) : (
+        <ArtTile
+          item={item}
+          className="aspect-square w-full overflow-hidden rounded-[14px]"
+          width={800}
+          priority
+          label={
+            preview.feedArtworkUrl
+              ? "Feed"
+              : preview.storyArtworkUrl
+                ? "Story"
+                : item.channel === "flyer" ||
+                    item.campaignMilestoneId?.startsWith("flyer-composer:")
+                  ? "Flyer"
                   : undefined
-        }
-      />
-      <div className="flex flex-col gap-3.5 p-3 sm:p-5 md:py-4 md:pr-5 md:pl-1">
+          }
+        />
+      )}
+      <div className="flex flex-col gap-3 p-3 sm:p-4 md:py-3 md:pr-4 md:pl-1">
         <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold text-cos-muted">
           <span
             className={cn(
@@ -162,12 +183,17 @@ export function ApprovalsFocusCard({
           </span>
         </div>
         <div>
-          <h2 className="font-display text-[28px] leading-tight tracking-[-0.02em] text-cos-text sm:text-[32px]">
+          <h2 className="font-display text-[1.45rem] leading-tight tracking-[-0.02em] text-cos-text sm:text-[1.75rem]">
             {item.campaignName}
           </h2>
-          <p className="mt-1.5 text-[15px] font-medium text-cos-muted italic">
+          <p className="mt-1 text-sm font-medium text-cos-muted italic">
             {item.milestoneName}
           </p>
+          {item.assigneeName?.trim() && item.assigneeName !== "Board" ? (
+            <p className="mt-2 text-xs text-cos-muted">
+              Assigned to <span className="font-semibold text-cos-text">{item.assigneeName}</span>
+            </p>
+          ) : null}
         </div>
         {item.workflowStatus === "failed" && item.publishError ? (
           <p className="line-clamp-3 text-sm leading-relaxed text-cos-muted">

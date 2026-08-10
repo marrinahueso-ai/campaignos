@@ -12,7 +12,18 @@ export const metadata = {
 
 const CONTACTS_LIMIT = 1000;
 
-export default async function NewsletterContactsPage() {
+interface NewsletterContactsPageProps {
+  searchParams: Promise<{
+    tab?: string;
+    audienceId?: string;
+    returnTo?: string;
+  }>;
+}
+
+export default async function NewsletterContactsPage({
+  searchParams,
+}: NewsletterContactsPageProps) {
+  const { tab, audienceId, returnTo } = await searchParams;
   const organization = await getCurrentOrganization();
   if (!organization) {
     return (
@@ -56,11 +67,16 @@ export default async function NewsletterContactsPage() {
     }),
   );
 
+  const initialTab = tab === "audiences" ? "audiences" : "contacts";
+
   return (
     <NewsletterContactsShell
       contacts={contacts}
       audiences={audiences}
       memberIdsByAudience={memberIdsByAudience}
+      initialTab={initialTab}
+      initialAudienceId={audienceId?.trim() || null}
+      returnTo={returnTo?.trim() || null}
     />
   );
 }

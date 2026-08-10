@@ -47,15 +47,18 @@ export default async function NewsletterDetailPage({
     notFound();
   }
 
-  const nameByMembershipId = new Map<string, string>();
+  // Newsletter actor columns (created_by, submitted_by, audit actors) store
+  // auth.users.id — not organization_users.id.
+  const nameByAuthUserId = new Map<string, string>();
   for (const member of members) {
-    nameByMembershipId.set(
-      member.id,
-      member.displayName?.trim() || member.email?.trim() || "Unknown",
+    if (!member.userId) continue;
+    nameByAuthUserId.set(
+      member.userId,
+      member.displayName?.trim() || member.email?.trim() || member.username || "Teammate",
     );
   }
-  const resolveName = (membershipId: string | null): string | null =>
-    membershipId ? nameByMembershipId.get(membershipId) ?? "Unknown" : null;
+  const resolveName = (authUserId: string | null): string | null =>
+    authUserId ? nameByAuthUserId.get(authUserId) ?? null : null;
 
   const canSendNewsletter = access ? accessHasPermission(access, "send_newsletter") : false;
   const canEditDraft = access ? accessHasPermission(access, "draft_edit") : false;
