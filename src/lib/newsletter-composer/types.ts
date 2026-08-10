@@ -5,8 +5,7 @@ export type NewsletterComposerStep =
   | "mustdos"
   | "footer"
   | "layout"
-  | "preview"
-  | "send";
+  | "preview";
 
 export type NewsletterComposerEvent = {
   id: string;

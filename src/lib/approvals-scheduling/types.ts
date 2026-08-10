@@ -63,6 +63,7 @@ export interface UnifiedApprovalHistoryEntry {
 export interface UnifiedApprovalItem {
   id: string;
   source: "classic" | "campaign_builder";
+  /** Empty string for organization-scoped items (e.g. newsletters) with no event. */
   eventId: string;
   eventTitle: string;
   campaignName: string;
@@ -144,7 +145,10 @@ export interface UnifiedApprovalsPageData {
 
 export interface ApprovalSchedulingItemRow {
   id: string;
-  event_id: string;
+  /** Null for organization-scoped items (e.g. newsletters) — see `organization_id`. */
+  event_id: string | null;
+  /** Set for organization-scoped items (e.g. newsletters); null for event-scoped rows. */
+  organization_id?: string | null;
   approval_request_id: string | null;
   communication_item_id: string | null;
   source: "classic" | "campaign_builder";

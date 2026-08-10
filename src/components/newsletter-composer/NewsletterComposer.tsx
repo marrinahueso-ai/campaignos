@@ -23,6 +23,11 @@ import { exportNewsletterHtml } from "@/lib/newsletter-composer/export-html";
 import { exportNewsletterMtk } from "@/lib/newsletter-composer/export-mtk";
 import { uploadNewsletterComposerArtworkAction } from "@/lib/newsletter-composer/artwork-actions";
 import { compressImageForUpload } from "@/lib/homepage-composer/compress-image";
+import {
+  editContentRequiringReapproval as editNewsletterContentRequiringReapprovalAction,
+  saveDraft as saveNewsletterDraftAction,
+  testSend as sendNewsletterTestEmailAction,
+} from "@/lib/newsletter/actions";
 import type {
   NewsletterComposerEvent,
   NewsletterComposerState,
@@ -43,8 +48,10 @@ import {
   Star,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -68,8 +75,7 @@ const STEPS: {
   { id: "mustdos", label: "Must-dos", hint: "Cal · vol · sponsors" },
   { id: "footer", label: "Footer", hint: "Socials · CTA" },
   { id: "layout", label: "Layout", hint: "Sort · drag" },
-  { id: "preview", label: "Preview", hint: "Phone · desktop" },
-  { id: "send", label: "Send", hint: "Copy HTML" },
+  { id: "preview", label: "Preview", hint: "Send test · approval" },
 ];
 
 function currentMonthYyyyMm(): string {
@@ -129,16 +135,24 @@ type Props = {
   organizationId: string | null;
   organizationName: string | null;
   events: NewsletterComposerEvent[];
+  /** When present, loads the durable server draft instead of the local one. */
+  initialNewsletterId?: string | null;
+  initialComposerState?: NewsletterComposerState | null;
 };
 
 export function NewsletterComposer({
   organizationId,
   organizationName,
   events,
+  initialNewsletterId = null,
+  initialComposerState = null,
 }: Props) {
+  const router = useRouter();
   const [step, setStep] = useState<NewsletterComposerStep>("header");
   const [state, setState] = useState<NewsletterComposerState>(() =>
-    buildInitialState(organizationName, events),
+    initialComposerState
+      ? normalizeComposerState(initialComposerState, organizationName, events)
+      : buildInitialState(organizationName, events),
   );
   const [hydrated, setHydrated] = useState(false);
   const [draftStatus, setDraftStatus] = useState<DraftSaveStatus>({
@@ -151,6 +165,13 @@ export function NewsletterComposer({
   const [manualVolOpen, setManualVolOpen] = useState(false);
   const [layoutSort, setLayoutSort] = useState("manual");
   const [monthFilter, setMonthFilter] = useState(currentMonthYyyyMm);
+  const [sendTestOpen, setSendTestOpen] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    message: string;
+  } | null>(null);
+  const [sendingApproval, setSendingApproval] = useState(false);
   const dragId = useRef<string | null>(null);
   const headerFileRef = useRef<HTMLInputElement>(null);
   const organizationNameRef = useRef(organizationName);
@@ -160,10 +181,25 @@ export function NewsletterComposer({
   const hydratedRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveSeqRef = useRef(0);
+  const newsletterIdRef = useRef(initialNewsletterId);
   organizationNameRef.current = organizationName;
   organizationIdRef.current = organizationId;
   eventsRef.current = events;
   stateRef.current = state;
+
+  const setNewsletterId = useCallback(
+    (id: string) => {
+      newsletterIdRef.current = id;
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        params.set("newsletterId", id);
+        router.replace(`/newsletter-composer?${params.toString()}`, {
+          scroll: false,
+        });
+      }
+    },
+    [router],
+  );
 
   const monthOptions = useMemo(
     () =>
@@ -181,6 +217,38 @@ export function NewsletterComposer({
     }
   }, [monthOptions, monthFilter]);
 
+  /**
+   * Fire-and-forget durable save to the `newsletters` row (best-effort). Once
+   * a newsletter id exists, saves go through `editContentRequiringReapproval`
+   * instead of plain `saveDraft` so that editing an already-approved/scheduled
+   * newsletter automatically rolls it back to `draft` when content changed
+   * (no-op for newsletters that aren't approved yet).
+   */
+  const flushDurableDraft = useCallback(async (snapshot: NewsletterComposerState) => {
+    const orgId = organizationIdRef.current;
+    if (!orgId) return;
+    const fields = {
+      title: snapshot.issueName?.trim() || snapshot.subject?.trim() || "Untitled newsletter",
+      subject: snapshot.subject,
+      composerState: snapshot,
+    };
+    try {
+      if (newsletterIdRef.current) {
+        await editNewsletterContentRequiringReapprovalAction({
+          newsletterId: newsletterIdRef.current,
+          fields,
+        });
+        return;
+      }
+      const result = await saveNewsletterDraftAction({ newsletterId: null, fields });
+      if (result.ok) {
+        setNewsletterId(result.newsletterId);
+      }
+    } catch {
+      /* durable save is best-effort — local draft already covers offline resilience */
+    }
+  }, [setNewsletterId]);
+
   const flushDraft = useCallback(async () => {
     if (!hydratedRef.current) return;
     const seq = ++saveSeqRef.current;
@@ -189,20 +257,37 @@ export function NewsletterComposer({
     setDraftStatus({ kind: "saving" });
     try {
       await saveComposerDraft(orgId, snapshot);
+      await flushDurableDraft(snapshot);
       if (seq !== saveSeqRef.current) return;
       setDraftStatus({ kind: "saved", at: Date.now() });
     } catch {
       if (seq !== saveSeqRef.current) return;
       setDraftStatus({ kind: "error", message: "Could not save draft" });
     }
-  }, []);
+  }, [flushDurableDraft]);
 
   // Load draft once per organization (IndexedDB ↔ localStorage, newest wins).
   // Do not re-hydrate when events/name change — that wiped in-progress edits.
+  // When a server-side newsletterId is present, its composer_state is the
+  // source of truth — never fall back to (possibly stale) local storage.
   useEffect(() => {
     let cancelled = false;
     setHydrated(false);
     hydratedRef.current = false;
+
+    if (initialNewsletterId) {
+      setState(
+        normalizeComposerState(
+          initialComposerState ?? {},
+          organizationNameRef.current,
+          eventsRef.current,
+        ),
+      );
+      newsletterIdRef.current = initialNewsletterId;
+      hydratedRef.current = true;
+      setHydrated(true);
+      return;
+    }
 
     void (async () => {
       try {
@@ -233,7 +318,8 @@ export function NewsletterComposer({
     return () => {
       cancelled = true;
     };
-  }, [organizationId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, initialNewsletterId]);
 
   // Debounced autosave — localStorage (sync) + IndexedDB.
   useEffect(() => {
@@ -342,6 +428,55 @@ export function NewsletterComposer({
       window.setTimeout(() => setCopyDone(null), 2000);
     } catch {
       window.alert("Could not copy — select and copy manually.");
+    }
+  }
+
+  /** Ensures the durable draft is saved and returns its id (or null on failure). */
+  async function ensureDurableSave(): Promise<string | null> {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    await flushDraft();
+    return newsletterIdRef.current;
+  }
+
+  async function onSendTest(emails: string[]) {
+    setSendingTest(true);
+    setTestResult(null);
+    try {
+      const id = await ensureDurableSave();
+      if (!id) {
+        setTestResult({ ok: false, message: "Could not save the draft — try again." });
+        return;
+      }
+      const result = await sendNewsletterTestEmailAction({
+        newsletterId: id,
+        recipientEmails: emails,
+      });
+      setTestResult(
+        result.ok
+          ? { ok: true, message: `Test sent to ${result.sentTo.join(", ")}.` }
+          : { ok: false, message: result.error },
+      );
+    } catch {
+      setTestResult({ ok: false, message: "Could not send the test email." });
+    } finally {
+      setSendingTest(false);
+    }
+  }
+
+  async function onSendForApproval() {
+    setSendingApproval(true);
+    try {
+      const id = await ensureDurableSave();
+      if (!id) {
+        window.alert("Could not save the draft — try again.");
+        return;
+      }
+      router.push(`/newsletters/${id}?prepare=approval`);
+    } finally {
+      setSendingApproval(false);
     }
   }
 
@@ -519,16 +654,20 @@ export function NewsletterComposer({
               previewMode={previewMode}
               setPreviewMode={setPreviewMode}
               onBack={() => nextStep("layout")}
-              onNext={() => nextStep("send")}
-            />
-          )}
-          {step === "send" && (
-            <SendStep
-              state={state}
               copyDone={copyDone}
               onCopy={copyHtml}
               onCopyMtk={copyMtk}
-              onBack={() => nextStep("preview")}
+              sendTestOpen={sendTestOpen}
+              onOpenSendTest={() => {
+                setTestResult(null);
+                setSendTestOpen(true);
+              }}
+              onCloseSendTest={() => setSendTestOpen(false)}
+              sendingTest={sendingTest}
+              testResult={testResult}
+              onSendTest={onSendTest}
+              sendingApproval={sendingApproval}
+              onSendForApproval={onSendForApproval}
             />
           )}
         </div>
@@ -2470,31 +2609,145 @@ function LayoutStep({
   );
 }
 
+function SendTestModal({
+  open,
+  onClose,
+  onSend,
+  sending,
+  result,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSend: (emails: string[]) => void;
+  sending: boolean;
+  result: { ok: boolean; message: string } | null;
+}) {
+  const [value, setValue] = useState("");
+
+  if (!open) return null;
+
+  const emails = value
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-5">
+      <button
+        type="button"
+        aria-label="Close"
+        className="absolute inset-0 bg-[rgba(28,36,48,0.55)] backdrop-blur-[3px]"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="send-test-title"
+        className="relative z-10 w-full max-w-[480px] rounded-t-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_24px_64px_rgba(28,36,48,0.28)] sm:rounded-[22px]"
+      >
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h2 id="send-test-title" className="font-display text-xl text-cos-text">
+              Send a test email
+            </h2>
+            <p className="mt-1 text-sm text-cos-muted">
+              Sends the current draft to addresses you choose — never your audience.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cos-border bg-white text-cos-muted transition hover:text-cos-text"
+          >
+            <X className="h-4 w-4" strokeWidth={1.75} />
+          </button>
+        </div>
+        <Field label="Recipient emails (comma-separated)">
+          <input
+            className={inputClass()}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="you@school.org, board@school.org"
+            disabled={sending}
+          />
+        </Field>
+        {result ? (
+          <p
+            className={cn(
+              "mt-3 text-sm",
+              result.ok ? "font-semibold text-cos-brand-sage" : "text-cos-error",
+            )}
+            role={result.ok ? undefined : "alert"}
+          >
+            {result.message}
+          </p>
+        ) : null}
+        <div className="mt-4 flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={sending}>
+            Close
+          </Button>
+          <Button
+            type="button"
+            disabled={sending || emails.length === 0}
+            onClick={() => onSend(emails)}
+          >
+            {sending ? "Sending…" : "Send test"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PreviewStep({
   state,
   previewMode,
   setPreviewMode,
   onBack,
-  onNext,
+  copyDone,
+  onCopy,
+  onCopyMtk,
+  sendTestOpen,
+  onOpenSendTest,
+  onCloseSendTest,
+  sendingTest,
+  testResult,
+  onSendTest,
+  sendingApproval,
+  onSendForApproval,
 }: {
   state: NewsletterComposerState;
   previewMode: "phone" | "desktop";
   setPreviewMode: (m: "phone" | "desktop") => void;
   onBack: () => void;
-  onNext: () => void;
+  copyDone: "html" | "mtk" | null;
+  onCopy: () => void;
+  onCopyMtk: () => void;
+  sendTestOpen: boolean;
+  onOpenSendTest: () => void;
+  onCloseSendTest: () => void;
+  sendingTest: boolean;
+  testResult: { ok: boolean; message: string } | null;
+  onSendTest: (emails: string[]) => void;
+  sendingApproval: boolean;
+  onSendForApproval: () => void;
 }) {
   return (
     <section className="space-y-4">
       <PanelHead
         title="Email preview"
-        body="Phone or desktop — colors, featured stories, and footer socials."
+        body="Phone or desktop — review, send yourself a test, then submit for approval."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="secondary" onClick={onBack}>
               ← Layout
             </Button>
-            <Button type="button" onClick={onNext}>
-              Looks good → Send
+            <Button type="button" variant="secondary" onClick={onOpenSendTest}>
+              Send test
+            </Button>
+            <Button type="button" disabled={sendingApproval} onClick={onSendForApproval}>
+              {sendingApproval ? "Saving…" : "Send for approval"}
             </Button>
           </div>
         }
@@ -2532,48 +2785,17 @@ function PreviewStep({
           <EmailPreviewDesktop state={state} />
         )}
       </div>
-    </section>
-  );
-}
 
-function SendStep({
-  state,
-  copyDone,
-  onCopy,
-  onCopyMtk,
-  onBack,
-}: {
-  state: NewsletterComposerState;
-  copyDone: "html" | "mtk" | null;
-  onCopy: () => void;
-  onCopyMtk: () => void;
-  onBack: () => void;
-}) {
-  const included = state.stories.filter((s) => s.included).length;
-  return (
-    <section className="space-y-4">
-      <PanelHead
-        title="Send or export"
-        body="Copy email-safe HTML for your ESP, or a simplified rich-text version for Membership Toolkit Quick Email."
-        actions={
-          <Button type="button" variant="secondary" onClick={onBack}>
-            ← Preview
-          </Button>
-        }
-      />
       <SettingsBox
-        title="Ready to send"
-        description={`${included} stories · subject: ${state.subject}`}
+        title="Export"
+        description="Copy email-safe HTML for your ESP, or a simplified rich-text version for Membership Toolkit Quick Email."
       >
         <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={onCopy}>
+          <Button type="button" variant="secondary" onClick={onCopy}>
             {copyDone === "html" ? "Copied!" : "Copy email HTML"}
           </Button>
           <Button type="button" variant="secondary" onClick={onCopyMtk}>
             {copyDone === "mtk" ? "Copied!" : "Copy for Membership Toolkit"}
-          </Button>
-          <Button type="button" variant="secondary" href="/create-with-ai">
-            Back to Create with AI
           </Button>
         </div>
         <p className="mt-3 text-xs text-cos-muted">
@@ -2582,6 +2804,14 @@ function SendStep({
           (no images — placeholders mark where to upload artwork in MTK).
         </p>
       </SettingsBox>
+
+      <SendTestModal
+        open={sendTestOpen}
+        onClose={onCloseSendTest}
+        onSend={onSendTest}
+        sending={sendingTest}
+        result={testResult}
+      />
     </section>
   );
 }

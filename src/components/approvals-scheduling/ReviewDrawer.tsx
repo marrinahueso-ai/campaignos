@@ -27,6 +27,11 @@ import {
   isFlyerComposerMilestoneId,
 } from "@/lib/flyer-composer/approval";
 import {
+  isNewsletterMilestoneId,
+  newsletterComposerHref,
+  parseNewsletterIdFromMilestoneId,
+} from "@/lib/newsletter/approval";
+import {
   campaignBuilderEditArtworkHref,
   campaignBuilderPreviewMilestoneHref,
 } from "@/lib/campaign-builder-v2/navigation";
@@ -58,7 +63,19 @@ function isFlyerApprovalItem(item: UnifiedApprovalItem): boolean {
   );
 }
 
-function approveButtonLabel(item: UnifiedApprovalItem, isFlyer: boolean): string {
+function isNewsletterApprovalItem(item: UnifiedApprovalItem): boolean {
+  return (
+    item.channel === "newsletter" ||
+    isNewsletterMilestoneId(item.campaignMilestoneId)
+  );
+}
+
+function approveButtonLabel(
+  item: UnifiedApprovalItem,
+  isFlyer: boolean,
+  isNewsletter: boolean,
+): string {
+  if (isNewsletter) return "Approve newsletter";
   if (isFlyer) return "Approve";
   const label = item.scheduleLabel?.trim();
   if (!label) return "Approve & schedule";
@@ -164,19 +181,27 @@ export function ReviewDrawer({
   const changeRequestComment = changeRequestDisplayComment(item.notes);
   const showChangeRequestBanner = item.workflowStatus === "changes_requested";
   const isFlyer = isFlyerApprovalItem(item);
-  const editPreviewHref = isFlyer
-    ? flyerComposerEditHref()
-    : item.campaignMilestoneId != null
-      ? campaignBuilderPreviewMilestoneHref(
-          item.eventId,
-          item.campaignMilestoneId,
-        )
-      : null;
-  const editArtworkHref = isFlyer
-    ? flyerComposerEditHref()
-    : item.campaignMilestoneId != null
-      ? campaignBuilderEditArtworkHref(item.eventId, item.campaignMilestoneId)
-      : null;
+  const isNewsletter = isNewsletterApprovalItem(item);
+  const newsletterId = isNewsletter
+    ? parseNewsletterIdFromMilestoneId(item.campaignMilestoneId)
+    : null;
+  const editPreviewHref = isNewsletter
+    ? newsletterComposerHref(newsletterId)
+    : isFlyer
+      ? flyerComposerEditHref()
+      : item.campaignMilestoneId != null
+        ? campaignBuilderPreviewMilestoneHref(
+            item.eventId,
+            item.campaignMilestoneId,
+          )
+        : null;
+  const editArtworkHref = isNewsletter
+    ? newsletterComposerHref(newsletterId)
+    : isFlyer
+      ? flyerComposerEditHref()
+      : item.campaignMilestoneId != null
+        ? campaignBuilderEditArtworkHref(item.eventId, item.campaignMilestoneId)
+        : null;
 
   const showRetry = canRetryFailedApproval(item) && Boolean(onRetry);
   const preview = getUnifiedApprovalPreview(item);
@@ -186,18 +211,20 @@ export function ReviewDrawer({
     null;
   const hasCaption = Boolean(caption);
   const feedUrl = preview.feedArtworkUrl;
-  const storyUrl = isFlyer ? null : preview.storyArtworkUrl;
-  const channelPills = isFlyer
-    ? ["Flyer"]
-    : item.platforms.length > 0
-      ? item.platforms.map((platform) =>
-          platform === "facebook"
-            ? "Facebook"
-            : platform === "instagram"
-              ? "Instagram"
-              : "Email",
-        )
-      : ["Social"];
+  const storyUrl = isFlyer || isNewsletter ? null : preview.storyArtworkUrl;
+  const channelPills = isNewsletter
+    ? ["Newsletter"]
+    : isFlyer
+      ? ["Flyer"]
+      : item.platforms.length > 0
+        ? item.platforms.map((platform) =>
+            platform === "facebook"
+              ? "Facebook"
+              : platform === "instagram"
+                ? "Instagram"
+                : "Email",
+          )
+        : ["Social"];
 
   async function copyCaption() {
     if (!caption) return;
@@ -302,7 +329,7 @@ export function ReviewDrawer({
                 >
                   {isSubmitting
                     ? "Saving…"
-                    : approveButtonLabel(item, isFlyer)}
+                    : approveButtonLabel(item, isFlyer, isNewsletter)}
                 </button>
               </>
             ) : null}
@@ -332,10 +359,14 @@ export function ReviewDrawer({
                   <div className="mt-3 flex flex-wrap gap-2">
                     {editArtworkHref ? (
                       <Button href={editArtworkHref} variant="primary" size="sm">
-                        {isFlyer ? "Open Flyer composer" : "Edit artwork"}
+                        {isNewsletter
+                          ? "Open newsletter composer"
+                          : isFlyer
+                            ? "Open Flyer composer"
+                            : "Edit artwork"}
                       </Button>
                     ) : null}
-                    {!isFlyer && editPreviewHref ? (
+                    {!isFlyer && !isNewsletter && editPreviewHref ? (
                       <Button
                         href={editPreviewHref}
                         variant="secondary"
@@ -350,12 +381,29 @@ export function ReviewDrawer({
             ) : null}
 
             <p className="mb-3 text-[11px] font-extrabold tracking-[0.1em] text-cos-muted uppercase">
-              {isFlyer
-                ? "This flyer will appear like this"
-                : "This post will appear in 2 formats"}
+              {isNewsletter
+                ? "This newsletter is ready for review"
+                : isFlyer
+                  ? "This flyer will appear like this"
+                  : "This post will appear in 2 formats"}
             </p>
 
-            {isFlyer ? (
+            {isNewsletter ? (
+              <div className="mb-6 flex items-start gap-3 rounded-[14px] border border-cos-border bg-white/70 px-4 py-3.5">
+                <Mail
+                  className="mt-0.5 h-5 w-5 shrink-0 text-[#6b8171]"
+                  strokeWidth={1.75}
+                />
+                <div>
+                  <p className="text-sm font-semibold text-cos-text">
+                    {caption || "No subject line yet"}
+                  </p>
+                  <p className="mt-1 text-xs text-cos-muted">
+                    Open the newsletter composer to review the full draft.
+                  </p>
+                </div>
+              </div>
+            ) : isFlyer ? (
               <div className="mb-6 max-w-[280px]">
                 <p className="mb-2 text-[10px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
                   Flyer preview
@@ -427,9 +475,9 @@ export function ReviewDrawer({
             <section className="mb-5 border-b border-cos-border pb-5">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <p className="text-[11px] font-extrabold tracking-[0.1em] text-cos-muted uppercase">
-                  {isFlyer ? "On-flyer copy" : "Caption"}
+                  {isNewsletter ? "Subject line" : isFlyer ? "On-flyer copy" : "Caption"}
                 </p>
-                {hasCaption && !isFlyer ? (
+                {hasCaption && !isFlyer && !isNewsletter ? (
                   <button
                     type="button"
                     onClick={() => void copyCaption()}
@@ -447,7 +495,11 @@ export function ReviewDrawer({
                 )}
               >
                 {caption ||
-                  (isFlyer ? "No on-flyer copy yet." : "No caption yet.")}
+                  (isNewsletter
+                    ? "No subject line yet."
+                    : isFlyer
+                      ? "No on-flyer copy yet."
+                      : "No caption yet.")}
               </div>
             </section>
 
@@ -462,9 +514,11 @@ export function ReviewDrawer({
                 />
                 <div>
                   <p className="text-sm font-semibold text-cos-text">
-                    {isFlyer
-                      ? "Print-ready"
-                      : item.scheduleLabel || "Schedule not set yet"}
+                    {isNewsletter
+                      ? "Draft — not sent yet"
+                      : isFlyer
+                        ? "Print-ready"
+                        : item.scheduleLabel || "Schedule not set yet"}
                   </p>
                   <p className="mt-0.5 text-xs text-cos-muted">
                     {approvalOutcomeChip(item).label}
@@ -499,9 +553,11 @@ export function ReviewDrawer({
                   strokeWidth={1.75}
                 />
                 <p>
-                  {isFlyer
-                    ? "Shared as a downloadable / printable flyer"
-                    : "Public (Anyone on or off Facebook)"}
+                  {isNewsletter
+                    ? "Sent to your saved newsletter audience"
+                    : isFlyer
+                      ? "Shared as a downloadable / printable flyer"
+                      : "Public (Anyone on or off Facebook)"}
                 </p>
               </div>
             </section>

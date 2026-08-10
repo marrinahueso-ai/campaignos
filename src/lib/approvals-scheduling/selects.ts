@@ -7,6 +7,7 @@
 export const SCHEDULING_LIST_SELECT = [
   "id",
   "event_id",
+  "organization_id",
   "approval_request_id",
   "communication_item_id",
   "source",

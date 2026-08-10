@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 6, 2026  
+**Last updated:** August 10, 2026 — newsletter scheduled-sends cron  
 **Related:** [Ops](./README.md) · [`vercel.json`](../../vercel.json) · [Env & secrets](./env-and-secrets.md) · [Architecture](../engineering/architecture.md) · [Documentation home](../README.md)
 
 ## Auth
@@ -38,6 +38,7 @@ Schedules are **UTC** (Vercel Cron).
 | `/api/cron/manual-upload-emails` | `30 13 * * *` | ~8:30 AM CDT | Manual IG upload reminder emails |
 | `/api/cron/meta-publish` | `*/20 * * * *` | Every ~20 min | Publish **due** Meta slots (IG feed/stories; mark native FB schedules published in DB) |
 | `/api/cron/volunteer-sync` | `*/30 * * * *` | Every ~30 min | Refresh stale SignUpGenius snapshots (connected sources only; ≥30 min spacing; capped per run) |
+| `/api/cron/newsletter-scheduled-sends` | `*/10 * * * *` | Every ~10 min | Execute due scheduled newsletter sends (single-flight claim; re-verifies approval/version/audience + production gate at execution time) |
 
 \*Central offset changes with DST; treat UTC as source of truth.
 
@@ -69,6 +70,10 @@ So a post scheduled for 2:00 PM Central typically goes out within **~20 minutes*
 
 Page loads (Dashboard, Approvals, etc.) stay **DB reads only** — no Meta polling on Dashboard focus.
 
+## Newsletter scheduled sends
+
+`/api/cron/newsletter-scheduled-sends` (`src/app/api/cron/newsletter-scheduled-sends/route.ts`) lists `newsletter_sends` rows with `status = "scheduled"` and `scheduled_for` in the past, across every org, and executes each via `executeScheduledSend`. Each send is claimed atomically (`claim_newsletter_scheduled_send` RPC, `scheduled → sending`) so overlapping cron invocations can't double-send; the executor re-checks the newsletter is still `scheduled` with an unchanged approved version/audience, re-checks `NEWSLETTER_PRODUCTION_SEND_ENABLED`, and recomputes recipient eligibility fresh (never trusting counts captured at schedule time) before delivering. Details: [newsletter-composer.md § Schedule cron + idempotency](../engineering/newsletter-composer.md#12-schedule-cron--idempotency).
+
 ## Volunteer background sync
 
 `/api/cron/volunteer-sync` re-reads public SignUpGenius pages for **connected** event sources whose last successful sync is older than **30 minutes** (or never synced). Each run processes at most **10** sources; interactive refresh on the Volunteers tab still works and respects the same spacing. Pending-review sources are skipped. Dashboard `/volunteers` and Today widgets read snapshots from DB — they do not scrape SignUpGenius on load.
@@ -82,6 +87,7 @@ Page loads (Dashboard, Approvals, etc.) stay **DB reads only** — no Meta polli
 | `meta-token-health` emails | `RESEND_API_KEY` + published templates + `transactional_notification_deliveries` table |
 | Volunteer sync | Connected `event_volunteer_sources` with public SignUpGenius URLs |
 | Story / manual-upload emails | `RESEND_API_KEY` (+ optional template IDs) |
+| Newsletter scheduled sends | `NEWSLETTER_PRODUCTION_SEND_ENABLED=true` (fails closed otherwise) + `RESEND_API_KEY` + migrations `20260810120000` / `20260810130000` applied |
 | All | `SUPABASE_SERVICE_ROLE_KEY` (admin client) + `CRON_SECRET` |
 
 ## Failure symptoms
@@ -94,6 +100,7 @@ Page loads (Dashboard, Approvals, etc.) stay **DB reads only** — no Meta polli
 | Scheduled posts delayed >30 min | Check Vercel cron invocations for `meta-publish`; due backlog may exceed per-run cap (20 bundles) — clears on subsequent runs |
 | Volunteer numbers stale on Master | `volunteer-sync`; source in error or SignUpGenius page unreadable — refresh on event Volunteers tab |
 | Inbox not updating | `inbox-sync`; Meta connection scope / token |
+| Scheduled newsletter not sending at its due time | `newsletter-scheduled-sends`; check `NEWSLETTER_PRODUCTION_SEND_ENABLED` is `true` in that environment and the newsletter's approval/version/audience haven't drifted since scheduling (either fails the send with an explicit reason on the `newsletter_sends` row, visible on `/newsletters/[id]`) |
 | Reminder emails missing | `story-post-reminders` / `manual-upload-emails`; Resend config |
 | Cron returns 401 | Missing/wrong `CRON_SECRET` |
 

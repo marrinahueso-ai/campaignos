@@ -1,7 +1,7 @@
 # Resend email templates
 
 **Status:** Living  
-**Last updated:** July 31, 2026  
+**Last updated:** August 10, 2026 — newsletter channel note  
 **Preview:** [transactional email mockup](../../public/resend-email-templates-mockup.html)
 
 ## Ship now
@@ -110,6 +110,22 @@ There is no separate webhooks living doc. Operational notification triggers:
 | Stripe webhook | `/api/stripe/webhook` | `payment-failed` on `invoice.payment_failed` |
 
 Cron schedule and auth: [cron-jobs.md](./cron-jobs.md). Stripe event matrix: [stripe-integration.md § Webhook events handled](../engineering/stripe-integration.md#webhook-events-handled).
+
+## Newsletter channel (separate from transactional)
+
+The Newsletter → Approval → Send workflow sends over Resend but is a **distinct
+channel** from the transactional aliases above — it is not one of the 15
+published aliases, has its own From address, its own webhook, and its own
+env-gated kill switch. Full behavior: [newsletter-composer.md](../engineering/newsletter-composer.md).
+
+| Item | Detail |
+|------|--------|
+| Sends | App-rendered HTML (`sendEmail({ html })`) — production/scheduled sends to a newsletter's audience, plus test sends to manually entered addresses. No Resend dashboard alias. |
+| From address | `NEWSLETTER_FROM_EMAIL` (falls back to `RESEND_FROM_EMAIL`, then the shared default) — must match the org's authorized `newsletter_sender_profiles.from_email`; requests to send from any other address are rejected before delivery. |
+| Production kill switch | `NEWSLETTER_PRODUCTION_SEND_ENABLED` — defaults **off** (fail closed) in every environment. Test sends and drafting are unaffected by this flag; only Send Now, Schedule, and the scheduled-send cron are gated on it. |
+| Webhook | `POST /api/newsletter/webhooks/resend` — separate endpoint from any transactional webhook path; verifies the Svix-style Resend signature (`RESEND_WEBHOOK_SECRET`), records delivery/bounce/complaint events, and auto-suppresses hard bounces / spam complaints in `newsletter_contacts`. |
+| Recipients | Org-managed `newsletter_contacts` / `newsletter_audiences` — **not** the same recipients as any transactional template above, and not Team & Access members. |
+| Unsubscribe | Per-recipient hashed token, public `/newsletter/unsubscribe` page, redeemed via a `SECURITY DEFINER` RPC — no relation to the transactional-email recipient list. |
 
 ## Deferred
 

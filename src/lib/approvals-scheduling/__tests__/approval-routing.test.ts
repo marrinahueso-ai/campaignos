@@ -479,7 +479,7 @@ describe("Approval Routing — ReviewDrawer preview identity", () => {
     );
     assert.match(
       mapSource,
-      /preview:\s*\{\s*captionText: row\.caption_text,\s*storyCaptionSnippet: row\.story_caption,\s*feedArtworkUrl: row\.feed_artwork_url,\s*storyArtworkUrl: isFlyer \? null : row\.story_artwork_url,/s,
+      /preview:\s*\{\s*captionText: row\.caption_text,\s*storyCaptionSnippet: row\.story_caption,\s*feedArtworkUrl: row\.feed_artwork_url,\s*storyArtworkUrl: isFlyer \|\| isNewsletter \? null : row\.story_artwork_url,/s,
     );
     assert.match(mapSource, /isFlyerComposerMilestoneId/);
     assert.match(
@@ -495,9 +495,12 @@ describe("Approval Routing — ReviewDrawer preview identity", () => {
       "utf8",
     );
     assert.match(drawer, /ArtworkLightboxThumbnail/);
-    assert.match(drawer, /item\.preview\.feedArtworkUrl/);
-    assert.match(drawer, /item\.preview\.storyArtworkUrl/);
-    assert.match(drawer, /item\.preview\.captionText/);
+    assert.match(drawer, /getUnifiedApprovalPreview\(item\)/);
+    assert.match(drawer, /preview\.feedArtworkUrl/);
+    assert.match(drawer, /preview\.storyArtworkUrl/);
+    assert.match(drawer, /preview\.captionText/);
+    assert.match(drawer, /isNewsletterMilestoneId/);
+    assert.match(drawer, /Approve newsletter/);
     assert.match(drawer, /\{item\.milestoneName\}/);
     assert.match(drawer, /Feed · 1:1/);
     assert.match(drawer, /Story · 9:16/);

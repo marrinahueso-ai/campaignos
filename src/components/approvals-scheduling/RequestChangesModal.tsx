@@ -10,6 +10,7 @@ import {
 } from "@/lib/approvals-revision/revision-notes";
 import { requestUnifiedChangesAction } from "@/lib/approvals-scheduling/actions";
 import { isFlyerComposerMilestoneId } from "@/lib/flyer-composer/approval";
+import { isNewsletterMilestoneId } from "@/lib/newsletter/approval";
 import {
   getUnifiedApprovalPreview,
   type UnifiedApprovalItem,
@@ -20,6 +21,13 @@ function isFlyerItem(item: UnifiedApprovalItem): boolean {
   return (
     item.channel === "flyer" ||
     isFlyerComposerMilestoneId(item.campaignMilestoneId)
+  );
+}
+
+function isNewsletterItem(item: UnifiedApprovalItem): boolean {
+  return (
+    item.channel === "newsletter" ||
+    isNewsletterMilestoneId(item.campaignMilestoneId)
   );
 }
 
@@ -39,6 +47,7 @@ export function RequestChangesModal({
   onSuccess,
 }: RequestChangesModalProps) {
   const isFlyer = item ? isFlyerItem(item) : false;
+  const isNewsletter = item ? isNewsletterItem(item) : false;
   const tagOptions = isFlyer ? FLYER_REVISION_TAGS : SOCIAL_REVISION_TAGS;
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState("");
@@ -74,7 +83,7 @@ export function RequestChangesModal({
         communicationItemId: item!.communicationItemId,
         schedulingItemId: item!.schedulingItemId,
         comment: note,
-        tags,
+        tags: isNewsletter ? [] : tags,
         campaignName: item!.campaignName,
         milestoneName: item!.milestoneName,
       });
@@ -128,9 +137,11 @@ export function RequestChangesModal({
               Request changes
             </h2>
             <p className="mt-1 text-sm text-cos-muted">
-              {isFlyer
-                ? "Tell the creator what to fix on the print flyer. They’ll update it and send it back."
-                : "Tell the creator what to fix. They’ll update the post and send it back."}
+              {isNewsletter
+                ? "Tell the creator what to fix in the newsletter draft. They’ll update it and resend it for approval."
+                : isFlyer
+                  ? "Tell the creator what to fix on the print flyer. They’ll update it and send it back."
+                  : "Tell the creator what to fix. They’ll update the post and send it back."}
             </p>
           </div>
           <button
@@ -152,39 +163,41 @@ export function RequestChangesModal({
             </span>
           </p>
 
-          <div className="mb-5 flex flex-wrap items-end gap-3">
-            {isFlyer ? (
-              <ArtworkLightboxThumbnail
-                src={feedUrl}
-                alt=""
-                variant="feed"
-                wrapperClassName="w-[88px]"
-                frameClassName="aspect-[2/3] w-full rounded-xl"
-                placeholder="—"
-              />
-            ) : (
-              <>
+          {!isNewsletter ? (
+            <div className="mb-5 flex flex-wrap items-end gap-3">
+              {isFlyer ? (
                 <ArtworkLightboxThumbnail
                   src={feedUrl}
                   alt=""
                   variant="feed"
                   wrapperClassName="w-[88px]"
-                  frameClassName="aspect-square w-full rounded-xl"
+                  frameClassName="aspect-[2/3] w-full rounded-xl"
                   placeholder="—"
                 />
-                {storyUrl ? (
+              ) : (
+                <>
                   <ArtworkLightboxThumbnail
-                    src={storyUrl}
+                    src={feedUrl}
                     alt=""
-                    variant="story"
-                    wrapperClassName="w-[56px]"
-                    frameClassName="aspect-[9/16] w-full rounded-xl"
+                    variant="feed"
+                    wrapperClassName="w-[88px]"
+                    frameClassName="aspect-square w-full rounded-xl"
                     placeholder="—"
                   />
-                ) : null}
-              </>
-            )}
-          </div>
+                  {storyUrl ? (
+                    <ArtworkLightboxThumbnail
+                      src={storyUrl}
+                      alt=""
+                      variant="story"
+                      wrapperClassName="w-[56px]"
+                      frameClassName="aspect-[9/16] w-full rounded-xl"
+                      placeholder="—"
+                    />
+                  ) : null}
+                </>
+              )}
+            </div>
+          ) : null}
 
           <label
             htmlFor="request-changes-note"
@@ -202,31 +215,35 @@ export function RequestChangesModal({
             className="w-full rounded-[14px] border border-cos-border bg-white px-4 py-3 text-sm leading-relaxed text-cos-text placeholder:text-cos-muted focus:border-[#6b8171] focus:outline-none"
           />
 
-          <p className="mt-4 mb-2 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-            Tag what needs work
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {tagOptions.map((tag) => {
-              const on = tags.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  disabled={pending}
-                  aria-pressed={on}
-                  onClick={() => toggleTag(tag)}
-                  className={cn(
-                    "rounded-full px-3 py-1.5 text-xs font-bold transition",
-                    on
-                      ? "bg-[#2f4a3c] text-[#fffcf7]"
-                      : "border border-cos-border bg-white text-cos-text hover:border-[#6b8171]",
-                  )}
-                >
-                  {tag}
-                </button>
-              );
-            })}
-          </div>
+          {!isNewsletter ? (
+            <>
+              <p className="mt-4 mb-2 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+                Tag what needs work
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {tagOptions.map((tag) => {
+                  const on = tags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      disabled={pending}
+                      aria-pressed={on}
+                      onClick={() => toggleTag(tag)}
+                      className={cn(
+                        "rounded-full px-3 py-1.5 text-xs font-bold transition",
+                        on
+                          ? "bg-[#2f4a3c] text-[#fffcf7]"
+                          : "border border-cos-border bg-white text-cos-text hover:border-[#6b8171]",
+                      )}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : null}
 
           {error ? (
             <p className="mt-3 text-sm text-[#a65a3a]" role="alert">

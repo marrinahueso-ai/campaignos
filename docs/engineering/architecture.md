@@ -5,7 +5,7 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel · Stripe  
-**Last updated:** August 9, 2026 — Events home in-shell workspace navigation  
+**Last updated:** August 10, 2026 — Newsletter → Approval → Send pipeline  
 **Related:** [Feature list](../product/feature-list.md) · [Image architecture](./image-architecture.md) · [Storage RLS](./storage-rls.md) · [Access control](./access-control.md) · [Billing & access](../ops/billing-and-access.md) · [Stripe integration](./stripe-integration.md) · [QA architecture overview](../qa/architecture-overview.md) · [Launch checklist](../qa/launch-checklist.md) · [Ask Ralli Assistant](./ask-ralli-assistant.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
@@ -173,7 +173,8 @@ flowchart LR
 | Create with AI — Social | `campaign-builder-v2`, `ai`, `ai-artwork`, `artwork-v2`, `meta-captions` | Creative assets in Storage; campaign/milestone state in DB |
 | Create with AI — Flyer | `flyer-composer` | Local drafts (org+event scoped); durable saves as `event_playbook_files` (category `flyer`) via `/api/flyer-composer/save` + list `/api/flyer-composer/saved` |
 | Create with AI — Homepage / Newsletter | `homepage-composer`, `newsletter-composer` | Drafts: localStorage + IndexedDB; artwork uploads (homepage may use service role — see storage-rls); AI blurbs metered (`homepage_composer_blurb`) |
-| Approvals & publish | `approvals-scheduling`, `meta-publishing` | Approval items + `meta_publication_slots` — native schedule + Calendar DnD: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md) |
+| Newsletter → Approval → Send pipeline | `newsletter` (durable model: `newsletters`, `newsletter_versions`, contacts/audiences, sends, unsubscribe) | Durable `newsletter_*` tables (org-scoped RLS); approval bridges into `approval_scheduling_items` (org-scoped, no `event_id`); production delivery gated by `NEWSLETTER_PRODUCTION_SEND_ENABLED`; recipients are org-managed contacts/audiences, not `organization_users` — see [newsletter-composer.md](./newsletter-composer.md) |
+| Approvals & publish | `approvals-scheduling`, `meta-publishing` | Approval items + `meta_publication_slots` — native schedule + Calendar DnD: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md); newsletter approval shares the same `approval_scheduling_items` queue, org-scoped instead of event-scoped |
 | Inbox / Insights | `inbox`, `insights`, `meta` | Synced Meta entities + analytics tables; Ease shells at `/insights` + event `?tab=insights` |
 | Access | `auth`, `access-templates`, `organization-workspace` | Memberships, templates, roster; Team Access person drawer (`?person=`) |
 | Onboarding | `onboarding`, `school-setup` (legacy wizard re-entry) | `organizations.onboarding_state` (migration `072`); routes `/onboarding`, `/onboarding/brand`, `/onboarding/invite`, `/onboarding/meta`; simple checklist at `/settings/school-setup` (not on Ease left nav) |
@@ -188,6 +189,7 @@ flowchart LR
 | Calendar | `calendar-import`, `google-calendar`, `communications-calendar`, `posting-analytics` |
 | Events / campaigns | `events`, `events-phase3`, `event-workspace`, `campaign-builder-v2`, `playbooks` |
 | Creative / composers | `ai`, `ai-artwork`, `artwork-v2`, `creative-assets`, `canva`, `flyer-composer`, `homepage-composer`, `newsletter-composer` |
+| Newsletter send pipeline | `newsletter` (durable model, versions, approval bridge, send validator/delivery, contacts/audiences, unsubscribe) |
 | Meta | `meta-publishing`, `meta-captions`, `inbox`, `insights`, `meta` |
 | Work management | `tasks-v2`, `approvals-scheduling`, `vendors`, `campaign-files`, `event-volunteers` |
 | Billing / credits | `billing` |

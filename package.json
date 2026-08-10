@@ -25,6 +25,7 @@
     "test:vendors": "node --experimental-strip-types --test 'src/lib/vendors/__tests__/*.test.ts'",
     "test:campaign-files": "node --experimental-strip-types --test 'src/lib/campaign-files/__tests__/files-ease-ui.test.ts' 'src/lib/campaign-files/__tests__/files-layout.test.ts' 'src/lib/campaign-files/__tests__/org-scope.test.ts' 'src/lib/campaign-files/__tests__/type-groups.test.ts' && npx tsx --test 'src/lib/campaign-files/__tests__/document-category.test.ts'",
     "test:inbox-queue": "node scripts/test-inbox-queue-utils.mjs",
+    "test:newsletter": "npx tsx --test 'src/lib/newsletter/__tests__/*.test.ts'",
     "clean": "bash scripts/clean.sh",
     "dev:clean": "npm run clean && npm run dev",
     "verify": "bash scripts/verify.sh",

@@ -38,6 +38,11 @@ import {
   filterItemsByViewScope,
 } from "@/lib/approvals-scheduling/permissions";
 import { unifiedItemNeedsPreviewEnrichment } from "@/lib/approvals-scheduling/status";
+import {
+  isNewsletterMilestoneId,
+  newsletterComposerHref,
+  parseNewsletterIdFromMilestoneId,
+} from "@/lib/newsletter/approval";
 import type { ApprovalsLayout } from "@/lib/approvals-scheduling/approvals-layout";
 import type {
   UnifiedApprovalItem,
@@ -244,8 +249,16 @@ export function ApprovalsSchedulingHub({
     ? canActOnUnifiedItem(reviewItem, canViewAll)
     : false;
 
-  /** Changes-requested → Revision shell (creator). */
+  /** Changes-requested → Revision shell (creator), or the newsletter composer. */
   function openRevisionCreator(item: UnifiedApprovalItem) {
+    if (isNewsletterMilestoneId(item.campaignMilestoneId)) {
+      router.push(
+        newsletterComposerHref(
+          parseNewsletterIdFromMilestoneId(item.campaignMilestoneId),
+        ),
+      );
+      return;
+    }
     router.push(revisionPath(item.id, "creator"));
   }
 

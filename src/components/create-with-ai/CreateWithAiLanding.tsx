@@ -236,6 +236,12 @@ export function CreateWithAiLanding({
           >
             Also available
           </h2>
+          <Link
+            href="/newsletters"
+            className="text-[11px] font-bold uppercase tracking-[0.07em] text-cos-brand-sage transition hover:text-cos-text"
+          >
+            Your newsletters →
+          </Link>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

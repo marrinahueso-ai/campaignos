@@ -17,6 +17,10 @@ import type {
 } from "@/lib/approvals-scheduling/types";
 import { normalizeMilestoneName } from "@/lib/campaign-builder-v2/milestone-names";
 import { isFlyerComposerMilestoneId } from "@/lib/flyer-composer/approval";
+import {
+  NEWSLETTER_CAMPAIGN_NAME,
+  isNewsletterMilestoneId,
+} from "@/lib/newsletter/approval";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 import type { ApprovalQueueItem } from "@/types/event-workspace";
@@ -270,17 +274,19 @@ export function mapSchedulingItemRow(
   }
 
   const isFlyer = isFlyerComposerMilestoneId(row.campaign_milestone_id);
-  const resolvedPlatforms = isFlyer
-    ? []
-    : platforms.length > 0
-      ? platforms
-      : (["facebook", "instagram"] as UnifiedPlatform[]);
+  const isNewsletter = isNewsletterMilestoneId(row.campaign_milestone_id);
+  const resolvedPlatforms =
+    isFlyer || isNewsletter
+      ? []
+      : platforms.length > 0
+        ? platforms
+        : (["facebook", "instagram"] as UnifiedPlatform[]);
 
   return {
     id: `cb2-${row.id}`,
     source: "campaign_builder",
-    eventId: row.event_id,
-    eventTitle,
+    eventId: row.event_id ?? "",
+    eventTitle: isNewsletter ? NEWSLETTER_CAMPAIGN_NAME : eventTitle,
     campaignName: row.campaign_name ?? eventTitle,
     milestoneName: normalizeMilestoneName(row.milestone_name),
     thumbnailUrl: row.feed_artwork_url ?? row.story_artwork_url,
@@ -297,7 +303,7 @@ export function mapSchedulingItemRow(
     assigneeInitials: initialsFromName(assigneeDisplayName),
     nextAction: nextActionForStatus(workflowStatus, needsApproverAssignment),
     nextActionTime: `Submitted ${formatRelativeTime(row.requested_at, now)}`,
-    deliveryMethod: isFlyer ? "draft-only" : deliveryMethod,
+    deliveryMethod: isFlyer || isNewsletter ? "draft-only" : deliveryMethod,
     platforms: resolvedPlatforms,
     scheduleAt: row.schedule_at,
     scheduleLabel: row.schedule_at ? formatDateTime(row.schedule_at) : null,
@@ -313,13 +319,13 @@ export function mapSchedulingItemRow(
       workflowStatus === "failed"
         ? row.notes?.trim() || "Couldn’t post to your Page. Try again."
         : null,
-    channel: isFlyer ? "flyer" : null,
+    channel: isFlyer ? "flyer" : isNewsletter ? "newsletter" : null,
     notes: row.notes,
     preview: {
       captionText: row.caption_text,
       storyCaptionSnippet: row.story_caption,
       feedArtworkUrl: row.feed_artwork_url,
-      storyArtworkUrl: isFlyer ? null : row.story_artwork_url,
+      storyArtworkUrl: isFlyer || isNewsletter ? null : row.story_artwork_url,
     },
     requestedAt: row.requested_at,
     approvalHistory: history,

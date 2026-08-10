@@ -12,7 +12,9 @@ export type AccessPermissionKey =
   | "upload_artwork"
   | "manage_people"
   | "manage_billing"
-  | "manage_integrations";
+  | "manage_integrations"
+  | "send_newsletter"
+  | "manage_newsletter_contacts";
 
 export const ACCESS_PERMISSION_KEYS: AccessPermissionKey[] = [
   "view_all_events",
@@ -26,6 +28,8 @@ export const ACCESS_PERMISSION_KEYS: AccessPermissionKey[] = [
   "manage_people",
   "manage_billing",
   "manage_integrations",
+  "send_newsletter",
+  "manage_newsletter_contacts",
 ];
 
 export const ACCESS_PERMISSION_LABELS: Record<AccessPermissionKey, string> = {
@@ -40,6 +44,8 @@ export const ACCESS_PERMISSION_LABELS: Record<AccessPermissionKey, string> = {
   manage_people: "Manage people",
   manage_billing: "Manage billing",
   manage_integrations: "Manage integrations",
+  send_newsletter: "Send newsletter",
+  manage_newsletter_contacts: "Manage newsletter contacts",
 };
 
 /** Short helper copy for the roles editor (see vs work). */
@@ -51,6 +57,10 @@ export const ACCESS_PERMISSION_DESCRIPTIONS: Partial<
     "Only their linked events show in lists. They can only work on those events.",
   access_assigned_events_only:
     "They can open and edit only events they’re linked to. Lists can still show all when “See all events” is on.",
+  send_newsletter:
+    "They can approve, schedule, and send the org newsletter to its audience.",
+  manage_newsletter_contacts:
+    "They can add, import, and manage newsletter contacts and audiences.",
 };
 
 /** System template ids match CampaignRole; custom ids are `custom_*`. */

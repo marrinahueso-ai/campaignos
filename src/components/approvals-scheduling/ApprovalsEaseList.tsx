@@ -29,6 +29,12 @@ export function platformLabel(item: UnifiedApprovalItem): string {
   ) {
     return "Flyer";
   }
+  if (
+    item.channel === "newsletter" ||
+    item.campaignMilestoneId?.startsWith("newsletter:")
+  ) {
+    return "Newsletter";
+  }
   if (item.platforms.length === 0) {
     return "Social";
   }
@@ -129,7 +135,10 @@ export function ApprovalsFocusCard({
               : item.channel === "flyer" ||
                   item.campaignMilestoneId?.startsWith("flyer-composer:")
                 ? "Flyer"
-                : undefined
+                : item.channel === "newsletter" ||
+                    item.campaignMilestoneId?.startsWith("newsletter:")
+                  ? "Newsletter"
+                  : undefined
         }
       />
       <div className="flex flex-col gap-3.5 p-3 sm:p-5 md:py-4 md:pr-5 md:pl-1">

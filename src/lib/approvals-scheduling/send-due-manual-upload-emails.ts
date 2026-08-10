@@ -81,6 +81,13 @@ export async function sendDueManualUploadEmails(): Promise<ManualUploadEmailCron
   const now = new Date();
 
   for (const row of rows) {
+    // Organization-scoped rows (newsletters) never use this manual-email
+    // kit flow — they don't set delivery_method=manual-email or manual_email_to,
+    // so this is defensive typing rather than an expected runtime path.
+    if (!row.event_id) {
+      continue;
+    }
+
     const emailSendAt = resolveManualUploadEmailDueAt(row);
     if (!isManualUploadEmailDue(emailSendAt, now)) {
       continue;

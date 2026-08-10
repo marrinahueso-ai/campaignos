@@ -22,6 +22,8 @@ function perms(
     manage_people: false,
     manage_billing: false,
     manage_integrations: false,
+    send_newsletter: false,
+    manage_newsletter_contacts: false,
   };
   return { ...base, ...overrides };
 }
@@ -47,6 +49,8 @@ export const DEFAULT_ACCESS_TEMPLATES: AccessTemplate[] = [
       manage_people: true,
       manage_billing: true,
       manage_integrations: true,
+      send_newsletter: true,
+      manage_newsletter_contacts: true,
     }),
   },
   {
@@ -65,6 +69,8 @@ export const DEFAULT_ACCESS_TEMPLATES: AccessTemplate[] = [
       manage_people: true,
       manage_billing: true,
       manage_integrations: true,
+      send_newsletter: true,
+      manage_newsletter_contacts: true,
     }),
   },
   {
@@ -80,6 +86,8 @@ export const DEFAULT_ACCESS_TEMPLATES: AccessTemplate[] = [
       approve_comms: true,
       publish_social: true,
       upload_artwork: true,
+      send_newsletter: true,
+      manage_newsletter_contacts: true,
     }),
   },
   {

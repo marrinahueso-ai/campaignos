@@ -50,6 +50,8 @@ const PUBLIC_PATHS = [
   "/api/google/oauth/callback",
   "/api/meta/webhook",
   "/api/stripe/webhook",
+  "/api/newsletter/webhooks/resend",
+  "/newsletter/unsubscribe",
   "/go/instagram-post",
   "/go/email-primary",
   "/share/homepage",

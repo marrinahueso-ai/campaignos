@@ -1,7 +1,7 @@
 # Access control — Phases A–C
 
 **Status:** Phases A–C + C2 + C3 + D (org switcher MVP) complete; Phase E (Stripe / org billing) shipped — see [billing-and-access.md](../ops/billing-and-access.md)  
-**Last updated:** July 26, 2026  
+**Last updated:** August 10, 2026 — newsletter permission keys  
 **Related:** [Access & multi-tenant onboarding](../security/access-and-onboarding.md) (user-facing join / switch / gates)
 
 This note records what shipped, what we found, and what we fixed for the access-template / tenancy workstream.
@@ -215,6 +215,19 @@ Do **not** commit `.env.local`.
 | Membership list + resolve | `src/lib/auth/membership-queries.ts` (`listActiveMemberships`, `getActiveMembership`) |
 | Header switcher | `src/components/layout/OrganizationSwitcher.tsx` (shown only when >1 membership) |
 | Tests | `src/lib/auth/__tests__/active-organization.test.ts` |
+
+---
+
+## Newsletter permission keys (August 2026)
+
+Two `AccessPermissionKey` entries added for the Newsletter → Approval → Send workflow (`src/lib/access-templates/types.ts`, defaults in `defaults.ts`). Same app-layer model as every other permission key — not a separate system.
+
+| Key | Grants | Default (admin / president / vp_communications) |
+|-----|--------|----|
+| `send_newsletter` | Production Send Now / Schedule / cancel / reschedule for newsletters. Approving a newsletter does **not** require this. | `true`; other roles `false` |
+| `manage_newsletter_contacts` | Create/import newsletter contacts, manage newsletter audiences and membership. Unrelated to Team & Access roster/roles. | `true`; other roles `false` |
+
+Newsletter drafting/testing/submitting reuse existing keys instead of new ones: `draft_edit` (create/edit a draft, send a test email), `submit_approval` (submit for approval), `approve_comms` (approve or request changes from the Approvals hub — shared with Social/Flyer). Full behavior + file paths: [newsletter-composer.md](./newsletter-composer.md#6-permissions).
 
 ---
 

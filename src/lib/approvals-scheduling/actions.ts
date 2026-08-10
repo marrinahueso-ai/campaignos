@@ -30,6 +30,10 @@ import {
 } from "@/lib/event-workspace/actions";
 import { logEventActivity } from "@/lib/event-workspace/activity-log";
 import { requireEventAccess } from "@/lib/events/queries";
+import {
+  isNewsletterMilestoneId,
+  parseNewsletterIdFromMilestoneId,
+} from "@/lib/newsletter/approval";
 import { publishMetaMilestoneBundle } from "@/lib/meta-publishing/publish-milestone";
 import { retryFailedMetaBundleAction } from "@/lib/meta-publishing/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -179,6 +183,10 @@ async function resolveMetaScheduleIntent(row: ApprovalSchedulingItemRow): Promis
   storyManual: boolean;
   feedScheduleAt: string | null;
 }> {
+  // Org-scoped rows (e.g. newsletters) never reach Meta scheduling.
+  if (!row.event_id) {
+    return resolveRowMetaScheduleIntent(row);
+  }
   const session = await loadCampaignBuilderSession(row.event_id);
   const preview =
     session?.previewContents.find(
@@ -474,6 +482,178 @@ async function runApproveSchedulingSideEffects(input: {
   revalidatePath(`/events/${eventId}/campaign-builder`);
 }
 
+/**
+ * Approve path for organization-scoped newsletter rows (`event_id IS NULL`).
+ * Marks the newsletter APPROVED / ready to send only — never sends or
+ * schedules it — then mirrors that onto the approvals queue row.
+ */
+async function approveNewsletterSchedulingItem(input: {
+  row: ApprovalSchedulingItemRow;
+  schedulingItemId: string;
+  campaignName?: string | null;
+  milestoneName?: string | null;
+  recipientEmail?: string | null;
+}): Promise<UnifiedApprovalActionResult> {
+  const { row, schedulingItemId } = input;
+
+  if (!(await hasPermission("approve_comms"))) {
+    return {
+      success: false,
+      error: "You don’t have permission to approve this.",
+    };
+  }
+
+  const { getCurrentOrganization } = await import(
+    "@/lib/auth/organization-context"
+  );
+  const organization = await getCurrentOrganization();
+  if (!organization || row.organization_id !== organization.id) {
+    return {
+      success: false,
+      error: "That approval doesn’t match your organization.",
+    };
+  }
+
+  const newsletterId = parseNewsletterIdFromMilestoneId(
+    row.campaign_milestone_id,
+  );
+  if (!newsletterId) {
+    return { success: false, error: "Couldn’t identify this newsletter." };
+  }
+
+  const { approveNewsletterForApprovalsHub } = await import(
+    "@/lib/newsletter/actions"
+  );
+  const result = await approveNewsletterForApprovalsHub(newsletterId);
+  if (!result.ok) {
+    return { success: false, error: result.error };
+  }
+
+  // Draft-only stays pre-publish (Draft), not Posted — mirrors flyer composer.
+  const updated = await updateSchedulingItemStatus(schedulingItemId, "scheduled");
+  if (!updated) {
+    return {
+      success: false,
+      error: "Newsletter approved, but the approvals queue could not be updated.",
+    };
+  }
+
+  const creatorEmail =
+    (await resolveUserEmailById(row.requested_by_user_id)) ??
+    input.recipientEmail ??
+    null;
+
+  if (creatorEmail && input.milestoneName) {
+    const { notifyNewsletterApproved } = await import(
+      "@/lib/newsletter/send-for-approval"
+    );
+    await notifyNewsletterApproved({
+      recipientEmail: creatorEmail,
+      milestoneName: input.milestoneName,
+      newsletterId,
+    }).catch((error) => {
+      console.error("Newsletter approved email failed:", error);
+    });
+  }
+
+  revalidatePath("/approvals");
+  revalidatePath("/newsletter-composer");
+  return { success: true };
+}
+
+/**
+ * Request-changes path for organization-scoped newsletter rows. Rolls the
+ * newsletter back to `changes_requested` with a note, mirroring the
+ * queue-side changes_requested state.
+ */
+async function requestNewsletterSchedulingChanges(input: {
+  row: ApprovalSchedulingItemRow;
+  schedulingItemId: string;
+  comment: string;
+  milestoneName?: string | null;
+  creatorEmail?: string | null;
+}): Promise<UnifiedApprovalActionResult> {
+  const { row, schedulingItemId, comment } = input;
+
+  if (!(await hasPermission("approve_comms"))) {
+    return {
+      success: false,
+      error: "You don’t have permission to request changes on this.",
+    };
+  }
+
+  const { getCurrentOrganization } = await import(
+    "@/lib/auth/organization-context"
+  );
+  const organization = await getCurrentOrganization();
+  if (!organization || row.organization_id !== organization.id) {
+    return {
+      success: false,
+      error: "That approval doesn’t match your organization.",
+    };
+  }
+
+  const { assertOrgFeature } = await import("@/lib/billing/gates");
+  const featureGate = await assertOrgFeature(organization.id, "change_requests");
+  if (!featureGate.ok) {
+    return {
+      success: false,
+      error: `${featureGate.message} ${featureGate.upgradeHint}`,
+    };
+  }
+
+  const newsletterId = parseNewsletterIdFromMilestoneId(
+    row.campaign_milestone_id,
+  );
+  if (!newsletterId) {
+    return { success: false, error: "Couldn’t identify this newsletter." };
+  }
+
+  const { requestNewsletterChangesForApprovalsHub } = await import(
+    "@/lib/newsletter/actions"
+  );
+  const result = await requestNewsletterChangesForApprovalsHub({
+    newsletterId,
+    note: comment,
+  });
+  if (!result.ok) {
+    return { success: false, error: result.error };
+  }
+
+  const updated = await updateSchedulingItemStatus(
+    schedulingItemId,
+    "changes_requested",
+    comment,
+  );
+  if (!updated) {
+    return {
+      success: false,
+      error: "Couldn’t save those changes. Try again.",
+    };
+  }
+
+  const creatorEmail =
+    input.creatorEmail ?? (await resolveUserEmailById(row.requested_by_user_id));
+
+  if (creatorEmail && input.milestoneName) {
+    const { notifyNewsletterChangesRequested } = await import(
+      "@/lib/newsletter/send-for-approval"
+    );
+    await notifyNewsletterChangesRequested({
+      recipientEmail: creatorEmail,
+      milestoneName: input.milestoneName,
+      newsletterId,
+      comment,
+    }).catch((error) => {
+      console.error("Newsletter changes-requested email failed:", error);
+    });
+  }
+
+  revalidatePath("/approvals");
+  revalidatePath("/newsletter-composer");
+  return { success: true };
+}
+
 export async function approveUnifiedItemAction(input: {
   eventId: string;
   communicationItemId?: string | null;
@@ -482,6 +662,29 @@ export async function approveUnifiedItemAction(input: {
   milestoneName?: string | null;
   recipientEmail?: string | null;
 }): Promise<UnifiedApprovalActionResult> {
+  let preloadedRow: ApprovalSchedulingItemRow | null = null;
+  if (input.schedulingItemId) {
+    preloadedRow = (await loadSchedulingItem(
+      input.schedulingItemId,
+    )) as ApprovalSchedulingItemRow | null;
+    if (!preloadedRow) {
+      return {
+        success: false,
+        error: "We couldn’t find this approval. Refresh and try again.",
+      };
+    }
+
+    if (isNewsletterMilestoneId(preloadedRow.campaign_milestone_id)) {
+      return approveNewsletterSchedulingItem({
+        row: preloadedRow,
+        schedulingItemId: input.schedulingItemId,
+        campaignName: input.campaignName,
+        milestoneName: input.milestoneName,
+        recipientEmail: input.recipientEmail,
+      });
+    }
+  }
+
   const eventAccess = await requireEventAccess(input.eventId);
   if ("error" in eventAccess) {
     return { success: false, error: eventAccess.error };
@@ -501,13 +704,7 @@ export async function approveUnifiedItemAction(input: {
   }
 
   if (input.schedulingItemId) {
-    const row = await loadSchedulingItem(input.schedulingItemId);
-    if (!row) {
-      return {
-        success: false,
-        error: "We couldn’t find this approval. Refresh and try again.",
-      };
-    }
+    const row = preloadedRow!;
 
     // Tenant guard: never approve a row from another event.
     if (row.event_id !== input.eventId) {
@@ -581,17 +778,40 @@ export async function requestUnifiedChangesAction(input: {
   campaignName?: string | null;
   milestoneName?: string | null;
 }): Promise<UnifiedApprovalActionResult> {
-  const eventAccess = await requireEventAccess(input.eventId);
-  if ("error" in eventAccess) {
-    return { success: false, error: eventAccess.error };
-  }
-
   const comment = input.comment.trim();
   if (!comment) {
     return {
       success: false,
       error: "Add a short note so your teammate knows what to fix.",
     };
+  }
+
+  let preloadedRow: ApprovalSchedulingItemRow | null = null;
+  if (input.schedulingItemId) {
+    preloadedRow = (await loadSchedulingItem(
+      input.schedulingItemId,
+    )) as ApprovalSchedulingItemRow | null;
+    if (!preloadedRow) {
+      return {
+        success: false,
+        error: "We couldn’t find this approval. Refresh and try again.",
+      };
+    }
+
+    if (isNewsletterMilestoneId(preloadedRow.campaign_milestone_id)) {
+      return requestNewsletterSchedulingChanges({
+        row: preloadedRow,
+        schedulingItemId: input.schedulingItemId,
+        comment,
+        milestoneName: input.milestoneName,
+        creatorEmail: input.creatorEmail,
+      });
+    }
+  }
+
+  const eventAccess = await requireEventAccess(input.eventId);
+  if ("error" in eventAccess) {
+    return { success: false, error: eventAccess.error };
   }
 
   const { encodeRevisionNotes } = await import(
@@ -630,17 +850,9 @@ export async function requestUnifiedChangesAction(input: {
 
   let schedulingRow: ApprovalSchedulingItemRow | null = null;
   if (input.schedulingItemId) {
-    schedulingRow = (await loadSchedulingItem(
-      input.schedulingItemId,
-    )) as ApprovalSchedulingItemRow | null;
-    if (!schedulingRow) {
-      return {
-        success: false,
-        error: "We couldn’t find this approval. Refresh and try again.",
-      };
-    }
+    schedulingRow = preloadedRow;
     // Tenant guard: never mutate a row from another event.
-    if (schedulingRow.event_id !== input.eventId) {
+    if (!schedulingRow || schedulingRow.event_id !== input.eventId) {
       return {
         success: false,
         error: "That approval doesn’t match this event.",
@@ -897,6 +1109,15 @@ export async function reassignUnifiedItemAction(input: {
     };
   }
 
+  // Reassign is event-scoped for now — organization-scoped rows (newsletters)
+  // are approved directly, so there is no per-post approver to hand off.
+  if (!row.event_id) {
+    return {
+      success: false,
+      error: "Reassign isn’t available for newsletters yet.",
+    };
+  }
+
   const eventAccess = await requireEventAccess(row.event_id);
   if ("error" in eventAccess) {
     return { success: false, error: eventAccess.error };
@@ -1080,21 +1301,23 @@ export async function enrichUnifiedApprovalItemPreviewAction(
   item = { ...item, preview: getUnifiedApprovalPreview(item) };
 
   if (item.schedulingItemId) {
-    if (!item.eventId) {
+    const isNewsletter = isNewsletterMilestoneId(item.campaignMilestoneId);
+
+    if (!isNewsletter && !item.eventId) {
       return item;
     }
-    const eventAccess = await requireEventAccess(item.eventId);
-    if ("error" in eventAccess) {
-      return item;
+    if (!isNewsletter) {
+      const eventAccess = await requireEventAccess(item.eventId);
+      if ("error" in eventAccess) {
+        return item;
+      }
     }
 
-    const { fetchSchedulingItemPreviewFields } = await import(
-      "@/lib/approvals-scheduling/queries"
-    );
-    const preview = await fetchSchedulingItemPreviewFields(
-      item.schedulingItemId,
-      item.eventId,
-    );
+    const { fetchSchedulingItemPreviewFields, fetchNewsletterSchedulingItemPreviewFields } =
+      await import("@/lib/approvals-scheduling/queries");
+    const preview = isNewsletter
+      ? await fetchNewsletterSchedulingItemPreviewFields(item.schedulingItemId)
+      : await fetchSchedulingItemPreviewFields(item.schedulingItemId, item.eventId);
     if (!preview) {
       return item;
     }

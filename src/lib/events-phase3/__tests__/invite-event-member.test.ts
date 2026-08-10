@@ -29,6 +29,8 @@ function template(
       manage_people: false,
       manage_billing: false,
       manage_integrations: false,
+      send_newsletter: false,
+      manage_newsletter_contacts: false,
     },
     ...overrides,
   };

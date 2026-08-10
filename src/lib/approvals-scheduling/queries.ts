@@ -1,6 +1,8 @@
 import "server-only";
 
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { getCurrentOrganization } from "@/lib/auth/organization-context";
+import { isNewsletterMilestoneId } from "@/lib/newsletter/approval";
 import {
   mapClassicApprovalItem,
   mapSchedulingItemRow,
@@ -159,16 +161,39 @@ const resolveScopedSchedulingEventIds = cache(
   },
 );
 
+/** Current org id for org-scoped (event_id NULL) scheduling rows, e.g. newsletters. */
+const resolveSchedulingOrganizationId = cache(
+  async function resolveSchedulingOrganizationId(): Promise<string | null> {
+    const organization = await getCurrentOrganization();
+    return organization?.id ?? null;
+  },
+);
+
+function dedupeSchedulingRowsById(
+  rowLists: ApprovalSchedulingItemRow[][],
+): ApprovalSchedulingItemRow[] {
+  const byId = new Map<string, ApprovalSchedulingItemRow>();
+  for (const rows of rowLists) {
+    for (const row of rows) {
+      byId.set(row.id, row);
+    }
+  }
+  return [...byId.values()]
+    .sort((left, right) => right.requested_at.localeCompare(left.requested_at))
+    .slice(0, SCHEDULING_ORG_FETCH_CAP);
+}
+
 /**
- * Org-scoped scheduling rows for Approvals hub list (lean columns).
- * Caption bodies load on demand via fetchSchedulingItemPreviewFields.
- * Optional workflow_status filter supports hub SSR deferral of terminal rows.
+ * Org-scoped rows with `event_id IS NULL` (currently only newsletters).
+ * Kept as a narrow, defense-in-depth query: filters on `organization_id`
+ * at the DB layer, then double-checks the newsletter milestone prefix here
+ * so any future org-scoped row type must opt in explicitly.
  */
-async function fetchCampaignBuilderSchedulingItems(
+async function fetchOrgScopedNewsletterSchedulingItems(
   workflowStatuses?: readonly UnifiedWorkflowStatus[],
 ): Promise<ApprovalSchedulingItemRow[]> {
-  const eventIds = await resolveScopedSchedulingEventIds();
-  if (eventIds.length === 0) {
+  const organizationId = await resolveSchedulingOrganizationId();
+  if (!organizationId) {
     return [];
   }
 
@@ -176,7 +201,8 @@ async function fetchCampaignBuilderSchedulingItems(
   let query = supabase
     .from("approval_scheduling_items")
     .select(SCHEDULING_LIST_SELECT)
-    .in("event_id", eventIds)
+    .eq("organization_id", organizationId)
+    .is("event_id", null)
     .order("requested_at", { ascending: false })
     .limit(SCHEDULING_ORG_FETCH_CAP);
 
@@ -189,42 +215,130 @@ async function fetchCampaignBuilderSchedulingItems(
   if (error?.code === "42P01") {
     return [];
   }
-
   if (error) {
-    console.error("Failed to fetch approval scheduling items:", error.message);
+    console.error(
+      "Failed to fetch org-scoped approval scheduling items:",
+      error.message,
+    );
     return [];
   }
 
-  return ((data ?? []) as unknown as Record<string, unknown>[]).map(
-    normalizeSchedulingListRow,
-  );
+  return ((data ?? []) as unknown as Record<string, unknown>[])
+    .map(normalizeSchedulingListRow)
+    .filter((row) => isNewsletterMilestoneId(row.campaign_milestone_id));
+}
+
+/**
+ * Org-scoped scheduling rows for Approvals hub list (lean columns).
+ * Caption bodies load on demand via fetchSchedulingItemPreviewFields.
+ * Optional workflow_status filter supports hub SSR deferral of terminal rows.
+ * Includes both event-scoped rows (social/flyer) and organization-scoped
+ * rows with no event (newsletters).
+ */
+async function fetchCampaignBuilderSchedulingItems(
+  workflowStatuses?: readonly UnifiedWorkflowStatus[],
+): Promise<ApprovalSchedulingItemRow[]> {
+  const eventIds = await resolveScopedSchedulingEventIds();
+  const [eventRows, orgRows] = await Promise.all([
+    eventIds.length > 0
+      ? (async () => {
+          const supabase = await createClient();
+          let query = supabase
+            .from("approval_scheduling_items")
+            .select(SCHEDULING_LIST_SELECT)
+            .in("event_id", eventIds)
+            .order("requested_at", { ascending: false })
+            .limit(SCHEDULING_ORG_FETCH_CAP);
+
+          if (workflowStatuses && workflowStatuses.length > 0) {
+            query = query.in("workflow_status", [...workflowStatuses]);
+          }
+
+          const { data, error } = await query;
+
+          if (error?.code === "42P01") {
+            return [] as ApprovalSchedulingItemRow[];
+          }
+          if (error) {
+            console.error(
+              "Failed to fetch approval scheduling items:",
+              error.message,
+            );
+            return [] as ApprovalSchedulingItemRow[];
+          }
+
+          return ((data ?? []) as unknown as Record<string, unknown>[]).map(
+            normalizeSchedulingListRow,
+          );
+        })()
+      : Promise.resolve([] as ApprovalSchedulingItemRow[]),
+    fetchOrgScopedNewsletterSchedulingItems(workflowStatuses),
+  ]);
+
+  if (eventIds.length === 0 && orgRows.length === 0) {
+    return [];
+  }
+
+  return dedupeSchedulingRowsById([eventRows, orgRows]);
 }
 
 /** Thin index of all statuses — pulse/summary/campaigns without full list DTOs. */
 async function fetchSchedulingStatusIndex(): Promise<SchedulingStatusIndexRow[]> {
-  const eventIds = await resolveScopedSchedulingEventIds();
-  if (eventIds.length === 0) {
+  const [eventIds, organizationId] = await Promise.all([
+    resolveScopedSchedulingEventIds(),
+    resolveSchedulingOrganizationId(),
+  ]);
+  if (eventIds.length === 0 && !organizationId) {
     return [];
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("approval_scheduling_items")
-    .select(SCHEDULING_STATUS_INDEX_SELECT)
-    .in("event_id", eventIds)
-    .order("requested_at", { ascending: false })
-    .limit(SCHEDULING_ORG_FETCH_CAP);
+  const queries: PromiseLike<{
+    data: unknown[] | null;
+    error: { code?: string; message: string } | null;
+  }>[] = [];
 
-  if (error?.code === "42P01") {
-    return [];
+  if (eventIds.length > 0) {
+    queries.push(
+      supabase
+        .from("approval_scheduling_items")
+        .select(SCHEDULING_STATUS_INDEX_SELECT)
+        .in("event_id", eventIds)
+        .order("requested_at", { ascending: false })
+        .limit(SCHEDULING_ORG_FETCH_CAP),
+    );
+  }
+  if (organizationId) {
+    queries.push(
+      supabase
+        .from("approval_scheduling_items")
+        .select(SCHEDULING_STATUS_INDEX_SELECT)
+        .eq("organization_id", organizationId)
+        .is("event_id", null)
+        .order("requested_at", { ascending: false })
+        .limit(SCHEDULING_ORG_FETCH_CAP),
+    );
   }
 
-  if (error) {
-    console.error("Failed to fetch approval scheduling status index:", error.message);
-    return [];
+  const results = await Promise.all(queries);
+  const byId = new Map<string, SchedulingStatusIndexRow>();
+  for (const { data, error } of results) {
+    if (error?.code === "42P01") {
+      continue;
+    }
+    if (error) {
+      console.error(
+        "Failed to fetch approval scheduling status index:",
+        error.message,
+      );
+      continue;
+    }
+    for (const row of (data ?? []) as unknown as SchedulingStatusIndexRow[]) {
+      byId.set(row.id, row);
+    }
   }
 
-  return (data ?? []) as unknown as SchedulingStatusIndexRow[];
+  return [...byId.values()].slice(0, SCHEDULING_ORG_FETCH_CAP);
 }
 
 export async function fetchSchedulingItemPreviewFields(
@@ -263,6 +377,55 @@ export async function fetchSchedulingItemPreviewFields(
 
   // Tenant guard: never return captions/artwork URLs for another event's row.
   if (row.event_id !== eventId) {
+    return null;
+  }
+
+  return {
+    captionText: row.caption_text,
+    storyCaptionSnippet: row.story_caption,
+    feedArtworkUrl: row.feed_artwork_url,
+    storyArtworkUrl: row.story_artwork_url,
+  };
+}
+
+/**
+ * Preview fields for organization-scoped rows (newsletters) — no `eventId`
+ * to guard with, so tenant-checks against the caller's current organization.
+ */
+export async function fetchNewsletterSchedulingItemPreviewFields(
+  schedulingItemId: string,
+): Promise<{
+  captionText: string | null;
+  storyCaptionSnippet: string | null;
+  feedArtworkUrl: string | null;
+  storyArtworkUrl: string | null;
+} | null> {
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("approval_scheduling_items")
+    .select(`${SCHEDULING_PREVIEW_SELECT}, organization_id`)
+    .eq("id", schedulingItemId)
+    .maybeSingle();
+
+  if (error?.code === "42P01" || error || !data) {
+    return null;
+  }
+
+  const row = data as unknown as {
+    organization_id: string | null;
+    caption_text: string | null;
+    story_caption: string | null;
+    feed_artwork_url: string | null;
+    story_artwork_url: string | null;
+  };
+
+  // Tenant guard: never return captions/artwork URLs for another org's row.
+  if (row.organization_id !== organization.id) {
     return null;
   }
 
@@ -410,7 +573,7 @@ async function mapSchedulingRowsToUnifiedItems(input: {
     eventTitleById.set(item.eventId, item.eventTitle);
   }
   for (const row of schedulingRows) {
-    if (row.campaign_name) {
+    if (row.event_id && row.campaign_name) {
       eventTitleById.set(row.event_id, row.campaign_name);
     }
   }
@@ -418,7 +581,9 @@ async function mapSchedulingRowsToUnifiedItems(input: {
   const enrichEventIds = [
     ...new Set([
       ...classicItems.map((item) => item.eventId),
-      ...schedulingRows.map((row) => row.event_id),
+      ...schedulingRows
+        .map((row) => row.event_id)
+        .filter((eventId): eventId is string => Boolean(eventId)),
     ]),
   ];
 
@@ -440,7 +605,9 @@ async function mapSchedulingRowsToUnifiedItems(input: {
     cb2Items.push(
       mapSchedulingItemRow(
         row,
-        eventTitleById.get(row.event_id) ?? row.campaign_name ?? "Campaign",
+        (row.event_id ? eventTitleById.get(row.event_id) : undefined) ??
+          row.campaign_name ??
+          "Campaign",
         assignee.name,
         assignee.role,
         isSchedulingRowAssignedToActor(row, actor),
@@ -878,7 +1045,7 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
     eventTitleById.set(item.eventId, item.eventTitle);
   }
   for (const row of schedulingRows) {
-    if (row.campaign_name) {
+    if (row.event_id && row.campaign_name) {
       eventTitleById.set(row.event_id, row.campaign_name);
     }
   }
@@ -931,7 +1098,9 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
 
     const mapped = mapSchedulingItemRow(
       row,
-      eventTitleById.get(row.event_id) ?? row.campaign_name ?? "Campaign",
+      (row.event_id ? eventTitleById.get(row.event_id) : undefined) ??
+        row.campaign_name ??
+        "Campaign",
       assignee.name,
       assignee.role,
       isSchedulingRowAssignedToActor(row, actor),

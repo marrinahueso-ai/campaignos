@@ -19,6 +19,8 @@ export interface SendEmailInput {
   scheduledAt?: string;
   /** Override From (defaults to RESEND_FROM_EMAIL). */
   from?: string;
+  /** Reply-To address(es). */
+  replyTo?: string | string[];
 }
 
 export interface SendTemplateEmailInput {
@@ -118,6 +120,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     subject: input.subject,
     html: input.html,
     text: input.text,
+    ...(input.replyTo ? { replyTo: input.replyTo } : {}),
     ...(isScheduled ? { scheduledAt: input.scheduledAt!.trim() } : {}),
     // Resend does not allow attachments on scheduled emails.
     ...(!isScheduled && input.attachments?.length

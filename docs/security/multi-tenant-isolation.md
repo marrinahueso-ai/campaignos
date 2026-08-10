@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 1, 2026  
+**Last updated:** August 10, 2026 — newsletter tenancy note  
 **Related:** [Access & multi-tenant onboarding](./access-and-onboarding.md) · [Access control](../engineering/access-control.md) · [Storage RLS](../engineering/storage-rls.md) · [Security](./README.md) · [Audit remediation](./audit-remediation.md)
 
 ## Purpose
@@ -22,6 +22,12 @@ Guarantees for organization isolation for QA and security review.
 
 **User-facing join / switch / gates:** [access-and-onboarding.md](./access-and-onboarding.md).  
 **Templates, see-vs-work, Phase A–D history:** [access-control.md](../engineering/access-control.md).
+
+## Newsletter tables (August 2026)
+
+All `newsletter_*` tables (`newsletters`, `newsletter_versions`, `newsletter_contacts`, `newsletter_audiences` + members, `newsletter_sends` + recipients, `newsletter_sender_profiles`, `newsletter_import_batches`, `newsletter_audit_events`) are **org-scoped and RLS-gated on active membership** (`private.is_active_org_member(organization_id)`), the same pattern as every other org table — not a special-cased tenancy model. `approval_scheduling_items` gained a nullable `organization_id` column so newsletter approval rows can be org-scoped instead of event-scoped; its RLS policies were extended (migration `20260810130000`) to allow access when `event_id is null and organization_id is not null and private.is_active_org_member(organization_id)`, since the pre-existing event-only policy is never true for `event_id is null` rows.
+
+`newsletter_unsubscribe_tokens` has **no client-facing RLS policy at all** — every read/write goes through the admin (service-role) client or the `redeem_newsletter_unsubscribe_token` `SECURITY DEFINER` RPC, which hashes the caller-supplied token server-side and never exposes token contents or cross-tenant contact data (`organization_name` / `contact_email` in the response are limited to the single matched token's own org). Full detail: [newsletter-composer.md](../engineering/newsletter-composer.md#14-unsubscribe-token-flow).
 
 ## Same-browser session isolation (shared/kiosk computers)
 

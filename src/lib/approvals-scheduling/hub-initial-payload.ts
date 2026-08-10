@@ -11,7 +11,7 @@ import type {
 /** Minimal scheduling row used to compute hub pulse/summary/campaigns. */
 export type SchedulingStatusIndexRow = {
   id: string;
-  event_id: string;
+  event_id: string | null;
   campaign_name: string | null;
   workflow_status: UnifiedWorkflowStatus;
   delivery_method: string | null;
