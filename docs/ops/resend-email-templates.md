@@ -123,9 +123,10 @@ env-gated kill switch. Full behavior: [newsletter-composer.md](../engineering/ne
 | Sends | App-rendered HTML (`sendEmail({ html })`) — production/scheduled sends to a newsletter's audience, plus test sends to manually entered addresses. No Resend dashboard alias. |
 | From address | `NEWSLETTER_FROM_EMAIL` (falls back to `RESEND_FROM_EMAIL`, then the shared default) — must match the org's authorized `newsletter_sender_profiles.from_email`; requests to send from any other address are rejected before delivery. |
 | Production kill switch | `NEWSLETTER_PRODUCTION_SEND_ENABLED` — defaults **off** (fail closed) in every environment. Test sends and drafting are unaffected by this flag; only Send Now, Schedule, and the scheduled-send cron are gated on it. |
-| Webhook | `POST /api/newsletter/webhooks/resend` — separate endpoint from any transactional webhook path; verifies the Svix-style Resend signature (`RESEND_WEBHOOK_SECRET`), records delivery/bounce/complaint events, and auto-suppresses hard bounces / spam complaints in `newsletter_contacts`. |
+| Webhook | `POST /api/newsletter/webhooks/resend` — verifies Svix signature (`RESEND_WEBHOOK_SECRET`); required in Vercel preview/production. Create with a **full-access** Resend API key via `node --env-file=.env.local scripts/create-newsletter-resend-webhook.mjs` (send-only keys cannot manage webhooks). Events: `email.delivered`, `email.bounced`, `email.complained`, `email.failed`. |
 | Recipients | Org-managed `newsletter_contacts` / `newsletter_audiences` — **not** the same recipients as any transactional template above, and not Team & Access members. |
-| Unsubscribe | Per-recipient hashed token, public `/newsletter/unsubscribe` page, redeemed via a `SECURITY DEFINER` RPC — no relation to the transactional-email recipient list. |
+| Unsubscribe | Per-recipient hashed token + `List-Unsubscribe` / `List-Unsubscribe-Post` headers on production sends; public `/newsletter/unsubscribe` page via `SECURITY DEFINER` RPC. |
+| API key note | Local/prod `RESEND_API_KEY` may be **send-only** (safe for delivery). Webhook create/list needs a temporary full-access key; store only `RESEND_WEBHOOK_SECRET` after create. |
 
 ## Deferred
 

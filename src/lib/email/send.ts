@@ -21,6 +21,10 @@ export interface SendEmailInput {
   from?: string;
   /** Reply-To address(es). */
   replyTo?: string | string[];
+  /** Custom MIME headers (e.g. List-Unsubscribe). */
+  headers?: Record<string, string>;
+  /** Logical delivery key, retained for 24 hours by Resend. */
+  idempotencyKey?: string;
 }
 
 export interface SendTemplateEmailInput {
@@ -114,25 +118,33 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   const resend = new Resend(apiKey);
   const isScheduled = Boolean(input.scheduledAt?.trim());
 
-  const { data, error } = await resend.emails.send({
-    from: input.from?.trim() || resolveFromAddress(),
-    to: input.to,
-    subject: input.subject,
-    html: input.html,
-    text: input.text,
-    ...(input.replyTo ? { replyTo: input.replyTo } : {}),
-    ...(isScheduled ? { scheduledAt: input.scheduledAt!.trim() } : {}),
-    // Resend does not allow attachments on scheduled emails.
-    ...(!isScheduled && input.attachments?.length
-      ? {
-          attachments: input.attachments.map((attachment) => ({
-            filename: attachment.filename,
-            content: attachment.content,
-            contentType: attachment.contentType,
-          })),
-        }
-      : {}),
-  });
+  const { data, error } = await resend.emails.send(
+    {
+      from: input.from?.trim() || resolveFromAddress(),
+      to: input.to,
+      subject: input.subject,
+      html: input.html,
+      text: input.text,
+      ...(input.replyTo ? { replyTo: input.replyTo } : {}),
+      ...(input.headers && Object.keys(input.headers).length > 0
+        ? { headers: input.headers }
+        : {}),
+      ...(isScheduled ? { scheduledAt: input.scheduledAt!.trim() } : {}),
+      // Resend does not allow attachments on scheduled emails.
+      ...(!isScheduled && input.attachments?.length
+        ? {
+            attachments: input.attachments.map((attachment) => ({
+              filename: attachment.filename,
+              content: attachment.content,
+              contentType: attachment.contentType,
+            })),
+          }
+        : {}),
+    },
+    input.idempotencyKey?.trim()
+      ? { idempotencyKey: input.idempotencyKey.trim() }
+      : undefined,
+  );
 
   if (error) {
     const { reportIntegrationError, reportFailedAction } = await import(

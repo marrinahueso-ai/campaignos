@@ -54,6 +54,11 @@ async function sendToRecipient(
     html,
     from: formatFromHeader(input.senderProfile),
     replyTo: input.newsletter.replyToEmail.trim() || undefined,
+    headers: {
+      "List-Unsubscribe": `<${unsubscribeUrl}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
+    idempotencyKey: `newsletter-send/${sendId}/${contact.contactId}`,
   });
 
   return { contact, success: result.success, messageId: result.id, error: result.error };

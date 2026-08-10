@@ -8,6 +8,14 @@
 -- (newsletters) were unreadable and unwritable by every authenticated user,
 -- including active org members. Add an OR branch that allows access when
 -- event_id is null and the caller is an active member of organization_id.
+--
+-- IMPORTANT: `private.drop_all_policies(...)` is intentional and safe here.
+-- It is the same recreate pattern used in migration 065. It removes the old
+-- event-only policies, then immediately recreates select/insert/update/delete
+-- policies that cover BOTH:
+--   * event-scoped rows (social / flyer) via can_access_event(event_id)
+--   * org-scoped newsletter rows (event_id is null) via is_active_org_member
+-- Service role continues to bypass RLS (cron / admin paths unchanged).
 
 select private.drop_all_policies('public.approval_scheduling_items');
 alter table public.approval_scheduling_items enable row level security;
