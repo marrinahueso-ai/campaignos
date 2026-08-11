@@ -400,6 +400,21 @@ export function duplicateCanvasBlock(block: NewsletterCanvasBlock): NewsletterCa
 }
 
 /**
+ * Insert a new canvas block immediately after `afterId`.
+ * Falls back to append when nothing is selected or the id is missing.
+ */
+export function insertCanvasBlockAfter(
+  blocks: NewsletterCanvasBlock[],
+  block: NewsletterCanvasBlock,
+  afterId: string | null | undefined,
+): NewsletterCanvasBlock[] {
+  if (!afterId) return [...blocks, block];
+  const idx = blocks.findIndex((b) => b.id === afterId);
+  if (idx < 0) return [...blocks, block];
+  return [...blocks.slice(0, idx + 1), block, ...blocks.slice(idx + 1)];
+}
+
+/**
  * Derives canvas blocks from the legacy flat `layoutBlocks` + stories /
  * calendar / volunteer / sponsors sub-state — the "Standard School Update"
  * template order every draft starts from, and the fallback used to open

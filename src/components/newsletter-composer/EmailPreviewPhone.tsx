@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  exportNewsletterPreviewFragment,
+  tryExportNewsletterPreviewFragment,
 } from "@/lib/newsletter-composer/export-html";
 import type { NewsletterComposerState } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
@@ -22,7 +22,7 @@ export function EmailPreviewPhone({
   showInboxBar = true,
   scrollToEnd = false,
 }: EmailPreviewPhoneProps) {
-  const fragment = exportNewsletterPreviewFragment(state);
+  const fragment = tryExportNewsletterPreviewFragment(state) ?? "";
 
   return (
     <div
@@ -47,9 +47,11 @@ export function EmailPreviewPhone({
       >
         {showInboxBar ? (
           <div className="sticky top-0 z-[1] border-b border-black/5 bg-white px-3.5 py-3">
-            <p className="mb-1 text-[11px] text-cos-muted">{state.fromName}</p>
+            <p className="mb-1 text-[11px] text-cos-muted">
+              {state.fromName || "Hey Ralli"}
+            </p>
             <p className="font-display text-base font-semibold leading-snug text-cos-text">
-              {state.subject}
+              {state.subject || "Newsletter"}
             </p>
           </div>
         ) : null}
@@ -76,17 +78,19 @@ export function EmailPreviewDesktop({
   state,
   showMailChrome = true,
 }: EmailPreviewDesktopProps) {
-  const fragment = exportNewsletterPreviewFragment(state);
+  const fragment = tryExportNewsletterPreviewFragment(state) ?? "";
+  const fromName = state.fromName?.trim() || "Hey Ralli";
+  const subject = state.subject?.trim() || "Newsletter";
 
   if (!showMailChrome) {
     return (
       <div className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_18px_40px_rgba(28,36,48,0.14)]">
         <div className="border-b border-black/5 bg-white px-5 py-4">
           <p className="mb-1 text-xs text-cos-muted">
-            From {state.fromName} · to your list
+            From {fromName} · to your list
           </p>
           <p className="font-display text-xl font-semibold leading-snug text-cos-text sm:text-2xl">
-            {state.subject}
+            {subject}
           </p>
         </div>
         <div
@@ -124,10 +128,10 @@ export function EmailPreviewDesktop({
         <div className="min-w-0">
           <div className="sticky top-0 z-[1] border-b border-black/5 bg-white px-5 py-4">
             <p className="mb-1 text-xs text-cos-muted">
-              From {state.fromName} · to your list
+              From {fromName} · to your list
             </p>
             <p className="font-display text-xl font-semibold leading-snug text-cos-text sm:text-2xl">
-              {state.subject}
+              {subject}
             </p>
           </div>
           <div

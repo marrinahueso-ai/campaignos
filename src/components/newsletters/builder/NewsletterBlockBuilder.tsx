@@ -7,6 +7,7 @@ import { uploadNewsletterComposerArtworkAction } from "@/lib/newsletter-composer
 import {
   buildInitialState,
   duplicateCanvasBlock,
+  insertCanvasBlockAfter,
   newCanvasBlock,
   normalizeComposerState,
   storyFromEvent,
@@ -238,7 +239,15 @@ export function NewsletterBlockBuilder({
 
   function insertBlock(kind: NewsletterCanvasBlockKind) {
     const block = newCanvasBlock(kind);
-    patch((prev) => ({ ...prev, canvasBlocks: [...(prev.canvasBlocks ?? []), block] }));
+    const afterId = selectedBlockId;
+    patch((prev) => ({
+      ...prev,
+      canvasBlocks: insertCanvasBlockAfter(
+        prev.canvasBlocks ?? [],
+        block,
+        afterId,
+      ),
+    }));
     setSelectedBlockId(block.id);
   }
 
@@ -269,7 +278,16 @@ export function NewsletterBlockBuilder({
 
     if (target.blockId === null) {
       const block = newCanvasBlock("event", { storyId });
-      patch((p) => ({ ...p, stories, canvasBlocks: [...(p.canvasBlocks ?? []), block] }));
+      const afterId = selectedBlockId;
+      patch((p) => ({
+        ...p,
+        stories,
+        canvasBlocks: insertCanvasBlockAfter(
+          p.canvasBlocks ?? [],
+          block,
+          afterId,
+        ),
+      }));
       setSelectedBlockId(block.id);
     } else {
       patch((p) => ({

@@ -3,12 +3,18 @@
 import { useMemo } from "react";
 
 import { EmailPreviewDesktop } from "@/components/newsletter-composer/EmailPreviewPhone";
+import { tryExportNewsletterPreviewFragment } from "@/lib/newsletter-composer/export-html";
 import type { NewsletterComposerState } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
+
+function canRenderSnapshot(snapshot: unknown): snapshot is NewsletterComposerState {
+  return Boolean(tryExportNewsletterPreviewFragment(snapshot));
+}
 
 /**
  * Compact scaled HTML preview for Approvals hub cards.
  * Prefer composer snapshot when available; fall back to rendered HTML iframe.
+ * Never throws — a bad newsletter snapshot must not blank Approvals.
  */
 export function NewsletterApprovalCardPreview({
   subject,
@@ -21,7 +27,9 @@ export function NewsletterApprovalCardPreview({
   snapshot?: NewsletterComposerState | null;
   className?: string;
 }) {
-  if (snapshot) {
+  const snapshotOk = canRenderSnapshot(snapshot);
+
+  if (snapshotOk) {
     return (
       <div
         className={cn(
@@ -94,7 +102,7 @@ export function NewsletterApprovalReviewPreview({
     return html;
   }, [html]);
 
-  if (snapshot) {
+  if (canRenderSnapshot(snapshot)) {
     return (
       <div className="mb-6 overflow-hidden rounded-[16px] border border-cos-border bg-[#f4f1ea] p-3 shadow-[0_8px_24px_rgba(28,36,48,0.06)]">
         <EmailPreviewDesktop state={snapshot} showMailChrome={false} />

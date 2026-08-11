@@ -733,6 +733,22 @@ function renderAnyBody(state: NewsletterComposerState): string {
     : renderBody(state);
 }
 
+/**
+ * In-app preview fragment that never throws.
+ * Incomplete / legacy composer snapshots must not blank Approvals or Library.
+ */
+export function tryExportNewsletterPreviewFragment(
+  state: unknown,
+): string | null {
+  if (!state || typeof state !== "object") return null;
+  try {
+    const html = renderAnyBody(state as NewsletterComposerState);
+    return html.trim() ? html : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Email-safe HTML for community newsletters (table layout). */
 export function exportNewsletterHtml(state: NewsletterComposerState): string {
   const body = renderAnyBody(state);

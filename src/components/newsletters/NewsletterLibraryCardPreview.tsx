@@ -1,6 +1,6 @@
 "use client";
 
-import { exportNewsletterPreviewFragment } from "@/lib/newsletter-composer/export-html";
+import { tryExportNewsletterPreviewFragment } from "@/lib/newsletter-composer/export-html";
 import type { NewsletterComposerState } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -8,18 +8,6 @@ import { cn } from "@/lib/utils/cn";
 const PREVIEW_SOURCE_WIDTH = 560;
 /** Fits ~220px-tall preview windows across the 3-column library grid. */
 const PREVIEW_SCALE = 0.4;
-
-function safePreviewFragment(
-  state: NewsletterComposerState | null | undefined,
-): string | null {
-  if (!state || typeof state !== "object") return null;
-  try {
-    const html = exportNewsletterPreviewFragment(state);
-    return html.trim() ? html : null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Miniature newsletter thumbnail for Library cards.
@@ -34,7 +22,7 @@ export function NewsletterLibraryCardPreview({
   state: NewsletterComposerState | null | undefined;
   className?: string;
 }) {
-  const fragment = safePreviewFragment(state);
+  const fragment = tryExportNewsletterPreviewFragment(state);
 
   if (!fragment) {
     return (
