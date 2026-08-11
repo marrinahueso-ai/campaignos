@@ -171,7 +171,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Newsletter Composer
 Community email builder plus a durable Newsletter → Approval → Schedule → Send workflow. Living docs: [QA](../qa/newsletter-composer.md) · [Engineering](../engineering/newsletter-composer.md).
 
-- **Library** — `/newsletters` is the Newsletter home (filters: All · In Progress · Waiting · Changes Requested · Scheduled · Sent · Templates). Cards reopen historical and in-flight issues with real audience + schedule/sent timestamps; Contacts stays one click away — **shipped**
+- **Library** — `/newsletters` is the Newsletter home (filters: All · In Progress · Waiting · Changes Requested · Scheduled · Sent · Templates). Compact 3-column cards (~400px) show a scaled thumbnail of each issue’s saved composer content plus title, status, audience, and schedule/sent time; Contacts stays one click away — **shipped**
 - **Template selection** — `/newsletters/new`; V1 **Standard School Update** opens the same block builder (other templates shown as coming soon) — **shipped**
 - **Block builder** — `/newsletter-composer` (Create with AI → Newsletter → New, or from Library). Palette: From Hey Ralli (Event / Upcoming / Volunteer / Artwork / Sponsor) + Add Your Own blocks; drag/reorder/duplicate/delete; Event blocks import real Hey Ralli event detail; images support Replace / Link / Alt; autosave; Preview & Send Details (or Preview & Resubmit after changes requested) — **shipped**
 - **Preview + Send Details (before approval)** — `/newsletters/[id]/preview` collects recipients (audience drawer), send date/time, and approval context; package is persisted on the newsletter; resubmit preserves recipients/datetime unless changed — **shipped**

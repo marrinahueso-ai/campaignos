@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Plus, Users } from "lucide-react";
 
+import { NewsletterLibraryCardPreview } from "@/components/newsletters/NewsletterLibraryCardPreview";
 import { NewsletterStatusBadge } from "@/components/newsletters/NewsletterStatusBadge";
 import {
   NEWSLETTER_LIBRARY_FILTERS,
@@ -42,6 +43,26 @@ function cardCta(status: NewsletterStatus): string {
     default:
       return "Continue";
   }
+}
+
+function audienceSummary(
+  audienceName: string | null,
+  audienceCount: number | null,
+): string {
+  if (!audienceName) return "No audience yet";
+  if (audienceCount == null) return audienceName;
+  return `${audienceName} · ${audienceCount}`;
+}
+
+function scheduleOrSentLabel(newsletter: Newsletter): string {
+  if (newsletter.sentAt) return `Sent ${formatDateTime(newsletter.sentAt)}`;
+  if (newsletter.scheduledSendAt) {
+    return `Scheduled ${formatDateTime(newsletter.scheduledSendAt)}`;
+  }
+  if (newsletter.proposedSendAt) {
+    return `Proposed ${formatDateTime(newsletter.proposedSendAt)}`;
+  }
+  return `Updated ${formatDateTime(newsletter.updatedAt)}`;
 }
 
 export function NewsletterLibraryShell({
@@ -175,84 +196,40 @@ export function NewsletterLibraryShell({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
           {visible.map(({ newsletter, audienceName, audienceCount }) => {
             const href = newsletterLibraryHref(newsletter);
-            const when =
-              newsletter.sentAt ||
-              newsletter.scheduledSendAt ||
-              newsletter.proposedSendAt ||
-              newsletter.updatedAt;
-            const whenLabel = newsletter.sentAt
-              ? `Sent ${formatDateTime(newsletter.sentAt)}`
-              : newsletter.scheduledSendAt
-                ? `Scheduled ${formatDateTime(newsletter.scheduledSendAt)}`
-                : newsletter.proposedSendAt
-                  ? `Proposed ${formatDateTime(newsletter.proposedSendAt)}`
-                  : `Updated ${formatDateTime(newsletter.updatedAt)}`;
+            const whenLabel = scheduleOrSentLabel(newsletter);
+            const previewState = newsletter.composerState;
 
             return (
               <Link key={newsletter.id} href={href} className="group block">
-                <article className="overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition group-hover:border-[#6b8171]">
-                  <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-[#f4f1ea] to-[#e8eee9]">
-                    {newsletter.composerState.headerImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={newsletter.composerState.headerImageUrl}
-                        alt=""
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full flex-col justify-end p-5">
-                        <p className="font-display text-2xl font-semibold text-cos-text">
-                          {newsletter.title || "Untitled newsletter"}
-                        </p>
-                        {newsletter.subject ? (
-                          <p className="mt-1 line-clamp-2 text-sm text-cos-muted">
-                            {newsletter.subject}
-                          </p>
-                        ) : null}
-                      </div>
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(28,36,48,0.75)] via-[rgba(28,36,48,0.25)] to-transparent p-5 text-white opacity-0 transition group-hover:opacity-100">
-                      <p className="font-display text-2xl font-bold">
-                        {newsletter.title || "Untitled newsletter"}
-                      </p>
-                      <div className="mt-3 flex items-end justify-between gap-3">
-                        <div className="text-sm">
-                          <p className="text-white/70">Audience</p>
-                          <p className="font-medium">
-                            {audienceName
-                              ? `${audienceName}${
-                                  audienceCount != null ? ` · ${audienceCount}` : ""
-                                }`
-                              : "No audience yet"}
-                          </p>
-                        </div>
-                        <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-cos-text">
-                          {cardCta(newsletter.status)}
-                        </span>
-                      </div>
+                <article className="flex h-[400px] flex-col overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition group-hover:border-[#6b8171] group-hover:shadow-[0_12px_32px_rgba(28,36,48,0.1)]">
+                  <div className="relative h-[220px] shrink-0 overflow-hidden border-b border-cos-border">
+                    <NewsletterLibraryCardPreview
+                      state={previewState}
+                      className="h-full w-full transition duration-500 group-hover:scale-[1.02]"
+                    />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(28,36,48,0.72)] via-[rgba(28,36,48,0.2)] to-transparent px-3.5 pb-3 pt-10 opacity-0 transition group-hover:opacity-100">
+                      <span className="inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-bold text-cos-text">
+                        {cardCta(newsletter.status)}
+                      </span>
                     </div>
                   </div>
-                  <div className="space-y-2 px-4 py-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-display text-xl font-semibold text-cos-text">
-                        {newsletter.title || "Untitled newsletter"}
+
+                  <div className="flex min-h-0 flex-1 flex-col gap-1.5 px-3.5 py-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="line-clamp-2 min-w-0 font-display text-lg font-semibold leading-snug text-cos-text">
+                        {newsletter.title ||
+                          previewState.issueName?.trim() ||
+                          "Untitled newsletter"}
                       </h3>
                       <NewsletterStatusBadge status={newsletter.status} />
                     </div>
-                    {newsletter.status === "changes_requested" &&
-                    newsletter.changeRequestNote ? (
-                      <p className="line-clamp-2 text-sm text-cos-muted italic">
-                        “{newsletter.changeRequestNote}”
-                      </p>
-                    ) : newsletter.subject ? (
-                      <p className="line-clamp-2 text-sm text-cos-muted">
-                        {newsletter.subject}
-                      </p>
-                    ) : null}
-                    <p className="text-xs font-semibold text-cos-muted" title={when}>
+                    <p className="truncate text-sm text-cos-muted">
+                      {audienceSummary(audienceName, audienceCount)}
+                    </p>
+                    <p className="mt-auto truncate text-xs font-semibold text-cos-muted">
                       {whenLabel}
                     </p>
                   </div>
