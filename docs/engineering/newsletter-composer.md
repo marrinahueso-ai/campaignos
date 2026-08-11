@@ -5,7 +5,7 @@
 **Last updated:** August 10, 2026
 **Related:** [QA guide](../qa/newsletter-composer.md) · [Feature list](../product/feature-list.md) · [Access control](./access-control.md) · [Multi-tenant isolation](../security/multi-tenant-isolation.md) · [Cron jobs](../ops/cron-jobs.md) · [Resend email templates](../ops/resend-email-templates.md) · [Homepage Composer eng](./homepage-composer.md) · [Architecture](./architecture.md)
 
-Two layers: a client-heavy composer (drafting UI, unchanged in spirit from the original soft launch) sitting on top of a **durable Newsletter → Approval → Send pipeline** (server-owned tables, versions, approval bridge, send validator, delivery, unsubscribe). Introduced by `supabase/migrations/20260810120000_newsletter_approval_send.sql` and `20260810130000_approval_scheduling_items_org_scope_rls.sql`.
+Two layers: a block-builder UI (Library → Template → Builder → Preview & Send Details) on top of a **durable Newsletter → Approval → Schedule → Send pipeline** (same tables/RPCs). UX Pilot references live under `public/ux-newsletter/`.
 
 ---
 
@@ -17,14 +17,14 @@ Two layers: a client-heavy composer (drafting UI, unchanged in spirit from the o
 |--------|---------|
 | `draft` | Being edited; never submitted, or pulled back via invalidation |
 | `needs_approval` | Submitted, waiting on an approver |
-| `changes_requested` | Approver asked for changes (mirrors the Social/Flyer revision flow) |
-| `approved` | Approver signed off on a specific version + audience — **not sent yet** |
+| `changes_requested` | Approver asked for changes |
+| `approved` | Brief intermediate after approve before schedule write (normally transitions immediately to `scheduled` via Approve & Schedule) |
 | `scheduled` | A scheduled send is queued against the approved version |
 | `sending` | A send is actively in flight (single-flight guard) |
 | `sent` | The most recent send completed |
 | `failed` | The most recent send failed outright |
 
-**Approval never sends.** Moving from `approved`/`scheduled` to an actual delivery only happens via Send Now / the scheduled-send cron, both gated on the `send_newsletter` permission and the production send flag (§9).
+**Approve & Schedule.** Approving from the Approvals hub (`approveAndScheduleNewsletterForApprovalsHub`) marks the newsletter approved **and** schedules using the creator’s `proposed_send_at` + proposed audience. There is no required creator-side prepare-to-send step afterward. Production delivery still goes through the scheduled-send cron / Send Now path and the production gate (§9).
 
 ---
 
@@ -32,16 +32,18 @@ Two layers: a client-heavy composer (drafting UI, unchanged in spirit from the o
 
 | Route | Role | Gate |
 |-------|------|------|
-| `/newsletter-composer` (`src/app/(dashboard)/newsletter-composer/page.tsx`) | Multi-step draft builder; loads an existing newsletter via `?newsletterId=` | `draft_edit` to save |
-| `/newsletters` (`.../newsletters/page.tsx`) | List of the org's newsletters + status badges | Any active member (see); `manage_newsletter_contacts` shows the Contacts link |
-| `/newsletters/[newsletterId]` (`.../newsletters/[newsletterId]/page.tsx` → `NewsletterDetailShell`) | Detail: current/approved version, audience, sender profile, audit trail | Any active member |
-| `/newsletters/[newsletterId]/send` (`.../newsletters/[newsletterId]/send/page.tsx` → `PrepareForSendShell`) | Runs the send validator; Send Now / Schedule / cancel / reschedule | `send_newsletter`; blocks with a message otherwise; requires status `approved`/`scheduled` |
-| `/newsletter-contacts` (`.../newsletter-contacts/page.tsx` → `NewsletterContactsShell`) | Manage contacts + audiences | `manage_newsletter_contacts` |
-| `/newsletter/unsubscribe` (public, `src/app/(public)/newsletter/unsubscribe/page.tsx`) | Token-based unsubscribe, no login | Public (token in query string) |
-| `/api/cron/newsletter-scheduled-sends` | Executes due scheduled sends | `CRON_SECRET` bearer |
-| `/api/newsletter/webhooks/resend` | Resend delivery/bounce/complaint events | Svix signature (optional if `RESEND_WEBHOOK_SECRET` unset) |
+| `/newsletters` | Library home with status filters | Any active member |
+| `/newsletters/new` | Template selection (Standard School Update) | `draft_edit` to continue into builder |
+| `/newsletter-composer` | Block builder; `?newsletterId=` loads durable draft | `draft_edit` to save |
+| `/newsletters/[newsletterId]/preview` | Preview + recipients + send datetime → Submit/Resubmit | `draft_edit` / `submit_approval` |
+| `/newsletters/[newsletterId]` | Status surface (waiting / changes / scheduled / sent) | Any active member |
+| `/newsletters/[newsletterId]/send` | Ops: cancel/reschedule/send-now | `send_newsletter` |
+| `/newsletter-contacts` | Contacts + audiences | `manage_newsletter_contacts` |
+| `/newsletter/unsubscribe` | Public token unsubscribe | Public |
+| `/api/cron/newsletter-scheduled-sends` | Executes due scheduled sends | `CRON_SECRET` |
+| `/api/newsletter/webhooks/resend` | Delivery/bounce/complaint | Svix signature |
 
-Chooser entry: `/create-with-ai` → Newsletter → `/newsletter-composer` (unchanged; no separate sidebar item for the composer itself — `/newsletters` and `/newsletter-contacts` are the durable-model surfaces and do appear in nav).
+Chooser entry: `/create-with-ai` → Newsletter → `/newsletters/new` (templates) / Library at `/newsletters`.
 
 ---
 
@@ -51,8 +53,8 @@ All under `public.*`, RLS `private.is_active_org_member(organization_id)` (selec
 
 | Table | Purpose |
 |-------|---------|
-| `newsletters` | One row per newsletter: status, `composer_state` (live draft snapshot), `current_version_id`, `approved_version_id`, proposed/approved audience, subject/from/reply-to, submitted/approved/sent actor + timestamps |
-| `newsletter_versions` | Immutable snapshot frozen at "Send for approval": `content_fingerprint`, `rendered_html` (with compliance footer baked in), subject/from/reply-to/audience, `compliance_footer` — unique `(newsletter_id, version_number)` |
+| `newsletters` | One row per newsletter: status, `composer_state` (live draft snapshot incl. optional `canvasBlocks`), `current_version_id`, `approved_version_id`, proposed/approved audience, subject/from/reply-to, submitted/approved/sent actor + timestamps, `proposed_send_at` / `scheduled_send_at` |
+| `newsletter_versions` | Immutable snapshot frozen at "Send for approval": `content_fingerprint`, `rendered_html` (with compliance footer baked in), subject/from/reply-to/audience, `proposed_send_at`, `compliance_footer` — unique `(newsletter_id, version_number)` |
 | `newsletter_contacts` | Org's newsletter recipients — **not** `organization_users` / Team & Access. Status (`active`/`unsubscribed`/`suppressed`/`bounced`/`complained`), source (`manual`/`csv_import`/`api`), consent attestation fields. Unique `(organization_id, email_normalized)` |
 | `newsletter_audiences` + `newsletter_audience_members` | Named recipient groups — **not** Team & Access roles. Membership is a plain join table (`audience_id, contact_id, organization_id`) |
 | `newsletter_import_batches` | One row per CSV import; carries the `authorization_attested` flag + counts |
@@ -78,18 +80,20 @@ Two `SECURITY DEFINER` RPCs (both `set search_path = ''`, callable by `service_r
 `src/lib/newsletter/versions.ts` → `createVersionFromNewsletter`:
 
 1. Loads the org + sender profile, builds the physical mailing address and compliance footer (§8).
-2. Renders `exportNewsletterHtml(composerState)` (same exporter the composer preview uses) and injects the compliance footer before `</body>`.
-3. Computes a `content_fingerprint` via `computeNewsletterContentFingerprint` (`src/lib/newsletter/content-fingerprint.ts`) — a SHA-256 hash of a canonicalized (key-order-independent) JSON blob of `{ composerState, subject, fromDisplayName, fromEmail, replyToEmail, audienceId }`.
+2. Renders `exportNewsletterHtml(composerState)` (canvas blocks when present) and injects the compliance footer before `</body>`.
+3. Computes a `content_fingerprint` via `computeNewsletterContentFingerprint` (`src/lib/newsletter/content-fingerprint.ts`) — a SHA-256 hash of a canonicalized JSON blob of `{ composerState, subject, fromDisplayName, fromEmail, replyToEmail, audienceId, proposedSendAt }`.
 4. Inserts the next `version_number` for that newsletter and points `newsletters.current_version_id` at it.
 
-**Explicitly excluded from the fingerprint:** `proposedSendAt` / `scheduledSendAt` (moving the send time alone must never invalidate an approval) and anything related to test sends (test sends never touch versions at all).
+**Approval package:** content + recipients + proposed send datetime. Changing any of these after approval invalidates.
+
+**Explicitly excluded from the fingerprint:** test-send activity (never touches versions).
 
 Invalidation (`src/lib/newsletter/invalidate.ts`):
 
 - `checkAndInvalidateIfContentChanged` — only runs when status is `approved` or `scheduled`. Recomputes the fingerprint of the *live* draft fields and compares it against the frozen `approved_version_id` snapshot's fingerprint. On mismatch, calls `invalidateNewsletterApproval`.
 - `invalidateNewsletterApproval` — rolls status back to `draft`, clears `approved_version_id` / `approved_audience_id` / `approved_by` / `approved_at` / `scheduled_send_at`, and cancels any still-`scheduled` send row (never touches a send that is already `sending` or `sent` — those are historical facts). Logs `approval_invalidated`.
 
-Callers that trigger a re-check: `editContentRequiringReapproval` (any draft field edit on an already-approved/scheduled newsletter) and `changeAudience` (changing `proposedAudienceId` always re-checks — approval is audience-specific).
+Callers that trigger a re-check: `editContentRequiringReapproval` (any draft field edit on an already-approved/scheduled newsletter, including `proposedSendAt`) and `changeAudience`.
 
 ---
 
@@ -99,19 +103,17 @@ Callers that trigger a re-check: `editContentRequiringReapproval` (any draft fie
 
 **Submit** — `sendNewsletterForApproval` (`src/lib/newsletter/send-for-approval.ts`), gated on `submit_approval`:
 
-1. Requires a non-empty subject.
+1. Requires non-empty subject, `proposed_audience_id`, and a **future** `proposed_send_at`.
 2. Freezes a new `newsletter_versions` snapshot via `createVersionFromNewsletter`.
-3. Upserts an `approval_scheduling_items` row keyed by `(organization_id, campaign_milestone_id)` with `event_id = null`, `source = "campaign_builder"`, `delivery_method = "draft-only"` — the same queue Social/Flyer use, just org- instead of event-scoped.
+3. Upserts an `approval_scheduling_items` row keyed by `(organization_id, campaign_milestone_id)` with `event_id = null`, `source = "campaign_builder"`, `schedule_at = proposed_send_at`.
 4. Sets `newsletters.status = "needs_approval"`, records `submitted_by` / `submitted_at`, logs `submitted_for_approval`.
-5. Emails the resolved approver (`resolveApprovalAssignee`) via `buildApprovalTransactionalEmail` + `sendEmail` when Resend is configured; otherwise notes "notified in the app only".
+5. Emails the resolved approver when Resend is configured.
 
-**Approve from the Approvals hub** — `approveNewsletterForApprovalsHub`, gated on `approve_comms` (**not** `send_newsletter` — approvers may not hold send access). Only allowed from `needs_approval`/`changes_requested`, and only when a `current_version_id` exists. Sets `status = "approved"`, freezes `approved_version_id` / `approved_audience_id` to the *current* version/audience, logs `approved`. **This never creates a send or schedules anything.** `notifyNewsletterApproved` emails the creator that the newsletter is "approved and ready to send."
+**Approve & Schedule from the Approvals hub** — `approveAndScheduleNewsletterForApprovalsHub`, gated on `approve_comms` (**not** `send_newsletter`). Approves the current version/audience, then calls `scheduleNewsletterSend` with `proposed_send_at` and `hasSendPermission: true` so approvers can schedule the pre-selected package. Notifies the creator that the newsletter is approved & scheduled.
 
-**Request changes from the Approvals hub** — `requestNewsletterChangesForApprovalsHub`, also gated on `approve_comms`. Sets `status = "changes_requested"` with a note; `notifyNewsletterChangesRequested` emails the creator. Resubmitting (`sendNewsletterForApproval` again) is detected via `isResubmitAfterChanges` and changes the notification copy/subject.
+**Request changes from the Approvals hub** — `requestNewsletterChangesForApprovalsHub`, gated on `approve_comms`. Sets `changes_requested` with a note; package (audience + proposed send time) is preserved for resubmit.
 
-An alternate direct-approve path, `approveNewsletter`, exists gated on `send_newsletter` for callers that already hold send access and want to approve without going through the hub UI; it shares the same `applyNewsletterApproval` core.
-
-Wiring into the shared hub: `src/lib/approvals-scheduling/map-items.ts` treats a `newsletter:` milestone id as `channel: "newsletter"` (like `flyer` is `channel: "flyer"`) and forces `deliveryMethod: "draft-only"`. `src/components/approvals-scheduling/ApprovalsSchedulingHub.tsx` routes a newsletter's "edit" action to `/newsletter-composer?newsletterId=...` (`newsletterComposerHref`). `src/lib/approvals-scheduling/actions.ts` dynamically imports `approveNewsletterForApprovalsHub` / `requestNewsletterChangesForApprovalsHub` / the notify helpers when the milestone id resolves to a newsletter.
+Wiring into the shared hub: `src/lib/approvals-scheduling/actions.ts` routes newsletter approve to Approve & Schedule; ReviewDrawer label is **Approve & Schedule**.
 
 ---
 

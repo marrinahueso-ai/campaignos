@@ -79,7 +79,7 @@ function approveButtonLabel(
   isFlyer: boolean,
   isNewsletter: boolean,
 ): string {
-  if (isNewsletter) return "Approve newsletter";
+  if (isNewsletter) return "Approve & Schedule";
   if (isFlyer) return "Approve";
   const label = item.scheduleLabel?.trim();
   if (!label) return "Approve & schedule";
@@ -513,7 +513,8 @@ export function ReviewDrawer({
                 <div>
                   <p className="text-sm font-semibold text-cos-text">
                     {isNewsletter
-                      ? "Draft — not sent yet"
+                      ? item.scheduleLabel ||
+                        "Send time set by creator — Approve & Schedule"
                       : isFlyer
                         ? "Print-ready"
                         : item.scheduleLabel || "Schedule not set yet"}

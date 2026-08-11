@@ -500,7 +500,7 @@ describe("Approval Routing — ReviewDrawer preview identity", () => {
     assert.match(drawer, /preview\.storyArtworkUrl/);
     assert.match(drawer, /preview\.captionText/);
     assert.match(drawer, /isNewsletterMilestoneId/);
-    assert.match(drawer, /Approve newsletter/);
+    assert.match(drawer, /Approve & Schedule/);
     assert.match(drawer, /\{item\.milestoneName\}/);
     assert.match(drawer, /Feed · 1:1/);
     assert.match(drawer, /Story · 9:16/);

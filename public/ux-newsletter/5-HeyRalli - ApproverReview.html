@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="utf-8">
+    <title>Hey Ralli · Approver Review</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: '#2c2825',
+              paper: '#fcfbf9',
+              parchment: '#f5f2eb',
+              line: '#e4ded4',
+              muted: '#6e675f',
+              accent: '#0d7e5e',
+              accentSoft: '#e6f3ee',
+            },
+            fontFamily: {
+              sans: ['DM Sans', 'sans-serif'],
+              serif: ['Lora', 'serif'],
+            },
+            boxShadow: {
+              soft: '0 10px 30px -15px rgba(44,40,37,0.15)',
+              card: '0 8px 30px -12px rgba(44,40,37,0.12)',
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+        body { font-family: 'DM Sans', sans-serif; overflow: hidden; }
+        .modal-overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal { transform: translateY(20px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
+        .modal-open .modal-overlay { opacity: 1; pointer-events: auto; }
+        .modal-open .modal { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body class="bg-paper text-ink h-screen flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="h-16 border-b border-line bg-white flex items-center justify-between px-6 z-50">
+        <div class="flex items-center gap-6">
+            <span class="font-serif text-xl font-bold tracking-tight text-ink">Hey&nbsp;Ralli<span class="text-accent">.</span></span>
+            <div class="h-6 w-px bg-line"></div>
+            <div class="flex flex-col">
+                <span class="text-xs font-bold uppercase tracking-widest text-muted">Reviewing Newsletter</span>
+                <span class="text-sm font-medium">August Back to School Update</span>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+             <a href="Status__desktop.html?state=waiting" class="text-xs text-muted hover:text-ink">Back to Creator View (Demo)</a>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Center: Preview -->
+        <section class="flex-1 bg-parchment overflow-y-auto p-12 dot-grid">
+            <div class="max-w-2xl mx-auto bg-white shadow-card rounded-sm border border-line overflow-hidden mb-12">
+                <img class="w-full h-64 object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_48cd30af2a_32714bb80a7db5b3.png" alt="a warm editorial photo of a sunlit school hallway, wooden lockers" />
+                <div class="px-12 py-10 text-center border-b border-line">
+                    <h1 class="font-serif text-4xl font-bold mb-2">Back to School!</h1>
+                    <p class="text-muted italic serif text-sm">Volume 14 · August 2026</p>
+                </div>
+                <div class="px-12 py-12">
+                    <h2 class="font-serif text-xl font-bold mb-4 text-accent">A Note from Principal Miller</h2>
+                    <p class="text-sm leading-relaxed text-ink mb-6">Welcome back, Ralli families! We are so excited to open our doors for the 2026-2027 school year...</p>
+                    
+                    <div class="bg-parchment/50 p-6 rounded-xl border border-line">
+                        <h3 class="font-bold text-sm mb-4 uppercase tracking-wider">Upcoming Dates</h3>
+                        <div class="space-y-3">
+                            <div class="flex gap-3 items-center">
+                                <div class="w-10 h-10 bg-white border border-line rounded flex flex-col items-center justify-center text-[10px] font-bold">
+                                    <span class="text-accent">AUG</span>
+                                    <span>15</span>
+                                </div>
+                                <p class="text-xs font-bold">First Day of School</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: Actions -->
+        <aside class="w-[400px] border-l border-line bg-white p-8 overflow-y-auto flex flex-col">
+            <div id="approverState" class="flex-1 space-y-10">
+                <!-- Dynamic Content -->
+            </div>
+            
+            <div id="mainActions" class="pt-8 border-t border-line space-y-3">
+                <!-- Dynamic Content -->
+            </div>
+        </aside>
+    </main>
+
+    <!-- Request Changes Modal -->
+    <div id="modalOverlay" class="modal-overlay fixed inset-0 bg-ink/60 z-[60] backdrop-blur-sm flex items-center justify-center p-6">
+        <div class="modal bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
+            <div class="p-8 border-b border-line">
+                <h3 class="font-serif text-3xl font-bold">Request Changes</h3>
+                <p class="text-muted mt-2">Let the creator know what needs to be adjusted.</p>
+            </div>
+            <div class="p-8 space-y-6">
+                <div class="space-y-3">
+                    <label class="text-xs font-bold uppercase tracking-widest text-muted">Feedback</label>
+                    <textarea class="w-full h-40 bg-parchment/50 border border-line rounded-2xl p-4 text-sm focus:outline-none focus:border-accent transition-colors" placeholder="e.g., Please update the principal's photo and double check the BBQ time."></textarea>
+                </div>
+                <div class="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded-xl border border-amber-100">
+                    <i class="fa-solid fa-circle-info text-sm"></i>
+                    <p class="text-xs font-medium">The newsletter will be moved back to 'Draft' for the creator.</p>
+                </div>
+            </div>
+            <div class="p-8 bg-parchment/30 flex gap-4">
+                <button onclick="toggleModal()" class="flex-1 py-4 text-sm font-bold text-muted hover:text-ink transition-colors">Cancel</button>
+                <a href="ApproverReview__desktop.html?state=requested" class="flex-1 py-4 bg-ink text-white rounded-full text-sm font-bold text-center hover:bg-black transition-all">Submit Feedback</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const state = urlParams.get('state') || 'pending'; // pending, requested, approved
+        const approverState = document.getElementById('approverState');
+        const mainActions = document.getElementById('mainActions');
+
+        const content = {
+            pending: {
+                html: `
+                    <div>
+                        <h2 class="font-serif text-3xl font-bold mb-4">Pending Review</h2>
+                        <p class="text-muted text-sm leading-relaxed">Submitted by <b>Mrs. Garcia</b> today at 10:45 AM. Review the content and recipients before approving.</p>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="space-y-3">
+                            <label class="text-xs font-bold uppercase tracking-widest text-muted">Details</label>
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-muted">Recipients</span>
+                                    <span class="font-bold">All Families (605)</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-muted">Schedule</span>
+                                    <span class="font-bold">Aug 15, 8:00 AM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                actions: `
+                    <button onclick="toggleModal()" class="w-full py-4 border border-line rounded-full font-bold hover:bg-parchment transition-all text-sm">Request Changes</button>
+                    <a href="ApproverReview__desktop.html?state=approved" class="w-full py-4 bg-accent text-white rounded-full font-bold flex items-center justify-center gap-2 hover:bg-[#0a6b4f] transition-all text-sm shadow-md">Approve & Schedule</a>
+                `
+            },
+            requested: {
+                html: `
+                    <div class="bg-amber-50 border border-amber-100 rounded-3xl p-8 space-y-4">
+                        <div class="flex items-center gap-2 text-amber-600 font-bold text-xs uppercase tracking-widest">
+                            <i class="fa-solid fa-comment-dots"></i>
+                            <span>Changes Requested</span>
+                        </div>
+                        <h3 class="font-serif text-2xl font-bold">Feedback Sent</h3>
+                        <p class="text-sm text-amber-800 leading-relaxed italic">"Please update the principal's photo and double check the BBQ time."</p>
+                        <p class="text-[10px] text-amber-600 font-bold uppercase tracking-widest pt-2">Sent today at 2:30 PM</p>
+                    </div>
+                `,
+                actions: `
+                    <a href="ApproverReview__desktop.html?state=pending" class="w-full py-4 border border-line rounded-full font-bold hover:bg-parchment transition-all text-sm text-center block">Clear & Re-review</a>
+                `
+            },
+            approved: {
+                html: `
+                    <div class="bg-accentSoft border border-accentSoft rounded-3xl p-8 space-y-4">
+                        <div class="flex items-center gap-2 text-accent font-bold text-xs uppercase tracking-widest">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Approved & Scheduled</span>
+                        </div>
+                        <h3 class="font-serif text-2xl font-bold">Successfully Scheduled</h3>
+                        <p class="text-sm text-accent leading-relaxed">This newsletter is now set to send on <b>August 15 at 8:00 AM</b>.</p>
+                        <p class="text-[10px] text-accent font-bold uppercase tracking-widest pt-2">Approved by You</p>
+                    </div>
+                `,
+                actions: `
+                    <a href="Status__desktop.html?state=scheduled" class="w-full py-4 border border-line rounded-full font-bold hover:bg-parchment transition-all text-sm text-center block">View Scheduled Status</a>
+                `
+            }
+        };
+
+        const current = content[state];
+        approverState.innerHTML = current.html;
+        mainActions.innerHTML = current.actions;
+
+        function toggleModal() {
+            document.body.classList.toggle('modal-open');
+        }
+    </script>
+
+</body>
+</html>

@@ -99,6 +99,7 @@ export async function createVersionFromNewsletter(input: {
     fromEmail: newsletter.fromEmail,
     replyToEmail: newsletter.replyToEmail,
     audienceId: newsletter.proposedAudienceId,
+    proposedSendAt: newsletter.proposedSendAt,
   });
 
   const supabase = await createClient();

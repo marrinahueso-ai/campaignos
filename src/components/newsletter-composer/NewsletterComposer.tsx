@@ -1163,11 +1163,15 @@ function StoriesStep({
       eventId: null,
       title: draftTitle.trim(),
       date: draftDate || null,
+      time: null,
+      location: null,
       meta: "Manual story",
       messaging: draftMsg.trim() || "Update for your community.",
       ctaLabel: draftCta.trim() || "Learn more →",
       ctaUrl: draftLink.trim(),
       imageUrl: draftImageUrl,
+      imageLink: "",
+      imageAlt: "",
       included: true,
       featured: false,
     };
@@ -1977,6 +1981,8 @@ function MustDosStep({
       details: volDetails.trim() || "Volunteer ask",
       signupUrl: volUrl.trim(),
       imageUrl: null,
+      imageLink: "",
+      imageAlt: "",
       included: true,
     };
     patch((p) => ({ ...p, volunteerAsks: [...p.volunteerAsks, ask] }));
@@ -2280,6 +2286,8 @@ function MustDosStep({
                     note: "",
                     url: "",
                     imageUrl: null,
+                    imageLink: "",
+                    imageAlt: "",
                   },
                 ],
               }))

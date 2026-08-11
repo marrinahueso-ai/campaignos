@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="utf-8">
+    <title>Hey Ralli · Choose Template</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: '#2c2825',
+              paper: '#fcfbf9',
+              parchment: '#f5f2eb',
+              line: '#e4ded4',
+              muted: '#6e675f',
+              accent: '#0d7e5e',
+              accentSoft: '#e6f3ee',
+            },
+            fontFamily: {
+              sans: ['DM Sans', 'sans-serif'],
+              serif: ['Lora', 'serif'],
+            },
+            boxShadow: {
+              soft: '0 10px 30px -15px rgba(44,40,37,0.15)',
+              card: '0 8px 30px -12px rgba(44,40,37,0.12)',
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+        body { font-family: 'DM Sans', sans-serif; }
+        .nav-link-underline { position: relative; }
+        .nav-link-underline::after {
+            content: '';
+            position: absolute;
+            bottom: -2px; left: 0; width: 0; height: 2px;
+            background-color: #0d7e5e;
+            transition: width 0.3s ease;
+        }
+        .nav-link-underline:hover::after { width: 100%; }
+    </style>
+</head>
+<body class="bg-paper text-ink antialiased">
+
+    <!-- Navigation -->
+    <header class="fixed top-0 left-0 w-full z-50 px-6 py-4">
+        <div class="max-w-[1440px] mx-auto flex items-center justify-between bg-parchment/80 backdrop-blur-md border border-line rounded-full px-8 py-3 shadow-soft">
+            <a href="Library__desktop.html" class="flex-shrink-0 font-serif text-2xl font-bold tracking-tight text-ink">Hey&nbsp;Ralli<span class="text-accent">.</span></a>
+            <nav class="hidden md:flex space-x-8 text-sm font-medium">
+                <a href="Library__desktop.html" class="nav-link-underline">Home</a>
+                <a href="#" class="nav-link-underline">Contacts</a>
+                <a href="TemplateSelection__desktop.html" class="nav-link-underline text-accent">Templates</a>
+                <a href="#" class="nav-link-underline">Pricing</a>
+            </nav>
+            <div class="w-24"></div> <!-- Spacer for balance -->
+        </div>
+    </header>
+
+    <main class="pt-32 pb-20 px-6">
+        <section class="max-w-4xl mx-auto text-center mb-16">
+            <h1 class="font-serif text-5xl font-bold mb-6">Choose a starting point</h1>
+            <p class="text-xl text-muted">Select a template to open the newsletter builder. You can customize everything once you're inside.</p>
+        </section>
+
+        <section class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Main Template -->
+                <a href="Builder__desktop.html" class="group block bg-parchment rounded-3xl border-2 border-line p-4 transition-all hover:border-accent hover:shadow-card hover:-translate-y-1">
+                    <div class="aspect-[3/4] rounded-2xl overflow-hidden mb-6 bg-white border border-line flex items-center justify-center relative">
+                        <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_5cde710b43_c139f53683b1f282.png" alt="a clean, modern school newsletter layout with placeholders for images and text, warm minimalist edit" />
+                        <div class="absolute inset-0 bg-accent/0 group-hover:bg-accent/5 transition-colors flex items-center justify-center">
+                            <span class="bg-accent text-white px-6 py-3 rounded-full font-medium opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">Select Template</span>
+                        </div>
+                    </div>
+                    <div class="px-2">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-serif text-2xl font-bold">Standard School Update</h3>
+                            <span class="text-[10px] uppercase tracking-widest font-bold bg-accentSoft text-accent px-2 py-1 rounded">Popular</span>
+                        </div>
+                        <p class="text-sm text-muted leading-relaxed">Perfect for weekly updates, featuring sections for principal's message, upcoming dates, and classroom news.</p>
+                    </div>
+                </a>
+
+                <!-- Placeholder 2 -->
+                <div class="group block bg-white/50 rounded-3xl border-2 border-dashed border-line p-4 opacity-70">
+                    <div class="aspect-[3/4] rounded-2xl overflow-hidden mb-6 bg-parchment border border-line flex flex-col items-center justify-center">
+                        <i class="fa-solid fa-calendar-star text-4xl text-muted/40 mb-4"></i>
+                        <span class="text-sm font-medium text-muted/60">Event Invitation</span>
+                    </div>
+                    <div class="px-2">
+                        <h3 class="font-serif text-2xl font-bold text-muted/60 mb-2">Fundraiser Gala</h3>
+                        <p class="text-sm text-muted/40 leading-relaxed">Coming soon: A special layout designed for ticketed events and RSVPs.</p>
+                    </div>
+                </div>
+
+                <!-- Placeholder 3 -->
+                <div class="group block bg-white/50 rounded-3xl border-2 border-dashed border-line p-4 opacity-70">
+                    <div class="aspect-[3/4] rounded-2xl overflow-hidden mb-6 bg-parchment border border-line flex flex-col items-center justify-center">
+                        <i class="fa-solid fa-camera-retro text-4xl text-muted/40 mb-4"></i>
+                        <span class="text-sm font-medium text-muted/60">Photo Gallery</span>
+                    </div>
+                    <div class="px-2">
+                        <h3 class="font-serif text-2xl font-bold text-muted/60 mb-2">Semester Highlights</h3>
+                        <p class="text-sm text-muted/40 leading-relaxed">Coming soon: Visual-first layout to celebrate school activities.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-20 text-center">
+                <a href="Library__desktop.html" class="text-muted hover:text-ink transition-colors inline-flex items-center gap-2 font-medium">
+                    <i class="fa-solid fa-arrow-left"></i> Back to My Library
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-parchment py-12 px-6 border-t border-line mt-auto">
+        <div class="max-w-[1440px] mx-auto text-center text-sm text-muted">
+            © 2026 Hey Ralli. All rights reserved.
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -30,6 +30,8 @@ export interface ScheduleNewsletterSendInput {
   scheduledFor: string;
   actorUserId?: string | null;
   hasSendPermission?: boolean;
+  /** Allow queuing a schedule when production delivery is still gated off. */
+  skipProductionGate?: boolean;
 }
 
 export type ScheduleNewsletterSendResult =
@@ -49,6 +51,7 @@ export async function scheduleNewsletterSend(
     organizationId: input.organizationId,
     newsletterId: input.newsletterId,
     hasSendPermission: input.hasSendPermission,
+    skipProductionGate: input.skipProductionGate ?? true,
   });
   if (!validation.ok) {
     return { ok: false, error: validation.errors[0] ?? "Unable to schedule.", errors: validation.errors };

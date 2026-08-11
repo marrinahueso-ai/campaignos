@@ -22,6 +22,7 @@ function baseInput(): NewsletterFingerprintInput {
     fromEmail: "newsletter@heyralli.com",
     replyToEmail: "board@riversidepta.org",
     audienceId: "audience-1",
+    proposedSendAt: "2026-10-15T15:00:00.000Z",
   };
 }
 
@@ -41,6 +42,7 @@ describe("computeNewsletterContentFingerprint", () => {
       fromDisplayName: input.fromDisplayName,
       subject: input.subject,
       composerState: input.composerState,
+      proposedSendAt: input.proposedSendAt,
     };
     assert.equal(
       computeNewsletterContentFingerprint(input),
@@ -64,10 +66,19 @@ describe("computeNewsletterContentFingerprint", () => {
 });
 
 describe("approvalInvalidatingFieldsChanged", () => {
-  it("schedule-only changes do NOT invalidate (proposedSendAt is not part of the fingerprint input)", () => {
+  it("proposed send datetime changes DO invalidate", () => {
     const approved = baseInput();
-    const rescheduled = baseInput(); // identical content — only the send time would differ elsewhere
-    assert.equal(approvalInvalidatingFieldsChanged(approved, rescheduled), false);
+    const rescheduled = {
+      ...baseInput(),
+      proposedSendAt: "2026-10-16T15:00:00.000Z",
+    };
+    assert.equal(approvalInvalidatingFieldsChanged(approved, rescheduled), true);
+  });
+
+  it("identical proposed send datetime does not invalidate", () => {
+    const approved = baseInput();
+    const same = baseInput();
+    assert.equal(approvalInvalidatingFieldsChanged(approved, same), false);
   });
 
   it("test-send-only activity does not invalidate (fingerprint input has no send-kind field)", () => {

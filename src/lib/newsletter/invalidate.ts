@@ -93,6 +93,7 @@ export async function checkAndInvalidateIfContentChanged(input: {
       fromEmail: newsletter.fromEmail,
       replyToEmail: newsletter.replyToEmail,
       audienceId: newsletter.proposedAudienceId,
+      proposedSendAt: newsletter.proposedSendAt,
     },
     {
       composerState: approvedVersion.snapshot,
@@ -101,6 +102,7 @@ export async function checkAndInvalidateIfContentChanged(input: {
       fromEmail: approvedVersion.fromEmail,
       replyToEmail: approvedVersion.replyToEmail,
       audienceId: approvedVersion.audienceId,
+      proposedSendAt: approvedVersion.proposedSendAt,
     },
   );
 

@@ -1,14 +1,15 @@
 import { notFound } from "next/navigation";
 
-import { NewsletterDetailShell } from "@/components/newsletters/NewsletterDetailShell";
+import { NewsletterStatusShell } from "@/components/newsletters/NewsletterStatusShell";
 import { accessHasPermission, getEffectiveAccess } from "@/lib/access-templates/effective-access";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
+import { listNewsletterAudienceMemberIds } from "@/lib/newsletter/audiences";
 import { getNewsletterDetailPayload } from "@/lib/newsletter/queries";
+import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 
 interface NewsletterDetailPageProps {
   params: Promise<{ newsletterId: string }>;
-  searchParams: Promise<{ prepare?: string }>;
 }
 
 export async function generateMetadata({ params }: NewsletterDetailPageProps) {
@@ -19,12 +20,8 @@ export async function generateMetadata({ params }: NewsletterDetailPageProps) {
   return { title: payload ? `${payload.newsletter.title} — Newsletter` : "Newsletter" };
 }
 
-export default async function NewsletterDetailPage({
-  params,
-  searchParams,
-}: NewsletterDetailPageProps) {
+export default async function NewsletterDetailPage({ params }: NewsletterDetailPageProps) {
   const { newsletterId } = await params;
-  const { prepare } = await searchParams;
   const organization = await getCurrentOrganization();
 
   if (!organization) {
@@ -37,18 +34,17 @@ export default async function NewsletterDetailPage({
     );
   }
 
-  const [payload, access, members] = await Promise.all([
+  const [payload, access, members, assignee] = await Promise.all([
     getNewsletterDetailPayload(organization.id, newsletterId),
     getEffectiveAccess(),
     getOrganizationUsers(organization.id),
+    resolveApprovalAssignee(organization.id, null),
   ]);
 
   if (!payload) {
     notFound();
   }
 
-  // Newsletter actor columns (created_by, submitted_by, audit actors) store
-  // auth.users.id — not organization_users.id.
   const nameByAuthUserId = new Map<string, string>();
   for (const member of members) {
     if (!member.userId) continue;
@@ -60,34 +56,39 @@ export default async function NewsletterDetailPage({
   const resolveName = (authUserId: string | null): string | null =>
     authUserId ? nameByAuthUserId.get(authUserId) ?? null : null;
 
-  const canSendNewsletter = access ? accessHasPermission(access, "send_newsletter") : false;
   const canEditDraft = access ? accessHasPermission(access, "draft_edit") : false;
 
-  const auditEvents = payload.auditEvents.map((event) => ({
-    id: event.id,
-    eventType: event.event_type,
-    detail: event.detail,
-    createdAt: event.created_at,
-    actorName: resolveName(event.actor_user_id),
-  }));
+  const audience =
+    payload.approvedAudience ?? payload.proposedAudience ?? null;
+  const audienceCount = audience
+    ? (await listNewsletterAudienceMemberIds(organization.id, audience.id)).length
+    : null;
+
+  const previewState =
+    payload.newsletter.status === "approved" ||
+    payload.newsletter.status === "scheduled" ||
+    payload.newsletter.status === "sending" ||
+    payload.newsletter.status === "sent" ||
+    payload.newsletter.status === "failed"
+      ? payload.approvedVersion?.snapshot ??
+        payload.currentVersion?.snapshot ??
+        payload.newsletter.composerState
+      : payload.currentVersion?.snapshot ?? payload.newsletter.composerState;
 
   return (
-    <NewsletterDetailShell
+    <NewsletterStatusShell
       newsletter={payload.newsletter}
-      currentVersion={payload.currentVersion}
-      approvedVersion={payload.approvedVersion}
-      proposedAudience={payload.proposedAudience}
-      approvedAudience={payload.approvedAudience}
-      audiences={payload.audiences}
-      senderProfile={payload.senderProfile}
-      auditEvents={auditEvents}
+      previewState={previewState}
+      audience={audience}
+      audienceCount={audienceCount}
       creatorName={resolveName(payload.newsletter.createdBy)}
       submittedByName={resolveName(payload.newsletter.submittedBy)}
       approvedByName={resolveName(payload.newsletter.approvedBy)}
       sentByName={resolveName(payload.newsletter.sentBy)}
-      canSendNewsletter={canSendNewsletter}
+      approverName={
+        assignee.hasAssignedPerson ? assignee.assigneeDisplayName : null
+      }
       canEditDraft={canEditDraft}
-      openPrepareApprovalOnLoad={prepare === "approval"}
     />
   );
 }

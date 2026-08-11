@@ -87,7 +87,16 @@ describe("runNewsletterSendChecks", () => {
 
   it("fails on duplicate active send", () => {
     const errors = runNewsletterSendChecks({ ...baseFacts(), hasDuplicateActiveSend: true });
-    assert.ok(errors.some((e) => e.includes("already in progress or complete")));
+    assert.ok(errors.some((e) => e.includes("already in progress")));
+  });
+
+  it("allows scheduling when production gate is skipped", () => {
+    const errors = runNewsletterSendChecks({
+      ...baseFacts(),
+      productionSendEnabled: false,
+      skipProductionGate: true,
+    });
+    assert.equal(errors.length, 0);
   });
 
   it("accumulates multiple errors at once", () => {

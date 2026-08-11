@@ -13,6 +13,8 @@ export type NewsletterComposerEvent = {
   description: string;
   date: string;
   time: string | null;
+  /** From the org's campaign event record — never invented. */
+  location: string | null;
   imageUrl: string | null;
   volunteerSignupUrl: string;
 };
@@ -32,6 +34,9 @@ export type NewsletterStory = {
   eventId: string | null;
   title: string;
   date: string | null;
+  time: string | null;
+  /** From the source event — never invented for manual stories. */
+  location: string | null;
   /** Short meta line under title in picker */
   meta: string;
   /** Body copy parents read in the email */
@@ -39,6 +44,9 @@ export type NewsletterStory = {
   ctaLabel: string;
   ctaUrl: string;
   imageUrl: string | null;
+  /** Where the image itself links to — separate from the CTA button link. */
+  imageLink: string;
+  imageAlt: string;
   included: boolean;
   featured: boolean;
 };
@@ -53,6 +61,8 @@ export type NewsletterVolunteerAsk = {
   details: string;
   signupUrl: string;
   imageUrl: string | null;
+  imageLink: string;
+  imageAlt: string;
   included: boolean;
 };
 
@@ -71,6 +81,9 @@ export type NewsletterSponsor = {
   url: string;
   /** Required logo / artwork for email display */
   imageUrl: string | null;
+  /** Where the logo image itself links to — falls back to `url` when blank. */
+  imageLink: string;
+  imageAlt: string;
 };
 
 export type NewsletterSocialLink = {
@@ -108,12 +121,103 @@ export type NewsletterLayoutBlock = {
   detail: string;
 };
 
+// ---------------------------------------------------------------------------
+// Block Builder canvas — a richer, ordered block list that replaces the flat
+// `layoutBlocks` sequence in the newer Block Builder UI. Content for the
+// "From Hey Ralli" kinds keeps living in `stories` / `calendarChips` /
+// `volunteerAsks` / `sponsors` (this just orders + configures how they show);
+// "Add your own" kinds carry their own inline content on the block.
+// ---------------------------------------------------------------------------
+
+/** System kinds pull their content from existing composer sub-state. */
+export type NewsletterSystemBlockKind =
+  | "hero"
+  | "message"
+  | "event"
+  | "calendar"
+  | "volunteer"
+  | "sponsors"
+  | "links"
+  | "cta"
+  | "socials";
+
+/** Freeform kinds carry their own content directly on the block. */
+export type NewsletterCustomBlockKind =
+  | "heading"
+  | "text"
+  | "image"
+  | "button"
+  | "textImage"
+  | "columns"
+  | "grid"
+  | "carousel"
+  | "list"
+  | "divider"
+  | "spacer"
+  | "footer";
+
+export type NewsletterCanvasBlockKind =
+  | NewsletterSystemBlockKind
+  | NewsletterCustomBlockKind;
+
+export type NewsletterEventBlockLayout =
+  | "featured"
+  | "card"
+  | "artwork-only"
+  | "compact";
+
+export type NewsletterCanvasListItem = {
+  id: string;
+  text: string;
+};
+
+export type NewsletterCanvasColumn = {
+  id: string;
+  imageUrl: string | null;
+  imageLink: string;
+  imageAlt: string;
+  heading: string;
+  text: string;
+  buttonLabel: string;
+  buttonUrl: string;
+};
+
+export type NewsletterCanvasBlock = {
+  id: string;
+  kind: NewsletterCanvasBlockKind;
+
+  /** "event" blocks reference a story (event-sourced or manual) by id. */
+  storyId: string | null;
+
+  /** "event" block presentation — content itself stays on the story. */
+  eventLayout: NewsletterEventBlockLayout;
+  showArtwork: boolean;
+  showDescription: boolean;
+  showLocation: boolean;
+  showVolunteerLink: boolean;
+
+  /** "Add your own" inline content. */
+  heading: string;
+  text: string;
+  imageUrl: string | null;
+  imageLink: string;
+  imageAlt: string;
+  buttonLabel: string;
+  buttonUrl: string;
+  columns: NewsletterCanvasColumn[];
+  items: NewsletterCanvasListItem[];
+  spacingPx: number;
+  backgroundColor: string | null;
+};
+
 export type NewsletterComposerState = {
   subject: string;
   issueName: string;
   fromName: string;
   colors: NewsletterBrandColors;
   headerImageUrl: string | null;
+  headerImageLink: string;
+  headerImageAlt: string;
   leadershipNames: string;
   leadershipMessage: string;
   ptoNote: string;
@@ -130,4 +234,10 @@ export type NewsletterComposerState = {
   footerCtaUrl: string;
   footerFinePrint: string;
   layoutBlocks: NewsletterLayoutBlock[];
+  /**
+   * Optional — the Block Builder canvas. When absent (older drafts),
+   * `migrateLayoutToCanvasBlocks` derives it from `layoutBlocks` so old
+   * drafts still open cleanly in the new builder.
+   */
+  canvasBlocks?: NewsletterCanvasBlock[];
 };

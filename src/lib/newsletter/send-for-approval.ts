@@ -98,25 +98,25 @@ export async function notifyNewsletterApproved(input: {
   }
 
   const href = newsletterDetailHref(input.newsletterId, { absolute: true });
-  const bodyText = `${input.milestoneName} is approved and ready to send.`;
+  const bodyText = `${input.milestoneName} is approved and scheduled to send.`;
 
   const mail = buildApprovalTransactionalEmail({
     categoryLabel: "APPROVAL",
-    headline: "Newsletter approved",
+    headline: "Newsletter approved & scheduled",
     bodyHtml: `<strong style="color:#14241c;">${escapeHtml(bodyText)}</strong>`,
     bodyText,
     previewHeading: "Newsletter",
     artworkSummary: input.milestoneName,
     artworkPreviewHtml: "",
     artworkPreviewText: "",
-    ctaLabel: "View newsletter",
+    ctaLabel: "View status",
     actionUrl: href,
     footer: "Sent by Hey Ralli",
   });
 
   const result = await sendEmail({
     to: [input.recipientEmail],
-    subject: `Approved: ${input.milestoneName}`,
+    subject: `Approved & scheduled: ${input.milestoneName}`,
     html: mail.html,
     text: mail.text,
   });
@@ -219,6 +219,34 @@ export async function sendNewsletterForApproval(
     };
   }
 
+  if (!newsletter.proposedAudienceId) {
+    return {
+      success: false,
+      message: "Choose recipients before sending for approval.",
+      schedulingItemId: null,
+      campaignMilestoneId: null,
+    };
+  }
+
+  if (!newsletter.proposedSendAt) {
+    return {
+      success: false,
+      message: "Choose a send date and time before sending for approval.",
+      schedulingItemId: null,
+      campaignMilestoneId: null,
+    };
+  }
+
+  const proposedAt = new Date(newsletter.proposedSendAt);
+  if (Number.isNaN(proposedAt.getTime()) || proposedAt.getTime() <= Date.now()) {
+    return {
+      success: false,
+      message: "Choose a future send date and time before sending for approval.",
+      schedulingItemId: null,
+      campaignMilestoneId: null,
+    };
+  }
+
   const versionResult = await createVersionFromNewsletter({
     newsletter,
     createdBy: membership?.user.userId ?? null,
@@ -264,7 +292,7 @@ export async function sendNewsletterForApproval(
     requested_by_user_id: membership?.user.id ?? null,
     delivery_method: "draft-only",
     platforms: [] as string[],
-    schedule_at: null,
+    schedule_at: newsletter.proposedSendAt,
     caption_text: newsletter.subject,
     story_caption: null,
     feed_artwork_url: null,

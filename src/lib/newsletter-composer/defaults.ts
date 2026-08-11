@@ -1,8 +1,13 @@
 import type {
   NewsletterBrandColors,
   NewsletterCalendarChip,
+  NewsletterCanvasBlock,
+  NewsletterCanvasBlockKind,
+  NewsletterCanvasColumn,
+  NewsletterCanvasListItem,
   NewsletterComposerEvent,
   NewsletterComposerState,
+  NewsletterEventBlockLayout,
   NewsletterLayoutBlock,
   NewsletterLinkChip,
   NewsletterSocialLink,
@@ -69,6 +74,8 @@ export function storyFromEvent(event: NewsletterComposerEvent): NewsletterStory 
     eventId: event.id,
     title: event.title,
     date: event.date || null,
+    time: event.time || null,
+    location: event.location || null,
     meta: meta || "Event",
     messaging:
       event.description?.trim().slice(0, 280) ||
@@ -76,6 +83,8 @@ export function storyFromEvent(event: NewsletterComposerEvent): NewsletterStory 
     ctaLabel: event.volunteerSignupUrl ? "Sign up →" : "Learn more →",
     ctaUrl: event.volunteerSignupUrl || "",
     imageUrl: event.imageUrl,
+    imageLink: "",
+    imageAlt: "",
     included: false,
     featured: false,
   };
@@ -123,6 +132,8 @@ export function volunteerAskFromEvent(
     details: event.description?.trim().slice(0, 160) || "Volunteer signup",
     signupUrl: url,
     imageUrl: event.imageUrl,
+    imageLink: "",
+    imageAlt: "",
     included: false,
   };
 }
@@ -143,6 +154,8 @@ function defaultSponsors(): NewsletterSponsor[] {
       note: "Thank-you line",
       url: "",
       imageUrl: null,
+      imageLink: "",
+      imageAlt: "",
     },
   ];
 }
@@ -274,6 +287,305 @@ export function orderedLayoutBlocks(
   return header ? [header, ...rest] : rest;
 }
 
+// ---------------------------------------------------------------------------
+// Block Builder canvas blocks
+// ---------------------------------------------------------------------------
+
+function newCanvasColumn(
+  overrides: Partial<NewsletterCanvasColumn> = {},
+): NewsletterCanvasColumn {
+  return {
+    id: newId("col"),
+    imageUrl: null,
+    imageLink: "",
+    imageAlt: "",
+    heading: "",
+    text: "",
+    buttonLabel: "",
+    buttonUrl: "",
+    ...overrides,
+  };
+}
+
+function newCanvasListItem(text = ""): NewsletterCanvasListItem {
+  return { id: newId("item"), text };
+}
+
+/** Fresh block with sensible per-kind defaults — used for both new inserts and normalization fallback. */
+export function newCanvasBlock(
+  kind: NewsletterCanvasBlockKind,
+  overrides: Partial<NewsletterCanvasBlock> = {},
+): NewsletterCanvasBlock {
+  const base: NewsletterCanvasBlock = {
+    id: newId(`block-${kind}`),
+    kind,
+    storyId: null,
+    eventLayout: "featured",
+    showArtwork: true,
+    showDescription: true,
+    showLocation: true,
+    showVolunteerLink: true,
+    heading: "",
+    text: "",
+    imageUrl: null,
+    imageLink: "",
+    imageAlt: "",
+    buttonLabel: "",
+    buttonUrl: "",
+    columns: [],
+    items: [],
+    spacingPx: 24,
+    backgroundColor: null,
+  };
+
+  switch (kind) {
+    case "heading":
+      base.heading = "New heading";
+      break;
+    case "text":
+      base.text = "Add a paragraph of text…";
+      break;
+    case "button":
+      base.buttonLabel = "Learn more →";
+      break;
+    case "textImage":
+      base.heading = "New section";
+      base.text = "Add a sentence or two of context…";
+      break;
+    case "columns":
+      base.columns = [newCanvasColumn(), newCanvasColumn()];
+      break;
+    case "grid":
+      base.columns = [newCanvasColumn(), newCanvasColumn(), newCanvasColumn(), newCanvasColumn()];
+      break;
+    case "carousel":
+      base.columns = [newCanvasColumn(), newCanvasColumn(), newCanvasColumn()];
+      break;
+    case "list":
+      base.heading = "Reminders";
+      base.items = [newCanvasListItem("First reminder"), newCanvasListItem("Second reminder")];
+      break;
+    case "spacer":
+      base.spacingPx = 24;
+      break;
+    default:
+      break;
+  }
+
+  return { ...base, ...overrides };
+}
+
+/** Adds a new column/item/card to blocks that hold a list (columns, grid, carousel). */
+export function addCanvasColumn(block: NewsletterCanvasBlock): NewsletterCanvasBlock {
+  return { ...block, columns: [...block.columns, newCanvasColumn()] };
+}
+
+export function addCanvasListItem(block: NewsletterCanvasBlock): NewsletterCanvasBlock {
+  return { ...block, items: [...block.items, newCanvasListItem()] };
+}
+
+/** Deep-cloned copy with fresh ids — used by "Duplicate block" in the canvas. */
+export function duplicateCanvasBlock(block: NewsletterCanvasBlock): NewsletterCanvasBlock {
+  return {
+    ...block,
+    id: newId(`block-${block.kind}`),
+    columns: block.columns.map((c) => ({ ...c, id: newId("col") })),
+    items: block.items.map((i) => ({ ...i, id: newId("item") })),
+  };
+}
+
+/**
+ * Derives canvas blocks from the legacy flat `layoutBlocks` + stories /
+ * calendar / volunteer / sponsors sub-state — the "Standard School Update"
+ * template order every draft starts from, and the fallback used to open
+ * older drafts that predate the Block Builder canvas.
+ */
+export function migrateLayoutToCanvasBlocks(
+  state: NewsletterComposerState,
+): NewsletterCanvasBlock[] {
+  const blocks = orderedLayoutBlocks(state);
+  const canvasBlocks: NewsletterCanvasBlock[] = [];
+
+  for (const block of blocks) {
+    switch (block.kind) {
+      case "header":
+        canvasBlocks.push(newCanvasBlock("hero", { id: block.id }));
+        break;
+      case "message":
+        if (state.leadershipMessage.trim()) {
+          canvasBlocks.push(newCanvasBlock("message", { id: block.id }));
+        }
+        break;
+      case "story": {
+        const story = state.stories.find((s) => s.id === block.storyId);
+        if (!story || !story.included) break;
+        canvasBlocks.push(
+          newCanvasBlock("event", {
+            id: block.id,
+            storyId: story.id,
+            eventLayout: story.featured ? "featured" : "card",
+          }),
+        );
+        break;
+      }
+      case "calendar":
+        if (state.calendarChips.some((c) => c.label.trim())) {
+          canvasBlocks.push(newCanvasBlock("calendar", { id: block.id }));
+        }
+        break;
+      case "volunteer":
+        if (state.volunteerAsks.some((v) => v.included)) {
+          canvasBlocks.push(newCanvasBlock("volunteer", { id: block.id }));
+        }
+        break;
+      case "sponsors":
+        canvasBlocks.push(newCanvasBlock("sponsors", { id: block.id }));
+        break;
+      case "links":
+        if (state.helpfulLinks.some((l) => l.label.trim())) {
+          canvasBlocks.push(newCanvasBlock("links", { id: block.id }));
+        }
+        break;
+      case "cta":
+        canvasBlocks.push(newCanvasBlock("cta", { id: block.id }));
+        break;
+      case "socials":
+        canvasBlocks.push(newCanvasBlock("socials", { id: block.id }));
+        break;
+      default:
+        break;
+    }
+  }
+
+  return canvasBlocks;
+}
+
+/** Standard School Update starter template — same order `buildInitialState` produces. */
+export function buildStandardSchoolUpdateCanvasBlocks(
+  state: NewsletterComposerState,
+): NewsletterCanvasBlock[] {
+  return migrateLayoutToCanvasBlocks(state);
+}
+
+function normalizeCanvasColumn(raw: unknown): NewsletterCanvasColumn | null {
+  if (!raw || typeof raw !== "object") return null;
+  const c = raw as Partial<NewsletterCanvasColumn>;
+  return {
+    id: typeof c.id === "string" && c.id ? c.id : newId("col"),
+    imageUrl: typeof c.imageUrl === "string" && c.imageUrl.trim() ? c.imageUrl : null,
+    imageLink: typeof c.imageLink === "string" ? c.imageLink : "",
+    imageAlt: typeof c.imageAlt === "string" ? c.imageAlt : "",
+    heading: typeof c.heading === "string" ? c.heading : "",
+    text: typeof c.text === "string" ? c.text : "",
+    buttonLabel: typeof c.buttonLabel === "string" ? c.buttonLabel : "",
+    buttonUrl: typeof c.buttonUrl === "string" ? c.buttonUrl : "",
+  };
+}
+
+function normalizeCanvasListItem(raw: unknown): NewsletterCanvasListItem | null {
+  if (!raw || typeof raw !== "object") return null;
+  const i = raw as Partial<NewsletterCanvasListItem>;
+  return {
+    id: typeof i.id === "string" && i.id ? i.id : newId("item"),
+    text: typeof i.text === "string" ? i.text : "",
+  };
+}
+
+const CANVAS_BLOCK_KINDS = new Set<NewsletterCanvasBlockKind>([
+  "hero",
+  "message",
+  "event",
+  "calendar",
+  "volunteer",
+  "sponsors",
+  "links",
+  "cta",
+  "socials",
+  "heading",
+  "text",
+  "image",
+  "button",
+  "textImage",
+  "columns",
+  "grid",
+  "carousel",
+  "list",
+  "divider",
+  "spacer",
+  "footer",
+]);
+
+function normalizeCanvasBlock(raw: unknown): NewsletterCanvasBlock | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Partial<NewsletterCanvasBlock> & { kind?: unknown };
+  const kind =
+    typeof r.kind === "string" && CANVAS_BLOCK_KINDS.has(r.kind as NewsletterCanvasBlockKind)
+      ? (r.kind as NewsletterCanvasBlockKind)
+      : null;
+  if (!kind) return null;
+
+  const base = newCanvasBlock(
+    kind,
+    typeof r.id === "string" && r.id ? { id: r.id } : {},
+  );
+
+  return {
+    ...base,
+    storyId: typeof r.storyId === "string" ? r.storyId : base.storyId,
+    eventLayout: (["featured", "card", "artwork-only", "compact"] as NewsletterEventBlockLayout[]).includes(
+      r.eventLayout as NewsletterEventBlockLayout,
+    )
+      ? (r.eventLayout as NewsletterEventBlockLayout)
+      : base.eventLayout,
+    showArtwork: typeof r.showArtwork === "boolean" ? r.showArtwork : base.showArtwork,
+    showDescription:
+      typeof r.showDescription === "boolean" ? r.showDescription : base.showDescription,
+    showLocation: typeof r.showLocation === "boolean" ? r.showLocation : base.showLocation,
+    showVolunteerLink:
+      typeof r.showVolunteerLink === "boolean" ? r.showVolunteerLink : base.showVolunteerLink,
+    heading: typeof r.heading === "string" ? r.heading : base.heading,
+    text: typeof r.text === "string" ? r.text : base.text,
+    imageUrl: typeof r.imageUrl === "string" && r.imageUrl.trim() ? r.imageUrl : null,
+    imageLink: typeof r.imageLink === "string" ? r.imageLink : base.imageLink,
+    imageAlt: typeof r.imageAlt === "string" ? r.imageAlt : base.imageAlt,
+    buttonLabel: typeof r.buttonLabel === "string" ? r.buttonLabel : base.buttonLabel,
+    buttonUrl: typeof r.buttonUrl === "string" ? r.buttonUrl : base.buttonUrl,
+    columns: Array.isArray(r.columns)
+      ? r.columns
+          .map(normalizeCanvasColumn)
+          .filter((c): c is NewsletterCanvasColumn => Boolean(c))
+      : base.columns,
+    items: Array.isArray(r.items)
+      ? r.items
+          .map(normalizeCanvasListItem)
+          .filter((i): i is NewsletterCanvasListItem => Boolean(i))
+      : base.items,
+    spacingPx: typeof r.spacingPx === "number" ? r.spacingPx : base.spacingPx,
+    backgroundColor:
+      typeof r.backgroundColor === "string" && r.backgroundColor.trim()
+        ? r.backgroundColor
+        : null,
+  };
+}
+
+/**
+ * Canvas blocks for the current state — from the saved array when present
+ * and non-empty, otherwise migrated from `layoutBlocks` so older drafts
+ * still open with an equivalent (editable) block sequence.
+ */
+export function ensureCanvasBlocks(
+  state: NewsletterComposerState,
+  rawCanvasBlocks?: unknown,
+): NewsletterCanvasBlock[] {
+  if (Array.isArray(rawCanvasBlocks) && rawCanvasBlocks.length > 0) {
+    const normalized = rawCanvasBlocks
+      .map(normalizeCanvasBlock)
+      .filter((b): b is NewsletterCanvasBlock => Boolean(b));
+    if (normalized.length > 0) return normalized;
+  }
+  return migrateLayoutToCanvasBlocks(state);
+}
+
 export function buildInitialState(
   organizationName: string | null,
   events: NewsletterComposerEvent[],
@@ -295,6 +607,8 @@ export function buildInitialState(
     fromName: org,
     colors: { ...defaultColors },
     headerImageUrl: null,
+    headerImageLink: "",
+    headerImageAlt: "",
     leadershipNames: "",
     leadershipMessage:
       "Hello — here’s what’s happening this month. We’ve packed the must-knows below so you can skim and go.",
@@ -312,8 +626,10 @@ export function buildInitialState(
     footerCtaUrl: "",
     footerFinePrint: `${org} · You’re receiving this as a community member.`,
     layoutBlocks: [],
+    canvasBlocks: [],
   };
   state.layoutBlocks = buildLayoutBlocks(state.stories);
+  state.canvasBlocks = buildStandardSchoolUpdateCanvasBlocks(state);
   return state;
 }
 
@@ -346,6 +662,8 @@ export function normalizeComposerState(
         messaging: prev.messaging || fresh.messaging,
         ctaLabel: prev.ctaLabel || fresh.ctaLabel,
         ctaUrl: prev.ctaUrl || fresh.ctaUrl,
+        imageLink: typeof prev.imageLink === "string" ? prev.imageLink : fresh.imageLink,
+        imageAlt: typeof prev.imageAlt === "string" ? prev.imageAlt : fresh.imageAlt,
         included: Boolean(prev.included),
         featured: Boolean(prev.featured),
       };
@@ -356,11 +674,15 @@ export function normalizeComposerState(
       eventId: null,
       title: m.title || "Story",
       date: m.date ?? null,
+      time: typeof m.time === "string" ? m.time : null,
+      location: typeof m.location === "string" ? m.location : null,
       meta: m.meta || "Manual",
       messaging: m.messaging || "",
       ctaLabel: m.ctaLabel || "Learn more →",
       ctaUrl: m.ctaUrl || "",
       imageUrl: m.imageUrl ?? null,
+      imageLink: typeof m.imageLink === "string" ? m.imageLink : "",
+      imageAlt: typeof m.imageAlt === "string" ? m.imageAlt : "",
       included: m.included !== false,
       featured: Boolean(m.featured),
     })),
@@ -395,6 +717,8 @@ export function normalizeComposerState(
         ...fresh,
         details: prev.details || fresh.details,
         signupUrl: prev.signupUrl || fresh.signupUrl,
+        imageLink: typeof prev.imageLink === "string" ? prev.imageLink : fresh.imageLink,
+        imageAlt: typeof prev.imageAlt === "string" ? prev.imageAlt : fresh.imageAlt,
         included: Boolean(prev.included),
       };
     }),
@@ -407,6 +731,8 @@ export function normalizeComposerState(
       details: v.details || "",
       signupUrl: v.signupUrl || "",
       imageUrl: v.imageUrl ?? null,
+      imageLink: typeof v.imageLink === "string" ? v.imageLink : "",
+      imageAlt: typeof v.imageAlt === "string" ? v.imageAlt : "",
       included: v.included !== false,
     })),
   ];
@@ -442,6 +768,8 @@ export function normalizeComposerState(
             typeof sp.imageUrl === "string" && sp.imageUrl.trim()
               ? sp.imageUrl
               : null,
+          imageLink: typeof sp.imageLink === "string" ? sp.imageLink : "",
+          imageAlt: typeof sp.imageAlt === "string" ? sp.imageAlt : "",
         }))
       : fallback.sponsors,
     helpfulLinks: Array.isArray(s.helpfulLinks)
@@ -453,8 +781,13 @@ export function normalizeComposerState(
       : fallback.layoutBlocks,
     headerImageUrl:
       typeof s.headerImageUrl === "string" ? s.headerImageUrl : null,
+    headerImageLink:
+      typeof s.headerImageLink === "string" ? s.headerImageLink : "",
+    headerImageAlt:
+      typeof s.headerImageAlt === "string" ? s.headerImageAlt : "",
   };
 
   merged.layoutBlocks = syncLayoutWithStories(merged);
+  merged.canvasBlocks = ensureCanvasBlocks(merged, s.canvasBlocks);
   return merged;
 }

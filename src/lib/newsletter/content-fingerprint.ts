@@ -4,12 +4,12 @@ import type { NewsletterComposerState } from "@/lib/newsletter-composer/types";
 
 /**
  * Fields that determine whether an already-approved newsletter needs
- * re-approval. Everything reachable from `composerState` counts (body copy,
- * stories, images, layout order) plus subject/from/reply-to/audience.
+ * re-approval. Content + recipients + proposed send datetime are all part of
+ * the approval package (Approve & Schedule).
  *
  * Explicitly EXCLUDED (must never appear here):
- *  - proposedSendAt / scheduledSendAt — moving the send time alone must not
- *    invalidate an approval.
+ *  - scheduledSendAt as a separate field — the creator's proposed send time is
+ *    the approved package; cron-owned scheduled_send_at mirrors it after approve.
  *  - anything related to test sends — test sends never touch this input.
  */
 export interface NewsletterFingerprintInput {
@@ -19,6 +19,8 @@ export interface NewsletterFingerprintInput {
   fromEmail: string;
   replyToEmail: string;
   audienceId: string | null;
+  /** ISO timestamp; part of the approval package. */
+  proposedSendAt: string | null;
 }
 
 /** Recursively sort object keys so JSON.stringify output is order-independent. */
@@ -43,8 +45,15 @@ function canonicalize(value: unknown): unknown {
 function invalidatingSlice(
   input: NewsletterFingerprintInput,
 ): Record<string, unknown> {
-  const { composerState, subject, fromDisplayName, fromEmail, replyToEmail, audienceId } =
-    input;
+  const {
+    composerState,
+    subject,
+    fromDisplayName,
+    fromEmail,
+    replyToEmail,
+    audienceId,
+    proposedSendAt,
+  } = input;
   return {
     composerState,
     subject: subject.trim(),
@@ -52,6 +61,7 @@ function invalidatingSlice(
     fromEmail: fromEmail.trim().toLowerCase(),
     replyToEmail: replyToEmail.trim().toLowerCase(),
     audienceId: audienceId ?? null,
+    proposedSendAt: proposedSendAt ?? null,
   };
 }
 
@@ -70,8 +80,9 @@ export function computeNewsletterContentFingerprint(
 
 /**
  * True when any approval-invalidating field differs between two snapshots
- * (e.g. the current draft vs. the last approved version). Schedule-only
- * changes and test sends are never part of this comparison.
+ * (e.g. the current draft vs. the last approved version). Test sends are
+ * never part of this comparison. Changing proposed send datetime DOES
+ * invalidate (approval covers content + recipients + send time).
  */
 export function approvalInvalidatingFieldsChanged(
   a: NewsletterFingerprintInput,

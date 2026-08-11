@@ -1,4 +1,4 @@
-import { NewsletterComposer } from "@/components/newsletter-composer/NewsletterComposer";
+import { NewsletterBlockBuilder } from "@/components/newsletters/builder/NewsletterBlockBuilder";
 import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
 import { getEventVolunteerSignupUrls } from "@/lib/homepage-composer/volunteer-links";
 import type { NewsletterComposerEvent } from "@/lib/newsletter-composer/types";
@@ -33,6 +33,7 @@ export default async function NewsletterComposerPage({
     description: event.description ?? "",
     date: event.date,
     time: event.time,
+    location: event.location ?? null,
     imageUrl: event.approvedSquareImageUrl,
     volunteerSignupUrl: volunteerUrls.get(event.id) ?? "",
   }));
@@ -43,12 +44,14 @@ export default async function NewsletterComposerPage({
       : null;
 
   return (
-    <NewsletterComposer
+    <NewsletterBlockBuilder
       organizationId={organization?.id ?? null}
       organizationName={organization?.name ?? null}
       events={composerEvents}
       initialNewsletterId={serverNewsletter?.id ?? null}
       initialComposerState={serverNewsletter?.composerState ?? null}
+      status={serverNewsletter?.status}
+      changeRequestNote={serverNewsletter?.changeRequestNote ?? null}
     />
   );
 }

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="utf-8">
+    <title>Hey Ralli · Changes Requested</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: '#2c2825',
+              paper: '#fcfbf9',
+              parchment: '#f5f2eb',
+              line: '#e4ded4',
+              muted: '#6e675f',
+              accent: '#0d7e5e',
+              accentSoft: '#e6f3ee',
+            },
+            fontFamily: {
+              sans: ['DM Sans', 'sans-serif'],
+              serif: ['Lora', 'serif'],
+            },
+            boxShadow: {
+              soft: '0 10px 30px -15px rgba(44,40,37,0.15)',
+              card: '0 8px 30px -12px rgba(44,40,37,0.12)',
+            },
+          },
+        },
+      };
+    </script>
+</head>
+<body class="bg-paper text-ink min-h-screen">
+
+    <!-- Simple Nav -->
+    <header class="p-6">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <a href="Library__desktop.html" class="flex items-center gap-2 text-muted hover:text-ink transition-colors font-medium">
+                <i class="fa-solid fa-arrow-left text-sm"></i>
+                <span>Back to My Newsletters</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+            
+            <!-- Left: Feedback & Status -->
+            <div class="lg:col-span-5 space-y-10">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-100 text-amber-600 font-bold text-xs uppercase tracking-widest mb-6">
+                        <i class="fa-solid fa-comment-dots"></i>
+                        <span>Changes Requested</span>
+                    </div>
+                    <h1 class="font-serif text-5xl font-bold mb-6">August Back to School Update</h1>
+                    
+                    <!-- Feedback Card -->
+                    <div class="bg-parchment rounded-3xl p-8 border border-line relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-4 opacity-10">
+                            <i class="fa-solid fa-quote-right text-6xl"></i>
+                        </div>
+                        <div class="flex items-center gap-3 mb-6">
+                            <img class="w-10 h-10 rounded-full border-2 border-white shadow-sm" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-6.jpg" alt="Mrs. Higgins">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-widest text-muted">Approver</p>
+                                <p class="font-bold">Mrs. Higgins</p>
+                            </div>
+                        </div>
+                        <p class="text-xl text-ink leading-relaxed italic">
+                            “Please update the principal's photo and double check the BBQ time.”
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-8">
+                    <div class="flex gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-parchment border border-line flex items-center justify-center text-accent shrink-0 shadow-sm">
+                            <i class="fa-solid fa-users text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Recipients</p>
+                            <p class="font-bold text-sm">All Families (605)</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-parchment border border-line flex items-center justify-center text-accent shrink-0 shadow-sm">
+                            <i class="fa-solid fa-calendar text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Scheduled</p>
+                            <p class="font-bold text-sm">Aug 15 · 8:00 AM</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-8 border-t border-line">
+                    <a href="Builder__desktop.html?mode=edit-changes" class="w-full bg-accent text-white py-4 rounded-full font-bold flex items-center justify-center gap-2 hover:bg-ink transition-all shadow-md transform hover:-translate-y-0.5 active:translate-y-0 text-lg">
+                        Edit Newsletter
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right: Preview (Read-only view) -->
+            <div class="lg:col-span-7">
+                <div class="bg-white border border-line rounded-3xl shadow-card overflow-hidden">
+                    <div class="p-4 border-b border-line bg-parchment/30 flex items-center justify-between">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-muted">Newsletter Preview</span>
+                        <div class="flex gap-1">
+                            <div class="w-2 h-2 rounded-full bg-line"></div>
+                            <div class="w-2 h-2 rounded-full bg-line"></div>
+                            <div class="w-2 h-2 rounded-full bg-line"></div>
+                        </div>
+                    </div>
+                    <div class="h-[600px] overflow-y-auto dot-grid p-8">
+                        <div class="max-w-md mx-auto bg-white shadow-soft border border-line rounded-sm overflow-hidden opacity-60 grayscale-[0.2]">
+                            <img class="w-full h-40 object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_48cd30af2a_7cc57bd329ef877c.png" alt="a warm editorial photo of a sunlit school hallway, wooden lockers" />
+                            <div class="p-8 text-center border-b border-line">
+                                <h2 class="font-serif text-2xl font-bold mb-1">Back to School!</h2>
+                                <p class="text-[10px] italic text-muted">Volume 14 · August 2026</p>
+                            </div>
+                            <div class="p-8 space-y-4">
+                                <div class="h-2 w-3/4 bg-parchment rounded"></div>
+                                <div class="h-2 w-full bg-parchment rounded"></div>
+                                <div class="h-2 w-5/6 bg-parchment rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

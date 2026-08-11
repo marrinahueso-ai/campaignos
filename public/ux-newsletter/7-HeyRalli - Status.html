@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="utf-8">
+    <title>Hey Ralli · Status</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: '#2c2825',
+              paper: '#fcfbf9',
+              parchment: '#f5f2eb',
+              line: '#e4ded4',
+              muted: '#6e675f',
+              accent: '#0d7e5e',
+              accentSoft: '#e6f3ee',
+            },
+            fontFamily: {
+              sans: ['DM Sans', 'sans-serif'],
+              serif: ['Lora', 'serif'],
+            },
+            boxShadow: {
+              soft: '0 10px 30px -15px rgba(44,40,37,0.15)',
+              card: '0 8px 30px -12px rgba(44,40,37,0.12)',
+            },
+          },
+        },
+      };
+    </script>
+</head>
+<body class="bg-paper text-ink min-h-screen">
+
+    <!-- Simple Nav -->
+    <header class="p-6">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <a href="Library__desktop.html" class="flex items-center gap-2 text-muted hover:text-ink transition-colors font-medium">
+                <i class="fa-solid fa-arrow-left text-sm"></i>
+                <span>Back to My Newsletters</span>
+            </a>
+            <div class="flex items-center gap-4">
+                 <a href="ApproverReview__desktop.html" id="approverLink" class="text-xs bg-parchment border border-line px-4 py-2 rounded-full hover:bg-white transition-all text-muted">
+                    Switch to Approver View (Demo)
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+            
+            <!-- Left: Status Info -->
+            <div class="lg:col-span-5 space-y-12">
+                <div id="statusHeader">
+                    <!-- Dynamic Content -->
+                </div>
+
+                <div class="space-y-8">
+                    <div class="flex gap-6">
+                        <div class="w-12 h-12 rounded-2xl bg-parchment border border-line flex items-center justify-center text-accent shrink-0 shadow-sm">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-muted uppercase tracking-widest mb-1">Recipients</p>
+                            <p class="font-bold text-lg">All Families</p>
+                            <p class="text-sm text-muted">605 active contacts</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-6">
+                        <div class="w-12 h-12 rounded-2xl bg-parchment border border-line flex items-center justify-center text-accent shrink-0 shadow-sm">
+                            <i class="fa-solid fa-calendar-check"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-muted uppercase tracking-widest mb-1">Scheduled for</p>
+                            <p class="font-bold text-lg">August 15, 2026</p>
+                            <p class="text-sm text-muted">8:00 AM · Pacific Daylight Time</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-8 border-t border-line flex flex-wrap gap-4" id="actionButtons">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+
+            <!-- Right: Fixed Preview -->
+            <div class="lg:col-span-7">
+                <div class="bg-white border border-line rounded-3xl shadow-card overflow-hidden">
+                    <div class="p-4 border-b border-line bg-parchment/30 flex items-center justify-between">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-muted">Newsletter Preview</span>
+                        <div class="flex gap-1">
+                            <div class="w-2 h-2 rounded-full bg-line"></div>
+                            <div class="w-2 h-2 rounded-full bg-line"></div>
+                            <div class="w-2 h-2 rounded-full bg-line"></div>
+                        </div>
+                    </div>
+                    <div class="h-[600px] overflow-y-auto dot-grid p-8">
+                        <div class="max-w-md mx-auto bg-white shadow-soft border border-line rounded-sm overflow-hidden pointer-events-none opacity-80">
+                            <img class="w-full h-40 object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_48cd30af2a_717d000462e9d810.png" alt="a warm editorial photo of a sunlit school hallway, wooden lockers" />
+                            <div class="p-8 text-center border-b border-line">
+                                <h2 class="font-serif text-2xl font-bold mb-1">Back to School!</h2>
+                                <p class="text-[10px] italic text-muted">Volume 14 · August 2026</p>
+                            </div>
+                            <div class="p-8 space-y-4">
+                                <div class="h-2 w-3/4 bg-parchment rounded"></div>
+                                <div class="h-2 w-full bg-parchment rounded"></div>
+                                <div class="h-2 w-5/6 bg-parchment rounded"></div>
+                                <div class="h-20 w-full bg-parchment/50 rounded-xl mt-6"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const state = urlParams.get('state') || 'waiting'; // waiting, scheduled, sent
+        const statusHeader = document.getElementById('statusHeader');
+        const actionButtons = document.getElementById('actionButtons');
+
+        const states = {
+            waiting: {
+                title: 'Waiting for approval',
+                description: 'Sent to Mrs. Higgins on Aug 12, 10:45 AM. You’ll be notified once it’s approved or if changes are requested.',
+                icon: 'fa-clock-rotate-left',
+                color: 'text-amber-500',
+                bg: 'bg-amber-50',
+                border: 'border-amber-100',
+                actions: `
+                    <button class="px-6 py-3 border border-line rounded-full font-bold hover:bg-parchment transition-all text-sm">Withdraw & Edit</button>
+                    <button class="px-6 py-3 border border-line rounded-full font-bold hover:bg-parchment transition-all text-sm">Resend Notification</button>
+                `
+            },
+            scheduled: {
+                title: 'Approved & Scheduled',
+                description: 'Mrs. Higgins approved this on Aug 12, 2:15 PM. No further action required.',
+                icon: 'fa-circle-check',
+                color: 'text-accent',
+                bg: 'bg-accentSoft',
+                border: 'border-accentSoft',
+                actions: `
+                    <button class="px-6 py-3 border border-line rounded-full font-bold hover:bg-parchment transition-all text-sm">Pause Schedule</button>
+                    <button class="px-6 py-3 border border-line rounded-full font-bold hover:bg-parchment transition-all text-sm">Duplicate</button>
+                `
+            },
+            sent: {
+                title: 'Newsletter Sent',
+                description: 'Successfully delivered to 605 recipients on Aug 15, 8:01 AM.',
+                icon: 'fa-paper-plane',
+                color: 'text-ink',
+                bg: 'bg-parchment',
+                border: 'border-line',
+                actions: `
+                    <button class="px-6 py-3 bg-accent text-white rounded-full font-bold hover:bg-ink transition-all text-sm shadow-sm">View Report</button>
+                    <button class="px-6 py-3 border border-line rounded-full font-bold hover:bg-parchment transition-all text-sm">Duplicate for Next Week</button>
+                `
+            }
+        };
+
+        const current = states[state];
+        statusHeader.innerHTML = `
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full ${current.bg} ${current.border} ${current.color} font-bold text-xs uppercase tracking-widest mb-6">
+                <i class="fa-solid ${current.icon}"></i>
+                <span>${current.title}</span>
+            </div>
+            <h1 class="font-serif text-5xl font-bold mb-6">August Back to School Update</h1>
+            <p class="text-xl text-muted leading-relaxed">${current.description}</p>
+        `;
+        actionButtons.innerHTML = current.actions;
+        
+        // Demo helper
+        document.getElementById('approverLink').href = `ApproverReview__desktop.html?state=${state}`;
+    </script>
+
+</body>
+</html>

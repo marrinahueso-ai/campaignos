@@ -335,10 +335,76 @@ export async function approveNewsletter(
 }
 
 /**
- * Approve path used by the org Approvals hub: marks the newsletter
- * APPROVED / ready to send only — never sends or schedules it. Gated on
- * `approve_comms` (the hub's general approval permission) instead of
- * `send_newsletter`, since approvers may not hold send access.
+ * Approve path used by the org Approvals hub: marks the newsletter approved
+ * AND schedules the send using the creator's proposed send time (Approve &
+ * Schedule). Gated on `approve_comms`. Approvers may not hold `send_newsletter`;
+ * scheduling here is authorization to send the already-chosen package.
+ */
+export async function approveAndScheduleNewsletterForApprovalsHub(
+  newsletterId: string,
+): Promise<{ ok: true; message: string } | { ok: false; error: string }> {
+  if (!(await hasPermission("approve_comms"))) {
+    return { ok: false, error: "You don’t have permission to approve this." };
+  }
+
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return { ok: false, error: "Sign in and set up your organization first." };
+  }
+
+  const actorUserId = await resolveAuthActorUserId();
+  const newsletter = await getNewsletterById(organization.id, newsletterId);
+  if (!newsletter) {
+    return { ok: false, error: "Newsletter not found." };
+  }
+  if (!newsletter.proposedSendAt) {
+    return {
+      ok: false,
+      error: "This newsletter has no send date/time. Ask the creator to set one before approving.",
+    };
+  }
+  if (!newsletter.proposedAudienceId) {
+    return {
+      ok: false,
+      error: "This newsletter has no recipients. Ask the creator to choose an audience before approving.",
+    };
+  }
+
+  const approved = await applyNewsletterApproval({
+    organizationId: organization.id,
+    newsletterId,
+    actorUserId,
+  });
+  if (!approved.ok) return approved;
+
+  const scheduleResult = await scheduleNewsletterSend({
+    organizationId: organization.id,
+    newsletterId,
+    scheduledFor: newsletter.proposedSendAt,
+    actorUserId,
+    // Approvers schedule the pre-selected package via approve_comms.
+    hasSendPermission: true,
+  });
+
+  if (!scheduleResult.ok) {
+    return {
+      ok: false,
+      error:
+        scheduleResult.error ??
+        "Approved, but scheduling failed. Open the newsletter to fix the send time.",
+    };
+  }
+
+  revalidateNewsletter(newsletterId);
+  return {
+    ok: true,
+    message: "Approved and scheduled.",
+  };
+}
+
+/**
+ * @deprecated Prefer approveAndScheduleNewsletterForApprovalsHub — Approve & Schedule
+ * is the product path. Kept for callers that only need the approval mark.
  */
 export async function approveNewsletterForApprovalsHub(
   newsletterId: string,

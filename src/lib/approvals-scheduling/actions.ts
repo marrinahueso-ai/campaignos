@@ -521,20 +521,20 @@ async function approveNewsletterSchedulingItem(input: {
     return { success: false, error: "Couldn’t identify this newsletter." };
   }
 
-  const { approveNewsletterForApprovalsHub } = await import(
+  const { approveAndScheduleNewsletterForApprovalsHub } = await import(
     "@/lib/newsletter/actions"
   );
-  const result = await approveNewsletterForApprovalsHub(newsletterId);
+  const result = await approveAndScheduleNewsletterForApprovalsHub(newsletterId);
   if (!result.ok) {
     return { success: false, error: result.error };
   }
 
-  // Draft-only stays pre-publish (Draft), not Posted — mirrors flyer composer.
+  // Product path: Approve & Schedule — queue mirrors scheduled.
   const updated = await updateSchedulingItemStatus(schedulingItemId, "scheduled");
   if (!updated) {
     return {
       success: false,
-      error: "Newsletter approved, but the approvals queue could not be updated.",
+      error: "Newsletter approved & scheduled, but the approvals queue could not be updated.",
     };
   }
 
@@ -558,6 +558,8 @@ async function approveNewsletterSchedulingItem(input: {
 
   revalidatePath("/approvals");
   revalidatePath("/newsletter-composer");
+  revalidatePath(`/newsletters/${newsletterId}`);
+  revalidatePath("/newsletters");
   return { success: true };
 }
 

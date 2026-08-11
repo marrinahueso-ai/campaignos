@@ -28,6 +28,11 @@ export interface NewsletterSendCheckFacts {
   productionSendEnabled: boolean;
   /** True when an existing send for this newsletter+version is already sending or sent. */
   hasDuplicateActiveSend: boolean;
+  /**
+   * When true, skip the production-gate check (used when queuing a schedule).
+   * Cron / Send Now still enforce the gate at delivery time.
+   */
+  skipProductionGate?: boolean;
 }
 
 /** Returns an empty array when every check passes; otherwise, one message per failure. */
@@ -81,15 +86,15 @@ export function runNewsletterSendChecks(facts: NewsletterSendCheckFacts): string
   }
 
   if (facts.eligibleRecipientCount <= 0) {
-    errors.push("No eligible recipients in the approved audience.");
+    errors.push("No eligible recipients in the audience.");
   }
 
-  if (!facts.productionSendEnabled) {
-    errors.push("Newsletter production sending is disabled for this environment.");
+  if (!facts.skipProductionGate && !facts.productionSendEnabled) {
+    errors.push("Production sending is disabled for this environment.");
   }
 
   if (facts.hasDuplicateActiveSend) {
-    errors.push("A send for this newsletter is already in progress or complete.");
+    errors.push("A send is already in progress or completed for this newsletter.");
   }
 
   return errors;

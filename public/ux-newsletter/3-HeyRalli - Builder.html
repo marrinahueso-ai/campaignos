@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="utf-8">
+    <title>Hey Ralli · Block Builder</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: '#2c2825',
+              paper: '#fcfbf9',
+              parchment: '#f5f2eb',
+              line: '#e4ded4',
+              muted: '#6e675f',
+              accent: '#0d7e5e',
+              accentSoft: '#e6f3ee',
+              clay: '#a68b7c',
+            },
+            fontFamily: {
+              sans: ['DM Sans', 'sans-serif'],
+              serif: ['Lora', 'serif'],
+            },
+            boxShadow: {
+              soft: '0 10px 30px -15px rgba(44,40,37,0.15)',
+              card: '0 8px 30px -12px rgba(44,40,37,0.12)',
+              active: '0 0 0 2px #0d7e5e, 0 10px 30px -10px rgba(13,126,94,0.3)',
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+        body { font-family: 'DM Sans', sans-serif; overflow: hidden; }
+        .canvas-scroll::-webkit-scrollbar { width: 6px; }
+        .canvas-scroll::-webkit-scrollbar-track { background: transparent; }
+        .canvas-scroll::-webkit-scrollbar-thumb { background: #e4ded4; border-radius: 10px; }
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #e4ded4; border-radius: 10px; }
+
+        .dot-grid { background-image: radial-gradient(circle at 1px 1px, rgba(44,40,37,0.05) 1px, transparent 0); background-size: 24px 24px; }
+
+        .block-container { position: relative; transition: all 0.2s ease; border: 1px solid transparent; }
+        .block-container:hover { border-color: rgba(13, 126, 94, 0.3); }
+        .block-container.is-selected { border-color: #0d7e5e; box-shadow: 0 0 0 1px #0d7e5e; z-index: 10; }
+
+        .block-controls { opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+        .block-container:hover .block-controls, .block-container.is-selected .block-controls { opacity: 1; pointer-events: auto; }
+
+        .drag-handle { cursor: grab; }
+        .drag-handle:active { cursor: grabbing; }
+
+        .modal-overlay { background: rgba(44, 40, 37, 0.4); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-paper text-ink h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="h-16 border-b border-line bg-white flex items-center justify-between px-6 z-50">
+        <div class="flex items-center gap-6">
+            <a href="ChangesRequested__desktop.html" class="text-muted hover:text-ink transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left-long text-sm"></i>
+                <span class="text-sm font-medium">Back</span>
+            </a>
+            <div class="h-6 w-px bg-line"></div>
+            <div class="flex items-center gap-3">
+                <h1 class="text-sm font-bold">August Back to School Update</h1>
+                <span class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted bg-parchment px-2 py-0.5 rounded">
+                    <i class="fa-solid fa-cloud-check text-accent"></i> Saved
+                </span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button class="px-4 py-2 text-sm font-medium text-muted hover:text-ink transition-colors">Preview</button>
+            <a href="PreviewSend__desktop.html?mode=resubmit" id="mainActionButton" class="bg-accent text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-[#0a6b4f] transition-all shadow-md transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+                Preview & Resubmit <i class="fa-solid fa-rotate-right text-[10px]"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- Persistent Feedback Banner (Only visible when editing changes) -->
+    <div id="feedbackBanner" class="bg-amber-50 border-b border-amber-100 px-6 py-3 flex items-center justify-between z-40 relative">
+        <div class="flex items-center gap-4">
+            <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                <i class="fa-solid fa-comment-dots text-xs"></i>
+            </div>
+            <p class="text-xs text-amber-900 leading-tight">
+                <span class="font-bold">Mrs. Higgins requested changes:</span>
+                “Please update the principal's photo and double check the BBQ time.”
+            </p>
+        </div>
+        <button onclick="this.parentElement.style.display='none'" class="text-amber-600 hover:text-amber-800 transition-colors">
+            <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+    </div>
+
+    <!-- Main Builder Layout -->
+    <main class="flex-1 flex overflow-hidden">
+
+        <!-- Left Sidebar: Block Library -->
+        <aside class="w-80 border-r border-line bg-parchment flex flex-col">
+            <div class="p-5 border-b border-line bg-white/50">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs"></i>
+                    <input type="text" placeholder="Search blocks..." class="w-full bg-paper border border-line rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:border-accent transition-colors">
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto sidebar-scroll p-5 space-y-8">
+                <!-- Group: From Hey Ralli -->
+                <div>
+                    <h2 class="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-4 flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-accent"></span> From Hey Ralli
+                    </h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="openEventModal()" class="group bg-white border border-line rounded-xl p-3 flex flex-col items-center justify-center gap-2 hover:border-accent hover:shadow-sm transition-all">
+                            <div class="w-8 h-8 rounded-lg bg-accentSoft flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-calendar-star text-sm"></i>
+                            </div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Event</span>
+                        </button>
+                        <button class="group bg-white border border-line rounded-xl p-3 flex flex-col items-center justify-center gap-2 hover:border-accent hover:shadow-sm transition-all">
+                            <div class="w-8 h-8 rounded-lg bg-accentSoft flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-list-check text-sm"></i>
+                            </div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Upcoming</span>
+                        </button>
+                        <button class="group bg-white border border-line rounded-xl p-3 flex flex-col items-center justify-center gap-2 hover:border-accent hover:shadow-sm transition-all">
+                            <div class="w-8 h-8 rounded-lg bg-accentSoft flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-hand-holding-heart text-sm"></i>
+                            </div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Volunteer</span>
+                        </button>
+                        <button class="group bg-white border border-line rounded-xl p-3 flex flex-col items-center justify-center gap-2 hover:border-accent hover:shadow-sm transition-all">
+                            <div class="w-8 h-8 rounded-lg bg-accentSoft flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-palette text-sm"></i>
+                            </div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Artwork</span>
+                        </button>
+                        <button class="group bg-white border border-line rounded-xl p-3 flex flex-col items-center justify-center gap-2 hover:border-accent hover:shadow-sm transition-all">
+                            <div class="w-8 h-8 rounded-lg bg-accentSoft flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-award text-sm"></i>
+                            </div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Sponsor</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Group: Add Your Own -->
+                <div>
+                    <h2 class="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-4 flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-clay"></span> Add Your Own
+                    </h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="group bg-white border border-line rounded-xl p-3 flex flex-col items-center justify-center gap-2 hover:border-accent hover:shadow-sm transition-all">
+                            <i class="fa-solid fa-heading text-muted group-hover:text-accent"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Heading</span>
+                        </button>
+                        <button class="group bg-white border border-line rounded-xl p-3 flex flex-col items-center justify-center gap-2 hover:border-accent hover:shadow-sm transition-all">
+                            <i class="fa-solid fa-align-left text-muted group-hover:text-accent"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Text</span>
+                        </button>
+                        <button class="group bg-white border border-line rounded-xl p-3 flex flex-col items-center justify-center gap-2 hover:border-accent hover:shadow-sm transition-all">
+                            <i class="fa-solid fa-image text-muted group-hover:text-accent"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Image</span>
+                        </button>
+                        <button class="group bg-white border border-line rounded-xl p-3 flex flex-col items-center justify-center gap-2 hover:border-accent hover:shadow-sm transition-all">
+                            <i class="fa-solid fa-toggle-on text-muted group-hover:text-accent"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Button</span>
+                        </button>
+                        <button class="group bg-white border border-line rounded-xl p-3 flex flex-col items-center justify-center gap-2 hover:border-accent hover:shadow-sm transition-all">
+                            <i class="fa-solid fa-columns text-muted group-hover:text-accent"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">2 Column</span>
+                        </button>
+                        <button class="group bg-white border border-line rounded-xl p-3 flex flex-col items-center justify-center gap-2 hover:border-accent hover:shadow-sm transition-all">
+                            <i class="fa-solid fa-grid-2 text-muted group-hover:text-accent"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Grid</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5 border-t border-line bg-white/50">
+                <button class="w-full py-3 bg-white border border-line rounded-xl text-[10px] font-bold uppercase tracking-widest text-muted hover:text-accent hover:border-accent transition-all">
+                    View All Blocks
+                </button>
+            </div>
+        </aside>
+
+        <!-- Center: Live Canvas -->
+        <section class="flex-1 bg-paper relative overflow-hidden flex flex-col">
+            <div class="flex-1 overflow-y-auto canvas-scroll p-12 dot-grid">
+                <!-- Newsletter Envelope -->
+                <div id="newsletter-canvas" class="max-w-2xl mx-auto bg-white shadow-soft min-h-full border border-line flex flex-col">
+
+                    <!-- Block: Hero -->
+                    <div class="block-container" onclick="selectBlock('hero', this)">
+                        <img class="w-full h-72 object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_48cd30af2a_0980e0c4542883ef.png" alt="a warm editorial photo of a sunlit school library with wooden bookshelves, soft light, cozy atmosphe" />
+                        <div class="block-controls absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+                            <div class="bg-white/90 backdrop-blur-sm border border-line rounded-full flex items-center p-1 shadow-soft">
+                                <button class="w-8 h-8 flex items-center justify-center hover:text-accent transition-colors drag-handle"><i class="fa-solid fa-grip-vertical text-xs"></i></button>
+                                <div class="w-px h-4 bg-line mx-1"></div>
+                                <button class="w-8 h-8 flex items-center justify-center hover:text-accent transition-colors"><i class="fa-solid fa-pencil text-xs"></i></button>
+                                <button class="w-8 h-8 flex items-center justify-center hover:text-accent transition-colors"><i class="fa-solid fa-copy text-xs"></i></button>
+                                <button class="w-8 h-8 flex items-center justify-center hover:text-red-500 transition-colors"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Block: Header -->
+                    <div class="block-container px-12 py-12 text-center" onclick="selectBlock('heading', this)">
+                        <h1 class="font-serif text-5xl font-bold mb-4">Back to School!</h1>
+                        <p class="text-muted italic serif text-lg">August 2026 · Volume 14</p>
+                        <div class="block-controls absolute top-4 right-4 flex flex-col gap-2 z-20">
+                            <button class="w-8 h-8 bg-white border border-line rounded-full flex items-center justify-center shadow-soft hover:text-accent"><i class="fa-solid fa-grip-vertical text-xs"></i></button>
+                            <button class="w-8 h-8 bg-white border border-line rounded-full flex items-center justify-center shadow-soft hover:text-red-500"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Block: Event (Imported from Hey Ralli) -->
+                    <div class="block-container is-selected" onclick="selectBlock('event', this)">
+                        <div class="px-12 py-10 bg-accentSoft/30">
+                            <div class="flex gap-8">
+                                <div class="w-1/3 aspect-[4/5] rounded-2xl overflow-hidden shadow-card border-2 border-white relative group/img">
+                                    <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_722e65fd2a_18f5cce24e117a71.png" alt="a cheerful school barbecue event flyer design with colorful bunting and grilled food illustration, v" />
+                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                        <button class="text-white text-xs font-bold underline">Change Art</button>
+                                    </div>
+                                </div>
+                                <div class="flex-1 space-y-4">
+                                    <div class="flex items-start justify-between">
+                                        <span class="text-[10px] font-bold uppercase tracking-widest text-accent bg-white px-2 py-1 rounded">Featured Event</span>
+                                        <div class="flex gap-2">
+                                             <button class="w-6 h-6 rounded-full bg-white border border-line flex items-center justify-center text-[10px] text-muted hover:text-accent"><i class="fa-solid fa-link"></i></button>
+                                        </div>
+                                    </div>
+                                    <h2 class="font-serif text-3xl font-bold">Welcome Back BBQ</h2>
+                                    <div class="space-y-2 text-sm">
+                                        <p class="flex items-center gap-2 font-bold text-ink">
+                                            <i class="fa-solid fa-calendar text-accent w-4"></i> Friday, August 22
+                                        </p>
+                                        <p class="flex items-center gap-2 text-muted">
+                                            <i class="fa-solid fa-clock text-muted w-4"></i> 5:30 PM – 7:30 PM
+                                        </p>
+                                        <p class="flex items-center gap-2 text-muted">
+                                            <i class="fa-solid fa-location-dot text-muted w-4"></i> School Playground
+                                        </p>
+                                    </div>
+                                    <p class="text-sm text-muted leading-relaxed">Join us for our annual welcome back celebration! Burgers, hot dogs, and vegetarian options will be provided by the PTA. Please bring a side dish to share.</p>
+                                    <div class="pt-2 flex gap-3">
+                                        <button class="px-5 py-2 bg-accent text-white rounded-full text-xs font-bold">RSVP Here</button>
+                                        <button class="px-5 py-2 border border-accent text-accent rounded-full text-xs font-bold bg-white">Volunteer</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="block-controls absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+                            <div class="bg-white/90 backdrop-blur-sm border border-accent rounded-full flex items-center p-1 shadow-active">
+                                <button class="w-8 h-8 flex items-center justify-center hover:text-accent transition-colors drag-handle"><i class="fa-solid fa-grip-vertical text-xs"></i></button>
+                                <div class="w-px h-4 bg-line mx-1"></div>
+                                <button class="w-8 h-8 flex items-center justify-center hover:text-accent transition-colors"><i class="fa-solid fa-pencil text-xs"></i></button>
+                                <button class="w-8 h-8 flex items-center justify-center hover:text-accent transition-colors"><i class="fa-solid fa-copy text-xs"></i></button>
+                                <button class="w-8 h-8 flex items-center justify-center hover:text-red-500 transition-colors"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Block: Two Column -->
+                    <div class="block-container px-12 py-16" onclick="selectBlock('columns', this)">
+                        <div class="grid grid-cols-2 gap-12">
+                            <div class="space-y-4">
+                                <div class="w-full aspect-video bg-parchment rounded-2xl overflow-hidden">
+                                    <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_8bcb7da41a_f94820632dbb0caf.png" alt="a focused young student writing in a notebook in a classroom setting, warm natural light" />
+                                </div>
+                                <h3 class="font-bold text-lg">Classroom Prep</h3>
+                                <p class="text-sm text-muted leading-relaxed">Our teachers have been working hard to get everything ready for the students.</p>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="w-full aspect-video bg-parchment rounded-2xl overflow-hidden">
+                                    <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_b603808a1c_d983971b580f281d.png" alt="school hallway with colorful student art on the walls, bright and inspiring" />
+                                </div>
+                                <h3 class="font-bold text-lg">New Art Gallery</h3>
+                                <p class="text-sm text-muted leading-relaxed">Wait until you see the new community mural in the south hallway!</p>
+                            </div>
+                        </div>
+                        <div class="block-controls absolute top-4 right-4 flex flex-col gap-2 z-20">
+                            <button class="w-8 h-8 bg-white border border-line rounded-full flex items-center justify-center shadow-soft hover:text-accent"><i class="fa-solid fa-grip-vertical text-xs"></i></button>
+                            <button class="w-8 h-8 bg-white border border-line rounded-full flex items-center justify-center shadow-soft hover:text-red-500"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="block-container px-12 py-12 bg-parchment/20 border-t border-line text-center space-y-6" onclick="selectBlock('footer', this)">
+                        <div class="flex justify-center gap-4 text-xl text-muted">
+                            <i class="fa-brands fa-facebook hover:text-accent cursor-pointer"></i>
+                            <i class="fa-brands fa-instagram hover:text-accent cursor-pointer"></i>
+                            <i class="fa-solid fa-globe hover:text-accent cursor-pointer"></i>
+                        </div>
+                        <div class="text-[10px] uppercase tracking-widest text-muted font-medium">
+                            <p>Hey Ralli Elementary · 123 School Lane · Portland, OR</p>
+                            <p class="mt-2">You are receiving this because you are a registered parent at Ralli.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Contextual Help / Status -->
+            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm border border-line px-5 py-2 rounded-full text-xs font-bold text-muted shadow-soft flex items-center gap-3">
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-mouse-pointer text-[10px] text-accent"></i> Click to edit</span>
+                <div class="w-px h-3 bg-line"></div>
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-grip-vertical text-[10px] text-accent"></i> Drag to reorder</span>
+            </div>
+        </section>
+
+        <!-- Right Sidebar: Settings -->
+        <aside class="w-80 border-l border-line bg-parchment flex flex-col overflow-hidden">
+            <div id="settings-header" class="p-6 border-b border-line bg-white">
+                <div class="flex items-center justify-between mb-1">
+                    <h2 class="text-[10px] font-bold uppercase tracking-[0.15em] text-muted">Block Settings</h2>
+                    <span id="settings-badge" class="bg-accentSoft text-accent text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Event</span>
+                </div>
+                <p id="settings-title" class="text-sm font-bold">Welcome Back BBQ</p>
+            </div>
+
+            <div id="settings-content" class="flex-1 overflow-y-auto sidebar-scroll p-6 space-y-8">
+                <!-- Layout Choice -->
+                <div class="space-y-3">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-muted">Event Layout</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="bg-white border-2 border-accent rounded-xl p-3 flex flex-col items-center gap-2 transition-all">
+                            <i class="fa-solid fa-rectangle-wide text-accent"></i>
+                            <span class="text-[10px] font-bold text-accent">Featured</span>
+                        </button>
+                        <button class="bg-white border border-line rounded-xl p-3 flex flex-col items-center gap-2 hover:border-accent transition-all">
+                            <i class="fa-solid fa-address-card text-muted/60"></i>
+                            <span class="text-[10px] font-bold text-muted">Card</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Display Toggles -->
+                <div class="space-y-4">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-muted">Show / Hide</label>
+                    <div class="space-y-3">
+                        <label class="flex items-center justify-between cursor-pointer group">
+                            <span class="text-sm font-medium">Event Artwork</span>
+                            <div class="w-8 h-4 bg-accent rounded-full relative"><div class="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full"></div></div>
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer group">
+                            <span class="text-sm font-medium">Description</span>
+                            <div class="w-8 h-4 bg-accent rounded-full relative"><div class="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full"></div></div>
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer group">
+                            <span class="text-sm font-medium">Location</span>
+                            <div class="w-8 h-4 bg-accent rounded-full relative"><div class="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full"></div></div>
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer group">
+                            <span class="text-sm font-medium">Volunteer Link</span>
+                            <div class="w-8 h-4 bg-accent rounded-full relative"><div class="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full"></div></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Image Actions -->
+                <div class="space-y-4 pt-6 border-t border-line">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-muted">Artwork Settings</label>
+                    <div class="bg-white border border-line rounded-2xl p-4 space-y-4">
+                        <div class="flex gap-4 items-center">
+                            <div class="w-12 h-12 rounded-lg overflow-hidden border border-line shrink-0">
+                                <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_722e65fd2a_d2258e443f7bce35.png" alt="a cheerful school barbecue event flyer design" />
+                            </div>
+                            <button class="flex-1 py-2 text-[10px] font-bold uppercase tracking-widest border border-line rounded-lg hover:bg-parchment transition-colors">Replace Image</button>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[9px] font-bold uppercase text-muted">Image Link (Click Action)</label>
+                            <input type="text" value="https://heyralli.com/e/bbq-2026" class="w-full bg-parchment/50 border border-line rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-accent">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[9px] font-bold uppercase text-muted">Alt Text</label>
+                            <input type="text" placeholder="Describe the image..." class="w-full bg-parchment/50 border border-line rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-accent">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Appearance -->
+                <div class="space-y-4 pt-6 border-t border-line">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-muted">Appearance</label>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-medium">Background Color</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-mono text-muted">#E6F3EE</span>
+                            <div class="w-6 h-6 rounded bg-accentSoft/30 border border-line cursor-pointer"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 bg-white border-t border-line space-y-3">
+                <button class="w-full py-3 bg-white border border-line rounded-xl text-xs font-bold hover:bg-parchment transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-copy text-[10px]"></i> Duplicate Block
+                </button>
+                <button class="w-full py-3 text-xs font-bold text-red-500 hover:bg-red-50 transition-all rounded-xl flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-trash-can text-[10px]"></i> Delete Block
+                </button>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Modal: Choose Event -->
+    <div id="eventModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6">
+        <div class="modal-overlay absolute inset-0" onclick="closeEventModal()"></div>
+        <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl relative overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+            <div class="p-8 border-b border-line flex items-center justify-between">
+                <div>
+                    <h3 class="font-serif text-3xl font-bold">Add Event Block</h3>
+                    <p class="text-sm text-muted mt-1">Choose an event you've already created in Hey Ralli.</p>
+                </div>
+                <button onclick="closeEventModal()" class="w-10 h-10 rounded-full border border-line flex items-center justify-center text-muted hover:text-ink transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-8 overflow-y-auto max-h-[60vh] space-y-4">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-muted"></i>
+                    <input type="text" placeholder="Search your events..." class="w-full bg-parchment/30 border border-line rounded-2xl py-3 pl-11 pr-4 focus:outline-none focus:border-accent">
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 pt-4">
+                    <!-- Event Item -->
+                    <div class="group border border-line rounded-2xl p-4 flex gap-4 hover:border-accent hover:bg-accentSoft/10 cursor-pointer transition-all">
+                        <div class="w-20 h-20 rounded-xl overflow-hidden shrink-0">
+                            <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_27ba242a3b_7aada163e1e07c42.png" alt="back to school breakfast event invitation graphic" />
+                        </div>
+                        <div class="flex-1 py-1">
+                            <h4 class="font-bold text-lg group-hover:text-accent transition-colors">Parent Breakfast Social</h4>
+                            <p class="text-sm text-muted mt-1">Sept 5 · 8:15 AM · Multi-purpose Room</p>
+                            <div class="flex gap-4 mt-2">
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-muted"><i class="fa-solid fa-user-group mr-1"></i> 24 Registered</span>
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-muted"><i class="fa-solid fa-hands-holding mr-1"></i> 4 Volunteer spots</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center px-4">
+                            <div class="w-8 h-8 rounded-full border border-line flex items-center justify-center text-muted group-hover:bg-accent group-hover:text-white group-hover:border-accent transition-all">
+                                <i class="fa-solid fa-plus"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Event Item -->
+                    <div class="group border-2 border-accent bg-accentSoft/10 rounded-2xl p-4 flex gap-4 cursor-pointer">
+                        <div class="w-20 h-20 rounded-xl overflow-hidden shrink-0">
+                            <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_1b0e9bcf82_88d3a72d3e08f27f.png" alt="school barbecue event graphic" />
+                        </div>
+                        <div class="flex-1 py-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <h4 class="font-bold text-lg text-accent">Welcome Back BBQ</h4>
+                                <span class="text-[9px] font-bold uppercase tracking-widest bg-accent text-white px-1.5 py-0.5 rounded">Selected</span>
+                            </div>
+                            <p class="text-sm text-muted">Aug 22 · 5:30 PM · School Playground</p>
+                            <div class="flex gap-4 mt-2">
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-muted"><i class="fa-solid fa-user-group mr-1"></i> 112 Registered</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center px-4">
+                            <div class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center">
+                                <i class="fa-solid fa-check"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Event Item -->
+                    <div class="group border border-line rounded-2xl p-4 flex gap-4 hover:border-accent hover:bg-accentSoft/10 cursor-pointer transition-all">
+                        <div class="w-20 h-20 rounded-xl overflow-hidden shrink-0">
+                            <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_6bc6eb77b1_8f98b56aaa6b7607.png" alt="school carnival event poster" />
+                        </div>
+                        <div class="flex-1 py-1">
+                            <h4 class="font-bold text-lg group-hover:text-accent transition-colors">Fall Carnival Planning</h4>
+                            <p class="text-sm text-muted mt-1">Oct 12 · 6:30 PM · Online Meeting</p>
+                        </div>
+                        <div class="flex items-center px-4">
+                            <div class="w-8 h-8 rounded-full border border-line flex items-center justify-center text-muted group-hover:bg-accent group-hover:text-white group-hover:border-accent transition-all">
+                                <i class="fa-solid fa-plus"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-8 bg-parchment/30 border-t border-line flex justify-end gap-4">
+                <button onclick="closeEventModal()" class="px-6 py-3 text-sm font-bold text-muted hover:text-ink">Cancel</button>
+                <button onclick="closeEventModal()" class="px-10 py-3 bg-accent text-white rounded-full text-sm font-bold shadow-md hover:bg-[#0a6b4f] transition-all">Insert Selected Event</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectBlock(type, element) {
+            // Remove existing selection
+            document.querySelectorAll('.block-container').forEach(el => {
+                el.classList.remove('is-selected');
+            });
+
+            // Add new selection
+            element.classList.add('is-selected');
+
+            // Update sidebar settings based on type
+            const title = document.getElementById('settings-title');
+            const badge = document.getElementById('settings-badge');
+            const content = document.getElementById('settings-content');
+
+            if (type === 'event') {
+                title.innerText = 'Welcome Back BBQ';
+                badge.innerText = 'Event';
+                badge.className = 'bg-accentSoft text-accent text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider';
+            } else if (type === 'heading') {
+                title.innerText = 'Back to School!';
+                badge.innerText = 'Heading';
+                badge.className = 'bg-parchment text-muted text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider';
+            } else if (type === 'hero') {
+                title.innerText = 'Library Banner';
+                badge.innerText = 'Hero Image';
+                badge.className = 'bg-parchment text-muted text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider';
+            }
+        }
+
+        function openEventModal() {
+            document.getElementById('eventModal').classList.remove('hidden');
+        }
+
+        function closeEventModal() {
+            document.getElementById('eventModal').classList.add('hidden');
+        }
+
+        // Initialize with event block selected for demo
+        window.onload = () => {
+            const eventBlock = document.querySelector('.block-container.is-selected');
+            if (eventBlock) selectBlock('event', eventBlock);
+        };
+    </script>
+
+</body>
+</html>

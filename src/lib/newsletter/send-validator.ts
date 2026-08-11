@@ -23,6 +23,11 @@ export interface ValidateNewsletterForSendInput {
   newsletterId: string;
   /** Pass a pre-resolved permission check (e.g. from a server action) to avoid a second lookup. */
   hasSendPermission?: boolean;
+  /**
+   * When true, skip the production-gate check so Approve & Schedule can queue
+   * a send. Cron / Send Now still enforce the gate at delivery time.
+   */
+  skipProductionGate?: boolean;
 }
 
 /**
@@ -107,6 +112,7 @@ export async function validateNewsletterForSend(
     eligibleRecipientCount: eligibility.eligible,
     productionSendEnabled: isNewsletterProductionSendEnabled(),
     hasDuplicateActiveSend,
+    skipProductionGate: input.skipProductionGate === true,
   };
 
   const errors = runNewsletterSendChecks(facts);

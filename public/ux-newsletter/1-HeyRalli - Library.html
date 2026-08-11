@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="utf-8">
+    <title>Hey Ralli · Newsletters</title>
+    <meta content="Hey Ralli makes it easy for schools to create, review, and send beautiful newsletters." name="description">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              // Stationery system — warm, premium, slightly desaturated.
+              // Green is kept as the single functional accent (interactive / active / primary).
+              ink: '#2c2825',          // deep charcoal ink (was near-black)
+              paper: '#fcfbf9',        // page surface (was pure white)
+              parchment: '#f5f2eb',    // raised surface / cards (was page)
+              line: '#e4ded4',         // elegant hairline border
+              muted: '#6e675f',        // warm-grey muted text
+              accent: '#0d7e5e',       // functional emerald accent (same hue, tuned)
+              accentSoft: '#e6f3ee',   // soft green fill for interactive states
+            },
+            fontFamily: {
+              sans: ['DM Sans', 'sans-serif'],
+              serif: ['Lora', 'serif'],
+            },
+            boxShadow: {
+              soft: '0 10px 30px -15px rgba(44,40,37,0.15)',
+              card: '0 8px 30px -12px rgba(44,40,37,0.12)',
+            },
+            backgroundImage: {
+              'dot-grid': 'radial-gradient(circle at 1px 1px, rgba(44,40,37,0.15) 1px, transparent 0)',
+            },
+            transitionTimingFunction: {
+              spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+        body { font-family: 'DM Sans', sans-serif; }
+        .text-vertical { writing-mode: vertical-rl; transform: rotate(180deg); }
+        .btn-hover-effect { position: relative; overflow: hidden; z-index: 1; }
+        .btn-hover-effect::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background-color: #0a6b4f;
+            transition: all 0.3s ease;
+            z-index: -1;
+        }
+        .btn-hover-effect:hover::after { left: 0; }
+        .card-hover-overlay {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease;
+        }
+        .group:hover .card-hover-overlay { opacity: 1; transform: translateY(0); }
+        .nav-link-underline { position: relative; }
+        .nav-link-underline::after {
+            content: '';
+            position: absolute;
+            bottom: -2px; left: 0; width: 0; height: 2px;
+            background-color: #0d7e5e;
+            transition: width 0.3s ease;
+        }
+        .nav-link-underline:hover::after { width: 100%; }
+        .active-indicator { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    </style>
+</head>
+<body class="bg-paper text-ink antialiased">
+
+    <!-- Navigation -->
+    <header class="fixed top-0 left-0 w-full z-50 px-6 py-4">
+        <div class="max-w-[1440px] mx-auto flex items-center justify-between bg-parchment/80 backdrop-blur-md border border-line rounded-full px-8 py-3 shadow-soft">
+            <a href="#" class="flex-shrink-0 font-serif text-2xl font-bold tracking-tight text-ink">Hey&nbsp;Ralli<span class="text-accent">.</span></a>
+            <nav class="hidden md:flex space-x-8 text-sm font-medium">
+                <a href="Library__desktop.html" class="nav-link-underline text-accent">Home</a>
+                <a href="#" class="nav-link-underline">Contacts</a>
+                <a href="TemplateSelection__desktop.html" class="nav-link-underline">Templates</a>
+                <a href="#" class="nav-link-underline">Pricing</a>
+            </nav>
+            <a href="TemplateSelection__desktop.html" class="btn-hover-effect bg-accent text-white px-6 py-2 rounded-full text-sm font-medium transition-colors">
+                New Newsletter
+            </a>
+        </div>
+    </header>
+
+    <main class="pt-32 pb-20 px-6">
+        <!-- Hero Section -->
+        <section class="relative max-w-[1440px] mx-auto mb-24">
+            <div class="absolute inset-0 -z-10 opacity-40 bg-dot-grid bg-[length:20px_20px]"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+                <div class="lg:col-span-7 pt-12">
+                    <span class="text-xs uppercase tracking-[0.2em] text-muted font-bold mb-6 block">Your Library</span>
+                    <h1 class="font-serif text-6xl md:text-8xl font-bold leading-none mb-8 text-ink">
+                        Newsletters
+                    </h1>
+                    <p class="text-xl md:text-2xl text-muted max-w-lg leading-relaxed mb-10">
+                        Create, review, send, and revisit your school newsletters — all in one place.
+                    </p>
+                    <a href="TemplateSelection__desktop.html" class="btn-hover-effect bg-accent text-white px-8 py-4 rounded-full text-lg font-medium transition-colors inline-flex items-center gap-3">
+                        <i class="fa-solid fa-plus"></i> New Newsletter
+                    </a>
+                </div>
+                <div class="lg:col-span-5 relative">
+                    <div class="aspect-[4/5] rounded-jumbo overflow-hidden shadow-card">
+                        <img class="w-full h-full object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_461e4c30c6_bae8dc4183713fcd.png" alt="warm editorial photo of a neatly arranged school library desk with printed newsletters, a pen, and s" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-ink/30 via-transparent to-transparent"></div>
+                    </div>
+                    <!-- Floating Stat -->
+                    <div class="absolute -bottom-6 -left-6 bg-parchment p-6 rounded-2xl shadow-soft border border-line max-w-xs">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                            <span class="text-xs uppercase tracking-widest text-muted font-bold">Live Updates</span>
+                        </div>
+                        <p class="text-sm text-ink font-medium">Draft updated 2 min ago by Mrs. Garcia</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter Tabs -->
+        <section class="max-w-[1440px] mx-auto mb-12">
+            <div class="bg-parchment p-2 rounded-full border border-line inline-flex items-center gap-1 relative">
+                <div id="tabIndicator" class="absolute top-2 left-2 h-[calc(100%-8px)] bg-white rounded-full shadow-sm active-indicator"></div>
+                <button data-tab="all" class="tab-btn relative z-10 px-8 py-3 rounded-full text-sm font-medium transition-colors whitespace-nowrap">All</button>
+                <button data-tab="in-progress" class="tab-btn relative z-10 px-8 py-3 rounded-full text-sm font-medium transition-colors whitespace-nowrap">In Progress</button>
+                <button data-tab="waiting" class="tab-btn relative z-10 px-8 py-3 rounded-full text-sm font-medium transition-colors whitespace-nowrap">Waiting for Approval</button>
+                <button data-tab="scheduled" class="tab-btn relative z-10 px-8 py-3 rounded-full text-sm font-medium transition-colors whitespace-nowrap">Scheduled</button>
+                <button data-tab="sent" class="tab-btn relative z-10 px-8 py-3 rounded-full text-sm font-medium transition-colors whitespace-nowrap">Sent</button>
+                <button data-tab="templates" class="tab-btn relative z-10 px-8 py-3 rounded-full text-sm font-medium transition-colors whitespace-nowrap">Templates</button>
+            </div>
+        </section>
+
+        <!-- Newsletter Grid -->
+        <section class="max-w-[1440px] mx-auto">
+            <div id="newsletterGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+
+                <!-- Card 1 (Changes Requested) -->
+                <article data-status="waiting" class="group cursor-pointer" onclick="window.location.href='ChangesRequested__desktop.html'">
+                    <div class="relative aspect-[4/5] rounded-jumbo overflow-hidden shadow-card mb-6">
+                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 grayscale-[0.2] group-hover:grayscale-0" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_9e9dcd16a7_c09d85611f4b851f.png" alt="children's colorful paper-cut artwork pinned to a cork board, warm natural light, soft documentary p" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                        <div class="card-hover-overlay absolute bottom-0 left-0 w-full p-6 text-white">
+                            <h3 class="font-serif text-3xl font-bold mb-2">August Back to School</h3>
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="w-2 h-2 bg-amber-400 rounded-full"></div>
+                                <span class="text-xs uppercase tracking-widest font-bold text-amber-400">Changes Requested</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="text-sm">
+                                    <p class="text-white/70 mb-1">Audience</p>
+                                    <p class="font-medium">All Families · 605 contacts</p>
+                                </div>
+                                <button class="bg-white text-ink px-4 py-2 rounded-full text-sm font-medium hover:bg-accent hover:text-white transition-colors">
+                                    Review
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-1">
+                        <h3 class="font-serif text-2xl font-bold mb-2 text-ink">August Back to School</h3>
+                        <p class="text-sm text-muted mb-4 line-clamp-2 italic">“Please update the principal's photo...”</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-amber-600">Changes Requested</span>
+                            <div class="flex -space-x-2">
+                                <img class="w-8 h-8 rounded-full border-2 border-paper" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_417e24b606_0d4fbf3549611bc6.png" alt="portrait headshot of a smiling woman teacher, soft natural light" />
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Card 2 -->
+                <article data-status="sent" class="group cursor-pointer">
+                    <div class="relative aspect-[4/5] rounded-jumbo overflow-hidden shadow-card mb-6">
+                        <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 grayscale-[0.2] group-hover:grayscale-0" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_0655acb6d6_81e3f5544c368c02.png" alt="hands holding a printed newsletter outdoors under shade, warm golden hour light, candid documentary " />
+                        <div class="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                        <div class="card-hover-overlay absolute bottom-0 left-0 w-full p-6 text-white">
+                            <h3 class="font-serif text-3xl font-bold mb-2">July Newsletter</h3>
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="w-2 h-2 bg-accent rounded-full"></div>
+                                <span class="text-xs uppercase tracking-widest font-bold">Sent</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="text-sm">
+                                    <p class="text-white/70 mb-1">Audience</p>
+                                    <p class="font-medium">All Families · 598 contacts</p>
+                                </div>
+                                <button class="bg-white text-ink px-4 py-2 rounded-full text-sm font-medium hover:bg-accent hover:text-white transition-colors">
+                                    View
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-1">
+                        <h3 class="font-serif text-2xl font-bold mb-2 text-ink">July Newsletter</h3>
+                        <p class="text-sm text-muted mb-4 line-clamp-2">Sent July 18</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-muted">Sent · Jul 18</span>
+                            <div class="flex -space-x-2">
+                                <img class="w-8 h-8 rounded-full border-2 border-paper" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_417e24b606_0d4fbf3549611bc6.png" alt="portrait headshot of a smiling woman teacher, soft natural light" />
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Template Card -->
+                <article data-status="templates" class="group cursor-pointer">
+                    <div class="relative aspect-[4/5] rounded-jumbo overflow-hidden border-2 border-dashed border-line bg-parchment flex flex-col items-center justify-center p-8 transition-colors hover:border-accent hover:bg-accentSoft/30 mb-6">
+                        <div class="w-20 h-20 rounded-full bg-white flex items-center justify-center text-accent shadow-soft mb-6 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-scroll text-3xl"></i>
+                        </div>
+                        <h3 class="font-serif text-2xl font-bold text-ink mb-2">Standard Template</h3>
+                        <p class="text-sm text-muted text-center">A clean, functional layout for all your school updates.</p>
+                        <button class="mt-8 bg-accent text-white px-6 py-2 rounded-full text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                            Use Template
+                        </button>
+                    </div>
+                    <div class="px-1">
+                        <h3 class="font-serif text-2xl font-bold mb-2 text-ink">Standard Template</h3>
+                        <p class="text-xs uppercase tracking-widest text-muted font-bold">Recommended</p>
+                    </div>
+                </article>
+
+            </div>
+
+            <!-- Empty state (hidden by default) -->
+            <div id="emptyState" class="hidden py-24 text-center">
+                <img class="w-48 h-48 mx-auto mb-8 rounded-full opacity-80" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_3313e38d7c_e31a8e85b56ecadb.png" alt="soft illustration of an empty mailbox with a small bird perched on it, warm pastel tones, friendly e" />
+                <h3 class="font-serif text-3xl font-bold text-ink mb-4">No newsletters here yet</h3>
+                <p class="text-muted mb-8">Start your first newsletter and it will appear in your library.</p>
+                <button class="btn-hover-effect bg-accent text-white px-8 py-4 rounded-full text-lg font-medium transition-colors">
+                    Create Newsletter
+                </button>
+            </div>
+        </section>
+
+        <!-- CTA Band -->
+        <section class="mt-32 bg-accent text-white rounded-jumbo p-12 md:p-24 relative overflow-hidden">
+            <div class="relative z-10 max-w-2xl">
+                <h2 class="font-serif text-5xl md:text-7xl font-bold mb-8 leading-tight">Create, review, send, and revisit</h2>
+                <p class="text-xl opacity-90 mb-10">Keep every school newsletter in one tidy library — filter by status, jump back in, and stay in the loop.</p>
+                <button class="bg-white text-accent px-8 py-4 rounded-full text-lg font-medium hover:bg-ink hover:text-white transition-colors inline-flex items-center gap-3">
+                    New Newsletter <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+            <div class="absolute right-0 bottom-0 opacity-20 pointer-events-none">
+                <i class="fa-solid fa-paper-plane text-[400px] translate-x-1/4 translate-y-1/4"></i>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-parchment py-20 px-6 border-t border-line">
+        <div class="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
+            <div class="lg:col-span-2">
+                <a href="#" class="font-serif text-3xl font-bold tracking-tight text-ink mb-6 inline-block">Hey&nbsp;Ralli<span class="text-accent">.</span></a>
+                <p class="text-muted max-w-sm">Making school communication simple, beautiful, and inclusive for every family.</p>
+            </div>
+            <div>
+                <h4 class="font-bold text-ink mb-6">Product</h4>
+                <ul class="space-y-4 text-muted">
+                    <li><a href="#" class="hover:text-ink transition-colors">Templates</a></li>
+                    <li><a href="#" class="hover:text-ink transition-colors">Features</a></li>
+                    <li><a href="#" class="hover:text-ink transition-colors">Pricing</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-ink mb-6">Company</h4>
+                <ul class="space-y-4 text-muted">
+                    <li><a href="#" class="hover:text-ink transition-colors">About</a></li>
+                    <li><a href="#" class="hover:text-ink transition-colors">Blog</a></li>
+                    <li><a href="#" class="hover:text-ink transition-colors">Careers</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-ink mb-6">Support</h4>
+                <ul class="space-y-4 text-muted">
+                    <li><a href="#" class="hover:text-ink transition-colors">Help Center</a></li>
+                    <li><a href="#" class="hover:text-ink transition-colors">Contact</a></li>
+                    <li><a href="#" class="hover:text-ink transition-colors">Privacy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="max-w-[1440px] mx-auto mt-16 pt-8 border-t border-line text-center text-sm text-muted">
+            © 2026 Hey Ralli. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        // Tab filter + active indicator
+        const tabs = document.querySelectorAll('.tab-btn');
+        const indicator = document.getElementById('tabIndicator');
+        const cards = document.querySelectorAll('#newsletterGrid article');
+        const emptyState = document.getElementById('emptyState');
+
+        function setActiveTab(tabEl) {
+            tabs.forEach(t => t.classList.remove('text-accent'));
+            tabEl.classList.add('text-accent');
+            indicator.style.width = tabEl.offsetWidth + 'px';
+            indicator.style.left = (tabEl.offsetLeft) + 'px';
+        }
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                setActiveTab(tab);
+                const filter = tab.dataset.tab;
+                let visible = 0;
+                cards.forEach(card => {
+                    const show = filter === 'all' || card.dataset.status === filter;
+                    card.classList.toggle('hidden', !show);
+                    if (show) visible++;
+                });
+                emptyState.classList.toggle('hidden', visible !== 0);
+            });
+        });
+
+        // Initialize indicator on first tab
+        window.addEventListener('load', () => {
+            const first = document.querySelector('.tab-btn[data-tab="all"]');
+            if (first) setActiveTab(first);
+        });
+    </script>
+
+</body></html>

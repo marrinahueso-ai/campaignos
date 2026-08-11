@@ -30,6 +30,7 @@ function fp(
     fromEmail: "news@example.com",
     replyToEmail: "reply@example.com",
     audienceId: "aud-1",
+    proposedSendAt: "2026-10-15T15:00:00.000Z",
     ...overrides,
   };
 }
@@ -46,8 +47,17 @@ describe("newsletter tenancy & safety contracts (pure)", () => {
     );
   });
 
-  it("keeps the same fingerprint when only proposed send time would change (excluded from hash)", () => {
-    // proposedSendAt is intentionally not part of NewsletterFingerprintInput.
+  it("invalidates approval when proposed send datetime changes", () => {
+    assert.equal(
+      approvalInvalidatingFieldsChanged(
+        fp({ proposedSendAt: "2026-10-15T15:00:00.000Z" }),
+        fp({ proposedSendAt: "2026-10-16T15:00:00.000Z" }),
+      ),
+      true,
+    );
+  });
+
+  it("keeps the same fingerprint when proposed send datetime is unchanged", () => {
     const a = computeNewsletterContentFingerprint(fp());
     const b = computeNewsletterContentFingerprint(fp());
     assert.equal(a, b);

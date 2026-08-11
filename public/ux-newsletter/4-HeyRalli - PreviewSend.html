@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="utf-8">
+    <title>Hey Ralli · Preview & Send</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: '#2c2825',
+              paper: '#fcfbf9',
+              parchment: '#f5f2eb',
+              line: '#e4ded4',
+              muted: '#6e675f',
+              accent: '#0d7e5e',
+              accentSoft: '#e6f3ee',
+            },
+            fontFamily: {
+              sans: ['DM Sans', 'sans-serif'],
+              serif: ['Lora', 'serif'],
+            },
+            boxShadow: {
+              soft: '0 10px 30px -15px rgba(44,40,37,0.15)',
+              card: '0 8px 30px -12px rgba(44,40,37,0.12)',
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+        body { font-family: 'DM Sans', sans-serif; }
+        .preview-scroll::-webkit-scrollbar { width: 4px; }
+        .preview-scroll::-webkit-scrollbar-thumb { background: #e4ded4; border-radius: 10px; }
+
+        .drawer-overlay { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .drawer { transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        .drawer-open .drawer-overlay { opacity: 1; pointer-events: auto; }
+        .drawer-open .drawer { transform: translateX(0); }
+    </style>
+</head>
+<body class="bg-paper text-ink min-h-screen flex flex-col overflow-hidden">
+
+    <!-- Top Navigation Bar -->
+    <header class="h-16 border-b border-line bg-white flex items-center justify-between px-6 z-50">
+        <div class="flex items-center gap-6">
+            <a href="Builder__desktop.html" class="flex items-center gap-2 text-muted hover:text-ink transition-colors">
+                <i class="fa-solid fa-arrow-left text-sm"></i>
+                <span class="text-sm font-medium">Back to Editor</span>
+            </a>
+            <div class="h-6 w-px bg-line"></div>
+            <div class="flex flex-col">
+                <span class="text-xs font-bold uppercase tracking-widest text-muted">Preview</span>
+                <span class="text-sm font-medium">August Back to School Update</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+             <a href="Status__desktop.html?state=waiting" id="mainSendButton" class="bg-accent text-white px-8 py-3 rounded-full text-sm font-bold hover:bg-[#0a6b4f] transition-all shadow-md transform hover:-translate-y-0.5 active:translate-y-0">
+                Send for Approval
+            </a>
+        </div>
+    </header>
+
+    <script>
+        // Handle Resubmit Mode
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            const sendBtn = document.getElementById('mainSendButton');
+            if (params.get('mode') === 'resubmit') {
+                sendBtn.innerText = 'Resubmit for Approval';
+                sendBtn.href = 'Status__desktop.html?state=waiting&resubmitted=true';
+            }
+        });
+    </script>
+
+    <!-- Main Preview Layout -->
+    <main class="flex-1 flex overflow-hidden">
+
+        <!-- Left: Newsletter Preview -->
+        <section class="flex-1 bg-parchment overflow-y-auto preview-scroll p-12 dot-grid">
+            <div class="max-w-2xl mx-auto bg-white shadow-card rounded-sm border border-line overflow-hidden mb-12">
+                <!-- Newsletter Mockup Content -->
+                <img class="w-full h-64 object-cover" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_48cd30af2a_988da8cc53296304.png" alt="a warm editorial photo of a sunlit school hallway, wooden lockers, soft morning light" />
+                <div class="px-12 py-10 text-center border-b border-line">
+                    <h1 class="font-serif text-4xl font-bold mb-2">Back to School!</h1>
+                    <p class="text-muted italic serif text-sm">Volume 14 · August 2026</p>
+                </div>
+                <div class="px-12 py-12">
+                    <h2 class="font-serif text-xl font-bold mb-4 text-accent">A Note from Principal Miller</h2>
+                    <p class="text-sm leading-relaxed text-ink mb-6">Welcome back, Ralli families! We are so excited to open our doors for the 2026-2027 school year...</p>
+
+                    <div class="bg-parchment/50 p-6 rounded-xl border border-line">
+                        <h3 class="font-bold text-sm mb-4 uppercase tracking-wider">Upcoming Dates</h3>
+                        <div class="space-y-3">
+                            <div class="flex gap-3 items-center">
+                                <div class="w-10 h-10 bg-white border border-line rounded flex flex-col items-center justify-center text-[10px] font-bold">
+                                    <span class="text-accent">AUG</span>
+                                    <span>15</span>
+                                </div>
+                                <p class="text-xs font-bold">First Day of School</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-12 py-8 bg-paper text-center border-t border-line">
+                    <p class="text-[10px] text-muted">© 2026 Hey Ralli Elementary · Portland, OR</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: Send Details -->
+        <aside class="w-[400px] border-l border-line bg-white p-8 overflow-y-auto">
+            <h2 class="font-serif text-3xl font-bold mb-10">Send Details</h2>
+
+            <div class="space-y-10">
+                <!-- Recipients -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold uppercase tracking-widest text-muted">Recipients</label>
+                        <button onclick="toggleDrawer()" class="text-accent text-xs font-bold hover:underline">Change</button>
+                    </div>
+                    <div class="bg-parchment rounded-2xl p-6 border border-line flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-accent shadow-sm border border-line">
+                            <i class="fa-solid fa-users text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-ink">All Families</p>
+                            <p class="text-sm text-muted">605 contacts</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date & Time -->
+                <div class="space-y-4">
+                    <label class="text-xs font-bold uppercase tracking-widest text-muted">Schedule</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white border border-line rounded-2xl p-5 space-y-2">
+                            <span class="text-[10px] font-bold text-muted uppercase tracking-wider">Date</span>
+                            <div class="flex items-center justify-between group cursor-pointer">
+                                <span class="font-bold">August 15</span>
+                                <i class="fa-solid fa-calendar text-muted group-hover:text-accent transition-colors"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white border border-line rounded-2xl p-5 space-y-2">
+                            <span class="text-[10px] font-bold text-muted uppercase tracking-wider">Time</span>
+                            <div class="flex items-center justify-between group cursor-pointer">
+                                <span class="font-bold">8:00 AM</span>
+                                <i class="fa-solid fa-clock text-muted group-hover:text-accent transition-colors"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-muted italic px-2">Timezone: Pacific Daylight Time (PDT)</p>
+                </div>
+
+                <!-- Approval Context -->
+                <div class="bg-accentSoft/50 rounded-2xl p-6 border border-accentSoft flex gap-4">
+                    <i class="fa-solid fa-shield-check text-accent mt-1"></i>
+                    <div class="space-y-1">
+                        <p class="text-xs font-bold text-accent uppercase tracking-wider">Approval Required</p>
+                        <p class="text-xs text-ink leading-relaxed">This newsletter will be sent to <b>Mrs. Higgins</b> for final review before it's scheduled.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile/Small screen fallback button -->
+            <div class="mt-12 md:hidden">
+                <a href="Status__desktop.html?state=waiting" class="w-full bg-accent text-white py-4 rounded-full font-bold flex items-center justify-center gap-2">
+                    Send for Approval
+                </a>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Recipient Drawer -->
+    <div id="drawerOverlay" onclick="toggleDrawer()" class="drawer-overlay fixed inset-0 bg-ink/40 z-[60] backdrop-blur-sm"></div>
+    <div id="drawer" class="drawer fixed top-0 right-0 h-full w-full max-w-md bg-white z-[70] shadow-2xl flex flex-col">
+        <div class="p-8 border-b border-line flex items-center justify-between">
+            <h3 class="font-serif text-2xl font-bold">Select Recipients</h3>
+            <button onclick="toggleDrawer()" class="w-10 h-10 rounded-full border border-line flex items-center justify-center text-muted hover:text-ink transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-8 space-y-6">
+            <div class="space-y-3">
+                <div class="flex items-center gap-3 p-4 bg-parchment border-2 border-accent rounded-2xl cursor-pointer">
+                    <div class="w-5 h-5 rounded-full border-4 border-accent bg-white"></div>
+                    <div class="flex-1">
+                        <p class="font-bold text-sm">All Families</p>
+                        <p class="text-xs text-muted">605 contacts · Main list</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-4 border border-line rounded-2xl cursor-pointer hover:border-accent/40 transition-colors">
+                    <div class="w-5 h-5 rounded-full border-2 border-line bg-white"></div>
+                    <div class="flex-1">
+                        <p class="font-bold text-sm">Staff Only</p>
+                        <p class="text-xs text-muted">42 contacts · Internal</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-4 border border-line rounded-2xl cursor-pointer hover:border-accent/40 transition-colors">
+                    <div class="w-5 h-5 rounded-full border-2 border-line bg-white"></div>
+                    <div class="flex-1">
+                        <p class="font-bold text-sm">PTA Board</p>
+                        <p class="text-xs text-muted">12 contacts · Leadership</p>
+                    </div>
+                </div>
+            </div>
+
+            <button class="w-full py-4 border border-dashed border-line rounded-2xl text-xs font-bold text-muted hover:border-accent hover:text-accent transition-colors">
+                + Create New Segment
+            </button>
+        </div>
+        <div class="p-8 border-t border-line">
+            <button onclick="toggleDrawer()" class="w-full bg-ink text-white py-4 rounded-full font-bold hover:bg-black transition-colors">
+                Apply Selection
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function toggleDrawer() {
+            document.body.classList.toggle('drawer-open');
+        }
+    </script>
+
+</body>
+</html>
