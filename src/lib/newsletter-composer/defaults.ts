@@ -468,8 +468,21 @@ export function ensureStoriesForEvents(
     if (!story) {
       story = { ...storyFromEvent(event), included: true };
       next = [...next, story];
-    } else if (!story.included) {
-      story = { ...story, included: true };
+    } else {
+      const fresh = storyFromEvent(event);
+      story = {
+        ...story,
+        included: true,
+        // Prefer live event artwork whenever the story is missing an image.
+        imageUrl: story.imageUrl?.trim() || fresh.imageUrl,
+        title: story.title?.trim() || fresh.title,
+        date: story.date ?? fresh.date,
+        time: story.time ?? fresh.time,
+        location: story.location ?? fresh.location,
+        messaging: story.messaging?.trim() || fresh.messaging,
+        ctaLabel: story.ctaLabel?.trim() || fresh.ctaLabel,
+        ctaUrl: story.ctaUrl?.trim() || fresh.ctaUrl,
+      };
       next = next.map((s) => (s.id === story!.id ? story! : s));
     }
     storyIds.push(story.id);
@@ -809,6 +822,10 @@ export function normalizeComposerState(
         messaging: prev.messaging || fresh.messaging,
         ctaLabel: prev.ctaLabel || fresh.ctaLabel,
         ctaUrl: prev.ctaUrl || fresh.ctaUrl,
+        imageUrl:
+          typeof prev.imageUrl === "string" && prev.imageUrl.trim()
+            ? prev.imageUrl
+            : fresh.imageUrl,
         imageLink: typeof prev.imageLink === "string" ? prev.imageLink : fresh.imageLink,
         imageAlt: typeof prev.imageAlt === "string" ? prev.imageAlt : fresh.imageAlt,
         included: Boolean(prev.included),

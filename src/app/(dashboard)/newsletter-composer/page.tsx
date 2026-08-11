@@ -1,4 +1,5 @@
 import { NewsletterBlockBuilder } from "@/components/newsletters/builder/NewsletterBlockBuilder";
+import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
 import { getEventVolunteerSignupUrls } from "@/lib/homepage-composer/volunteer-links";
 import type { NewsletterComposerEvent } from "@/lib/newsletter-composer/types";
@@ -23,20 +24,25 @@ export default async function NewsletterComposerPage({
   const { newsletterId } = await searchParams;
   const organization = await getLatestOrganization();
   const events = await getCampaignPageEvents(organization?.id ?? null);
-  const volunteerUrls = await getEventVolunteerSignupUrls(
-    events.map((event) => event.id),
-  );
+  const [volunteerUrls, artworkByEvent] = await Promise.all([
+    getEventVolunteerSignupUrls(events.map((event) => event.id)),
+    getEventArtworkMap(events.map((event) => event.id)),
+  ]);
 
-  const composerEvents: NewsletterComposerEvent[] = events.map((event) => ({
-    id: event.id,
-    title: event.title,
-    description: event.description ?? "",
-    date: event.date,
-    time: event.time,
-    location: event.location ?? null,
-    imageUrl: event.approvedSquareImageUrl,
-    volunteerSignupUrl: volunteerUrls.get(event.id) ?? "",
-  }));
+  const composerEvents: NewsletterComposerEvent[] = events.map((event) => {
+    const artworkUrl = artworkByEvent.get(event.id)?.imageUrl?.trim() || null;
+    return {
+      id: event.id,
+      title: event.title,
+      description: event.description ?? "",
+      date: event.date,
+      time: event.time,
+      location: event.location ?? null,
+      // Prefer campaign artwork (Create with AI / Files), then approved square.
+      imageUrl: artworkUrl || event.approvedSquareImageUrl || null,
+      volunteerSignupUrl: volunteerUrls.get(event.id) ?? "",
+    };
+  });
 
   const serverNewsletter =
     newsletterId && organization

@@ -464,20 +464,18 @@ function MessageSettings({
   );
 }
 
-const EVENT_LAYOUTS: { id: NewsletterEventBlockLayout; label: string }[] = [
-  { id: "featured", label: "Featured" },
-  { id: "card", label: "Card" },
-  { id: "artwork-only", label: "Artwork only" },
-  { id: "compact", label: "Compact" },
-];
-
-const EVENT_COMPOSITE_LAYOUTS: {
+const EVENT_LAYOUT_TILES: {
   id: NewsletterEventInsertLayout;
   label: string;
+  kind: "single" | "composite";
 }[] = [
-  { id: "textImage", label: "Text + image" },
-  { id: "columns", label: "2/3 column" },
-  { id: "grid", label: "Grid" },
+  { id: "featured", label: "Featured", kind: "single" },
+  { id: "card", label: "Card", kind: "single" },
+  { id: "artwork-only", label: "Artwork only", kind: "single" },
+  { id: "compact", label: "Compact", kind: "single" },
+  { id: "textImage", label: "Text + image", kind: "composite" },
+  { id: "columns", label: "2/3 column", kind: "composite" },
+  { id: "grid", label: "Grid", kind: "composite" },
 ];
 
 function EventSettings({
@@ -514,44 +512,32 @@ function EventSettings({
           <div className="space-y-3">
             <label className={fieldLabelClass()}>Event layout</label>
             <div className="grid grid-cols-2 gap-2">
-              {EVENT_LAYOUTS.map((l) => (
-                <button
-                  key={l.id}
-                  type="button"
-                  onClick={() => onPatchBlock({ eventLayout: l.id })}
-                  className={cn(
-                    "rounded-xl border p-2.5 text-center text-[11px] font-bold transition",
-                    block.eventLayout === l.id
-                      ? "border-2 border-cos-brand-sage bg-cos-brand-sage-soft text-cos-brand-sage"
-                      : "border-cos-border bg-cos-card text-cos-muted hover:border-cos-brand-sage",
-                  )}
-                >
-                  {l.label}
-                </button>
-              ))}
+              {EVENT_LAYOUT_TILES.map((l) => {
+                const selected =
+                  l.kind === "single" && block.eventLayout === l.id;
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => {
+                      if (l.kind === "composite") {
+                        onConvertEventLayout?.(l.id);
+                        return;
+                      }
+                      onPatchBlock({ eventLayout: l.id as NewsletterEventBlockLayout });
+                    }}
+                    className={cn(
+                      "rounded-xl border p-2.5 text-center text-[11px] font-bold transition",
+                      selected
+                        ? "border-2 border-cos-brand-sage bg-cos-brand-sage-soft text-cos-brand-sage"
+                        : "border-cos-border bg-cos-card text-cos-muted hover:border-cos-brand-sage",
+                    )}
+                  >
+                    {l.label}
+                  </button>
+                );
+              })}
             </div>
-            {onConvertEventLayout ? (
-              <>
-                <p className="pt-1 text-[10px] font-bold tracking-[0.12em] text-cos-muted uppercase">
-                  Multi-event layouts
-                </p>
-                <div className="grid grid-cols-1 gap-2">
-                  {EVENT_COMPOSITE_LAYOUTS.map((l) => (
-                    <button
-                      key={l.id}
-                      type="button"
-                      onClick={() => onConvertEventLayout(l.id)}
-                      className="rounded-xl border border-cos-border bg-cos-card p-2.5 text-left text-[11px] font-bold text-cos-muted transition hover:border-cos-brand-sage hover:text-cos-brand-sage"
-                    >
-                      {l.label}
-                      <span className="mt-0.5 block font-medium normal-case tracking-normal text-cos-muted">
-                        Select multiple events to fill this layout
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : null}
           </div>
 
           <div className="space-y-3 border-t border-cos-border pt-4">

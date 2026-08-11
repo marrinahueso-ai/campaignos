@@ -711,6 +711,82 @@ export async function canCurrentUserManageNewsletterContacts(): Promise<boolean>
   return hasPermission("manage_newsletter_contacts");
 }
 
+const DELETABLE_NEWSLETTER_STATUSES = new Set([
+  "draft",
+  "changes_requested",
+  "needs_approval",
+  "approved",
+  "failed",
+]);
+
+/**
+ * Permanently delete a newsletter (and cascaded versions).
+ * Blocked for scheduled / sending / sent issues.
+ */
+export async function deleteNewsletter(input: {
+  newsletterId: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const draftAccess = await hasPermission("draft_edit");
+  const sendAccess = await hasPermission("send_newsletter");
+  if (!draftAccess && !sendAccess) {
+    return { ok: false, error: "You do not have permission to delete newsletters." };
+  }
+
+  const context = await requireNewsletterContext();
+  if (!context.ok) return { ok: false, error: context.error };
+
+  const newsletterId = input.newsletterId.trim();
+  if (!newsletterId) return { ok: false, error: "Newsletter id is required." };
+
+  const existing = await getNewsletterById(context.organizationId, newsletterId);
+  if (!existing) return { ok: false, error: "Newsletter not found." };
+
+  if (!DELETABLE_NEWSLETTER_STATUSES.has(existing.status)) {
+    return {
+      ok: false,
+      error:
+        existing.status === "scheduled"
+          ? "Cancel the schedule before deleting this newsletter."
+          : existing.status === "sending"
+            ? "This newsletter is currently sending and can’t be deleted yet."
+            : "Sent newsletters can’t be deleted from the library.",
+    };
+  }
+
+  const supabase = await createClient();
+  const { buildNewsletterMilestoneId } = await import("@/lib/newsletter/approval");
+  const milestoneId = buildNewsletterMilestoneId(newsletterId);
+
+  // Clear Approvals hub rows for this issue (not FK-cascaded from newsletters).
+  await supabase
+    .from("approval_scheduling_items")
+    .delete()
+    .eq("organization_id", context.organizationId)
+    .eq("campaign_milestone_id", milestoneId);
+
+  const { error } = await supabase
+    .from("newsletters")
+    .delete()
+    .eq("id", newsletterId)
+    .eq("organization_id", context.organizationId);
+
+  if (error) {
+    console.error("Failed to delete newsletter:", error.message);
+    return { ok: false, error: "Could not delete that newsletter. Try again." };
+  }
+
+  await logNewsletterAuditEvent({
+    organizationId: context.organizationId,
+    newsletterId,
+    actorUserId: context.actorUserId,
+    eventType: "deleted",
+    detail: { status: existing.status, title: existing.title },
+  }).catch(() => undefined);
+
+  revalidateNewsletter(newsletterId);
+  return { ok: true };
+}
+
 /** Persist org newsletter From / Reply-To (authorized domain only). */
 export async function updateNewsletterSenderProfile(input: {
   fromDisplayName?: string;

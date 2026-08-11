@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Plus, Users } from "lucide-react";
+import { Mail, Plus, Trash2, Users } from "lucide-react";
+import { useState, useTransition } from "react";
 
 import { NewsletterLibraryCardPreview } from "@/components/newsletters/NewsletterLibraryCardPreview";
 import { NewsletterStatusBadge } from "@/components/newsletters/NewsletterStatusBadge";
+import { deleteNewsletter } from "@/lib/newsletter/actions";
 import {
   NEWSLETTER_LIBRARY_FILTERS,
   newsletterLibraryHref,
@@ -28,6 +30,14 @@ type Props = {
   canManageContacts: boolean;
   recentActivityLabel?: string | null;
 };
+
+const DELETABLE_STATUSES = new Set<NewsletterStatus>([
+  "draft",
+  "changes_requested",
+  "needs_approval",
+  "approved",
+  "failed",
+]);
 
 function cardCta(status: NewsletterStatus): string {
   switch (status) {
@@ -65,6 +75,10 @@ function scheduleOrSentLabel(newsletter: Newsletter): string {
   return `Updated ${formatDateTime(newsletter.updatedAt)}`;
 }
 
+function canDeleteNewsletter(status: NewsletterStatus): boolean {
+  return DELETABLE_STATUSES.has(status);
+}
+
 export function NewsletterLibraryShell({
   cards,
   filter,
@@ -72,6 +86,9 @@ export function NewsletterLibraryShell({
   recentActivityLabel,
 }: Props) {
   const router = useRouter();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const visible =
     filter === "templates"
@@ -87,21 +104,43 @@ export function NewsletterLibraryShell({
     router.replace(qs ? `/newsletters?${qs}` : "/newsletters");
   }
 
+  function handleDelete(newsletter: Newsletter) {
+    const label = newsletter.title?.trim() || "this newsletter";
+    if (
+      !window.confirm(
+        `Delete “${label}”? This permanently removes the draft and can’t be undone.`,
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setPendingId(newsletter.id);
+    startTransition(async () => {
+      const result = await deleteNewsletter({ newsletterId: newsletter.id });
+      setPendingId(null);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   return (
-    <div className="studio-page space-y-10 pb-16">
-      <header className="grid gap-10 lg:grid-cols-12 lg:items-start">
-        <div className="lg:col-span-7 space-y-5 pt-2">
+    <div className="studio-page space-y-7 pb-16">
+      <header className="grid gap-6 lg:grid-cols-12 lg:items-center">
+        <div className="lg:col-span-7 space-y-4 pt-1">
           <p className="studio-eyebrow">Your Library</p>
-          <h1 className="font-display text-[clamp(2.5rem,6vw,4.5rem)] font-semibold leading-[0.95] tracking-[-0.03em] text-cos-text">
+          <h1 className="font-display text-[clamp(2rem,4.5vw,3.25rem)] font-semibold leading-[0.98] tracking-[-0.03em] text-cos-text">
             Newsletters
           </h1>
-          <p className="max-w-[36ch] text-lg leading-relaxed text-cos-muted">
+          <p className="max-w-[40ch] text-base leading-relaxed text-cos-muted">
             Create, review, send, and revisit your school newsletters — all in one place.
           </p>
           <div className="flex flex-wrap gap-2">
             <Link
               href="/newsletters/new"
-              className="inline-flex items-center gap-2 rounded-full bg-cos-primary px-6 py-3 text-sm font-bold text-[#f6f2eb] transition hover:bg-cos-primary-hover"
+              className="inline-flex items-center gap-2 rounded-full bg-cos-primary px-5 py-2.5 text-sm font-bold text-[#f6f2eb] transition hover:bg-cos-primary-hover"
             >
               <Plus className="h-4 w-4" strokeWidth={2} />
               New Newsletter
@@ -109,7 +148,7 @@ export function NewsletterLibraryShell({
             {canManageContacts ? (
               <Link
                 href="/newsletter-contacts"
-                className="inline-flex items-center gap-2 rounded-full border border-cos-border bg-cos-card px-5 py-3 text-sm font-semibold text-cos-text transition hover:border-cos-brand-sage"
+                className="inline-flex items-center gap-2 rounded-full border border-cos-border bg-cos-card px-4 py-2.5 text-sm font-semibold text-cos-text transition hover:border-cos-brand-sage"
               >
                 <Users className="h-4 w-4" strokeWidth={1.75} />
                 Contacts
@@ -118,26 +157,26 @@ export function NewsletterLibraryShell({
           </div>
         </div>
         <div className="relative lg:col-span-5">
-          <div className="aspect-[4/5] overflow-hidden rounded-[28px] border border-cos-border bg-gradient-to-br from-[#e8eee9] via-[#f4f1ea] to-[#dfe8e3] shadow-[0_18px_40px_rgba(28,36,48,0.12)]">
-            <div className="flex h-full flex-col justify-end p-8">
-              <Mail className="mb-4 h-10 w-10 text-[#2f4a3c]" strokeWidth={1.5} />
-              <p className="font-display text-2xl font-semibold text-cos-text">
+          <div className="flex min-h-[140px] items-end overflow-hidden rounded-[20px] border border-cos-border bg-gradient-to-br from-[#e8eee9] via-[#f4f1ea] to-[#dfe8e3] px-6 py-5 shadow-[0_12px_28px_rgba(28,36,48,0.08)] sm:min-h-[160px]">
+            <div>
+              <Mail className="mb-2.5 h-7 w-7 text-[#2f4a3c]" strokeWidth={1.5} />
+              <p className="font-display text-xl font-semibold text-cos-text">
                 Your events. Your way.
               </p>
-              <p className="mt-2 text-sm text-cos-muted">
+              <p className="mt-1 max-w-[32ch] text-sm text-cos-muted">
                 Build from real Hey Ralli events, then approve &amp; schedule in one flow.
               </p>
             </div>
           </div>
           {recentActivityLabel ? (
-            <div className="absolute -bottom-4 -left-3 max-w-xs rounded-2xl border border-cos-border bg-cos-card p-4 shadow-[0_10px_30px_rgba(28,36,48,0.1)]">
-              <div className="mb-1 flex items-center gap-2">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-[#0d7e5e]" />
-                <span className="text-[10px] font-extrabold tracking-[0.14em] text-cos-muted uppercase">
+            <div className="absolute -bottom-3 -left-2 max-w-xs rounded-xl border border-cos-border bg-cos-card px-3 py-2.5 shadow-[0_8px_22px_rgba(28,36,48,0.08)]">
+              <div className="mb-0.5 flex items-center gap-2">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#0d7e5e]" />
+                <span className="text-[9px] font-extrabold tracking-[0.14em] text-cos-muted uppercase">
                   Live updates
                 </span>
               </div>
-              <p className="text-sm font-medium text-cos-text">{recentActivityLabel}</p>
+              <p className="text-xs font-medium text-cos-text">{recentActivityLabel}</p>
             </div>
           ) : null}
         </div>
@@ -162,6 +201,12 @@ export function NewsletterLibraryShell({
           ))}
         </div>
       </div>
+
+      {error ? (
+        <p className="rounded-xl border border-cos-error/30 bg-cos-error/5 px-4 py-3 text-sm text-cos-error">
+          {error}
+        </p>
+      ) : null}
 
       {filter === "templates" ? (
         <div className="rounded-[22px] border border-cos-border bg-cos-card px-6 py-12 text-center shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
@@ -196,45 +241,70 @@ export function NewsletterLibraryShell({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visible.map(({ newsletter, audienceName, audienceCount }) => {
             const href = newsletterLibraryHref(newsletter);
             const whenLabel = scheduleOrSentLabel(newsletter);
             const previewState = newsletter.composerState;
+            const deletable = canDeleteNewsletter(newsletter.status);
+            const deleting = isPending && pendingId === newsletter.id;
 
             return (
-              <Link key={newsletter.id} href={href} className="group block">
-                <article className="flex h-[400px] flex-col overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition group-hover:border-[#6b8171] group-hover:shadow-[0_12px_32px_rgba(28,36,48,0.1)]">
-                  <div className="relative h-[220px] shrink-0 overflow-hidden border-b border-cos-border">
-                    <NewsletterLibraryCardPreview
-                      state={previewState}
-                      className="h-full w-full transition duration-500 group-hover:scale-[1.02]"
-                    />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(28,36,48,0.72)] via-[rgba(28,36,48,0.2)] to-transparent px-3.5 pb-3 pt-10 opacity-0 transition group-hover:opacity-100">
-                      <span className="inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-bold text-cos-text">
-                        {cardCta(newsletter.status)}
-                      </span>
+              <div key={newsletter.id} className="group relative">
+                <Link href={href} className="block">
+                  <article className="flex h-[300px] flex-col overflow-hidden rounded-[18px] border border-cos-border bg-cos-card shadow-[0_6px_20px_rgba(28,36,48,0.05)] transition group-hover:border-[#6b8171] group-hover:shadow-[0_10px_26px_rgba(28,36,48,0.09)]">
+                    <div className="relative h-[160px] shrink-0 overflow-hidden border-b border-cos-border">
+                      <NewsletterLibraryCardPreview
+                        state={previewState}
+                        className="h-full w-full transition duration-500 group-hover:scale-[1.02]"
+                      />
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(28,36,48,0.72)] via-[rgba(28,36,48,0.2)] to-transparent px-3 pb-2.5 pt-8 opacity-0 transition group-hover:opacity-100">
+                        <span className="inline-flex rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-cos-text">
+                          {cardCta(newsletter.status)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex min-h-0 flex-1 flex-col gap-1.5 px-3.5 py-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="line-clamp-2 min-w-0 font-display text-lg font-semibold leading-snug text-cos-text">
-                        {newsletter.title ||
-                          previewState.issueName?.trim() ||
-                          "Untitled newsletter"}
-                      </h3>
-                      <NewsletterStatusBadge status={newsletter.status} />
+                    <div className="flex min-h-0 flex-1 flex-col gap-1 px-3 py-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="line-clamp-2 min-w-0 pr-6 font-display text-base font-semibold leading-snug text-cos-text">
+                          {newsletter.title ||
+                            previewState.issueName?.trim() ||
+                            "Untitled newsletter"}
+                        </h3>
+                        <NewsletterStatusBadge status={newsletter.status} />
+                      </div>
+                      <p className="truncate text-xs text-cos-muted">
+                        {audienceSummary(audienceName, audienceCount)}
+                      </p>
+                      <p className="mt-auto truncate text-[11px] font-semibold text-cos-muted">
+                        {whenLabel}
+                      </p>
                     </div>
-                    <p className="truncate text-sm text-cos-muted">
-                      {audienceSummary(audienceName, audienceCount)}
-                    </p>
-                    <p className="mt-auto truncate text-xs font-semibold text-cos-muted">
-                      {whenLabel}
-                    </p>
-                  </div>
-                </article>
-              </Link>
+                  </article>
+                </Link>
+
+                {deletable ? (
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    aria-label={`Delete ${newsletter.title || "newsletter"}`}
+                    title="Delete newsletter"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDelete(newsletter);
+                    }}
+                    className={cn(
+                      "absolute top-2.5 right-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-cos-border bg-white/95 text-cos-muted shadow-sm transition hover:border-cos-error hover:text-cos-error",
+                      "opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
+                      deleting && "opacity-60",
+                    )}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" strokeWidth={1.85} />
+                  </button>
+                ) : null}
+              </div>
             );
           })}
         </div>

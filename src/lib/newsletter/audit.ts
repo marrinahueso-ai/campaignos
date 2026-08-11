@@ -20,7 +20,8 @@ export type NewsletterAuditEventType =
   | "contact_imported"
   | "contact_suppressed"
   | "audience_created"
-  | "sender_profile_updated";
+  | "sender_profile_updated"
+  | "deleted";
 
 export interface LogNewsletterAuditEventInput {
   organizationId: string;

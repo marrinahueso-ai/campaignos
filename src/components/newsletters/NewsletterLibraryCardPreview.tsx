@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils/cn";
 
 /** Email content width used when scaling into the card thumbnail. */
 const PREVIEW_SOURCE_WIDTH = 560;
-/** Fits ~220px-tall preview windows across the 3-column library grid. */
-const PREVIEW_SCALE = 0.4;
+/** Fits ~160px-tall preview windows across the library grid. */
+const PREVIEW_SCALE = 0.32;
 
 /**
  * Miniature newsletter thumbnail for Library cards.

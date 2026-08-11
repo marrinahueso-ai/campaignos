@@ -17,15 +17,14 @@ function formatEventMeta(event: NewsletterComposerEvent): string {
 export const EVENT_INSERT_LAYOUTS: {
   id: NewsletterEventInsertLayout;
   label: string;
-  hint: string;
 }[] = [
-  { id: "featured", label: "Featured", hint: "One rich card per event" },
-  { id: "card", label: "Card", hint: "One card per event" },
-  { id: "artwork-only", label: "Artwork only", hint: "Image per event" },
-  { id: "compact", label: "Compact", hint: "Small row per event" },
-  { id: "textImage", label: "Text + image", hint: "One section per event" },
-  { id: "columns", label: "2/3 column", hint: "Side-by-side from selection" },
-  { id: "grid", label: "Grid", hint: "All selected in a grid" },
+  { id: "featured", label: "Featured" },
+  { id: "card", label: "Card" },
+  { id: "artwork-only", label: "Artwork only" },
+  { id: "compact", label: "Compact" },
+  { id: "textImage", label: "Text + image" },
+  { id: "columns", label: "2/3 column" },
+  { id: "grid", label: "Grid" },
 ];
 
 type Props = {
@@ -176,25 +175,13 @@ export function EventPickerModal({
                     type="button"
                     onClick={() => setLayout(item.id)}
                     className={cn(
-                      "rounded-xl border px-2.5 py-2 text-left transition",
+                      "rounded-xl border p-2.5 text-center text-[11px] font-bold transition",
                       layout === item.id
-                        ? "border-2 border-cos-brand-sage bg-cos-brand-sage-soft"
-                        : "border-cos-border bg-cos-card hover:border-cos-brand-sage",
+                        ? "border-2 border-cos-brand-sage bg-cos-brand-sage-soft text-cos-brand-sage"
+                        : "border-cos-border bg-cos-card text-cos-muted hover:border-cos-brand-sage",
                     )}
                   >
-                    <span
-                      className={cn(
-                        "block text-[11px] font-bold",
-                        layout === item.id
-                          ? "text-cos-brand-sage"
-                          : "text-cos-text",
-                      )}
-                    >
-                      {item.label}
-                    </span>
-                    <span className="mt-0.5 block text-[10px] text-cos-muted">
-                      {item.hint}
-                    </span>
+                    {item.label}
                   </button>
                 ))}
               </div>
