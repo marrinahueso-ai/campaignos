@@ -38,8 +38,10 @@ export function CanvasBlockFrame({
         role="button"
         tabIndex={0}
         draggable
+        data-canvas-block-id={block.id}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
+        onPointerDown={onSelect}
         onClick={onSelect}
         className={cn(
           "group relative cursor-pointer border border-dashed px-6 py-4 text-center text-xs font-semibold text-cos-muted transition",
@@ -49,7 +51,11 @@ export function CanvasBlockFrame({
         )}
       >
         Empty {block.kind} block — click to edit in the panel on the right.
-        <BlockControls onDuplicate={onDuplicate} onDelete={onDelete} />
+        <BlockControls
+          visible={selected}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+        />
       </div>
     );
   }
@@ -59,8 +65,10 @@ export function CanvasBlockFrame({
       role="button"
       tabIndex={0}
       draggable
+      data-canvas-block-id={block.id}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
+      onPointerDown={onSelect}
       onClick={onSelect}
       className={cn(
         "group relative cursor-pointer border border-transparent px-6 py-3 transition [&_a]:pointer-events-none",
@@ -70,20 +78,31 @@ export function CanvasBlockFrame({
       )}
     >
       <div dangerouslySetInnerHTML={{ __html: fragment }} />
-      <BlockControls onDuplicate={onDuplicate} onDelete={onDelete} />
+      <BlockControls
+        visible={selected}
+        onDuplicate={onDuplicate}
+        onDelete={onDelete}
+      />
     </div>
   );
 }
 
 function BlockControls({
+  visible,
   onDuplicate,
   onDelete,
 }: {
+  visible: boolean;
   onDuplicate: () => void;
   onDelete: () => void;
 }) {
   return (
-    <div className="pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+    <div
+      className={cn(
+        "pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 transition-opacity",
+        visible ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+      )}
+    >
       <div className="pointer-events-auto flex items-center rounded-full border border-cos-border bg-white/95 p-1 shadow-[0_8px_20px_rgba(28,36,48,0.14)] backdrop-blur-sm">
         <span className="flex h-8 w-8 cursor-grab items-center justify-center text-cos-muted">
           <GripVertical className="h-3.5 w-3.5" />

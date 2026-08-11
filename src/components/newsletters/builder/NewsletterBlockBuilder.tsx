@@ -114,9 +114,12 @@ export function NewsletterBlockBuilder({
 
   const stateRef = useRef(state);
   stateRef.current = state;
+  const selectedBlockIdRef = useRef<string | null>(selectedBlockId);
+  selectedBlockIdRef.current = selectedBlockId;
   const newsletterIdRef = useRef(initialNewsletterId);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragIdRef = useRef<string | null>(null);
+  const canvasScrollRef = useRef<HTMLElement | null>(null);
 
   const canvasBlocks = state.canvasBlocks ?? [];
   const selectedBlock = canvasBlocks.find((b) => b.id === selectedBlockId) ?? null;
@@ -237,9 +240,16 @@ export function NewsletterBlockBuilder({
     return uploaded.url;
   }
 
+  function selectBlock(blockId: string) {
+    selectedBlockIdRef.current = blockId;
+    setSelectedBlockId(blockId);
+  }
+
   function insertBlock(kind: NewsletterCanvasBlockKind) {
     const block = newCanvasBlock(kind);
-    const afterId = selectedBlockId;
+    // Read from ref so palette clicks never use a stale selection
+    // (React Compiler / memoized handlers can otherwise append at end).
+    const afterId = selectedBlockIdRef.current;
     patch((prev) => ({
       ...prev,
       canvasBlocks: insertCanvasBlockAfter(
@@ -248,7 +258,13 @@ export function NewsletterBlockBuilder({
         afterId,
       ),
     }));
-    setSelectedBlockId(block.id);
+    selectBlock(block.id);
+    requestAnimationFrame(() => {
+      const el = canvasScrollRef.current?.querySelector(
+        `[data-canvas-block-id="${CSS.escape(block.id)}"]`,
+      );
+      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
   }
 
   function handlePaletteClick(kind: NewsletterCanvasBlockKind | "event-picker") {
@@ -278,7 +294,7 @@ export function NewsletterBlockBuilder({
 
     if (target.blockId === null) {
       const block = newCanvasBlock("event", { storyId });
-      const afterId = selectedBlockId;
+      const afterId = selectedBlockIdRef.current;
       patch((p) => ({
         ...p,
         stories,
@@ -288,7 +304,13 @@ export function NewsletterBlockBuilder({
           afterId,
         ),
       }));
-      setSelectedBlockId(block.id);
+      selectBlock(block.id);
+      requestAnimationFrame(() => {
+        const el = canvasScrollRef.current?.querySelector(
+          `[data-canvas-block-id="${CSS.escape(block.id)}"]`,
+        );
+        el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
     } else {
       patch((p) => ({
         ...p,
@@ -297,7 +319,7 @@ export function NewsletterBlockBuilder({
           b.id === target.blockId ? { ...b, storyId } : b,
         ),
       }));
-      setSelectedBlockId(target.blockId);
+      selectBlock(target.blockId);
     }
   }
 
@@ -308,7 +330,7 @@ export function NewsletterBlockBuilder({
       if (idx < 0) return prev;
       const copy = duplicateCanvasBlock(blocks[idx]!);
       const next = [...blocks.slice(0, idx + 1), copy, ...blocks.slice(idx + 1)];
-      setSelectedBlockId(copy.id);
+      selectBlock(copy.id);
       return { ...prev, canvasBlocks: next };
     });
   }
@@ -331,7 +353,10 @@ export function NewsletterBlockBuilder({
       }
       return { ...prev, stories, canvasBlocks: next };
     });
-    setSelectedBlockId((current) => (current === blockId ? null : current));
+    if (selectedBlockIdRef.current === blockId) {
+      selectedBlockIdRef.current = null;
+      setSelectedBlockId(null);
+    }
   }
 
   function handleDragStart(blockId: string) {
@@ -450,7 +475,10 @@ export function NewsletterBlockBuilder({
         </aside>
 
         {/* Center canvas */}
-        <section className="relative flex-1 overflow-y-auto bg-[#f4f1ea] p-10">
+        <section
+          ref={canvasScrollRef}
+          className="relative flex-1 overflow-y-auto bg-[#f4f1ea] p-10"
+        >
           <div className="mx-auto max-w-2xl space-y-0 rounded-sm bg-white shadow-[0_10px_30px_-15px_rgba(44,40,37,0.15)]">
             {canvasBlocks.length === 0 ? (
               <div className="p-16 text-center text-sm text-cos-muted">
@@ -463,7 +491,7 @@ export function NewsletterBlockBuilder({
                   block={block}
                   state={state}
                   selected={block.id === selectedBlockId}
-                  onSelect={() => setSelectedBlockId(block.id)}
+                  onSelect={() => selectBlock(block.id)}
                   onDuplicate={() => handleDuplicate(block.id)}
                   onDelete={() => handleDelete(block.id)}
                   onDragStart={() => handleDragStart(block.id)}
