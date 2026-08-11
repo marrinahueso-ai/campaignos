@@ -34,7 +34,7 @@ export function NewsletterApprovalCardPreview({
         </span>
         <div className="pointer-events-none origin-top-left scale-[0.42] p-2 sm:scale-[0.48]">
           <div className="w-[560px]">
-            <EmailPreviewDesktop state={snapshot} />
+            <EmailPreviewDesktop state={snapshot} showMailChrome={false} />
           </div>
         </div>
       </div>
@@ -97,7 +97,7 @@ export function NewsletterApprovalReviewPreview({
   if (snapshot) {
     return (
       <div className="mb-6 overflow-hidden rounded-[16px] border border-cos-border bg-[#f4f1ea] p-3 shadow-[0_8px_24px_rgba(28,36,48,0.06)]">
-        <EmailPreviewDesktop state={snapshot} />
+        <EmailPreviewDesktop state={snapshot} showMailChrome={false} />
       </div>
     );
   }

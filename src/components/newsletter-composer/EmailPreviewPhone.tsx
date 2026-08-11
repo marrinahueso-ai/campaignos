@@ -64,10 +64,39 @@ export function EmailPreviewPhone({
 
 type EmailPreviewDesktopProps = {
   state: NewsletterComposerState;
+  /**
+   * Fake mail-client frame (window bar + Inbox / Starred / Sent rail).
+   * Keep on in the composer; turn off for Approvals / detail so reviewers
+   * only see the newsletter itself.
+   */
+  showMailChrome?: boolean;
 };
 
-export function EmailPreviewDesktop({ state }: EmailPreviewDesktopProps) {
+export function EmailPreviewDesktop({
+  state,
+  showMailChrome = true,
+}: EmailPreviewDesktopProps) {
   const fragment = exportNewsletterPreviewFragment(state);
+
+  if (!showMailChrome) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_18px_40px_rgba(28,36,48,0.14)]">
+        <div className="border-b border-black/5 bg-white px-5 py-4">
+          <p className="mb-1 text-xs text-cos-muted">
+            From {state.fromName} · to your list
+          </p>
+          <p className="font-display text-xl font-semibold leading-snug text-cos-text sm:text-2xl">
+            {state.subject}
+          </p>
+        </div>
+        <div
+          className="mx-auto max-h-[min(62vh,640px)] max-w-[560px] overflow-y-auto bg-white px-5 py-5 [&_a]:pointer-events-none"
+          dangerouslySetInnerHTML={{ __html: fragment }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-black/10 bg-[#e8e4dc] shadow-[0_18px_40px_rgba(28,36,48,0.14)]">
       <div className="flex items-center gap-2.5 border-b border-black/5 bg-[#f3f0ea] px-3.5 py-2.5">

@@ -557,7 +557,7 @@ export function NewsletterDetailShell({
               : "The approved version."
           }
         >
-          <EmailPreviewDesktop state={previewState} />
+          <EmailPreviewDesktop state={previewState} showMailChrome={false} />
         </SettingsBox>
       </div>
 
