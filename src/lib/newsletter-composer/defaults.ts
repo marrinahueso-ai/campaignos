@@ -243,15 +243,20 @@ export function syncLayoutWithStories(
     detail: "Fixed at top",
   };
 
-  const nonStory = state.layoutBlocks.filter(
+  const layoutBlocks = Array.isArray(state.layoutBlocks)
+    ? state.layoutBlocks
+    : [];
+  const stories = Array.isArray(state.stories) ? state.stories : [];
+
+  const nonStory = layoutBlocks.filter(
     (b) => b.kind !== "story" && b.kind !== "header",
   );
   const messageIdx = nonStory.findIndex((b) => b.kind === "message");
   const insertAt = messageIdx >= 0 ? messageIdx + 1 : 1;
-  const included = state.stories.filter((s) => s.included);
+  const included = stories.filter((s) => s.included);
   const storyBlocks: NewsletterLayoutBlock[] = included
     .map((s) => {
-      const existing = state.layoutBlocks.find((b) => b.storyId === s.id);
+      const existing = layoutBlocks.find((b) => b.storyId === s.id);
       return (
         existing ?? {
           id: `block-story-${s.id}`,

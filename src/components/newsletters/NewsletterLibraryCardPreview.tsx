@@ -9,19 +9,45 @@ const PREVIEW_SOURCE_WIDTH = 560;
 /** Fits ~220px-tall preview windows across the 3-column library grid. */
 const PREVIEW_SCALE = 0.4;
 
+function safePreviewFragment(
+  state: NewsletterComposerState | null | undefined,
+): string | null {
+  if (!state || typeof state !== "object") return null;
+  try {
+    const html = exportNewsletterPreviewFragment(state);
+    return html.trim() ? html : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Miniature newsletter thumbnail for Library cards.
  * Renders the same saved composer HTML as the desktop email preview —
  * scaled and cropped to the top of the issue (no duplicate preview store).
+ * Never throws — a bad snapshot must not blank the Library page.
  */
 export function NewsletterLibraryCardPreview({
   state,
   className,
 }: {
-  state: NewsletterComposerState;
+  state: NewsletterComposerState | null | undefined;
   className?: string;
 }) {
-  const fragment = exportNewsletterPreviewFragment(state);
+  const fragment = safePreviewFragment(state);
+
+  if (!fragment) {
+    return (
+      <div
+        className={cn(
+          "relative flex items-center justify-center overflow-hidden bg-[#e8e4dc]",
+          className,
+        )}
+      >
+        <p className="px-4 text-center text-xs text-cos-muted">No preview yet</p>
+      </div>
+    );
+  }
 
   return (
     <div

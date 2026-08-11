@@ -149,6 +149,10 @@ function isCampaignBuilderActive(pathname: string, _hash: string): boolean {
     pathname.startsWith("/volunteer-composer/") ||
     pathname === "/newsletter-composer" ||
     pathname.startsWith("/newsletter-composer/") ||
+    pathname === "/newsletters" ||
+    pathname.startsWith("/newsletters/") ||
+    pathname === "/newsletter-contacts" ||
+    pathname.startsWith("/newsletter-contacts/") ||
     extractCampaignBuilderEventId(pathname) !== null
   );
 }

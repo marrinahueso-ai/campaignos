@@ -28,7 +28,8 @@ function storyById(
   id: string | null,
 ): NewsletterStory | null {
   if (!id) return null;
-  return state.stories.find((s) => s.id === id) ?? null;
+  const stories = Array.isArray(state.stories) ? state.stories : [];
+  return stories.find((s) => s.id === id) ?? null;
 }
 
 /** Distinct section band so Calendar / Volunteer / Sponsors don't blur together. */
