@@ -8,7 +8,7 @@ import { Calendar, Clock, ShieldCheck, Users, X } from "lucide-react";
 import { EmailPreviewDesktop } from "@/components/newsletter-composer/EmailPreviewPhone";
 import { Button } from "@/components/ui/Button";
 import { newsletterComposerHref } from "@/lib/newsletter/approval";
-import { saveDraft, submitForApproval } from "@/lib/newsletter/actions";
+import { saveDraft, submitForApproval, testSend } from "@/lib/newsletter/actions";
 import type { Newsletter, NewsletterAudience } from "@/lib/newsletter/types";
 import type { NewsletterComposerState } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
@@ -51,6 +51,13 @@ export function NewsletterPreviewSendShell({
     isoToDatetimeLocalValue(newsletter.proposedSendAt),
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [testOpen, setTestOpen] = useState(false);
+  const [testEmails, setTestEmails] = useState("");
+  const [testBusy, setTestBusy] = useState(false);
+  const [testMessage, setTestMessage] = useState<{
+    ok: boolean;
+    text: string;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -115,9 +122,45 @@ export function NewsletterPreviewSendShell({
     });
   }
 
+  async function handleTestSend() {
+    const emails = testEmails
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean);
+    if (emails.length === 0) {
+      setTestMessage({ ok: false, text: "Enter at least one email address." });
+      return;
+    }
+    setTestBusy(true);
+    setTestMessage(null);
+    try {
+      const result = await testSend({
+        newsletterId: newsletter.id,
+        recipientEmails: emails,
+      });
+      setTestMessage(
+        result.ok
+          ? { ok: true, text: `Test sent to ${result.sentTo.join(", ")}.` }
+          : { ok: false, text: result.error },
+      );
+    } catch {
+      setTestMessage({ ok: false, text: "Could not send the test email." });
+    } finally {
+      setTestBusy(false);
+    }
+  }
+
+  const approvalLabel = busy
+    ? isResubmit
+      ? "Resubmitting…"
+      : "Submitting…"
+    : isResubmit
+      ? "Resubmit for Approval"
+      : "Send for Approval";
+
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-[#fcfbf9]">
-      <header className="flex h-16 items-center justify-between border-b border-cos-border bg-white px-4 sm:px-6">
+      <header className="flex h-16 items-center justify-between gap-3 border-b border-cos-border bg-white px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-4">
           <Link
             href={composerHref}
@@ -135,16 +178,75 @@ export function NewsletterPreviewSendShell({
             </p>
           </div>
         </div>
-        <Button type="button" onClick={handleSubmit} disabled={busy}>
-          {busy
-            ? isResubmit
-              ? "Resubmitting…"
-              : "Submitting…"
-            : isResubmit
-              ? "Resubmit for Approval"
-              : "Send for Approval"}
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setTestOpen((open) => !open);
+              setTestMessage(null);
+            }}
+            disabled={busy || testBusy}
+          >
+            Send Test Email
+          </Button>
+          <Button type="button" onClick={handleSubmit} disabled={busy || testBusy}>
+            {approvalLabel}
+          </Button>
+        </div>
       </header>
+
+      {testOpen ? (
+        <div className="border-b border-cos-border bg-white px-4 py-3 sm:px-6">
+          <div className="mx-auto flex max-w-3xl flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              className="h-10 min-w-0 flex-1 rounded-lg border border-cos-border bg-cos-bg px-3 text-sm text-cos-text outline-none focus:border-cos-brand-sage"
+              placeholder="you@school.org, board@school.org"
+              value={testEmails}
+              onChange={(e) => setTestEmails(e.target.value)}
+              disabled={testBusy}
+              aria-label="Test email recipients"
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                onClick={() => void handleTestSend()}
+                disabled={testBusy || !testEmails.trim()}
+              >
+                {testBusy ? "Sending…" : "Send test"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setTestOpen(false);
+                  setTestMessage(null);
+                }}
+                disabled={testBusy}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+          {testMessage ? (
+            <p
+              className={cn(
+                "mx-auto mt-2 max-w-3xl text-sm",
+                testMessage.ok
+                  ? "font-semibold text-cos-brand-sage"
+                  : "text-cos-error",
+              )}
+              role={testMessage.ok ? undefined : "alert"}
+            >
+              {testMessage.text}
+            </p>
+          ) : (
+            <p className="mx-auto mt-2 max-w-3xl text-xs text-cos-muted">
+              Sends a preview to the addresses above — not your full audience.
+            </p>
+          )}
+        </div>
+      ) : null}
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <section className="flex-1 overflow-y-auto bg-[#f5f2eb] p-6 sm:p-10">
@@ -181,51 +283,66 @@ export function NewsletterPreviewSendShell({
                   <p className="text-sm text-cos-muted">
                     {selectedAudience
                       ? `${memberCount} contact${memberCount === 1 ? "" : "s"}`
-                      : "Select from your saved audiences"}
+                      : "Pick who should receive this issue"}
                   </p>
                 </div>
               </div>
-              {audiences.length === 0 ? (
-                <p className="text-xs text-cos-muted">
-                  No audiences yet —{" "}
-                  <Link
-                    href={`/newsletter-contacts?tab=audiences&returnTo=${encodeURIComponent(`/newsletters/${newsletter.id}/preview`)}`}
-                    className="font-semibold underline-offset-2 hover:underline"
-                  >
-                    create one
-                  </Link>
-                  , then return here.
-                </p>
-              ) : null}
             </div>
 
             <div className="space-y-3">
               <p className="text-[10px] font-extrabold tracking-[0.12em] text-cos-muted uppercase">
                 Schedule
               </p>
-              <label className="block rounded-2xl border border-cos-border bg-white p-4">
-                <span className="mb-2 flex items-center gap-2 text-[10px] font-bold tracking-wider text-cos-muted uppercase">
-                  <Calendar className="h-3.5 w-3.5" /> Date &amp; time
-                </span>
-                <input
-                  type="datetime-local"
-                  className="h-10 w-full rounded-lg border border-cos-border bg-cos-card px-3 text-sm text-cos-text outline-none focus:border-cos-brand-sage"
-                  value={proposedSendAt}
-                  onChange={(e) => setProposedSendAt(e.target.value)}
-                  onBlur={() => {
-                    void saveDraft({
-                      newsletterId: newsletter.id,
-                      fields: {
-                        proposedSendAt: datetimeLocalValueToIso(proposedSendAt),
-                      },
-                    });
-                  }}
-                />
-              </label>
-              <p className="px-1 text-[10px] text-cos-muted italic">
-                Approving will schedule this send for the time you choose. Your local timezone is
-                used.
-              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="space-y-1.5">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-cos-muted">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Date
+                  </span>
+                  <input
+                    type="date"
+                    className="h-11 w-full rounded-xl border border-cos-border bg-[#f5f2eb] px-3 text-sm text-cos-text outline-none focus:border-cos-brand-sage"
+                    value={proposedSendAt.slice(0, 10)}
+                    onChange={(e) => {
+                      const date = e.target.value;
+                      const time = proposedSendAt.slice(11, 16) || "08:00";
+                      const next = date ? `${date}T${time}` : "";
+                      setProposedSendAt(next);
+                      void saveDraft({
+                        newsletterId: newsletter.id,
+                        fields: {
+                          proposedSendAt: datetimeLocalValueToIso(next),
+                        },
+                      });
+                    }}
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-cos-muted">
+                    <Clock className="h-3.5 w-3.5" />
+                    Time
+                  </span>
+                  <input
+                    type="time"
+                    className="h-11 w-full rounded-xl border border-cos-border bg-[#f5f2eb] px-3 text-sm text-cos-text outline-none focus:border-cos-brand-sage"
+                    value={proposedSendAt.slice(11, 16)}
+                    onChange={(e) => {
+                      const time = e.target.value;
+                      const date =
+                        proposedSendAt.slice(0, 10) ||
+                        new Date().toISOString().slice(0, 10);
+                      const next = time ? `${date}T${time}` : "";
+                      setProposedSendAt(next);
+                      void saveDraft({
+                        newsletterId: newsletter.id,
+                        fields: {
+                          proposedSendAt: datetimeLocalValueToIso(next),
+                        },
+                      });
+                    }}
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="flex gap-3 rounded-2xl border border-[#e6f3ee] bg-[#e6f3ee]/60 p-5">
@@ -248,14 +365,28 @@ export function NewsletterPreviewSendShell({
               </p>
             ) : null}
 
-            <Button
-              type="button"
-              className="w-full lg:hidden"
-              onClick={handleSubmit}
-              disabled={busy}
-            >
-              {isResubmit ? "Resubmit for Approval" : "Send for Approval"}
-            </Button>
+            <div className="flex flex-col gap-2 lg:hidden">
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  setTestOpen(true);
+                  setTestMessage(null);
+                }}
+                disabled={busy || testBusy}
+              >
+                Send Test Email
+              </Button>
+              <Button
+                type="button"
+                className="w-full"
+                onClick={handleSubmit}
+                disabled={busy || testBusy}
+              >
+                {isResubmit ? "Resubmit for Approval" : "Send for Approval"}
+              </Button>
+            </div>
           </div>
         </aside>
       </div>
