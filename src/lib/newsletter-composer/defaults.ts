@@ -8,6 +8,7 @@ import type {
   NewsletterComposerEvent,
   NewsletterComposerState,
   NewsletterEventBlockLayout,
+  NewsletterEventInsertLayout,
   NewsletterLayoutBlock,
   NewsletterLinkChip,
   NewsletterSocialLink,
@@ -412,6 +413,131 @@ export function insertCanvasBlockAfter(
   const idx = blocks.findIndex((b) => b.id === afterId);
   if (idx < 0) return [...blocks, block];
   return [...blocks.slice(0, idx + 1), block, ...blocks.slice(idx + 1)];
+}
+
+/** Insert several blocks in order immediately after `afterId`. */
+export function insertCanvasBlocksAfter(
+  blocks: NewsletterCanvasBlock[],
+  newBlocks: NewsletterCanvasBlock[],
+  afterId: string | null | undefined,
+): NewsletterCanvasBlock[] {
+  if (newBlocks.length === 0) return blocks;
+  if (!afterId) return [...blocks, ...newBlocks];
+  const idx = blocks.findIndex((b) => b.id === afterId);
+  if (idx < 0) return [...blocks, ...newBlocks];
+  return [...blocks.slice(0, idx + 1), ...newBlocks, ...blocks.slice(idx + 1)];
+}
+
+export function canvasColumnFromEvent(
+  event: NewsletterComposerEvent,
+): NewsletterCanvasColumn {
+  const meta = [event.date, event.time, event.location]
+    .filter((p) => p && String(p).trim())
+    .join(" · ");
+  const description = event.description?.trim() ?? "";
+  return {
+    id: newId("col"),
+    imageUrl: event.imageUrl,
+    imageLink: event.volunteerSignupUrl || "",
+    imageAlt: event.title,
+    heading: event.title,
+    text: [meta, description].filter(Boolean).join("\n"),
+    buttonLabel: event.volunteerSignupUrl ? "Sign up →" : "Learn more →",
+    buttonUrl: event.volunteerSignupUrl || "",
+  };
+}
+
+export function isCompositeEventInsertLayout(
+  layout: NewsletterEventInsertLayout,
+): layout is "textImage" | "columns" | "grid" {
+  return layout === "textImage" || layout === "columns" || layout === "grid";
+}
+
+/**
+ * Ensure stories exist + are included for the given events.
+ * Returns updated stories list and story ids in the same order as `events`.
+ */
+export function ensureStoriesForEvents(
+  stories: NewsletterStory[],
+  events: NewsletterComposerEvent[],
+): { stories: NewsletterStory[]; storyIds: string[] } {
+  let next = [...stories];
+  const storyIds: string[] = [];
+  for (const event of events) {
+    let story = next.find((s) => s.eventId === event.id) ?? null;
+    if (!story) {
+      story = { ...storyFromEvent(event), included: true };
+      next = [...next, story];
+    } else if (!story.included) {
+      story = { ...story, included: true };
+      next = next.map((s) => (s.id === story!.id ? story! : s));
+    }
+    storyIds.push(story.id);
+  }
+  return { stories: next, storyIds };
+}
+
+/**
+ * Build canvas block(s) from a multi-event selection + insert layout.
+ * - featured/card/artwork-only/compact → one `event` block per event
+ * - textImage → one text+image block per event
+ * - columns → one 2/3-column block filled from the selection
+ * - grid → one grid block filled from the selection
+ */
+export function buildBlocksFromEventSelection(
+  events: NewsletterComposerEvent[],
+  layout: NewsletterEventInsertLayout,
+  storyIds: string[],
+): NewsletterCanvasBlock[] {
+  if (events.length === 0) return [];
+
+  if (layout === "grid") {
+    return [
+      newCanvasBlock("grid", {
+        columns: events.map((event) => canvasColumnFromEvent(event)),
+      }),
+    ];
+  }
+
+  if (layout === "columns") {
+    return [
+      newCanvasBlock("columns", {
+        columns: events.map((event) => canvasColumnFromEvent(event)),
+      }),
+    ];
+  }
+
+  if (layout === "textImage") {
+    return events.map((event) => {
+      const meta = [event.date, event.time, event.location]
+        .filter((p) => p && String(p).trim())
+        .join(" · ");
+      return newCanvasBlock("textImage", {
+        heading: event.title,
+        text:
+          event.description?.trim() ||
+          meta ||
+          `${event.title} — details below.`,
+        imageUrl: event.imageUrl,
+        imageLink: event.volunteerSignupUrl || "",
+        imageAlt: event.title,
+        buttonLabel: event.volunteerSignupUrl ? "Sign up →" : "",
+        buttonUrl: event.volunteerSignupUrl || "",
+      });
+    });
+  }
+
+  // Single-event presentation styles — one live event block per selection.
+  return events.map((event, index) =>
+    newCanvasBlock("event", {
+      storyId: storyIds[index] ?? null,
+      eventLayout: layout,
+      showArtwork: true,
+      showDescription: layout !== "artwork-only" && layout !== "compact",
+      showLocation: layout !== "artwork-only",
+      showVolunteerLink: layout !== "artwork-only" && layout !== "compact",
+    }),
+  );
 }
 
 /**

@@ -166,6 +166,17 @@ export type NewsletterEventBlockLayout =
   | "artwork-only"
   | "compact";
 
+/**
+ * Layouts available when adding events from the Event picker.
+ * Single-event styles create one `event` block each; composite layouts
+ * create one grid / columns / textImage block filled from the selection.
+ */
+export type NewsletterEventInsertLayout =
+  | NewsletterEventBlockLayout
+  | "textImage"
+  | "columns"
+  | "grid";
+
 export type NewsletterCanvasListItem = {
   id: string;
   text: string;

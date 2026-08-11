@@ -5,18 +5,21 @@ import { CanvasBlockFrame } from "@/components/newsletters/builder/CanvasBlockFr
 import { EventPickerModal } from "@/components/newsletters/builder/EventPickerModal";
 import { uploadNewsletterComposerArtworkAction } from "@/lib/newsletter-composer/artwork-actions";
 import {
+  buildBlocksFromEventSelection,
   buildInitialState,
   duplicateCanvasBlock,
+  ensureStoriesForEvents,
   insertCanvasBlockAfter,
+  insertCanvasBlocksAfter,
   newCanvasBlock,
   normalizeComposerState,
-  storyFromEvent,
 } from "@/lib/newsletter-composer/defaults";
 import type {
   NewsletterCanvasBlock,
   NewsletterCanvasBlockKind,
   NewsletterComposerEvent,
   NewsletterComposerState,
+  NewsletterEventInsertLayout,
 } from "@/lib/newsletter-composer/types";
 import {
   saveDraft as saveNewsletterDraftAction,
@@ -51,6 +54,16 @@ import {
   useState,
   type DragEvent,
 } from "react";
+
+type EventPickerState =
+  | { mode: "add" }
+  | { mode: "replace"; blockId: string }
+  | {
+      mode: "convert";
+      blockId: string;
+      layout: NewsletterEventInsertLayout;
+      seedEventIds: string[];
+    };
 
 type Props = {
   organizationId: string | null;
@@ -108,7 +121,7 @@ export function NewsletterBlockBuilder({
       : buildInitialState(organizationName, events),
   );
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const [eventPicker, setEventPicker] = useState<{ blockId: string | null } | null>(null);
+  const [eventPicker, setEventPicker] = useState<EventPickerState | null>(null);
   const [saveLabel, setSaveLabel] = useState<string>("");
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
@@ -125,11 +138,18 @@ export function NewsletterBlockBuilder({
   const selectedBlock = canvasBlocks.find((b) => b.id === selectedBlockId) ?? null;
 
   const eventPickerCurrentEventId = (() => {
-    if (!eventPicker?.blockId) return null;
+    if (!eventPicker || eventPicker.mode !== "replace") return null;
     const targetBlock = canvasBlocks.find((b) => b.id === eventPicker.blockId);
     if (!targetBlock?.storyId) return null;
     return state.stories.find((s) => s.id === targetBlock.storyId)?.eventId ?? null;
   })();
+
+  const eventPickerSeedIds =
+    eventPicker?.mode === "convert" ? eventPicker.seedEventIds : undefined;
+  const eventPickerInitialLayout =
+    eventPicker?.mode === "convert" ? eventPicker.layout : "card";
+  const eventPickerMulti =
+    eventPicker?.mode === "add" || eventPicker?.mode === "convert";
 
   const setNewsletterId = useCallback(
     (id: string) => {
@@ -269,58 +289,115 @@ export function NewsletterBlockBuilder({
 
   function handlePaletteClick(kind: NewsletterCanvasBlockKind | "event-picker") {
     if (kind === "event-picker") {
-      setEventPicker({ blockId: null });
+      setEventPicker({ mode: "add" });
       return;
     }
     insertBlock(kind);
   }
 
+  function scrollToBlock(blockId: string) {
+    requestAnimationFrame(() => {
+      const el = canvasScrollRef.current?.querySelector(
+        `[data-canvas-block-id="${CSS.escape(blockId)}"]`,
+      );
+      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }
+
+  /** Change-event on an existing single event block (single pick). */
   function handlePickEvent(event: NewsletterComposerEvent) {
     const target = eventPicker;
     setEventPicker(null);
-    if (!target) return;
+    if (!target || target.mode !== "replace") return;
     const prev = stateRef.current;
-    let story = prev.stories.find((s) => s.eventId === event.id) ?? null;
-    let stories = prev.stories;
-    if (!story) {
-      story = { ...storyFromEvent(event), included: true };
-      stories = [...prev.stories, story];
-    } else if (!story.included) {
-      const included = { ...story, included: true };
-      stories = prev.stories.map((s) => (s.id === included.id ? included : s));
-      story = included;
-    }
-    const storyId = story.id;
+    const { stories, storyIds } = ensureStoriesForEvents(prev.stories, [event]);
+    const storyId = storyIds[0]!;
+    patch((p) => ({
+      ...p,
+      stories,
+      canvasBlocks: (p.canvasBlocks ?? []).map((b) =>
+        b.id === target.blockId ? { ...b, storyId } : b,
+      ),
+    }));
+    selectBlock(target.blockId);
+  }
 
-    if (target.blockId === null) {
-      const block = newCanvasBlock("event", { storyId });
+  /** Multi-add from palette, or convert an event block into grid/columns/text+image. */
+  function handleConfirmMultiEvents(
+    selectedEvents: NewsletterComposerEvent[],
+    layout: NewsletterEventInsertLayout,
+  ) {
+    const target = eventPicker;
+    setEventPicker(null);
+    if (!target || selectedEvents.length === 0) return;
+    if (target.mode === "replace") return;
+
+    const prev = stateRef.current;
+    const { stories, storyIds } = ensureStoriesForEvents(
+      prev.stories,
+      selectedEvents,
+    );
+    const newBlocks = buildBlocksFromEventSelection(
+      selectedEvents,
+      layout,
+      storyIds,
+    );
+    if (newBlocks.length === 0) return;
+
+    if (target.mode === "convert") {
+      patch((p) => {
+        const blocks = p.canvasBlocks ?? [];
+        const idx = blocks.findIndex((b) => b.id === target.blockId);
+        if (idx < 0) {
+          return {
+            ...p,
+            stories,
+            canvasBlocks: [...blocks, ...newBlocks],
+          };
+        }
+        return {
+          ...p,
+          stories,
+          canvasBlocks: [
+            ...blocks.slice(0, idx),
+            ...newBlocks,
+            ...blocks.slice(idx + 1),
+          ],
+        };
+      });
+    } else {
       const afterId = selectedBlockIdRef.current;
       patch((p) => ({
         ...p,
         stories,
-        canvasBlocks: insertCanvasBlockAfter(
+        canvasBlocks: insertCanvasBlocksAfter(
           p.canvasBlocks ?? [],
-          block,
+          newBlocks,
           afterId,
         ),
       }));
-      selectBlock(block.id);
-      requestAnimationFrame(() => {
-        const el = canvasScrollRef.current?.querySelector(
-          `[data-canvas-block-id="${CSS.escape(block.id)}"]`,
-        );
-        el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      });
-    } else {
-      patch((p) => ({
-        ...p,
-        stories,
-        canvasBlocks: (p.canvasBlocks ?? []).map((b) =>
-          b.id === target.blockId ? { ...b, storyId } : b,
-        ),
-      }));
-      selectBlock(target.blockId);
     }
+
+    const focusId = newBlocks[0]!.id;
+    selectBlock(focusId);
+    scrollToBlock(focusId);
+  }
+
+  function openConvertEventLayout(
+    blockId: string,
+    layout: NewsletterEventInsertLayout,
+  ) {
+    const block = stateRef.current.canvasBlocks?.find((b) => b.id === blockId);
+    const story = block?.storyId
+      ? stateRef.current.stories.find((s) => s.id === block.storyId)
+      : null;
+    const seedEventIds = story?.eventId ? [story.eventId] : [];
+    setEventPicker({
+      mode: "convert",
+      blockId,
+      layout,
+      seedEventIds,
+    });
   }
 
   function handleDuplicate(blockId: string) {
@@ -511,7 +588,12 @@ export function NewsletterBlockBuilder({
             onPatchState={patch}
             onPatchBlock={(p) => patchSelectedBlock(() => p)}
             onUploadImage={uploadImage}
-            onChangeEvent={() => setEventPicker({ blockId: selectedBlock.id })}
+            onChangeEvent={() =>
+              setEventPicker({ mode: "replace", blockId: selectedBlock.id })
+            }
+            onConvertEventLayout={(layout) =>
+              openConvertEventLayout(selectedBlock.id, layout)
+            }
             onDuplicate={() => handleDuplicate(selectedBlock.id)}
             onDelete={() => handleDelete(selectedBlock.id)}
           />
@@ -521,9 +603,13 @@ export function NewsletterBlockBuilder({
       <EventPickerModal
         open={eventPicker !== null}
         events={events}
+        multiSelect={eventPickerMulti}
         selectedEventId={eventPickerCurrentEventId}
+        initialSelectedEventIds={eventPickerSeedIds}
+        initialLayout={eventPickerInitialLayout}
         onClose={() => setEventPicker(null)}
         onSelect={handlePickEvent}
+        onConfirmMulti={handleConfirmMultiEvents}
       />
     </div>
   );

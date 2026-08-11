@@ -16,6 +16,7 @@ import type {
   NewsletterComposerEvent,
   NewsletterComposerState,
   NewsletterEventBlockLayout,
+  NewsletterEventInsertLayout,
   NewsletterStory,
 } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
@@ -32,6 +33,8 @@ type Props = {
   onPatchBlock: (patch: Partial<NewsletterCanvasBlock>) => void;
   onUploadImage: (dataUrl: string, assetId: string) => Promise<string | null>;
   onChangeEvent: () => void;
+  /** Convert this event block into grid / columns / text+image via multi-select. */
+  onConvertEventLayout?: (layout: NewsletterEventInsertLayout) => void;
   onDuplicate: () => void;
   onDelete: () => void;
 };
@@ -117,6 +120,7 @@ export function BlockSettingsPanel({
   onPatchBlock,
   onUploadImage,
   onChangeEvent,
+  onConvertEventLayout,
   onDuplicate,
   onDelete,
 }: Props) {
@@ -174,6 +178,7 @@ export function BlockSettingsPanel({
             onPatchBlock={onPatchBlock}
             updateStory={updateStory}
             onChangeEvent={onChangeEvent}
+            onConvertEventLayout={onConvertEventLayout}
             upload={upload}
             busy={busy}
           />
@@ -466,12 +471,22 @@ const EVENT_LAYOUTS: { id: NewsletterEventBlockLayout; label: string }[] = [
   { id: "compact", label: "Compact" },
 ];
 
+const EVENT_COMPOSITE_LAYOUTS: {
+  id: NewsletterEventInsertLayout;
+  label: string;
+}[] = [
+  { id: "textImage", label: "Text + image" },
+  { id: "columns", label: "2/3 column" },
+  { id: "grid", label: "Grid" },
+];
+
 function EventSettings({
   state,
   block,
   onPatchBlock,
   updateStory,
   onChangeEvent,
+  onConvertEventLayout,
   upload,
   busy,
 }: {
@@ -480,6 +495,7 @@ function EventSettings({
   onPatchBlock: (patch: Partial<NewsletterCanvasBlock>) => void;
   updateStory: (storyId: string, patch: Partial<NewsletterStory>) => void;
   onChangeEvent: () => void;
+  onConvertEventLayout?: (layout: NewsletterEventInsertLayout) => void;
   upload: UploadFn;
   busy: Record<string, boolean>;
 }) {
@@ -514,6 +530,28 @@ function EventSettings({
                 </button>
               ))}
             </div>
+            {onConvertEventLayout ? (
+              <>
+                <p className="pt-1 text-[10px] font-bold tracking-[0.12em] text-cos-muted uppercase">
+                  Multi-event layouts
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {EVENT_COMPOSITE_LAYOUTS.map((l) => (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => onConvertEventLayout(l.id)}
+                      className="rounded-xl border border-cos-border bg-cos-card p-2.5 text-left text-[11px] font-bold text-cos-muted transition hover:border-cos-brand-sage hover:text-cos-brand-sage"
+                    >
+                      {l.label}
+                      <span className="mt-0.5 block font-medium normal-case tracking-normal text-cos-muted">
+                        Select multiple events to fill this layout
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : null}
           </div>
 
           <div className="space-y-3 border-t border-cos-border pt-4">
