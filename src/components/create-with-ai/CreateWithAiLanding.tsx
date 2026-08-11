@@ -81,7 +81,7 @@ const ALSO_AVAILABLE: AlsoItem[] = [
   {
     id: "newsletter",
     title: "Newsletter",
-    href: "/newsletters/new",
+    href: "/newsletters",
     artClass: "bg-[linear-gradient(155deg,#0b2f5b,#2f9fb3_50%,#7fd0df)]",
     status: "live",
   },

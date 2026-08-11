@@ -77,7 +77,8 @@ function renderBlockMtk(
 ): { html: string; text: string } | null {
   switch (block.kind) {
     case "header": {
-      const title = state.issueName.split("·")[0]?.trim() || state.issueName;
+      const title = state.issueName.trim() || "Newsletter";
+      const edition = state.issueEdition.trim();
       const htmlParts: string[] = [];
       const textParts: string[] = [];
       if (state.headerImageUrl?.trim()) {
@@ -87,9 +88,9 @@ function renderBlockMtk(
       }
       htmlParts.push(`<h2>${esc(title)}</h2>`);
       textParts.push(title);
-      if (state.issueName.trim() && state.issueName.trim() !== title) {
-        htmlParts.push(`<p>${esc(state.issueName)}</p>`);
-        textParts.push(state.issueName);
+      if (edition) {
+        htmlParts.push(`<p>${esc(edition)}</p>`);
+        textParts.push(edition);
       }
       return {
         html: joinParts(htmlParts, "\n"),

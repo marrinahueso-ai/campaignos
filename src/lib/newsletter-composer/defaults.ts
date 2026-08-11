@@ -603,7 +603,8 @@ export function buildInitialState(
   const org = organizationName?.trim() || "Your organization";
   const state: NewsletterComposerState = {
     subject: `${org} Newsletter — this month’s updates`,
-    issueName: `${org} Newsletter`,
+    issueName: `${org} Scoop`,
+    issueEdition: "",
     fromName: org,
     colors: { ...defaultColors },
     headerImageUrl: null,
@@ -741,6 +742,14 @@ export function normalizeComposerState(
     ...fallback,
     ...s,
     colors: { ...defaultColors, ...(s.colors ?? {}) },
+    issueName:
+      typeof s.issueName === "string" && s.issueName.trim()
+        ? s.issueName
+        : fallback.issueName,
+    issueEdition:
+      typeof s.issueEdition === "string"
+        ? s.issueEdition
+        : fallback.issueEdition,
     stories,
     calendarChips: Array.isArray(s.calendarChips)
       ? s.calendarChips
@@ -789,5 +798,16 @@ export function normalizeComposerState(
 
   merged.layoutBlocks = syncLayoutWithStories(merged);
   merged.canvasBlocks = ensureCanvasBlocks(merged, s.canvasBlocks);
+
+  // Older drafts used a single issueName with " · " between title and edition.
+  if (!merged.issueEdition.trim() && merged.issueName.includes("·")) {
+    const [title, ...rest] = merged.issueName.split("·");
+    const edition = rest.join("·").trim();
+    if (title?.trim() && edition) {
+      merged.issueName = title.trim();
+      merged.issueEdition = edition;
+    }
+  }
+
   return merged;
 }

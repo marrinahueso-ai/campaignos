@@ -111,12 +111,18 @@ function renderBlock(
   const { colors } = state;
   switch (block.kind) {
     case "header": {
-      const title = state.issueName.split("·")[0]?.trim() || state.issueName;
+      const title = state.issueName.trim() || "Newsletter";
+      const edition = state.issueEdition.trim();
       if (state.headerImageUrl) {
+        const img = `
+    <img src="${esc(state.headerImageUrl)}" alt="${esc(state.headerImageAlt.trim() || title)}" width="560" style="display:block;width:100%;max-width:560px;height:auto;border-radius:14px;" />`;
+        const linked = state.headerImageLink.trim()
+          ? `<a href="${esc(state.headerImageLink.trim())}" style="text-decoration:none;">${img}</a>`
+          : img;
         return `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
   <tr><td style="border-radius:14px;overflow:hidden;">
-    <img src="${esc(state.headerImageUrl)}" alt="${esc(title)}" width="560" style="display:block;width:100%;max-width:560px;height:auto;border-radius:14px;" />
+    ${linked}
   </td></tr>
 </table>`;
       }
@@ -125,7 +131,11 @@ function renderBlock(
   <tr>
     <td style="background:linear-gradient(135deg,${esc(colors.primary)},${esc(colors.accent)});border-radius:14px;padding:22px 18px;text-align:center;">
       <div style="font-family:Georgia,serif;font-size:24px;font-weight:700;color:#ffffff;margin:0 0 6px;">${esc(title)}</div>
-      <div style="font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.92);">${esc(state.issueName)}</div>
+      ${
+        edition
+          ? `<div style="font-family:Arial,sans-serif;font-size:13px;color:rgba(255,255,255,0.92);">${esc(edition)}</div>`
+          : ""
+      }
     </td>
   </tr>
 </table>`;

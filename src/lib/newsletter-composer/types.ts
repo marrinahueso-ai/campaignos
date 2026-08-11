@@ -212,7 +212,10 @@ export type NewsletterCanvasBlock = {
 
 export type NewsletterComposerState = {
   subject: string;
+  /** Primary header / newsletter name (line 1), e.g. "Edmondson Scoop". */
   issueName: string;
+  /** Header subtitle / edition (line 2), e.g. "August 2026 edition". */
+  issueEdition: string;
   fromName: string;
   colors: NewsletterBrandColors;
   headerImageUrl: string | null;

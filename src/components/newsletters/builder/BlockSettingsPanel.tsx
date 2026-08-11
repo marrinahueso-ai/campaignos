@@ -401,12 +401,25 @@ function HeroSettings({
         onChangeLink={(v) => onPatchState((p) => ({ ...p, headerImageLink: v }))}
         onChangeAlt={(v) => onPatchState((p) => ({ ...p, headerImageAlt: v }))}
       />
-      <Field label="Issue name">
+      <Field label="Newsletter name">
         <input
           className={textInputClass()}
           value={state.issueName}
+          placeholder="e.g. Edmondson Scoop"
           onChange={(e) => onPatchState((p) => ({ ...p, issueName: e.target.value }))}
         />
+        <p className="mt-1 text-[11px] text-cos-muted">
+          Line 1 on the header — also saves as this newsletter&apos;s name.
+        </p>
+      </Field>
+      <Field label="Edition">
+        <input
+          className={textInputClass()}
+          value={state.issueEdition}
+          placeholder="e.g. August 2026 edition"
+          onChange={(e) => onPatchState((p) => ({ ...p, issueEdition: e.target.value }))}
+        />
+        <p className="mt-1 text-[11px] text-cos-muted">Line 2 on the header.</p>
       </Field>
     </div>
   );
