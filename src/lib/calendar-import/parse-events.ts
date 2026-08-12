@@ -466,6 +466,14 @@ export function parseRawReviewEvents(value: unknown): CalendarReviewEvent[] {
           typeof record.existingEventId === "string"
             ? record.existingEventId
             : null,
+        existingEventName:
+          typeof record.existingEventName === "string"
+            ? record.existingEventName
+            : null,
+        existingEventDate:
+          typeof record.existingEventDate === "string"
+            ? record.existingEventDate
+            : null,
         matchReason:
           typeof record.matchReason === "string" ? record.matchReason : null,
         applyUpdate:

@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 6, 2026  
+**Last updated:** August 12, 2026  
 **Related:** [feature-list.md](../product/feature-list.md) · [testing-guide.md](./testing-guide.md) · [google-calendar.md](../integrations/google-calendar.md) · [architecture.md](../engineering/architecture.md)
 
 > **Not the same as Meta Calendar DnD.** This doc covers **school-year event intake** (ICS / Google / PDF → `events` rows). Rescheduling **approved Meta posts** on the calendar is a separate feature — see [meta-calendar-dnd.md](./meta-calendar-dnd.md).
@@ -65,7 +65,7 @@ Org scoping: events are unique per **school year** (`school_year_id` + source + 
 
 ### Interactive review vs cron / overnight sync
 
-- **Import review UI:** statuses **New / Duplicate / Update / Conflict** with reason text. Update rows offer **Apply** / **Skip** (default Apply). Primary action: **Import**.
+- **Import review UI:** Sync Review summary (new / changed / needs attention). Statuses **New / Duplicate / Update / Conflict** (+ `needs_review`). Update rows show old → new (Hey Ralli vs connected calendar). Conflict / needs-review cards use **Currently in Hey Ralli** · **From your connected calendar** with **Use Calendar Update** / **Keep Hey Ralli Event** / **Keep Both**. Primary action: **Finish Review** (same create / patch / skip import path).
 - **Subscribe cron / Google overnight:** same classification; New/Update/Conflict **stage into Review** (not auto-applied). Unchanged ids skipped; prior-year dates filtered out.
 
 ---

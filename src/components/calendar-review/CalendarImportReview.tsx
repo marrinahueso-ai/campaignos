@@ -2,28 +2,36 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { CalendarReviewChatPanel } from "@/components/calendar-review/CalendarReviewChatPanel";
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  Loader2,
+  TriangleAlert,
+} from "lucide-react";
 import { CalendarReviewEditDialog } from "@/components/calendar-review/CalendarReviewEditDialog";
-import { CalendarReviewPulseFilters } from "@/components/calendar-review/CalendarReviewPulseFilters";
-import { Button } from "@/components/ui/Button";
 import {
   deleteImportedCalendarEventsAction,
   importCalendarEventsAction,
   parseCalendarImportAction,
   saveCalendarReviewEventsAction,
 } from "@/lib/calendar-import/actions";
-import {
-  applyReviewEventFilters,
-  keepCalendarReviewCategory,
-  type CalendarReviewFilter,
-} from "@/lib/calendar-import/review-filters";
 import type { ReviewPlaybookOption } from "@/lib/calendar-import/review-plan-options";
+import {
+  applySyncReviewDecision,
+  buildSyncReviewSummaryCopy,
+  formatSyncReviewShortDate,
+  getSyncReviewChangeDiffs,
+  partitionSyncReviewSections,
+  type SyncReviewDecision,
+} from "@/lib/calendar-import/sync-review-decisions";
 import { cn } from "@/lib/utils/cn";
-import { formatEventDate, getTodayDateString } from "@/lib/utils/dates";
+import { formatEventDate } from "@/lib/utils/dates";
 import type { CalendarParseStatus } from "@/types";
 import type {
-  CalendarEventReviewStatus,
   CalendarReviewData,
   CalendarReviewEvent,
 } from "@/types/calendar-review";
@@ -54,12 +62,6 @@ export function CalendarImportReview({
   const [events, setEvents] = useState<CalendarReviewEvent[]>(data.events);
   const [parseStatus, setParseStatus] = useState(initialParseStatus);
   const [parseError, setParseError] = useState(initialParseError);
-  const [focusEventId, setFocusEventId] = useState<string | null>(
-    () =>
-      data.events.find((event) => event.status === "needs_review")?.id ??
-      data.events[0]?.id ??
-      null,
-  );
   const [editingEvent, setEditingEvent] = useState<CalendarReviewEvent | null>(
     null,
   );
@@ -67,47 +69,16 @@ export function CalendarImportReview({
     initialParseStatus === "imported" || importedEventCount > 0,
   );
   const [importedCount, setImportedCount] = useState(importedEventCount);
+  const [updatedCount, setUpdatedCount] = useState(0);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] =
-    useState<CalendarReviewFilter>(() => {
-      const needs = data.events.filter((e) => e.status === "needs_review").length;
-      const ready = data.events.filter((e) => e.status === "ready").length;
-      const updates = data.events.filter((e) => e.status === "update").length;
-      if (needs > 0) return "needs_review";
-      if (ready > 0) return "ready";
-      if (updates > 0) return "updates";
-      return "ready";
-    });
-  const [showAiChat, setShowAiChat] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const panelRef = useRef<HTMLDivElement>(null);
   const parseStartedRef = useRef(false);
 
-  const today = getTodayDateString();
-  const filteredEvents = useMemo(
-    () =>
-      applyReviewEventFilters(events, {
-        filter: activeFilter,
-        dateFilter: "all",
-        search: "",
-        today,
-      }),
-    [events, activeFilter, today],
+  const sections = useMemo(() => partitionSyncReviewSections(events), [events]);
+  const summaryCopy = useMemo(
+    () => buildSyncReviewSummaryCopy(sections),
+    [sections],
   );
-
-  const focusEvent = useMemo(() => {
-    if (filteredEvents.length === 0) return null;
-    return (
-      filteredEvents.find((event) => event.id === focusEventId) ??
-      filteredEvents[0]
-    );
-  }, [filteredEvents, focusEventId]);
-
-  const queueEvents = useMemo(() => {
-    if (!focusEvent) return filteredEvents;
-    return filteredEvents.filter((event) => event.id !== focusEvent.id);
-  }, [filteredEvents, focusEvent]);
-
   const isImported = parseStatus === "imported" || importComplete;
 
   const persistEvents = useCallback(
@@ -147,13 +118,15 @@ export function CalendarImportReview({
       setEvents(result.events);
       setParseStatus("parsed");
       setParseError(null);
-      setFocusEventId(
-        result.events.find((event) => event.status === "needs_review")?.id ??
-          result.events[0]?.id ??
-          null,
-      );
     });
   }, [importId, parseStatus, initialParseStatus]);
+
+  function handleDecision(eventId: string, decision: SyncReviewDecision) {
+    const nextEvents = events.map((event) =>
+      event.id === eventId ? applySyncReviewDecision(event, decision) : event,
+    );
+    persistEvents(nextEvents);
+  }
 
   function handleSaveEdit(updatedEvent: CalendarReviewEvent) {
     persistEvents(
@@ -166,25 +139,7 @@ export function CalendarImportReview({
     setEditingEvent(null);
   }
 
-  function handlePulseFilterChange(filter: CalendarReviewFilter) {
-    setActiveFilter(filter);
-    requestAnimationFrame(() => {
-      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }
-
-  function handleKeepFocus(event: CalendarReviewEvent) {
-    const nextEvents = keepCalendarReviewCategory(events, event.id);
-    persistEvents(nextEvents);
-    const nextNeeds = nextEvents.find(
-      (entry) =>
-        entry.id !== event.id &&
-        (entry.status === "needs_review" || entry.status === "conflict"),
-    );
-    setFocusEventId(nextNeeds?.id ?? event.id);
-  }
-
-  function handleImportReady() {
+  function handleFinishReview() {
     setActionError(null);
 
     startTransition(async () => {
@@ -206,7 +161,8 @@ export function CalendarImportReview({
         return;
       }
 
-      setImportedCount(result.importedCount + result.updatedCount);
+      setImportedCount(result.importedCount);
+      setUpdatedCount(result.updatedCount);
       setImportComplete(true);
       setParseStatus("imported");
     });
@@ -227,11 +183,6 @@ export function CalendarImportReview({
 
       setEvents(result.events);
       setParseStatus("parsed");
-      setFocusEventId(
-        result.events.find((event) => event.status === "needs_review")?.id ??
-          result.events[0]?.id ??
-          null,
-      );
     });
   }
 
@@ -247,24 +198,46 @@ export function CalendarImportReview({
 
       setImportComplete(false);
       setImportedCount(0);
+      setUpdatedCount(0);
       setParseStatus("parsed");
     });
   }
 
-  const importHref = onGoToImport ? undefined : "/calendar?tab=import";
+  const backControl = onGoToImport ? (
+    <button
+      type="button"
+      onClick={onGoToImport}
+      className="inline-flex items-center gap-2 text-sm font-medium text-cos-muted transition hover:text-cos-brand-sage"
+    >
+      <ArrowLeft className="h-4 w-4" />
+      Back to Import
+    </button>
+  ) : (
+    <Link
+      href="/calendar"
+      className="inline-flex items-center gap-2 text-sm font-medium text-cos-muted transition hover:text-cos-brand-sage"
+    >
+      <ArrowLeft className="h-4 w-4" />
+      Back to Calendar
+    </Link>
+  );
 
   return (
-    <div ref={panelRef} className="space-y-4">
-      <p className="flex flex-wrap items-baseline justify-between gap-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-        <span>Review import</span>
-        <span className="text-[12px] font-semibold tracking-normal text-cos-muted normal-case">
-          Focus what needs a decision — not eight KPI cards
-          {data.filename ? ` · ${data.filename}` : ""}
-        </span>
-      </p>
+    <div className="space-y-10">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+          Calendar Sync Review
+          {data.filename ? (
+            <span className="ml-2 font-semibold tracking-normal text-cos-muted normal-case">
+              · {data.filename}
+            </span>
+          ) : null}
+        </p>
+        {backControl}
+      </div>
 
       {parseStatus === "parsing" ? (
-        <div className="flex items-start gap-3 rounded-[18px] border border-cos-border bg-[rgba(255,252,247,0.65)] px-4 py-3">
+        <div className="flex items-start gap-3 rounded-[24px] border border-cos-border bg-cos-card px-5 py-4 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
           <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-cos-muted" />
           <div>
             <p className="text-sm font-bold text-cos-text">
@@ -278,240 +251,210 @@ export function CalendarImportReview({
       ) : null}
 
       {parseStatus === "failed" && parseError ? (
-        <div className="flex items-start gap-3 rounded-[18px] border border-red-200 bg-red-50 px-4 py-3">
+        <div className="flex items-start gap-3 rounded-[24px] border border-red-200 bg-red-50 px-5 py-4">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
           <div className="flex-1">
             <p className="text-sm font-bold text-red-900">
               Could not parse calendar
             </p>
             <p className="mt-1 text-sm text-red-700">{parseError}</p>
-            <Button className="mt-3" size="sm" onClick={handleRetryParse}>
+            <button
+              type="button"
+              onClick={handleRetryParse}
+              className="mt-3 inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card"
+            >
               Try again
-            </Button>
+            </button>
           </div>
         </div>
       ) : null}
 
-      {importComplete ? (
-        <div className="flex items-start gap-3 rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-3">
+      {isImported ? (
+        <div className="flex items-start gap-3 rounded-[24px] border border-emerald-200 bg-emerald-50 px-5 py-4">
           <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
           <div className="flex-1">
             <p className="text-sm font-bold text-emerald-900">
-              {importedCount} events added to your calendar
+              {importedCount > 0 || updatedCount > 0
+                ? [
+                    importedCount > 0
+                      ? `${importedCount} event${importedCount === 1 ? "" : "s"} added`
+                      : null,
+                    updatedCount > 0
+                      ? `${updatedCount} updated`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                : "Review finished"}
             </p>
             <p className="mt-1 text-sm text-emerald-700">
-              View-only dates are on the calendar now.
+              Dates are on your calendar now.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {!embedded ? (
-                <Button href="/calendar" size="sm">
+                <Link
+                  href="/calendar"
+                  className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card"
+                >
                   Open calendar
-                </Button>
+                </Link>
               ) : null}
-              <Button
-                variant="secondary"
-                size="sm"
+              <button
+                type="button"
                 onClick={handleDeleteImported}
                 disabled={isPending}
+                className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text disabled:opacity-50"
               >
                 Delete all imported events
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       ) : null}
 
       {actionError ? (
-        <div className="rounded-[18px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[24px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
           {actionError}
         </div>
       ) : null}
 
       {(parseStatus === "parsed" || isImported) && events.length > 0 ? (
         <>
-          <CalendarReviewPulseFilters
-            events={events}
-            activeFilter={activeFilter}
-            onFilterChange={handlePulseFilterChange}
-          />
+          <header className="space-y-6">
+            <h1 className="font-display text-[clamp(2rem,4vw,3.25rem)] font-semibold tracking-[-0.02em] text-cos-text">
+              {isImported ? "Calendar updated" : "Review calendar sync"}
+            </h1>
 
-          {filteredEvents.length === 0 ? (
-            <div className="rounded-[22px] border border-dashed border-cos-border bg-[rgba(255,252,247,0.55)] px-6 py-12 text-center">
-              <p className="text-sm font-bold text-cos-text">
-                Nothing in this pulse
-              </p>
-              <button
-                type="button"
-                className="mt-3 text-[13px] font-bold text-cos-muted hover:text-cos-text"
-                onClick={() => setActiveFilter("all")}
-              >
-                Show all events
-              </button>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <SummaryCard
+                value={sections.newlyAdded.length}
+                label="new events added"
+                tone="success"
+              />
+              <SummaryCard
+                value={sections.changes.length}
+                label="events changed"
+                tone="neutral"
+              />
+              <SummaryCard
+                value={sections.needsAttention.length}
+                label="needs your review"
+                tone="attention"
+              />
             </div>
-          ) : (
-            <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.25fr)_minmax(240px,0.75fr)]">
-              {focusEvent ? (
-                <article className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] sm:grid-cols-[120px_1fr]">
-                  <div
-                    className="min-h-[90px] bg-gradient-to-br from-[#1e4a3a] via-[#6b8171] to-[#c4922e] sm:min-h-[160px]"
-                    aria-hidden
-                  />
-                  <div className="flex flex-col gap-2 p-5">
-                    <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-cos-muted">
-                      <span
-                        className={cn(
-                          "rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] uppercase",
-                          statusBadgeClass(focusEvent.status),
-                        )}
-                      >
-                        {statusLabel(focusEvent.status)}
-                      </span>
-                      <span>
-                        {CALENDAR_EVENT_CATEGORY_LABELS[focusEvent.category]} ·{" "}
-                        {formatEventDate(focusEvent.date)}
-                      </span>
-                    </div>
-                    <h3 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-cos-text">
-                      {focusEvent.name}
-                    </h3>
-                    <p className="text-[13px] leading-snug text-cos-muted">
-                      {focusCopy(focusEvent)}
-                    </p>
-                    {!isImported ? (
-                      <div className="mt-auto flex flex-wrap gap-2 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => handleKeepFocus(focusEvent)}
-                          disabled={isPending}
-                          className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px disabled:opacity-50"
-                        >
-                          Keep as{" "}
-                          {CALENDAR_EVENT_CATEGORY_LABELS[focusEvent.category]}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingEvent(focusEvent)}
-                          disabled={isPending}
-                          className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px disabled:opacity-50"
-                        >
-                          Edit details
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                </article>
-              ) : null}
 
-              <div className="flex flex-col gap-1.5">
-                {queueEvents.map((event) => (
-                  <button
+            {sections.alreadyOnCalendar.length > 0 ? (
+              <p className="text-sm text-cos-muted">
+                {sections.alreadyOnCalendar.length} already on your calendar
+                (skipped).
+              </p>
+            ) : null}
+
+            <p className="max-w-2xl font-display text-xl italic leading-relaxed text-cos-muted">
+              “{summaryCopy}”
+            </p>
+          </header>
+
+          {sections.needsAttention.length > 0 && !isImported ? (
+            <section className="space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cos-brand-terracotta text-white">
+                  <TriangleAlert className="h-4 w-4" />
+                </div>
+                <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-cos-text">
+                  Needs your attention
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                {sections.needsAttention.map((event) => (
+                  <AttentionCard
                     key={event.id}
-                    type="button"
-                    onClick={() => setFocusEventId(event.id)}
-                    className="grid w-full grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.7)] px-3.5 py-2.5 text-left transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
-                  >
-                    <span className="min-w-0">
-                      <strong className="mb-0.5 block truncate text-sm font-bold text-cos-text">
-                        {event.name}
-                      </strong>
-                      <span className="text-xs text-cos-muted">
-                        {queueMeta(event)}
-                      </span>
-                    </span>
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] uppercase",
-                        statusBadgeClass(event.status),
-                      )}
-                    >
-                      {queueStatusLabel(event.status)}
-                    </span>
-                  </button>
+                    event={event}
+                    disabled={isPending}
+                    onDecision={(decision) => handleDecision(event.id, decision)}
+                    onEdit={() => setEditingEvent(event)}
+                  />
                 ))}
               </div>
-            </div>
-          )}
-
-          {!isImported ? (
-            <div className="flex flex-wrap gap-2 pt-1">
-              <button
-                type="button"
-                onClick={handleImportReady}
-                disabled={isPending}
-                className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px disabled:opacity-50"
-              >
-                Import
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAiChat((open) => !open)}
-                className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
-              >
-                Ask AI to fix conflicts
-              </button>
-            </div>
+            </section>
           ) : null}
 
-          {showAiChat && !isImported ? (
-            <CalendarReviewChatPanel
-              importId={importId}
-              events={events}
-              onEventsUpdated={(nextEvents) => {
-                setEvents(nextEvents);
-              }}
-              disabled={isPending}
-            />
+          {sections.changes.length > 0 ? (
+            <section className="space-y-5">
+              <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-cos-text">
+                Changes
+              </h2>
+              <div className="space-y-6 rounded-[32px] border border-cos-border bg-[rgba(246,242,235,0.85)] p-6 sm:p-8">
+                {sections.changes.map((event, index) => (
+                  <ChangeRow
+                    key={event.id}
+                    event={event}
+                    showDivider={index < sections.changes.length - 1}
+                    disabled={isPending || isImported}
+                    onDecision={(decision) => handleDecision(event.id, decision)}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {sections.newlyAdded.length > 0 ? (
+            <section className="space-y-5">
+              <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-cos-text">
+                Newly added
+              </h2>
+              <div className="divide-y divide-cos-border overflow-hidden rounded-[32px] border border-cos-border bg-cos-card">
+                {sections.newlyAdded.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex items-center justify-between gap-4 px-6 py-5 transition hover:bg-[rgba(246,242,235,0.55)]"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Check className="h-4 w-4 shrink-0 text-cos-brand-sage" />
+                      <span className="truncate font-display text-lg font-medium text-cos-text">
+                        {event.name}
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-sm text-cos-muted">
+                      {formatSyncReviewShortDate(event.date)}
+                      {" · "}
+                      {CALENDAR_EVENT_CATEGORY_LABELS[event.category]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {!isImported ? (
+            <div className="pt-4 text-center">
+              <button
+                type="button"
+                onClick={handleFinishReview}
+                disabled={isPending}
+                className="inline-flex items-center rounded-full bg-cos-text px-12 py-4 text-lg font-bold text-cos-card shadow-lg transition hover:-translate-y-0.5 hover:bg-cos-brand-sage disabled:opacity-50"
+              >
+                {isPending ? "Finishing…" : "Finish Review"}
+              </button>
+              <p className="mt-3 text-sm text-cos-muted">
+                Adds new events, applies updates you kept, and skips duplicates.
+              </p>
+            </div>
           ) : null}
         </>
       ) : null}
 
       {parseStatus === "parsed" && events.length === 0 && !isImported ? (
-        <div className="rounded-[22px] border border-dashed border-cos-border bg-[rgba(255,252,247,0.55)] px-6 py-10 text-center">
+        <div className="rounded-[24px] border border-dashed border-cos-border bg-[rgba(255,252,247,0.55)] px-6 py-12 text-center">
           <p className="text-sm font-bold text-cos-text">
             No events left to import
           </p>
           <p className="mt-1 text-sm text-cos-muted">
             Upload a different calendar or bring another source in.
           </p>
-          {onGoToImport ? (
-            <button
-              type="button"
-              onClick={onGoToImport}
-              className="mt-4 inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text"
-            >
-              Back to Import
-            </button>
-          ) : (
-            <Button href={importHref} variant="secondary" className="mt-4">
-              Back to Import
-            </Button>
-          )}
+          <div className="mt-4">{backControl}</div>
         </div>
-      ) : null}
-
-      {!importComplete &&
-      parseStatus !== "parsed" &&
-      parseStatus !== "parsing" &&
-      parseStatus !== "failed" ? (
-        <p className="text-sm text-cos-muted">
-          Need a different file?{" "}
-          {onGoToImport ? (
-            <button
-              type="button"
-              onClick={onGoToImport}
-              className="font-medium text-cos-text underline-offset-2 hover:underline"
-            >
-              Go to Import
-            </button>
-          ) : (
-            <Link
-              href="/calendar?tab=import"
-              className="font-medium text-cos-text underline-offset-2 hover:underline"
-            >
-              Go to Import
-            </Link>
-          )}
-        </p>
       ) : null}
 
       {editingEvent ? (
@@ -526,78 +469,235 @@ export function CalendarImportReview({
   );
 }
 
-function statusLabel(status: CalendarEventReviewStatus): string {
-  switch (status) {
-    case "needs_review":
-      return "Needs review";
-    case "ready":
-      return "Ready";
-    case "conflict":
-      return "Conflict";
-    case "duplicate":
-      return "Duplicate";
-    case "update":
-      return "Update";
-    default:
-      return "Review";
-  }
+function SummaryCard({
+  value,
+  label,
+  tone,
+}: {
+  value: number;
+  label: string;
+  tone: "success" | "neutral" | "attention";
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-3xl border p-6",
+        tone === "attention"
+          ? "border-cos-brand-terracotta/25 bg-cos-brand-terracotta-soft"
+          : "border-cos-border bg-[rgba(246,242,235,0.9)]",
+      )}
+    >
+      <div
+        className={cn(
+          "font-display text-4xl font-semibold",
+          tone === "success" && "text-cos-brand-sage",
+          tone === "neutral" && "text-cos-text",
+          tone === "attention" && "text-cos-brand-terracotta",
+        )}
+      >
+        {value}
+      </div>
+      <div className="mt-1 text-sm font-medium text-cos-muted">{label}</div>
+    </div>
+  );
 }
 
-function queueStatusLabel(status: CalendarEventReviewStatus): string {
-  switch (status) {
-    case "needs_review":
-      return "Needs you";
-    case "ready":
-      return "Ready";
-    case "conflict":
-      return "Conflict";
-    case "duplicate":
-      return "Duplicate";
-    case "update":
-      return "Update";
-    default:
-      return "Review";
-  }
+function AttentionCard({
+  event,
+  disabled,
+  onDecision,
+  onEdit,
+}: {
+  event: CalendarReviewEvent;
+  disabled: boolean;
+  onDecision: (decision: SyncReviewDecision) => void;
+  onEdit: () => void;
+}) {
+  const existingName = event.existingEventName ?? null;
+  const existingDate = event.existingEventDate ?? null;
+  const hasExisting = Boolean(event.existingEventId || existingName || existingDate);
+  const subtitle =
+    event.matchReason ??
+    (event.status === "conflict"
+      ? "Conflict in this import"
+      : event.status === "needs_review"
+        ? "Needs a closer look before adding"
+        : "Possible duplicate");
+
+  return (
+    <article className="overflow-hidden rounded-[32px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+      <div className="border-b border-cos-border bg-cos-brand-terracotta-soft/40 px-6 py-6 sm:px-8">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cos-border bg-cos-card text-cos-brand-terracotta shadow-sm">
+            <CalendarDays className="h-6 w-6" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-display text-2xl font-semibold tracking-[-0.02em] text-cos-text">
+              {event.name}
+            </h3>
+            <p className="text-sm text-cos-muted">{subtitle}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 sm:p-8">
+        <div className="relative grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <div className="hidden lg:block absolute top-0 bottom-0 left-1/2 w-px bg-cos-border" />
+
+          <div className="space-y-5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-cos-muted">
+                Currently in Hey Ralli
+              </span>
+              <span className="h-2 w-2 rounded-full bg-cos-border" />
+            </div>
+            {hasExisting ? (
+              <div className="space-y-3 text-lg text-cos-text">
+                <p>{existingName ?? event.name}</p>
+                <p className="text-cos-muted">
+                  {existingDate
+                    ? formatEventDate(existingDate)
+                    : "Date on file"}
+                </p>
+              </div>
+            ) : (
+              <p className="text-lg text-cos-muted">
+                Not on your Hey Ralli calendar yet.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-cos-brand-sage">
+                From your connected calendar
+              </span>
+              <span className="rounded-full bg-cos-brand-sage-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cos-brand-sage">
+                Recommended
+              </span>
+            </div>
+            <div className="space-y-3 text-lg">
+              <p className="font-medium text-cos-text">{event.name}</p>
+              <p className="font-bold text-cos-brand-sage">
+                {formatEventDate(event.date)}
+              </p>
+              <p className="text-sm text-cos-muted">
+                {CALENDAR_EVENT_CATEGORY_LABELS[event.category]}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 flex flex-wrap items-center gap-3 border-t border-cos-border pt-8">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onDecision("use_calendar_update")}
+            className="inline-flex items-center rounded-full bg-cos-brand-sage px-8 py-3.5 text-[13px] font-bold text-white transition hover:brightness-95 disabled:opacity-50"
+          >
+            Use Calendar Update
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onDecision("keep_hey_ralli")}
+            className="inline-flex items-center rounded-full border border-cos-border bg-cos-card px-8 py-3.5 text-[13px] font-medium text-cos-muted transition hover:bg-[rgba(246,242,235,0.9)] disabled:opacity-50"
+          >
+            Keep Hey Ralli Event
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onDecision("keep_both")}
+            className="px-4 py-2 text-sm font-medium text-cos-muted transition hover:text-cos-text disabled:opacity-50"
+          >
+            Keep Both
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onEdit}
+            className="ml-auto px-4 py-2 text-sm font-medium text-cos-muted transition hover:text-cos-text disabled:opacity-50"
+          >
+            Edit details
+          </button>
+        </div>
+      </div>
+    </article>
+  );
 }
 
-function statusBadgeClass(status: CalendarEventReviewStatus): string {
-  switch (status) {
-    case "needs_review":
-    case "conflict":
-    case "update":
-      return "bg-[rgba(166,90,58,0.12)] text-[#a65a3a]";
-    case "duplicate":
-      return "bg-[rgba(196,146,46,0.16)] text-[#7a5a12]";
-    case "ready":
-      return "bg-[rgba(42,122,134,0.12)] text-[#2a7a86]";
-    default:
-      return "bg-[rgba(47,74,60,0.12)] text-[#2f4a3c]";
-  }
-}
+function ChangeRow({
+  event,
+  showDivider,
+  disabled,
+  onDecision,
+}: {
+  event: CalendarReviewEvent;
+  showDivider: boolean;
+  disabled: boolean;
+  onDecision: (decision: SyncReviewDecision) => void;
+}) {
+  const diffs = getSyncReviewChangeDiffs(event);
 
-function focusCopy(event: CalendarReviewEvent): string {
-  if (event.status === "duplicate") {
-    return (
-      event.matchReason ??
-      "Possible duplicate. Confirm whether to keep this row or skip it."
-    );
-  }
-  if (event.status === "conflict") {
-    return (
-      event.matchReason ??
-      "Something doesn’t line up. Edit details or ask AI to help resolve it."
-    );
-  }
-  if (event.status === "ready") {
-    return "Ready to import with the current plan type.";
-  }
-  const label = CALENDAR_EVENT_CATEGORY_LABELS[event.category].toLowerCase();
-  return `Looks like a ${label}. Confirm the plan type, then keep or edit before importing.`;
-}
+  return (
+    <div
+      className={cn(
+        "flex flex-col justify-between gap-6 md:flex-row md:items-center",
+        showDivider && "border-b border-cos-border/50 pb-8",
+      )}
+    >
+      <div className="min-w-0">
+        <h4 className="font-display text-xl font-semibold text-cos-text">
+          {event.name}
+        </h4>
+        <p className="mt-1 text-xs text-cos-muted">
+          {event.matchReason ?? "Connected calendar update"}
+        </p>
+      </div>
 
-function queueMeta(event: CalendarReviewEvent): string {
-  if (event.status === "duplicate") {
-    return `Possible duplicate · ${formatEventDate(event.date)}`;
-  }
-  return `${CALENDAR_EVENT_CATEGORY_LABELS[event.category]} · ${formatEventDate(event.date)}`;
+      <div className="flex flex-col items-stretch gap-3 sm:items-end">
+        <div className="flex flex-wrap items-center gap-6 rounded-2xl border border-cos-border/60 bg-cos-card/70 px-5 py-4">
+          {diffs.map((diff) => (
+            <div key={`${diff.label}-${diff.from}-${diff.to}`} className="space-y-1">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-cos-muted">
+                {diff.label}
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <span className="text-cos-muted line-through">
+                  {diff.label === "Date"
+                    ? formatSyncReviewShortDate(diff.from)
+                    : diff.from}
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 text-cos-brand-sage" />
+                <span className="font-bold text-cos-text">
+                  {diff.label === "Date"
+                    ? formatSyncReviewShortDate(diff.to)
+                    : diff.to}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+        {!disabled ? (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onDecision("keep_hey_ralli")}
+              className="rounded-full px-3 py-1.5 text-xs font-bold text-cos-muted hover:text-cos-text"
+            >
+              Keep Hey Ralli Event
+            </button>
+            <button
+              type="button"
+              onClick={() => onDecision("keep_both")}
+              className="rounded-full px-3 py-1.5 text-xs font-bold text-cos-muted hover:text-cos-text"
+            >
+              Keep Both
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
 }

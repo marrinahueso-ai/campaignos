@@ -99,6 +99,8 @@ describe("classifyReviewEventsAgainstExisting", () => {
     );
     assert.equal(classified[0]?.status, "update");
     assert.equal(classified[0]?.existingEventId, "evt-1");
+    assert.equal(classified[0]?.existingEventName, "Book Fair");
+    assert.equal(classified[0]?.existingEventDate, "2025-10-01");
     assert.match(classified[0]?.matchReason ?? "", /2025-10-01 → 2025-10-08/);
   });
 

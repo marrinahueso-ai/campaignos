@@ -1,10 +1,13 @@
 import { createHash } from "crypto";
-import { normalizeEventNameKey } from "@/lib/calendar-import/import-preferences";
 import type {
   CalendarEventReviewStatus,
   CalendarImportSource,
   CalendarReviewEvent,
 } from "@/types/calendar-review";
+
+function normalizeEventNameKey(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, " ").trim();
+}
 
 export type ExistingCalendarEventForDedup = {
   id: string;
@@ -162,6 +165,8 @@ export function classifyReviewEventsAgainstExisting<
             ...event,
             status: "duplicate" as const,
             existingEventId: matched.id,
+            existingEventName: matched.title,
+            existingEventDate: matched.date,
             matchReason: `Already on calendar (same ${source} id).`,
             applyUpdate: false,
           };
@@ -180,6 +185,8 @@ export function classifyReviewEventsAgainstExisting<
           ...event,
           status: "update" as const,
           existingEventId: matched.id,
+          existingEventName: matched.title,
+          existingEventDate: matched.date,
           matchReason: `Same ${source} event — ${changeBits.join("; ") || "fields changed"}.`,
           applyUpdate: mode === "auto" ? true : event.applyUpdate !== false,
         };
@@ -194,6 +201,8 @@ export function classifyReviewEventsAgainstExisting<
         ...event,
         status: "duplicate" as const,
         existingEventId: titleDateMatch.id,
+        existingEventName: titleDateMatch.title,
+        existingEventDate: titleDateMatch.date,
         matchReason: "Already on calendar (same title + date).",
         applyUpdate: false,
       };
@@ -206,6 +215,8 @@ export function classifyReviewEventsAgainstExisting<
       ...event,
       status,
       existingEventId: null,
+      existingEventName: null,
+      existingEventDate: null,
       matchReason:
         status === "needs_review"
           ? (event.matchReason ?? "Needs review before import.")

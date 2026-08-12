@@ -41,11 +41,16 @@ describe("calendar review staging contracts", () => {
     assert.match(hub, /Upload file/);
   });
 
-  it("Review primary action is Import", () => {
+  it("Review primary action is Finish Review", () => {
     const review = readSrc(
       "../../../components/calendar-review/CalendarImportReview.tsx",
     );
-    assert.match(review, />\s*Import\s*</);
+    assert.match(review, /Finish Review/);
+    assert.match(review, /Use Calendar Update/);
+    assert.match(review, /Keep Hey Ralli Event/);
+    assert.match(review, /Keep Both/);
+    assert.match(review, /Currently in Hey Ralli/);
+    assert.match(review, /From your connected calendar/);
     assert.doesNotMatch(review, /Import ready items/);
   });
 });

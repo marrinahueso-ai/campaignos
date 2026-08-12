@@ -53,6 +53,10 @@ export interface CalendarReviewEvent {
   importExternalId?: string | null;
   /** Matched existing event for duplicate / update rows. */
   existingEventId?: string | null;
+  /** Title of the matched Hey Ralli event (for sync review comparison). */
+  existingEventName?: string | null;
+  /** Date of the matched Hey Ralli event (for sync review comparison). */
+  existingEventDate?: string | null;
   /** Human-readable why this row is New / Duplicate / Update / Conflict. */
   matchReason?: string | null;
   /**
