@@ -80,7 +80,7 @@ Two `SECURITY DEFINER` RPCs (both `set search_path = ''`, callable by `service_r
 `src/lib/newsletter/versions.ts` → `createVersionFromNewsletter`:
 
 1. Loads the org + sender profile, builds the physical mailing address and compliance footer (§8).
-2. Renders `exportNewsletterHtml(composerState)` (canvas blocks when present) and injects the compliance footer before `</body>`.
+2. Renders `exportNewsletterHtml(composerState)` (canvas blocks when present) and injects the compliance footer before `</body>`. Heading/text/button/hero/footer styling (colors, fonts, sizes, dual buttons, optional header/footer CTAs, fixed-ratio heading images) lives on `NewsletterCanvasBlock` fields and is inlined in that HTML — same path as the builder canvas preview (`exportCanvasBlockFragment`).
 3. Computes a `content_fingerprint` via `computeNewsletterContentFingerprint` (`src/lib/newsletter/content-fingerprint.ts`) — a SHA-256 hash of a canonicalized JSON blob of `{ composerState, subject, fromDisplayName, fromEmail, replyToEmail, audienceId, proposedSendAt }`.
 4. Inserts the next `version_number` for that newsletter and points `newsletters.current_version_id` at it.
 

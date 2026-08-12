@@ -4,20 +4,31 @@ import { ImageFieldEditor } from "@/components/newsletters/builder/ImageFieldEdi
 import { Button } from "@/components/ui/Button";
 import { compressImageForUpload } from "@/lib/homepage-composer/compress-image";
 import {
+  NEWSLETTER_ALIGN_OPTIONS,
+  NEWSLETTER_FONT_OPTIONS,
+  NEWSLETTER_FONT_SIZE_OPTIONS,
+} from "@/lib/newsletter-composer/block-styles";
+import {
   addCanvasColumn,
   addCanvasListItem,
   calendarChipFromEvent,
+  newCanvasButton,
   newId,
 } from "@/lib/newsletter-composer/defaults";
 import type {
+  NewsletterButtonLayout,
   NewsletterCanvasBlock,
   NewsletterCanvasBlockKind,
+  NewsletterCanvasButton,
   NewsletterCanvasColumn,
   NewsletterComposerEvent,
   NewsletterComposerState,
   NewsletterEventBlockLayout,
   NewsletterEventInsertLayout,
+  NewsletterFontFamily,
+  NewsletterFontSize,
   NewsletterStory,
+  NewsletterTextAlign,
 } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
 import { Copy, Plus, Trash2 } from "lucide-react";
@@ -112,6 +123,193 @@ function Toggle({
   );
 }
 
+function ColorField({
+  label,
+  value,
+  fallback = "#1c2430",
+  onChange,
+}: {
+  label: string;
+  value: string | null;
+  fallback?: string;
+  onChange: (next: string | null) => void;
+}) {
+  const hex = value?.trim() || fallback;
+  return (
+    <Field label={label}>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={/^#[0-9a-fA-F]{6}$/.test(hex) ? hex : fallback}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-9 w-11 cursor-pointer rounded border border-cos-border bg-cos-card p-0.5"
+          aria-label={label}
+        />
+        <input
+          className={textInputClass()}
+          value={value ?? ""}
+          placeholder={fallback}
+          onChange={(e) => onChange(e.target.value.trim() ? e.target.value : null)}
+        />
+      </div>
+    </Field>
+  );
+}
+
+function FontFamilyField({
+  value,
+  onChange,
+}: {
+  value: NewsletterFontFamily | null;
+  onChange: (next: NewsletterFontFamily) => void;
+}) {
+  return (
+    <Field label="Font">
+      <select
+        className={textInputClass()}
+        value={value ?? "arial"}
+        onChange={(e) => onChange(e.target.value as NewsletterFontFamily)}
+      >
+        {NEWSLETTER_FONT_OPTIONS.map((f) => (
+          <option key={f.id} value={f.id}>
+            {f.label}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
+function FontSizeField({
+  value,
+  onChange,
+}: {
+  value: NewsletterFontSize | null;
+  onChange: (next: NewsletterFontSize) => void;
+}) {
+  return (
+    <Field label="Font size">
+      <div className="grid grid-cols-4 gap-1.5">
+        {NEWSLETTER_FONT_SIZE_OPTIONS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => onChange(s.id)}
+            className={cn(
+              "rounded-lg border px-1 py-2 text-[10px] font-bold transition",
+              (value ?? "md") === s.id
+                ? "border-2 border-cos-brand-sage bg-cos-brand-sage-soft text-cos-brand-sage"
+                : "border-cos-border bg-cos-card text-cos-muted hover:border-cos-brand-sage",
+            )}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </Field>
+  );
+}
+
+function TextAlignField({
+  value,
+  onChange,
+}: {
+  value: NewsletterTextAlign | null;
+  onChange: (next: NewsletterTextAlign) => void;
+}) {
+  return (
+    <Field label="Alignment">
+      <div className="grid grid-cols-3 gap-1.5">
+        {NEWSLETTER_ALIGN_OPTIONS.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            onClick={() => onChange(a.id)}
+            className={cn(
+              "rounded-lg border px-2 py-2 text-[11px] font-bold transition",
+              (value ?? "left") === a.id
+                ? "border-2 border-cos-brand-sage bg-cos-brand-sage-soft text-cos-brand-sage"
+                : "border-cos-border bg-cos-card text-cos-muted hover:border-cos-brand-sage",
+            )}
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
+    </Field>
+  );
+}
+
+function patchButtons(
+  buttons: NewsletterCanvasButton[],
+): Pick<NewsletterCanvasBlock, "buttons" | "buttonLabel" | "buttonUrl"> {
+  const next = buttons.slice(0, 2);
+  const primary = next[0];
+  return {
+    buttons: next,
+    buttonLabel: primary?.label ?? "",
+    buttonUrl: primary?.url ?? "",
+  };
+}
+
+function ButtonFields({
+  title,
+  button,
+  defaultBg,
+  onChange,
+  onRemove,
+}: {
+  title: string;
+  button: NewsletterCanvasButton;
+  defaultBg: string;
+  onChange: (next: NewsletterCanvasButton) => void;
+  onRemove?: () => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className={fieldLabelClass()}>{title}</p>
+        {onRemove ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-[11px] font-semibold text-cos-muted hover:text-cos-error"
+          >
+            Remove
+          </button>
+        ) : null}
+      </div>
+      <Field label="Button text">
+        <input
+          className={textInputClass()}
+          value={button.label}
+          onChange={(e) => onChange({ ...button, label: e.target.value })}
+        />
+      </Field>
+      <Field label="Link">
+        <input
+          className={textInputClass()}
+          value={button.url}
+          onChange={(e) => onChange({ ...button, url: e.target.value })}
+          placeholder="https://…"
+        />
+      </Field>
+      <ColorField
+        label="Button color"
+        value={button.backgroundColor}
+        fallback={defaultBg}
+        onChange={(v) => onChange({ ...button, backgroundColor: v })}
+      />
+      <ColorField
+        label="Text color"
+        value={button.textColor}
+        fallback="#fffcf7"
+        onChange={(v) => onChange({ ...button, textColor: v })}
+      />
+    </div>
+  );
+}
+
 export function BlockSettingsPanel({
   state,
   block,
@@ -164,7 +362,14 @@ export function BlockSettingsPanel({
 
       <div className="flex-1 space-y-6 overflow-y-auto p-5">
         {block.kind === "hero" ? (
-          <HeroSettings state={state} onPatchState={onPatchState} upload={upload} busy={busy} />
+          <HeroSettings
+            state={state}
+            block={block}
+            onPatchState={onPatchState}
+            onPatchBlock={onPatchBlock}
+            upload={upload}
+            busy={busy}
+          />
         ) : null}
 
         {block.kind === "message" ? (
@@ -217,23 +422,83 @@ export function BlockSettingsPanel({
         ) : null}
 
         {block.kind === "heading" ? (
-          <Field label="Heading text">
-            <input
-              className={textInputClass()}
-              value={block.heading}
-              onChange={(e) => onPatchBlock({ heading: e.target.value })}
+          <div className="space-y-4">
+            <Field label="Heading text">
+              <input
+                className={textInputClass()}
+                value={block.heading}
+                onChange={(e) => onPatchBlock({ heading: e.target.value })}
+              />
+            </Field>
+            <ColorField
+              label="Text color"
+              value={block.textColor}
+              fallback="#1c2430"
+              onChange={(v) => onPatchBlock({ textColor: v })}
             />
-          </Field>
+            <FontFamilyField
+              value={block.fontFamily}
+              onChange={(v) => onPatchBlock({ fontFamily: v })}
+            />
+            <FontSizeField
+              value={block.fontSize}
+              onChange={(v) => onPatchBlock({ fontSize: v })}
+            />
+            <TextAlignField
+              value={block.textAlign}
+              onChange={(v) => onPatchBlock({ textAlign: v })}
+            />
+            <div className="space-y-2 border-t border-cos-border pt-4">
+              <p className={fieldLabelClass()}>Optional image</p>
+              <p className="text-[11px] text-cos-muted">
+                Images display at a fixed 560×180 band so layouts stay consistent.
+              </p>
+              <ImageFieldEditor
+                imageUrl={block.imageUrl}
+                imageLink={block.imageLink}
+                imageAlt={block.imageAlt}
+                uploading={Boolean(busy[`block:${block.id}`])}
+                onUpload={(file) =>
+                  upload(`block:${block.id}`, file, `block-${block.id}`, (url) =>
+                    onPatchBlock({ imageUrl: url }),
+                  )
+                }
+                onRemove={() => onPatchBlock({ imageUrl: null })}
+                onChangeLink={(v) => onPatchBlock({ imageLink: v })}
+                onChangeAlt={(v) => onPatchBlock({ imageAlt: v })}
+              />
+            </div>
+          </div>
         ) : null}
 
         {block.kind === "text" ? (
-          <Field label="Paragraph">
-            <textarea
-              className={cn(textInputClass(), "min-h-[110px]")}
-              value={block.text}
-              onChange={(e) => onPatchBlock({ text: e.target.value })}
+          <div className="space-y-4">
+            <Field label="Paragraph">
+              <textarea
+                className={cn(textInputClass(), "min-h-[110px]")}
+                value={block.text}
+                onChange={(e) => onPatchBlock({ text: e.target.value })}
+              />
+            </Field>
+            <ColorField
+              label="Text color"
+              value={block.textColor}
+              fallback="#333333"
+              onChange={(v) => onPatchBlock({ textColor: v })}
             />
-          </Field>
+            <FontFamilyField
+              value={block.fontFamily}
+              onChange={(v) => onPatchBlock({ fontFamily: v })}
+            />
+            <FontSizeField
+              value={block.fontSize}
+              onChange={(v) => onPatchBlock({ fontSize: v })}
+            />
+            <TextAlignField
+              value={block.textAlign}
+              onChange={(v) => onPatchBlock({ textAlign: v })}
+            />
+          </div>
         ) : null}
 
         {block.kind === "image" ? (
@@ -254,23 +519,11 @@ export function BlockSettingsPanel({
         ) : null}
 
         {block.kind === "button" ? (
-          <div className="space-y-3">
-            <Field label="Button label">
-              <input
-                className={textInputClass()}
-                value={block.buttonLabel}
-                onChange={(e) => onPatchBlock({ buttonLabel: e.target.value })}
-              />
-            </Field>
-            <Field label="Button link">
-              <input
-                className={textInputClass()}
-                value={block.buttonUrl}
-                onChange={(e) => onPatchBlock({ buttonUrl: e.target.value })}
-                placeholder="https://…"
-              />
-            </Field>
-          </div>
+          <ButtonBlockSettings
+            block={block}
+            brandPrimary={state.colors.primary}
+            onPatchBlock={onPatchBlock}
+          />
         ) : null}
 
         {block.kind === "textImage" ? (
@@ -350,14 +603,11 @@ export function BlockSettingsPanel({
         ) : null}
 
         {block.kind === "footer" ? (
-          <Field label="Fine print (blank uses your footer default)">
-            <textarea
-              className={cn(textInputClass(), "min-h-[90px]")}
-              value={block.text}
-              onChange={(e) => onPatchBlock({ text: e.target.value })}
-              placeholder={state.footerFinePrint}
-            />
-          </Field>
+          <FooterSettings
+            state={state}
+            block={block}
+            onPatchBlock={onPatchBlock}
+          />
         ) : null}
       </div>
 
@@ -381,15 +631,27 @@ type UploadFn = (key: string, file: File, assetId: string, onDone: (url: string)
 
 function HeroSettings({
   state,
+  block,
   onPatchState,
+  onPatchBlock,
   upload,
   busy,
 }: {
   state: NewsletterComposerState;
+  block: NewsletterCanvasBlock;
   onPatchState: PatchState;
+  onPatchBlock: (patch: Partial<NewsletterCanvasBlock>) => void;
   upload: UploadFn;
   busy: Record<string, boolean>;
 }) {
+  const cta =
+    block.buttons[0] ??
+    newCanvasButton({
+      label: "Learn more →",
+      backgroundColor: state.colors.primary,
+      textColor: "#fffcf7",
+    });
+
   return (
     <div className="space-y-4">
       <ImageFieldEditor
@@ -426,6 +688,210 @@ function HeroSettings({
         />
         <p className="mt-1 text-[11px] text-cos-muted">Line 2 on the header.</p>
       </Field>
+
+      <div className="space-y-4 border-t border-cos-border pt-4">
+        <p className={fieldLabelClass()}>Header style</p>
+        <ColorField
+          label="Background color"
+          value={block.backgroundColor}
+          fallback={state.colors.primary}
+          onChange={(v) => onPatchBlock({ backgroundColor: v })}
+        />
+        <ColorField
+          label="Text color"
+          value={block.textColor}
+          fallback="#ffffff"
+          onChange={(v) => onPatchBlock({ textColor: v })}
+        />
+        <FontFamilyField
+          value={block.fontFamily}
+          onChange={(v) => onPatchBlock({ fontFamily: v })}
+        />
+        <FontSizeField
+          value={block.fontSize}
+          onChange={(v) => onPatchBlock({ fontSize: v })}
+        />
+      </div>
+
+      <div className="space-y-3 border-t border-cos-border pt-4">
+        <Toggle
+          label="Header CTA button"
+          checked={block.showCta}
+          onChange={(v) =>
+            onPatchBlock({
+              showCta: v,
+              ...(v && block.buttons.length === 0 ? patchButtons([cta]) : {}),
+            })
+          }
+        />
+        {block.showCta ? (
+          <ButtonFields
+            title="CTA"
+            button={cta}
+            defaultBg={state.colors.primary}
+            onChange={(next) => onPatchBlock(patchButtons([next]))}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ButtonBlockSettings({
+  block,
+  brandPrimary,
+  onPatchBlock,
+}: {
+  block: NewsletterCanvasBlock;
+  brandPrimary: string;
+  onPatchBlock: (patch: Partial<NewsletterCanvasBlock>) => void;
+}) {
+  const buttons =
+    block.buttons.length > 0
+      ? block.buttons
+      : [
+          newCanvasButton({
+            label: block.buttonLabel || "Learn more →",
+            url: block.buttonUrl,
+          }),
+        ];
+
+  function updateAt(index: number, next: NewsletterCanvasButton) {
+    const copy = buttons.map((b, i) => (i === index ? next : b));
+    onPatchBlock(patchButtons(copy));
+  }
+
+  return (
+    <div className="space-y-4">
+      <Field label="Layout">
+        <div className="grid grid-cols-2 gap-1.5">
+          {(
+            [
+              { id: "row" as const, label: "Side by side" },
+              { id: "stack" as const, label: "Stacked" },
+            ] satisfies { id: NewsletterButtonLayout; label: string }[]
+          ).map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => onPatchBlock({ buttonLayout: opt.id })}
+              className={cn(
+                "rounded-lg border px-2 py-2 text-[11px] font-bold transition",
+                block.buttonLayout === opt.id
+                  ? "border-2 border-cos-brand-sage bg-cos-brand-sage-soft text-cos-brand-sage"
+                  : "border-cos-border bg-cos-card text-cos-muted hover:border-cos-brand-sage",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      {buttons.map((button, index) => (
+        <ButtonFields
+          key={button.id}
+          title={buttons.length > 1 ? `Button ${index + 1}` : "Button"}
+          button={button}
+          defaultBg={brandPrimary}
+          onChange={(next) => updateAt(index, next)}
+          onRemove={
+            buttons.length > 1
+              ? () => onPatchBlock(patchButtons(buttons.filter((_, i) => i !== index)))
+              : undefined
+          }
+        />
+      ))}
+
+      {buttons.length < 2 ? (
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full"
+          onClick={() =>
+            onPatchBlock(
+              patchButtons([
+                ...buttons,
+                newCanvasButton({ label: "Second button", backgroundColor: brandPrimary }),
+              ]),
+            )
+          }
+        >
+          <Plus className="h-3.5 w-3.5" /> Add second button
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function FooterSettings({
+  state,
+  block,
+  onPatchBlock,
+}: {
+  state: NewsletterComposerState;
+  block: NewsletterCanvasBlock;
+  onPatchBlock: (patch: Partial<NewsletterCanvasBlock>) => void;
+}) {
+  const cta =
+    block.buttons[0] ??
+    newCanvasButton({
+      label: "Get involved",
+      backgroundColor: state.colors.primary,
+      textColor: "#fffcf7",
+    });
+
+  return (
+    <div className="space-y-4">
+      <Field label="Fine print (blank uses your footer default)">
+        <textarea
+          className={cn(textInputClass(), "min-h-[90px]")}
+          value={block.text}
+          onChange={(e) => onPatchBlock({ text: e.target.value })}
+          placeholder={state.footerFinePrint}
+        />
+      </Field>
+      <ColorField
+        label="Background color"
+        value={block.backgroundColor}
+        fallback="#ffffff"
+        onChange={(v) => onPatchBlock({ backgroundColor: v })}
+      />
+      <ColorField
+        label="Text color"
+        value={block.textColor}
+        fallback="#999999"
+        onChange={(v) => onPatchBlock({ textColor: v })}
+      />
+      <FontFamilyField
+        value={block.fontFamily}
+        onChange={(v) => onPatchBlock({ fontFamily: v })}
+      />
+      <FontSizeField
+        value={block.fontSize}
+        onChange={(v) => onPatchBlock({ fontSize: v })}
+      />
+
+      <div className="space-y-3 border-t border-cos-border pt-4">
+        <Toggle
+          label="Footer CTA button"
+          checked={block.showCta}
+          onChange={(v) =>
+            onPatchBlock({
+              showCta: v,
+              ...(v && block.buttons.length === 0 ? patchButtons([cta]) : {}),
+            })
+          }
+        />
+        {block.showCta ? (
+          <ButtonFields
+            title="CTA"
+            button={cta}
+            defaultBg={state.colors.primary}
+            onChange={(next) => onPatchBlock(patchButtons([next]))}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

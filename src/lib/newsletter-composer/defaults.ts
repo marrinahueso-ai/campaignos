@@ -3,17 +3,21 @@ import type {
   NewsletterCalendarChip,
   NewsletterCanvasBlock,
   NewsletterCanvasBlockKind,
+  NewsletterCanvasButton,
   NewsletterCanvasColumn,
   NewsletterCanvasListItem,
   NewsletterComposerEvent,
   NewsletterComposerState,
   NewsletterEventBlockLayout,
   NewsletterEventInsertLayout,
+  NewsletterFontFamily,
+  NewsletterFontSize,
   NewsletterLayoutBlock,
   NewsletterLinkChip,
   NewsletterSocialLink,
   NewsletterSponsor,
   NewsletterStory,
+  NewsletterTextAlign,
   NewsletterVolunteerAsk,
 } from "@/lib/newsletter-composer/types";
 
@@ -317,6 +321,19 @@ function newCanvasListItem(text = ""): NewsletterCanvasListItem {
   return { id: newId("item"), text };
 }
 
+export function newCanvasButton(
+  overrides: Partial<NewsletterCanvasButton> = {},
+): NewsletterCanvasButton {
+  return {
+    id: newId("btn"),
+    label: "Learn more →",
+    url: "",
+    backgroundColor: null,
+    textColor: null,
+    ...overrides,
+  };
+}
+
 /** Fresh block with sensible per-kind defaults — used for both new inserts and normalization fallback. */
 export function newCanvasBlock(
   kind: NewsletterCanvasBlockKind,
@@ -342,17 +359,43 @@ export function newCanvasBlock(
     items: [],
     spacingPx: 24,
     backgroundColor: null,
+    textColor: null,
+    fontFamily: null,
+    fontSize: null,
+    textAlign: kind === "heading" ? "center" : kind === "text" ? "left" : "center",
+    buttons: [],
+    buttonLayout: "stack",
+    showCta: false,
   };
 
   switch (kind) {
     case "heading":
       base.heading = "New heading";
+      base.fontFamily = "georgia";
+      base.fontSize = "md";
       break;
     case "text":
       base.text = "Add a paragraph of text…";
+      base.fontFamily = "arial";
+      base.fontSize = "md";
       break;
     case "button":
+      base.buttons = [newCanvasButton({ label: "Learn more →" })];
       base.buttonLabel = "Learn more →";
+      base.buttonLayout = "row";
+      break;
+    case "hero":
+      base.fontFamily = "georgia";
+      base.fontSize = "md";
+      base.textAlign = "center";
+      base.textColor = "#ffffff";
+      base.backgroundColor = null;
+      break;
+    case "footer":
+      base.fontFamily = "arial";
+      base.fontSize = "sm";
+      base.textAlign = "center";
+      base.textColor = "#999999";
       break;
     case "textImage":
       base.heading = "New section";
@@ -397,6 +440,7 @@ export function duplicateCanvasBlock(block: NewsletterCanvasBlock): NewsletterCa
     id: newId(`block-${block.kind}`),
     columns: block.columns.map((c) => ({ ...c, id: newId("col") })),
     items: block.items.map((i) => ({ ...i, id: newId("item") })),
+    buttons: (block.buttons ?? []).map((b) => ({ ...b, id: newId("btn") })),
   };
 }
 
@@ -650,6 +694,22 @@ function normalizeCanvasListItem(raw: unknown): NewsletterCanvasListItem | null 
   };
 }
 
+function normalizeCanvasButton(raw: unknown): NewsletterCanvasButton | null {
+  if (!raw || typeof raw !== "object") return null;
+  const b = raw as Partial<NewsletterCanvasButton>;
+  return {
+    id: typeof b.id === "string" && b.id ? b.id : newId("btn"),
+    label: typeof b.label === "string" ? b.label : "",
+    url: typeof b.url === "string" ? b.url : "",
+    backgroundColor:
+      typeof b.backgroundColor === "string" && b.backgroundColor.trim()
+        ? b.backgroundColor
+        : null,
+    textColor:
+      typeof b.textColor === "string" && b.textColor.trim() ? b.textColor : null,
+  };
+}
+
 const CANVAS_BLOCK_KINDS = new Set<NewsletterCanvasBlockKind>([
   "hero",
   "message",
@@ -674,6 +734,16 @@ const CANVAS_BLOCK_KINDS = new Set<NewsletterCanvasBlockKind>([
   "footer",
 ]);
 
+const FONT_FAMILIES = new Set<NewsletterFontFamily>([
+  "georgia",
+  "arial",
+  "helvetica",
+  "verdana",
+  "times",
+]);
+const FONT_SIZES = new Set<NewsletterFontSize>(["sm", "md", "lg", "xl"]);
+const TEXT_ALIGNS = new Set<NewsletterTextAlign>(["left", "center", "right"]);
+
 function normalizeCanvasBlock(raw: unknown): NewsletterCanvasBlock | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Partial<NewsletterCanvasBlock> & { kind?: unknown };
@@ -687,6 +757,29 @@ function normalizeCanvasBlock(raw: unknown): NewsletterCanvasBlock | null {
     kind,
     typeof r.id === "string" && r.id ? { id: r.id } : {},
   );
+
+  let buttons = Array.isArray(r.buttons)
+    ? r.buttons
+        .map(normalizeCanvasButton)
+        .filter((b): b is NewsletterCanvasButton => Boolean(b))
+        .slice(0, 2)
+    : [];
+
+  // Older drafts only had buttonLabel / buttonUrl on the block.
+  if (
+    buttons.length === 0 &&
+    typeof r.buttonLabel === "string" &&
+    r.buttonLabel.trim()
+  ) {
+    buttons = [
+      newCanvasButton({
+        label: r.buttonLabel,
+        url: typeof r.buttonUrl === "string" ? r.buttonUrl : "",
+      }),
+    ];
+  }
+
+  const primary = buttons[0] ?? null;
 
   return {
     ...base,
@@ -707,8 +800,12 @@ function normalizeCanvasBlock(raw: unknown): NewsletterCanvasBlock | null {
     imageUrl: typeof r.imageUrl === "string" && r.imageUrl.trim() ? r.imageUrl : null,
     imageLink: typeof r.imageLink === "string" ? r.imageLink : base.imageLink,
     imageAlt: typeof r.imageAlt === "string" ? r.imageAlt : base.imageAlt,
-    buttonLabel: typeof r.buttonLabel === "string" ? r.buttonLabel : base.buttonLabel,
-    buttonUrl: typeof r.buttonUrl === "string" ? r.buttonUrl : base.buttonUrl,
+    buttonLabel:
+      primary?.label ??
+      (typeof r.buttonLabel === "string" ? r.buttonLabel : base.buttonLabel),
+    buttonUrl:
+      primary?.url ??
+      (typeof r.buttonUrl === "string" ? r.buttonUrl : base.buttonUrl),
     columns: Array.isArray(r.columns)
       ? r.columns
           .map(normalizeCanvasColumn)
@@ -724,6 +821,27 @@ function normalizeCanvasBlock(raw: unknown): NewsletterCanvasBlock | null {
       typeof r.backgroundColor === "string" && r.backgroundColor.trim()
         ? r.backgroundColor
         : null,
+    textColor:
+      typeof r.textColor === "string" && r.textColor.trim() ? r.textColor : null,
+    fontFamily:
+      typeof r.fontFamily === "string" &&
+      FONT_FAMILIES.has(r.fontFamily as NewsletterFontFamily)
+        ? (r.fontFamily as NewsletterFontFamily)
+        : base.fontFamily,
+    fontSize:
+      typeof r.fontSize === "string" && FONT_SIZES.has(r.fontSize as NewsletterFontSize)
+        ? (r.fontSize as NewsletterFontSize)
+        : base.fontSize,
+    textAlign:
+      typeof r.textAlign === "string" && TEXT_ALIGNS.has(r.textAlign as NewsletterTextAlign)
+        ? (r.textAlign as NewsletterTextAlign)
+        : base.textAlign,
+    buttons,
+    buttonLayout:
+      r.buttonLayout === "row" || r.buttonLayout === "stack"
+        ? r.buttonLayout
+        : base.buttonLayout,
+    showCta: typeof r.showCta === "boolean" ? r.showCta : base.showCta,
   };
 }
 

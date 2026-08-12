@@ -1,6 +1,14 @@
+import {
+  HEADING_IMAGE_DISPLAY,
+  newsletterBodyFontPx,
+  newsletterFontStack,
+  newsletterHeaderTitleFontPx,
+  newsletterHeadingFontPx,
+} from "@/lib/newsletter-composer/block-styles";
 import { orderedLayoutBlocks } from "@/lib/newsletter-composer/defaults";
 import type {
   NewsletterCanvasBlock,
+  NewsletterCanvasButton,
   NewsletterCanvasColumn,
   NewsletterComposerState,
   NewsletterLayoutBlock,
@@ -435,19 +443,43 @@ function renderEventBlockHtml(
 </table>`;
 }
 
-function renderHeadingBlockHtml(block: NewsletterCanvasBlock): string {
-  if (!block.heading.trim()) return "";
+function renderHeadingImageBand(block: NewsletterCanvasBlock): string {
+  if (!block.imageUrl) return "";
+  const { width, height } = HEADING_IMAGE_DISPLAY;
+  const tag = `<img src="${esc(block.imageUrl)}" alt="${esc(block.imageAlt)}" width="${width}" height="${height}" style="display:block;width:100%;max-width:${width}px;height:${height}px;object-fit:cover;border-radius:12px;" />`;
+  const wrapped = block.imageLink.trim()
+    ? `<a href="${esc(normalizeHref(block.imageLink))}" style="text-decoration:none;">${tag}</a>`
+    : tag;
   return `
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 6px;">
-  <tr><td style="text-align:center;font-family:Georgia,serif;font-size:26px;font-weight:700;color:#1c2430;">${esc(block.heading)}</td></tr>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 10px;">
+  <tr><td style="text-align:center;">${wrapped}</td></tr>
 </table>`;
+}
+
+function renderHeadingBlockHtml(block: NewsletterCanvasBlock): string {
+  const imageBand = renderHeadingImageBand(block);
+  if (!block.heading.trim() && !imageBand) return "";
+  const align = block.textAlign ?? "center";
+  const color = block.textColor?.trim() || "#1c2430";
+  const font = newsletterFontStack(block.fontFamily, "Georgia,serif");
+  const size = newsletterHeadingFontPx(block.fontSize);
+  const heading = block.heading.trim()
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 6px;">
+  <tr><td style="text-align:${esc(align)};font-family:${esc(font)};font-size:${size}px;font-weight:700;color:${esc(color)};line-height:1.25;">${esc(block.heading)}</td></tr>
+</table>`
+    : "";
+  return `${imageBand}${heading}`;
 }
 
 function renderTextBlockHtml(block: NewsletterCanvasBlock): string {
   if (!block.text.trim()) return "";
+  const align = block.textAlign ?? "left";
+  const color = block.textColor?.trim() || "#333333";
+  const font = newsletterFontStack(block.fontFamily, "Arial,sans-serif");
+  const size = newsletterBodyFontPx(block.fontSize);
   return `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 12px;">
-  <tr><td style="font-family:Arial,sans-serif;font-size:14px;line-height:1.55;color:#333;">${esc(block.text).replace(/\n/g, "<br/>")}</td></tr>
+  <tr><td style="text-align:${esc(align)};font-family:${esc(font)};font-size:${size}px;line-height:1.55;color:${esc(color)};">${esc(block.text).replace(/\n/g, "<br/>")}</td></tr>
 </table>`;
 }
 
@@ -463,17 +495,131 @@ function renderImageBlockHtml(block: NewsletterCanvasBlock): string {
 </table>`;
 }
 
+function resolveBlockButtons(block: NewsletterCanvasBlock): NewsletterCanvasButton[] {
+  if (Array.isArray(block.buttons) && block.buttons.length > 0) {
+    return block.buttons.filter((b) => b.label.trim()).slice(0, 2);
+  }
+  if (block.buttonLabel.trim()) {
+    return [
+      {
+        id: "legacy",
+        label: block.buttonLabel,
+        url: block.buttonUrl,
+        backgroundColor: null,
+        textColor: null,
+      },
+    ];
+  }
+  return [];
+}
+
+function renderCtaAnchor(
+  button: NewsletterCanvasButton,
+  colors: NewsletterComposerState["colors"],
+  extraStyle = "",
+): string {
+  const bg = button.backgroundColor?.trim() || colors.primary;
+  const fg = button.textColor?.trim() || "#fffcf7";
+  return `<a href="${esc(normalizeHref(button.url || "#"))}" style="display:inline-block;background:${esc(bg)};color:${esc(fg)};font-family:Arial,sans-serif;font-size:13px;font-weight:700;padding:11px 22px;border-radius:999px;text-decoration:none;${extraStyle}">${esc(button.label)}</a>`;
+}
+
 function renderButtonBlockHtml(
   block: NewsletterCanvasBlock,
   colors: NewsletterComposerState["colors"],
 ): string {
-  if (!block.buttonLabel.trim()) return "";
+  const buttons = resolveBlockButtons(block);
+  if (!buttons.length) return "";
+  const layout = block.buttonLayout === "row" ? "row" : "stack";
+
+  if (layout === "row" && buttons.length > 1) {
+    return `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;">
+  <tr>
+    ${buttons
+      .map(
+        (b) =>
+          `<td style="text-align:center;padding:4px 6px;vertical-align:middle;">${renderCtaAnchor(b, colors)}</td>`,
+      )
+      .join("")}
+  </tr>
+</table>`;
+  }
+
   return `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;">
-  <tr><td style="text-align:center;">
-    <a href="${esc(normalizeHref(block.buttonUrl || "#"))}" style="display:inline-block;background:${esc(colors.primary)};color:#fffcf7;font-family:Arial,sans-serif;font-size:13px;font-weight:700;padding:11px 22px;border-radius:999px;text-decoration:none;">${esc(block.buttonLabel)}</a>
-  </td></tr>
+  ${buttons
+    .map(
+      (b) =>
+        `<tr><td style="text-align:center;padding:4px 0;">${renderCtaAnchor(b, colors)}</td></tr>`,
+    )
+    .join("")}
 </table>`;
+}
+
+function renderHeroBlockHtml(
+  block: NewsletterCanvasBlock,
+  state: NewsletterComposerState,
+): string {
+  const { colors } = state;
+  const title = state.issueName.trim() || "Newsletter";
+  const edition = state.issueEdition.trim();
+  const parts: string[] = [];
+
+  if (state.headerImageUrl) {
+    const img = `
+    <img src="${esc(state.headerImageUrl)}" alt="${esc(state.headerImageAlt.trim() || title)}" width="560" style="display:block;width:100%;max-width:560px;height:auto;border-radius:14px;" />`;
+    const linked = state.headerImageLink.trim()
+      ? `<a href="${esc(state.headerImageLink.trim())}" style="text-decoration:none;">${img}</a>`
+      : img;
+    parts.push(`
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
+  <tr><td style="border-radius:14px;overflow:hidden;">
+    ${linked}
+  </td></tr>
+</table>`);
+  }
+
+  const textColor = block.textColor?.trim() || "#ffffff";
+  const hasStyleOverrides = Boolean(
+    block.backgroundColor?.trim() ||
+      block.showCta ||
+      (textColor.toLowerCase() !== "#ffffff") ||
+      (block.fontFamily != null && block.fontFamily !== "georgia") ||
+      (block.fontSize != null && block.fontSize !== "md"),
+  );
+
+  // Keep legacy image-only headers until the author customizes style / CTA.
+  if (state.headerImageUrl && !hasStyleOverrides) {
+    return parts.join("\n");
+  }
+
+  const bg =
+    block.backgroundColor?.trim() ||
+    `linear-gradient(135deg,${colors.primary},${colors.accent})`;
+  const font = newsletterFontStack(block.fontFamily, "Georgia,serif");
+  const titleSize = newsletterHeaderTitleFontPx(block.fontSize);
+  const align = block.textAlign ?? "center";
+  const ctaButtons = block.showCta ? resolveBlockButtons(block).slice(0, 1) : [];
+  const ctaHtml = ctaButtons.length
+    ? `<div style="margin-top:14px;">${renderCtaAnchor(ctaButtons[0]!, colors)}</div>`
+    : "";
+
+  parts.push(`
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
+  <tr>
+    <td style="background:${esc(bg)};border-radius:14px;padding:22px 18px;text-align:${esc(align)};">
+      <div style="font-family:${esc(font)};font-size:${titleSize}px;font-weight:700;color:${esc(textColor)};margin:0 0 6px;">${esc(title)}</div>
+      ${
+        edition
+          ? `<div style="font-family:Arial,sans-serif;font-size:13px;color:${esc(textColor)};opacity:0.92;">${esc(edition)}</div>`
+          : ""
+      }
+      ${ctaHtml}
+    </td>
+  </tr>
+</table>`);
+
+  return parts.join("\n");
 }
 
 function renderTextImageBlockHtml(
@@ -613,10 +759,30 @@ function renderFooterBlockHtml(
   state: NewsletterComposerState,
 ): string {
   const text = block.text.trim() || state.footerFinePrint;
-  if (!text.trim()) return "";
+  const ctaButtons =
+    block.showCta
+      ? resolveBlockButtons(block).slice(0, 1)
+      : [];
+  if (!text.trim() && !ctaButtons.length) return "";
+
+  const bg = block.backgroundColor?.trim() || "transparent";
+  const color = block.textColor?.trim() || "#999999";
+  const font = newsletterFontStack(block.fontFamily, "Arial,sans-serif");
+  const size = newsletterBodyFontPx(block.fontSize ?? "sm");
+  const align = block.textAlign ?? "center";
+  const ctaHtml = ctaButtons.length
+    ? `<div style="margin:0 0 12px;">${renderCtaAnchor(ctaButtons[0]!, state.colors)}</div>`
+    : "";
+  const finePrint = text.trim()
+    ? `<div style="font-family:${esc(font)};font-size:${size}px;color:${esc(color)};line-height:1.5;">${esc(text).replace(/\n/g, "<br/>")}</div>`
+    : "";
+
   return `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;">
-  <tr><td style="text-align:center;font-family:Arial,sans-serif;font-size:11px;color:#999;line-height:1.5;padding-top:14px;border-top:1px solid #eee;">${esc(text).replace(/\n/g, "<br/>")}</td></tr>
+  <tr><td style="background:${esc(bg)};border-radius:12px;text-align:${esc(align)};padding:14px 12px;border-top:1px solid #eee;">
+    ${ctaHtml}
+    ${finePrint}
+  </td></tr>
 </table>`;
 }
 
@@ -630,7 +796,7 @@ function renderCanvasBlock(
 
   switch (block.kind) {
     case "hero":
-      return proxy("header");
+      return renderHeroBlockHtml(block, state);
     case "message":
       return proxy("message");
     case "calendar":

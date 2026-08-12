@@ -177,6 +177,20 @@ export type NewsletterEventInsertLayout =
   | "columns"
   | "grid";
 
+export type NewsletterTextAlign = "left" | "center" | "right";
+
+/** Email-safe font presets used by heading/text/header/footer styling. */
+export type NewsletterFontFamily =
+  | "georgia"
+  | "arial"
+  | "helvetica"
+  | "verdana"
+  | "times";
+
+export type NewsletterFontSize = "sm" | "md" | "lg" | "xl";
+
+export type NewsletterButtonLayout = "stack" | "row";
+
 export type NewsletterCanvasListItem = {
   id: string;
   text: string;
@@ -191,6 +205,15 @@ export type NewsletterCanvasColumn = {
   text: string;
   buttonLabel: string;
   buttonUrl: string;
+};
+
+/** Up to two CTAs inside a Button block (or optional header/footer CTA). */
+export type NewsletterCanvasButton = {
+  id: string;
+  label: string;
+  url: string;
+  backgroundColor: string | null;
+  textColor: string | null;
 };
 
 export type NewsletterCanvasBlock = {
@@ -213,12 +236,25 @@ export type NewsletterCanvasBlock = {
   imageUrl: string | null;
   imageLink: string;
   imageAlt: string;
+  /** @deprecated Prefer `buttons[0]` — kept for older drafts. */
   buttonLabel: string;
+  /** @deprecated Prefer `buttons[0]` — kept for older drafts. */
   buttonUrl: string;
   columns: NewsletterCanvasColumn[];
   items: NewsletterCanvasListItem[];
   spacingPx: number;
   backgroundColor: string | null;
+
+  /** Shared typography / color for heading, text, hero, footer blocks. */
+  textColor: string | null;
+  fontFamily: NewsletterFontFamily | null;
+  fontSize: NewsletterFontSize | null;
+  textAlign: NewsletterTextAlign | null;
+
+  /** Button block: 1–2 buttons + layout. Also used for hero/footer optional CTA. */
+  buttons: NewsletterCanvasButton[];
+  buttonLayout: NewsletterButtonLayout;
+  showCta: boolean;
 };
 
 export type NewsletterComposerState = {
