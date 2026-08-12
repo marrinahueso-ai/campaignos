@@ -197,6 +197,22 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
   const phaseItems = buildArtworkPhaseItemsFromMilestones(milestones);
   const now = new Date().toISOString();
 
+  // Every (relative_day, platform, placement) triple below is unique, and the
+  // orphan-delete loop below only ever removes rows for days NOT in
+  // activeDays — so this index built from the one bulk fetch above stays
+  // valid for every lookup the target loop needs, without a fresh per-target
+  // round trip (previously milestones.length * META_PUBLISH_TARGETS.length
+  // extra SELECTs per sync call — the dominant source of this table's query
+  // volume in production).
+  const existingSlotByKey = new Map<string, MetaPublicationSlotRow>();
+  for (const slot of existingSlotsResult.data ?? []) {
+    const row = slot as MetaPublicationSlotRow;
+    existingSlotByKey.set(
+      `${row.relative_day}:${row.platform}:${row.placement}`,
+      row,
+    );
+  }
+
   for (const slot of existingSlotsResult.data ?? []) {
     const row = slot as MetaPublicationSlotRow;
     if (activeDays.has(row.relative_day)) {
@@ -264,25 +280,16 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
       const enabled = isTargetEnabled(surfaces, storyManualPublish, target.platform, target.placement);
       const eventAssetId = target.usesArtwork === "feed" ? feedAssetId : storyAssetId;
 
-      const { data: existing, error: existingError } = await supabase
-        .from("meta_publication_slots")
-        .select("*")
-        .eq("event_id", eventId)
-        .eq("relative_day", milestone.relativeDay)
-        .eq("platform", target.platform)
-        .eq("placement", target.placement)
-        .maybeSingle();
-
-      if (isMissingMetaSlotsTable(existingError)) {
-        return false;
-      }
+      const existing = existingSlotByKey.get(
+        `${milestone.relativeDay}:${target.platform}:${target.placement}`,
+      ) ?? null;
 
       if (!enabled) {
         if (!existing) {
           continue;
         }
 
-        const row = existing as MetaPublicationSlotRow;
+        const row = existing;
         if (row.status === "published" || row.status === "cancelled") {
           continue;
         }
@@ -303,7 +310,7 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
       };
 
       if (existing) {
-        const row = existing as MetaPublicationSlotRow;
+        const row = existing;
         if (row.status === "published") {
           continue;
         }

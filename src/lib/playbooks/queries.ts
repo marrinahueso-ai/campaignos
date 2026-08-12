@@ -193,7 +193,12 @@ export async function getDefaultPlaybookIdForEventType(
   return SYSTEM_PLAYBOOK_IDS[eventType] ?? SYSTEM_PLAYBOOK_IDS[DEFAULT_EVENT_TYPE];
 }
 
-export async function getEventPlaybookData(
+/**
+ * Per-request cached — called from many places for the same event
+ * (communication items sync, planning hub render, AI grounding/strategy
+ * context, calendar preview) that can overlap within a single request.
+ */
+export const getEventPlaybookData = cache(async function getEventPlaybookData(
   eventId: string,
 ): Promise<EventPlaybookData | null> {
   const supabase = await createClient();
@@ -241,7 +246,7 @@ export async function getEventPlaybookData(
     steps,
     healthPercent: health.healthPercent,
   };
-}
+});
 
 export async function getEventCommunicationSteps(
   eventId: string,

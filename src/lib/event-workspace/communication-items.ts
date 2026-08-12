@@ -166,10 +166,31 @@ export async function ensureStepCommunicationItemsForEvent(
     return 0;
   }
 
+  const persistableSteps = playbookData.steps.filter((step) =>
+    isPersistableStepId(step.id),
+  );
+  if (!persistableSteps.length) {
+    return 0;
+  }
+
+  // This "ensure" runs on every sync (playbook edits, approvals, milestone
+  // changes, ...), and after the first run every step already has an item —
+  // so a per-step existence SELECT (findCommunicationItemForStep) was the
+  // common case, not the exception. One bulk fetch tells us which steps
+  // already have an item; ensureCommunicationItemForStep (with its own
+  // idempotent check + insert) only runs for steps that are actually new.
+  const existingItems = await getStepCommunicationItemRowsForEvent(eventId);
+  const stepIdsWithItem = new Set(
+    existingItems
+      .map((item) => item.event_communication_step_id)
+      .filter((id): id is string => Boolean(id)),
+  );
+
   let ensured = 0;
 
-  for (const step of playbookData.steps) {
-    if (!isPersistableStepId(step.id)) {
+  for (const step of persistableSteps) {
+    if (stepIdsWithItem.has(step.id)) {
+      ensured += 1;
       continue;
     }
 
