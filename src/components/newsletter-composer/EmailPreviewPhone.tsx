@@ -81,6 +81,16 @@ export function EmailPreviewDesktop({
   const fragment = tryExportNewsletterPreviewFragment(state) ?? "";
   const fromName = state.fromName?.trim() || "Hey Ralli";
   const subject = state.subject?.trim() || "Newsletter";
+  const body = fragment.trim() ? (
+    <div
+      className="mx-auto max-h-[min(70vh,720px)] max-w-[560px] overflow-y-auto bg-white px-5 py-5 [&_a]:pointer-events-none"
+      dangerouslySetInnerHTML={{ __html: fragment }}
+    />
+  ) : (
+    <div className="mx-auto max-w-[560px] px-5 py-10 text-center text-sm text-cos-muted">
+      No newsletter content to preview yet. Go back to the editor and add blocks.
+    </div>
+  );
 
   if (!showMailChrome) {
     return (
@@ -93,10 +103,7 @@ export function EmailPreviewDesktop({
             {subject}
           </p>
         </div>
-        <div
-          className="mx-auto max-h-[min(62vh,640px)] max-w-[560px] overflow-y-auto bg-white px-5 py-5 [&_a]:pointer-events-none"
-          dangerouslySetInnerHTML={{ __html: fragment }}
-        />
+        {body}
       </div>
     );
   }
@@ -134,10 +141,17 @@ export function EmailPreviewDesktop({
               {subject}
             </p>
           </div>
-          <div
-            className="mx-auto max-h-[480px] max-w-[560px] overflow-y-auto bg-white px-5 py-5 [&_a]:pointer-events-none"
-            dangerouslySetInnerHTML={{ __html: fragment }}
-          />
+          {fragment.trim() ? (
+            <div
+              className="mx-auto max-h-[min(70vh,720px)] max-w-[560px] overflow-y-auto bg-white px-5 py-5 [&_a]:pointer-events-none"
+              dangerouslySetInnerHTML={{ __html: fragment }}
+            />
+          ) : (
+            <div className="mx-auto max-w-[560px] px-5 py-10 text-center text-sm text-cos-muted">
+              No newsletter content to preview yet. Go back to the editor and add
+              blocks.
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -50,7 +50,7 @@ export default async function NewsletterPreviewPage({ params }: PreviewPageProps
     redirect(`/newsletters/${newsletterId}`);
   }
 
-  const { newsletter, currentVersion, approvedVersion, audiences } = payload;
+  const { newsletter, audiences } = payload;
 
   if (
     newsletter.status === "needs_approval" ||
@@ -69,10 +69,9 @@ export default async function NewsletterPreviewPage({ params }: PreviewPageProps
     }),
   );
 
-  const previewState =
-    currentVersion?.snapshot ??
-    approvedVersion?.snapshot ??
-    newsletter.composerState;
+  // Preview & Send / Resubmit must show the live draft the creator is about
+  // to submit — not a stale frozen version from a prior approval round.
+  const previewState = newsletter.composerState;
 
   const isResubmit = newsletter.status === "changes_requested";
 

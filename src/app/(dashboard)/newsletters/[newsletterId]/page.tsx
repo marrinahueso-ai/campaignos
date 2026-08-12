@@ -64,16 +64,21 @@ export default async function NewsletterDetailPage({ params }: NewsletterDetailP
     ? (await listNewsletterAudienceMemberIds(organization.id, audience.id)).length
     : null;
 
+  // Draft / changes_requested: show the live composer draft.
+  // Approved+ pipeline: prefer the frozen approved/current version snapshot.
   const previewState =
-    payload.newsletter.status === "approved" ||
-    payload.newsletter.status === "scheduled" ||
-    payload.newsletter.status === "sending" ||
-    payload.newsletter.status === "sent" ||
-    payload.newsletter.status === "failed"
-      ? payload.approvedVersion?.snapshot ??
-        payload.currentVersion?.snapshot ??
-        payload.newsletter.composerState
-      : payload.currentVersion?.snapshot ?? payload.newsletter.composerState;
+    payload.newsletter.status === "draft" ||
+    payload.newsletter.status === "changes_requested"
+      ? payload.newsletter.composerState
+      : payload.newsletter.status === "approved" ||
+          payload.newsletter.status === "scheduled" ||
+          payload.newsletter.status === "sending" ||
+          payload.newsletter.status === "sent" ||
+          payload.newsletter.status === "failed"
+        ? payload.approvedVersion?.snapshot ??
+          payload.currentVersion?.snapshot ??
+          payload.newsletter.composerState
+        : payload.newsletter.composerState;
 
   return (
     <NewsletterStatusShell
