@@ -4,7 +4,9 @@ import {
   applySyncReviewDecision,
   buildSyncReviewSummaryCopy,
   getSyncReviewChangeDiffs,
+  partitionFirstImportSections,
   partitionSyncReviewSections,
+  resolveCalendarReviewMode,
 } from "../sync-review-decisions.ts";
 import type { CalendarReviewEvent } from "../../../types/calendar-review.ts";
 
@@ -138,5 +140,61 @@ describe("buildSyncReviewSummaryCopy", () => {
       skippedUpdates: [],
     });
     assert.match(copy, /1 thing that needs a quick look/i);
+  });
+});
+
+describe("resolveCalendarReviewMode", () => {
+  it("uses first_import when there is no prior import and no updates", () => {
+    assert.equal(
+      resolveCalendarReviewMode(
+        [event({ name: "Fair", date: "2026-10-01", status: "ready" })],
+        { hasPriorImportedCalendar: false },
+      ),
+      "first_import",
+    );
+  });
+
+  it("uses sync when the org already imported a calendar", () => {
+    assert.equal(
+      resolveCalendarReviewMode(
+        [event({ name: "Fair", date: "2026-10-01", status: "ready" })],
+        { hasPriorImportedCalendar: true },
+      ),
+      "sync",
+    );
+  });
+
+  it("uses sync when the batch includes update rows", () => {
+    assert.equal(
+      resolveCalendarReviewMode(
+        [
+          event({
+            name: "Fair",
+            date: "2026-10-08",
+            status: "update",
+            existingEventId: "e1",
+          }),
+        ],
+        { hasPriorImportedCalendar: false },
+      ),
+      "sync",
+    );
+  });
+});
+
+describe("partitionFirstImportSections", () => {
+  it("puts matched duplicates into needs attention and ready rows into readyToAdd", () => {
+    const sections = partitionFirstImportSections([
+      event({ name: "Ready", date: "2026-10-01", status: "ready" }),
+      event({
+        name: "Dup",
+        date: "2026-10-02",
+        status: "duplicate",
+        existingEventId: "e1",
+      }),
+      event({ name: "Conflict", date: "2026-10-03", status: "conflict" }),
+    ]);
+    assert.equal(sections.readyToAdd.length, 1);
+    assert.equal(sections.needsAttention.length, 2);
   });
 });

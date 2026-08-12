@@ -82,6 +82,7 @@ export const getCalendarReviewPageData = cache(async (
   reviewData: CalendarReviewData | null;
   importedEventCount: number;
   playbookOptions: ReviewPlaybookOption[];
+  hasPriorImportedCalendar: boolean;
 }> => {
   const importRecord = importId?.trim()
     ? await getCalendarImportById(importId.trim())
@@ -93,6 +94,7 @@ export const getCalendarReviewPageData = cache(async (
       reviewData: null,
       importedEventCount: 0,
       playbookOptions: [],
+      hasPriorImportedCalendar: false,
     };
   }
 
@@ -127,16 +129,27 @@ export const getCalendarReviewPageData = cache(async (
   };
 
   const supabase = await createClient();
-  const { count } = await supabase
-    .from("events")
-    .select("*", { count: "exact", head: true })
-    .eq("calendar_import_id", importRecord.id);
+  const [{ count }, priorImport] = await Promise.all([
+    supabase
+      .from("events")
+      .select("*", { count: "exact", head: true })
+      .eq("calendar_import_id", importRecord.id),
+    supabase
+      .from("calendar_imports")
+      .select("id")
+      .eq("organization_id", importRecord.organizationId)
+      .eq("parse_status", "imported")
+      .neq("id", importRecord.id)
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   return {
     importRecord,
     reviewData,
     importedEventCount: count ?? 0,
     playbookOptions,
+    hasPriorImportedCalendar: Boolean(priorImport.data),
   };
 });
 

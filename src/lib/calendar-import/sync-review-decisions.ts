@@ -1,5 +1,7 @@
 import type { CalendarReviewEvent } from "@/types/calendar-review";
 
+export type CalendarReviewMode = "first_import" | "sync";
+
 export type SyncReviewDecision =
   | "use_calendar_update"
   | "keep_hey_ralli"
@@ -12,6 +14,30 @@ export type SyncReviewSections = {
   alreadyOnCalendar: CalendarReviewEvent[];
   skippedUpdates: CalendarReviewEvent[];
 };
+
+export type FirstImportSections = {
+  needsAttention: CalendarReviewEvent[];
+  readyToAdd: CalendarReviewEvent[];
+  alreadyOnCalendar: CalendarReviewEvent[];
+};
+
+/**
+ * First import = no prior completed calendar import for the org, and this batch
+ * has no Update rows (those only appear on re-sync against existing imports).
+ * Otherwise use Sync Review.
+ */
+export function resolveCalendarReviewMode(
+  events: CalendarReviewEvent[],
+  options: { hasPriorImportedCalendar: boolean },
+): CalendarReviewMode {
+  if (options.hasPriorImportedCalendar) {
+    return "sync";
+  }
+  if (events.some((event) => event.status === "update")) {
+    return "sync";
+  }
+  return "first_import";
+}
 
 /**
  * Partition review rows for the Sync Review UX.
@@ -62,6 +88,38 @@ export function partitionSyncReviewSections(
   };
 }
 
+/**
+ * First Import partition: ready list + attention for conflicts / ambiguous /
+ * possible duplicates against anything already in Hey Ralli.
+ */
+export function partitionFirstImportSections(
+  events: CalendarReviewEvent[],
+): FirstImportSections {
+  const needsAttention: CalendarReviewEvent[] = [];
+  const readyToAdd: CalendarReviewEvent[] = [];
+  const alreadyOnCalendar: CalendarReviewEvent[] = [];
+
+  for (const event of events) {
+    if (
+      event.status === "conflict" ||
+      event.status === "needs_review" ||
+      (event.status === "duplicate" && event.existingEventId)
+    ) {
+      needsAttention.push(event);
+      continue;
+    }
+    if (event.status === "duplicate") {
+      alreadyOnCalendar.push(event);
+      continue;
+    }
+    if (event.status === "ready") {
+      readyToAdd.push(event);
+    }
+  }
+
+  return { needsAttention, readyToAdd, alreadyOnCalendar };
+}
+
 export function buildSyncReviewSummaryCopy(sections: SyncReviewSections): string {
   const needs = sections.needsAttention.length;
   const changed = sections.changes.length;
@@ -94,9 +152,34 @@ export function buildSyncReviewSummaryCopy(sections: SyncReviewSections): string
   return `Hey Ralli checked your calendar and handled it. I only found ${needs} thing${needs === 1 ? "" : "s"} that need${needs === 1 ? "s" : ""} a quick look from you.`;
 }
 
+export function buildFirstImportSummaryCopy(
+  sections: FirstImportSections,
+  totalFound: number,
+): string {
+  if (totalFound === 0) {
+    return "Hey Ralli couldn’t find events to bring in from this calendar.";
+  }
+  if (sections.needsAttention.length === 0) {
+    return "Hey Ralli successfully found your calendar events. They’re ready to add to your schedule.";
+  }
+  return "Hey Ralli successfully found your calendar events. Take a quick look before I add them to your schedule.";
+}
+
+/** Events that Finish / Add will create (not skipped duplicates/conflicts). */
+export function countEventsToAdd(events: CalendarReviewEvent[]): number {
+  let count = 0;
+  for (const event of events) {
+    if (event.status === "ready" || event.status === "needs_review") {
+      count += 1;
+    }
+  }
+  return count;
+}
+
 /**
  * Apply a Sync Review decision to one row.
  * Maps onto existing status / applyUpdate semantics used by import.
+ * Same decisions are reused for First Import (button labels differ in UI).
  */
 export function applySyncReviewDecision(
   event: CalendarReviewEvent,
@@ -139,7 +222,7 @@ export function applySyncReviewDecision(
     };
   }
 
-  // use_calendar_update
+  // use_calendar_update / Use Calendar Event
   if (event.status === "update") {
     return {
       ...event,

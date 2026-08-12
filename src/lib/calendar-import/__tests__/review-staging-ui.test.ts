@@ -46,11 +46,16 @@ describe("calendar review staging contracts", () => {
       "../../../components/calendar-review/CalendarImportReview.tsx",
     );
     assert.match(review, /Finish Review/);
+    assert.match(review, /Add Events to Calendar/);
     assert.match(review, /Use Calendar Update/);
+    assert.match(review, /Use Calendar Event/);
     assert.match(review, /Keep Hey Ralli Event/);
     assert.match(review, /Keep Both/);
     assert.match(review, /Currently in Hey Ralli/);
     assert.match(review, /From your connected calendar/);
+    assert.match(review, /From your calendar/);
+    assert.match(review, /First Calendar Import/);
+    assert.match(review, /Calendar Sync Review/);
     assert.doesNotMatch(review, /Import ready items/);
   });
 });

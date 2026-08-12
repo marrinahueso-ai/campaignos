@@ -75,6 +75,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
         data={reviewPage.reviewData}
         importedEventCount={reviewPage.importedEventCount}
         playbookOptions={reviewPage.playbookOptions}
+        hasPriorImportedCalendar={reviewPage.hasPriorImportedCalendar}
         embedded
       />
     ) : (

@@ -22,10 +22,14 @@ import {
 import type { ReviewPlaybookOption } from "@/lib/calendar-import/review-plan-options";
 import {
   applySyncReviewDecision,
+  buildFirstImportSummaryCopy,
   buildSyncReviewSummaryCopy,
+  countEventsToAdd,
   formatSyncReviewShortDate,
   getSyncReviewChangeDiffs,
+  partitionFirstImportSections,
   partitionSyncReviewSections,
+  resolveCalendarReviewMode,
   type SyncReviewDecision,
 } from "@/lib/calendar-import/sync-review-decisions";
 import { cn } from "@/lib/utils/cn";
@@ -37,6 +41,8 @@ import type {
 } from "@/types/calendar-review";
 import { CALENDAR_EVENT_CATEGORY_LABELS } from "@/types/calendar-review";
 
+const READY_PREVIEW_LIMIT = 5;
+
 interface CalendarImportReviewProps {
   importId: string;
   parseStatus: CalendarParseStatus;
@@ -44,6 +50,8 @@ interface CalendarImportReviewProps {
   data: CalendarReviewData;
   importedEventCount: number;
   playbookOptions: ReviewPlaybookOption[];
+  /** True when the org has completed a prior calendar import (sync mode). */
+  hasPriorImportedCalendar?: boolean;
   /** Hide standalone page chrome when rendered inside Calendar tabs. */
   embedded?: boolean;
   onGoToImport?: () => void;
@@ -56,6 +64,7 @@ export function CalendarImportReview({
   data,
   importedEventCount,
   playbookOptions,
+  hasPriorImportedCalendar = false,
   embedded = false,
   onGoToImport,
 }: CalendarImportReviewProps) {
@@ -71,13 +80,42 @@ export function CalendarImportReview({
   const [importedCount, setImportedCount] = useState(importedEventCount);
   const [updatedCount, setUpdatedCount] = useState(0);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [showAllReady, setShowAllReady] = useState(false);
   const [isPending, startTransition] = useTransition();
   const parseStartedRef = useRef(false);
 
-  const sections = useMemo(() => partitionSyncReviewSections(events), [events]);
+  const reviewMode = useMemo(
+    () =>
+      resolveCalendarReviewMode(events, {
+        hasPriorImportedCalendar,
+      }),
+    [events, hasPriorImportedCalendar],
+  );
+  const isFirstImport = reviewMode === "first_import";
+
+  const syncSections = useMemo(
+    () => partitionSyncReviewSections(events),
+    [events],
+  );
+  const firstSections = useMemo(
+    () => partitionFirstImportSections(events),
+    [events],
+  );
   const summaryCopy = useMemo(
-    () => buildSyncReviewSummaryCopy(sections),
-    [sections],
+    () =>
+      isFirstImport
+        ? buildFirstImportSummaryCopy(firstSections, events.length)
+        : buildSyncReviewSummaryCopy(syncSections),
+    [isFirstImport, firstSections, syncSections, events.length],
+  );
+  const eventsToAddCount = useMemo(() => countEventsToAdd(events), [events]);
+  const readyPreview = useMemo(() => {
+    if (showAllReady) return firstSections.readyToAdd;
+    return firstSections.readyToAdd.slice(0, READY_PREVIEW_LIMIT);
+  }, [firstSections.readyToAdd, showAllReady]);
+  const readyHiddenCount = Math.max(
+    0,
+    firstSections.readyToAdd.length - READY_PREVIEW_LIMIT,
   );
   const isImported = parseStatus === "imported" || importComplete;
 
@@ -222,11 +260,15 @@ export function CalendarImportReview({
     </Link>
   );
 
+  const attentionEvents = isFirstImport
+    ? firstSections.needsAttention
+    : syncSections.needsAttention;
+
   return (
     <div className="space-y-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-          Calendar Sync Review
+          {isFirstImport ? "First Calendar Import" : "Calendar Sync Review"}
           {data.filename ? (
             <span className="ml-2 font-semibold tracking-normal text-cos-muted normal-case">
               · {data.filename}
@@ -322,30 +364,56 @@ export function CalendarImportReview({
         <>
           <header className="space-y-6">
             <h1 className="font-display text-[clamp(2rem,4vw,3.25rem)] font-semibold tracking-[-0.02em] text-cos-text">
-              {isImported ? "Calendar updated" : "Review calendar sync"}
+              {isImported
+                ? isFirstImport
+                  ? "Calendar imported"
+                  : "Calendar updated"
+                : isFirstImport
+                  ? "Calendar ready to import"
+                  : "Review calendar sync"}
             </h1>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <SummaryCard
-                value={sections.newlyAdded.length}
-                label="new events added"
-                tone="success"
-              />
-              <SummaryCard
-                value={sections.changes.length}
-                label="events changed"
-                tone="neutral"
-              />
-              <SummaryCard
-                value={sections.needsAttention.length}
-                label="needs your review"
-                tone="attention"
-              />
-            </div>
+            {isFirstImport ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <SummaryCard
+                  value={events.length}
+                  label="events found"
+                  tone="neutral"
+                />
+                <SummaryCard
+                  value={firstSections.readyToAdd.length}
+                  label="ready to add"
+                  tone="success"
+                />
+                <SummaryCard
+                  value={firstSections.needsAttention.length}
+                  label="need your review"
+                  tone="attention"
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <SummaryCard
+                  value={syncSections.newlyAdded.length}
+                  label="new events added"
+                  tone="success"
+                />
+                <SummaryCard
+                  value={syncSections.changes.length}
+                  label="events changed"
+                  tone="neutral"
+                />
+                <SummaryCard
+                  value={syncSections.needsAttention.length}
+                  label="needs your review"
+                  tone="attention"
+                />
+              </div>
+            )}
 
-            {sections.alreadyOnCalendar.length > 0 ? (
+            {!isFirstImport && syncSections.alreadyOnCalendar.length > 0 ? (
               <p className="text-sm text-cos-muted">
-                {sections.alreadyOnCalendar.length} already on your calendar
+                {syncSections.alreadyOnCalendar.length} already on your calendar
                 (skipped).
               </p>
             ) : null}
@@ -355,7 +423,7 @@ export function CalendarImportReview({
             </p>
           </header>
 
-          {sections.needsAttention.length > 0 && !isImported ? (
+          {attentionEvents.length > 0 && !isImported ? (
             <section className="space-y-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cos-brand-terracotta text-white">
@@ -367,11 +435,12 @@ export function CalendarImportReview({
               </div>
 
               <div className="space-y-4">
-                {sections.needsAttention.map((event) => (
+                {attentionEvents.map((event) => (
                   <AttentionCard
                     key={event.id}
                     event={event}
                     disabled={isPending}
+                    mode={reviewMode}
                     onDecision={(decision) => handleDecision(event.id, decision)}
                     onEdit={() => setEditingEvent(event)}
                   />
@@ -380,52 +449,98 @@ export function CalendarImportReview({
             </section>
           ) : null}
 
-          {sections.changes.length > 0 ? (
-            <section className="space-y-5">
-              <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-cos-text">
-                Changes
-              </h2>
-              <div className="space-y-6 rounded-[32px] border border-cos-border bg-[rgba(246,242,235,0.85)] p-6 sm:p-8">
-                {sections.changes.map((event, index) => (
-                  <ChangeRow
-                    key={event.id}
-                    event={event}
-                    showDivider={index < sections.changes.length - 1}
-                    disabled={isPending || isImported}
-                    onDecision={(decision) => handleDecision(event.id, decision)}
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {sections.newlyAdded.length > 0 ? (
-            <section className="space-y-5">
-              <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-cos-text">
-                Newly added
-              </h2>
-              <div className="divide-y divide-cos-border overflow-hidden rounded-[32px] border border-cos-border bg-cos-card">
-                {sections.newlyAdded.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex items-center justify-between gap-4 px-6 py-5 transition hover:bg-[rgba(246,242,235,0.55)]"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Check className="h-4 w-4 shrink-0 text-cos-brand-sage" />
-                      <span className="truncate font-display text-lg font-medium text-cos-text">
-                        {event.name}
+          {isFirstImport ? (
+            firstSections.readyToAdd.length > 0 ? (
+              <section className="space-y-5">
+                <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-cos-text">
+                  Ready to import
+                </h2>
+                <div className="divide-y divide-cos-border overflow-hidden rounded-[32px] border border-cos-border bg-cos-card">
+                  {readyPreview.map((event) => (
+                    <div
+                      key={event.id}
+                      className="flex items-center justify-between gap-4 px-6 py-5 transition hover:bg-[rgba(246,242,235,0.55)]"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-cos-brand-sage/30" />
+                        <span className="truncate font-display text-lg font-medium text-cos-text">
+                          {event.name}
+                        </span>
+                      </div>
+                      <span className="shrink-0 text-sm text-cos-muted">
+                        {formatSyncReviewShortDate(event.date)}
+                        {" · "}
+                        {CALENDAR_EVENT_CATEGORY_LABELS[event.category]}
                       </span>
                     </div>
-                    <span className="shrink-0 text-sm text-cos-muted">
-                      {formatSyncReviewShortDate(event.date)}
-                      {" · "}
-                      {CALENDAR_EVENT_CATEGORY_LABELS[event.category]}
-                    </span>
+                  ))}
+                </div>
+                {!showAllReady && readyHiddenCount > 0 ? (
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllReady(true)}
+                      className="text-sm font-medium text-cos-brand-sage hover:underline"
+                    >
+                      Show {readyHiddenCount} more event
+                      {readyHiddenCount === 1 ? "" : "s"}…
+                    </button>
                   </div>
-                ))}
-              </div>
-            </section>
-          ) : null}
+                ) : null}
+              </section>
+            ) : null
+          ) : (
+            <>
+              {syncSections.changes.length > 0 ? (
+                <section className="space-y-5">
+                  <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-cos-text">
+                    Changes
+                  </h2>
+                  <div className="space-y-6 rounded-[32px] border border-cos-border bg-[rgba(246,242,235,0.85)] p-6 sm:p-8">
+                    {syncSections.changes.map((event, index) => (
+                      <ChangeRow
+                        key={event.id}
+                        event={event}
+                        showDivider={index < syncSections.changes.length - 1}
+                        disabled={isPending || isImported}
+                        onDecision={(decision) =>
+                          handleDecision(event.id, decision)
+                        }
+                      />
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {syncSections.newlyAdded.length > 0 ? (
+                <section className="space-y-5">
+                  <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-cos-text">
+                    Newly added
+                  </h2>
+                  <div className="divide-y divide-cos-border overflow-hidden rounded-[32px] border border-cos-border bg-cos-card">
+                    {syncSections.newlyAdded.map((event) => (
+                      <div
+                        key={event.id}
+                        className="flex items-center justify-between gap-4 px-6 py-5 transition hover:bg-[rgba(246,242,235,0.55)]"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <Check className="h-4 w-4 shrink-0 text-cos-brand-sage" />
+                          <span className="truncate font-display text-lg font-medium text-cos-text">
+                            {event.name}
+                          </span>
+                        </div>
+                        <span className="shrink-0 text-sm text-cos-muted">
+                          {formatSyncReviewShortDate(event.date)}
+                          {" · "}
+                          {CALENDAR_EVENT_CATEGORY_LABELS[event.category]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+            </>
+          )}
 
           {!isImported ? (
             <div className="pt-4 text-center">
@@ -435,10 +550,18 @@ export function CalendarImportReview({
                 disabled={isPending}
                 className="inline-flex items-center rounded-full bg-cos-text px-12 py-4 text-lg font-bold text-cos-card shadow-lg transition hover:-translate-y-0.5 hover:bg-cos-brand-sage disabled:opacity-50"
               >
-                {isPending ? "Finishing…" : "Finish Review"}
+                {isPending
+                  ? isFirstImport
+                    ? "Adding…"
+                    : "Finishing…"
+                  : isFirstImport
+                    ? "Add Events to Calendar"
+                    : "Finish Review"}
               </button>
               <p className="mt-3 text-sm text-cos-muted">
-                Adds new events, applies updates you kept, and skips duplicates.
+                {isFirstImport
+                  ? `This will add ${eventsToAddCount} event${eventsToAddCount === 1 ? "" : "s"} to your Hey Ralli calendar.`
+                  : "Adds new events, applies updates you kept, and skips duplicates."}
               </p>
             </div>
           ) : null}
@@ -505,11 +628,13 @@ function SummaryCard({
 function AttentionCard({
   event,
   disabled,
+  mode,
   onDecision,
   onEdit,
 }: {
   event: CalendarReviewEvent;
   disabled: boolean;
+  mode: "first_import" | "sync";
   onDecision: (decision: SyncReviewDecision) => void;
   onEdit: () => void;
 }) {
@@ -523,6 +648,12 @@ function AttentionCard({
       : event.status === "needs_review"
         ? "Needs a closer look before adding"
         : "Possible duplicate");
+  const calendarSourceLabel =
+    mode === "first_import"
+      ? "From your calendar"
+      : "From your connected calendar";
+  const primaryActionLabel =
+    mode === "first_import" ? "Use Calendar Event" : "Use Calendar Update";
 
   return (
     <article className="overflow-hidden rounded-[32px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
@@ -570,7 +701,7 @@ function AttentionCard({
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-cos-brand-sage">
-                From your connected calendar
+                {calendarSourceLabel}
               </span>
               <span className="rounded-full bg-cos-brand-sage-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cos-brand-sage">
                 Recommended
@@ -595,7 +726,7 @@ function AttentionCard({
             onClick={() => onDecision("use_calendar_update")}
             className="inline-flex items-center rounded-full bg-cos-brand-sage px-8 py-3.5 text-[13px] font-bold text-white transition hover:brightness-95 disabled:opacity-50"
           >
-            Use Calendar Update
+            {primaryActionLabel}
           </button>
           <button
             type="button"

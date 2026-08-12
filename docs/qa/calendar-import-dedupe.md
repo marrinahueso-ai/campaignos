@@ -65,7 +65,7 @@ Org scoping: events are unique per **school year** (`school_year_id` + source + 
 
 ### Interactive review vs cron / overnight sync
 
-- **Import review UI:** Sync Review summary (new / changed / needs attention). Statuses **New / Duplicate / Update / Conflict** (+ `needs_review`). Update rows show old → new (Hey Ralli vs connected calendar). Conflict / needs-review cards use **Currently in Hey Ralli** · **From your connected calendar** with **Use Calendar Update** / **Keep Hey Ralli Event** / **Keep Both**. Primary action: **Finish Review** (same create / patch / skip import path).
+- **Import review UI:** Two modes on the same review surface. **First Import** (no prior completed import): summary of events found / ready to add / need review; **Ready to import** list; primary **Add Events to Calendar**. **Sync Review** (later Google/RSS refresh): summary of new / changed / needs attention; Changes show old → new; primary **Finish Review**. Statuses **New / Duplicate / Update / Conflict** (+ `needs_review`). Conflict / needs-review cards use **Currently in Hey Ralli** · **From your calendar** (first) / **From your connected calendar** (sync) with **Use Calendar Event** / **Use Calendar Update** · **Keep Hey Ralli Event** · **Keep Both**. Both modes use the same create / patch / skip import path.
 - **Subscribe cron / Google overnight:** same classification; New/Update/Conflict **stage into Review** (not auto-applied). Unchanged ids skipped; prior-year dates filtered out.
 
 ---
