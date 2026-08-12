@@ -55,7 +55,7 @@ export const areEventPlaybookTaskGroupsAvailable = cache(async (): Promise<boole
 });
 
 /** Events eligible for Event Playbooks — non calendar-only, active school year when set. */
-export async function getEventPlaybookEvents(
+export const getEventPlaybookEvents = cache(async function getEventPlaybookEvents(
   organizationId: string | null,
 ): Promise<Event[]> {
   const supabase = await createClient();
@@ -82,7 +82,7 @@ export async function getEventPlaybookEvents(
   }
 
   return mapEventRows((data ?? []) as unknown as EventRow[]);
-}
+});
 
 export type GetEventPlaybookTasksOptions = {
   limit?: number;

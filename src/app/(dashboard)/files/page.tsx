@@ -11,21 +11,32 @@ interface FilesPageProps {
   searchParams: Promise<{ event?: string }>;
 }
 
-export default async function FilesPage({ searchParams }: FilesPageProps) {
-  const params = await searchParams;
+function FilesLoadingFallback() {
+  return <div className="min-h-[16rem] animate-pulse bg-cos-bg/60" />;
+}
+
+async function FilesPageBody({ eventParam }: { eventParam: string | null }) {
   const [data, initialEventLayout] = await Promise.all([
     getFilesPageData(),
     getFilesLayoutForCurrentUser(),
   ]);
 
   return (
+    <FilesEaseShell
+      data={data}
+      initialEventId={eventParam}
+      initialEventLayout={initialEventLayout}
+    />
+  );
+}
+
+export default async function FilesPage({ searchParams }: FilesPageProps) {
+  const params = await searchParams;
+
+  return (
     <div className="studio-page pb-12">
-      <Suspense fallback={<div className="min-h-[16rem] animate-pulse bg-cos-bg/60" />}>
-        <FilesEaseShell
-          data={data}
-          initialEventId={params.event ?? null}
-          initialEventLayout={initialEventLayout}
-        />
+      <Suspense fallback={<FilesLoadingFallback />}>
+        <FilesPageBody eventParam={params.event ?? null} />
       </Suspense>
     </div>
   );

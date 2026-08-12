@@ -60,9 +60,13 @@ export async function loadLiveMilestoneNamesById(
 /**
  * When Social renames a post, keep pending approval rows in sync so the
  * Approvals hub Post name matches Create with AI.
+ *
+ * Pass `previous` from the loaded session to skip no-op name syncs on routine
+ * autosaves (avoids N UPDATEs on approval_scheduling_items every keystroke).
  */
 export async function syncSchedulingMilestoneNamesFromSession(
   session: CampaignBuilderSession,
+  previous?: CampaignBuilderSession | null,
 ): Promise<void> {
   const eventId = session.eventId?.trim();
   if (
@@ -73,12 +77,41 @@ export async function syncSchedulingMilestoneNamesFromSession(
     return;
   }
 
-  const supabase = await createClient();
   const campaignName = session.inspiration?.campaignName?.trim() || null;
+  const prevCampaignName =
+    previous?.inspiration?.campaignName?.trim() || null;
+  const prevById = new Map<string, string>();
+  if (Array.isArray(previous?.milestones)) {
+    for (const milestone of previous.milestones) {
+      const id = String(milestone?.id ?? "").trim();
+      const name = normalizeMilestoneName(String(milestone?.name ?? ""));
+      if (id) prevById.set(id, name);
+    }
+  }
+
+  const changed = session.milestones.filter((milestone) => {
+    const milestoneId = String(milestone.id ?? "").trim();
+    const milestoneName = normalizeMilestoneName(String(milestone.name ?? ""));
+    if (!milestoneId || isChannelPostName(milestoneName)) {
+      return false;
+    }
+    if (prevById.get(milestoneId) !== milestoneName) {
+      return true;
+    }
+    // Campaign name change still needs a row patch when names are otherwise equal.
+    return campaignName !== prevCampaignName && Boolean(campaignName);
+  });
+
+  if (changed.length === 0 && previous) {
+    return;
+  }
+
+  const supabase = await createClient();
   const now = new Date().toISOString();
+  const toSync = previous ? changed : session.milestones;
 
   await Promise.all(
-    session.milestones.map(async (milestone) => {
+    toSync.map(async (milestone) => {
       const milestoneId = String(milestone.id ?? "").trim();
       const milestoneName = normalizeMilestoneName(String(milestone.name ?? ""));
       if (!milestoneId || isChannelPostName(milestoneName)) {

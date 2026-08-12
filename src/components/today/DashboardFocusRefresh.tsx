@@ -3,8 +3,12 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
-/** Debounce rapid tab switches — DB-only refresh, no Meta or SignUpGenius calls. */
-const FOCUS_REFRESH_DEBOUNCE_MS = 2_000;
+/**
+ * Soft-refresh Dashboard when the tab becomes visible again.
+ * Debounce is intentionally long — layout + widgets are expensive, and
+ * rapid focus switches should not remount the full RSC tree.
+ */
+const FOCUS_REFRESH_DEBOUNCE_MS = 30_000;
 
 /**
  * Soft-refresh Dashboard server components when the tab becomes visible again.

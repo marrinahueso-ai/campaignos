@@ -3,7 +3,7 @@ import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import {
-  listNewsletterAudienceMemberIds,
+  countNewsletterAudienceMembersByOrg,
   listNewsletterAudiences,
 } from "@/lib/newsletter/audiences";
 import { parseNewsletterLibraryFilter } from "@/lib/newsletter/library-filters";
@@ -33,21 +33,16 @@ export default async function NewslettersPage({ searchParams }: NewslettersPageP
     );
   }
 
-  const [newsletters, canManageContacts, audiences, members] = await Promise.all([
-    listNewslettersForOrg(organization.id),
-    hasPermission("manage_newsletter_contacts"),
-    listNewsletterAudiences(organization.id),
-    getOrganizationUsers(organization.id),
-  ]);
+  const [newsletters, canManageContacts, audiences, members, countByAudience] =
+    await Promise.all([
+      listNewslettersForOrg(organization.id),
+      hasPermission("manage_newsletter_contacts"),
+      listNewsletterAudiences(organization.id),
+      getOrganizationUsers(organization.id),
+      countNewsletterAudienceMembersByOrg(organization.id),
+    ]);
 
   const audienceNameById = new Map(audiences.map((a) => [a.id, a.name]));
-  const countByAudience = new Map<string, number>();
-  await Promise.all(
-    audiences.map(async (audience) => {
-      const ids = await listNewsletterAudienceMemberIds(organization.id, audience.id);
-      countByAudience.set(audience.id, ids.length);
-    }),
-  );
 
   const nameByAuthUserId = new Map<string, string>();
   for (const member of members) {

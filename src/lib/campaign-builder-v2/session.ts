@@ -63,7 +63,7 @@ export async function saveCampaignBuilderSessionAction(
   const { syncSchedulingMilestoneNamesFromSession } = await import(
     "@/lib/approvals-scheduling/live-milestone-names"
   );
-  await syncSchedulingMilestoneNamesFromSession(protectedSession);
+  await syncSchedulingMilestoneNamesFromSession(protectedSession, existing);
 
   return { success: true, message: "Session saved." };
 }

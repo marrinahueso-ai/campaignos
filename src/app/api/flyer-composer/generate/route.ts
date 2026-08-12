@@ -14,6 +14,8 @@ import type {
 } from "@/lib/flyer-composer/types";
 
 export const dynamic = "force-dynamic";
+/** OpenAI image + optional QR composite + storage — match campaign-builder page budget. */
+export const maxDuration = 300;
 
 const SLOT_KEYS: (keyof FlyerComposerSlotFields)[] = [
   "orgName",

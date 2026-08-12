@@ -636,6 +636,7 @@ export function CampaignBuilderProvider({
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionRef = useRef(session);
   const currentStepRef = useRef(currentStep);
+  const lastServerSavedJsonRef = useRef<string | null>(null);
 
   useEffect(() => {
     sessionRef.current = session;
@@ -647,9 +648,17 @@ export function CampaignBuilderProvider({
   }, [currentStep, eventId]);
 
   const saveSessionToServer = useCallback(async (next: CampaignBuilderSession) => {
+    const serialized = JSON.stringify(next);
+    if (
+      lastServerSavedJsonRef.current != null &&
+      lastServerSavedJsonRef.current === serialized
+    ) {
+      return;
+    }
     setIsSaving(true);
     try {
       await saveCampaignBuilderSessionAction(next);
+      lastServerSavedJsonRef.current = serialized;
     } finally {
       setIsSaving(false);
     }
@@ -675,7 +684,7 @@ export function CampaignBuilderProvider({
       }
       saveTimerRef.current = setTimeout(() => {
         void saveSessionToServer(sessionRef.current);
-      }, 800);
+      }, 1500);
     },
     [saveSessionToServer],
   );

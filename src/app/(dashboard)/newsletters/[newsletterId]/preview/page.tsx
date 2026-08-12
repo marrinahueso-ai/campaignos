@@ -4,7 +4,7 @@ import { NewsletterPreviewSendShell } from "@/components/newsletters/NewsletterP
 import { accessHasPermission, getEffectiveAccess } from "@/lib/access-templates/effective-access";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import {
-  listNewsletterAudienceMemberIds,
+  countNewsletterAudienceMembersByOrg,
 } from "@/lib/newsletter/audiences";
 import { getNewsletterDetailPayload } from "@/lib/newsletter/queries";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
@@ -36,10 +36,11 @@ export default async function NewsletterPreviewPage({ params }: PreviewPageProps
     );
   }
 
-  const [payload, access, assignee] = await Promise.all([
+  const [payload, access, assignee, countByAudience] = await Promise.all([
     getNewsletterDetailPayload(organization.id, newsletterId),
     getEffectiveAccess(),
     resolveApprovalAssignee(organization.id, null),
+    countNewsletterAudienceMembersByOrg(organization.id),
   ]);
 
   if (!payload) notFound();
@@ -62,12 +63,9 @@ export default async function NewsletterPreviewPage({ params }: PreviewPageProps
   }
 
   const memberCountByAudience: Record<string, number> = {};
-  await Promise.all(
-    audiences.map(async (audience) => {
-      const ids = await listNewsletterAudienceMemberIds(organization.id, audience.id);
-      memberCountByAudience[audience.id] = ids.length;
-    }),
-  );
+  for (const audience of audiences) {
+    memberCountByAudience[audience.id] = countByAudience.get(audience.id) ?? 0;
+  }
 
   // Preview & Send / Resubmit must show the live draft the creator is about
   // to submit — not a stale frozen version from a prior approval round.

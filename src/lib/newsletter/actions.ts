@@ -49,6 +49,14 @@ function revalidateNewsletter(newsletterId?: string | null) {
   revalidatePath("/newsletters");
 }
 
+/** Quiet autosave: refresh library/detail only — do not remount the open composer. */
+function revalidateNewsletterQuiet(newsletterId?: string | null) {
+  revalidatePath("/newsletters");
+  if (newsletterId) {
+    revalidatePath(`/newsletters/${newsletterId}`);
+  }
+}
+
 /**
  * Auth user id for FKs that reference `auth.users` (created_by, approved_by, …).
  * Do NOT use EffectiveAccess.membershipId — that is `organization_users.id`.
@@ -106,6 +114,11 @@ export type SaveNewsletterDraftResult =
 export async function saveDraft(input: {
   newsletterId?: string | null;
   fields: NewsletterDraftFieldsInput;
+  /**
+   * Autosave path: skip multi-path revalidate and skip update audit spam.
+   * Creates still audit; workflow actions should omit quiet.
+   */
+  quiet?: boolean;
 }): Promise<SaveNewsletterDraftResult> {
   const access = await requirePermission("draft_edit");
   if ("error" in access) {
@@ -115,6 +128,7 @@ export async function saveDraft(input: {
   const actorUserId = await resolveAuthActorUserId();
   const supabase = await createClient();
   const now = new Date().toISOString();
+  const quiet = Boolean(input.quiet);
 
   if (!input.newsletterId) {
     const { data, error } = await supabase
@@ -140,7 +154,11 @@ export async function saveDraft(input: {
       eventType: "draft_saved",
       detail: { created: true },
     });
-    revalidateNewsletter(data.id);
+    if (!quiet) {
+      revalidateNewsletter(data.id);
+    } else {
+      revalidateNewsletterQuiet(data.id);
+    }
     return { ok: true, newsletterId: data.id };
   }
 
@@ -159,14 +177,18 @@ export async function saveDraft(input: {
     return { ok: false, error: error.message };
   }
 
-  await logNewsletterAuditEvent({
-    organizationId: access.organizationId,
-    newsletterId: input.newsletterId,
-    actorUserId,
-    eventType: "draft_saved",
-    detail: { created: false },
-  });
-  revalidateNewsletter(input.newsletterId);
+  if (!quiet) {
+    await logNewsletterAuditEvent({
+      organizationId: access.organizationId,
+      newsletterId: input.newsletterId,
+      actorUserId,
+      eventType: "draft_saved",
+      detail: { created: false },
+    });
+    revalidateNewsletter(input.newsletterId);
+  } else {
+    revalidateNewsletterQuiet(input.newsletterId);
+  }
   return { ok: true, newsletterId: input.newsletterId };
 }
 

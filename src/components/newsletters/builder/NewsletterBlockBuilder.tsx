@@ -133,6 +133,10 @@ export function NewsletterBlockBuilder({
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragIdRef = useRef<string | null>(null);
   const canvasScrollRef = useRef<HTMLElement | null>(null);
+  /** Skip the mount effect — hydrated props are already durable. */
+  const skipNextAutosaveRef = useRef(true);
+  /** Last payload successfully written (or hydrated) — skip no-op saves. */
+  const lastSavedFingerprintRef = useRef<string | null>(null);
 
   const canvasBlocks = state.canvasBlocks ?? [];
   const selectedBlock = canvasBlocks.find((b) => b.id === selectedBlockId) ?? null;
@@ -183,12 +187,36 @@ export function NewsletterBlockBuilder({
     [patch, selectedBlockId],
   );
 
-  const flushDraft = useCallback(async () => {
+  const draftFingerprint = useCallback((snapshot: NewsletterComposerState) => {
+    return JSON.stringify({
+      title: snapshot.issueName?.trim() || snapshot.subject?.trim() || "Untitled newsletter",
+      subject: snapshot.subject,
+      fromDisplayName: snapshot.fromName,
+      composerState: snapshot,
+    });
+  }, []);
+
+  // Seed fingerprint from hydrated draft so the first user edit is the first save.
+  useEffect(() => {
+    if (lastSavedFingerprintRef.current != null) return;
+    lastSavedFingerprintRef.current = draftFingerprint(stateRef.current);
+  }, [draftFingerprint]);
+
+  const flushDraft = useCallback(async (options?: { force?: boolean }) => {
     if (!organizationId) {
       setSaveLabel("Sign in to save");
       return;
     }
     const snapshot = stateRef.current;
+    const fingerprint = draftFingerprint(snapshot);
+    if (
+      !options?.force &&
+      lastSavedFingerprintRef.current != null &&
+      fingerprint === lastSavedFingerprintRef.current &&
+      newsletterIdRef.current
+    ) {
+      return;
+    }
     setSaveLabel("Saving…");
     try {
       const result = await saveNewsletterDraftAction({
@@ -199,11 +227,13 @@ export function NewsletterBlockBuilder({
           fromDisplayName: snapshot.fromName,
           composerState: snapshot,
         },
+        quiet: true,
       });
       if (!result.ok) {
         setSaveLabel(result.error || "Could not save");
         return;
       }
+      lastSavedFingerprintRef.current = fingerprint;
       if (!newsletterIdRef.current) {
         setNewsletterId(result.newsletterId);
       }
@@ -211,16 +241,19 @@ export function NewsletterBlockBuilder({
     } catch {
       setSaveLabel("Could not save");
     }
-  }, [organizationId, setNewsletterId]);
+  }, [draftFingerprint, organizationId, setNewsletterId]);
 
-  // Debounced autosave.
+  // Debounced autosave — no "Saving…" until the quiet period actually flushes.
   useEffect(() => {
+    if (skipNextAutosaveRef.current) {
+      skipNextAutosaveRef.current = false;
+      return;
+    }
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    setSaveLabel("Saving…");
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
       void flushDraft();
-    }, 600);
+    }, 900);
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);

@@ -132,7 +132,8 @@ export default async function EventsPage({
     today,
     activeSchoolYear?.id ?? null,
   );
-  const artworkByEventId = await getEventArtworkMap(artworkEventIds);
+  // Start artwork fetch while we resolve selection / roster maps (same request).
+  const artworkPromise = getEventArtworkMap(artworkEventIds);
 
   const assignmentInputs: CommitteeAssignmentInput[] = committeeAssignments.map(
     (row) => ({
@@ -174,10 +175,6 @@ export default async function EventsPage({
 
   const leanEvents = events.map(toEventsHomeEvent);
   const leanArchivedEvents = archivedEvents.map(toEventsHomeEvent);
-  const artworkRecord: Record<string, HeroArtworkSelection | null> = {};
-  for (const [eventId, artwork] of artworkByEventId) {
-    artworkRecord[eventId] = artwork;
-  }
 
   // Resolve initial selection against accessible lists only (untrusted URL id).
   const requestedInArchived =
@@ -197,9 +194,17 @@ export default async function EventsPage({
     requestedEventId,
   });
 
-  const initialSelectedStats = initialSelected
-    ? await getEventDetailHeroStats(initialSelected.id)
-    : null;
+  const [artworkByEventId, initialSelectedStats] = await Promise.all([
+    artworkPromise,
+    initialSelected
+      ? getEventDetailHeroStats(initialSelected.id)
+      : Promise.resolve(null),
+  ]);
+
+  const artworkRecord: Record<string, HeroArtworkSelection | null> = {};
+  for (const [eventId, artwork] of artworkByEventId) {
+    artworkRecord[eventId] = artwork;
+  }
 
   const canManagePeople = Boolean(
     access && accessHasPermission(access, "manage_people"),

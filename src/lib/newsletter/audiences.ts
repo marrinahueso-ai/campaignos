@@ -174,6 +174,33 @@ export async function listNewsletterAudienceMemberIds(
   return (data ?? []).map((row) => (row as { contact_id: string }).contact_id);
 }
 
+/** One query for library/hub member counts — avoids per-audience N+1. */
+export async function countNewsletterAudienceMembersByOrg(
+  organizationId: string,
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("newsletter_audience_members")
+    .select("audience_id")
+    .eq("organization_id", organizationId);
+
+  if (error) {
+    console.error(
+      "Failed to count newsletter audience members:",
+      error.message,
+    );
+    return counts;
+  }
+
+  for (const row of data ?? []) {
+    const audienceId = (row as { audience_id: string }).audience_id;
+    if (!audienceId) continue;
+    counts.set(audienceId, (counts.get(audienceId) ?? 0) + 1);
+  }
+  return counts;
+}
+
 /**
  * Server-side eligibility snapshot for an audience: total selected, how
  * many are excluded for deliverability reasons, and the deliverable

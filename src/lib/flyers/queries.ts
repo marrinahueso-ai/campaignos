@@ -55,9 +55,12 @@ export function mapFlyerRow(row: FlyerRow): Flyer {
 
 export async function listFlyersForOrg(organizationId: string): Promise<Flyer[]> {
   const supabase = await createClient();
+  // Library cards use preview_image_url + metadata — omit composer_state JSONB.
   const { data, error } = await supabase
     .from("flyers")
-    .select("*")
+    .select(
+      "id, organization_id, event_id, title, status, print_size, preview_image_url, approval_scheduling_item_id, change_request_note, created_by, updated_by, submitted_by, approved_by, submitted_at, approved_at, created_at, updated_at",
+    )
     .eq("organization_id", organizationId)
     .order("updated_at", { ascending: false });
 
@@ -65,7 +68,12 @@ export async function listFlyersForOrg(organizationId: string): Promise<Flyer[]>
     console.error("Failed to list flyers:", error.message);
     return [];
   }
-  return (data ?? []).map((row) => mapFlyerRow(row as FlyerRow));
+  return (data ?? []).map((row) =>
+    mapFlyerRow({
+      ...(row as Omit<FlyerRow, "composer_state">),
+      composer_state: {},
+    } as FlyerRow),
+  );
 }
 
 export async function getFlyerById(

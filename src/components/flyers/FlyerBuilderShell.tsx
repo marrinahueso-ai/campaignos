@@ -215,6 +215,7 @@ export function FlyerBuilderShell({
         overrides?.previewImageUrl !== undefined
           ? overrides.previewImageUrl
           : previewImageUrl,
+      quiet: true,
     });
     if (!result.ok) {
       setSaveStatus("error");
@@ -321,6 +322,7 @@ export function FlyerBuilderShell({
           previousFlyerUrl: imageUrl,
           editDirection: mode === "update" ? "" : editDirection,
         }),
+        quiet: true,
       });
       if (!result.ok) {
         setSaveStatus("error");
@@ -328,7 +330,6 @@ export function FlyerBuilderShell({
         return;
       }
       setSaveStatus("saved");
-      router.refresh();
     } catch {
       setSaveStatus("error");
       setError("Couldn’t reach the flyer generator. Try again.");

@@ -26,6 +26,14 @@ function revalidateFlyer(flyerId?: string | null) {
   }
 }
 
+/** Quiet builder persist: update library cards without remounting the builder. */
+function revalidateFlyerQuiet(flyerId?: string | null) {
+  revalidatePath("/flyers");
+  if (flyerId) {
+    revalidatePath(`/flyers/${flyerId}`);
+  }
+}
+
 /**
  * Auth user id for FKs that reference `auth.users` (created_by, approved_by, …).
  * Do NOT use EffectiveAccess.membershipId — that is `organization_users.id`.
@@ -112,6 +120,8 @@ export async function updateFlyerDraft(input: {
   printSize?: FlyerPrintSize;
   composerState?: FlyerComposerState;
   previewImageUrl?: string | null;
+  /** Builder persist/generate: skip library path remounts. */
+  quiet?: boolean;
 }): Promise<UpdateFlyerDraftResult> {
   const access = await requirePermission("upload_artwork");
   if ("error" in access) {
@@ -157,7 +167,11 @@ export async function updateFlyerDraft(input: {
     return { ok: false, error: error.message };
   }
 
-  revalidateFlyer(flyerId);
+  if (!input.quiet) {
+    revalidateFlyer(flyerId);
+  } else {
+    revalidateFlyerQuiet(flyerId);
+  }
   return { ok: true };
 }
 
