@@ -23,7 +23,7 @@ const TILES = [
     title: "Flyer",
     body: "Print flyer for this event — save to Files when ready.",
     href: (eventId: string) =>
-      `/create-with-ai/flyer?eventId=${encodeURIComponent(eventId)}&view=start&fresh=1`,
+      `/create-with-ai/flyer?eventId=${encodeURIComponent(eventId)}`,
     hardNavigate: true,
     art: "from-[#5c4033] via-[#8b6f47] to-[#e8d9c0]",
   },

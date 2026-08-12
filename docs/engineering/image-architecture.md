@@ -179,7 +179,7 @@ Expect a much smaller body than the original (often `image/webp`) and `cf-cache-
 | Vendors | `vendor-documents` | Signed URL (`VendorLogoMark`) | — |
 | Stickers / GIPHY | Stickers bucket / GIPHY CDN | Raw `<img>` today | Meta DM attachment = original / CDN send URL |
 | Newsletter / Homepage / Volunteer composers | `event-assets` (often compressed) | In-app tiles migrating | Export HTML uses hosted URL |
-| Flyer composer | `event-assets` | iframe vanilla `<img>` | Approval + Files save = original |
+| Flyer composer | `event-assets` | React builder `<img>` preview | Approval + Files save = original |
 | Insights | Meta Graph thumbnails | Remote `<img>` | — |
 | Marketing | `public/images` | `next/image` / raw | — |
 

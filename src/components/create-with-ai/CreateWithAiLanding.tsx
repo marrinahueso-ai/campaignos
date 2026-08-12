@@ -94,7 +94,7 @@ const ALSO_AVAILABLE: AlsoItem[] = [
   },
 ];
 
-const FLYER_HREF = "/create-with-ai/flyer?view=start";
+const FLYER_HREF = "/flyers";
 
 export function CreateWithAiLanding({
   canUseSocial,

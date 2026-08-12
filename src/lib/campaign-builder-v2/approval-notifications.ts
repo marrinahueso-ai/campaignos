@@ -358,18 +358,23 @@ export async function sendChangeRequestedEmail(
     approvalRequestId?: string | null;
   },
 ): Promise<CampaignApprovalNotificationResult> {
-  const { isFlyerComposerMilestoneId, flyerComposerEditHref } = await import(
-    "@/lib/flyer-composer/approval"
-  );
+  const {
+    isFlyerComposerMilestoneId,
+    flyerComposerEditHref,
+    parseFlyerIdFromMilestoneId,
+  } = await import("@/lib/flyer-composer/approval");
   const isFlyer =
     input.contentKind === "flyer" ||
     isFlyerComposerMilestoneId(input.campaignMilestoneId);
+  const flyerId = isFlyer
+    ? parseFlyerIdFromMilestoneId(input.campaignMilestoneId)
+    : null;
   const { artwork, artworkPreviewText } = artworkEmailBits(input, isFlyer);
   const base =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
   const reviewHref = `${base.replace(/\/$/, "")}/events/${input.eventId}/campaign-builder#review`;
   const editPreviewHref = isFlyer
-    ? flyerComposerEditHref({ absolute: true })
+    ? flyerComposerEditHref({ flyerId, absolute: true })
     : input.campaignMilestoneId
       ? absoluteCampaignBuilderPreviewMilestoneHref(
           input.eventId,
@@ -377,7 +382,7 @@ export async function sendChangeRequestedEmail(
         )
       : null;
   const editArtworkHref = isFlyer
-    ? flyerComposerEditHref({ absolute: true })
+    ? flyerComposerEditHref({ flyerId, absolute: true })
     : input.campaignMilestoneId
       ? absoluteCampaignBuilderEditArtworkHref(
           input.eventId,

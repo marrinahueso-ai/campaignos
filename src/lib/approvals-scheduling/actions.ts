@@ -31,6 +31,10 @@ import {
 import { logEventActivity } from "@/lib/event-workspace/activity-log";
 import { requireEventAccess } from "@/lib/events/queries";
 import {
+  isFlyerComposerMilestoneId,
+  parseFlyerIdFromMilestoneId,
+} from "@/lib/flyer-composer/approval";
+import {
   isNewsletterMilestoneId,
   parseNewsletterIdFromMilestoneId,
 } from "@/lib/newsletter/approval";
@@ -483,6 +487,240 @@ async function runApproveSchedulingSideEffects(input: {
 }
 
 /**
+ * Approve path for flyer-composer milestone rows (durable library + legacy).
+ * Marks the flyer approved when a library row exists, then mirrors onto the
+ * approvals queue as scheduled (draft-only print asset).
+ */
+async function approveFlyerSchedulingItem(input: {
+  row: ApprovalSchedulingItemRow;
+  schedulingItemId: string;
+  campaignName?: string | null;
+  milestoneName?: string | null;
+  recipientEmail?: string | null;
+}): Promise<UnifiedApprovalActionResult> {
+  const { row, schedulingItemId } = input;
+
+  if (!(await hasPermission("approve_comms"))) {
+    return {
+      success: false,
+      error: "You don’t have permission to approve this.",
+    };
+  }
+
+  const { getCurrentOrganization } = await import(
+    "@/lib/auth/organization-context"
+  );
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return {
+      success: false,
+      error: "Sign in and set up your organization first.",
+    };
+  }
+
+  if (
+    row.organization_id &&
+    row.organization_id !== organization.id
+  ) {
+    return {
+      success: false,
+      error: "That approval doesn’t match your organization.",
+    };
+  }
+
+  const flyerId = parseFlyerIdFromMilestoneId(row.campaign_milestone_id);
+  if (flyerId) {
+    const { approveFlyerForApprovalsHub } = await import(
+      "@/lib/flyers/actions"
+    );
+    const result = await approveFlyerForApprovalsHub({ flyerId });
+    // Legacy milestones (pre-library random keys) have no flyers row — continue.
+    if (!result.ok && result.error !== "Flyer not found.") {
+      return { success: false, error: result.error };
+    }
+  }
+
+  const updated = await updateSchedulingItemStatus(schedulingItemId, "scheduled");
+  if (!updated) {
+    return {
+      success: false,
+      error: "Couldn’t save that approval. Try again.",
+    };
+  }
+
+  if (row.event_id) {
+    await logEventActivity({
+      eventId: row.event_id,
+      activityType: "board_approval",
+      title: "Post approved",
+      description: `${row.milestone_name} is approved and scheduled.`,
+    });
+  }
+
+  const creatorEmail =
+    (await resolveUserEmailById(row.requested_by_user_id)) ??
+    input.recipientEmail ??
+    null;
+  if (
+    creatorEmail &&
+    input.campaignName &&
+    input.milestoneName &&
+    row.event_id
+  ) {
+    await sendContentApprovedEmail({
+      eventId: row.event_id,
+      campaignName: input.campaignName,
+      milestoneName: input.milestoneName,
+      recipientEmail: creatorEmail,
+      campaignMilestoneId: row.campaign_milestone_id,
+      schedulingItemId,
+      feedArtworkUrl: row.feed_artwork_url,
+      storyArtworkUrl: row.story_artwork_url,
+      captionText: row.caption_text,
+      storyCaption: row.story_caption,
+    }).catch((error) => {
+      console.error("Flyer approved email failed:", error);
+    });
+  }
+
+  revalidatePath("/approvals");
+  revalidatePath("/flyers");
+  revalidatePath("/create-with-ai/flyer");
+  if (flyerId) {
+    revalidatePath(`/flyers/${flyerId}`);
+    revalidatePath(`/flyers/${flyerId}/review`);
+    revalidatePath(`/create-with-ai/flyer?flyerId=${flyerId}`);
+  }
+  return { success: true };
+}
+
+/**
+ * Request-changes path for flyer-composer milestone rows.
+ */
+async function requestFlyerSchedulingChanges(input: {
+  row: ApprovalSchedulingItemRow;
+  schedulingItemId: string;
+  comment: string;
+  storedNotes: string;
+  milestoneName?: string | null;
+  creatorEmail?: string | null;
+  campaignName?: string | null;
+}): Promise<UnifiedApprovalActionResult> {
+  const { row, schedulingItemId, comment, storedNotes } = input;
+
+  if (!(await hasPermission("approve_comms"))) {
+    return {
+      success: false,
+      error: "You don’t have permission to request changes on this.",
+    };
+  }
+
+  const { getCurrentOrganization } = await import(
+    "@/lib/auth/organization-context"
+  );
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return {
+      success: false,
+      error: "Sign in and set up your organization first.",
+    };
+  }
+
+  if (
+    row.organization_id &&
+    row.organization_id !== organization.id
+  ) {
+    return {
+      success: false,
+      error: "That approval doesn’t match your organization.",
+    };
+  }
+
+  const { assertOrgFeature } = await import("@/lib/billing/gates");
+  const featureGate = await assertOrgFeature(organization.id, "change_requests");
+  if (!featureGate.ok) {
+    return {
+      success: false,
+      error: `${featureGate.message} ${featureGate.upgradeHint}`,
+    };
+  }
+
+  const flyerId = parseFlyerIdFromMilestoneId(row.campaign_milestone_id);
+  if (flyerId) {
+    const { requestFlyerChangesForApprovalsHub } = await import(
+      "@/lib/flyers/actions"
+    );
+    const result = await requestFlyerChangesForApprovalsHub({
+      flyerId,
+      note: comment,
+    });
+    // Legacy milestones (pre-library random keys) have no flyers row — continue.
+    if (!result.ok && result.error !== "Flyer not found.") {
+      return { success: false, error: result.error };
+    }
+  }
+
+  const updated = await updateSchedulingItemStatus(
+    schedulingItemId,
+    "changes_requested",
+    storedNotes,
+  );
+  if (!updated) {
+    return {
+      success: false,
+      error: "Couldn’t save those changes. Try again.",
+    };
+  }
+
+  if (row.event_id) {
+    await syncCampaignBuilderSessionAfterSchedulingOutcome({
+      eventId: row.event_id,
+      campaignMilestoneId: row.campaign_milestone_id,
+      milestoneName: row.milestone_name,
+      outcome: "changes_requested",
+      changeRequestComment: comment,
+    });
+    await logEventActivity({
+      eventId: row.event_id,
+      activityType: "board_approval",
+      title: "Changes requested",
+      description: `Changes requested for ${row.milestone_name}.`,
+    });
+  }
+
+  const creatorEmail =
+    input.creatorEmail ?? (await resolveUserEmailById(row.requested_by_user_id));
+
+  if (creatorEmail && input.campaignName && input.milestoneName && row.event_id) {
+    await sendChangeRequestedEmail({
+      eventId: row.event_id,
+      campaignName: input.campaignName,
+      milestoneName: input.milestoneName,
+      recipientEmail: creatorEmail,
+      comment,
+      campaignMilestoneId: row.campaign_milestone_id ?? null,
+      schedulingItemId,
+      feedArtworkUrl: row.feed_artwork_url,
+      storyArtworkUrl: row.story_artwork_url,
+      captionText: row.caption_text,
+      storyCaption: row.story_caption,
+    });
+  }
+
+  revalidatePath("/approvals");
+  revalidatePath("/approvals/revision");
+  revalidatePath("/flyers");
+  revalidatePath("/create-with-ai/flyer");
+  if (flyerId) {
+    revalidatePath(`/flyers/${flyerId}`);
+    revalidatePath(`/flyers/${flyerId}/changes`);
+    revalidatePath(`/flyers/${flyerId}/review`);
+    revalidatePath(`/create-with-ai/flyer?flyerId=${flyerId}`);
+  }
+  return { success: true };
+}
+
+/**
  * Approve path for organization-scoped newsletter rows (`event_id IS NULL`).
  * Marks the newsletter APPROVED / ready to send only — never sends or
  * schedules it — then mirrors that onto the approvals queue row.
@@ -685,6 +923,16 @@ export async function approveUnifiedItemAction(input: {
         recipientEmail: input.recipientEmail,
       });
     }
+
+    if (isFlyerComposerMilestoneId(preloadedRow.campaign_milestone_id)) {
+      return approveFlyerSchedulingItem({
+        row: preloadedRow,
+        schedulingItemId: input.schedulingItemId,
+        campaignName: input.campaignName,
+        milestoneName: input.milestoneName,
+        recipientEmail: input.recipientEmail,
+      });
+    }
   }
 
   const eventAccess = await requireEventAccess(input.eventId);
@@ -807,6 +1055,24 @@ export async function requestUnifiedChangesAction(input: {
         comment,
         milestoneName: input.milestoneName,
         creatorEmail: input.creatorEmail,
+      });
+    }
+
+    if (isFlyerComposerMilestoneId(preloadedRow.campaign_milestone_id)) {
+      const { encodeRevisionNotes } = await import(
+        "@/lib/approvals-revision/revision-notes"
+      );
+      type Tag = import("@/components/approvals-revision/types").RevisionTag;
+      const tags = (input.tags ?? []).filter(Boolean) as Tag[];
+      const storedNotes = encodeRevisionNotes(comment, tags);
+      return requestFlyerSchedulingChanges({
+        row: preloadedRow,
+        schedulingItemId: input.schedulingItemId,
+        comment,
+        storedNotes,
+        milestoneName: input.milestoneName,
+        creatorEmail: input.creatorEmail,
+        campaignName: input.campaignName,
       });
     }
   }
@@ -1067,9 +1333,6 @@ export async function resubmitUnifiedApprovalAction(input: {
       storyCaption: mergedSnapshot.storyCaption,
     });
   }
-  const { isFlyerComposerMilestoneId } = await import(
-    "@/lib/flyer-composer/approval"
-  );
   const isFlyerResubmit = isFlyerComposerMilestoneId(
     schedulingRow?.campaign_milestone_id,
   );

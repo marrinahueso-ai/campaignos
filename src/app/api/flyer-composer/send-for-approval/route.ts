@@ -72,9 +72,11 @@ export async function POST(request: Request) {
   }
 
   const data = parsed.data;
+  const flyerId = data.flyerId?.trim() || null;
   const result = await sendFlyerComposerForApproval({
-    eventId: data.eventId,
-    submissionKey: data.submissionKey,
+    eventId: data.eventId?.trim() || null,
+    flyerId,
+    submissionKey: data.submissionKey?.trim() || flyerId || "",
     imageUrl: data.imageUrl,
     versionId: data.versionId?.trim() || null,
     headline: data.headline?.trim() || null,

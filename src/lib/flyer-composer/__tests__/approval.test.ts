@@ -4,10 +4,13 @@ import {
   FLYER_COMPOSER_CAMPAIGN_NAME,
   FLYER_COMPOSER_MILESTONE_PREFIX,
   buildFlyerComposerMilestoneId,
+  flyerChangesHref,
   flyerComposerApprovalTitle,
   flyerComposerEditHref,
+  flyerReviewHref,
   isFlyerComposerMilestoneId,
   isPersistableFlyerApprovalImageUrl,
+  parseFlyerIdFromMilestoneId,
 } from "@/lib/flyer-composer/approval";
 
 describe("flyer composer approval helpers", () => {
@@ -20,6 +23,14 @@ describe("flyer composer approval helpers", () => {
       buildFlyerComposerMilestoneId(`${FLYER_COMPOSER_MILESTONE_PREFIX}abc-123`),
       `${FLYER_COMPOSER_MILESTONE_PREFIX}abc-123`,
     );
+  });
+
+  it("parses flyer id from milestone id", () => {
+    assert.equal(
+      parseFlyerIdFromMilestoneId("flyer-composer:uuid-1"),
+      "uuid-1",
+    );
+    assert.equal(parseFlyerIdFromMilestoneId("newsletter:x"), null);
   });
 
   it("rejects empty submission keys", () => {
@@ -43,15 +54,21 @@ describe("flyer composer approval helpers", () => {
     assert.equal(FLYER_COMPOSER_CAMPAIGN_NAME, "Flyer");
   });
 
-  it("deep-links to flyer Preview", () => {
+  it("deep-links to flyer builder, changes, and review", () => {
     assert.equal(
       flyerComposerEditHref(),
       "/create-with-ai/flyer?view=result",
+    );
+    assert.equal(
+      flyerComposerEditHref({ flyerId: "f1" }),
+      "/create-with-ai/flyer?flyerId=f1",
     );
     assert.match(
       flyerComposerEditHref({ absolute: true }),
       /\/create-with-ai\/flyer\?view=result$/,
     );
+    assert.equal(flyerChangesHref("f1"), "/flyers/f1/changes");
+    assert.equal(flyerReviewHref("f1"), "/flyers/f1/review");
   });
 
   it("accepts hosted and data image urls only", () => {

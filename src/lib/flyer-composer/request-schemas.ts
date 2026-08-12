@@ -21,16 +21,29 @@ export const flyerSaveBodySchema = z.object({
   versionId: z.string().trim().max(120).optional().nullable(),
 });
 
-export const flyerSendForApprovalBodySchema = z.object({
-  eventId: z.string().trim().uuid(),
-  submissionKey: z.string().trim().min(1).max(200),
-  imageUrl: flyerImageUrlSchema,
-  versionId: z.string().trim().max(120).optional().nullable(),
-  headline: z.string().trim().max(500).optional().nullable(),
-  orgName: z.string().trim().max(200).optional().nullable(),
-  templateName: z.string().trim().max(200).optional().nullable(),
-  captionText: z.string().trim().max(5000).optional().nullable(),
-});
+export const flyerSendForApprovalBodySchema = z
+  .object({
+    eventId: z.string().trim().uuid().optional().nullable(),
+    flyerId: z.string().trim().uuid().optional().nullable(),
+    submissionKey: z.string().trim().max(200).optional().nullable(),
+    imageUrl: flyerImageUrlSchema,
+    versionId: z.string().trim().max(120).optional().nullable(),
+    headline: z.string().trim().max(500).optional().nullable(),
+    orgName: z.string().trim().max(200).optional().nullable(),
+    templateName: z.string().trim().max(200).optional().nullable(),
+    captionText: z.string().trim().max(5000).optional().nullable(),
+  })
+  .superRefine((value, ctx) => {
+    const hasFlyerId = Boolean(value.flyerId?.trim());
+    const hasSubmissionKey = Boolean(value.submissionKey?.trim());
+    if (!hasFlyerId && !hasSubmissionKey) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "submissionKey or flyerId is required.",
+        path: ["submissionKey"],
+      });
+    }
+  });
 
 export function parseJsonBody<T>(
   schema: z.ZodType<T>,

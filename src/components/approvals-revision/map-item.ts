@@ -14,8 +14,10 @@ import {
   type UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
 import {
+  flyerChangesHref,
   flyerComposerEditHref,
   isFlyerComposerMilestoneId,
+  parseFlyerIdFromMilestoneId,
 } from "@/lib/flyer-composer/approval";
 
 /**
@@ -89,6 +91,9 @@ export function mapApprovalItemToRevision(
   const isFlyer =
     item.channel === "flyer" ||
     isFlyerComposerMilestoneId(item.campaignMilestoneId);
+  const flyerId = isFlyer
+    ? parseFlyerIdFromMilestoneId(item.campaignMilestoneId)
+    : null;
 
   const noteBody =
     parsedNotes.comment ||
@@ -102,7 +107,11 @@ export function mapApprovalItemToRevision(
   }`;
 
   const editArtworkHref = isFlyer
-    ? flyerComposerEditHref()
+    ? flyerId
+      ? item.workflowStatus === "changes_requested"
+        ? flyerChangesHref(flyerId)
+        : flyerComposerEditHref({ flyerId })
+      : flyerComposerEditHref()
     : item.eventId && item.campaignMilestoneId
       ? campaignBuilderEditArtworkHref(
           item.eventId,
@@ -113,7 +122,11 @@ export function mapApprovalItemToRevision(
         : null;
 
   const changeDateHref = isFlyer
-    ? flyerComposerEditHref()
+    ? flyerId
+      ? item.workflowStatus === "changes_requested"
+        ? flyerChangesHref(flyerId)
+        : flyerComposerEditHref({ flyerId })
+      : flyerComposerEditHref()
     : item.eventId && item.campaignMilestoneId
       ? campaignBuilderPreviewMilestoneHref(
           item.eventId,

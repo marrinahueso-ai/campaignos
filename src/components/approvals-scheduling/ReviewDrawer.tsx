@@ -25,7 +25,9 @@ import {
 } from "@/lib/approvals-scheduling/outcome-display";
 import {
   flyerComposerEditHref,
+  flyerReviewHref,
   isFlyerComposerMilestoneId,
+  parseFlyerIdFromMilestoneId,
 } from "@/lib/flyer-composer/approval";
 import {
   isNewsletterMilestoneId,
@@ -189,10 +191,17 @@ export function ReviewDrawer({
   const newsletterId = isNewsletter
     ? parseNewsletterIdFromMilestoneId(item.campaignMilestoneId)
     : null;
+  const flyerId = isFlyer
+    ? parseFlyerIdFromMilestoneId(item.campaignMilestoneId)
+    : null;
   const editPreviewHref = isNewsletter
     ? newsletterComposerHref(newsletterId)
     : isFlyer
-      ? flyerComposerEditHref()
+      ? flyerId
+        ? item.workflowStatus === "changes_requested"
+          ? flyerComposerEditHref({ flyerId })
+          : flyerReviewHref(flyerId)
+        : flyerComposerEditHref()
       : item.campaignMilestoneId != null
         ? campaignBuilderPreviewMilestoneHref(
             item.eventId,
@@ -202,7 +211,11 @@ export function ReviewDrawer({
   const editArtworkHref = isNewsletter
     ? newsletterComposerHref(newsletterId)
     : isFlyer
-      ? flyerComposerEditHref()
+      ? flyerId
+        ? item.workflowStatus === "changes_requested"
+          ? flyerComposerEditHref({ flyerId })
+          : flyerReviewHref(flyerId)
+        : flyerComposerEditHref()
       : item.campaignMilestoneId != null
         ? campaignBuilderEditArtworkHref(item.eventId, item.campaignMilestoneId)
         : null;

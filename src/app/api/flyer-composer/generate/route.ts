@@ -87,7 +87,9 @@ function parseAssets(raw: Record<string, unknown> | null): FlyerComposerAssetCon
     fileTypeRaw === "pdf" || fileTypeRaw === "image" ? fileTypeRaw : null;
   const photoSourceRaw = readString(raw?.inspirationPhotoSource).trim();
   const photoSource =
-    photoSourceRaw === "sample" || photoSourceRaw === "upload"
+    photoSourceRaw === "sample" ||
+    photoSourceRaw === "upload" ||
+    photoSourceRaw === "library"
       ? photoSourceRaw
       : null;
   const inspirationPhotoPresent =
@@ -134,6 +136,9 @@ function parseBrandKit(raw: Record<string, unknown> | null): FlyerComposerBrandK
     ptoLogoUploaded: raw.ptoLogoUploaded === true,
     schoolLogoUploaded: raw.schoolLogoUploaded === true,
     logoDisplay,
+    selectedLogoId: readString(raw.selectedLogoId).trim() || null,
+    selectedLogoUrl: readString(raw.selectedLogoUrl).trim() || null,
+    selectedLogoLabel: readString(raw.selectedLogoLabel).trim() || null,
   };
 }
 

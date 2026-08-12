@@ -1,5 +1,13 @@
-import { FlyerComposerHost } from "@/components/create-with-ai/FlyerComposerHost";
+import { notFound, redirect } from "next/navigation";
+
+import { FlyerBuilderShell } from "@/components/flyers/FlyerBuilderShell";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
+import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
+import { getFlyerComposerBrandKit } from "@/lib/flyer-composer/brand-kit";
+import { createFlyer, updateFlyerDraft } from "@/lib/flyers/actions";
+import { getFlyerById } from "@/lib/flyers/queries";
+import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 
 export const metadata = {
   title: "Flyer · Create with AI",
@@ -11,10 +19,11 @@ export const metadata = {
 
 type FlyerComposerPageProps = {
   searchParams: Promise<{
-    view?: string;
+    flyerId?: string;
     eventId?: string;
     event?: string;
     fresh?: string;
+    view?: string;
   }>;
 };
 
@@ -23,14 +32,85 @@ export default async function FlyerComposerPage({
 }: FlyerComposerPageProps) {
   const params = await searchParams;
   const eventId = (params.eventId || params.event || "").trim() || null;
-  const fresh = params.fresh === "1" || params.fresh === "true";
+  const flyerId = params.flyerId?.trim() || null;
   const organization = await getCurrentOrganization();
+
+  if (!organization) {
+    return (
+      <div className="studio-page space-y-4">
+        <p className="text-sm text-cos-muted">
+          Sign in and set up your organization to create flyers.
+        </p>
+      </div>
+    );
+  }
+
+  if (!flyerId) {
+    const canEdit = await hasPermission("upload_artwork");
+    if (!canEdit) {
+      return (
+        <div className="studio-page space-y-4">
+          <p className="text-sm text-cos-muted">
+            You don’t have permission to create flyers.
+          </p>
+        </div>
+      );
+    }
+    const created = await createFlyer({ eventId });
+    if (!created.ok) {
+      return (
+        <div className="studio-page space-y-4">
+          <p className="text-sm text-[#a65a3a]">{created.error}</p>
+        </div>
+      );
+    }
+    const qs = new URLSearchParams({ flyerId: created.flyerId });
+    if (eventId) qs.set("eventId", eventId);
+    redirect(`/create-with-ai/flyer?${qs.toString()}`);
+  }
+
+  const [flyer, events, brandKit, canEdit, assignee] = await Promise.all([
+    getFlyerById(organization.id, flyerId),
+    getCampaignPageEvents(organization.id),
+    getFlyerComposerBrandKit(),
+    hasPermission("upload_artwork"),
+    resolveApprovalAssignee(organization.id, null),
+  ]);
+
+  if (!flyer) notFound();
+
+  let flyerForShell = flyer;
+  if (eventId && !flyer.eventId) {
+    await updateFlyerDraft({ flyerId: flyer.id, eventId });
+    flyerForShell = { ...flyer, eventId };
+  }
+
   return (
-    <FlyerComposerHost
-      view={params.view ?? null}
-      eventId={eventId}
-      organizationId={organization?.id ?? null}
-      fresh={fresh}
+    <FlyerBuilderShell
+      flyer={flyerForShell}
+      events={events.map((event) => ({
+        id: event.id,
+        title: event.title,
+        date: event.date ?? null,
+      }))}
+      brandKit={
+        brandKit
+          ? {
+              organizationShortName: brandKit.organizationShortName,
+              primaryColor: brandKit.primaryColor,
+              accentColor: brandKit.accentColor,
+              fontStyle: brandKit.fontStyle,
+              mascotLabel: brandKit.mascotLabel,
+              ptoLogoUploaded: brandKit.ptoLogoUploaded,
+              schoolLogoUploaded: brandKit.schoolLogoUploaded,
+              logos: brandKit.logos,
+            }
+          : null
+      }
+      canEdit={canEdit}
+      approverDisplayName={
+        assignee.hasAssignedPerson ? assignee.assigneeDisplayName : null
+      }
     />
   );
 }

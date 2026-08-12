@@ -2,6 +2,7 @@ import {
   FLYER_QR_MARGIN_FRACTION,
   FLYER_QR_SLOT_FRACTION,
 } from "@/lib/flyer-composer/qr-layout";
+import { resolveSelectedLogoReferenceUrl } from "@/lib/flyer-composer/reference-images";
 import type { FlyerComposerGenerateInput } from "@/lib/flyer-composer/types";
 
 /** Structured facts that belong on the flyer (not freeform creative direction). */
@@ -65,10 +66,18 @@ function formatEventDetails(input: FlyerComposerGenerateInput): string {
   return lines.join("\n");
 }
 
+function hasAttachedLogo(input: FlyerComposerGenerateInput): boolean {
+  return (
+    input.brandEnabled &&
+    Boolean(resolveSelectedLogoReferenceUrl(input.brandKit))
+  );
+}
+
 function hasAttachedReferenceImage(input: FlyerComposerGenerateInput): boolean {
   const { assets } = input;
   if (assets.inspirationPhotoPresent && assets.inspirationPhotoUrl) return true;
   if (assets.customTemplatePresent && assets.customTemplateImageUrl) return true;
+  if (hasAttachedLogo(input)) return true;
   return false;
 }
 
@@ -77,7 +86,8 @@ function isHalfPageFlyer(input: FlyerComposerGenerateInput): boolean {
   return (
     input.start.printSize === "half" ||
     input.template.templateId === "simple-half" ||
-    ratio === "3/2"
+    ratio === "3/2" ||
+    ratio === "8.5/5.5"
   );
 }
 
@@ -147,6 +157,16 @@ export function buildFlyerComposerImagePrompt(
     }
   }
 
+  const logoAttached = hasAttachedLogo(input);
+  if (logoAttached) {
+    const logoLabel =
+      input.brandKit?.selectedLogoLabel?.trim() || "organization logo";
+    lines.push(
+      "",
+      `Attached brand logo (${logoLabel}): incorporate this logo mark into the flyer design (corner badge or masthead). Do not invent a different logo or redraw letterforms from the logo as headline type.`,
+    );
+  }
+
   if (hasRefs) {
     lines.push(
       "",
@@ -154,6 +174,11 @@ export function buildFlyerComposerImagePrompt(
       "Build a complete designed flyer around them — title treatment, activity callouts, date/time bar — not a bare photograph with no type.",
       "If an attachment is a photo, use it as the scene/hero under the design. If it is a prior flyer, treat it as a light structure guide — still follow the volunteer direction above.",
     );
+    if (logoAttached) {
+      lines.push(
+        "The logo attachment is a brand mark — place it as a logo, not as the hero photo.",
+      );
+    }
   } else if (!direction) {
     lines.push(
       "",

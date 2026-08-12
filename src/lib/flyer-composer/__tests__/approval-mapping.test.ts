@@ -70,7 +70,7 @@ describe("flyer approval scheduling mapping", () => {
     assert.equal(model.storyArtworkUrl, null);
     assert.equal(
       model.editArtworkHref,
-      "/create-with-ai/flyer?view=result",
+      "/create-with-ai/flyer?flyerId=draft-1",
     );
   });
 

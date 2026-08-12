@@ -87,7 +87,8 @@ CampignOS/
 |-------|------|
 | `/create-with-ai` | Chooser: Home Page · Social Media · Newsletter · Flyer |
 | `/create-with-ai/social` | Campaign Builder v2 (Creative Setup → Review & Approve) |
-| `/create-with-ai/flyer` | Flyer composer (static HTML embed); saves to event Files (`event_playbook_files` category `flyer`); list/load via `/api/flyer-composer/saved` |
+| `/create-with-ai/flyer` | React Flyer builder (`FlyerBuilderShell`); creates/loads durable `flyers` drafts (`?flyerId=` / `?eventId=`); generate via `/api/flyer-composer/generate`; Approvals via `/api/flyer-composer/send-for-approval` |
+| `/flyers` | Flyer library (grid + status filters); cards deep-link to builder / `/flyers/[id]/review` / `/flyers/[id]/changes` |
 | `/homepage-composer` | Membership Toolkit / homepage HTML export |
 | `/newsletter-composer` | Scoop-style family email HTML export |
 | `/ops/background-library` | Owner-only Background Library (source upload → generate 10, or bulk upload finished assets → vision auto-tag → approve/delete); `platform-backgrounds` + `background_*` tables; display via shared `AppImage` ([image-architecture.md](./image-architecture.md)). School picker: Social **Browse Gallery** + Flyer **Browse Gallery** (rich metadata search/assortment + usage count) |
@@ -171,7 +172,7 @@ flowchart LR
 | Calendar intake | `calendar-import`, `google-calendar`, school-year subscribe feeds | `calendar_imports`, `organization_google_calendar_connections`, `school_years.calendar_subscribe_url` — dedupe: [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md) |
 | Events / year calendar | `events`, `communications-calendar`, `unified-calendar` UI | `events`, publication slots on calendar |
 | Create with AI — Social | `campaign-builder-v2`, `ai`, `ai-artwork`, `artwork-v2`, `meta-captions` | Creative assets in Storage; campaign/milestone state in DB |
-| Create with AI — Flyer | `flyer-composer` | Local drafts (org+event scoped); durable saves as `event_playbook_files` (category `flyer`) via `/api/flyer-composer/save` + list `/api/flyer-composer/saved` |
+| Create with AI — Flyer | `flyer-composer`, `flyers` | React library + builder + approver review; durable `flyers` rows; Approvals via `approval_scheduling_items` (`flyer-composer:{id}`); optional Files saves via `/api/flyer-composer/save` |
 | Create with AI — Homepage / Newsletter | `homepage-composer`, `newsletter-composer` | Drafts: localStorage + IndexedDB; artwork uploads (homepage may use service role — see storage-rls); AI blurbs metered (`homepage_composer_blurb`) |
 | Newsletter → Approval → Send pipeline | `newsletter` (durable model: `newsletters`, `newsletter_versions`, contacts/audiences, sends, unsubscribe) | Durable `newsletter_*` tables (org-scoped RLS); approval bridges into `approval_scheduling_items` (org-scoped, no `event_id`); production delivery gated by `NEWSLETTER_PRODUCTION_SEND_ENABLED`; recipients are org-managed contacts/audiences, not `organization_users` — see [newsletter-composer.md](./newsletter-composer.md) |
 | Approvals & publish | `approvals-scheduling`, `meta-publishing` | Approval items + `meta_publication_slots` — native schedule + Calendar DnD: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md); newsletter approval shares the same `approval_scheduling_items` queue, org-scoped instead of event-scoped |

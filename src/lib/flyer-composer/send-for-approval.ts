@@ -22,14 +22,18 @@ import {
   flyerComposerApprovalTitle,
   isPersistableFlyerApprovalImageUrl,
 } from "@/lib/flyer-composer/approval";
+import { markFlyerNeedsApproval } from "@/lib/flyers/actions";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 import { assertSafeOutboundUrl, supabaseStorageHostPatterns } from "@/lib/security/safe-outbound-url";
 import { createClient } from "@/lib/supabase/server";
 
 export type SendFlyerComposerForApprovalInput = {
-  eventId: string;
+  /** Optional campaign link. When omitted, Approvals row is org-scoped. */
+  eventId?: string | null;
   /** Stable client key so resubmits update the same Approvals row. */
   submissionKey: string;
+  /** Durable library id — when set, used as the milestone submission key. */
+  flyerId?: string | null;
   imageUrl: string;
   versionId?: string | null;
   headline?: string | null;
@@ -115,6 +119,10 @@ async function ensureHostedFlyerImageUrl(
  * Submit the selected flyer version into the unified Approvals queue
  * (`approval_scheduling_items`), same family as Create with AI Social.
  * Uses delivery_method `draft-only` (print asset — no Meta schedule).
+ *
+ * When `flyerId` is set, the milestone key is the durable flyer id and the
+ * `flyers` row is updated to `needs_approval` after upsert.
+ * When `eventId` is omitted, the Approvals row is org-scoped (like newsletters).
  */
 export async function sendFlyerComposerForApproval(
   input: SendFlyerComposerForApprovalInput,
@@ -132,9 +140,22 @@ export async function sendFlyerComposerForApproval(
 
   const organization = await getCurrentOrganization();
   const membership = await getActiveMembership();
-  const event = await getEventById(input.eventId);
+  if (!organization) {
+    return {
+      success: false,
+      message: "Organization not found.",
+      schedulingItemId: null,
+      workflowStatus: null,
+      campaignMilestoneId: null,
+      feedArtworkUrl: null,
+    };
+  }
 
-  if (!organization || !event) {
+  const eventId = input.eventId?.trim() || null;
+  const flyerId = input.flyerId?.trim() || null;
+  const event = eventId ? await getEventById(eventId) : null;
+
+  if (eventId && !event) {
     return {
       success: false,
       message: "Organization or campaign not found.",
@@ -171,9 +192,10 @@ export async function sendFlyerComposerForApproval(
     };
   }
 
+  const submissionKey = flyerId || input.submissionKey;
   let campaignMilestoneId: string;
   try {
-    campaignMilestoneId = buildFlyerComposerMilestoneId(input.submissionKey);
+    campaignMilestoneId = buildFlyerComposerMilestoneId(submissionKey);
   } catch {
     return {
       success: false,
@@ -197,7 +219,7 @@ export async function sendFlyerComposerForApproval(
 
   const assignee = await resolveApprovalAssignee(
     organization.id,
-    event.approvalOrganizationRoleId ?? null,
+    event?.approvalOrganizationRoleId ?? null,
   );
   const workflowStatus = assignee.assignedUserId
     ? ("assigned_to_me" as const)
@@ -206,12 +228,20 @@ export async function sendFlyerComposerForApproval(
   const supabase = await createClient();
   const now = new Date().toISOString();
 
-  const { data: existing } = await supabase
+  let existingQuery = supabase
     .from("approval_scheduling_items")
     .select("id, workflow_status, assigned_user_id")
-    .eq("event_id", input.eventId)
-    .eq("campaign_milestone_id", campaignMilestoneId)
-    .maybeSingle();
+    .eq("campaign_milestone_id", campaignMilestoneId);
+
+  if (eventId) {
+    existingQuery = existingQuery.eq("event_id", eventId);
+  } else {
+    existingQuery = existingQuery
+      .eq("organization_id", organization.id)
+      .is("event_id", null);
+  }
+
+  const { data: existing } = await existingQuery.maybeSingle();
 
   const resubmitStatuses = new Set([
     "in_queue",
@@ -222,7 +252,8 @@ export async function sendFlyerComposerForApproval(
     existing?.workflow_status === "changes_requested";
 
   const rowPayload = {
-    event_id: input.eventId,
+    event_id: eventId,
+    organization_id: organization.id,
     source: "campaign_builder" as const,
     campaign_milestone_id: campaignMilestoneId,
     campaign_name: FLYER_COMPOSER_CAMPAIGN_NAME,
@@ -319,6 +350,7 @@ export async function sendFlyerComposerForApproval(
         story_artwork_url: null,
         delivery_method: "draft-only",
         platforms: [],
+        organization_id: organization.id,
         updated_at: now,
       })
       .eq("id", existing.id);
@@ -333,6 +365,14 @@ export async function sendFlyerComposerForApproval(
         campaignMilestoneId,
         feedArtworkUrl: hosted.url,
       };
+    }
+
+    if (flyerId) {
+      await markFlyerNeedsApproval({
+        flyerId,
+        schedulingItemId: existing.id,
+        previewImageUrl: hosted.url,
+      });
     }
 
     return {
@@ -356,12 +396,33 @@ export async function sendFlyerComposerForApproval(
     };
   }
 
-  await logEventActivity({
-    eventId: input.eventId,
-    activityType: "board_approval",
-    title: "Flyer sent for approval",
-    description: `${milestoneName} is waiting for review.`,
-  });
+  if (flyerId) {
+    const marked = await markFlyerNeedsApproval({
+      flyerId,
+      schedulingItemId,
+      previewImageUrl: hosted.url,
+    });
+    if (!marked.ok) {
+      return {
+        success: false,
+        message:
+          "Approval item created, but the flyer status could not be updated.",
+        schedulingItemId,
+        workflowStatus,
+        campaignMilestoneId,
+        feedArtworkUrl: hosted.url,
+      };
+    }
+  }
+
+  if (eventId) {
+    await logEventActivity({
+      eventId,
+      activityType: "board_approval",
+      title: "Flyer sent for approval",
+      description: `${milestoneName} is waiting for review.`,
+    });
+  }
 
   if (shouldNotify) {
     const orgUsers = await getOrganizationUsers(organization.id);
@@ -382,17 +443,19 @@ export async function sendFlyerComposerForApproval(
     if (!recipientEmail) {
       const skipReason =
         "No approver email — assign an approver in Team Access or on the event.";
-      await logApprovalNotificationSkipped({
-        eventId: input.eventId,
-        notificationType,
-        recipientEmail: null,
-        errorMessage: skipReason,
-        schedulingItemId,
-      });
+      if (eventId) {
+        await logApprovalNotificationSkipped({
+          eventId,
+          notificationType,
+          recipientEmail: null,
+          errorMessage: skipReason,
+          schedulingItemId,
+        });
+      }
       emailNote = ` Approver email skipped: ${skipReason}`;
-    } else {
+    } else if (eventId) {
       const emailInput = {
-        eventId: input.eventId,
+        eventId,
         campaignName: FLYER_COMPOSER_CAMPAIGN_NAME,
         milestoneName,
         recipientEmail,
@@ -413,6 +476,29 @@ export async function sendFlyerComposerForApproval(
       } else {
         emailNote = ` Approver email skipped: ${notifyResult.message}`;
       }
+    } else {
+      emailNote = ` Approver notified at ${recipientEmail}.`;
+      // Org-scoped flyers: reuse assigned email with empty event (hub deep link).
+      const emailInput = {
+        eventId: "",
+        campaignName: FLYER_COMPOSER_CAMPAIGN_NAME,
+        milestoneName,
+        recipientEmail,
+        approverRole: assignee.organizationRoleName ?? "committee-chair",
+        schedulingItemId,
+        campaignMilestoneId,
+        feedArtworkUrl: hosted.url,
+        storyArtworkUrl: null as string | null,
+        captionText,
+        storyCaption: null as string | null,
+        contentKind: "flyer" as const,
+      };
+      const notifyResult = isResubmitAfterChanges
+        ? await sendApprovalResubmittedEmail(emailInput)
+        : await sendApprovalAssignedEmail(emailInput);
+      emailNote = notifyResult.wired
+        ? ` Approver notified at ${recipientEmail}.`
+        : ` Approver email skipped: ${notifyResult.message}`;
     }
 
     return {
@@ -447,33 +533,48 @@ export type FlyerComposerApprovalStatus = {
   milestoneName: string;
   feedArtworkUrl: string | null;
   notes: string | null;
-  eventId: string;
+  eventId: string | null;
   campaignMilestoneId: string;
 };
 
 export async function getFlyerComposerApprovalStatus(input: {
-  eventId: string;
+  eventId?: string | null;
   submissionKey: string;
+  flyerId?: string | null;
 }): Promise<FlyerComposerApprovalStatus | null> {
-  const event = await getEventById(input.eventId);
-  if (!event) return null;
+  const eventId = input.eventId?.trim() || null;
+  const submissionKey = input.flyerId?.trim() || input.submissionKey;
 
   let campaignMilestoneId: string;
   try {
-    campaignMilestoneId = buildFlyerComposerMilestoneId(input.submissionKey);
+    campaignMilestoneId = buildFlyerComposerMilestoneId(submissionKey);
   } catch {
     return null;
   }
 
+  if (eventId) {
+    const event = await getEventById(eventId);
+    if (!event) return null;
+  }
+
+  const organization = await getCurrentOrganization();
+  if (!organization && !eventId) return null;
+
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("approval_scheduling_items")
     .select(
       "id, workflow_status, milestone_name, feed_artwork_url, notes, event_id, campaign_milestone_id",
     )
-    .eq("event_id", input.eventId)
-    .eq("campaign_milestone_id", campaignMilestoneId)
-    .maybeSingle();
+    .eq("campaign_milestone_id", campaignMilestoneId);
+
+  if (eventId) {
+    query = query.eq("event_id", eventId);
+  } else if (organization) {
+    query = query.eq("organization_id", organization.id).is("event_id", null);
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error || !data) return null;
 

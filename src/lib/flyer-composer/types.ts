@@ -40,7 +40,7 @@ export type FlyerComposerTemplateContext = {
 
 export type FlyerComposerAssetContext = {
   inspirationPhotoPresent: boolean;
-  inspirationPhotoSource: "sample" | "upload" | null;
+  inspirationPhotoSource: "sample" | "upload" | "library" | null;
   inspirationPhotoLabel: string | null;
   /** Context note for the model when no image URL is attached. */
   inspirationPhotoNote: string | null;

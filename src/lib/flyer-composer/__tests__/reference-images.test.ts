@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { buildSampleDirectionInput } from "@/lib/flyer-composer/direction-payload";
 import {
   isFlyerComposerReferenceImageUrl,
+  resolveFlyerComposerOpenAiReferenceImageUrls,
   resolveFlyerComposerReferenceImageUrls,
 } from "@/lib/flyer-composer/reference-images";
 
@@ -53,5 +54,41 @@ describe("flyer composer reference images", () => {
     });
 
     assert.deepEqual(resolveFlyerComposerReferenceImageUrls(input.assets), []);
+  });
+
+  it("appends selected logo URL when brand is enabled", () => {
+    const input = buildSampleDirectionInput({
+      brandEnabled: true,
+      brandKit: {
+        organizationShortName: "Riverside",
+        primaryColor: "#1a4d3a",
+        accentColor: null,
+        fontStyle: null,
+        mascotLabel: null,
+        ptoLogoUploaded: true,
+        schoolLogoUploaded: false,
+        logoDisplay: "pto",
+        selectedLogoId: "pto",
+        selectedLogoUrl: "https://cdn.example/logo.png",
+        selectedLogoLabel: "PTO logo",
+      },
+      assets: {
+        inspirationPhotoPresent: true,
+        inspirationPhotoSource: "library",
+        inspirationPhotoLabel: "Lawn",
+        inspirationPhotoNote: null,
+        inspirationPhotoUrl: "https://images.example/hero.jpg",
+        customTemplatePresent: false,
+        customTemplateFileName: null,
+        customTemplateFileType: null,
+        customTemplateNote: null,
+        customTemplateImageUrl: null,
+      },
+    });
+
+    assert.deepEqual(resolveFlyerComposerOpenAiReferenceImageUrls(input), [
+      "https://images.example/hero.jpg",
+      "https://cdn.example/logo.png",
+    ]);
   });
 });

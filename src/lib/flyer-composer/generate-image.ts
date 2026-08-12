@@ -10,7 +10,7 @@ import {
   buildFlyerComposerImagePrompt,
   resolveFlyerComposerImageSize,
 } from "@/lib/flyer-composer/generate-image-prompt";
-import { resolveFlyerComposerReferenceImageUrls } from "@/lib/flyer-composer/reference-images";
+import { resolveFlyerComposerOpenAiReferenceImageUrls } from "@/lib/flyer-composer/reference-images";
 import { resolveFlyerComposerQrUrl } from "@/lib/flyer-composer/qr-code";
 import { compositeFlyerQrCode } from "@/lib/flyer-composer/qr-composite";
 import type {
@@ -19,7 +19,7 @@ import type {
 } from "@/lib/flyer-composer/types";
 
 function resolveInspirationUrls(input: FlyerComposerGenerateInput): string[] {
-  return resolveFlyerComposerReferenceImageUrls(input.assets);
+  return resolveFlyerComposerOpenAiReferenceImageUrls(input);
 }
 
 function buildFlyerStoragePath(organizationId: string): string {

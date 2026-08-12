@@ -2,6 +2,7 @@
  * Flyer composer ↔ Approvals hub bridge helpers.
  * Reuses `approval_scheduling_items` (same queue as Create with AI Social).
  * Identity: campaign_milestone_id = flyer-composer:{submissionKey}
+ * When the durable library is used, submissionKey is the flyer.id.
  */
 
 export const FLYER_COMPOSER_MILESTONE_PREFIX = "flyer-composer:";
@@ -25,15 +26,54 @@ export function isFlyerComposerMilestoneId(
   return Boolean(value?.startsWith(FLYER_COMPOSER_MILESTONE_PREFIX));
 }
 
-/** Deep link back to Flyer Preview (selected version lives in local draft). */
+/** Extracts the raw flyer / submission key from a `flyer-composer:{id}` milestone id. */
+export function parseFlyerIdFromMilestoneId(
+  value: string | null | undefined,
+): string | null {
+  if (!isFlyerComposerMilestoneId(value)) return null;
+  const id = value!.slice(FLYER_COMPOSER_MILESTONE_PREFIX.length).trim();
+  return id || null;
+}
+
+function appUrlBase(): string {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000"
+  ).replace(/\/$/, "");
+}
+
+/**
+ * Deep link back to Flyer builder / Preview.
+ * With `flyerId`: durable library edit at `/create-with-ai/flyer?flyerId=`.
+ * Without: legacy Preview deep link (`?view=result`).
+ */
 export function flyerComposerEditHref(options?: {
+  flyerId?: string | null;
   absolute?: boolean;
 }): string {
-  const path = "/create-with-ai/flyer?view=result";
+  const flyerId = options?.flyerId?.trim();
+  const path = flyerId
+    ? `/create-with-ai/flyer?flyerId=${encodeURIComponent(flyerId)}`
+    : "/create-with-ai/flyer?view=result";
   if (!options?.absolute) return path;
-  const base =
-    process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
-  return `${base.replace(/\/$/, "")}${path}`;
+  return `${appUrlBase()}${path}`;
+}
+
+/** Deep link to the flyer changes-requested view. */
+export function flyerChangesHref(
+  flyerId: string,
+  options?: { absolute?: boolean },
+): string {
+  const path = `/flyers/${encodeURIComponent(flyerId.trim())}/changes`;
+  return options?.absolute ? `${appUrlBase()}${path}` : path;
+}
+
+/** Deep link to the flyer review / status view. */
+export function flyerReviewHref(
+  flyerId: string,
+  options?: { absolute?: boolean },
+): string {
+  const path = `/flyers/${encodeURIComponent(flyerId.trim())}/review`;
+  return options?.absolute ? `${appUrlBase()}${path}` : path;
 }
 
 export function flyerComposerApprovalTitle(input: {
