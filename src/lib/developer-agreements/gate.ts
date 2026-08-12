@@ -42,12 +42,18 @@ function rolesRequireDocument(
 /**
  * Whether this user must complete developer agreements before app access.
  * Lightweight for middleware: true if any required current version is unsigned.
+ *
+ * @param precomputedRoles - When the caller already fetched this user's active
+ * campaign roles (e.g. middleware's shared membership snapshot), pass them
+ * here to skip the redundant `organization_users` lookup. Omit to fetch live.
  */
 export async function userMustSignDeveloperAgreements(
   supabase: SupabaseClient,
   userId: string,
+  precomputedRoles?: string[],
 ): Promise<boolean> {
-  const roles = await getActiveCampaignRolesForUser(supabase, userId);
+  const roles =
+    precomputedRoles ?? (await getActiveCampaignRolesForUser(supabase, userId));
   if (!roles.length) {
     return false;
   }

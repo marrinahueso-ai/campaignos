@@ -11,7 +11,10 @@ import {
   isFoundingAccessCodeRequired,
   validateFoundingAccessCode,
 } from "@/lib/auth/founding-access";
-import { getOrganizationAccessState } from "@/lib/auth/organization-access-state";
+import {
+  getEdgeMembershipSnapshot,
+  getOrganizationAccessState,
+} from "@/lib/auth/organization-access-state";
 import { resolveOrgGateRedirect } from "@/lib/auth/org-gate";
 import { resolvePostAuthPathForUser } from "@/lib/auth/post-auth-path-for-user";
 import {
@@ -303,11 +306,38 @@ export async function updateSession(request: NextRequest) {
       !pathname.startsWith(DEVELOPER_AGREEMENTS_PATH) &&
       !isPublicPath(pathname)
     ) {
-      const mustSignResult = await withTimeout(
-        userMustSignDeveloperAgreements(supabase, user.id),
+      // Both gates below independently query `organization_users` for this
+      // same user. Fetch it once and hand both the shared snapshot, so a
+      // normal authenticated navigation costs one membership round trip
+      // (plus one canceled-lockout lookup for the resolved org) instead of
+      // up to four sequential ones. Gates are then evaluated concurrently
+      // since neither depends on the other's result — decision precedence
+      // (agreements gate before org gate) is preserved below, unchanged
+      // from the previous sequential behavior.
+      const snapshotResult = await withTimeout(
+        getEdgeMembershipSnapshot(supabase, user.id),
         GATE_TIMEOUT_MS,
-        "userMustSignDeveloperAgreements",
+        "getEdgeMembershipSnapshot",
       );
+      const membershipSnapshot = snapshotResult.ok ? snapshotResult.value : null;
+
+      const [mustSignResult, gateRedirectResult] = await Promise.all([
+        withTimeout(
+          userMustSignDeveloperAgreements(
+            supabase,
+            user.id,
+            membershipSnapshot?.campaignRoles,
+          ),
+          GATE_TIMEOUT_MS,
+          "userMustSignDeveloperAgreements",
+        ),
+        withTimeout(
+          resolveOrgGateRedirect(request, supabase, user.id, membershipSnapshot),
+          GATE_TIMEOUT_MS,
+          "resolveOrgGateRedirect",
+        ),
+      ]);
+
       if (mustSignResult.ok && mustSignResult.value) {
         const agreementsUrl = new URL(
           DEVELOPER_AGREEMENTS_PATH,
@@ -317,26 +347,13 @@ export async function updateSession(request: NextRequest) {
         copyCookies(supabaseResponse, redirectResponse);
         return redirectResponse;
       }
-    }
-  }
 
-  if (
-    user &&
-    !isPublicPath(pathname) &&
-    pathname !== "/account/change-password" &&
-    pathname !== "/account/update-password" &&
-    !pathname.startsWith(DEVELOPER_AGREEMENTS_PATH)
-  ) {
-    const gateRedirectResult = await withTimeout(
-      resolveOrgGateRedirect(request, supabase, user.id),
-      GATE_TIMEOUT_MS,
-      "resolveOrgGateRedirect",
-    );
-    if (gateRedirectResult.ok && gateRedirectResult.value) {
-      const gateUrl = new URL(gateRedirectResult.value, request.nextUrl.origin);
-      const redirectResponse = NextResponse.redirect(gateUrl);
-      copyCookies(supabaseResponse, redirectResponse);
-      return redirectResponse;
+      if (gateRedirectResult.ok && gateRedirectResult.value) {
+        const gateUrl = new URL(gateRedirectResult.value, request.nextUrl.origin);
+        const redirectResponse = NextResponse.redirect(gateUrl);
+        copyCookies(supabaseResponse, redirectResponse);
+        return redirectResponse;
+      }
     }
   }
 

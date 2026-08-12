@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
-import { ACTIVE_ORGANIZATION_COOKIE } from "@/lib/auth/active-organization";
+import {
+  ACTIVE_ORGANIZATION_COOKIE,
+  resolveActiveOrganizationId,
+} from "@/lib/auth/active-organization";
 import {
   getPendingFoundingAccessCodeFromRequest,
   validateFoundingAccessCode,
@@ -10,6 +13,7 @@ import {
   getOrganizationAccessState,
   getOrganizationCanceledLockout,
   resolveEdgeActiveOrganizationId,
+  type EdgeMembershipSnapshot,
 } from "@/lib/auth/organization-access-state";
 import {
   ONBOARDING_PATH,
@@ -32,15 +36,22 @@ function isOrgSetupPath(pathname: string): boolean {
 /**
  * Returns a redirect path when an authenticated user must not access app routes yet.
  * Returns null when the request may proceed.
+ *
+ * @param membership - When the caller already fetched this user's membership
+ * snapshot (e.g. middleware's shared lookup), pass it here to skip the
+ * redundant `organization_users` queries. Omit to fetch live.
  */
 export async function resolveOrgGateRedirect(
   request: NextRequest,
   supabase: SupabaseClient,
   userId: string,
+  membership?: EdgeMembershipSnapshot | null,
 ): Promise<string | null> {
   const { pathname } = request.nextUrl;
 
-  const accessState = await getOrganizationAccessState(supabase, userId);
+  const accessState = membership
+    ? membership.accessState
+    : await getOrganizationAccessState(supabase, userId);
   if (accessState === "active") {
     if (pathname === BILLING_CANCELED_PATH) {
       return null;
@@ -51,11 +62,16 @@ export async function resolveOrgGateRedirect(
     // wrongly lock out a paying or trialing org.
     const preferredOrganizationId =
       request.cookies.get(ACTIVE_ORGANIZATION_COOKIE)?.value ?? null;
-    const activeOrganizationId = await resolveEdgeActiveOrganizationId(
-      supabase,
-      userId,
-      preferredOrganizationId,
-    );
+    const activeOrganizationId = membership
+      ? resolveActiveOrganizationId({
+          preferredOrganizationId,
+          membershipOrganizationIds: membership.activeOrganizationIds,
+        })
+      : await resolveEdgeActiveOrganizationId(
+          supabase,
+          userId,
+          preferredOrganizationId,
+        );
     if (activeOrganizationId) {
       const canceled = await getOrganizationCanceledLockout(
         supabase,

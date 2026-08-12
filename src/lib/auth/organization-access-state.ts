@@ -33,6 +33,56 @@ export async function getOrganizationAccessState(
   );
 }
 
+export type EdgeMembershipSnapshot = {
+  accessState: OrganizationAccessState | null;
+  /** Unique active-membership campaign roles, for the developer-agreements gate. */
+  campaignRoles: string[];
+  /** Active-membership organization ids, in the same row order Postgres returns. */
+  activeOrganizationIds: string[];
+};
+
+/**
+ * Edge-safe, single-round-trip replacement for calling
+ * getOrganizationAccessState + resolveEdgeActiveOrganizationId +
+ * getActiveCampaignRolesForUser separately. Middleware runs this once per
+ * navigation and derives all three from the same `organization_users` rows,
+ * instead of issuing three near-identical queries for the same user.
+ */
+export async function getEdgeMembershipSnapshot(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<EdgeMembershipSnapshot> {
+  const { data, error } = await supabase
+    .from("organization_users")
+    .select("status, organization_id, campaign_role")
+    .eq("user_id", userId);
+
+  if (error?.code === "42P01") {
+    return { accessState: null, campaignRoles: [], activeOrganizationIds: [] };
+  }
+  if (error) {
+    return { accessState: "none", campaignRoles: [], activeOrganizationIds: [] };
+  }
+
+  const rows = data ?? [];
+  const accessState = resolveOrganizationAccessState(
+    rows.map((row) => row.status as string),
+  );
+  const activeRows = rows.filter((row) => row.status === "active");
+  const campaignRoles = [
+    ...new Set(
+      activeRows
+        .map((row) => String(row.campaign_role ?? "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  const activeOrganizationIds = activeRows.map(
+    (row) => row.organization_id as string,
+  );
+
+  return { accessState, campaignRoles, activeOrganizationIds };
+}
+
 /**
  * Edge-safe resolution of the caller's active organization id (cookie
  * preference + active memberships), mirroring getActiveMembership's logic
