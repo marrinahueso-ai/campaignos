@@ -166,7 +166,7 @@ describe("flyer composer image prompt", () => {
     const prompt = buildFlyerComposerImagePrompt(input);
 
     assert.match(prompt, /No reference photo/i);
-    assert.match(prompt, /avoid generic stock crowd/i);
+    assert.match(prompt, /avoid people and generic stock crowd/i);
     assert.doesNotMatch(prompt, /Inspiration photo: none/i);
   });
 
@@ -190,5 +190,12 @@ describe("flyer composer image prompt", () => {
   it("bans comic emphasis rays beside typography", () => {
     const prompt = buildFlyerComposerImagePrompt(buildSampleDirectionInput());
     assert.match(prompt, /speed lines|emphasis rays|starbursts/i);
+  });
+
+  it("bans people and grid-like icon rows in artwork", () => {
+    const prompt = buildFlyerComposerImagePrompt(buildSampleDirectionInput());
+    assert.match(prompt, /No people in the artwork/i);
+    assert.match(prompt, /No grid-like icon rows/i);
+    assert.doesNotMatch(prompt, /icons or short labels/i);
   });
 });

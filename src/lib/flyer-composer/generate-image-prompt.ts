@@ -120,6 +120,8 @@ export function buildFlyerComposerImagePrompt(
     formatPrintFormatInstructions(input),
     "Readable from a few feet away. Real text on the flyer — not lorem ipsum.",
     "Typography style: clean, confident lettering — NO speed lines, sparkle bursts, comic emphasis rays, starbursts, or hash-mark accents beside words or headlines.",
+    "No people in the artwork — no photos, illustrations, cartoons, silhouettes, or crowds of people, families, kids, or skaters.",
+    "No grid-like icon rows, icon strips, emoji tiles, or dotted/line dividers between icons — keep the layout open with bold typography and atmosphere, not a row of labeled icons.",
   ];
 
   if (direction) {
@@ -129,7 +131,7 @@ export function buildFlyerComposerImagePrompt(
       direction,
       "",
       "Include the theme, activities, and any dates/times named in that direction on the flyer.",
-      "Show activities visually when possible (icons or short labels), not only a bare background photo.",
+      "Suggest the activity with scenery, props, color, and type — never by drawing people or a bottom icon grid.",
     );
   } else {
     lines.push(
@@ -185,7 +187,7 @@ export function buildFlyerComposerImagePrompt(
   } else if (!direction) {
     lines.push(
       "",
-      "No reference photo — use brand colors and clear typography; avoid generic stock crowd photos.",
+      "No reference photo — use brand colors and clear typography; avoid people and generic stock crowd scenes.",
     );
   }
 
