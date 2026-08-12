@@ -25,6 +25,13 @@ export type FlyerGeneratePayloadInput = {
   directions?: string | null;
   ctaUrl?: string | null;
   ctaLabel?: string | null;
+  /** Linked campaign event — used to populate flyer facts when present. */
+  event?: {
+    title?: string | null;
+    date?: string | null;
+    time?: string | null;
+    location?: string | null;
+  } | null;
   qrEnabled: boolean;
   qrUrl?: string | null;
   qrCaption?: string | null;
@@ -47,6 +54,58 @@ function isImageReferenceUrl(url: string | null | undefined): boolean {
     trimmed.startsWith("http://") ||
     trimmed.startsWith("data:image/")
   );
+}
+
+/** Format YYYY-MM-DD (or ISO) for flyer copy — never invent dates. */
+export function formatFlyerEventDate(date: string | null | undefined): string {
+  const raw = date?.trim();
+  if (!raw) return "";
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return raw;
+  try {
+    return new Date(`${match[1]}-${match[2]}-${match[3]}T12:00:00`).toLocaleDateString(
+      "en-US",
+      { weekday: "long", month: "long", day: "numeric", year: "numeric" },
+    );
+  } catch {
+    return raw;
+  }
+}
+
+/**
+ * Resolve structured flyer facts from an optional linked event.
+ * Explicit overrides win; otherwise event title/date/time/location are used.
+ */
+export function resolveFlyerEventFacts(input: {
+  title?: string | null;
+  datesEvents?: string | null;
+  directions?: string | null;
+  location?: string | null;
+  event?: {
+    title?: string | null;
+    date?: string | null;
+    time?: string | null;
+    location?: string | null;
+  } | null;
+}): {
+  headline: string;
+  datesEvents: string;
+  directions: string;
+  location: string;
+} {
+  const eventTitle = input.event?.title?.trim() || "";
+  const eventDate = formatFlyerEventDate(input.event?.date);
+  const eventTime = input.event?.time?.trim() || "";
+  const eventLocation = input.event?.location?.trim() || "";
+
+  const dateLine = [eventDate, eventTime].filter(Boolean).join(" · ");
+
+  return {
+    headline: input.title?.trim() || eventTitle,
+    datesEvents: input.datesEvents?.trim() || dateLine,
+    directions: input.directions?.trim() || eventTime,
+    location: input.location?.trim() || eventLocation,
+  };
 }
 
 export function printSizeLabel(printSize: FlyerPrintSize): string {
@@ -129,6 +188,14 @@ export function buildFlyerGeneratePayload(
               ? "school"
               : "lettermark";
 
+  const facts = resolveFlyerEventFacts({
+    title: input.title,
+    datesEvents: input.datesEvents,
+    directions: input.directions,
+    location: input.location,
+    event: input.event,
+  });
+
   return {
     start: {
       path: "new",
@@ -174,11 +241,11 @@ export function buildFlyerGeneratePayload(
       : null,
     fields: {
       orgName: input.orgName?.trim() || brandKit?.organizationShortName || "",
-      headline: input.title?.trim() || "",
+      headline: facts.headline,
       schoolYear: "",
-      location: input.location?.trim() || "",
-      directions: input.directions?.trim() || "",
-      datesEvents: input.datesEvents?.trim() || "",
+      location: facts.location,
+      directions: facts.directions,
+      datesEvents: facts.datesEvents,
       aiDirection,
       bodyCopy: "",
       donationTiers: "",

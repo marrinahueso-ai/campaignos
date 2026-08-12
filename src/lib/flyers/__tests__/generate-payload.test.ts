@@ -83,5 +83,45 @@ describe("flyer generate-payload", () => {
     assert.equal(payload.template.hasQr, false);
     assert.equal(payload.fields.qrUrl, "");
   });
+
+  it("pulls event name, date, time, and location into flyer facts", () => {
+    const payload = buildFlyerGeneratePayload({
+      printSize: "letter",
+      aiDirection: "Back to school night flyer",
+      qrEnabled: false,
+      brandEnabled: false,
+      event: {
+        title: "Meet the Teacher Night",
+        date: "2026-08-22",
+        time: "5:30 PM — 7:30 PM",
+        location: "School Playground",
+      },
+    });
+
+    assert.equal(payload.fields.headline, "Meet the Teacher Night");
+    assert.match(payload.fields.datesEvents ?? "", /August/);
+    assert.match(payload.fields.datesEvents ?? "", /5:30 PM/);
+    assert.equal(payload.fields.directions, "5:30 PM — 7:30 PM");
+    assert.equal(payload.fields.location, "School Playground");
+  });
+
+  it("keeps an explicit flyer title over the event title", () => {
+    const payload = buildFlyerGeneratePayload({
+      printSize: "letter",
+      aiDirection: "Custom",
+      title: "Custom Flyer Title",
+      qrEnabled: false,
+      brandEnabled: false,
+      event: {
+        title: "Event Name",
+        date: "2026-08-22",
+        time: "6:00 PM",
+        location: "Gym",
+      },
+    });
+
+    assert.equal(payload.fields.headline, "Custom Flyer Title");
+    assert.equal(payload.fields.location, "Gym");
+  });
 });
 

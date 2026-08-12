@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  CalendarDays,
+  ChevronDown,
   Cloud,
   Download,
   ImagePlus,
@@ -18,9 +20,11 @@ import {
 import { useRef, useState, useTransition } from "react";
 
 import { BackgroundLibraryPicker } from "@/components/background-library/BackgroundLibraryPicker";
+import { EventPickerModal } from "@/components/newsletters/builder/EventPickerModal";
 import { updateFlyerDraft } from "@/lib/flyers/actions";
 import {
   buildFlyerGeneratePayload,
+  formatFlyerEventDate,
   printSizeLabel,
   type FlyerGenerateBrandKit,
 } from "@/lib/flyers/generate-payload";
@@ -30,13 +34,8 @@ import type {
   FlyerPrintSize,
   FlyerVersion,
 } from "@/lib/flyers/types";
+import type { NewsletterComposerEvent } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
-
-export type FlyerBuilderEventOption = {
-  id: string;
-  title: string;
-  date: string | null;
-};
 
 type SaveStatus = "idle" | "saving" | "saved" | "error" | "generating";
 
@@ -49,11 +48,19 @@ const EDIT_CHIPS = [
 
 type Props = {
   flyer: Flyer;
-  events: FlyerBuilderEventOption[];
+  events: NewsletterComposerEvent[];
   brandKit: FlyerGenerateBrandKit | null;
   canEdit: boolean;
   approverDisplayName: string | null;
 };
+
+function formatEventMeta(event: NewsletterComposerEvent): string {
+  const dateLabel = formatFlyerEventDate(event.date) || event.date || "";
+  const parts = [dateLabel, event.time, event.location].filter(
+    (part) => part && String(part).trim(),
+  );
+  return parts.join(" · ") || "No date set";
+}
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -137,6 +144,7 @@ export function FlyerBuilderShell({
     initial.activeVersionId ?? null,
   );
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [eventPickerOpen, setEventPickerOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [sendMessage, setSendMessage] = useState<string | null>(null);
@@ -145,6 +153,8 @@ export function FlyerBuilderShell({
   );
   const [status, setStatus] = useState(flyer.status);
 
+  const selectedEvent =
+    events.find((event) => event.id === eventId) ?? null;
   const isHalf = printSize === "half";
   const isGenerating = saveStatus === "generating";
   const readOnly = !canEdit || status === "needs_approval" || status === "approved";
@@ -155,6 +165,13 @@ export function FlyerBuilderShell({
     (canEdit || status === "changes_requested");
   const sendLabel =
     status === "changes_requested" ? "Resubmit" : "Send for Approval";
+
+  function applySelectedEvent(event: NewsletterComposerEvent | null) {
+    setEventId(event?.id ?? null);
+    if (event && !title.trim()) {
+      setTitle(event.title);
+    }
+  }
 
   function composerStatePatch(
     overrides: Partial<FlyerComposerState> = {},
@@ -240,6 +257,14 @@ export function FlyerBuilderShell({
       editDirection: mode === "update" ? editDirection : null,
       title,
       orgName: brandKit?.organizationShortName,
+      event: selectedEvent
+        ? {
+            title: selectedEvent.title,
+            date: selectedEvent.date,
+            time: selectedEvent.time,
+            location: selectedEvent.location,
+          }
+        : null,
       qrEnabled,
       qrUrl,
       brandEnabled,
@@ -480,19 +505,36 @@ export function FlyerBuilderShell({
               <label className="text-[10px] font-bold tracking-widest text-cos-muted uppercase">
                 Associated Event
               </label>
-              <select
-                value={eventId ?? ""}
+              <button
+                type="button"
                 disabled={readOnly}
-                onChange={(e) => setEventId(e.target.value || null)}
-                className="w-full rounded-xl border border-cos-border bg-white px-4 py-3 text-sm focus:border-[#0d7e5e] focus:outline-none disabled:opacity-60"
+                onClick={() => setEventPickerOpen(true)}
+                className="flex w-full items-center justify-between gap-3 rounded-xl border border-cos-border bg-white px-4 py-3 text-left transition hover:border-[#0d7e5e] disabled:opacity-60"
               >
-                <option value="">No event</option>
-                {events.map((event) => (
-                  <option key={event.id} value={event.id}>
-                    {event.title}
-                  </option>
-                ))}
-              </select>
+                <div className="flex min-w-0 items-center gap-3">
+                  <CalendarDays className="h-4 w-4 shrink-0 text-[#0d7e5e]" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-cos-text">
+                      {selectedEvent?.title ?? "Choose an event…"}
+                    </p>
+                    <p className="truncate text-[11px] text-cos-muted">
+                      {selectedEvent
+                        ? formatEventMeta(selectedEvent)
+                        : "Optional — for Files & Approvals"}
+                    </p>
+                  </div>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-cos-muted" />
+              </button>
+              {selectedEvent && !readOnly ? (
+                <button
+                  type="button"
+                  onClick={() => applySelectedEvent(null)}
+                  className="text-[11px] font-medium text-cos-muted transition hover:text-cos-text"
+                >
+                  Clear event
+                </button>
+              ) : null}
             </div>
 
             <div className="space-y-2">
@@ -996,6 +1038,20 @@ export function FlyerBuilderShell({
           setInspirationPhotoUrl(asset.publicUrl);
           setInspirationPhotoSource("library");
           setInspirationPhotoLabel(asset.title || "Gallery image");
+        }}
+      />
+
+      <EventPickerModal
+        open={eventPickerOpen}
+        events={events}
+        selectedEventId={eventId}
+        multiSelect={false}
+        title="Link an event"
+        description="Choose an event you've already created — name, date, time, and location are included when you generate."
+        onClose={() => setEventPickerOpen(false)}
+        onSelect={(event) => {
+          applySelectedEvent(event);
+          setEventPickerOpen(false);
         }}
       />
     </div>

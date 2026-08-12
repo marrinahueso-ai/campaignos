@@ -140,6 +140,9 @@ export function buildFlyerComposerImagePrompt(
 
   if (facts) {
     lines.push("", "Facts to include when they don't conflict with the direction:", facts);
+    lines.push(
+      "Use these real event facts on the flyer — do not invent dates, times, or locations, and do not print placeholder copy like “To Be Announced” when a date or time is provided above.",
+    );
   }
 
   if (org) {
@@ -193,11 +196,12 @@ export function buildFlyerComposerImagePrompt(
     lines.push(
       "",
       "QR CODE SLOT (critical — the app stamps a real scannable QR after generation):",
-      `- Leave ONE empty solid white SQUARE in the lower-right corner — exactly ~${slotPct}% of the shorter flyer side on both width and height (always square, never a rectangle).`,
+      `- Leave ONE empty solid white SQUARE in the lower-right corner — exactly ~${slotPct}% of the shorter flyer side on both width and height (always a perfect square, never a rounded rectangle or rounded corners).`,
       `- Place it with ~${marginPct}% margin from the right edge and ~${marginPct}% from the bottom edge — same corner and size every time.`,
+      "- The white square must be empty and flush to those margins — the app will fill that entire square with a QR of the same size.",
       "- Do NOT draw QR modules, fake barcodes, pixel grids, finder patterns, or any stand-in code.",
       "- Do NOT put the URL text inside that white square — caption text may sit beside it to the left.",
-      "- Keep that white square clear of icons, gradients, and texture so a QR overlay can fill it.",
+      "- Keep that white square clear of icons, gradients, paperclips, and texture so a QR overlay can fill it edge-to-edge.",
     );
     const caption = input.fields.qrCaption?.trim();
     if (caption) lines.push(`QR caption beside the square: ${caption}`);

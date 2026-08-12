@@ -2,10 +2,13 @@ import sharp from "sharp";
 
 import { generateFlyerQrPng, isFlyerQrTarget } from "@/lib/flyer-composer/qr-code";
 import { resolveFlyerQrStampRect } from "@/lib/flyer-composer/qr-layout";
+import { findFlyerQrPlaceholderSlot } from "@/lib/flyer-composer/qr-slot";
 
 /**
- * Overlay a scannable QR on a fixed lower-right white square.
- * Size and position are deterministic so every flyer gets the same QR footprint.
+ * Overlay a scannable QR on a lower-right white square.
+ * The QR fills the white box edge-to-edge (quiet zone is inside the QR PNG).
+ * Prefer a detected AI placeholder in the lower-right when present so the
+ * stamped code matches that box size; otherwise use the fixed stamp geometry.
  */
 export async function compositeFlyerQrCode(input: {
   imageBase64: string;
@@ -22,11 +25,33 @@ export async function compositeFlyerQrCode(input: {
     const width = meta.width ?? 1024;
     const height = meta.height ?? 1792;
 
-    const rect = resolveFlyerQrStampRect(width, height);
-    const inset = Math.max(2, Math.round(rect.boxSize * 0.06));
-    const qrSize = Math.max(40, rect.boxSize - inset * 2);
-    const left = rect.left + inset;
-    const top = rect.top + inset;
+    const fixed = resolveFlyerQrStampRect(width, height);
+    let left = fixed.left;
+    let top = fixed.top;
+    let boxSize = fixed.boxSize;
+
+    const detected = await findFlyerQrPlaceholderSlot(flyerBytes);
+    if (detected) {
+      const detectedRight = detected.left + detected.size;
+      const detectedBottom = detected.top + detected.size;
+      const overlapsFixed =
+        detected.left < fixed.left + fixed.boxSize &&
+        detectedRight > fixed.left &&
+        detected.top < fixed.top + fixed.boxSize &&
+        detectedBottom > fixed.top;
+      const nearLowerRight =
+        detectedRight >= width - Math.max(fixed.margin * 4, 24) &&
+        detectedBottom >= height - Math.max(fixed.margin * 4, 24);
+      if (overlapsFixed || nearLowerRight) {
+        left = detected.left;
+        top = detected.top;
+        boxSize = detected.size;
+      }
+    }
+
+    // QR PNG already includes a quiet zone (margin:1). Stamp at the same
+    // size as the white box so the code fills the square.
+    const qrSize = Math.max(40, boxSize);
 
     const qrPng = await generateFlyerQrPng(qrUrl, qrSize);
     if (!qrPng) return null;
@@ -38,8 +63,8 @@ export async function compositeFlyerQrCode(input: {
 
     const whiteBox = await sharp({
       create: {
-        width: rect.boxSize,
-        height: rect.boxSize,
+        width: boxSize,
+        height: boxSize,
         channels: 3,
         background: { r: 255, g: 255, b: 255 },
       },
@@ -49,7 +74,7 @@ export async function compositeFlyerQrCode(input: {
 
     const composited = await sharp(flyerBytes)
       .composite([
-        { input: whiteBox, left: rect.left, top: rect.top },
+        { input: whiteBox, left, top },
         { input: stamp, left, top },
       ])
       .png()

@@ -160,20 +160,69 @@ describe("flyer QR resolve + composite", () => {
       darkInSlot > slotPixels * 0.08,
       `expected QR modules in fixed box; dark=${darkInSlot}`,
     );
-    // White square + QR quiet zone (antialiased modules leave some mid grays).
+    // White quiet zone + QR modules should cover most of the filled box.
     assert.ok(
       darkInSlot + whiteInSlot > slotPixels * 0.55,
       `expected most of fixed box covered; covered=${darkInSlot + whiteInSlot}`,
     );
+  });
 
-    // Lower-right corners of the painted white square should stay bright.
-    const corner = (x: number, y: number) => {
-      const i = (y * info.width + x) * info.channels;
-      return (data[i]! + data[i + 1]! + data[i + 2]!) / 3;
-    };
-    assert.ok(corner(rect.left + 1, rect.top + 1) > 240);
+  it("fills a detected lower-right white placeholder with a same-size QR", async () => {
+    const width = 512;
+    const height = 768;
+    const slotSize = 140;
+    const slotLeft = width - slotSize - 24;
+    const slotTop = height - slotSize - 28;
+
+    const flyer = await sharp({
+      create: {
+        width,
+        height,
+        channels: 3,
+        background: { r: 20, g: 40, b: 80 },
+      },
+    })
+      .composite([
+        {
+          input: await sharp({
+            create: {
+              width: slotSize,
+              height: slotSize,
+              channels: 3,
+              background: { r: 255, g: 255, b: 255 },
+            },
+          })
+            .png()
+            .toBuffer(),
+          left: slotLeft,
+          top: slotTop,
+        },
+      ])
+      .png()
+      .toBuffer();
+
+    const composited = await compositeFlyerQrCode({
+      imageBase64: flyer.toString("base64"),
+      qrUrl: "https://www.facebook.com/HeyRalli/",
+    });
+    assert.ok(composited);
+
+    const { data, info } = await sharp(Buffer.from(composited!, "base64"))
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    let darkInDetected = 0;
+    for (let y = slotTop; y < slotTop + slotSize; y += 1) {
+      for (let x = slotLeft; x < slotLeft + slotSize; x += 1) {
+        const i = (y * info.width + x) * info.channels;
+        if (data[i]! < 40 && data[i + 1]! < 40 && data[i + 2]! < 40) {
+          darkInDetected += 1;
+        }
+      }
+    }
     assert.ok(
-      corner(rect.left + rect.boxSize - 2, rect.top + rect.boxSize - 2) > 200,
+      darkInDetected > slotSize * slotSize * 0.08,
+      `expected QR modules filling detected white box; dark=${darkInDetected}`,
     );
   });
 

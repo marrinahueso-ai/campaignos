@@ -44,6 +44,10 @@ type Props = {
   initialSelectedEventIds?: string[];
   /** Pre-chosen layout when converting from Event settings. */
   initialLayout?: NewsletterEventInsertLayout;
+  /** Optional dialog title override (Flyer Builder, etc.). */
+  title?: string;
+  /** Optional dialog description override. */
+  description?: string;
   onClose: () => void;
   /** Change-event / legacy single pick. */
   onSelect: (event: NewsletterComposerEvent) => void;
@@ -62,6 +66,8 @@ export function EventPickerModal({
   multiSelect = false,
   initialSelectedEventIds,
   initialLayout = "card",
+  title,
+  description,
   onClose,
   onSelect,
   onConfirmMulti,
@@ -133,12 +139,14 @@ export function EventPickerModal({
               id="event-picker-title"
               className="font-display text-2xl text-cos-text"
             >
-              {multiSelect ? "Add events" : "Add event block"}
+              {title ??
+                (multiSelect ? "Add events" : "Add event block")}
             </h3>
             <p className="mt-1 text-sm text-cos-muted">
-              {multiSelect
-                ? "Select one or more events, then choose how they should appear in the newsletter."
-                : "Choose an event you've already created — artwork, dates, and links come along automatically."}
+              {description ??
+                (multiSelect
+                  ? "Select one or more events, then choose how they should appear in the newsletter."
+                  : "Choose an event you've already created — artwork, dates, and links come along automatically.")}
             </p>
           </div>
           <button

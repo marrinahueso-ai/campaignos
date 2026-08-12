@@ -3,10 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import { FlyerBuilderShell } from "@/components/flyers/FlyerBuilderShell";
 import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
+import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
 import { getFlyerComposerBrandKit } from "@/lib/flyer-composer/brand-kit";
 import { createFlyer, updateFlyerDraft } from "@/lib/flyers/actions";
 import { getFlyerById } from "@/lib/flyers/queries";
+import { getEventVolunteerSignupUrls } from "@/lib/homepage-composer/volunteer-links";
+import type { NewsletterComposerEvent } from "@/lib/newsletter-composer/types";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 
 export const metadata = {
@@ -69,7 +72,7 @@ export default async function FlyerComposerPage({
     redirect(`/create-with-ai/flyer?${qs.toString()}`);
   }
 
-  const [flyer, events, brandKit, canEdit, assignee] = await Promise.all([
+  const [flyer, campaignEvents, brandKit, canEdit, assignee] = await Promise.all([
     getFlyerById(organization.id, flyerId),
     getCampaignPageEvents(organization.id),
     getFlyerComposerBrandKit(),
@@ -78,6 +81,25 @@ export default async function FlyerComposerPage({
   ]);
 
   if (!flyer) notFound();
+
+  const [volunteerUrls, artworkByEvent] = await Promise.all([
+    getEventVolunteerSignupUrls(campaignEvents.map((event) => event.id)),
+    getEventArtworkMap(campaignEvents.map((event) => event.id)),
+  ]);
+
+  const events: NewsletterComposerEvent[] = campaignEvents.map((event) => {
+    const artworkUrl = artworkByEvent.get(event.id)?.imageUrl?.trim() || null;
+    return {
+      id: event.id,
+      title: event.title,
+      description: event.description ?? "",
+      date: event.date,
+      time: event.time,
+      location: event.location ?? null,
+      imageUrl: artworkUrl || event.approvedSquareImageUrl || null,
+      volunteerSignupUrl: volunteerUrls.get(event.id) ?? "",
+    };
+  });
 
   let flyerForShell = flyer;
   if (eventId && !flyer.eventId) {
@@ -88,11 +110,7 @@ export default async function FlyerComposerPage({
   return (
     <FlyerBuilderShell
       flyer={flyerForShell}
-      events={events.map((event) => ({
-        id: event.id,
-        title: event.title,
-        date: event.date ?? null,
-      }))}
+      events={events}
       brandKit={
         brandKit
           ? {
