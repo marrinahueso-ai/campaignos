@@ -395,7 +395,6 @@ export function UnifiedCalendarShell({
           <CalendarImportPlanList
             events={data.importedEvents}
             filename={data.importListFilename}
-            playbookOptions={data.importListPlaybooks}
             onNavigateView={handleViewChange}
           />
         ) : null}
@@ -414,8 +413,16 @@ export function UnifiedCalendarShell({
         {view === "review" && reviewPanel
           ? isValidElement(reviewPanel)
             ? cloneElement(
-                reviewPanel as ReactElement<{ onGoToImport?: () => void }>,
-                { onGoToImport: () => handleViewChange("import") },
+                reviewPanel as ReactElement<{
+                  onGoToImport?: () => void;
+                  onViewImportedEvents?: () => void;
+                  onBackToCalendar?: () => void;
+                }>,
+                {
+                  onGoToImport: () => handleViewChange("import"),
+                  onViewImportedEvents: () => handleViewChange("import-list"),
+                  onBackToCalendar: () => handleViewChange("month"),
+                },
               )
             : reviewPanel
           : null}

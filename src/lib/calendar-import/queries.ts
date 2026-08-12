@@ -331,7 +331,7 @@ export async function getImportedEventsForCalendarList(): Promise<{
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("events")
-    .select("id, title, date, category, communication_strategy")
+    .select("id, title, date, time, category, communication_strategy, import_source")
     .neq("status", "archived")
     .in("school_year_id", schoolYearIds)
     .order("date", { ascending: true });
@@ -366,11 +366,13 @@ export async function getImportedEventsForCalendarList(): Promise<{
       id: row.id as string,
       title: row.title as string,
       date: row.date as string,
+      time: (row.time as string | null) ?? null,
       category: (row.category as string | null) ?? null,
       communicationStrategy: parseCommunicationStrategy(
         row.communication_strategy as string,
       ),
       playbookId: playbookByEventId.get(row.id as string) ?? null,
+      importSource: (row.import_source as string | null) ?? null,
     })),
   };
 }

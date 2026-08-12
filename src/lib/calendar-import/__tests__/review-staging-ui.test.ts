@@ -56,6 +56,23 @@ describe("calendar review staging contracts", () => {
     assert.match(review, /From your calendar/);
     assert.match(review, /First Calendar Import/);
     assert.match(review, /Calendar Sync Review/);
+    assert.match(review, /all caught up/);
+    assert.match(review, /Calendar updated/);
+    assert.match(review, /View imported events/);
+    assert.match(review, /events added/);
+    assert.match(review, /duplicate skipped/);
     assert.doesNotMatch(review, /Import ready items/);
+  });
+
+  it("Imported Events Library uses search and source filters", () => {
+    const library = readSrc(
+      "../../../components/unified-calendar/CalendarImportPlanList.tsx",
+    );
+    assert.match(library, /Imported Events Library/);
+    assert.match(library, /All Sources/);
+    assert.match(library, /School RSS Feed/);
+    assert.match(library, /PDF Import/);
+    assert.match(library, /Search events/);
+    assert.match(library, /href=\{`\/events\/\$\{event\.id\}`\}/);
   });
 });

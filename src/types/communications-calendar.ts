@@ -98,7 +98,11 @@ export interface CalendarImportedEventListItem {
   category: string | null;
   communicationStrategy: CommunicationStrategy;
   playbookId: string | null;
+  /** ICS / google / subscribe / ai_parse / manual when known. */
+  importSource?: string | null;
+  time?: string | null;
 }
+
 
 export type PlanningItemType =
   | "event"

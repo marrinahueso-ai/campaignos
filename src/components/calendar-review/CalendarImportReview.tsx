@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import Link from "next/link";
 import {
   AlertCircle,
   ArrowLeft,
@@ -55,6 +54,8 @@ interface CalendarImportReviewProps {
   /** Hide standalone page chrome when rendered inside Calendar tabs. */
   embedded?: boolean;
   onGoToImport?: () => void;
+  onViewImportedEvents?: () => void;
+  onBackToCalendar?: () => void;
 }
 
 export function CalendarImportReview({
@@ -67,6 +68,8 @@ export function CalendarImportReview({
   hasPriorImportedCalendar = false,
   embedded = false,
   onGoToImport,
+  onViewImportedEvents,
+  onBackToCalendar,
 }: CalendarImportReviewProps) {
   const [events, setEvents] = useState<CalendarReviewEvent[]>(data.events);
   const [parseStatus, setParseStatus] = useState(initialParseStatus);
@@ -79,6 +82,7 @@ export function CalendarImportReview({
   );
   const [importedCount, setImportedCount] = useState(importedEventCount);
   const [updatedCount, setUpdatedCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showAllReady, setShowAllReady] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -188,22 +192,28 @@ export function CalendarImportReview({
         return;
       }
 
-      if (
-        result.importedCount === 0 &&
-        result.updatedCount === 0 &&
-        result.skippedCount > 0
-      ) {
-        setActionError(
-          `${result.skippedCount} event${result.skippedCount === 1 ? "" : "s"} already on your calendar — nothing new to import.`,
-        );
-        return;
-      }
-
       setImportedCount(result.importedCount);
       setUpdatedCount(result.updatedCount);
+      setSkippedCount(result.skippedCount);
       setImportComplete(true);
       setParseStatus("imported");
     });
+  }
+
+  function handleViewImportedEvents() {
+    if (onViewImportedEvents) {
+      onViewImportedEvents();
+      return;
+    }
+    window.location.assign("/calendar?tab=import-list");
+  }
+
+  function handleBackToCalendar() {
+    if (onBackToCalendar) {
+      onBackToCalendar();
+      return;
+    }
+    window.location.assign("/calendar");
   }
 
   function handleRetryParse() {
@@ -237,11 +247,23 @@ export function CalendarImportReview({
       setImportComplete(false);
       setImportedCount(0);
       setUpdatedCount(0);
+      setSkippedCount(0);
       setParseStatus("parsed");
     });
   }
 
-  const backControl = onGoToImport ? (
+  const calendarBackControl = (
+    <button
+      type="button"
+      onClick={handleBackToCalendar}
+      className="inline-flex items-center gap-2 text-sm font-medium text-cos-muted transition hover:text-cos-brand-sage"
+    >
+      <ArrowLeft className="h-4 w-4" />
+      Back to Calendar
+    </button>
+  );
+
+  const importBackControl = onGoToImport ? (
     <button
       type="button"
       onClick={onGoToImport}
@@ -251,18 +273,139 @@ export function CalendarImportReview({
       Back to Import
     </button>
   ) : (
-    <Link
-      href="/calendar"
-      className="inline-flex items-center gap-2 text-sm font-medium text-cos-muted transition hover:text-cos-brand-sage"
-    >
-      <ArrowLeft className="h-4 w-4" />
-      Back to Calendar
-    </Link>
+    calendarBackControl
   );
 
   const attentionEvents = isFirstImport
     ? firstSections.needsAttention
     : syncSections.needsAttention;
+
+  if (isImported) {
+    return (
+      <div className="space-y-10">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+            Sync Complete
+          </p>
+          {calendarBackControl}
+        </div>
+
+        <div className="mx-auto max-w-3xl space-y-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-cos-brand-sage-soft text-cos-brand-sage">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+          <h1 className="font-display text-[clamp(2rem,4vw,3.5rem)] font-semibold tracking-[-0.02em] text-cos-text">
+            Calendar updated
+          </h1>
+          <p className="mx-auto max-w-xl font-display text-xl italic leading-relaxed text-cos-muted">
+            “Successfully reviewed and added all events to your calendar.
+            Everything is now up to date.”
+          </p>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <SummaryCard
+              value={importedCount}
+              label="events added"
+              tone="success"
+            />
+            <SummaryCard
+              value={updatedCount}
+              label="events updated"
+              tone="neutral"
+            />
+            <SummaryCard
+              value={skippedCount}
+              label="duplicate skipped"
+              tone="neutral"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleViewImportedEvents}
+              className="inline-flex items-center rounded-full bg-cos-text px-8 py-3.5 text-[13px] font-bold text-cos-card"
+            >
+              View imported events
+            </button>
+            <button
+              type="button"
+              onClick={handleBackToCalendar}
+              className="inline-flex items-center rounded-full border border-cos-border bg-cos-card px-8 py-3.5 text-[13px] font-medium text-cos-muted transition hover:bg-[rgba(246,242,235,0.9)]"
+            >
+              Back to Calendar
+            </button>
+          </div>
+
+          {!embedded ? (
+            <button
+              type="button"
+              onClick={handleDeleteImported}
+              disabled={isPending}
+              className="text-sm font-medium text-cos-muted hover:text-[#a65a3a] disabled:opacity-50"
+            >
+              Delete all imported events
+            </button>
+          ) : null}
+        </div>
+
+        {actionError ? (
+          <div className="rounded-[24px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+            {actionError}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (
+    parseStatus === "parsed" &&
+    events.length === 0 &&
+    (hasPriorImportedCalendar || !isFirstImport)
+  ) {
+    return (
+      <div className="space-y-10">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+            Calendar Sync
+          </p>
+          {calendarBackControl}
+        </div>
+
+        <div className="mx-auto max-w-3xl space-y-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-cos-brand-sage-soft text-cos-brand-sage">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+          <h1 className="font-display text-[clamp(2rem,4vw,3.5rem)] font-semibold tracking-[-0.02em] text-cos-text">
+            You’re all caught up
+          </h1>
+          <p className="mx-auto max-w-xl font-display text-xl italic leading-relaxed text-cos-muted">
+            “Your connected calendar is up to date. There are no new events or
+            changes that need your attention.”
+          </p>
+          <p className="text-sm text-cos-muted">
+            {formatLastCheckedLabel(data.uploadedAt)}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleViewImportedEvents}
+              className="inline-flex items-center rounded-full bg-cos-text px-8 py-3.5 text-[13px] font-bold text-cos-card"
+            >
+              View imported events
+            </button>
+            <button
+              type="button"
+              onClick={handleBackToCalendar}
+              className="inline-flex items-center rounded-full border border-cos-border bg-cos-card px-8 py-3.5 text-[13px] font-medium text-cos-muted transition hover:bg-[rgba(246,242,235,0.9)]"
+            >
+              Back to Calendar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">
@@ -275,7 +418,7 @@ export function CalendarImportReview({
             </span>
           ) : null}
         </p>
-        {backControl}
+        {isFirstImport ? calendarBackControl : importBackControl}
       </div>
 
       {parseStatus === "parsing" ? (
@@ -311,66 +454,19 @@ export function CalendarImportReview({
         </div>
       ) : null}
 
-      {isImported ? (
-        <div className="flex items-start gap-3 rounded-[24px] border border-emerald-200 bg-emerald-50 px-5 py-4">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-          <div className="flex-1">
-            <p className="text-sm font-bold text-emerald-900">
-              {importedCount > 0 || updatedCount > 0
-                ? [
-                    importedCount > 0
-                      ? `${importedCount} event${importedCount === 1 ? "" : "s"} added`
-                      : null,
-                    updatedCount > 0
-                      ? `${updatedCount} updated`
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")
-                : "Review finished"}
-            </p>
-            <p className="mt-1 text-sm text-emerald-700">
-              Dates are on your calendar now.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {!embedded ? (
-                <Link
-                  href="/calendar"
-                  className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card"
-                >
-                  Open calendar
-                </Link>
-              ) : null}
-              <button
-                type="button"
-                onClick={handleDeleteImported}
-                disabled={isPending}
-                className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text disabled:opacity-50"
-              >
-                Delete all imported events
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       {actionError ? (
         <div className="rounded-[24px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
           {actionError}
         </div>
       ) : null}
 
-      {(parseStatus === "parsed" || isImported) && events.length > 0 ? (
+      {parseStatus === "parsed" && events.length > 0 ? (
         <>
           <header className="space-y-6">
             <h1 className="font-display text-[clamp(2rem,4vw,3.25rem)] font-semibold tracking-[-0.02em] text-cos-text">
-              {isImported
-                ? isFirstImport
-                  ? "Calendar imported"
-                  : "Calendar updated"
-                : isFirstImport
-                  ? "Calendar ready to import"
-                  : "Review calendar sync"}
+              {isFirstImport
+                ? "Calendar ready to import"
+                : "Review calendar sync"}
             </h1>
 
             {isFirstImport ? (
@@ -423,7 +519,7 @@ export function CalendarImportReview({
             </p>
           </header>
 
-          {attentionEvents.length > 0 && !isImported ? (
+          {attentionEvents.length > 0 ? (
             <section className="space-y-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cos-brand-terracotta text-white">
@@ -502,7 +598,7 @@ export function CalendarImportReview({
                         key={event.id}
                         event={event}
                         showDivider={index < syncSections.changes.length - 1}
-                        disabled={isPending || isImported}
+                        disabled={isPending}
                         onDecision={(decision) =>
                           handleDecision(event.id, decision)
                         }
@@ -542,41 +638,39 @@ export function CalendarImportReview({
             </>
           )}
 
-          {!isImported ? (
-            <div className="pt-4 text-center">
-              <button
-                type="button"
-                onClick={handleFinishReview}
-                disabled={isPending}
-                className="inline-flex items-center rounded-full bg-cos-text px-12 py-4 text-lg font-bold text-cos-card shadow-lg transition hover:-translate-y-0.5 hover:bg-cos-brand-sage disabled:opacity-50"
-              >
-                {isPending
-                  ? isFirstImport
-                    ? "Adding…"
-                    : "Finishing…"
-                  : isFirstImport
-                    ? "Add Events to Calendar"
-                    : "Finish Review"}
-              </button>
-              <p className="mt-3 text-sm text-cos-muted">
-                {isFirstImport
-                  ? `This will add ${eventsToAddCount} event${eventsToAddCount === 1 ? "" : "s"} to your Hey Ralli calendar.`
-                  : "Adds new events, applies updates you kept, and skips duplicates."}
-              </p>
-            </div>
-          ) : null}
+          <div className="pt-4 text-center">
+            <button
+              type="button"
+              onClick={handleFinishReview}
+              disabled={isPending}
+              className="inline-flex items-center rounded-full bg-cos-text px-12 py-4 text-lg font-bold text-cos-card shadow-lg transition hover:-translate-y-0.5 hover:bg-cos-brand-sage disabled:opacity-50"
+            >
+              {isPending
+                ? isFirstImport
+                  ? "Adding…"
+                  : "Finishing…"
+                : isFirstImport
+                  ? "Add Events to Calendar"
+                  : "Finish Review"}
+            </button>
+            <p className="mt-3 text-sm text-cos-muted">
+              {isFirstImport
+                ? `This will add ${eventsToAddCount} event${eventsToAddCount === 1 ? "" : "s"} to your Hey Ralli calendar.`
+                : "Adds new events, applies updates you kept, and skips duplicates."}
+            </p>
+          </div>
         </>
       ) : null}
 
-      {parseStatus === "parsed" && events.length === 0 && !isImported ? (
+      {parseStatus === "parsed" && events.length === 0 ? (
         <div className="rounded-[24px] border border-dashed border-cos-border bg-[rgba(255,252,247,0.55)] px-6 py-12 text-center">
           <p className="text-sm font-bold text-cos-text">
-            No events left to import
+            No events found in this import
           </p>
           <p className="mt-1 text-sm text-cos-muted">
             Upload a different calendar or bring another source in.
           </p>
-          <div className="mt-4">{backControl}</div>
+          <div className="mt-4">{importBackControl}</div>
         </div>
       ) : null}
 
@@ -590,6 +684,28 @@ export function CalendarImportReview({
       ) : null}
     </div>
   );
+}
+
+function formatLastCheckedLabel(uploadedAt: string): string {
+  const date = new Date(uploadedAt);
+  if (Number.isNaN(date.getTime())) {
+    return "Last checked recently";
+  }
+
+  const time = date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const today = new Date();
+  if (date.toDateString() === today.toDateString()) {
+    return `Last checked today at ${time}`;
+  }
+
+  const day = date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  return `Last checked ${day} at ${time}`;
 }
 
 function SummaryCard({
