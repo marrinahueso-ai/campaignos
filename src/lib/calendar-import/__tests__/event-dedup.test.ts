@@ -25,6 +25,8 @@ function reviewEvent(
     communicationStrategy: overrides.communicationStrategy ?? "full_campaign",
     importSource: overrides.importSource ?? null,
     importExternalId: overrides.importExternalId ?? null,
+    time: overrides.time,
+    location: overrides.location,
     existingEventId: overrides.existingEventId ?? null,
     matchReason: overrides.matchReason ?? null,
     applyUpdate: overrides.applyUpdate,
@@ -194,6 +196,87 @@ describe("classifyReviewEventsAgainstExisting", () => {
     assert.equal(classified[0]?.status, "duplicate");
   });
 
+  it("marks update when same external id has a time-only change", () => {
+    const classified = classifyReviewEventsAgainstExisting(
+      [
+        reviewEvent({
+          name: "Book Fair",
+          date: "2025-10-01",
+          time: "16:00:00",
+          importSource: "subscribe",
+          importExternalId: "uid-book-fair",
+        }),
+      ],
+      [
+        {
+          id: "evt-1",
+          title: "Book Fair",
+          date: "2025-10-01",
+          time: "15:00:00",
+          importSource: "subscribe",
+          importExternalId: "uid-book-fair",
+        },
+      ],
+    );
+    assert.equal(classified[0]?.status, "update");
+    assert.match(classified[0]?.matchReason ?? "", /time changed/);
+    assert.equal(classified[0]?.existingEventTime, "15:00:00");
+  });
+
+  it("marks update when same external id has a location-only change", () => {
+    const classified = classifyReviewEventsAgainstExisting(
+      [
+        reviewEvent({
+          name: "Book Fair",
+          date: "2025-10-01",
+          location: "Cafeteria",
+          importSource: "subscribe",
+          importExternalId: "uid-book-fair",
+        }),
+      ],
+      [
+        {
+          id: "evt-1",
+          title: "Book Fair",
+          date: "2025-10-01",
+          location: "Library",
+          importSource: "subscribe",
+          importExternalId: "uid-book-fair",
+        },
+      ],
+    );
+    assert.equal(classified[0]?.status, "update");
+    assert.match(classified[0]?.matchReason ?? "", /location changed/);
+    assert.equal(classified[0]?.existingEventLocation, "Library");
+  });
+
+  it("still skips when time and location are unchanged", () => {
+    const classified = classifyReviewEventsAgainstExisting(
+      [
+        reviewEvent({
+          name: "Book Fair",
+          date: "2025-10-01",
+          time: "15:00:00",
+          location: "Library",
+          importSource: "subscribe",
+          importExternalId: "uid-book-fair",
+        }),
+      ],
+      [
+        {
+          id: "evt-1",
+          title: "Book Fair",
+          date: "2025-10-01",
+          time: "15:00",
+          location: "Library",
+          importSource: "subscribe",
+          importExternalId: "uid-book-fair",
+        },
+      ],
+    );
+    assert.equal(classified[0]?.status, "duplicate");
+  });
+
   it("auto mode defaults update rows to applyUpdate true", () => {
     const classified = classifyReviewEventsAgainstExisting(
       [
@@ -278,6 +361,21 @@ END:VCALENDAR`;
     assert.equal(events.length, 2);
     assert.equal(events[0]?.importExternalId, "school-uid-99");
     assert.equal(events[1]?.status, "conflict");
+  });
+
+  it("captures time from timed DTSTART and location from LOCATION", () => {
+    const ics = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:timed-event@example.com
+DTSTART:20261015T183000Z
+SUMMARY:Evening Concert
+LOCATION:Main Gym
+END:VEVENT
+END:VCALENDAR`;
+    const events = parseIcsToReviewEvents(ics, null, "subscribe");
+    assert.equal(events.length, 1);
+    assert.equal(events[0]?.time, "18:30:00");
+    assert.equal(events[0]?.location, "Main Gym");
   });
 });
 

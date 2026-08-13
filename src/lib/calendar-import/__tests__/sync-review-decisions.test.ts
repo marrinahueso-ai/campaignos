@@ -21,9 +21,13 @@ function event(
     category: overrides.category ?? "School Event",
     status: overrides.status,
     communicationStrategy: "calendar_only",
+    time: overrides.time,
+    location: overrides.location,
     existingEventId: overrides.existingEventId ?? null,
     existingEventName: overrides.existingEventName ?? null,
     existingEventDate: overrides.existingEventDate ?? null,
+    existingEventTime: overrides.existingEventTime ?? null,
+    existingEventLocation: overrides.existingEventLocation ?? null,
     matchReason: overrides.matchReason ?? null,
     applyUpdate: overrides.applyUpdate,
   };
@@ -123,6 +127,26 @@ describe("getSyncReviewChangeDiffs", () => {
     assert.equal(diffs.length, 2);
     assert.equal(diffs[0]?.label, "Title");
     assert.equal(diffs[1]?.label, "Date");
+  });
+
+  it("returns time and location diffs", () => {
+    const diffs = getSyncReviewChangeDiffs(
+      event({
+        name: "Picnic",
+        date: "2026-09-18",
+        time: "17:00:00",
+        location: "Field",
+        status: "update",
+        existingEventName: "Picnic",
+        existingEventDate: "2026-09-18",
+        existingEventTime: "16:00:00",
+        existingEventLocation: "Gym",
+      }),
+    );
+    assert.deepEqual(
+      diffs.map((diff) => diff.label),
+      ["Time", "Location"],
+    );
   });
 });
 

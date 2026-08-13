@@ -264,6 +264,10 @@ export function getSyncReviewChangeDiffs(event: CalendarReviewEvent): Array<{
   const diffs: Array<{ label: string; from: string; to: string }> = [];
   const existingName = event.existingEventName?.trim();
   const existingDate = event.existingEventDate?.trim();
+  const existingTime = event.existingEventTime?.trim() || "";
+  const existingLocation = event.existingEventLocation?.trim() || "";
+  const incomingTime = event.time?.trim() || "";
+  const incomingLocation = event.location?.trim() || "";
 
   if (existingName && existingName !== event.name) {
     diffs.push({ label: "Title", from: existingName, to: event.name });
@@ -271,6 +275,22 @@ export function getSyncReviewChangeDiffs(event: CalendarReviewEvent): Array<{
 
   if (existingDate && existingDate !== event.date) {
     diffs.push({ label: "Date", from: existingDate, to: event.date });
+  }
+
+  if (existingTime !== incomingTime) {
+    diffs.push({
+      label: "Time",
+      from: existingTime || "None",
+      to: incomingTime || "None",
+    });
+  }
+
+  if (existingLocation !== incomingLocation) {
+    diffs.push({
+      label: "Location",
+      from: existingLocation || "None",
+      to: incomingLocation || "None",
+    });
   }
 
   if (diffs.length === 0 && event.matchReason) {

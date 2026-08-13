@@ -20,6 +20,8 @@ const PTO_TITLE_PATTERN =
 type ParsedIcsEvent = {
   name: string;
   date: string;
+  time: string | null;
+  location: string | null;
   category: CalendarEventCategory;
   importExternalId: string | null;
 };
@@ -52,6 +54,24 @@ function parseIcsDateValue(raw: string): string | null {
   }
 
   return `${year}-${month}-${day}`;
+}
+
+/** Extract HH:MM:SS from DTSTART; date-only values return null. */
+export function parseIcsTimeValue(raw: string): string | null {
+  const value = raw.trim();
+  if (!value || !value.includes("T")) {
+    return null;
+  }
+
+  const match = value.match(/T(\d{2})(\d{2})(\d{2})?/);
+  if (!match) {
+    return null;
+  }
+
+  const hours = match[1]!;
+  const minutes = match[2]!;
+  const seconds = match[3] ?? "00";
+  return `${hours}:${minutes}:${seconds}`;
 }
 
 function getIcsPropertyValue(
@@ -186,10 +206,13 @@ function parseVeventBlock(
 
   const uid = getIcsPropertyValue(lines, "UID");
   const recurrenceId = getIcsPropertyValue(lines, "RECURRENCE-ID");
+  const locationRaw = getIcsPropertyValue(lines, "LOCATION");
 
   return {
     name,
     date,
+    time: parseIcsTimeValue(dtStart),
+    location: locationRaw ? unescapeIcsText(locationRaw) || null : null,
     category: inferCategoryFromTitle(name),
     importExternalId: buildExternalIdFromIcs(uid, recurrenceId, importSource),
   };
@@ -226,6 +249,8 @@ export function parseIcsToReviewEvents(
       id: randomUUID(),
       name: parsed.name,
       date: parsed.date,
+      time: parsed.time,
+      location: parsed.location,
       category: parsed.category,
       status: "ready",
       eventType: inferEventTypeFromTitle(parsed.name, parsed.category),

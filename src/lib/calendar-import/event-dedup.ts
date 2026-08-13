@@ -13,6 +13,8 @@ export type ExistingCalendarEventForDedup = {
   id: string;
   title: string;
   date: string;
+  time?: string | null;
+  location?: string | null;
   importSource?: string | null;
   importExternalId?: string | null;
 };
@@ -21,6 +23,24 @@ export type ClassifyImportMode = "interactive" | "auto";
 
 export function calendarEventDedupeKey(name: string, date: string): string {
   return `${date}::${normalizeEventNameKey(name)}`;
+}
+
+export function normalizeEventTimeKey(
+  time: string | null | undefined,
+): string {
+  if (!time?.trim()) {
+    return "";
+  }
+  const parts = time.trim().split(":");
+  const hours = (parts[0] ?? "00").padStart(2, "0");
+  const minutes = (parts[1] ?? "00").padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+export function normalizeEventLocationKey(
+  location: string | null | undefined,
+): string {
+  return (location ?? "").replace(/\s+/g, " ").trim().toLowerCase();
 }
 
 export function externalImportKey(
@@ -97,10 +117,60 @@ export function fieldsMatchExisting(
  * Title+date fallback matching remains normalized to safely handle UID-less feeds.
  */
 function externalIdentityFieldsMatch(
-  incoming: { name: string; date: string },
-  existing: { title: string; date: string },
+  incoming: {
+    name: string;
+    date: string;
+    time?: string | null;
+    location?: string | null;
+  },
+  existing: {
+    title: string;
+    date: string;
+    time?: string | null;
+    location?: string | null;
+  },
 ): boolean {
-  return incoming.name === existing.title && incoming.date === existing.date;
+  return (
+    incoming.name === existing.title &&
+    incoming.date === existing.date &&
+    normalizeEventTimeKey(incoming.time) ===
+      normalizeEventTimeKey(existing.time) &&
+    normalizeEventLocationKey(incoming.location) ===
+      normalizeEventLocationKey(existing.location)
+  );
+}
+
+function describeExternalFieldChanges(
+  incoming: {
+    name: string;
+    date: string;
+    time?: string | null;
+    location?: string | null;
+  },
+  existing: {
+    title: string;
+    date: string;
+    time?: string | null;
+    location?: string | null;
+  },
+): string[] {
+  const dateChanged = incoming.date !== existing.date;
+  const titleChanged =
+    normalizeEventNameKey(incoming.name) !==
+    normalizeEventNameKey(existing.title);
+  const timeChanged =
+    normalizeEventTimeKey(incoming.time) !==
+    normalizeEventTimeKey(existing.time);
+  const locationChanged =
+    normalizeEventLocationKey(incoming.location) !==
+    normalizeEventLocationKey(existing.location);
+
+  return [
+    dateChanged ? `date ${existing.date} → ${incoming.date}` : null,
+    titleChanged ? "title changed" : null,
+    timeChanged ? "time changed" : null,
+    locationChanged ? "location changed" : null,
+  ].filter((bit): bit is string => Boolean(bit));
 }
 
 function buildExternalIndex(
@@ -134,7 +204,7 @@ function buildTitleDateIndex(
 /**
  * Classify parsed review events against existing calendar rows.
  * - Same external id + unchanged → duplicate (skip)
- * - Same external id + source title/date changed → update
+ * - Same external id + title/date/time/location changed → update
  * - No external id + title+date match → duplicate
  * - No external id + same title different date → ready (new; no auto-merge)
  */
@@ -167,19 +237,14 @@ export function classifyReviewEventsAgainstExisting<
             existingEventId: matched.id,
             existingEventName: matched.title,
             existingEventDate: matched.date,
+            existingEventTime: matched.time ?? null,
+            existingEventLocation: matched.location ?? null,
             matchReason: `Already on calendar (same ${source} id).`,
             applyUpdate: false,
           };
         }
 
-        const dateChanged = event.date !== matched.date;
-        const titleChanged =
-          normalizeEventNameKey(event.name) !==
-          normalizeEventNameKey(matched.title);
-        const changeBits = [
-          dateChanged ? `date ${matched.date} → ${event.date}` : null,
-          titleChanged ? "title changed" : null,
-        ].filter(Boolean);
+        const changeBits = describeExternalFieldChanges(event, matched);
 
         return {
           ...event,
@@ -187,6 +252,8 @@ export function classifyReviewEventsAgainstExisting<
           existingEventId: matched.id,
           existingEventName: matched.title,
           existingEventDate: matched.date,
+          existingEventTime: matched.time ?? null,
+          existingEventLocation: matched.location ?? null,
           matchReason: `Same ${source} event — ${changeBits.join("; ") || "fields changed"}.`,
           applyUpdate: mode === "auto" ? true : event.applyUpdate !== false,
         };
@@ -203,6 +270,8 @@ export function classifyReviewEventsAgainstExisting<
         existingEventId: titleDateMatch.id,
         existingEventName: titleDateMatch.title,
         existingEventDate: titleDateMatch.date,
+        existingEventTime: titleDateMatch.time ?? null,
+        existingEventLocation: titleDateMatch.location ?? null,
         matchReason: "Already on calendar (same title + date).",
         applyUpdate: false,
       };
@@ -217,6 +286,8 @@ export function classifyReviewEventsAgainstExisting<
       existingEventId: null,
       existingEventName: null,
       existingEventDate: null,
+      existingEventTime: null,
+      existingEventLocation: null,
       matchReason:
         status === "needs_review"
           ? (event.matchReason ?? "Needs review before import.")

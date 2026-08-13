@@ -202,6 +202,8 @@ function mapDedupRows(
     id?: string;
     title: string;
     date: string;
+    time?: string | null;
+    location?: string | null;
     import_source?: string | null;
     import_external_id?: string | null;
   }[],
@@ -210,6 +212,8 @@ function mapDedupRows(
     id: (row.id as string | undefined) ?? "",
     title: row.title as string,
     date: row.date as string,
+    time: (row.time as string | null | undefined) ?? null,
+    location: (row.location as string | null | undefined) ?? null,
     importSource: (row.import_source as string | null | undefined) ?? null,
     importExternalId:
       (row.import_external_id as string | null | undefined) ?? null,
@@ -222,7 +226,7 @@ export async function getSchoolYearCalendarEventsForDedup(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("events")
-    .select("id, title, date, import_source, import_external_id")
+    .select("id, title, date, time, location, import_source, import_external_id")
     .eq("school_year_id", schoolYearId)
     .neq("status", "archived")
     .order("date", { ascending: true });
@@ -250,7 +254,7 @@ export async function getCalendarWindowEventsForDedup(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("events")
-    .select("id, title, date, import_source, import_external_id")
+    .select("id, title, date, time, location, import_source, import_external_id")
     .gte("date", scope.window.startDate)
     .lte("date", scope.window.endDate)
     .neq("status", "archived")
@@ -270,7 +274,7 @@ export async function getSchoolYearEventsForDedupViaClient(
 ): Promise<ExistingCalendarEventForDedup[]> {
   const { data, error } = await supabase
     .from("events")
-    .select("id, title, date, import_source, import_external_id")
+    .select("id, title, date, time, location, import_source, import_external_id")
     .eq("school_year_id", schoolYearId)
     .neq("status", "archived");
 

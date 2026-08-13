@@ -462,6 +462,8 @@ export function parseRawReviewEvents(value: unknown): CalendarReviewEvent[] {
           typeof record.importExternalId === "string"
             ? record.importExternalId
             : null,
+        time: typeof record.time === "string" ? record.time : null,
+        location: typeof record.location === "string" ? record.location : null,
         existingEventId:
           typeof record.existingEventId === "string"
             ? record.existingEventId
@@ -473,6 +475,14 @@ export function parseRawReviewEvents(value: unknown): CalendarReviewEvent[] {
         existingEventDate:
           typeof record.existingEventDate === "string"
             ? record.existingEventDate
+            : null,
+        existingEventTime:
+          typeof record.existingEventTime === "string"
+            ? record.existingEventTime
+            : null,
+        existingEventLocation:
+          typeof record.existingEventLocation === "string"
+            ? record.existingEventLocation
             : null,
         matchReason:
           typeof record.matchReason === "string" ? record.matchReason : null,

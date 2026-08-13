@@ -78,14 +78,40 @@ export async function saveCalendarSubscribeUrlAction(
   schoolYearId: string,
   calendarSubscribeUrl: string,
 ): Promise<{ error: string | null; success: boolean }> {
-  const validation = validateCalendarSubscribeUrl(calendarSubscribeUrl);
+  const organization = await getLatestOrganization();
+  if (!organization) {
+    return { error: "Finish organization setup first.", success: false };
+  }
+
+  const activeSchoolYear = await getActiveSchoolYear(organization.id);
+  if (!activeSchoolYear || activeSchoolYear.id !== schoolYearId) {
+    return {
+      error: "Set an active school year before saving a calendar feed.",
+      success: false,
+    };
+  }
+
+  const trimmed = calendarSubscribeUrl.trim();
+  // Empty Save must not wipe a connected feed — clearing is explicit and rare.
+  if (!trimmed) {
+    if (activeSchoolYear.calendarSubscribeUrl?.trim()) {
+      return {
+        error:
+          "Enter a calendar feed URL to update it. Clearing the saved feed is not supported from Save.",
+        success: false,
+      };
+    }
+    return { error: "Enter a calendar feed URL.", success: false };
+  }
+
+  const validation = validateCalendarSubscribeUrl(trimmed);
   if (!validation.valid) {
     return { error: validation.error, success: false };
   }
 
   const saved = await updateSchoolYearSubscribeUrl(
     schoolYearId,
-    validation.normalized || null,
+    validation.normalized,
   );
 
   if (!saved) {
@@ -96,6 +122,7 @@ export async function saveCalendarSubscribeUrlAction(
   revalidatePath("/settings/school-year");
   revalidatePath("/settings/integrations");
   revalidatePath("/settings/integrations/calendar");
+  revalidatePath("/calendar");
   revalidatePath("/calendar/import");
   return { error: null, success: true };
 }
@@ -145,7 +172,9 @@ export async function syncCalendarSubscribeFeedAction(
     organizationId: organization.id,
     organizationSchoolYear: organization.schoolYear,
     schoolYear: activeSchoolYear,
-    autoImport: false,
+    // Match overnight cron: stage only actionable rows so a no-op refresh
+    // lands on “You’re all caught up” instead of a duplicate-filled review.
+    stageForReview: true,
   });
 
   if (result.success) {

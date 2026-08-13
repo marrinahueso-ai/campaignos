@@ -142,13 +142,15 @@ export async function updateSchoolYearSubscribeUrl(
   calendarSubscribeUrl: string | null,
 ): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("school_years")
     .update({
       calendar_subscribe_url: calendarSubscribeUrl?.trim() || null,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", schoolYearId);
+    .eq("id", schoolYearId)
+    .select("id, calendar_subscribe_url")
+    .maybeSingle();
 
   if (error) {
     if (isMissingSchemaError(error)) {
@@ -158,7 +160,8 @@ export async function updateSchoolYearSubscribeUrl(
     return false;
   }
 
-  return true;
+  // RLS can filter the row with no error — treat a missing return as failure.
+  return Boolean(data?.id);
 }
 
 export async function activateSchoolYear(

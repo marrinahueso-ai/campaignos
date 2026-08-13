@@ -104,19 +104,12 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
 
       if (result.importId) {
         if (result.added === 0 && result.skipped > 0) {
-          setMessage(
-            `You're up to date — all ${result.skipped} events are already on your calendar.`,
-          );
-          router.refresh();
-          return;
-        }
-
-        if (result.skipped > 0) {
+          setMessage("You're up to date — opening review.");
+        } else if (result.skipped > 0) {
           setMessage(
             `${result.added} new events ready to review (${result.skipped} already on calendar).`,
           );
         }
-
         router.push(`/calendar?tab=review&import=${result.importId}`);
         return;
       }

@@ -22,7 +22,7 @@ Stable import identity on `events` so re-imports do not create duplicate school 
 
 **Connect-only (not the review page):** [`/settings/integrations/calendar`](https://heyralli.com/settings/integrations/calendar) — Google OAuth + subscribe management; file upload and review CTAs deep-link to the import/review tabs.
 
-**Flow:** **Bring in calendar** (three methods) → Review (First Import or Sync) → **Add Events to Calendar** / **Finish Review** → **Calendar updated** → **View imported events** or **Back to Calendar**. Empty later sync → **You’re all caught up**. Overnight Google/RSS also land in Review. **View imported items** / library is a supporting link inside the import hub — not a peer calendar view tab.
+**Flow:** **Bring in calendar** (three methods) → Review (First Import or Sync) → **Add Events to Calendar** / **Finish Review** → **Calendar updated** → **View imported events** or **Back to Calendar**. Empty later sync (manual Refresh or overnight) → **You’re all caught up**. Overnight Google/RSS also land in Review. **View imported items** / library is a supporting link inside the import hub — not a peer calendar view tab.
 
 **Plan type on review:** The **Plan type** column lists org playbooks from Settings → Playbooks (plus **On the calendar only**). Selection stores `playbookId` on the review row and assigns that playbook on import; `communicationStrategy` remains `full_campaign` / `calendar_only` for pipeline gates. Defaults follow import preferences (strategy) + event-type / system playbook when no playbook is stored yet. Duplicate / Update / Conflict status logic is unchanged.
 
@@ -49,7 +49,7 @@ Stable import identity on `events` so re-imports do not create duplicate school 
 | Source | `import_source` | `import_external_id` |
 |--------|-----------------|----------------------|
 | ICS upload | `ics` | ICS `UID` (+ `#YYYY-MM-DD` when `RECURRENCE-ID` present) |
-| Subscribe / webcal feed | `subscribe` | ICS `UID` (same path) |
+| Subscribe / webcal feed | `subscribe` | ICS `UID` (same path); title / date / time / location changes → Update |
 | Google Calendar sync | `google` | Google event id (UID `…@heyralli.google` stripped) |
 | PDF / AI parse | `ai_parse` | Content fingerprint of normalized title+date (not a fake ICS UID) |
 

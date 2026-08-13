@@ -16,6 +16,12 @@ describe("calendar review staging contracts", () => {
     assert.doesNotMatch(cron, /autoImport:\s*true/);
   });
 
+  it("manual Refresh calendar feed also stages Review like overnight", () => {
+    const actions = readSrc("../../school-years/actions.ts");
+    assert.match(actions, /syncCalendarSubscribeFeedAction/);
+    assert.match(actions, /stageForReview:\s*true/);
+  });
+
   it("overnight Google cron stages Review instead of auto-import", () => {
     const cron = readSrc("../../google-calendar/sync-cron.ts");
     assert.match(cron, /stageForReview:\s*true/);

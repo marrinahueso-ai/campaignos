@@ -93,7 +93,7 @@ async function loadExistingEventsForImportDedup(
 ): Promise<ExistingCalendarEventForDedup[]> {
   const { data, error } = await supabase
     .from("events")
-    .select("id, title, date, import_source, import_external_id")
+    .select("id, title, date, time, location, import_source, import_external_id")
     .eq("school_year_id", schoolYearId)
     .neq("status", "archived");
 
@@ -105,6 +105,8 @@ async function loadExistingEventsForImportDedup(
     id: row.id as string,
     title: row.title as string,
     date: row.date as string,
+    time: (row.time as string | null) ?? null,
+    location: (row.location as string | null) ?? null,
     importSource: (row.import_source as string | null) ?? null,
     importExternalId: (row.import_external_id as string | null) ?? null,
   }));
@@ -167,6 +169,8 @@ export async function insertImportedEvents(
       .update({
         title: event.name,
         date: event.date,
+        time: event.time?.trim() || null,
+        location: event.location?.trim() || null,
         category: event.category,
         import_source: event.importSource ?? null,
         import_external_id: event.importExternalId ?? null,
@@ -208,8 +212,8 @@ export async function insertImportedEvents(
       title: event.name,
       description: `Imported from calendar (${event.category}).`,
       date: event.date,
-      time: null,
-      location: null,
+      time: event.time?.trim() || null,
+      location: event.location?.trim() || null,
       audience: null,
       theme: null,
       status: event.date >= today ? "scheduled" : "draft",

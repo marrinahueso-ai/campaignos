@@ -51,12 +51,20 @@ export interface CalendarReviewEvent {
   importSource?: CalendarImportSource | null;
   /** ICS UID, Google event id, or AI content fingerprint. */
   importExternalId?: string | null;
+  /** Optional start time (HH:MM or HH:MM:SS) from the source calendar. */
+  time?: string | null;
+  /** Optional location from the source calendar. */
+  location?: string | null;
   /** Matched existing event for duplicate / update rows. */
   existingEventId?: string | null;
   /** Title of the matched Hey Ralli event (for sync review comparison). */
   existingEventName?: string | null;
   /** Date of the matched Hey Ralli event (for sync review comparison). */
   existingEventDate?: string | null;
+  /** Time of the matched Hey Ralli event (for sync review comparison). */
+  existingEventTime?: string | null;
+  /** Location of the matched Hey Ralli event (for sync review comparison). */
+  existingEventLocation?: string | null;
   /** Human-readable why this row is New / Duplicate / Update / Conflict. */
   matchReason?: string | null;
   /**

@@ -174,19 +174,12 @@ export function SettingsEaseSchoolYear({
 
       if (result.importId) {
         if (result.added === 0 && result.skipped > 0) {
-          setMessage(
-            `Feed refreshed — all ${result.skipped} events are already on your calendar.`,
-          );
-          router.refresh();
-          return;
-        }
-
-        if (result.skipped > 0) {
+          setMessage("Feed refreshed — opening review.");
+        } else if (result.skipped > 0) {
           setMessage(
             `Feed refreshed — ${result.added} new events ready to review (${result.skipped} already on calendar).`,
           );
         }
-
         router.push(`/calendar?tab=review&import=${result.importId}`);
         return;
       }
