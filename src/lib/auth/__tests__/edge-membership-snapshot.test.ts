@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import { ACTIVE_ORGANIZATION_COOKIE } from "../active-organization.ts";
 import { getEdgeMembershipSnapshot } from "../organization-access-state.ts";
 import { resolveOrgGateRedirect } from "../org-gate.ts";
-import { userMustSignDeveloperAgreements } from "../../developer-agreements/gate.ts";
+import {
+  DEVELOPER_AGREEMENTS_PATH,
+  userMustSignDeveloperAgreements,
+} from "../../developer-agreements/gate.ts";
 import { BILLING_CANCELED_PATH } from "../../billing/subscription-lockout.ts";
 
 /**
@@ -286,5 +291,89 @@ describe("userMustSignDeveloperAgreements — precomputed roles parity", () => {
     const live = await userMustSignDeveloperAgreements(supabase, USER);
     assert.equal(withPrecomputed, false);
     assert.equal(live, false);
+  });
+});
+
+describe("middleware cross-gate precedence — agreements gate before org gate", () => {
+  it("when both gates would independently redirect, the agreements-gate decision wins", async () => {
+    // Fixture where BOTH gates fire off the same snapshot: an unsigned
+    // required agreement for the "developer" role, on a canceled org.
+    const supabase = makeSupabaseStub({
+      organizationUsers: [
+        {
+          user_id: USER,
+          organization_id: ORG_CANCELED,
+          status: "active",
+          campaign_role: "developer",
+        },
+      ],
+      organizations: [
+        {
+          id: ORG_CANCELED,
+          billing_exempt_at: null,
+          subscription_status: "canceled",
+        },
+      ],
+      documents: [
+        {
+          id: "doc-1",
+          required_for_roles: ["developer"],
+          current_version_id: "v1",
+          is_active: true,
+        },
+      ],
+      signatures: [],
+    });
+    const snapshot = await getEdgeMembershipSnapshot(supabase, USER);
+
+    const mustSign = await userMustSignDeveloperAgreements(
+      supabase,
+      USER,
+      snapshot.campaignRoles,
+    );
+    const orgGateRedirect = await resolveOrgGateRedirect(
+      makeRequest("/dashboard", ORG_CANCELED),
+      supabase,
+      USER,
+      snapshot,
+    );
+
+    // Confirm the fixture actually exercises both gates independently —
+    // otherwise this test would pass for the wrong reason.
+    assert.equal(mustSign, true);
+    assert.equal(orgGateRedirect, BILLING_CANCELED_PATH);
+
+    // Mirror middleware.ts's own precedence conditional (agreements checked
+    // and returned first; org-gate redirect only reached if agreements
+    // did not fire) to pin which redirect a request actually receives.
+    const decidedRedirect = mustSign
+      ? DEVELOPER_AGREEMENTS_PATH
+      : orgGateRedirect
+        ? orgGateRedirect
+        : null;
+    assert.equal(decidedRedirect, DEVELOPER_AGREEMENTS_PATH);
+  });
+
+  it("middleware.ts source still checks mustSignResult before gateRedirectResult", () => {
+    // The behavioral test above only proves precedence holds when checked
+    // in that order — this pins that middleware.ts's actual source still
+    // performs the check in that order, so a future edit that silently
+    // swaps them gets caught.
+    const middlewarePath = fileURLToPath(
+      new URL("../../supabase/middleware.ts", import.meta.url),
+    );
+    const middlewareSrc = readFileSync(middlewarePath, "utf8");
+    const mustSignCheckIndex = middlewareSrc.indexOf(
+      "if (mustSignResult.ok && mustSignResult.value)",
+    );
+    const gateRedirectCheckIndex = middlewareSrc.indexOf(
+      "if (gateRedirectResult.ok && gateRedirectResult.value)",
+    );
+    assert.ok(mustSignCheckIndex >= 0, "mustSignResult check not found");
+    assert.ok(gateRedirectCheckIndex >= 0, "gateRedirectResult check not found");
+    assert.ok(
+      mustSignCheckIndex < gateRedirectCheckIndex,
+      "agreements gate must be checked (and returned) before the org gate",
+    );
   });
 });

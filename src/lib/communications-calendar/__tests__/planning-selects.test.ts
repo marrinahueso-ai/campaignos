@@ -100,7 +100,13 @@ describe("planning lean selects", () => {
       "getAllEvents",
     ];
     for (const name of listHelpers) {
-      const start = eventQueries.indexOf(`export async function ${name}`);
+      // getAllEvents is wrapped in React.cache() (request-local dedupe);
+      // the others remain plain exported async functions.
+      const start = eventQueries.search(
+        new RegExp(
+          `export (?:async function ${name}\\(|const ${name} = cache\\(async function ${name}\\()`,
+        ),
+      );
       assert.ok(start >= 0, `${name} missing`);
       const nextExport = eventQueries.indexOf("\nexport ", start + 1);
       const body = eventQueries.slice(
@@ -116,7 +122,10 @@ describe("planning lean selects", () => {
     assert.match(unifiedRaw, /UNIFIED_META_SLOT_SELECT/);
   });
 
-  it("CampaignBuilderShell keeps InspirationStep as a static import (no loading flash)", () => {
+  it("CampaignBuilderShell keeps SocialMediaComposer as a static import (no loading flash)", () => {
+    // Post-redesign: the builder's step content lives entirely in
+    // SocialMediaComposer (InspirationStep was folded in and is no longer
+    // referenced anywhere). Static import here is what avoids the flash.
     const shellPath = fileURLToPath(
       new URL(
         "../../../components/campaign-builder-v2/CampaignBuilderShell.tsx",
@@ -126,9 +135,9 @@ describe("planning lean selects", () => {
     const shell = readFileSync(shellPath, "utf8");
     assert.match(
       shell,
-      /import\s+\{\s*InspirationStep\s*\}\s+from\s+["']@\/components\/campaign-builder-v2\/InspirationStep["']/,
+      /import\s+\{\s*SocialMediaComposer\s*\}\s+from\s+["']@\/components\/campaign-builder-v2\/social-composer["']/,
     );
-    assert.doesNotMatch(shell, /const InspirationStep = dynamic\(/);
+    assert.doesNotMatch(shell, /const SocialMediaComposer = dynamic\(/);
   });
 
   it("CampaignBuilderProvider skips unchanged localStorage writes and avoids debounce double-write", () => {
@@ -160,7 +169,10 @@ describe("planning lean selects", () => {
     const provider = readSource(
       "../../../components/campaign-builder-v2/CampaignBuilderProvider.tsx",
     );
-    assert.match(provider, /Drop step-local UI noise when leaving/);
+    assert.match(
+      provider,
+      /Clear finished generation progress so non-active step UI state is not kept hot/,
+    );
     assert.match(provider, /setInspirationUploadError\(null\)/);
     assert.match(
       provider,

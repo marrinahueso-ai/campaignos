@@ -114,11 +114,19 @@ describe("files ease UI contracts", () => {
     assert.match(folderBar, /Move right/);
   });
 
-  it("adds quiet context upload on Volunteers and Tasks tabs", () => {
+  it("keeps the shared EventContextFileUpload component's contract intact", () => {
     assert.match(contextUpload, /FileDocumentCategoryQuickEdit/);
     assert.match(contextUpload, /uploadContext/);
-    assert.match(volunteers, /uploadContext="volunteers"/);
-    assert.match(tasks, /uploadContext="tasks"/);
+  });
+
+  it("Volunteers and Tasks tabs no longer wire the quiet context-upload widget (redesigned)", () => {
+    // Volunteers moved to a dedicated SignUpGenius connect/roster flow;
+    // Tasks dropped inline file upload entirely. Neither references
+    // EventContextFileUpload/uploadContext anymore — pin that intentionally.
+    assert.doesNotMatch(volunteers, /EventContextFileUpload/);
+    assert.doesNotMatch(volunteers, /uploadContext/);
+    assert.doesNotMatch(tasks, /EventContextFileUpload/);
+    assert.doesNotMatch(tasks, /uploadContext/);
   });
 
   it("shows post-upload document category quick edit", () => {
