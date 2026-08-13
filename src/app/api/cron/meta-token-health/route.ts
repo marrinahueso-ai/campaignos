@@ -14,17 +14,24 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [result, backfilled, approvalReminders, trialEndingNotices] = await Promise.all([
+  const [result, backfillOutcome, approvalReminders, trialEndingNotices] = await Promise.all([
     refreshAllMetaConnectionHealth(),
     // Write-owned sync path: keep meta milestone approval requests in sync
-    // without running this on every dashboard layout GET.
-    backfillMetaApprovalRequests(null).catch((error: unknown) => {
-      console.error(
-        "Meta approval backfill during token-health cron failed:",
-        error instanceof Error ? error.message : error,
-      );
-      return 0;
-    }),
+    // without running this on every dashboard layout GET. Runs with the
+    // service-role client (useServiceRole: true) — a cron invocation has no
+    // user session, and the normal RLS-bound client would silently see zero
+    // rows for every org instead of actually reconciling them. See
+    // docs/ops/cron-jobs.md for the full explanation.
+    backfillMetaApprovalRequests(null, null, true)
+      .then((count) => ({ count, error: null as string | null }))
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("Meta approval backfill during token-health cron failed:", message);
+        // Surface the failure explicitly instead of a bare `0`, which is
+        // indistinguishable from "ran fine, nothing needed reconciling"
+        // (e.g. a missing SUPABASE_SERVICE_ROLE_KEY must not look healthy).
+        return { count: 0, error: message };
+      }),
     sendPendingApprovalReminders(),
     sendTrialEndingNotices(),
   ]);
@@ -33,7 +40,8 @@ export async function GET(request: Request) {
     ok: true,
     organizationsProcessed: result.organizationsProcessed,
     invalidTokens: result.results.filter((entry) => entry.reconnectRequired).length,
-    approvalRequestsBackfilled: backfilled,
+    approvalRequestsBackfilled: backfillOutcome.count,
+    approvalBackfillError: backfillOutcome.error,
     approvalReminders,
     trialEndingNotices,
     results: result.results,

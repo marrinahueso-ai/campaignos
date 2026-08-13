@@ -327,27 +327,44 @@ export async function syncMetaApprovalRequestsForEvent(
 }
 
 /**
- * `scopeEventIds`: `null` (default) reconciles every event visible to the
- * caller's session — the intended behavior for the daily system-wide cron
- * sweep (`/api/cron/meta-token-health`). Pass an explicit array to bound the
- * reconciliation to those event ids only; an empty array is a cheap no-op.
+ * `scopeEventIds`: `null` (default) reconciles every event — the intended
+ * behavior for the daily system-wide cron sweep (`/api/cron/meta-token-health`).
+ * Pass an explicit array to bound the reconciliation to those event ids
+ * only; an empty array is a cheap no-op.
  *
  * Interactive/page-load callers must always pass a scoped array — never
  * `null` — so a single organization's page view can't trigger dedupe/sync
  * work for events outside that organization. See
  * `backfillMetaApprovalRequestsForEvents` below.
+ *
+ * `useServiceRole`: only the cron passes `true`. A cron invocation has no
+ * user session, so the normal cookie/RLS client sees zero rows for every
+ * org (RLS requires `authenticated` + membership) and this whole function
+ * was a silent no-op in production — see docs/ops/cron-jobs.md. Elevating
+ * fixes the dedupe/stale-resolution repair below, which only ever touches
+ * `approval_requests`/`communication_items` rows that already exist.
+ *
+ * The meta_publication_slots scan and per-event creation sweep further
+ * below intentionally keep using the interactive/session-scoped client even
+ * when `useServiceRole` is set: discovering *and creating* a genuinely
+ * missing approval request depends on the full bundle-computation pipeline
+ * (`syncAndGetMetaPublishBundles` → `getEventById`/`getCurrentOrganization`
+ * and further nested session-scoped lookups), which has its own org-scoping
+ * assumptions baked in throughout and is out of scope for this fix. That
+ * sweep remains a safe (unchanged) no-op under the cron, exactly as before.
  */
 export async function backfillMetaApprovalRequests(
   actor?: ApprovalActor | null,
   scopeEventIds: string[] | null = null,
+  useServiceRole = false,
 ): Promise<number> {
   if (scopeEventIds && scopeEventIds.length === 0) {
     return 0;
   }
 
   const [deduped, resolvedStale] = await Promise.all([
-    dedupePendingApprovalRequestsInDb(scopeEventIds),
-    resolveStalePendingApprovalRequestsForApprovedItems(scopeEventIds),
+    dedupePendingApprovalRequestsInDb(scopeEventIds, useServiceRole),
+    resolveStalePendingApprovalRequestsForApprovedItems(scopeEventIds, useServiceRole),
   ]);
   if (deduped > 0) {
     console.info(`Cancelled ${deduped} duplicate pending approval request(s).`);

@@ -1,3 +1,4 @@
+import { createJobClient } from "@/lib/supabase/job-client";
 import { createClient } from "@/lib/supabase/server";
 
 const SUPERSEDED_NOTE = "Superseded by duplicate approval request cleanup.";
@@ -44,19 +45,26 @@ export async function cancelDuplicatePendingApprovalRequests(
 }
 
 /**
- * `eventIds`: `null` (default) reconciles every event the caller's RLS
- * session can see — intended for the system-wide cron sweep only. Pass an
- * explicit array (possibly empty) to bound the scan to those events, e.g.
- * the requesting organization's own events for an interactive page load.
+ * `eventIds`: `null` (default) reconciles every event — intended for the
+ * system-wide cron sweep only. Pass an explicit array (possibly empty) to
+ * bound the scan to those events, e.g. the requesting organization's own
+ * events for an interactive page load.
+ *
+ * `useServiceRole`: the cron invocation has no user session, so the normal
+ * cookie/RLS client (`createClient()`) sees zero rows for every org — RLS
+ * requires `authenticated` + membership (see docs/ops/cron-jobs.md). Only
+ * the cron passes `true`; interactive callers must keep the default `false`
+ * so they stay bound by the requesting user's own RLS session.
  */
 export async function dedupePendingApprovalRequestsInDb(
   eventIds: string[] | null = null,
+  useServiceRole = false,
 ): Promise<number> {
   if (eventIds && eventIds.length === 0) {
     return 0;
   }
 
-  const supabase = await createClient();
+  const supabase = await createJobClient(useServiceRole);
 
   let query = supabase
     .from("approval_requests")
@@ -120,18 +128,20 @@ type ApprovalQueueDedupeRow = {
 };
 
 /**
- * `eventIds`: same contract as {@link dedupePendingApprovalRequestsInDb} —
- * `null` means unbounded (cron sweep), an array bounds the scan to those
- * event ids (an empty array is a cheap no-op).
+ * `eventIds` / `useServiceRole`: same contract as
+ * {@link dedupePendingApprovalRequestsInDb} — `eventIds: null` means
+ * unbounded (cron sweep), an array bounds the scan to those event ids (an
+ * empty array is a cheap no-op); `useServiceRole` is cron-only.
  */
 export async function resolveStalePendingApprovalRequestsForApprovedItems(
   eventIds: string[] | null = null,
+  useServiceRole = false,
 ): Promise<number> {
   if (eventIds && eventIds.length === 0) {
     return 0;
   }
 
-  const supabase = await createClient();
+  const supabase = await createJobClient(useServiceRole);
   const now = new Date().toISOString();
 
   let query = supabase

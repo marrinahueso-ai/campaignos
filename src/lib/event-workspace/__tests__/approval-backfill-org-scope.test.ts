@@ -34,14 +34,14 @@ describe("approval-request-dedupe — organization/event scoping", () => {
   it("dedupePendingApprovalRequestsInDb accepts an optional eventIds scope defaulting to null", () => {
     assert.match(
       source,
-      /export async function dedupePendingApprovalRequestsInDb\(\s*eventIds: string\[\] \| null = null,\s*\): Promise<number>/,
+      /export async function dedupePendingApprovalRequestsInDb\(\s*eventIds: string\[\] \| null = null,\s*useServiceRole = false,\s*\): Promise<number>/,
     );
   });
 
   it("dedupePendingApprovalRequestsInDb exits cheaply for an empty scope without querying", () => {
     assert.match(
       source,
-      /export async function dedupePendingApprovalRequestsInDb\([\s\S]{0,80}\{\s*if \(eventIds && eventIds\.length === 0\) \{\s*return 0;\s*\}/,
+      /export async function dedupePendingApprovalRequestsInDb\([\s\S]{0,120}\{\s*if \(eventIds && eventIds\.length === 0\) \{\s*return 0;\s*\}/,
     );
   });
 
@@ -52,7 +52,7 @@ describe("approval-request-dedupe — organization/event scoping", () => {
   it("resolveStalePendingApprovalRequestsForApprovedItems accepts the same eventIds contract", () => {
     assert.match(
       source,
-      /export async function resolveStalePendingApprovalRequestsForApprovedItems\(\s*eventIds: string\[\] \| null = null,\s*\): Promise<number>/,
+      /export async function resolveStalePendingApprovalRequestsForApprovedItems\(\s*eventIds: string\[\] \| null = null,\s*useServiceRole = false,\s*\): Promise<number>/,
     );
   });
 
@@ -86,18 +86,18 @@ describe("approval-request-dedupe — organization/event scoping", () => {
 describe("meta-approval-sync — bounded, scoped backfill", () => {
   const source = readSrc("lib/event-workspace/meta-approval-sync.ts");
 
-  it("backfillMetaApprovalRequests threads an optional scopeEventIds through to both dedupe helpers", () => {
+  it("backfillMetaApprovalRequests threads an optional scopeEventIds + useServiceRole through to both dedupe helpers", () => {
     assert.match(
       source,
-      /export async function backfillMetaApprovalRequests\(\s*actor\?: ApprovalActor \| null,\s*scopeEventIds: string\[\] \| null = null,\s*\): Promise<number>/,
+      /export async function backfillMetaApprovalRequests\(\s*actor\?: ApprovalActor \| null,\s*scopeEventIds: string\[\] \| null = null,\s*useServiceRole = false,\s*\): Promise<number>/,
     );
     assert.match(
       source,
-      /dedupePendingApprovalRequestsInDb\(scopeEventIds\)/,
+      /dedupePendingApprovalRequestsInDb\(scopeEventIds, useServiceRole\)/,
     );
     assert.match(
       source,
-      /resolveStalePendingApprovalRequestsForApprovedItems\(scopeEventIds\)/,
+      /resolveStalePendingApprovalRequestsForApprovedItems\(scopeEventIds, useServiceRole\)/,
     );
   });
 
@@ -154,9 +154,72 @@ describe("meta-approval-sync — bounded, scoped backfill", () => {
 describe("cron token-health route — unscoped system-wide sweep preserved", () => {
   const source = readSrc("app/api/cron/meta-token-health/route.ts");
 
-  it("still calls the unscoped backfillMetaApprovalRequests(null) exactly as before", () => {
-    assert.match(source, /backfillMetaApprovalRequests\(null\)\.catch\(/);
+  it("still calls the unscoped backfillMetaApprovalRequests(null, null, ...) exactly as before", () => {
+    assert.match(source, /backfillMetaApprovalRequests\(null, null, true\)/);
     assert.doesNotMatch(source, /backfillMetaApprovalRequestsForEvents/);
+  });
+
+  it("passes useServiceRole: true only from the cron — the sole production call site", () => {
+    assert.match(source, /backfillMetaApprovalRequests\(null, null, true\)/);
+  });
+
+  it("surfaces a distinct error field instead of letting a failed backfill look identical to zero-found-nothing", () => {
+    assert.match(source, /approvalBackfillError: backfillOutcome\.error/);
+    assert.match(source, /return \{ count: 0, error: message \};/);
+  });
+});
+
+describe("Approval reconciliation cron fix — elevated access stays cron-only", () => {
+  const dedupeSource = readSrc("lib/event-workspace/approval-request-dedupe.ts");
+  const syncSource = readSrc("lib/event-workspace/meta-approval-sync.ts");
+  const approvalsPageSource = readSrc("app/(dashboard)/approvals/page.tsx");
+  const cronSource = readSrc("app/api/cron/meta-token-health/route.ts");
+
+  it("approval-request-dedupe.ts routes both repair queries through createJobClient, not a raw admin/anon toggle", () => {
+    assert.match(dedupeSource, /import \{ createJobClient \} from "@\/lib\/supabase\/job-client";/);
+    const dedupeFn = dedupeSource.slice(
+      dedupeSource.indexOf("export async function dedupePendingApprovalRequestsInDb"),
+      dedupeSource.indexOf("export async function resolveStalePendingApprovalRequestsForApprovedItems"),
+    );
+    assert.match(dedupeFn, /const supabase = await createJobClient\(useServiceRole\);/);
+    const staleFn = dedupeSource.slice(
+      dedupeSource.indexOf("export async function resolveStalePendingApprovalRequestsForApprovedItems"),
+    );
+    assert.match(staleFn, /const supabase = await createJobClient\(useServiceRole\);/);
+  });
+
+  it("cancelDuplicatePendingApprovalRequests (interactive create/update path) is untouched — still the plain cookie client", () => {
+    const fn = dedupeSource.slice(
+      dedupeSource.indexOf("export async function cancelDuplicatePendingApprovalRequests"),
+      dedupeSource.indexOf("export async function dedupePendingApprovalRequestsInDb"),
+    );
+    assert.match(fn, /const supabase = await createClient\(\);/);
+    assert.doesNotMatch(fn, /createJobClient/);
+  });
+
+  it("backfillMetaApprovalRequestsForEvents (Phase 4 interactive/page-load entry point) never opts into service role", () => {
+    const fn = syncSource.slice(
+      syncSource.indexOf("export async function backfillMetaApprovalRequestsForEvents"),
+    );
+    assert.match(fn, /return backfillMetaApprovalRequests\(actor, eventIds\);/);
+    assert.doesNotMatch(fn, /true\)/);
+  });
+
+  it("the Approvals page still calls the interactive entry point, never passing useServiceRole", () => {
+    assert.match(approvalsPageSource, /backfillMetaApprovalRequestsForEvents\(backfillEventIds, null\)/);
+  });
+
+  it("only the cron route file passes useServiceRole: true to backfillMetaApprovalRequests", () => {
+    assert.match(cronSource, /backfillMetaApprovalRequests\(null, null, true\)/);
+    assert.doesNotMatch(approvalsPageSource, /backfillMetaApprovalRequests\([^)]*true\)/);
+  });
+
+  it("the meta_publication_slots creation sweep intentionally still uses the plain session client (documented scope boundary)", () => {
+    const fnSource = syncSource.slice(
+      syncSource.indexOf("export async function backfillMetaApprovalRequests("),
+      syncSource.indexOf("export async function backfillMetaApprovalRequestsForEvents"),
+    );
+    assert.match(fnSource, /const supabase = await createClient\(\);\s*\n\s*let slotsQuery/);
   });
 });
 

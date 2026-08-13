@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 10, 2026 — newsletter scheduled-sends cron  
+**Last updated:** August 12, 2026 — approval backfill now runs with service role  
 **Related:** [Ops](./README.md) · [`vercel.json`](../../vercel.json) · [Env & secrets](./env-and-secrets.md) · [Architecture](../engineering/architecture.md) · [Documentation home](../README.md)
 
 ## Auth
@@ -51,9 +51,11 @@ Daily job (`src/app/api/cron/meta-token-health/route.ts`) runs four parallel tas
 | Task | Code | Email (if any) |
 |------|------|----------------|
 | Meta connection health | `refreshAllMetaConnectionHealth()` | Invalid Page token → `meta-disconnected` once per connection row |
-| Approval request backfill | `backfillMetaApprovalRequests()` | — |
+| Approval request backfill | `backfillMetaApprovalRequests(null, null, true)` — service role | — |
 | Pending approval reminders | `sendPendingApprovalReminders()` | Assigned pending approval after **24h** → `approval-reminder` once per request |
 | Trial ending notices | `sendTrialEndingNotices()` | `trialing` org with **1–3 days** left → `trial-ending` once per org + `trial_ends_at` |
+
+**Approval backfill scope (as of Aug 12, 2026):** the dedupe/stale-resolution repair (`dedupePendingApprovalRequestsInDb` / `resolveStalePendingApprovalRequestsForApprovedItems`) now runs with `useServiceRole: true` from this cron — previously it used the cookie/anon client with no user session, so RLS silently returned zero rows every day (a no-op that looked healthy: `ok: true`, `approvalRequestsBackfilled: 0`). A failed elevated call (e.g. missing `SUPABASE_SERVICE_ROLE_KEY`) now surfaces as a non-null `approvalBackfillError` in the JSON response instead of looking identical to "nothing needed reconciling." The meta_publication_slots scan that discovers and *creates* brand-new missing approval requests still uses the plain session client and remains a no-op under cron — it depends on the bundle-computation pipeline's own session-scoped lookups (`getEventById`/`getCurrentOrganization`), which is a larger, separate follow-up. `/approvals` page loads (Phase 4, `backfillMetaApprovalRequestsForEvents`) already cover that creation path correctly for the viewing org via the real user session.
 
 All four email paths use the durable `transactional_notification_deliveries` ledger plus Resend idempotency keys. Policy details: [resend-email-templates.md § Soft-launch notification policy](./resend-email-templates.md#soft-launch-notification-policy).
 
