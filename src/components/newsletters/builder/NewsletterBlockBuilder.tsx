@@ -53,6 +53,7 @@ import {
   useRef,
   useState,
   type DragEvent,
+  type MouseEvent as ReactMouseEvent,
 } from "react";
 
 type EventPickerState =
@@ -496,6 +497,21 @@ export function NewsletterBlockBuilder({
   const primaryCtaLabel =
     status === "changes_requested" ? "Preview & Resubmit" : "Preview & Send Details";
 
+  // Client-side <Link> navigation unmounts the builder without firing
+  // beforeunload/pagehide, so a debounced edit still in flight would never
+  // reach the server before Preview/Resubmit reads the draft. Flush first.
+  async function handlePrimaryCtaClick(event: ReactMouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    await flushDraft();
+    if (primaryCtaHref) {
+      router.push(primaryCtaHref);
+    }
+  }
+
   return (
     <div className="-mx-4 -my-8 flex h-[calc(100dvh-3.75rem)] min-h-[640px] flex-col overflow-hidden bg-cos-bg lg:-mx-8 lg:-my-10">
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-cos-border bg-cos-card px-6">
@@ -525,6 +541,7 @@ export function NewsletterBlockBuilder({
           {primaryCtaHref ? (
             <Link
               href={primaryCtaHref}
+              onClick={handlePrimaryCtaClick}
               className="inline-flex items-center gap-2 rounded-full bg-cos-primary px-5 py-2.5 text-sm font-bold text-[#f6f2eb] shadow-md transition hover:bg-cos-primary-hover"
             >
               {primaryCtaLabel}
