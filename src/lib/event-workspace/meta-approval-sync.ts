@@ -326,12 +326,28 @@ export async function syncMetaApprovalRequestsForEvent(
   return synced;
 }
 
+/**
+ * `scopeEventIds`: `null` (default) reconciles every event visible to the
+ * caller's session — the intended behavior for the daily system-wide cron
+ * sweep (`/api/cron/meta-token-health`). Pass an explicit array to bound the
+ * reconciliation to those event ids only; an empty array is a cheap no-op.
+ *
+ * Interactive/page-load callers must always pass a scoped array — never
+ * `null` — so a single organization's page view can't trigger dedupe/sync
+ * work for events outside that organization. See
+ * `backfillMetaApprovalRequestsForEvents` below.
+ */
 export async function backfillMetaApprovalRequests(
   actor?: ApprovalActor | null,
+  scopeEventIds: string[] | null = null,
 ): Promise<number> {
+  if (scopeEventIds && scopeEventIds.length === 0) {
+    return 0;
+  }
+
   const [deduped, resolvedStale] = await Promise.all([
-    dedupePendingApprovalRequestsInDb(),
-    resolveStalePendingApprovalRequestsForApprovedItems(),
+    dedupePendingApprovalRequestsInDb(scopeEventIds),
+    resolveStalePendingApprovalRequestsForApprovedItems(scopeEventIds),
   ]);
   if (deduped > 0) {
     console.info(`Cancelled ${deduped} duplicate pending approval request(s).`);
@@ -343,10 +359,16 @@ export async function backfillMetaApprovalRequests(
   }
 
   const supabase = await createClient();
-  const { data: slots } = await supabase
+  let slotsQuery = supabase
     .from("meta_publication_slots")
     .select("event_id")
     .in("status", ["draft", "scheduled"]);
+
+  if (scopeEventIds) {
+    slotsQuery = slotsQuery.in("event_id", scopeEventIds);
+  }
+
+  const { data: slots } = await slotsQuery;
 
   const eventIds = [...new Set((slots ?? []).map((slot) => slot.event_id as string))];
 
@@ -355,4 +377,23 @@ export async function backfillMetaApprovalRequests(
   );
 
   return results.reduce((total, count) => total + count, 0);
+}
+
+/**
+ * Organization-scoped entry point for interactive page loads (e.g. the
+ * Approvals hub). Unlike `backfillMetaApprovalRequests(actor, null)`, this
+ * can never touch another organization's events: the caller must supply the
+ * exact event ids to reconcile (typically from `resolveScopedOrgEventIds`),
+ * and an empty list exits immediately without any approval_requests /
+ * meta_publication_slots / communication_items reads.
+ */
+export async function backfillMetaApprovalRequestsForEvents(
+  eventIds: string[],
+  actor?: ApprovalActor | null,
+): Promise<number> {
+  if (eventIds.length === 0) {
+    return 0;
+  }
+
+  return backfillMetaApprovalRequests(actor, eventIds);
 }

@@ -43,15 +43,33 @@ export async function cancelDuplicatePendingApprovalRequests(
   return duplicateIds.length;
 }
 
-export async function dedupePendingApprovalRequestsInDb(): Promise<number> {
+/**
+ * `eventIds`: `null` (default) reconciles every event the caller's RLS
+ * session can see — intended for the system-wide cron sweep only. Pass an
+ * explicit array (possibly empty) to bound the scan to those events, e.g.
+ * the requesting organization's own events for an interactive page load.
+ */
+export async function dedupePendingApprovalRequestsInDb(
+  eventIds: string[] | null = null,
+): Promise<number> {
+  if (eventIds && eventIds.length === 0) {
+    return 0;
+  }
+
   const supabase = await createClient();
 
-  const { data: pending, error } = await supabase
+  let query = supabase
     .from("approval_requests")
     .select("id, communication_item_id, requested_at")
     .eq("status", "pending")
     .not("communication_item_id", "is", null)
     .order("requested_at", { ascending: false });
+
+  if (eventIds) {
+    query = query.in("event_id", eventIds);
+  }
+
+  const { data: pending, error } = await query;
 
   if (error || !pending?.length) {
     if (error) {
@@ -101,15 +119,32 @@ type ApprovalQueueDedupeRow = {
   requested_at: string;
 };
 
-export async function resolveStalePendingApprovalRequestsForApprovedItems(): Promise<number> {
+/**
+ * `eventIds`: same contract as {@link dedupePendingApprovalRequestsInDb} —
+ * `null` means unbounded (cron sweep), an array bounds the scan to those
+ * event ids (an empty array is a cheap no-op).
+ */
+export async function resolveStalePendingApprovalRequestsForApprovedItems(
+  eventIds: string[] | null = null,
+): Promise<number> {
+  if (eventIds && eventIds.length === 0) {
+    return 0;
+  }
+
   const supabase = await createClient();
   const now = new Date().toISOString();
 
-  const { data: pending, error } = await supabase
+  let query = supabase
     .from("approval_requests")
     .select("id, communication_item_id")
     .eq("status", "pending")
     .not("communication_item_id", "is", null);
+
+  if (eventIds) {
+    query = query.in("event_id", eventIds);
+  }
+
+  const { data: pending, error } = await query;
 
   if (error || !pending?.length) {
     if (error) {
