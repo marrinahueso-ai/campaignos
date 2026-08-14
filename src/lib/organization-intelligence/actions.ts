@@ -12,12 +12,20 @@ import {
   parseTrainingDocumentDeleteInput,
   parseTrainingDocumentInput,
 } from "@/lib/organization-intelligence/validation";
+import { requirePermission } from "@/lib/access-templates/effective-access";
 
 export interface IntelligenceActionState {
   error: string | null;
   success: boolean;
 }
 
+/**
+ * AI Brain settings (voice/tone profile + training documents) are org-wide
+ * configuration, same class of change as the organization profile — any
+ * active member could otherwise overwrite them with only RLS as a backstop.
+ * Reuse manage_people, the permission this codebase already treats as the
+ * general org-settings gate (see organizations/profile-actions.ts).
+ */
 async function requireOrganizationId(): Promise<
   { organizationId: string } | { error: string }
 > {
@@ -27,6 +35,11 @@ async function requireOrganizationId(): Promise<
     return {
       error: "Complete School Setup first to configure your AI Brain profile.",
     };
+  }
+
+  const access = await requirePermission("manage_people");
+  if ("error" in access) {
+    return { error: access.error };
   }
 
   return { organizationId: organization.id };
