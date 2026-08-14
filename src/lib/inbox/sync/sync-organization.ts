@@ -30,10 +30,14 @@ function channelResult(
 
 export async function syncInboxForOrganization(
   organizationId: string,
+  /** Cron caller (syncAllOrganizationsInbox): no user session, so reads/writes must bypass RLS. */
+  options?: { useServiceRole?: boolean },
 ): Promise<InboxSyncResult> {
+  const useServiceRole = Boolean(options?.useServiceRole);
   const refreshed = await ensureMetaConnectionHealthyForOrganization(organizationId);
   const connection =
-    refreshed?.connection ?? (await getMetaConnectionForOrganization(organizationId));
+    refreshed?.connection ??
+    (await getMetaConnectionForOrganization(organizationId, { useServiceRole }));
 
   if (refreshed && !refreshed.tokenValid) {
     const error =
@@ -41,6 +45,7 @@ export async function syncInboxForOrganization(
     await upsertOrganizationInboxSettings({
       organizationId,
       lastSyncError: error,
+      useServiceRole,
     });
 
     return {
@@ -53,7 +58,9 @@ export async function syncInboxForOrganization(
     };
   }
 
-  const inboxSettings = await getOrganizationInboxSettings(organizationId);
+  const inboxSettings = await getOrganizationInboxSettings(organizationId, {
+    useServiceRole,
+  });
   const grantedScopes = inboxSettings?.messagingScopesGranted ?? [];
 
   if (!connection?.pageAccessToken || !connection.facebookPageId) {
@@ -61,6 +68,7 @@ export async function syncInboxForOrganization(
     await upsertOrganizationInboxSettings({
       organizationId,
       lastSyncError: error,
+      useServiceRole,
     });
 
     return {
@@ -242,6 +250,7 @@ export async function syncInboxForOrganization(
     organizationId,
     threads: allThreads,
     messages: allMessages,
+    useServiceRole,
   });
 
   const hasData = upserted.threadsUpserted > 0 || upserted.messagesUpserted > 0;
@@ -259,6 +268,7 @@ export async function syncInboxForOrganization(
     syncEnabled: hasData || errors.length < channelResults.length,
     lastSyncedAt: new Date().toISOString(),
     lastSyncError: syncError,
+    useServiceRole,
   });
 
   return {
@@ -290,7 +300,9 @@ export async function syncAllOrganizationsInbox(): Promise<{
 
   for (const row of data) {
     const organizationId = row.organization_id as string;
-    const result = await syncInboxForOrganization(organizationId);
+    const result = await syncInboxForOrganization(organizationId, {
+      useServiceRole: true,
+    });
     results.push({ organizationId, result });
   }
 

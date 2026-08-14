@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createJobClient } from "@/lib/supabase/job-client";
 import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/sync/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -256,8 +256,9 @@ export async function upsertInboxBatch(input: {
   organizationId: string;
   threads: NormalizedInboxThread[];
   messages: NormalizedInboxMessage[];
+  useServiceRole?: boolean;
 }): Promise<UpsertInboxBatchResult> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(Boolean(input.useServiceRole));
   return upsertInboxBatchWithClient(supabase, input);
 }
 

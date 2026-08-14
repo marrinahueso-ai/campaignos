@@ -9,8 +9,8 @@ import {
   parseGrantedScopes,
 } from "@/lib/inbox/scopes";
 import type { OrganizationInboxSettingsRow } from "@/lib/inbox/db-types";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createJobClient } from "@/lib/supabase/job-client";
 
 export interface OrganizationInboxSettings {
   id: string;
@@ -38,8 +38,9 @@ function mapSettingsRow(row: OrganizationInboxSettingsRow): OrganizationInboxSet
 
 export async function getOrganizationInboxSettings(
   organizationId: string,
+  options?: { useServiceRole?: boolean },
 ): Promise<OrganizationInboxSettings | null> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(Boolean(options?.useServiceRole));
   const { data, error } = await supabase
     .from("organization_inbox_settings")
     .select("*")
@@ -59,8 +60,9 @@ export async function upsertOrganizationInboxSettings(input: {
   lastSyncedAt?: string | null;
   lastSyncError?: string | null;
   messagingScopesGranted?: string[];
+  useServiceRole?: boolean;
 }): Promise<OrganizationInboxSettings | null> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(Boolean(input.useServiceRole));
   const now = new Date().toISOString();
   const payload: Record<string, unknown> = {
     organization_id: input.organizationId,
