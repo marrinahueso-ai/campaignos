@@ -60,6 +60,7 @@ describe("calendar review staging contracts", () => {
     assert.match(review, /Keep Both/);
     assert.doesNotMatch(review, /Keep Hey Ralli Event/);
     assert.doesNotMatch(review, /Update Hey Ralli Event/);
+    assert.match(review, /resolveCalendarSyncChangeAction/);
     assert.match(review, /Currently in Hey Ralli/);
     assert.match(review, /From your connected calendar/);
     assert.match(review, /From your calendar/);

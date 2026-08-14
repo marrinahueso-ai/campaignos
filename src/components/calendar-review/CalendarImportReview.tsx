@@ -16,6 +16,7 @@ import {
   deleteImportedCalendarEventsAction,
   importCalendarEventsAction,
   parseCalendarImportAction,
+  resolveCalendarSyncChangeAction,
   saveCalendarReviewEventsAction,
 } from "@/lib/calendar-import/actions";
 import type { ReviewPlaybookOption } from "@/lib/calendar-import/review-plan-options";
@@ -164,6 +165,29 @@ export function CalendarImportReview({
   }, [importId, parseStatus, initialParseStatus]);
 
   function handleDecision(eventId: string, decision: SyncReviewDecision) {
+    const target = events.find((event) => event.id === eventId);
+    if (!target) {
+      return;
+    }
+
+    // Change rows: apply immediately so Update actually saves (not only on Finish).
+    if (target.status === "update") {
+      setActionError(null);
+      startTransition(async () => {
+        const result = await resolveCalendarSyncChangeAction(
+          importId,
+          target,
+          decision,
+        );
+        if (result.error) {
+          setActionError(result.error);
+          return;
+        }
+        setEvents(result.events);
+      });
+      return;
+    }
+
     const nextEvents = events.map((event) =>
       event.id === eventId ? applySyncReviewDecision(event, decision) : event,
     );
@@ -656,7 +680,7 @@ export function CalendarImportReview({
             <p className="mt-3 text-sm text-cos-muted">
               {isFirstImport
                 ? `This will add ${eventsToAddCount} event${eventsToAddCount === 1 ? "" : "s"} to your Hey Ralli calendar.`
-                : "Adds new events, applies updates you kept, and skips duplicates."}
+                : "Finishes this review — new events are added; changes you already resolved with Update / Keep Mine / Keep Both stay as you chose."}
             </p>
           </div>
         </>

@@ -24,6 +24,7 @@ import {
   parseCalendarTextWithAi,
   refineCalendarEventsWithAi,
   mapParsedEvents,
+  parseStoredReviewEvents,
 } from "@/lib/calendar-import/parse-events";
 import { countDateMentions } from "@/lib/calendar-import/extract-date-lines";
 import { generateText } from "@/lib/ai/provider";
@@ -54,6 +55,10 @@ import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import { linkCalendarImportToSchoolYear } from "@/lib/school-years/mutations";
 import type { CalendarReviewEvent } from "@/types/calendar-review";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
+import {
+  applySyncReviewDecision,
+  type SyncReviewDecision,
+} from "@/lib/calendar-import/sync-review-decisions";
 
 export type CalendarImportActionState = {
   error: string | null;
@@ -273,6 +278,151 @@ export async function saveCalendarReviewEventsAction(
   return { error: null, success: true };
 }
 
+/**
+ * Apply one Sync Review change decision immediately (Update / Keep Mine / Keep Both)
+ * so the user does not have to wait for Finish Review for the row to take effect.
+ */
+export async function resolveCalendarSyncChangeAction(
+  importId: string,
+  event: CalendarReviewEvent,
+  decision: SyncReviewDecision,
+): Promise<{
+  events: CalendarReviewEvent[];
+  updatedCount: number;
+  insertedCount: number;
+  skippedCount: number;
+  error: string | null;
+}> {
+  const importRecord = await getCalendarImportById(importId);
+
+  if (!importRecord) {
+    return {
+      events: [],
+      updatedCount: 0,
+      insertedCount: 0,
+      skippedCount: 0,
+      error: "Calendar upload not found.",
+    };
+  }
+
+  if (importRecord.parseStatus === "imported") {
+    return {
+      events: [],
+      updatedCount: 0,
+      insertedCount: 0,
+      skippedCount: 0,
+      error: "This calendar has already been imported.",
+    };
+  }
+
+  const allEvents = parseStoredReviewEvents(importRecord.parsedEvents);
+  const target =
+    allEvents.find((row) => row.id === event.id) ??
+    allEvents.find(
+      (row) =>
+        row.importExternalId &&
+        event.importExternalId &&
+        row.importExternalId === event.importExternalId,
+    ) ??
+    event;
+
+  const decided = applySyncReviewDecision(
+    {
+      ...target,
+      // Prefer the latest field values from the client row when present.
+      name: event.name || target.name,
+      date: event.date || target.date,
+      time: event.time ?? target.time,
+      location: event.location ?? target.location,
+      existingEventId: event.existingEventId ?? target.existingEventId,
+      existingEventName: event.existingEventName ?? target.existingEventName,
+      existingEventDate: event.existingEventDate ?? target.existingEventDate,
+      existingEventTime: event.existingEventTime ?? target.existingEventTime,
+      existingEventLocation:
+        event.existingEventLocation ?? target.existingEventLocation,
+      importSource: event.importSource ?? target.importSource,
+      importExternalId: event.importExternalId ?? target.importExternalId,
+      status: target.status === "update" ? "update" : event.status,
+    },
+    decision,
+  );
+
+  const {
+    events: inserted,
+    skippedCount,
+    updatedCount,
+  } = await insertImportedEvents([decided], importId, undefined, undefined, {
+    autoApplyUpdates: false,
+  });
+
+  const applied =
+    updatedCount > 0 ||
+    inserted.length > 0 ||
+    (decision === "keep_hey_ralli" && skippedCount > 0);
+
+  if (!applied && decision === "use_calendar_update") {
+    return {
+      events: allEvents,
+      updatedCount: 0,
+      insertedCount: 0,
+      skippedCount,
+      error:
+        "Unable to update that event. Please try Finish Review, or refresh and try again.",
+    };
+  }
+
+  if (!applied && decision === "keep_both") {
+    return {
+      events: allEvents,
+      updatedCount: 0,
+      insertedCount: 0,
+      skippedCount,
+      error: "Unable to keep both events. Please try again.",
+    };
+  }
+
+  const resolvedReason =
+    decision === "use_calendar_update"
+      ? "Updated from your connected calendar."
+      : decision === "keep_hey_ralli"
+        ? "Kept your Hey Ralli values."
+        : "Kept both events.";
+
+  const nextEvents = allEvents.map((row) => {
+    if (row.id !== target.id) {
+      return row;
+    }
+    return {
+      ...decided,
+      id: row.id,
+      status: "duplicate" as const,
+      applyUpdate: false,
+      keepBothFromEventId: null,
+      matchReason: resolvedReason,
+    };
+  });
+
+  const saved = await saveCalendarReviewEvents(importId, nextEvents);
+  if (!saved) {
+    return {
+      events: allEvents,
+      updatedCount,
+      insertedCount: inserted.length,
+      skippedCount,
+      error: "Updated the calendar, but could not save the review list.",
+    };
+  }
+
+  revalidateCalendarPaths();
+  return {
+    events: nextEvents,
+    updatedCount,
+    insertedCount: inserted.length,
+    skippedCount,
+    error: null,
+  };
+}
+
 export async function refineCalendarReviewAction(
   importId: string,
   events: CalendarReviewEvent[],
@@ -349,6 +499,13 @@ export async function importCalendarEventsAction(
 
   if (!inserted.length && updatedCount === 0) {
     if (skippedCount > 0) {
+      await updateCalendarImportParseStatus(importId, {
+        parseStatus: "imported",
+        parseError: null,
+        parsedEvents: events,
+        importedAt: new Date().toISOString(),
+      });
+      revalidateCalendarPaths();
       return {
         importedCount: 0,
         skippedCount,
