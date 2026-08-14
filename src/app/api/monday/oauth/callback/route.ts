@@ -18,6 +18,9 @@ import {
 } from "@/lib/monday/connection";
 import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getOrganizationCanceledLockout } from "@/lib/auth/organization-access-state";
+import { BILLING_CANCELED_PATH } from "@/lib/billing/subscription-lockout";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -90,6 +93,19 @@ export async function GET(request: NextRequest) {
       console.error("Monday OAuth callback: no organization for authenticated user");
       redirectTarget.searchParams.set("error", "no_organization");
       return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
+    }
+
+    // This callback route is intentionally public (external provider
+    // redirect target), so the middleware canceled-subscription gate never
+    // runs for it. Check directly here so a canceled org can't still
+    // connect a brand-new Monday integration while locked out everywhere
+    // else in the app.
+    const supabase = await createClient();
+    if (await getOrganizationCanceledLockout(supabase, organization.id)) {
+      return clearOAuthCookies(
+        NextResponse.redirect(new URL(BILLING_CANCELED_PATH, origin)),
+        origin,
+      );
     }
 
     const redirectUri =

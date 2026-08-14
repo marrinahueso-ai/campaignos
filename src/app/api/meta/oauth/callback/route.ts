@@ -13,6 +13,9 @@ import {
   parseMetaOAuthState,
 } from "@/lib/meta-publishing/config.server";
 import { saveMetaConnectionFromOAuth } from "@/lib/meta-publishing/connection-actions";
+import { getOrganizationCanceledLockout } from "@/lib/auth/organization-access-state";
+import { BILLING_CANCELED_PATH } from "@/lib/billing/subscription-lockout";
+import { createClient } from "@/lib/supabase/server";
 import {
   debugToken,
   exchangeCodeForUserToken,
@@ -76,6 +79,20 @@ export async function GET(request: NextRequest) {
   if (!organization) {
     redirectTarget.searchParams.set("error", "no_organization");
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
+  }
+
+  // This callback route is intentionally public (it's an external provider
+  // redirect target, not an authenticated app page), so the middleware
+  // canceled-subscription gate never runs for it. Check directly here —
+  // otherwise a canceled org could still establish a brand-new Meta
+  // connection (page tokens, inbox webhooks) while locked out everywhere
+  // else in the app.
+  const supabase = await createClient();
+  if (await getOrganizationCanceledLockout(supabase, organization.id)) {
+    return clearOAuthCookies(
+      NextResponse.redirect(new URL(BILLING_CANCELED_PATH, origin)),
+      origin,
+    );
   }
 
   const redirectUri = getMetaRedirectUri(origin);
