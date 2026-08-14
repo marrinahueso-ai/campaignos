@@ -1,7 +1,7 @@
 # Operations
 
 **Purpose:** Deploy, environments, cron jobs, support, observability.  
-**Last updated:** July 26, 2026
+**Last updated:** August 13, 2026
 
 | Doc | Status |
 |-----|--------|
@@ -13,6 +13,7 @@
 | [sentry.md](./sentry.md) | Planned stub |
 | [incident-response.md](./incident-response.md) | Planned stub |
 | [billing-and-access.md](./billing-and-access.md) | **Living** (billing, access, AI credits) · eng wiring: [stripe-integration](../engineering/stripe-integration.md) |
+| [commercial-readiness-engineer-handoff.md](./commercial-readiness-engineer-handoff.md) | **Living** — short independent-engineer package (do not repeat completed security/load work) |
 
 See also: [`vercel.json`](../../vercel.json) · [`.env.local.example`](../../.env.local.example)
 

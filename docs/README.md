@@ -2,7 +2,7 @@
 
 **Status:** Living index  
 **Owner:** Engineering  
-**Last updated:** August 8, 2026  
+**Last updated:** August 13, 2026  
 **Production:** [heyralli.com](https://heyralli.com)
 
 This is the documentation hub. Start here.
@@ -16,7 +16,7 @@ This is the documentation hub. Start here.
 | **New engineer** | [Architecture](./engineering/architecture.md) → [Image architecture](./engineering/image-architecture.md) → [Feature list](./product/feature-list.md) → [Access & multi-tenant onboarding](./security/access-and-onboarding.md) → [Local setup](./getting-started/local-setup.md) |
 | **QA** | [Product completion master](./qa/product-completion-master.md) → [Launch checklist](./qa/launch-checklist.md) → [QA architecture overview](./qa/architecture-overview.md) → [Testing guide](./qa/testing-guide.md) → [Feature list](./product/feature-list.md) |
 | **Integrations** | [Meta](./integrations/meta.md) · [Google Calendar](./integrations/google-calendar.md) · [SignUpGenius](./integrations/signupgenius.md) |
-| **Ops / deploy** | [Ops](./ops/README.md) → deploy · env · cron · [Meta App Review use cases](./ops/meta-app-review-use-cases.md) |
+| **Ops / deploy** | [Ops](./ops/README.md) → deploy · env · cron · [commercial-readiness engineer handoff](./ops/commercial-readiness-engineer-handoff.md) · [Meta App Review use cases](./ops/meta-app-review-use-cases.md) |
 | **Product / design** | [Feature list](./product/feature-list.md) · [Product blueprints](./product/blueprints/) |
 | **Historical only** | [Archive](./archive/README.md) — do not treat as current |
 | **Maintaining docs** | [Governance](./GOVERNANCE.md) |
@@ -62,6 +62,7 @@ This is the documentation hub. Start here.
 | Access control (templates / RLS) | [engineering/access-control.md](./engineering/access-control.md) |
 | Multi-tenant isolation | [security/multi-tenant-isolation.md](./security/multi-tenant-isolation.md) |
 | Launch security assessment (Aug 2026) | [security/launch-security-assessment-2026-08.md](./security/launch-security-assessment-2026-08.md) — core platform vs **External Integration Readiness** (Meta/Google pending final review) |
+| Engineer commercial-readiness handoff | [ops/commercial-readiness-engineer-handoff.md](./ops/commercial-readiness-engineer-handoff.md) — 10–15h independent review package (validated work vs remaining judgment) |
 | OWASP ZAP soft-launch pass | [security/owasp-zap.md](./security/owasp-zap.md) |
 | Storage RLS | [engineering/storage-rls.md](./engineering/storage-rls.md) |
 | Image Transformations (verify) | See [image-architecture.md](./engineering/image-architecture.md#5-storage-buckets-images) · bucket policies in [storage-rls.md](./engineering/storage-rls.md) |
