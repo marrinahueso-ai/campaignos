@@ -219,6 +219,13 @@ export async function duplicateInspirationToCampaign(
       filename: source.filename,
       storage_path: source.storage_path,
       status: "uploaded",
+      // Reused artwork from another campaign hasn't been reviewed in this
+      // campaign's context. Explicitly mark it "generated" (pending review)
+      // rather than leaving plan_status null, which would let it inherit
+      // approval via the legacy (plan_status null + status="uploaded")
+      // fallback in isApprovedArtworkAsset/isApprovedPlanAsset — a fallback
+      // meant only for pre-plan_status historical rows, not fresh duplicates.
+      plan_status: "generated",
       ai_generated: false,
       is_custom: true,
       uploaded_by: uploadedBy,
