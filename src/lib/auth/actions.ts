@@ -41,7 +41,10 @@ import {
   createInvitedMemberAccount,
   userMustChangePassword,
 } from "@/lib/auth/invite-credentials";
-import { revokeUserSessionsIfNoActiveMembership } from "@/lib/auth/revoke-sessions";
+import {
+  revokeUserSessions,
+  revokeUserSessionsIfNoActiveMembership,
+} from "@/lib/auth/revoke-sessions";
 import { sendOrganizationWelcomeEmail } from "@/lib/email/send-organization-welcome";
 import {
   isEmailConfigured,
@@ -558,6 +561,18 @@ export async function changePasswordAction(
     return { error: error.message, success: false };
   }
 
+  // Password rotation must invalidate other devices. Supabase Auth does not
+  // revoke peer sessions on updateUser({ password }), so delete auth.sessions
+  // (cascades to refresh_tokens) then re-establish only this device.
+  await revokeUserSessions(user.id);
+  const { error: reestablishError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password,
+  });
+  if (reestablishError) {
+    redirect("/login?passwordChanged=1");
+  }
+
   await clearMustChangePassword(user.id);
   if (stayOnPage) {
     return { error: null, success: true };
@@ -853,6 +868,19 @@ export async function updatePasswordFromRecoveryAction(
   const { error } = await supabase.auth.updateUser({ password });
   if (error) {
     return { error: error.message, success: false };
+  }
+
+  // Recovery may have left other long-lived sessions intact. Revoke them,
+  // then mint a fresh session on this device with the new password.
+  await revokeUserSessions(user.id);
+  if (user.email) {
+    const { error: reestablishError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password,
+    });
+    if (reestablishError) {
+      redirect("/login?passwordChanged=1");
+    }
   }
 
   await clearMustChangePassword(user.id);
