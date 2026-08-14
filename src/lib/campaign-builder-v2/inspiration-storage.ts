@@ -2,6 +2,7 @@ import "server-only";
 
 import { requireEventAccess } from "@/lib/events/queries";
 import {
+  MAX_EVENT_ASSET_BYTES,
   resolveAssetImageUrl,
   sanitizeEventAssetFilename,
 } from "@/lib/event-workspace/storage";
@@ -43,6 +44,13 @@ async function uploadDataUrlImage(input: {
     };
   }
   const bytes = Buffer.from(match[2], "base64");
+  if (bytes.byteLength > MAX_EVENT_ASSET_BYTES) {
+    return {
+      url: null,
+      error: "Inspiration images must be 10 MB or smaller.",
+    };
+  }
+
   const uploaded = await uploadSchoolMediaBytes({
     organizationId: input.organizationId,
     eventId: input.eventId,

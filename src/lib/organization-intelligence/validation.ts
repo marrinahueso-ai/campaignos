@@ -1,5 +1,6 @@
+import { fileExtensionOf } from "@/lib/uploads/safe-content-type";
 import {
-  ALLOWED_TRAINING_MIME_TYPES,
+  ALLOWED_TRAINING_FILE_EXTENSIONS,
   CTA_STYLES,
   EMOJI_USAGE_OPTIONS,
   MAX_PROFILE_TEXT_LENGTH,
@@ -143,8 +144,14 @@ export function parseTrainingDocumentInput(
   if (fileField.size > MAX_TRAINING_FILE_BYTES) {
     return validationError("Training files must be 25 MB or smaller.");
   }
-  if (fileField.type && !ALLOWED_TRAINING_MIME_TYPES.includes(fileField.type)) {
-    return validationError("Unsupported file type for the Training Library.");
+  if (
+    !ALLOWED_TRAINING_FILE_EXTENSIONS.includes(
+      fileExtensionOf(fileField.name) as (typeof ALLOWED_TRAINING_FILE_EXTENSIONS)[number],
+    )
+  ) {
+    return validationError(
+      "Unsupported file type for the Training Library. Upload PDF, Word, TXT, CSV, JSON, or ZIP files.",
+    );
   }
 
   return {

@@ -12,6 +12,10 @@ import {
   buildVendorLogoStoragePath,
   isAllowedVendorDocument,
   isAllowedVendorLogo,
+  MAX_VENDOR_DOCUMENT_BYTES,
+  MAX_VENDOR_LOGO_BYTES,
+  resolveVendorDocumentContentType,
+  resolveVendorLogoContentType,
   VENDOR_DOCUMENTS_BUCKET,
 } from "@/lib/vendors/storage";
 import { getAllOrgVendorsForDedup } from "@/lib/vendors/queries";
@@ -493,6 +497,14 @@ export async function uploadVendorDocument(input: {
   if (!isAllowedVendorDocument(input.file)) {
     return { id: null, error: "Upload PDF, Word, Excel, PNG, or JPG files only." };
   }
+  if (input.file.size > MAX_VENDOR_DOCUMENT_BYTES) {
+    return { id: null, error: "Document must be 25 MB or smaller." };
+  }
+
+  const contentType = resolveVendorDocumentContentType(input.file.name);
+  if (!contentType) {
+    return { id: null, error: "Upload PDF, Word, Excel, PNG, or JPG files only." };
+  }
 
   const supabase = await createClient();
   const storagePath = buildVendorDocumentStoragePath(
@@ -506,7 +518,7 @@ export async function uploadVendorDocument(input: {
   const { error: uploadError } = await supabase.storage
     .from(VENDOR_DOCUMENTS_BUCKET)
     .upload(storagePath, buffer, {
-      contentType: input.file.type || "application/octet-stream",
+      contentType,
       upsert: false,
     });
 
@@ -572,6 +584,14 @@ export async function uploadVendorLogo(input: {
   if (!isAllowedVendorLogo(input.file)) {
     return { success: false, error: "Upload PNG, JPG, or WebP images only." };
   }
+  if (input.file.size > MAX_VENDOR_LOGO_BYTES) {
+    return { success: false, error: "Logo must be 5 MB or smaller." };
+  }
+
+  const contentType = resolveVendorLogoContentType(input.file.name);
+  if (!contentType) {
+    return { success: false, error: "Upload PNG, JPG, or WebP images only." };
+  }
 
   const supabase = await createClient();
   const { data: existing } = await supabase
@@ -591,7 +611,7 @@ export async function uploadVendorLogo(input: {
   const { error: uploadError } = await supabase.storage
     .from(VENDOR_DOCUMENTS_BUCKET)
     .upload(storagePath, buffer, {
-      contentType: input.file.type || "image/png",
+      contentType,
       upsert: false,
     });
 

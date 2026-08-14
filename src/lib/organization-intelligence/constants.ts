@@ -86,14 +86,19 @@ export const MAX_TRAINING_TITLE_LENGTH = 120;
 export const MAX_TRAINING_NOTES_LENGTH = 1000;
 export const MAX_TRAINING_FILE_BYTES = 25 * 1024 * 1024;
 
-export const ALLOWED_TRAINING_MIME_TYPES = [
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/msword",
-  "text/plain",
-  "text/html",
-  "text/csv",
-  "application/json",
-  "application/zip",
-  "application/octet-stream",
-];
+/**
+ * Extension allow-list for the Training Library — deliberately excludes
+ * ".html" (script-capable). The stored Content-Type is derived from this
+ * extension server-side (see resolveTrainingFileContentType), never from the
+ * client-supplied File.type, so a renamed/spoofed upload can't be served
+ * back as text/html or another script-capable type.
+ */
+export const ALLOWED_TRAINING_FILE_EXTENSIONS = [
+  ".pdf",
+  ".docx",
+  ".doc",
+  ".txt",
+  ".csv",
+  ".json",
+  ".zip",
+] as const;

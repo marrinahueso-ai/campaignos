@@ -1,4 +1,28 @@
 import { VENDOR_DOCUMENTS_BUCKET } from "@/lib/vendors/constants";
+import { resolveSafeUploadContentType } from "@/lib/uploads/safe-content-type";
+
+/** Vendor documents are contracts/invoices, not media — same ceiling as campaign files. */
+export const MAX_VENDOR_DOCUMENT_BYTES = 25 * 1024 * 1024;
+/** Vendor logos are small display images. */
+export const MAX_VENDOR_LOGO_BYTES = 5 * 1024 * 1024;
+
+const ALLOWED_VENDOR_LOGO_EXTENSIONS = [
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+] as const;
+
+const ALLOWED_VENDOR_DOCUMENT_EXTENSIONS = [
+  ".pdf",
+  ".docx",
+  ".doc",
+  ".xlsx",
+  ".xls",
+  ".png",
+  ".jpg",
+  ".jpeg",
+] as const;
 
 export function sanitizeVendorDocumentFilename(filename: string): string {
   return filename.replace(/[^\w.-]/g, "_");
@@ -26,52 +50,40 @@ export function buildVendorLogoStoragePath(
   return `${organizationId}/${vendorId}/logo/${Date.now()}-${safeName}`;
 }
 
+/**
+ * Extension is authoritative (see resolveVendorLogoContentType) — accepting a
+ * file merely because its client-supplied MIME type matched would let a file
+ * named e.g. "evil.html" through by spoofing `file.type` to `image/png`.
+ */
 export function isAllowedVendorLogo(file: File): boolean {
-  const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-  const allowedExtensions = new Set([".png", ".jpg", ".jpeg", ".webp"]);
-  if (allowedExtensions.has(extension)) {
-    return true;
-  }
-
-  const allowedMimeTypes = new Set([
-    "image/png",
-    "image/jpeg",
-    "image/jpg",
-    "image/webp",
-  ]);
-
-  return allowedMimeTypes.has(file.type);
+  return resolveVendorLogoContentType(file.name) !== null;
 }
 
 export function isAllowedVendorDocument(file: File): boolean {
-  const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-  const allowedExtensions = new Set([
-    ".pdf",
-    ".docx",
-    ".doc",
-    ".xlsx",
-    ".xls",
-    ".png",
-    ".jpg",
-    ".jpeg",
-  ]);
+  return resolveVendorDocumentContentType(file.name) !== null;
+}
 
-  if (allowedExtensions.has(extension)) {
-    return true;
-  }
+/**
+ * Server-derived Content-Type for a vendor logo, from its extension only —
+ * never from the client-supplied `file.type`. Returns null to reject uploads
+ * with an unrecognized/disallowed extension.
+ */
+export function resolveVendorLogoContentType(filename: string): string | null {
+  return resolveSafeUploadContentType(filename, ALLOWED_VENDOR_LOGO_EXTENSIONS);
+}
 
-  const allowedMimeTypes = new Set([
-    "application/pdf",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-excel",
-    "image/png",
-    "image/jpeg",
-    "image/jpg",
-  ]);
-
-  return allowedMimeTypes.has(file.type);
+/**
+ * Server-derived Content-Type for a vendor document, from its extension only
+ * — never from the client-supplied `file.type`. Returns null to reject
+ * uploads with an unrecognized/disallowed extension.
+ */
+export function resolveVendorDocumentContentType(
+  filename: string,
+): string | null {
+  return resolveSafeUploadContentType(
+    filename,
+    ALLOWED_VENDOR_DOCUMENT_EXTENSIONS,
+  );
 }
 
 export { VENDOR_DOCUMENTS_BUCKET };

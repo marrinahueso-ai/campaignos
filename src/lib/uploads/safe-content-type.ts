@@ -23,6 +23,11 @@ const EXTENSION_CONTENT_TYPES: Record<string, string> = {
   ".xls": "application/vnd.ms-excel",
   ".xlsx":
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".csv": "text/csv",
+  ".ics": "text/calendar",
+  ".txt": "text/plain",
+  ".json": "application/json",
+  ".zip": "application/zip",
 };
 
 /** Common image-only allow-list for logos / artwork / inspiration uploads. Deliberately excludes SVG (script-capable) and any non-image type. */

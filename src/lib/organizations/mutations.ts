@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createOrganizationMembership } from "@/lib/auth/membership-mutations";
 import { getAuthUser } from "@/lib/auth/queries";
 import { validateCalendarSubscribeUrl } from "@/lib/calendar-import/fetch-subscribe-feed";
+import {
+  CALENDAR_UPLOAD_EXTENSIONS,
+  MAX_CALENDAR_IMPORT_FILE_BYTES,
+} from "@/lib/calendar-import/mutations";
 import { seedOrganizationPlaybookDefaults } from "@/lib/playbooks/mutations";
 import { seedOrganizationWorkspace } from "@/lib/organization-workspace/seed";
 import {
@@ -238,12 +242,16 @@ export async function createSchoolProfile(
     if (!fileType) {
       return { error: "Calendar file must be PDF, Word (.docx), Excel, CSV, or ICS." };
     }
+    if (files.calendarFile.size > MAX_CALENDAR_IMPORT_FILE_BYTES) {
+      return { error: "Calendar file must be 15 MB or smaller." };
+    }
 
     const storagePath = `${organizationId}/${Date.now()}-${sanitizeFilenameForStorage(files.calendarFile.name)}`;
     const uploadedPath = await uploadFile(
       CALENDAR_UPLOADS_BUCKET,
       storagePath,
       files.calendarFile,
+      CALENDAR_UPLOAD_EXTENSIONS,
     );
 
     if (!uploadedPath) {

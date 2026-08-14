@@ -23,9 +23,20 @@ import {
 import { getCalendarWindowEventIds } from "@/lib/calendar-import/calendar-window-scope";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
+import { resolveSafeUploadContentType } from "@/lib/uploads/safe-content-type";
 import { sanitizeFilenameForStorage } from "@/lib/uploads/sanitize-filename";
 
 const CALENDAR_UPLOADS_BUCKET = "calendar-uploads";
+export const CALENDAR_UPLOAD_EXTENSIONS = [
+  ".pdf",
+  ".docx",
+  ".xlsx",
+  ".xls",
+  ".csv",
+  ".ics",
+] as const;
+/** Calendar exports are small documents, not media — cap well below the 25MB campaign-file limit. */
+export const MAX_CALENDAR_IMPORT_FILE_BYTES = 15_000_000;
 
 async function resolveDbClient(
   client?: SupabaseClient,
@@ -510,6 +521,13 @@ export async function uploadCalendarImportFile(
   organizationId: string,
   file: File,
 ): Promise<{ importRecord: CalendarImport | null; error: string | null }> {
+  if (file.size > MAX_CALENDAR_IMPORT_FILE_BYTES) {
+    return {
+      importRecord: null,
+      error: "Calendar file must be 15 MB or smaller.",
+    };
+  }
+
   const supabase = await createClient();
   const extension = file.name.split(".").pop()?.toLowerCase();
 
@@ -538,13 +556,27 @@ export async function uploadCalendarImportFile(
       };
   }
 
+  // Never trust the client-supplied file.type for this public-ish bucket:
+  // derive Content-Type from the extension we just validated above so a
+  // spoofed type can't be served back as text/html or similar.
+  const contentType = resolveSafeUploadContentType(
+    file.name,
+    CALENDAR_UPLOAD_EXTENSIONS,
+  );
+  if (!contentType) {
+    return {
+      importRecord: null,
+      error: "Calendar file must be PDF, Word (.docx), Excel, CSV, or ICS.",
+    };
+  }
+
   const storagePath = `${organizationId}/${Date.now()}-${sanitizeFilenameForStorage(file.name)}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const { error: uploadError } = await supabase.storage
     .from(CALENDAR_UPLOADS_BUCKET)
     .upload(storagePath, buffer, {
-      contentType: file.type || "application/octet-stream",
+      contentType,
       upsert: true,
     });
 

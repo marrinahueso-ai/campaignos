@@ -4,6 +4,8 @@ import {
   mapTrainingDocumentRow,
   toAiProfileUpsert,
 } from "@/lib/organization-intelligence/mappers";
+import { ALLOWED_TRAINING_FILE_EXTENSIONS } from "@/lib/organization-intelligence/constants";
+import { resolveSafeUploadContentType } from "@/lib/uploads/safe-content-type";
 import type {
   OrganizationAiProfile,
   OrganizationAiProfileInput,
@@ -20,6 +22,19 @@ async function uploadTrainingFile(
   documentId: string,
   file: File,
 ): Promise<string | null> {
+  // Never trust the client-supplied file.type — derive Content-Type from the
+  // extension validation already performed in parseTrainingDocumentInput, so
+  // a spoofed/renamed upload can't be served back as text/html or another
+  // script-capable type from the training-library bucket.
+  const contentType = resolveSafeUploadContentType(
+    file.name,
+    ALLOWED_TRAINING_FILE_EXTENSIONS,
+  );
+  if (!contentType) {
+    console.error("Rejected training document with disallowed extension:", file.name);
+    return null;
+  }
+
   const supabase = await createClient();
   const buffer = Buffer.from(await file.arrayBuffer());
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -28,7 +43,7 @@ async function uploadTrainingFile(
   const { error } = await supabase.storage
     .from(TRAINING_LIBRARY_BUCKET)
     .upload(path, buffer, {
-      contentType: file.type || "application/octet-stream",
+      contentType,
       upsert: true,
     });
 
