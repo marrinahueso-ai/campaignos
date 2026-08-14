@@ -136,6 +136,50 @@ export async function syncApprovalScheduleAtForMetaMilestone(
     .in("id", rowIds);
 }
 
+/**
+ * Best-effort resolution of the event a planning item belongs to, used only
+ * for the assigned-only access check below. Falsy/unresolved is not treated
+ * as "no event" — callers only enforce the check when an id comes back.
+ */
+async function resolveEventIdForPlanningItem(
+  supabase: SupabaseClient,
+  sourceType: PlanningItemType,
+  sourceId: string,
+  context?: { eventId?: string },
+): Promise<string | null> {
+  if (sourceType === "event") {
+    return sourceId;
+  }
+  if (context?.eventId) {
+    return context.eventId;
+  }
+  if (sourceType === "artwork") {
+    const { data } = await supabase
+      .from("event_assets")
+      .select("event_id")
+      .eq("id", sourceId)
+      .maybeSingle();
+    return (data?.event_id as string | undefined) ?? null;
+  }
+  if (sourceType === "approval") {
+    const { data } = await supabase
+      .from("approval_requests")
+      .select("event_id")
+      .eq("id", sourceId)
+      .maybeSingle();
+    return (data?.event_id as string | undefined) ?? null;
+  }
+  if (sourceType === "scheduled_post") {
+    const { data } = await supabase
+      .from("publication_schedule")
+      .select("event_id")
+      .eq("id", sourceId)
+      .maybeSingle();
+    return (data?.event_id as string | undefined) ?? null;
+  }
+  return null;
+}
+
 export async function reschedulePlanningItem(
   sourceType: PlanningItemType,
   sourceId: string,
@@ -150,6 +194,23 @@ export async function reschedulePlanningItem(
 ): Promise<boolean> {
   const supabase = await createClient();
   const now = new Date().toISOString();
+
+  // Assigned-only members must not reschedule calendar items outside their
+  // assigned events via drag-and-drop, even though org-level RLS on these
+  // tables would otherwise allow the write. Mirrors the IDOR guard already
+  // enforced by getEventById() for page loads.
+  const targetEventId = await resolveEventIdForPlanningItem(
+    supabase,
+    sourceType,
+    sourceId,
+    context,
+  );
+  if (targetEventId) {
+    const event = await getEventById(targetEventId);
+    if (!event) {
+      return false;
+    }
+  }
 
   switch (sourceType) {
     case "event": {

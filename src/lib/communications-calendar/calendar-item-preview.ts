@@ -68,8 +68,19 @@ export async function loadCalendarItemPreview(input: {
   };
 
   const relativeDay = relativeDayFromSourceId(input.sourceId, input.eventId);
+
+  // Assigned-only members must not preview caption/artwork content for
+  // events outside their assignment: getEventById() already enforces that
+  // IDOR check (org-level RLS on approval_scheduling_items does not), so a
+  // null result here must stop the preview, not fall through to the
+  // session-client queries below.
+  const event = await getEventById(input.eventId);
+  if (!event) {
+    return empty;
+  }
+
   const supabase = await createClient();
-  const [schedulingResult, session, event] = await Promise.all([
+  const [schedulingResult, session] = await Promise.all([
     supabase
       .from("approval_scheduling_items")
       .select(
@@ -77,7 +88,6 @@ export async function loadCalendarItemPreview(input: {
       )
       .eq("event_id", input.eventId),
     loadCampaignBuilderSession(input.eventId),
-    getEventById(input.eventId),
   ]);
 
   const schedulingRows = schedulingResult.data ?? [];
