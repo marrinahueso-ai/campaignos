@@ -299,6 +299,11 @@ export async function publishAllActionableMetaBundlesNowAction(
     };
   }
 
+  const capacityGate = await assertMetaPostCapacityForEvent(eventId);
+  if (!capacityGate.ok) {
+    return { success: false, error: capacityGate.error };
+  }
+
   let publishedCount = 0;
   let failedCount = 0;
   let firstError: string | null = null;
@@ -548,6 +553,11 @@ export async function publishAllApprovedMetaBundlesAction(
     };
   }
 
+  const capacityGate = await assertMetaPostCapacityForEvent(eventId);
+  if (!capacityGate.ok) {
+    return { success: false, error: capacityGate.error };
+  }
+
   let publishedCount = 0;
   let failedCount = 0;
   let firstError: string | null = null;
@@ -739,6 +749,11 @@ export async function publishMetaBundleAction(
 ): Promise<MetaPublishActionResult> {
   if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to publish posts." };
+  }
+
+  const capacityGate = await assertMetaPostCapacityForEvent(eventId);
+  if (!capacityGate.ok) {
+    return { success: false, error: capacityGate.error };
   }
 
   const result = await publishMetaMilestoneBundle({ eventId, relativeDay });

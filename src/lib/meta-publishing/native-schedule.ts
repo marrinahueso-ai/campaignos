@@ -1,7 +1,7 @@
 import "server-only";
 
 import {
-  getFeedCaptionForMilestone,
+  getCaptionForMilestone,
   getMetaSocialCaptionsForEvent,
 } from "@/lib/meta-captions/queries";
 import { getMetaConnectionForCurrentOrg } from "@/lib/meta-publishing/connection";
@@ -156,8 +156,14 @@ export async function createNativeMetaSchedulesForMilestone(input: {
   }
 
   const captions = await getMetaSocialCaptionsForEvent(input.eventId);
-  const feedCaption =
-    getFeedCaptionForMilestone(captions, input.relativeDay)?.trim() ?? "";
+  const feedCaptionRow = getCaptionForMilestone(captions, input.relativeDay, "feed");
+  const feedCaption = feedCaptionRow?.content?.trim() ?? "";
+  // Meta-native "unpublished" schedules auto-publish live on Meta's own
+  // servers at the scheduled time — CampignOS never gets a second chance to
+  // block it. The caption must be status="approved" right now, not just
+  // present, or this whole milestone must fail soft instead of scheduling
+  // draft text with Meta.
+  const feedCaptionApproved = feedCaptionRow?.status === "approved";
   const { feedUrl } = await resolveMilestoneArtworkUrls({
     eventId: input.eventId,
     relativeDay: input.relativeDay,
@@ -176,6 +182,17 @@ export async function createNativeMetaSchedulesForMilestone(input: {
     }
 
     if (!slotSupportsMetaNativeSchedule(slot)) {
+      continue;
+    }
+
+    if (!feedCaptionApproved) {
+      const error = "Approved feed caption is required for Meta-native schedule.";
+      await persistSlotGraphSchedule({
+        slotId: slot.id,
+        graphScheduleId: slot.graphScheduleId,
+        graphScheduleError: error,
+      });
+      result.warnings.push(error);
       continue;
     }
 
@@ -300,8 +317,9 @@ export async function rescheduleNativeMetaSchedulesForMilestone(input: {
   }
 
   const captions = await getMetaSocialCaptionsForEvent(input.eventId);
-  const feedCaption =
-    getFeedCaptionForMilestone(captions, input.relativeDay)?.trim() ?? "";
+  const feedCaptionRow = getCaptionForMilestone(captions, input.relativeDay, "feed");
+  const feedCaption = feedCaptionRow?.content?.trim() ?? "";
+  const feedCaptionApproved = feedCaptionRow?.status === "approved";
   const { feedUrl } = await resolveMilestoneArtworkUrls({
     eventId: input.eventId,
     relativeDay: input.relativeDay,
@@ -325,8 +343,15 @@ export async function rescheduleNativeMetaSchedulesForMilestone(input: {
       continue;
     }
 
-    // Update unsupported — delete + recreate when we have artwork.
-    if (feedUrl && isWithinMetaNativeScheduleWindow(input.scheduledFor)) {
+    // Update unsupported — delete + recreate when we have artwork. Never
+    // recreate with a caption that isn't currently approved: the Graph
+    // schedule auto-publishes on Meta's own servers, so falling through to
+    // the "time not moved" warning below is the safe failure mode here.
+    if (
+      feedUrl &&
+      feedCaptionApproved &&
+      isWithinMetaNativeScheduleWindow(input.scheduledFor)
+    ) {
       await tryDeleteGraphSchedule({ connection, scheduleId });
       const recreated = await scheduleFacebookFeedPhoto({
         pageId: connection.facebookPageId,

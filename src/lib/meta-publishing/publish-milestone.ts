@@ -5,9 +5,8 @@ import {
 } from "@/lib/artwork-v2/campaign-phases";
 import { resolveMilestoneArtworkUrls } from "@/lib/meta-publishing/resolve-milestone-artwork";
 import {
-  getFeedCaptionForMilestone,
+  getCaptionForMilestone,
   getMetaSocialCaptionsForEvent,
-  getStoryCaptionForMilestone,
 } from "@/lib/meta-captions/queries";
 import {
   getMetaConnectionForCurrentOrg,
@@ -419,16 +418,25 @@ export async function publishMetaMilestoneBundle(input: {
   const captions = await getMetaSocialCaptionsForEvent(input.eventId, {
     useServiceRole,
   });
-  const feedCaption = getFeedCaptionForMilestone(captions, input.relativeDay)?.trim();
-  const storyCaption = getStoryCaptionForMilestone(captions, input.relativeDay)?.trim();
+  const feedCaptionRow = getCaptionForMilestone(captions, input.relativeDay, "feed");
+  const storyCaptionRow = getCaptionForMilestone(captions, input.relativeDay, "story");
+  const feedCaption = feedCaptionRow?.content?.trim();
+  const storyCaption = storyCaptionRow?.content?.trim();
 
   const needsFeedCaption = isFeedSurfaceEnabled(surfaces);
   const needsStoryCaption =
     isStorySurfaceEnabled(surfaces) && !storyManualPublish;
 
+  // Last-mile enforcement before the Graph API call: caption text existing is
+  // not enough — it must actually be status="approved". Draft/pending text
+  // must never publish, no matter which caller reached this function
+  // (interactive, retry, bulk actions, or the due-slots cron).
+  const feedCaptionApproved = !needsFeedCaption || feedCaptionRow?.status === "approved";
+  const storyCaptionApproved = !needsStoryCaption || storyCaptionRow?.status === "approved";
+
   if (
-    (needsFeedCaption && !feedCaption) ||
-    (needsStoryCaption && !storyCaption)
+    (needsFeedCaption && (!feedCaption || !feedCaptionApproved)) ||
+    (needsStoryCaption && (!storyCaption || !storyCaptionApproved))
   ) {
     const error =
       needsFeedCaption && needsStoryCaption

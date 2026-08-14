@@ -94,7 +94,19 @@ export function bundleIsManualStoryOnly(bundle: MetaPublishBundle): boolean {
   );
 }
 
-/** True when this milestone can be scheduled or rescheduled from Review & publish. */
+/**
+ * True when this milestone can be scheduled or rescheduled from Review & publish.
+ *
+ * This is a real authorization boundary, not just a UI filter: it gates the
+ * server actions in meta-publishing/actions.ts (publishMetaBundleNowAction,
+ * scheduleMetaBundleAction, etc.), so it must only pass once required
+ * artwork/captions are actually approved (deriveBundleStatus in bundles.ts
+ * only reaches "ready"/"approved"/"scheduled" after that's true). Draft
+ * caption/artwork previews are shown in the UI (bundleHasReviewPublishContent,
+ * isReviewPublishVisibleBundle) so editors can see what's pending, but that
+ * preview content must never make a needs_caption/needs_artwork bundle
+ * schedulable or publishable.
+ */
 export function bundleIsSchedulable(bundle: MetaPublishBundle): boolean {
   if (!bundle.isMetaPost || bundle.status === "skipped") {
     return false;
@@ -104,19 +116,7 @@ export function bundleIsSchedulable(bundle: MetaPublishBundle): boolean {
     return false;
   }
 
-  if (REVIEW_PUBLISH_SCHEDULABLE_STATUSES.includes(bundle.status)) {
-    return true;
-  }
-
-  // Review UI shows caption + artwork previews while formal status is still needs_*.
-  if (
-    (bundle.status === "needs_caption" || bundle.status === "needs_artwork") &&
-    bundleHasReviewPublishContent(bundle)
-  ) {
-    return true;
-  }
-
-  return false;
+  return REVIEW_PUBLISH_SCHEDULABLE_STATUSES.includes(bundle.status);
 }
 
 export function reviewPublishMilestoneStatusLabel(
