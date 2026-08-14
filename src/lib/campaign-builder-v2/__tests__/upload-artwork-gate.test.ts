@@ -74,4 +74,31 @@ describe("Create with AI upload_artwork gate wiring", () => {
     assert.match(storage, /requireEventAccess\(input\.eventId\)/);
     assert.match(storage, /eventId\?: string/);
   });
+
+  function extractFunctionBody(signature: string): string {
+    const start = actions.indexOf(signature);
+    assert.ok(start >= 0, `${signature} not found`);
+    const next = actions.indexOf("\nexport async function", start + signature.length);
+    return actions.slice(start, next >= 0 ? next : undefined);
+  }
+
+  it("regenerateArtworkAction requires event access and upload_artwork", () => {
+    const body = extractFunctionBody("export async function regenerateArtworkAction(");
+    assert.match(body, /requireEventAccess\(input\.eventId\)/);
+    assert.match(body, /hasPermission\("upload_artwork"\)/);
+  });
+
+  it("regenerateMilestoneArtworkAction requires event access and upload_artwork", () => {
+    const body = extractFunctionBody(
+      "export async function regenerateMilestoneArtworkAction(",
+    );
+    assert.match(body, /requireEventAccess\(input\.eventId\)/);
+    assert.match(body, /hasPermission\("upload_artwork"\)/);
+  });
+
+  it("regenerateCaptionAction requires event access and upload_artwork", () => {
+    const body = extractFunctionBody("export async function regenerateCaptionAction(");
+    assert.match(body, /requireEventAccess\(input\.eventId\)/);
+    assert.match(body, /hasPermission\("upload_artwork"\)/);
+  });
 });

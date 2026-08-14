@@ -387,6 +387,14 @@ export async function regenerateArtworkAction(
     };
   }
 
+  if (!(await hasPermission("upload_artwork"))) {
+    return {
+      success: false,
+      variationUrls: [],
+      message: "You do not have permission to generate artwork.",
+    };
+  }
+
   const resolved = await resolveInspirationForGeneration(
     input.eventId,
     input.inspiration,
@@ -451,6 +459,23 @@ export interface RegenerateMilestoneArtworkInput {
 export async function regenerateMilestoneArtworkAction(
   input: RegenerateMilestoneArtworkInput,
 ): Promise<GenerateMilestoneArtworkResult> {
+  const eventAccess = await requireEventAccess(input.eventId);
+  if ("error" in eventAccess) {
+    return {
+      success: false,
+      artwork: input.previewContent.artwork,
+      message: eventAccess.error,
+    };
+  }
+
+  if (!(await hasPermission("upload_artwork"))) {
+    return {
+      success: false,
+      artwork: input.previewContent.artwork,
+      message: "You do not have permission to generate artwork.",
+    };
+  }
+
   const resolved = await resolveInspirationForGeneration(
     input.eventId,
     input.inspiration,
@@ -498,6 +523,23 @@ export async function regenerateMilestoneArtworkAction(
 export async function regenerateCaptionAction(
   input: RegenerateCaptionInput,
 ): Promise<RegenerateCaptionResult> {
+  const eventAccess = await requireEventAccess(input.eventId);
+  if ("error" in eventAccess) {
+    return {
+      success: false,
+      caption: input.currentCaption,
+      message: eventAccess.error,
+    };
+  }
+
+  if (!(await hasPermission("upload_artwork"))) {
+    return {
+      success: false,
+      caption: input.currentCaption,
+      message: "You do not have permission to generate captions.",
+    };
+  }
+
   const result = await generateCampaignBuilderCaption({
     eventId: input.eventId,
     inspiration: input.inspiration,
@@ -1133,6 +1175,18 @@ export async function approveAllAndScheduleAction(eventId: string): Promise<{
   success: boolean;
   message: string;
 }> {
+  // Assigned-only members must not force a Meta schedule repair for events
+  // outside their assignment — this was missing the event-access IDOR check
+  // every other action in this file uses, even though the underlying
+  // repair only touches rows already approved/scheduled.
+  const eventAccess = await requireEventAccess(eventId);
+  if ("error" in eventAccess) {
+    return {
+      success: false,
+      message: eventAccess.error,
+    };
+  }
+
   const { repairCampaignBuilderMetaSchedulesForEvent } = await import(
     "@/lib/campaign-builder-v2/schedule-meta-from-approval"
   );
@@ -1195,6 +1249,14 @@ export async function syncAppliedMilestoneArtworkAction(input: {
   /** When false, skips path revalidation (use while Create with AI is open). */
   revalidate?: boolean;
 }): Promise<{ success: boolean; message?: string }> {
+  // Assigned-only members must not write artwork for events outside their
+  // assignment — matches the requireEventAccess gate every other artwork
+  // action in this file already applies before touching event_assets.
+  const eventAccess = await requireEventAccess(input.eventId);
+  if ("error" in eventAccess) {
+    return { success: false, message: eventAccess.error };
+  }
+
   try {
     await syncHeroFromMilestoneArtwork({
       eventId: input.eventId,
