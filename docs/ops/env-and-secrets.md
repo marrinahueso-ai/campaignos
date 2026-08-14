@@ -90,6 +90,7 @@ Optional in local development. **Required in Preview/Production** — `encryptOA
 | Variable | Notes |
 |----------|-------|
 | `CRON_SECRET` | Bearer token for `/api/cron/*` — **required in Production and Preview** (`isCronRequestAuthorized` fails closed when `VERCEL_ENV` is production/preview and the secret is missing) |
+| `SENTRY_VERIFY_SECRET` | Bearer token for `/api/sentry-verify` and `/dev/sentry-verify` — a **dedicated** secret, deliberately separate from `CRON_SECRET`. The browser verify page necessarily carries its secret in a URL query string (browser history, access logs); using its own single-purpose secret means a leaked verify-page URL can't be replayed against real `/api/cron/*` routes. Leave unset to disable both verify routes entirely (they fail closed). |
 
 See [cron-jobs.md](./cron-jobs.md).
 

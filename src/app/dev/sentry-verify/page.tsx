@@ -11,7 +11,8 @@ interface PageProps {
 
 /**
  * Temporary browser-side Sentry verification page.
- * Requires ?secret= matching SENTRY_VERIFY_SECRET (or CRON_SECRET). Returns 404 otherwise.
+ * Requires ?secret= matching the dedicated SENTRY_VERIFY_SECRET (never
+ * CRON_SECRET — see sentry-verify.ts for why). Returns 404 otherwise.
  */
 export default async function SentryVerifyPage({ searchParams }: PageProps) {
   const params = await searchParams;

@@ -9,8 +9,9 @@ export const dynamic = "force-dynamic";
 
 /**
  * Temporary production verification endpoint.
- * Requires Authorization: Bearer $CRON_SECRET (or ?secret=).
- * Disable by removing CRON_SECRET access or deleting this route after verify.
+ * Requires Authorization: Bearer $SENTRY_VERIFY_SECRET (a dedicated secret —
+ * never CRON_SECRET; see sentry-verify.ts for why).
+ * Disable by unsetting SENTRY_VERIFY_SECRET or deleting this route after verify.
  */
 export async function GET(request: Request) {
   if (!isSentryTestAuthorized(request)) {
@@ -37,9 +38,7 @@ export async function GET(request: Request) {
         process.env.VERCEL_ENV ||
         process.env.NODE_ENV ||
         null,
-      verifySecretConfigured: Boolean(
-        process.env.SENTRY_VERIFY_SECRET?.trim() || process.env.CRON_SECRET?.trim(),
-      ),
+      verifySecretConfigured: Boolean(process.env.SENTRY_VERIFY_SECRET?.trim()),
       sdkPackage: "@sentry/nextjs",
     });
   }

@@ -1,19 +1,27 @@
 /**
  * Temporary Sentry verification helpers.
- * The HTTP routes that call these are locked behind CRON_SECRET.
+ * The HTTP routes that call these are locked behind a dedicated
+ * SENTRY_VERIFY_SECRET — deliberately NOT CRON_SECRET. The browser-side
+ * verify page (/dev/sentry-verify) necessarily carries its secret in a URL
+ * query string, which ends up in browser history and access/CDN logs; if
+ * that secret were CRON_SECRET (as it previously defaulted to), a leaked
+ * verify-page URL would hand over the same bearer token that authorizes
+ * every real /api/cron/* route (approval backfill, Meta publish, newsletter
+ * sends, etc). Using a separate, single-purpose secret contains the blast
+ * radius of that unavoidable query-string exposure to this verify feature
+ * alone. If SENTRY_VERIFY_SECRET is unset, verification is simply disabled
+ * (fail closed) rather than falling back to a higher-value secret.
  */
 
 import * as Sentry from "@sentry/nextjs";
 import { isSentryEnabled } from "@/lib/monitoring/sentry-privacy";
 
 function getSentryVerifySecret(): string | null {
-  const secret =
-    process.env.SENTRY_VERIFY_SECRET?.trim() ||
-    process.env.CRON_SECRET?.trim() ||
-    "";
+  const secret = process.env.SENTRY_VERIFY_SECRET?.trim() || "";
   return secret || null;
 }
 
+/** API route (curl-friendly): header-only — never accepts the secret via query string. */
 export function isSentryTestAuthorized(request: Request): boolean {
   const secret = getSentryVerifySecret();
   if (!secret) {
@@ -21,12 +29,7 @@ export function isSentryTestAuthorized(request: Request): boolean {
   }
 
   const header = request.headers.get("authorization");
-  if (header === `Bearer ${secret}`) {
-    return true;
-  }
-
-  const url = new URL(request.url);
-  return url.searchParams.get("secret") === secret;
+  return header === `Bearer ${secret}`;
 }
 
 /** Shared secret check for the browser verify page. */
