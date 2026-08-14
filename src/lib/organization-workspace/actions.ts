@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requirePermission } from "@/lib/access-templates/effective-access";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import {
   applyOrganizationRosterImport,
@@ -51,6 +52,28 @@ async function requireOrganizationId(): Promise<
   return { organizationId: organization.id };
 }
 
+/**
+ * Roster/role/committee mutations here restructure org-wide data. RLS only
+ * enforces org-membership isolation, not template permission keys (see
+ * docs/engineering/access-control.md), so `manage_people` must be checked
+ * at the app layer — same pattern as the team-management actions in
+ * src/lib/auth/actions.ts. The Team & Access UI already hides these
+ * controls without the permission; this closes the matching server gap.
+ */
+async function requireOrganizationIdWithManagePeople(): Promise<
+  { organizationId: string } | { error: string }
+> {
+  const base = await requireOrganizationId();
+  if ("error" in base) {
+    return base;
+  }
+  const access = await requirePermission("manage_people");
+  if ("error" in access) {
+    return { error: access.error };
+  }
+  return base;
+}
+
 function revalidateOrganizationWorkspace() {
   revalidatePath(ORGANIZATION_PATH);
   revalidatePath("/settings/team-access");
@@ -61,7 +84,7 @@ export async function createOrganizationRoleAction(
   _prevState: OrganizationActionState,
   formData: FormData,
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -105,7 +128,7 @@ export async function updateOrganizationRoleAction(
     campaignRole?: CampaignRole | null;
   },
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -123,7 +146,7 @@ export async function updateOrganizationRoleAction(
 export async function deleteOrganizationRoleAction(
   roleId: string,
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -142,7 +165,7 @@ export async function createOrganizationMemberAction(
   _prevState: OrganizationActionState,
   formData: FormData,
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -181,7 +204,7 @@ export async function updateOrganizationMemberAction(
     campaignRole?: CampaignRole | null;
   },
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -207,7 +230,7 @@ export async function createRosterPersonAction(input: {
   /** Access-template base role stored on roster until invite. */
   campaignRole?: CampaignRole | null;
 }): Promise<OrganizationActionState & { memberId?: string }> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -272,7 +295,7 @@ export async function removeRosterCommitteeAssignmentAction(input: {
   organizationMemberId: string;
   committeeId: string;
 }): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -310,7 +333,7 @@ export async function saveRosterCommitteeAssignmentAction(input: {
   committeeId: string | null;
   committeeRole: "chair" | "co_chair" | "member" | "supervising_vp";
 }): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -361,7 +384,7 @@ export async function saveRosterCommitteeAssignmentAction(input: {
 export async function deleteOrganizationMemberAction(
   memberId: string,
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -380,7 +403,7 @@ export async function updateResponsibilityMatrixAction(
   entryId: string,
   defaultRoleId: string | null,
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -403,7 +426,7 @@ export async function updateCommitteeDefaultAction(
     playbookSlug?: string | null;
   },
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -487,7 +510,7 @@ export async function applyOrganizationRosterAction(
 ): Promise<
   OrganizationActionState & { roleCount?: number; committeeCount?: number }
 > {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -511,7 +534,7 @@ export async function createOrganizationCommitteeAction(
   _prevState: OrganizationActionState,
   formData: FormData,
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -549,7 +572,7 @@ export async function updateOrganizationCommitteeAction(
     assignedEventId?: string | null;
   },
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -582,7 +605,7 @@ export async function updateOrganizationCommitteeAction(
 export async function archiveOrganizationCommitteeAction(
   committeeId: string,
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -600,7 +623,7 @@ export async function archiveOrganizationCommitteeAction(
 export async function restoreOrganizationCommitteeAction(
   committeeId: string,
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -618,7 +641,7 @@ export async function restoreOrganizationCommitteeAction(
 export async function deleteOrganizationCommitteeAction(
   committeeId: string,
 ): Promise<OrganizationActionState> {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -636,7 +659,7 @@ export async function deleteOrganizationCommitteeAction(
 export async function clearAllOrganizationCommitteesAction(): Promise<
   OrganizationActionState & { deletedCount?: number }
 > {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
@@ -657,7 +680,7 @@ export async function clearOrganizationRosterImportAction(): Promise<
     deletedRoles?: number;
   }
 > {
-  const org = await requireOrganizationId();
+  const org = await requireOrganizationIdWithManagePeople();
   if ("error" in org) {
     return { error: org.error, success: false };
   }
