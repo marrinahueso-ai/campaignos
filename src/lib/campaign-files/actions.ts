@@ -15,6 +15,7 @@ import {
   updateCampaignFile,
   uploadCampaignFile,
 } from "@/lib/campaign-files/mutations";
+import { getCampaignFileById } from "@/lib/campaign-files/queries";
 import { isAllowedCampaignFile } from "@/lib/campaign-files/storage";
 import { getEventById } from "@/lib/events/queries";
 import { getAuthUser } from "@/lib/auth/queries";
@@ -30,6 +31,30 @@ export interface UploadCampaignFileResult {
   fileId?: string;
   fileName?: string;
   documentCategory?: DocumentCategory;
+}
+
+/**
+ * update/deleteCampaignFile only scope by file id (RLS-only, org-wide) —
+ * this closes the gap for assigned-only members, who must not mutate files
+ * on events outside their assignment, and guards against a fileId/eventId
+ * mismatch from the client.
+ */
+async function requireCampaignFileEventAccess(
+  fileId: string,
+  eventId: string,
+): Promise<{ error: string } | { error: null }> {
+  const file = await getCampaignFileById(fileId);
+  if (!file) {
+    return { error: "File not found." };
+  }
+  if (file.eventId !== eventId) {
+    return { error: "That file doesn’t match this event." };
+  }
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { error: "You do not have access to this event's files." };
+  }
+  return { error: null };
 }
 
 function revalidateFilesPaths(eventId: string) {
@@ -137,6 +162,11 @@ export async function updateCampaignFileAction(
     status?: "active" | "pending" | "archived";
   },
 ): Promise<{ success: boolean; error: string | null }> {
+  const access = await requireCampaignFileEventAccess(fileId, eventId);
+  if (access.error) {
+    return { success: false, error: access.error };
+  }
+
   const trimmedName = input.name?.trim();
   if (input.name !== undefined && !trimmedName) {
     return { success: false, error: "File name is required." };
@@ -159,6 +189,11 @@ export async function deleteCampaignFileAction(
   fileId: string,
   eventId: string,
 ): Promise<{ success: boolean; error: string | null }> {
+  const access = await requireCampaignFileEventAccess(fileId, eventId);
+  if (access.error) {
+    return { success: false, error: access.error };
+  }
+
   const success = await deleteCampaignFile(fileId);
 
   if (!success) {
