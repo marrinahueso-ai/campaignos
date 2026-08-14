@@ -23,7 +23,10 @@ import {
   type SchedulingSessionOutcome,
 } from "@/lib/campaign-builder-v2/sync-session-from-scheduling";
 import { hasPermission } from "@/lib/access-templates/effective-access";
-import { getOrganizationUsers } from "@/lib/auth/membership-queries";
+import {
+  getActiveMembership,
+  getOrganizationUsers,
+} from "@/lib/auth/membership-queries";
 import {
   approveCommunicationAction,
   requestCommunicationChangesAction,
@@ -44,8 +47,10 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils/dates";
 import {
   deliveryMethodPatchAfterManualKitSend,
+  isSchedulingRowAssignedToActor,
   resolveRowManualEmailSendAt,
   resolveRowMetaScheduleIntent,
+  type ApprovalVisibilityActor,
 } from "@/lib/approvals-scheduling/approval-visibility";
 import { syncSchedulingItemsForMetaPublishOutcome } from "@/lib/approvals-scheduling/publish-outcome-sync";
 import { sendPublishFailedEmail } from "@/lib/email/transactional-notifications";
@@ -63,6 +68,18 @@ export type UnifiedApprovalActionResult = {
   /** Non-fatal notice (e.g. Meta schedule failed after approval already saved). */
   warning?: string;
 };
+
+/** Current user as an approval-assignment actor, for assignee-matching checks. */
+async function resolveCurrentApprovalActor(): Promise<ApprovalVisibilityActor | null> {
+  const membership = await getActiveMembership();
+  if (!membership) {
+    return null;
+  }
+  return {
+    organizationUserId: membership.user.id,
+    organizationRoleId: membership.user.organizationRoleId,
+  };
+}
 
 async function syncCampaignBuilderSessionAfterSchedulingOutcome(input: {
   eventId: string;
@@ -965,15 +982,30 @@ export async function approveUnifiedItemAction(input: {
     }
 
     if (
-      !row.assigned_user_id &&
-      !(await hasPermission("approve_comms")) &&
-      (row.workflow_status === "in_queue" ||
-        row.workflow_status === "assigned_to_me")
+      row.workflow_status === "in_queue" ||
+      row.workflow_status === "assigned_to_me"
     ) {
-      return {
-        success: false,
-        error: "Choose who approves this in Team Access first.",
-      };
+      const canApprove = await hasPermission("approve_comms");
+
+      if (!row.assigned_user_id && !canApprove) {
+        return {
+          success: false,
+          error: "Choose who approves this in Team Access first.",
+        };
+      }
+
+      // An assignee exists — either a formal approver or that exact
+      // assignee (user or role) may act, never any org member with event
+      // access. Mirrors the visibility check in approval-visibility.ts.
+      if (row.assigned_user_id && !canApprove) {
+        const actor = await resolveCurrentApprovalActor();
+        if (!isSchedulingRowAssignedToActor(row, actor)) {
+          return {
+            success: false,
+            error: "You are not the assigned approver for this item.",
+          };
+        }
+      }
     }
 
     // Draft-only stays pre-publish (Draft), not Posted.
@@ -1126,6 +1158,31 @@ export async function requestUnifiedChangesAction(input: {
         error: "That approval doesn’t match this event.",
       };
     }
+
+    // Same authorization as approveUnifiedItemAction's scheduling branch:
+    // formal approvers, or the specific assignee, may request changes.
+    // Everyone else with plain event access may not.
+    if (
+      schedulingRow.workflow_status === "in_queue" ||
+      schedulingRow.workflow_status === "assigned_to_me"
+    ) {
+      const canApprove = await hasPermission("approve_comms");
+      if (!canApprove) {
+        const isAssignee =
+          Boolean(schedulingRow.assigned_user_id) &&
+          isSchedulingRowAssignedToActor(
+            schedulingRow,
+            await resolveCurrentApprovalActor(),
+          );
+        if (!isAssignee) {
+          return {
+            success: false,
+            error: "You don’t have permission to request changes on this.",
+          };
+        }
+      }
+    }
+
     const updated = await updateSchedulingItemStatus(
       input.schedulingItemId,
       "changes_requested",
