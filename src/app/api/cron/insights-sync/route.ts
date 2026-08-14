@@ -26,7 +26,10 @@ export async function GET(request: Request) {
   const results = [];
   for (const row of data) {
     const organizationId = row.organization_id as string;
-    const result = await syncOrganizationInsights({ organizationId });
+    const result = await syncOrganizationInsights({
+      organizationId,
+      useServiceRole: true,
+    });
     results.push({ organizationId, ...result });
   }
 

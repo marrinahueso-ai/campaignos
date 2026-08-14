@@ -1,6 +1,5 @@
 import "server-only";
 
-import { getOrganizationSchoolYearIds } from "@/lib/events/org-scope";
 import {
   fetchFacebookPageDailyInsights,
   fetchFacebookPageRecentPosts,
@@ -19,7 +18,7 @@ import {
   hasInstagramInsightsScopes,
 } from "@/lib/insights/scopes";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createJobClient } from "@/lib/supabase/job-client";
 
 type PublishedSlot = {
   id: string;
@@ -147,12 +146,25 @@ async function finishSyncRun(input: {
 
 async function fetchPublishedSlotsForOrganization(
   organizationId: string,
+  useServiceRole: boolean,
 ): Promise<PublishedSlot[]> {
-  const supabase = await createClient();
-  const schoolYearIds = await getOrganizationSchoolYearIds(organizationId);
-  if (schoolYearIds.length === 0) {
+  // Deliberately not the shared, session-only getOrganizationSchoolYearIds()
+  // helper here — this function is the one insights-sync call site that
+  // needs to run under the cron's service-role client (no user session), so
+  // it queries school_years directly with createJobClient(useServiceRole)
+  // instead of threading a new option through that widely-shared, cached
+  // helper's many other (correctly session-scoped) call sites.
+  const supabase = await createJobClient(useServiceRole);
+  const { data: schoolYears, error: schoolYearsError } = await supabase
+    .from("school_years")
+    .select("id")
+    .eq("organization_id", organizationId);
+
+  if (schoolYearsError || !schoolYears?.length) {
     return [];
   }
+
+  const schoolYearIds = schoolYears.map((row) => row.id as string);
 
   const { data: events, error: eventsError } = await supabase
     .from("events")
@@ -475,9 +487,14 @@ export async function syncOrganizationInsights(input: {
   organizationId: string;
   since?: string;
   until?: string;
+  /** Cron caller: no user session, so reads/writes must bypass RLS. */
+  useServiceRole?: boolean;
 }): Promise<InsightsSyncResult> {
+  const useServiceRole = Boolean(input.useServiceRole);
   const warnings: string[] = [];
-  const connection = await getMetaConnectionForOrganization(input.organizationId);
+  const connection = await getMetaConnectionForOrganization(input.organizationId, {
+    useServiceRole,
+  });
 
   if (!connection?.pageAccessToken || !connection.facebookPageId) {
     return {
@@ -561,7 +578,10 @@ export async function syncOrganizationInsights(input: {
       warnings.push("Reconnect Facebook to finish Instagram Insights setup.");
     }
 
-    const slots = await fetchPublishedSlotsForOrganization(input.organizationId);
+    const slots = await fetchPublishedSlotsForOrganization(
+      input.organizationId,
+      useServiceRole,
+    );
     const discovered = await discoverRecentPageAndIgPosts({
       pageId: connection.facebookPageId,
       pageAccessToken: connection.pageAccessToken,
