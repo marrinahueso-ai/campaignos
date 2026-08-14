@@ -23,6 +23,8 @@ function event(
     communicationStrategy: "calendar_only",
     time: overrides.time,
     location: overrides.location,
+    importSource: overrides.importSource,
+    importExternalId: overrides.importExternalId,
     existingEventId: overrides.existingEventId ?? null,
     existingEventName: overrides.existingEventName ?? null,
     existingEventDate: overrides.existingEventDate ?? null,
@@ -30,6 +32,7 @@ function event(
     existingEventLocation: overrides.existingEventLocation ?? null,
     matchReason: overrides.matchReason ?? null,
     applyUpdate: overrides.applyUpdate,
+    keepBothFromEventId: overrides.keepBothFromEventId,
   };
 }
 
@@ -58,7 +61,7 @@ describe("partitionSyncReviewSections", () => {
 });
 
 describe("applySyncReviewDecision", () => {
-  it("maps Use Calendar Update on update to applyUpdate true", () => {
+  it("maps Update (use_calendar_update) on update to applyUpdate true", () => {
     const next = applySyncReviewDecision(
       event({
         name: "Picnic",
@@ -71,23 +74,26 @@ describe("applySyncReviewDecision", () => {
     );
     assert.equal(next.status, "update");
     assert.equal(next.applyUpdate, true);
+    assert.equal(next.keepBothFromEventId, null);
   });
 
-  it("maps Keep Hey Ralli on update to skip", () => {
+  it("maps Keep Mine on update to skip without clearing identity", () => {
     const next = applySyncReviewDecision(
       event({
         name: "Picnic",
         date: "2026-09-25",
         status: "update",
         existingEventId: "e1",
+        importExternalId: "uid-1",
       }),
       "keep_hey_ralli",
     );
     assert.equal(next.status, "update");
     assert.equal(next.applyUpdate, false);
+    assert.equal(next.existingEventId, "e1");
   });
 
-  it("maps Keep Both to a new ready row", () => {
+  it("maps Keep Both to a ready insert detached from the source id", () => {
     const next = applySyncReviewDecision(
       event({
         name: "Picnic",
@@ -96,12 +102,16 @@ describe("applySyncReviewDecision", () => {
         existingEventId: "e1",
         existingEventName: "Picnic",
         existingEventDate: "2026-09-18",
+        importExternalId: "uid-picnic",
+        importSource: "subscribe",
       }),
       "keep_both",
     );
     assert.equal(next.status, "ready");
     assert.equal(next.existingEventId, null);
     assert.equal(next.applyUpdate, false);
+    assert.equal(next.importExternalId, null);
+    assert.equal(next.keepBothFromEventId, "e1");
   });
 
   it("maps Use Calendar Update on conflict to ready", () => {
@@ -114,7 +124,7 @@ describe("applySyncReviewDecision", () => {
 });
 
 describe("getSyncReviewChangeDiffs", () => {
-  it("returns title and date diffs against the Hey Ralli event", () => {
+  it("returns title and human-readable date diffs", () => {
     const diffs = getSyncReviewChangeDiffs(
       event({
         name: "Fall Picnic",
@@ -127,19 +137,21 @@ describe("getSyncReviewChangeDiffs", () => {
     assert.equal(diffs.length, 2);
     assert.equal(diffs[0]?.label, "Title");
     assert.equal(diffs[1]?.label, "Date");
+    assert.equal(diffs[1]?.from, "Sep 18");
+    assert.equal(diffs[1]?.to, "Sep 25");
   });
 
-  it("returns time and location diffs", () => {
+  it("formats empty and HH:MM:SS times for humans", () => {
     const diffs = getSyncReviewChangeDiffs(
       event({
         name: "Picnic",
         date: "2026-09-18",
-        time: "17:00:00",
+        time: "14:00:00",
         location: "Field",
         status: "update",
         existingEventName: "Picnic",
         existingEventDate: "2026-09-18",
-        existingEventTime: "16:00:00",
+        existingEventTime: null,
         existingEventLocation: "Gym",
       }),
     );
@@ -147,8 +159,37 @@ describe("getSyncReviewChangeDiffs", () => {
       diffs.map((diff) => diff.label),
       ["Time", "Location"],
     );
+    assert.equal(diffs[0]?.from, "No time");
+    assert.equal(diffs[0]?.to, "2:00 PM");
+    assert.equal(diffs[1]?.from, "Gym");
+    assert.equal(diffs[1]?.to, "Field");
+  });
+
+  it("includes multiple simultaneous field changes", () => {
+    const diffs = getSyncReviewChangeDiffs(
+      event({
+        name: "Fall Picnic",
+        date: "2026-09-25",
+        time: "17:00:00",
+        location: "Field",
+        status: "update",
+        existingEventName: "Family Picnic",
+        existingEventDate: "2026-09-18",
+        existingEventTime: "16:00:00",
+        existingEventLocation: null,
+      }),
+    );
+    assert.deepEqual(
+      diffs.map((diff) => diff.label),
+      ["Title", "Date", "Time", "Location"],
+    );
+    assert.equal(diffs[2]?.from, "4:00 PM");
+    assert.equal(diffs[2]?.to, "5:00 PM");
+    assert.equal(diffs[3]?.from, "No location");
+    assert.equal(diffs[3]?.to, "Field");
   });
 });
+
 
 describe("buildSyncReviewSummaryCopy", () => {
   it("mentions needs-review count when attention remains", () => {

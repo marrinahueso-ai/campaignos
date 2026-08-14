@@ -17,6 +17,8 @@ export type ExistingCalendarEventForDedup = {
   location?: string | null;
   importSource?: string | null;
   importExternalId?: string | null;
+  /** Rejected incoming update fingerprint — see buildIncomingUpdateSnapshot. */
+  importDismissedSnapshot?: string | null;
 };
 
 export type ClassifyImportMode = "interactive" | "auto";
@@ -48,6 +50,25 @@ export function externalImportKey(
   importExternalId: string,
 ): string {
   return `${importSource}::${importExternalId.trim()}`;
+}
+
+/**
+ * Stable fingerprint of an incoming calendar update's identity fields.
+ * Used so "Keep Mine" can ignore the exact rejected source change on later
+ * refreshes until the source values change again.
+ */
+export function buildIncomingUpdateSnapshot(event: {
+  name: string;
+  date: string;
+  time?: string | null;
+  location?: string | null;
+}): string {
+  return [
+    event.name.trim(),
+    event.date.trim(),
+    normalizeEventTimeKey(event.time),
+    normalizeEventLocationKey(event.location),
+  ].join("|");
 }
 
 /** Content fingerprint for AI/PDF parses — not a fake ICS UID. */
@@ -224,6 +245,25 @@ export function classifyReviewEventsAgainstExisting<
       return event;
     }
 
+    // Keep Both: insert a separate copy without rematching the original source id
+    // (or title+date), so Finish can create one new row and dismiss the source change.
+    if (event.keepBothFromEventId) {
+      return {
+        ...event,
+        status: "ready" as const,
+        existingEventId: null,
+        existingEventName: null,
+        existingEventDate: null,
+        existingEventTime: null,
+        existingEventLocation: null,
+        importExternalId: null,
+        applyUpdate: false,
+        matchReason:
+          event.matchReason ??
+          "Keeping both — will create a new calendar event.",
+      };
+    }
+
     const source = event.importSource ?? null;
     const externalId = event.importExternalId?.trim() || null;
 
@@ -245,6 +285,24 @@ export function classifyReviewEventsAgainstExisting<
         }
 
         const changeBits = describeExternalFieldChanges(event, matched);
+        const incomingSnapshot = buildIncomingUpdateSnapshot(event);
+        if (
+          matched.importDismissedSnapshot &&
+          matched.importDismissedSnapshot === incomingSnapshot
+        ) {
+          return {
+            ...event,
+            status: "duplicate" as const,
+            existingEventId: matched.id,
+            existingEventName: matched.title,
+            existingEventDate: matched.date,
+            existingEventTime: matched.time ?? null,
+            existingEventLocation: matched.location ?? null,
+            matchReason:
+              "Kept Hey Ralli values — same source change was already dismissed.",
+            applyUpdate: false,
+          };
+        }
 
         return {
           ...event,

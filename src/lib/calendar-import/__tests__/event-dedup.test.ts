@@ -3,12 +3,14 @@ import { randomUUID } from "node:crypto";
 import { describe, it } from "node:test";
 import {
   buildAiParseFingerprint,
+  buildIncomingUpdateSnapshot,
   calendarEventDedupeKey,
   classifyReviewEventsAgainstExisting,
   fieldsMatchExisting,
   markWithinFileConflicts,
   partitionClassifiedReviewEvents,
 } from "../event-dedup.ts";
+import { applySyncReviewDecision } from "../sync-review-decisions.ts";
 import { normalizeIcsUid, parseIcsToReviewEvents } from "../parse-ics.ts";
 import type { CalendarReviewEvent } from "../../../types/calendar-review.ts";
 
@@ -28,8 +30,13 @@ function reviewEvent(
     time: overrides.time,
     location: overrides.location,
     existingEventId: overrides.existingEventId ?? null,
+    existingEventName: overrides.existingEventName ?? null,
+    existingEventDate: overrides.existingEventDate ?? null,
+    existingEventTime: overrides.existingEventTime ?? null,
+    existingEventLocation: overrides.existingEventLocation ?? null,
     matchReason: overrides.matchReason ?? null,
     applyUpdate: overrides.applyUpdate,
+    keepBothFromEventId: overrides.keepBothFromEventId,
   };
 }
 
@@ -418,5 +425,147 @@ describe("fieldsMatchExisting", () => {
       ),
       false,
     );
+  });
+});
+
+describe("change resolution refresh / idempotency", () => {
+  const existing = {
+    id: "evt-1",
+    title: "Family Picnic",
+    date: "2026-09-18",
+    time: "16:00:00",
+    location: "Gym",
+    importSource: "subscribe",
+    importExternalId: "uid-picnic",
+  };
+
+  const incoming = reviewEvent({
+    name: "Fall Picnic",
+    date: "2026-09-25",
+    time: "17:00:00",
+    location: "Field",
+    importSource: "subscribe",
+    importExternalId: "uid-picnic",
+  });
+
+  it("stages a multi-field source change as a single update", () => {
+    const classified = classifyReviewEventsAgainstExisting([incoming], [
+      existing,
+    ]);
+    const partitioned = partitionClassifiedReviewEvents(classified);
+    assert.equal(classified[0]?.status, "update");
+    assert.equal(classified[0]?.existingEventId, "evt-1");
+    assert.equal(partitioned.toUpdate.length, 1);
+    assert.equal(partitioned.toInsert.length, 0);
+    assert.match(classified[0]?.matchReason ?? "", /title changed/);
+    assert.match(classified[0]?.matchReason ?? "", /time changed/);
+    assert.match(classified[0]?.matchReason ?? "", /location changed/);
+  });
+
+  it("after Update (fields aligned) a refresh is a no-op duplicate", () => {
+    const classified = classifyReviewEventsAgainstExisting(
+      [
+        reviewEvent({
+          name: "Fall Picnic",
+          date: "2026-09-25",
+          time: "17:00:00",
+          location: "Field",
+          importSource: "subscribe",
+          importExternalId: "uid-picnic",
+        }),
+      ],
+      [
+        {
+          ...existing,
+          title: "Fall Picnic",
+          date: "2026-09-25",
+          time: "17:00:00",
+          location: "Field",
+          importDismissedSnapshot: null,
+        },
+      ],
+    );
+    const partitioned = partitionClassifiedReviewEvents(classified);
+    assert.equal(classified[0]?.status, "duplicate");
+    assert.equal(partitioned.toUpdate.length, 0);
+    assert.equal(partitioned.toInsert.length, 0);
+    assert.equal(partitioned.skippedDuplicates.length, 1);
+  });
+
+  it("after Keep Mine, the exact dismissed snapshot does not reappear", () => {
+    const snapshot = buildIncomingUpdateSnapshot(incoming);
+    const classified = classifyReviewEventsAgainstExisting([incoming], [
+      { ...existing, importDismissedSnapshot: snapshot },
+    ]);
+    const partitioned = partitionClassifiedReviewEvents(classified);
+    assert.equal(classified[0]?.status, "duplicate");
+    assert.match(classified[0]?.matchReason ?? "", /already dismissed/i);
+    assert.equal(partitioned.toUpdate.length, 0);
+    assert.equal(partitioned.toInsert.length, 0);
+  });
+
+  it("Keep Mine reappears when the source changes again", () => {
+    const snapshot = buildIncomingUpdateSnapshot(incoming);
+    const newer = reviewEvent({
+      ...incoming,
+      time: "18:00:00",
+    });
+    const classified = classifyReviewEventsAgainstExisting([newer], [
+      { ...existing, importDismissedSnapshot: snapshot },
+    ]);
+    assert.equal(classified[0]?.status, "update");
+  });
+
+  it("Keep Both inserts once and dismisses rematch on refresh", () => {
+    const decided = applySyncReviewDecision(
+      {
+        ...incoming,
+        status: "update",
+        existingEventId: "evt-1",
+        existingEventName: existing.title,
+        existingEventDate: existing.date,
+        existingEventTime: existing.time,
+        existingEventLocation: existing.location,
+      },
+      "keep_both",
+    );
+    assert.equal(decided.keepBothFromEventId, "evt-1");
+    assert.equal(decided.importExternalId, null);
+
+    const finishClassified = classifyReviewEventsAgainstExisting(
+      [decided],
+      [existing],
+    );
+    const partitioned = partitionClassifiedReviewEvents(finishClassified);
+    assert.equal(finishClassified[0]?.status, "ready");
+    assert.equal(partitioned.toInsert.length, 1);
+    assert.equal(partitioned.toUpdate.length, 0);
+    assert.equal(finishClassified[0]?.importExternalId, null);
+
+    const snapshot = buildIncomingUpdateSnapshot(incoming);
+    const refresh = classifyReviewEventsAgainstExisting([incoming], [
+      { ...existing, importDismissedSnapshot: snapshot },
+    ]);
+    const refreshPartition = partitionClassifiedReviewEvents(refresh);
+    assert.equal(refresh[0]?.status, "duplicate");
+    assert.equal(refreshPartition.toInsert.length, 0);
+    assert.equal(refreshPartition.toUpdate.length, 0);
+  });
+
+  it("preserves source mapping on the existing event for Update classification", () => {
+    const classified = classifyReviewEventsAgainstExisting([incoming], [
+      existing,
+    ]);
+    assert.equal(classified[0]?.existingEventId, "evt-1");
+    assert.equal(classified[0]?.importExternalId, "uid-picnic");
+    assert.equal(classified[0]?.importSource, "subscribe");
+  });
+
+  it("does not match another org/school-year event when external index is scoped", () => {
+    // Callers load existing rows per school_year_id; an out-of-scope event is
+    // simply absent from `existing`, so classify cannot update it.
+    const classified = classifyReviewEventsAgainstExisting([incoming], []);
+    assert.equal(classified[0]?.status, "ready");
+    assert.equal(classified[0]?.existingEventId, null);
   });
 });

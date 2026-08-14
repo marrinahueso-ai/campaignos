@@ -72,6 +72,12 @@ export interface CalendarReviewEvent {
    * Interactive review can set false to Skip.
    */
   applyUpdate?: boolean;
+  /**
+   * When Keep Both was chosen for an update/conflict against an existing event,
+   * Finish creates a separate row and dismisses the same source change on this id
+   * so subsequent syncs do not rematch/recreate duplicates.
+   */
+  keepBothFromEventId?: string | null;
 }
 
 export interface CalendarReviewStats {

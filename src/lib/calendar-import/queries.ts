@@ -23,6 +23,7 @@ import {
   type ReviewPlaybookOption,
 } from "@/lib/calendar-import/review-plan-options";
 import { getPlaybooksForOrganization } from "@/lib/playbooks/queries";
+import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import type { CalendarImport, CalendarImportRow } from "@/types";
 import type { CalendarReviewData } from "@/types/calendar-review";
 import type { CalendarImportedEventListItem } from "@/types/communications-calendar";
@@ -206,6 +207,7 @@ function mapDedupRows(
     location?: string | null;
     import_source?: string | null;
     import_external_id?: string | null;
+    import_dismissed_snapshot?: string | null;
   }[],
 ): ExistingCalendarEventForDedup[] {
   return data.map((row) => ({
@@ -217,25 +219,48 @@ function mapDedupRows(
     importSource: (row.import_source as string | null | undefined) ?? null,
     importExternalId:
       (row.import_external_id as string | null | undefined) ?? null,
+    importDismissedSnapshot:
+      (row.import_dismissed_snapshot as string | null | undefined) ?? null,
   }));
+}
+
+const DEDUP_EVENT_SELECT =
+  "id, title, date, time, location, import_source, import_external_id, import_dismissed_snapshot";
+const DEDUP_EVENT_SELECT_LEGACY =
+  "id, title, date, time, location, import_source, import_external_id";
+
+async function selectDedupEventRows(
+  build: (columns: string) => PromiseLike<{
+    data: unknown[] | null;
+    error: { code?: string; message?: string } | null;
+  }>,
+): Promise<ExistingCalendarEventForDedup[]> {
+  const primary = await build(DEDUP_EVENT_SELECT);
+  if (!primary.error && primary.data) {
+    return mapDedupRows(primary.data as Parameters<typeof mapDedupRows>[0]);
+  }
+  if (primary.error && isMissingSchemaError(primary.error)) {
+    const fallback = await build(DEDUP_EVENT_SELECT_LEGACY);
+    if (fallback.error || !fallback.data) {
+      return [];
+    }
+    return mapDedupRows(fallback.data as Parameters<typeof mapDedupRows>[0]);
+  }
+  return [];
 }
 
 export async function getSchoolYearCalendarEventsForDedup(
   schoolYearId: string,
 ): Promise<ExistingCalendarEventForDedup[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("events")
-    .select("id, title, date, time, location, import_source, import_external_id")
-    .eq("school_year_id", schoolYearId)
-    .neq("status", "archived")
-    .order("date", { ascending: true });
-
-  if (error || !data) {
-    return [];
-  }
-
-  return mapDedupRows(data as Parameters<typeof mapDedupRows>[0]);
+  return selectDedupEventRows((columns) =>
+    supabase
+      .from("events")
+      .select(columns)
+      .eq("school_year_id", schoolYearId)
+      .neq("status", "archived")
+      .order("date", { ascending: true }),
+  );
 }
 
 /** Events currently on the calendar — used for import dedup. */
@@ -252,37 +277,29 @@ export async function getCalendarWindowEventsForDedup(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("events")
-    .select("id, title, date, time, location, import_source, import_external_id")
-    .gte("date", scope.window.startDate)
-    .lte("date", scope.window.endDate)
-    .neq("status", "archived")
-    .in("school_year_id", scope.schoolYearIds)
-    .order("date", { ascending: true });
-
-  if (error || !data) {
-    return [];
-  }
-
-  return mapDedupRows(data as Parameters<typeof mapDedupRows>[0]);
+  return selectDedupEventRows((columns) =>
+    supabase
+      .from("events")
+      .select(columns)
+      .gte("date", scope.window.startDate)
+      .lte("date", scope.window.endDate)
+      .neq("status", "archived")
+      .in("school_year_id", scope.schoolYearIds)
+      .order("date", { ascending: true }),
+  );
 }
 
 export async function getSchoolYearEventsForDedupViaClient(
   schoolYearId: string,
   supabase: SupabaseClient,
 ): Promise<ExistingCalendarEventForDedup[]> {
-  const { data, error } = await supabase
-    .from("events")
-    .select("id, title, date, time, location, import_source, import_external_id")
-    .eq("school_year_id", schoolYearId)
-    .neq("status", "archived");
-
-  if (error || !data) {
-    return [];
-  }
-
-  return mapDedupRows(data as Parameters<typeof mapDedupRows>[0]);
+  return selectDedupEventRows((columns) =>
+    supabase
+      .from("events")
+      .select(columns)
+      .eq("school_year_id", schoolYearId)
+      .neq("status", "archived"),
+  );
 }
 
 export async function getExistingCalendarEventKeysForWindow(

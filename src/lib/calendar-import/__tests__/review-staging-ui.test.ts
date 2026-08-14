@@ -55,8 +55,11 @@ describe("calendar review staging contracts", () => {
     assert.match(review, /Add Events to Calendar/);
     assert.match(review, /Use Calendar Update/);
     assert.match(review, /Use Calendar Event/);
-    assert.match(review, /Keep Hey Ralli Event/);
+    assert.match(review, />\s*Update\s*</);
+    assert.match(review, /Keep Mine/);
     assert.match(review, /Keep Both/);
+    assert.doesNotMatch(review, /Keep Hey Ralli Event/);
+    assert.doesNotMatch(review, /Update Hey Ralli Event/);
     assert.match(review, /Currently in Hey Ralli/);
     assert.match(review, /From your connected calendar/);
     assert.match(review, /From your calendar/);
@@ -68,6 +71,9 @@ describe("calendar review staging contracts", () => {
     assert.match(review, /events added/);
     assert.match(review, /duplicate skipped/);
     assert.doesNotMatch(review, /Import ready items/);
+    assert.match(review, /onDecision\("use_calendar_update"\)/);
+    assert.match(review, /onDecision\("keep_hey_ralli"\)/);
+    assert.match(review, /onDecision\("keep_both"\)/);
   });
 
   it("Imported Events Library uses search and source filters", () => {

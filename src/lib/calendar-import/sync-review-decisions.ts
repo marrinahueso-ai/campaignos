@@ -1,4 +1,9 @@
 import type { CalendarReviewEvent } from "@/types/calendar-review";
+import {
+  formatSyncReviewLocation,
+  formatSyncReviewShortDate,
+  formatSyncReviewTime,
+} from "@/lib/calendar-import/sync-review-format";
 
 export type CalendarReviewMode = "first_import" | "sync";
 
@@ -186,13 +191,21 @@ export function applySyncReviewDecision(
   decision: SyncReviewDecision,
 ): CalendarReviewEvent {
   if (decision === "keep_both") {
+    const fromEventId =
+      event.existingEventId ?? event.keepBothFromEventId ?? null;
     return {
       ...event,
       status: "ready",
       existingEventId: null,
       existingEventName: null,
       existingEventDate: null,
+      existingEventTime: null,
+      existingEventLocation: null,
+      // Detach source id from the copy so Finish can insert without unique-index
+      // collision; the original row keeps the mapping and gets a dismiss snapshot.
+      importExternalId: null,
       applyUpdate: false,
+      keepBothFromEventId: fromEventId,
       matchReason: "Keeping both — will create a new calendar event.",
     };
   }
@@ -202,6 +215,7 @@ export function applySyncReviewDecision(
       return {
         ...event,
         applyUpdate: false,
+        keepBothFromEventId: null,
         matchReason: "Kept the Hey Ralli event — calendar update skipped.",
       };
     }
@@ -210,6 +224,7 @@ export function applySyncReviewDecision(
         ...event,
         status: "duplicate",
         applyUpdate: false,
+        keepBothFromEventId: null,
         matchReason: "Skipped — not added from this import.",
       };
     }
@@ -217,6 +232,7 @@ export function applySyncReviewDecision(
       ...event,
       status: "duplicate",
       applyUpdate: false,
+      keepBothFromEventId: null,
       matchReason:
         event.matchReason ?? "Kept the Hey Ralli event — import row skipped.",
     };
@@ -227,6 +243,7 @@ export function applySyncReviewDecision(
     return {
       ...event,
       applyUpdate: true,
+      keepBothFromEventId: null,
       matchReason: event.matchReason ?? "Will apply the connected calendar update.",
     };
   }
@@ -236,6 +253,7 @@ export function applySyncReviewDecision(
       ...event,
       status: "duplicate",
       applyUpdate: false,
+      keepBothFromEventId: null,
       matchReason: "Confirmed — already matches the Hey Ralli event.",
     };
   }
@@ -245,6 +263,7 @@ export function applySyncReviewDecision(
       ...event,
       status: "ready",
       applyUpdate: false,
+      keepBothFromEventId: null,
       matchReason: "Will add this event from your connected calendar.",
     };
   }
@@ -253,6 +272,7 @@ export function applySyncReviewDecision(
     ...event,
     status: "ready",
     applyUpdate: false,
+    keepBothFromEventId: null,
   };
 }
 
@@ -274,22 +294,26 @@ export function getSyncReviewChangeDiffs(event: CalendarReviewEvent): Array<{
   }
 
   if (existingDate && existingDate !== event.date) {
-    diffs.push({ label: "Date", from: existingDate, to: event.date });
+    diffs.push({
+      label: "Date",
+      from: formatSyncReviewShortDate(existingDate),
+      to: formatSyncReviewShortDate(event.date),
+    });
   }
 
   if (existingTime !== incomingTime) {
     diffs.push({
       label: "Time",
-      from: existingTime || "None",
-      to: incomingTime || "None",
+      from: formatSyncReviewTime(existingTime),
+      to: formatSyncReviewTime(incomingTime),
     });
   }
 
   if (existingLocation !== incomingLocation) {
     diffs.push({
       label: "Location",
-      from: existingLocation || "None",
-      to: incomingLocation || "None",
+      from: formatSyncReviewLocation(existingLocation),
+      to: formatSyncReviewLocation(incomingLocation),
     });
   }
 
@@ -304,13 +328,4 @@ export function getSyncReviewChangeDiffs(event: CalendarReviewEvent): Array<{
   return diffs;
 }
 
-/** Format a short date for change chips (e.g. Sept 18). */
-export function formatSyncReviewShortDate(date: string): string {
-  const [year, month, day] = date.split("-").map(Number);
-  if (!year || !month || !day) return date;
-  const parsed = new Date(year, month - 1, day);
-  return parsed.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
+export { formatSyncReviewShortDate };

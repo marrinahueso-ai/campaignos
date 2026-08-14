@@ -850,7 +850,7 @@ function AttentionCard({
             onClick={() => onDecision("keep_hey_ralli")}
             className="inline-flex items-center rounded-full border border-cos-border bg-cos-card px-8 py-3.5 text-[13px] font-medium text-cos-muted transition hover:bg-[rgba(246,242,235,0.9)] disabled:opacity-50"
           >
-            Keep Hey Ralli Event
+            Keep Mine
           </button>
           <button
             type="button"
@@ -911,34 +911,33 @@ function ChangeRow({
                 {diff.label}
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <span className="text-cos-muted line-through">
-                  {diff.label === "Date"
-                    ? formatSyncReviewShortDate(diff.from)
-                    : diff.from}
-                </span>
+                <span className="text-cos-muted line-through">{diff.from}</span>
                 <ArrowRight className="h-3.5 w-3.5 text-cos-brand-sage" />
-                <span className="font-bold text-cos-text">
-                  {diff.label === "Date"
-                    ? formatSyncReviewShortDate(diff.to)
-                    : diff.to}
-                </span>
+                <span className="font-bold text-cos-text">{diff.to}</span>
               </div>
             </div>
           ))}
         </div>
         {!disabled ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onDecision("use_calendar_update")}
+              className="rounded-full bg-cos-brand-sage px-4 py-1.5 text-xs font-bold text-white transition hover:brightness-95"
+            >
+              Update
+            </button>
             <button
               type="button"
               onClick={() => onDecision("keep_hey_ralli")}
-              className="rounded-full px-3 py-1.5 text-xs font-bold text-cos-muted hover:text-cos-text"
+              className="rounded-full border border-cos-border bg-cos-card px-4 py-1.5 text-xs font-bold text-cos-muted transition hover:bg-[rgba(246,242,235,0.9)] hover:text-cos-text"
             >
-              Keep Hey Ralli Event
+              Keep Mine
             </button>
             <button
               type="button"
               onClick={() => onDecision("keep_both")}
-              className="rounded-full px-3 py-1.5 text-xs font-bold text-cos-muted hover:text-cos-text"
+              className="rounded-full px-3 py-1.5 text-xs font-bold text-cos-muted transition hover:text-cos-text"
             >
               Keep Both
             </button>
