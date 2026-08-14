@@ -5,7 +5,10 @@ import {
   getMetaConnectionForCurrentOrg,
   isMetaConnectionConfigured,
 } from "@/lib/meta-publishing/connection";
-import { getMetaOAuthErrorMessage } from "@/lib/meta-publishing/connection-utils";
+import {
+  getMetaOAuthErrorMessage,
+  toMetaSettingsConnectionView,
+} from "@/lib/meta-publishing/connection-utils";
 import { isMetaIntegrationConfigured } from "@/lib/meta-publishing/config.server";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
@@ -32,7 +35,7 @@ export default async function MetaPublishingSettingsPage({
   const connection = await getMetaConnectionForCurrentOrg();
   const inboxConnection = await getInboxConnectionStatus();
   const params = await searchParams;
-  const configuredViaEnv = connection?.id === "env";
+  const connectionView = toMetaSettingsConnectionView(connection);
   const isConnected = isMetaConnectionConfigured(connection);
   const integrationConfigured = isMetaIntegrationConfigured();
 
@@ -47,8 +50,7 @@ export default async function MetaPublishingSettingsPage({
   return (
     <SettingsEaseMeta
       organizationName={organization?.name ?? null}
-      connection={connection}
-      configuredViaEnv={configuredViaEnv}
+      connection={connectionView}
       integrationConfigured={integrationConfigured}
       reconnectRequired={
         isConnected && inboxConnection.metaReconnectRequired

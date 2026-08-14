@@ -26,6 +26,21 @@ export interface MetaConnection {
   updatedAt: string;
 }
 
+/**
+ * Token-free Meta connection summary for client Settings UI.
+ * Never include pageAccessToken — keep decrypted tokens server-side only.
+ */
+export interface MetaSettingsConnectionView {
+  id: string;
+  facebookPageId: string;
+  instagramAccountId: string;
+  pageName: string | null;
+  /** True when a Page id and access token are both present server-side. */
+  connected: boolean;
+  hasInstagram: boolean;
+  configuredViaEnv: boolean;
+}
+
 export interface MetaConnectionRow {
   id: string;
   organization_id: string;

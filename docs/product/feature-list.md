@@ -21,7 +21,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Resources (`/resources`) — **shipped** (public learning/help hub: hero + client-side search over on-page Topics/Tutorials/Guides, quick-start paths, Featured Tutorials with narrated Resource videos via reusable registry + lightbox viewer (`?tutorial=<id>`, native controls, audio, no listing autoplay/preload) plus live `/features` demos for remaining cards, Browse by Topic grid, dark Step-by-Step Guides band, support CTA to `hello@heyralli.com`; replaces `/features` as the shared nav "Resources" destination — `/features` itself is unchanged). Narrated tutorials: Create your first event (`create-an-event-tutorial.mp4`), Creating social posts with AI (`create-with-ai-tutorial.mp4`), Approving & scheduling content (`approvals-scheduling-tutorial.mp4`); captions/VTT not yet authored.
 - About (`/about`) — **shipped** (founder-led story on the shared marketing-wow shell: “Born from the work, not a software company,” real founder photo, dark school-year workflow band, restrained principles, trial + Why Hey Ralli CTAs; replaces legacy `StudioAboutPage`)
 - Email deep links (`/go/...`) — **shipped**
-- Public Privacy (`/privacy`) / Terms (`/terms`) + footer legal links — **shipped** (mockup chrome; living notes: [privacy-and-data.md](../security/privacy-and-data.md))
+- Public Privacy (`/privacy`) / Terms (`/terms`) + footer legal links — **shipped** (mockup chrome; living notes: [privacy-and-data.md](../security/privacy-and-data.md); Meta User Data Deletion instructions at `/privacy#user-data-deletion` for App Dashboard Instructions URL)
 - Invite landing (`/invite`) — **shipped** (tokenless guidance; real accept stays at `/invite/[token]`)
 
 ## Auth & onboarding

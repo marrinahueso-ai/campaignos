@@ -5,16 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { buildMetaOAuthStartPath } from "@/lib/integrations/oauth";
 import { disconnectMetaConnectionAction } from "@/lib/meta-publishing/connection-actions";
-import {
-  isInstagramPublishingConfigured,
-  isMetaConnectionConfigured,
-} from "@/lib/meta-publishing/connection-utils";
-import type { MetaConnection } from "@/lib/meta-publishing/types";
+import type { MetaSettingsConnectionView } from "@/lib/meta-publishing/types";
 
 interface SettingsEaseMetaProps {
   organizationName: string | null;
-  connection: MetaConnection | null;
-  configuredViaEnv: boolean;
+  /** Token-free connection summary — never include decrypted Page tokens. */
+  connection: MetaSettingsConnectionView | null;
   integrationConfigured: boolean;
   reconnectRequired: boolean;
   returnTo: string;
@@ -88,7 +84,6 @@ function HonestList({ items }: { items: string[] }) {
 export function SettingsEaseMeta({
   organizationName,
   connection,
-  configuredViaEnv,
   integrationConfigured,
   reconnectRequired,
   returnTo,
@@ -102,8 +97,9 @@ export function SettingsEaseMeta({
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const connected = isMetaConnectionConfigured(connection);
-  const hasInstagram = isInstagramPublishingConfigured(connection);
+  const connected = Boolean(connection?.connected);
+  const hasInstagram = Boolean(connection?.hasInstagram);
+  const configuredViaEnv = Boolean(connection?.configuredViaEnv);
   const orgLabel = organizationName ?? "your organization";
   const pageLabel = connection?.pageName?.trim() || "Facebook Page";
 

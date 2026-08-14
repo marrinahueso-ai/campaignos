@@ -1076,6 +1076,18 @@
       font-size: 1.25rem;
       letter-spacing: -0.02em;
     }
+
+    .mw .legal-doc h3 {
+      margin: 20px 0 0;
+      font-family: var(--display);
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+    }
+
+    .mw .legal-doc code {
+      font-size: 0.92em;
+      word-break: break-all;
+    }
     
     .mw .legal-doc p, .mw .legal-doc li {
       color: var(--ink-soft);

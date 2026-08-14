@@ -162,6 +162,7 @@ Use a **test organization** and a **Facebook Page + linked Instagram Professiona
 | Topic | Where |
 |-------|--------|
 | Public Privacy Policy | `/privacy` |
+| Meta User Data Deletion instructions | `/privacy#user-data-deletion` (Instructions URL for App Dashboard; no deletion callback in Phase 1) |
 | Terms | `/terms` |
 | Internal privacy notes | [privacy-and-data.md](../security/privacy-and-data.md) |
 | OAuth tokens at rest | Encrypted (AES-256-GCM); see [env-and-secrets.md](./env-and-secrets.md) |

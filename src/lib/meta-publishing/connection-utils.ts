@@ -1,5 +1,8 @@
 import type { ResolvedMetaPage } from "@/lib/meta-publishing/graph-api";
-import type { MetaConnection } from "@/lib/meta-publishing/types";
+import type {
+  MetaConnection,
+  MetaSettingsConnectionView,
+} from "@/lib/meta-publishing/types";
 
 export function pickPageFromTokenResult(
   pages: ResolvedMetaPage[],
@@ -27,6 +30,28 @@ export function isMetaConnectionConfigured(connection: MetaConnection | null): b
 
 export function isInstagramPublishingConfigured(connection: MetaConnection | null): boolean {
   return Boolean(connection?.instagramAccountId?.trim());
+}
+
+/**
+ * Strip decrypted Page tokens before any Meta connection reaches a client
+ * component. Mirrors the InsightsConnectionHealth pattern.
+ */
+export function toMetaSettingsConnectionView(
+  connection: MetaConnection | null,
+): MetaSettingsConnectionView | null {
+  if (!connection) {
+    return null;
+  }
+
+  return {
+    id: connection.id,
+    facebookPageId: connection.facebookPageId,
+    instagramAccountId: connection.instagramAccountId,
+    pageName: connection.pageName,
+    connected: isMetaConnectionConfigured(connection),
+    hasInstagram: isInstagramPublishingConfigured(connection),
+    configuredViaEnv: connection.id === "env",
+  };
 }
 
 const META_OAUTH_ERROR_MESSAGES: Record<string, string> = {

@@ -472,6 +472,16 @@ describe("settings ease UI contracts", () => {
     assert.match(metaPage, /SettingsEaseMeta/);
     assert.doesNotMatch(metaPage, /StudioPageHeader/);
     assert.doesNotMatch(metaPage, /MetaConnectionPanel/);
+    assert.match(metaPage, /toMetaSettingsConnectionView/);
+    assert.doesNotMatch(
+      metaPage,
+      /connection=\{connection\}/,
+    );
+    assert.match(metaPage, /connection=\{connectionView\}/);
+    assert.doesNotMatch(metaPage, /configuredViaEnv=\{/);
+    assert.doesNotMatch(metaEase, /pageAccessToken/);
+    assert.doesNotMatch(metaEase, /\bMetaConnection\b/);
+    assert.match(metaEase, /MetaSettingsConnectionView/);
     assert.match(metaEase, /data-settings-ease="meta"/);
     assert.match(metaEase, /Connect once for/);
     assert.match(metaEase, /Approve the list Facebook shows/);
