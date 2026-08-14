@@ -117,15 +117,37 @@ function extractImageGenerationResults(payload: OpenAiResponsesPayload): Array<{
   return results;
 }
 
+/**
+ * Inspiration/reference URLs here originate from client input (Campaign
+ * Builder inspiration images, Flyer Composer reference/logo URLs), so this
+ * must not be a raw `fetch` — that would be server-side SSRF (cloud metadata,
+ * internal services). Route through the same safeFetch + Supabase-storage
+ * allowlist used by the sibling ai-artwork provider's reference-image fetch.
+ */
 async function fetchImageAsDataUrl(imageUrl: string): Promise<string | null> {
   try {
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
+    const { safeFetch } = await import("@/lib/security/safe-fetch");
+    const { supabaseStorageHostPatterns } = await import(
+      "@/lib/security/safe-outbound-url"
+    );
+    const fetched = await safeFetch(
+      imageUrl,
+      {},
+      {
+        allowHttp: false,
+        allowedHostPatterns: supabaseStorageHostPatterns(),
+        timeoutMs: 20_000,
+        maxBytes: 12_000_000,
+      },
+    );
+    if (!fetched.ok || !fetched.response.ok) {
       return null;
     }
 
-    const contentType = response.headers.get("content-type")?.split(";")[0]?.trim() || "image/png";
-    const bytes = Buffer.from(await response.arrayBuffer());
+    const contentType =
+      fetched.response.headers.get("content-type")?.split(";")[0]?.trim() ||
+      "image/png";
+    const bytes = Buffer.from(await fetched.response.arrayBuffer());
     return `data:${contentType};base64,${bytes.toString("base64")}`;
   } catch {
     return null;
