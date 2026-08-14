@@ -22,7 +22,7 @@ import {
 import { resolveEventShareLink } from "@/lib/meta-publishing/post-kit";
 import { isManualStoryEmailMode, derivePublishMode } from "@/lib/meta-publishing/publish-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createJobClient } from "@/lib/supabase/job-client";
 import type { EventRow } from "@/types";
 import type { EventAssetRow } from "@/types/event-workspace";
 import { resolveSiteOrigin } from "@/lib/site/url";
@@ -64,8 +64,9 @@ async function resolveStoryArtworkUrl(
   eventId: string,
   relativeDay: number,
   milestoneTitle: string,
+  useServiceRole: boolean,
 ): Promise<string | null> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(useServiceRole);
   const { data: assetsData, error } = await supabase
     .from("event_assets")
     .select("*")
@@ -124,8 +125,9 @@ async function resolveScheduledFor(
   eventId: string,
   relativeDay: number,
   dueDate: string | null,
+  useServiceRole: boolean,
 ): Promise<Date | null> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(useServiceRole);
   const { data: slot } = await supabase
     .from("meta_publication_slots")
     .select("scheduled_for")
@@ -143,8 +145,8 @@ async function resolveScheduledFor(
   return defaultScheduledTime(dueDate);
 }
 
-async function markReminderSent(stepId: string): Promise<void> {
-  const supabase = await createClient();
+async function markReminderSent(stepId: string, useServiceRole: boolean): Promise<void> {
+  const supabase = await createJobClient(useServiceRole);
   const now = new Date().toISOString();
   await supabase
     .from("event_communication_steps")
@@ -152,18 +154,28 @@ async function markReminderSent(stepId: string): Promise<void> {
     .eq("id", stepId);
 }
 
-/** Send story post kit email for one milestone. Used after schedule/publish and by cron backup. */
+/**
+ * Send story post kit email for one milestone. Used after schedule/publish
+ * (interactive, session-scoped) and by the daily cron backup (no session —
+ * pass `useServiceRole: true`, mirroring the meta-token-health cron fix).
+ * RLS on event_communication_steps/events/school_years requires an
+ * authenticated membership; without service role the cron path silently
+ * reads zero rows and every call fails with "Post not found."
+ */
 export async function sendStoryPostKitForMilestone(input: {
   eventId: string;
   relativeDay: number;
   /** When false, skip if story_reminder_sent_at is already set. */
   forceResend?: boolean;
+  /** Cron/job callers with no user session must pass true. */
+  useServiceRole?: boolean;
 }): Promise<SendStoryPostKitResult> {
   if (!isEmailConfigured()) {
     return { success: false, error: "Email is not configured (RESEND_API_KEY missing)." };
   }
 
-  const supabase = await createClient();
+  const useServiceRole = input.useServiceRole ?? false;
+  const supabase = await createJobClient(useServiceRole);
   const { data: step, error: stepError } = await supabase
     .from("event_communication_steps")
     .select(
@@ -239,13 +251,16 @@ export async function sendStoryPostKitForMilestone(input: {
     };
   }
 
-  const captions = await getMetaSocialCaptionsForEvent(input.eventId);
+  const captions = await getMetaSocialCaptionsForEvent(input.eventId, {
+    useServiceRole,
+  });
   const feedCaption = getFeedCaptionForMilestone(captions, input.relativeDay);
   const storyCaption = getStoryCaptionForMilestone(captions, input.relativeDay);
   const storyArtworkUrl = await resolveStoryArtworkUrl(
     input.eventId,
     input.relativeDay,
     step.title as string,
+    useServiceRole,
   );
 
   const scheduledFor =
@@ -253,6 +268,7 @@ export async function sendStoryPostKitForMilestone(input: {
       input.eventId,
       input.relativeDay,
       step.due_date as string | null,
+      useServiceRole,
     )) ?? new Date();
 
   const event = mapEventRow({
@@ -310,7 +326,7 @@ export async function sendStoryPostKitForMilestone(input: {
     return { success: false, error: sendResult.error ?? "Failed to send email." };
   }
 
-  await markReminderSent(step.id as string);
+  await markReminderSent(step.id as string, useServiceRole);
 
   return { success: true, recipients: recipients.length };
 }

@@ -143,6 +143,9 @@ export async function sendStoryPostReminders(): Promise<StoryPostReminderResult>
     const sendResult = await sendStoryPostKitForMilestone({
       eventId: step.event_id,
       relativeDay: step.relative_day,
+      // Cron has no user session — RLS on event_communication_steps/events/
+      // school_years otherwise silently reads zero rows for every step.
+      useServiceRole: true,
     });
 
     if (sendResult.skipped) {
