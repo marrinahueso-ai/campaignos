@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requirePermission } from "@/lib/access-templates/effective-access";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { updateOrganizationProfile } from "@/lib/organizations/mutations";
 import { COMMON_US_TIMEZONES } from "@/types/posting-preferences";
@@ -18,6 +19,15 @@ export async function updateOrganizationProfileAction(
   const organization = await getCurrentOrganization();
   if (!organization) {
     return { error: "Workspace not found.", success: false };
+  }
+
+  // Same org-structural mutation class as roles/roster/committees in
+  // organization-workspace/actions.ts — RLS only enforces org-membership
+  // isolation, not template permission keys, so manage_people must be
+  // checked here at the app layer.
+  const access = await requirePermission("manage_people");
+  if ("error" in access) {
+    return { error: access.error, success: false };
   }
 
   const name = formData.get("name")?.toString().trim() ?? "";
