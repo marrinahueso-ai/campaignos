@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireGiphyProxyAccess } from "@/lib/giphy/api-auth";
 import { isGiphyConfigured, trendingGiphyGifs } from "@/lib/giphy/client";
 import type { GiphyProxyResponse } from "@/lib/giphy/types";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,24 @@ export async function GET(request: Request) {
       hasMore: false,
     };
     return NextResponse.json(body);
+  }
+
+  // Auth-gated proxy to a metered upstream API — throttle per org so a
+  // scripted client can't burn Giphy quota (same shape as AI generate).
+  const rateLimit = await checkRateLimit({
+    key: `giphy-trending:org:${access.organizationId}`,
+    windowSeconds: 60,
+    max: 60,
+  });
+  if (!rateLimit.allowed) {
+    const body: GiphyProxyResponse = {
+      configured: true,
+      gifs: [],
+      message: "Too many GIF requests. Try again shortly.",
+      nextOffset: null,
+      hasMore: false,
+    };
+    return NextResponse.json(body, { status: 429 });
   }
 
   const { searchParams } = new URL(request.url);

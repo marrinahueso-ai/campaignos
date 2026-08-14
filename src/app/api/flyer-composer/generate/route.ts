@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireFlyerComposerGenerateAccess } from "@/lib/flyer-composer/api-auth";
 import { generateFlyerComposer } from "@/lib/flyer-composer/generate";
+import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { isSameOriginRequest } from "@/lib/security/verify-same-origin";
 import type {
   FlyerComposerAssetContext,
@@ -208,6 +209,28 @@ export async function POST(request: Request) {
         aiUsed: false,
       },
       { status: access.status },
+    );
+  }
+
+  // AI credits cap total spend, not request burst rate — an image-generation
+  // call is expensive (OpenAI latency/cost) so throttle per org same as Meta
+  // publish (src/lib/meta-publishing/publish-milestone.ts).
+  const rateLimit = await checkRateLimit({
+    key: `flyer-composer-generate:org:${access.organizationId}`,
+    windowSeconds: 5 * 60,
+    max: 20,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: rateLimitMessage(rateLimit.retryAfterSeconds, "Flyer generation requests"),
+        imageUrl: null,
+        imageBase64: null,
+        slots: null,
+        aiUsed: false,
+      },
+      { status: 429 },
     );
   }
 
