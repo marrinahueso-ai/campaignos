@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 12, 2026 — approval backfill now runs with service role  
+**Last updated:** August 13, 2026 — all cron routes set maxDuration; insights-sync and inbox-sync fixed to service role  
 **Related:** [Ops](./README.md) · [`vercel.json`](../../vercel.json) · [Env & secrets](./env-and-secrets.md) · [Architecture](../engineering/architecture.md) · [Documentation home](../README.md)
 
 ## Auth
@@ -34,7 +34,7 @@ Schedules are **UTC** (Vercel Cron).
 | `/api/cron/google-calendar-sync` | `30 6 * * *` | ~1:30 AM CDT | Sync org Google Calendar connections → review |
 | `/api/cron/meta-token-health` | `0 8 * * *` | ~3:00 AM CDT | Meta token health + approval backfill + soft-launch transactional emails (see below) |
 | `/api/cron/inbox-sync` | `0 9 * * *` | ~4:00 AM CDT | Sync Meta inbox |
-| `/api/cron/story-post-reminders` | `0 13 * * *` | ~8:00 AM CDT | Email story post kit reminders (Resend) |
+| `/api/cron/story-post-reminders` | `0 13 * * *` | ~8:00 AM CDT | Email story post kit reminders (Resend) — service role (see below) |
 | `/api/cron/manual-upload-emails` | `30 13 * * *` | ~8:30 AM CDT | Manual IG upload reminder emails |
 | `/api/cron/meta-publish` | `*/20 * * * *` | Every ~20 min | Publish **due** Meta slots (IG feed/stories; mark native FB schedules published in DB) |
 | `/api/cron/volunteer-sync` | `*/30 * * * *` | Every ~30 min | Refresh stale SignUpGenius snapshots (connected sources only; ≥30 min spacing; capped per run) |
@@ -60,6 +60,10 @@ Daily job (`src/app/api/cron/meta-token-health/route.ts`) runs four parallel tas
 All four email paths use the durable `transactional_notification_deliveries` ledger plus Resend idempotency keys. Policy details: [resend-email-templates.md § Soft-launch notification policy](./resend-email-templates.md#soft-launch-notification-policy).
 
 **Stripe `payment-failed`** is **not** cron-driven — it fires from `POST /api/stripe/webhook` on `invoice.payment_failed` ([stripe-integration.md](../engineering/stripe-integration.md)).
+
+## `story-post-reminders` — cron-vs-interactive client fix (Aug 13, 2026)
+
+`sendStoryPostKitForMilestone()` (`src/lib/meta-publishing/send-story-post-kit.ts`) is shared by two callers: an interactive path (fires right after schedule/publish, has a normal user session) and this daily cron backup (no session). Every internal read/write in that file previously used the plain session client, so — same bug class as the pre-fix `meta-token-health` cron — the cron's calls silently hit RLS on `event_communication_steps` / `events` / `school_years` and returned zero rows, making every reminder fail with `"Post not found."` while the cron still reported `ok: true`. Fixed the same way: the function now takes a `useServiceRole` flag (default `false`, so the interactive caller is unaffected) and `send-story-post-reminders.ts` passes `useServiceRole: true`. `sentReminders`/`errors` in the cron's own response were already wired to surface failures, so no response-shape change was needed here.
 
 ## Meta: Publish Now vs Schedule (ops)
 
@@ -107,6 +111,18 @@ Page loads (Dashboard, Approvals, etc.) stay **DB reads only** — no Meta polli
 | Cron returns 401 | Missing/wrong `CRON_SECRET` |
 
 Check Vercel → Project → **Logs** / deployment cron invocations, and Sentry if configured.
+
+## Runtime headroom
+
+Every `/api/cron/*` route now declares `export const maxDuration = 300;`. Without it, a route falls back to the platform's default function timeout, and an org-wide sweep that outgrows that default gets silently killed mid-run — indistinguishable from a clean, fast run in the cron's own success response. 300s gives real headroom as org count grows; raise further (or introduce batching/pagination) if a specific cron's own logs show it approaching that ceiling.
+
+## `insights-sync` — cron RLS fix (Aug 13, 2026)
+
+Same bug class as `meta-token-health` and `story-post-reminders`: `syncOrganizationInsights()`'s `fetchPublishedSlotsForOrganization()` helper used the shared, session-only `getOrganizationSchoolYearIds()` (`createClient()`), so under the cron (no user session) the org's `school_years` → `events` → `meta_publication_slots` lookup silently returned `[]` via RLS. This didn't fully zero out the sync — Graph API discovery of recent posts is a direct external call, unaffected by RLS — but it meant discovered posts never got linked to their internal scheduling-slot metadata (milestone titles, `metaPublicationSlotId`) when synced by cron, while the route still reported `ok: true`. Fixed the same way: `syncOrganizationInsights()` now takes a `useServiceRole` flag (default `false`; the interactive `syncInsightsAction`/`/api/insights/sync` callers are unaffected) and `fetchPublishedSlotsForOrganization()` queries directly via `createJobClient(useServiceRole)` instead of the shared session-only helper. The cron route passes `useServiceRole: true`. This cron is **still not scheduled** in `vercel.json` — invoke it manually or add a schedule if you want it running; this fix just means it will work correctly once it is.
+
+## `inbox-sync` — cron RLS fix (Aug 13, 2026)
+
+Same bug class again, this time in the org-loop wrapper: `syncAllOrganizationsInbox()` (the cron entry point) correctly lists connected orgs with `createAdminClient()`, but the per-org `syncInboxForOrganization()` it calls read/wrote `organization_inbox_settings` (via `getOrganizationInboxSettings`/`upsertOrganizationInboxSettings`) and `inbox_threads`/`inbox_messages` (via `upsertInboxBatch`) through the plain session client with no service-role opt-in. Under the cron (no user session), those RLS-protected reads/writes silently no-op'd: Graph API discovery of new messages/comments/tags still worked (external call, no RLS), but nothing was persisted and no sync error was recorded — while the cron still reported `ok: true`. Fixed by adding a `useServiceRole` option that threads from `syncAllOrganizationsInbox()` → `syncInboxForOrganization(organizationId, { useServiceRole: true })` → every settings/upsert call it makes. The two interactive callers (`inbox/actions.ts`'s "Sync now" and the post-OAuth-connect kickoff in `/api/meta/oauth/callback`) call `syncInboxForOrganization` without the option, so they keep the session-scoped client as before.
 
 ## Changing schedules
 
