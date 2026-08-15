@@ -501,7 +501,16 @@ describe("Approval Routing — ReviewDrawer preview identity", () => {
     assert.match(drawer, /preview\.captionText/);
     assert.match(drawer, /isNewsletterMilestoneId/);
     assert.match(drawer, /Approve & Schedule/);
+    assert.match(drawer, /approveSocialButtonLabel/);
+    assert.match(drawer, /approvalTimingHeadline/);
     assert.match(drawer, /\{item\.milestoneName\}/);
+    const outcomeDisplay = readFileSync(
+      new URL("../outcome-display.ts", import.meta.url),
+      "utf8",
+    );
+    assert.match(outcomeDisplay, /Approve & publish now/);
+    assert.match(outcomeDisplay, /Publish immediately after approval/);
+    assert.match(outcomeDisplay, /Approve for \$\{short\[1\]\}/);
     assert.match(drawer, /Feed · 1:1/);
     assert.match(drawer, /Story · 9:16/);
     assert.match(drawer, /onRetry/);

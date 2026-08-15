@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  approvalCelebrationSubline,
   approvalOutcomeChip,
+  approvalTimingHeadline,
+  approvalTimingListLabel,
+  approveSocialButtonLabel,
   canRetryFailedApproval,
   isDraftOutcome,
   isFailedOutcome,
@@ -54,6 +58,48 @@ function buildItem(
     ...overrides,
   };
 }
+
+describe("approve CTAs match Publish now vs Schedule", () => {
+  it("Publish now approve CTA and timing copy", () => {
+    const item = buildItem({
+      workflowStatus: "in_queue",
+      deliveryMethod: "publish-now",
+      scheduleLabel: "Aug 28, 2026, 9:00 AM",
+    });
+    assert.equal(approveSocialButtonLabel(item), "Approve & publish now");
+    assert.equal(
+      approvalTimingHeadline(item),
+      "Publish immediately after approval",
+    );
+    assert.equal(approvalTimingListLabel(item), "Publish now");
+    assert.equal(
+      approvalCelebrationSubline(item),
+      "Publishing to your Page now",
+    );
+    assert.match(approvalOutcomeChip(item).label, /publish now/i);
+  });
+
+  it("Schedule approve CTA keeps chosen date", () => {
+    const item = buildItem({
+      workflowStatus: "in_queue",
+      deliveryMethod: "schedule",
+      scheduleLabel: "Aug 28, 2026, 9:00 AM",
+    });
+    assert.equal(approveSocialButtonLabel(item), "Approve for Aug 28");
+    assert.equal(approvalTimingHeadline(item), "Aug 28, 2026, 9:00 AM");
+    assert.equal(approvalTimingListLabel(item), "Aug 28, 2026, 9:00 AM");
+    assert.equal(
+      approvalCelebrationSubline(item),
+      "Scheduled · Aug 28, 2026, 9:00 AM",
+    );
+    assert.match(approvalOutcomeChip(item).label, /schedule/i);
+  });
+
+  it("legacy auto-publish matches Publish now", () => {
+    const item = buildItem({ deliveryMethod: "auto-publish" });
+    assert.equal(approveSocialButtonLabel(item), "Approve & publish now");
+  });
+});
 
 describe("approvalOutcomeChip", () => {
   it("labels successful Meta publishes as Posted", () => {

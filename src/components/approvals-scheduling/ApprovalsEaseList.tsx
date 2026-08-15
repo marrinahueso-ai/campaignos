@@ -3,6 +3,7 @@
 import { Eye } from "lucide-react";
 import {
   approvalOutcomeChip,
+  approvalTimingListLabel,
   canRetryFailedApproval,
 } from "@/lib/approvals-scheduling/outcome-display";
 import { displayApprovalPostName } from "@/lib/approvals-scheduling/milestone-display-names";
@@ -52,7 +53,19 @@ export function platformLabel(item: UnifiedApprovalItem): string {
 }
 
 function formatWhen(item: UnifiedApprovalItem): string {
-  return item.scheduleLabel || item.nextActionTime || "Timing TBD";
+  if (
+    item.channel === "flyer" ||
+    item.campaignMilestoneId?.startsWith("flyer-composer:") ||
+    item.channel === "newsletter" ||
+    item.campaignMilestoneId?.startsWith("newsletter:")
+  ) {
+    return item.scheduleLabel || item.nextActionTime || "Timing TBD";
+  }
+  return (
+    approvalTimingListLabel(item) ||
+    item.nextActionTime ||
+    "Timing TBD"
+  );
 }
 
 function ArtTile({

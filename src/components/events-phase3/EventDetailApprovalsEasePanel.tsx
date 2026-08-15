@@ -14,7 +14,7 @@ import {
   approveUnifiedItemAction,
   retryFailedUnifiedApprovalAction,
 } from "@/lib/approvals-scheduling/actions";
-import { canRetryFailedApproval } from "@/lib/approvals-scheduling/outcome-display";
+import { canRetryFailedApproval, approvalCelebrationSubline } from "@/lib/approvals-scheduling/outcome-display";
 import { displayApprovalPostName } from "@/lib/approvals-scheduling/milestone-display-names";
 import { canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
 import type {
@@ -330,9 +330,7 @@ export function EventDetailApprovalsEasePanel({
       setReviewItem(null);
       setCelebration({
         scheduleLabel: approvedItem.scheduleLabel,
-        scheduleSubline: approvedItem.scheduleLabel
-          ? `Ready to post · ${approvedItem.scheduleLabel}`
-          : "Approved and ready to post",
+        scheduleSubline: approvalCelebrationSubline(approvedItem),
         pendingWarning: result.warning?.trim() || null,
       });
       void refresh();

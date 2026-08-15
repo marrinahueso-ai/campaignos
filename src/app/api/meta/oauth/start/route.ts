@@ -6,7 +6,7 @@ import {
   META_OAUTH_STATE_COOKIE,
 } from "@/lib/meta-publishing/config";
 import { safeOAuthReturnTo } from "@/lib/integrations/oauth";
-import { META_COMBINED_OAUTH_SCOPES } from "@/lib/meta-publishing/oauth-scopes";
+import { META_COMBINED_OAUTH_SCOPES_FOR_AUTHORIZE } from "@/lib/meta-publishing/oauth-scopes";
 import {
   createMetaOAuthState,
   getMetaAppId,
@@ -57,9 +57,9 @@ export async function GET(request: NextRequest) {
   if (configId) {
     authorizeUrl.searchParams.set("config_id", configId);
     // Login configurations define permissions; scope is kept for non-config apps.
-    authorizeUrl.searchParams.set("scope", META_COMBINED_OAUTH_SCOPES);
+    authorizeUrl.searchParams.set("scope", META_COMBINED_OAUTH_SCOPES_FOR_AUTHORIZE);
   } else {
-    authorizeUrl.searchParams.set("scope", META_COMBINED_OAUTH_SCOPES);
+    authorizeUrl.searchParams.set("scope", META_COMBINED_OAUTH_SCOPES_FOR_AUTHORIZE);
   }
 
   if (authType === "rerequest") {

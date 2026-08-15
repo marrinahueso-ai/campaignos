@@ -60,4 +60,21 @@ export const META_COMBINED_OAUTH_SCOPE_LIST = [
   ...META_INSIGHTS_OAUTH_SCOPE_LIST,
 ] as const;
 
+/**
+ * Scopes we intentionally do not send on OAuth until Meta attaches them to a
+ * use case on the live app. `pages_messaging` must live under “Engage with
+ * customers on Messenger” (Found in N use cases) — Ready for testing alone
+ * still yields Invalid Scopes.
+ */
+export const META_OAUTH_TEMPORARILY_OMITTED_SCOPES = [
+  "pages_messaging",
+] as const;
+
+export const META_COMBINED_OAUTH_SCOPES_FOR_AUTHORIZE = META_COMBINED_OAUTH_SCOPE_LIST.filter(
+  (scope) =>
+    !(META_OAUTH_TEMPORARILY_OMITTED_SCOPES as readonly string[]).includes(
+      scope,
+    ),
+).join(",");
+
 export const META_COMBINED_OAUTH_SCOPES = META_COMBINED_OAUTH_SCOPE_LIST.join(",");

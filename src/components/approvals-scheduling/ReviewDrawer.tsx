@@ -20,7 +20,10 @@ import {
   hasStaleContentNote,
 } from "@/lib/dev-tools/clear-generated-content";
 import {
+  approvalCelebrationSubline,
   approvalOutcomeChip,
+  approvalTimingHeadline,
+  approveSocialButtonLabel,
   canRetryFailedApproval,
 } from "@/lib/approvals-scheduling/outcome-display";
 import {
@@ -83,11 +86,7 @@ function approveButtonLabel(
 ): string {
   if (isNewsletter) return "Approve & Schedule";
   if (isFlyer) return "Approve";
-  const label = item.scheduleLabel?.trim();
-  if (!label) return "Approve & schedule";
-  const short = label.match(/^([A-Za-z]{3,9}\.?\s+\d{1,2})/);
-  if (short) return `Approve for ${short[1]}`;
-  return `Approve for ${label.split(",")[0] ?? label}`;
+  return approveSocialButtonLabel(item);
 }
 
 function HistoryFallback({
@@ -516,7 +515,11 @@ export function ReviewDrawer({
 
             <section className="mb-5 border-b border-cos-border pb-5">
               <p className="mb-2 text-[11px] font-extrabold tracking-[0.1em] text-cos-muted uppercase">
-                Schedule
+                {isFlyer || isNewsletter
+                  ? "Schedule"
+                  : item.deliveryMethod === "schedule"
+                    ? "Schedule"
+                    : "Publishing"}
               </p>
               <div className="flex items-start gap-3 rounded-[14px] border border-cos-border bg-[#fffcf7] px-3.5 py-3">
                 <Calendar
@@ -525,12 +528,7 @@ export function ReviewDrawer({
                 />
                 <div>
                   <p className="text-sm font-semibold text-cos-text">
-                    {isNewsletter
-                      ? item.scheduleLabel ||
-                        "Send time set by creator — Approve & Schedule"
-                      : isFlyer
-                        ? "Print-ready"
-                        : item.scheduleLabel || "Schedule not set yet"}
+                    {approvalTimingHeadline(item, { isFlyer, isNewsletter })}
                   </p>
                   <p className="mt-0.5 text-xs text-cos-muted">
                     {approvalOutcomeChip(item).label}

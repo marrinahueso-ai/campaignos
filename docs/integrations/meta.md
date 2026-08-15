@@ -43,6 +43,7 @@ Same mental model for Canva and Monday: one Connect CTA per provider, `returnTo`
 ## Today
 
 - Combined Meta scopes: `META_COMBINED_OAUTH_SCOPE_LIST` in `src/lib/meta-publishing/oauth-scopes.ts` — **15 scopes**; live Facebook access-request wording mapped in [meta-app-review-use-cases.md § Consent screen](../ops/meta-app-review-use-cases.md#consent-screen--scopes-what-facebook-shows-at-connect).
+- **Temporary:** Connect authorize URL uses `META_COMBINED_OAUTH_SCOPES_FOR_AUTHORIZE`, which omits `pages_messaging` until Hey Ralli Connect’s Meta app shows that permission **Found in N use cases** (Messenger use case). Publishing / IG / comments can connect; Page Messenger DMs need a reconnect after Meta attaches it.
 - Shared helpers: `src/lib/integrations/oauth.ts` (`safeOAuthReturnTo`, `buildOAuthStartPath`, `buildIntegrationSettingsPath`).
 - Settings → Meta is the manage home; Insights / Communications Connect CTAs hit the **same** `/api/meta/oauth/start` (no `flow=` fork).
 - Canva / Monday panels and Artwork Canva connect use the same start-path helper.

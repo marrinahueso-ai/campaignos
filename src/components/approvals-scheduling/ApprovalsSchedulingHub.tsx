@@ -29,6 +29,7 @@ import {
   type ApprovalsEasePulseCounts,
 } from "@/lib/approvals-scheduling/approvals-ease-pulse";
 import { dedupeUnifiedApprovalItems } from "@/lib/approvals-scheduling/approval-visibility";
+import { approvalCelebrationSubline } from "@/lib/approvals-scheduling/outcome-display";
 import {
   filterApprovalsBySearch,
   shouldApplyApprovalsEasePulseFilter,
@@ -332,9 +333,7 @@ export function ApprovalsSchedulingHub({
         // Hold any follow-up warnings until celebration dismisses.
         setCelebration({
           scheduleLabel: approvedItem.scheduleLabel,
-          scheduleSubline: approvedItem.scheduleLabel
-            ? `Ready to post · ${approvedItem.scheduleLabel}`
-            : "Approved and ready to post",
+          scheduleSubline: approvalCelebrationSubline(approvedItem),
           pendingWarning: result.warning?.trim() || null,
         });
         void refreshApprovalsTab();
