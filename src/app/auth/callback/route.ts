@@ -10,6 +10,7 @@ import {
 import { resolvePendingFoundingAccessForCallback } from "@/lib/auth/founding-access-callback";
 import { resolvePostAuthPathForUser } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
+import { recordCurrentLegalAcceptance } from "@/lib/legal/acceptances";
 import { getSupabaseCookieOptions } from "@/lib/supabase/cookie-options";
 
 type EmailOtpType =
@@ -107,6 +108,14 @@ export async function GET(request: NextRequest) {
   }
 
   if (user) {
+    const isRecovery = otpType === "recovery";
+    if (!isRecovery && (invite || setupIntent)) {
+      await recordCurrentLegalAcceptance({
+        sessionUserId: user.id,
+        source: invite ? "invite" : "signup",
+      });
+    }
+
     if (userMustChangePassword(user)) {
       nextPath = "/account/change-password";
     } else {

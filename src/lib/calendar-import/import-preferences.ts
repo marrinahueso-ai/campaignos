@@ -121,19 +121,64 @@ export async function upsertImportPreferencesFromReviewEvents(
   events: CalendarReviewEvent[],
   client?: SupabaseClient,
 ): Promise<void> {
-  await Promise.all(
-    events.map((event) =>
-      upsertImportEventPreference({
-        organizationId,
-        eventName: event.name,
-        category: event.category,
-        eventType:
-          event.eventType ?? inferEventTypeFromTitle(event.name, event.category),
-        communicationStrategy:
-          event.communicationStrategy ??
-          defaultStrategyForCalendarImport(event.name, event.category),
-        client,
-      }),
-    ),
-  );
+  if (events.length === 0) {
+    return;
+  }
+
+  const supabase = await resolveDbClient(client);
+  const now = new Date().toISOString();
+  const byKey = new Map<
+    string,
+    {
+      organization_id: string;
+      event_name_key: string;
+      category: CalendarEventCategory;
+      event_type: EventType | null;
+      communication_strategy: CommunicationStrategy;
+      updated_at: string;
+    }
+  >();
+
+  for (const event of events) {
+    const eventNameKey = normalizeEventNameKey(event.name);
+    if (!eventNameKey || byKey.has(eventNameKey)) {
+      continue;
+    }
+    byKey.set(eventNameKey, {
+      organization_id: organizationId,
+      event_name_key: eventNameKey,
+      category: event.category,
+      event_type:
+        event.eventType ?? inferEventTypeFromTitle(event.name, event.category),
+      communication_strategy:
+        event.communicationStrategy ??
+        defaultStrategyForCalendarImport(event.name, event.category),
+      updated_at: now,
+    });
+  }
+
+  const rows = [...byKey.values()];
+  if (rows.length === 0) {
+    return;
+  }
+
+  // Chunk to avoid oversized payloads / gateway timeouts on large calendars.
+  const chunkSize = 50;
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
+    const { error } = await supabase.from("import_event_preferences").upsert(
+      chunk,
+      { onConflict: "organization_id,event_name_key" },
+    );
+    if (error) {
+      if (isMissingSchemaError(error)) {
+        return;
+      }
+      console.error(
+        "Failed to save import event preferences batch:",
+        error.message,
+      );
+      return;
+    }
+  }
 }

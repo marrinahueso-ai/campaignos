@@ -20,6 +20,7 @@ import { replaceOrganizationUserEventAssignments } from "@/lib/auth/event-assign
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getAuthUser, requireAuthUser } from "@/lib/auth/queries";
 import { createClient } from "@/lib/supabase/server";
+import { recordCurrentLegalAcceptance } from "@/lib/legal/acceptances";
 import {
   type CampaignRole,
   campaignRoleLabel,
@@ -385,6 +386,13 @@ export async function signInWithPasswordAction(
 
   await clearPendingFoundingAccessCookie();
 
+  if (inviteToken && data.user) {
+    await recordCurrentLegalAcceptance({
+      sessionUserId: data.user.id,
+      source: "invite",
+    });
+  }
+
   if (data.user && userMustChangePassword(data.user)) {
     redirect("/account/change-password");
   }
@@ -486,6 +494,10 @@ export async function completeInviteSetupAction(
   }
 
   await clearPendingFoundingAccessCookie();
+  await recordCurrentLegalAcceptance({
+    sessionUserId: data.user.id,
+    source: "invite",
+  });
   redirect(await getAuthenticatedAppPath());
 }
 

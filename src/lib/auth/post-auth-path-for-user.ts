@@ -6,6 +6,8 @@ import {
   DEVELOPER_AGREEMENTS_PATH,
   userMustSignDeveloperAgreements,
 } from "@/lib/developer-agreements/gate";
+import { termsAcceptanceRedirectPath } from "@/lib/legal/acceptances-pure";
+import { userMustAcceptCurrentTerms } from "@/lib/legal/gate";
 import {
   ONBOARDING_PATH,
   resolveAuthenticatedAppPath,
@@ -62,7 +64,24 @@ export async function resolvePostAuthPathForUser(
       });
       return `/login?${params.toString()}`;
     }
+    if (await userMustAcceptCurrentTerms(supabase, userId)) {
+      return termsAcceptanceRedirectPath(ONBOARDING_PATH);
+    }
     return ONBOARDING_PATH;
+  }
+
+  const nextPath = next?.trim() || "";
+  const isPasswordRecovery =
+    nextPath === "/account/update-password" ||
+    nextPath.startsWith("/account/update-password?") ||
+    nextPath === "/account/change-password" ||
+    nextPath.startsWith("/account/change-password?");
+
+  if (
+    !isPasswordRecovery &&
+    (await userMustAcceptCurrentTerms(supabase, userId))
+  ) {
+    return termsAcceptanceRedirectPath(next);
   }
 
   if (await userMustSignDeveloperAgreements(supabase, userId)) {

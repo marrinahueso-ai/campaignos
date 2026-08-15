@@ -363,14 +363,22 @@ describe("middleware cross-gate precedence — agreements gate before org gate",
       new URL("../../supabase/middleware.ts", import.meta.url),
     );
     const middlewareSrc = readFileSync(middlewarePath, "utf8");
+    const mustAcceptTermsIndex = middlewareSrc.indexOf(
+      "if (mustAcceptTermsResult.ok && mustAcceptTermsResult.value)",
+    );
     const mustSignCheckIndex = middlewareSrc.indexOf(
       "if (mustSignResult.ok && mustSignResult.value)",
     );
     const gateRedirectCheckIndex = middlewareSrc.indexOf(
       "if (gateRedirectResult.ok && gateRedirectResult.value)",
     );
+    assert.ok(mustAcceptTermsIndex >= 0, "mustAcceptTermsResult check not found");
     assert.ok(mustSignCheckIndex >= 0, "mustSignResult check not found");
     assert.ok(gateRedirectCheckIndex >= 0, "gateRedirectResult check not found");
+    assert.ok(
+      mustAcceptTermsIndex < mustSignCheckIndex,
+      "Terms gate must be checked before developer agreements",
+    );
     assert.ok(
       mustSignCheckIndex < gateRedirectCheckIndex,
       "agreements gate must be checked (and returned) before the org gate",

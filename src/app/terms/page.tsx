@@ -4,7 +4,7 @@ import { TermsOfServiceContent } from "@/lib/marketing-wow/legal-content";
 export const metadata = {
   title: "Terms of Service",
   description:
-    "Terms for using Hey Ralli workspaces, content, acceptable use, and billing.",
+    "Terms of Service for Hey Ralli workspaces, AI features, publishing, billing, and organization accounts."
 };
 
 export default function TermsPage() {

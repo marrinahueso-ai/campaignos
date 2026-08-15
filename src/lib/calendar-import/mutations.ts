@@ -201,133 +201,164 @@ export async function insertImportedEvents(
     partitionClassifiedReviewEvents(classified);
 
   let updatedCount = 0;
-  for (const event of toUpdate) {
-    if (!event.existingEventId) {
-      continue;
-    }
+  const activityRows: Array<{
+    event_id: string;
+    activity_type: string;
+    title: string;
+    description: string;
+    occurred_at: string;
+  }> = [];
 
-    // Only calendar-owned fields — never overwrite Hey Ralli-only data
-    // (description, communication strategy, playbook, assignees, etc.).
-    const updatePayload: Record<string, unknown> = {
-      title: event.name,
-      date: event.date,
-      time: event.time?.trim() || null,
-      location: event.location?.trim() || null,
-      category: event.category,
-      import_source: event.importSource ?? null,
-      import_external_id: event.importExternalId ?? null,
-      calendar_import_id: calendarImportId,
-      import_dismissed_snapshot: null,
-      updated_at: new Date().toISOString(),
-      status: event.date >= today ? "scheduled" : "draft",
-    };
+  // Apply patches in parallel batches — sequential awaits were hanging Finish
+  // Review on larger subscribe syncs (dozens of time-only changes).
+  const updateChunkSize = 8;
+  for (let i = 0; i < toUpdate.length; i += updateChunkSize) {
+    const chunk = toUpdate.slice(i, i + updateChunkSize);
+    const results = await Promise.all(
+      chunk.map(async (event) => {
+        if (!event.existingEventId) {
+          return false;
+        }
 
-    let updateQuery = supabase
-      .from("events")
-      .update(updatePayload)
-      .eq("id", event.existingEventId);
+        const updatePayload: Record<string, unknown> = {
+          title: event.name,
+          date: event.date,
+          time: event.time?.trim() || null,
+          location: event.location?.trim() || null,
+          category: event.category,
+          import_source: event.importSource ?? null,
+          import_external_id: event.importExternalId ?? null,
+          calendar_import_id: calendarImportId,
+          import_dismissed_snapshot: null,
+          updated_at: new Date().toISOString(),
+          status: event.date >= today ? "scheduled" : "draft",
+        };
 
-    // Tenant bound: never patch an event outside this school year / org scope.
-    if (activeSchoolYear) {
-      updateQuery = updateQuery.eq("school_year_id", activeSchoolYear.id);
-    }
+        let updateQuery = supabase
+          .from("events")
+          .update(updatePayload)
+          .eq("id", event.existingEventId);
 
-    let { data: updatedRows, error: updateError } =
-      await updateQuery.select("id");
+        if (activeSchoolYear) {
+          updateQuery = updateQuery.eq("school_year_id", activeSchoolYear.id);
+        }
 
-    if (updateError && isMissingSchemaError(updateError)) {
-      delete updatePayload.import_dismissed_snapshot;
-      let fallbackQuery = supabase
-        .from("events")
-        .update(updatePayload)
-        .eq("id", event.existingEventId);
-      if (activeSchoolYear) {
-        fallbackQuery = fallbackQuery.eq("school_year_id", activeSchoolYear.id);
-      }
-      ({ data: updatedRows, error: updateError } =
-        await fallbackQuery.select("id"));
-    }
+        let { data: updatedRows, error: updateError } =
+          await updateQuery.select("id");
 
-    if (updateError) {
-      console.error(
-        "Failed to update imported event:",
-        updateError.message,
-      );
-      continue;
-    }
+        if (updateError && isMissingSchemaError(updateError)) {
+          delete updatePayload.import_dismissed_snapshot;
+          let fallbackQuery = supabase
+            .from("events")
+            .update(updatePayload)
+            .eq("id", event.existingEventId);
+          if (activeSchoolYear) {
+            fallbackQuery = fallbackQuery.eq(
+              "school_year_id",
+              activeSchoolYear.id,
+            );
+          }
+          ({ data: updatedRows, error: updateError } =
+            await fallbackQuery.select("id"));
+        }
 
-    if (!updatedRows?.length) {
-      console.error(
-        "Refused calendar update — event missing or outside school-year scope:",
-        event.existingEventId,
-      );
-      continue;
-    }
+        if (updateError) {
+          console.error(
+            "Failed to update imported event:",
+            updateError.message,
+          );
+          return false;
+        }
 
-    updatedCount += 1;
-    await supabase.from("activity_log").insert({
-      event_id: event.existingEventId,
-      activity_type: "calendar_imported",
-      title: "Updated from calendar",
-      description: `Updated from import (${event.matchReason ?? "external id match"}).`,
-      occurred_at: new Date().toISOString(),
-    });
+        if (!updatedRows?.length) {
+          console.error(
+            "Refused calendar update — event missing or outside school-year scope:",
+            event.existingEventId,
+          );
+          return false;
+        }
+
+        activityRows.push({
+          event_id: event.existingEventId,
+          activity_type: "calendar_imported",
+          title: "Updated from calendar",
+          description: `Updated from import (${event.matchReason ?? "external id match"}).`,
+          occurred_at: new Date().toISOString(),
+        });
+        return true;
+      }),
+    );
+    updatedCount += results.filter(Boolean).length;
   }
 
   // Persist Keep Mine dismissals so the exact rejected source change does not
   // reappear on the next refresh until the source values change again.
-  for (const event of skippedDuplicates) {
-    if (
-      event.status !== "update" ||
-      event.applyUpdate !== false ||
-      !event.existingEventId
-    ) {
-      continue;
-    }
-
-    const snapshot = buildIncomingUpdateSnapshot(event);
-    let dismissQuery = supabase
-      .from("events")
-      .update({
-        import_dismissed_snapshot: snapshot,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", event.existingEventId);
-    if (activeSchoolYear) {
-      dismissQuery = dismissQuery.eq("school_year_id", activeSchoolYear.id);
-    }
-    const { error: dismissError } = await dismissQuery;
-    if (dismissError && !isMissingSchemaError(dismissError)) {
-      console.error(
-        "Failed to persist Keep Mine dismiss snapshot:",
-        dismissError.message,
-      );
-    }
-  }
+  const dismissChunk = skippedDuplicates.filter(
+    (event) =>
+      event.status === "update" &&
+      event.applyUpdate === false &&
+      Boolean(event.existingEventId),
+  );
+  await Promise.all(
+    dismissChunk.map(async (event) => {
+      const snapshot = buildIncomingUpdateSnapshot(event);
+      let dismissQuery = supabase
+        .from("events")
+        .update({
+          import_dismissed_snapshot: snapshot,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", event.existingEventId!);
+      if (activeSchoolYear) {
+        dismissQuery = dismissQuery.eq("school_year_id", activeSchoolYear.id);
+      }
+      const { error: dismissError } = await dismissQuery;
+      if (dismissError && !isMissingSchemaError(dismissError)) {
+        console.error(
+          "Failed to persist Keep Mine dismiss snapshot:",
+          dismissError.message,
+        );
+      }
+    }),
+  );
 
   // Keep Both: dismiss the same source change on the original mapped event so
   // later syncs do not rematch it as an unresolved update (and do not insert
   // more copies). The new row is inserted without the source external id.
-  for (const event of toInsert) {
-    if (!event.keepBothFromEventId) {
-      continue;
-    }
-    const snapshot = buildIncomingUpdateSnapshot(event);
-    let dismissQuery = supabase
-      .from("events")
-      .update({
-        import_dismissed_snapshot: snapshot,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", event.keepBothFromEventId);
-    if (activeSchoolYear) {
-      dismissQuery = dismissQuery.eq("school_year_id", activeSchoolYear.id);
-    }
-    const { error: dismissError } = await dismissQuery;
-    if (dismissError && !isMissingSchemaError(dismissError)) {
+  const keepBothDismiss = toInsert.filter((event) =>
+    Boolean(event.keepBothFromEventId),
+  );
+  await Promise.all(
+    keepBothDismiss.map(async (event) => {
+      const snapshot = buildIncomingUpdateSnapshot(event);
+      let dismissQuery = supabase
+        .from("events")
+        .update({
+          import_dismissed_snapshot: snapshot,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", event.keepBothFromEventId!);
+      if (activeSchoolYear) {
+        dismissQuery = dismissQuery.eq("school_year_id", activeSchoolYear.id);
+      }
+      const { error: dismissError } = await dismissQuery;
+      if (dismissError && !isMissingSchemaError(dismissError)) {
+        console.error(
+          "Failed to persist Keep Both dismiss snapshot:",
+          dismissError.message,
+        );
+      }
+    }),
+  );
+
+  if (activityRows.length > 0) {
+    const { error: activityError } = await supabase
+      .from("activity_log")
+      .insert(activityRows);
+    if (activityError) {
       console.error(
-        "Failed to persist Keep Both dismiss snapshot:",
-        dismissError.message,
+        "Failed to write calendar update activity log:",
+        activityError.message,
       );
     }
   }

@@ -112,7 +112,9 @@ export async function resolveOrgGateRedirect(
     pathname.startsWith("/invite/") ||
     pathname === "/account/change-password" ||
     pathname === "/account/update-password" ||
-    pathname.startsWith("/account/agreements")
+    pathname.startsWith("/account/agreements") ||
+    pathname === "/account/legal" ||
+    pathname.startsWith("/account/legal/")
   ) {
     return null;
   }

@@ -460,87 +460,123 @@ export async function importCalendarEventsAction(
   updatedCount: number;
   error: string | null;
 }> {
-  const importRecord = await getCalendarImportById(importId);
+  try {
+    const importRecord = await getCalendarImportById(importId);
 
-  if (!importRecord) {
-    return {
-      importedCount: 0,
-      skippedCount: 0,
-      updatedCount: 0,
-      error: "Calendar upload not found.",
-    };
-  }
-
-  if (importRecord.parseStatus === "imported") {
-    return {
-      importedCount: 0,
-      skippedCount: 0,
-      updatedCount: 0,
-      error: "This calendar has already been imported.",
-    };
-  }
-
-  if (events.length === 0) {
-    return {
-      importedCount: 0,
-      skippedCount: 0,
-      updatedCount: 0,
-      error: "No events selected to import.",
-    };
-  }
-
-  const {
-    events: inserted,
-    skippedCount,
-    updatedCount,
-  } = await insertImportedEvents(events, importId, undefined, undefined, {
-    autoApplyUpdates: false,
-  });
-
-  if (!inserted.length && updatedCount === 0) {
-    if (skippedCount > 0) {
-      await updateCalendarImportParseStatus(importId, {
-        parseStatus: "imported",
-        parseError: null,
-        parsedEvents: events,
-        importedAt: new Date().toISOString(),
-      });
-      revalidateCalendarPaths();
+    if (!importRecord) {
       return {
         importedCount: 0,
-        skippedCount,
+        skippedCount: 0,
         updatedCount: 0,
-        error: null,
+        error: "Calendar upload not found.",
       };
     }
 
+    if (importRecord.parseStatus === "imported") {
+      return {
+        importedCount: 0,
+        skippedCount: 0,
+        updatedCount: 0,
+        error: "This calendar has already been imported.",
+      };
+    }
+
+    // Use the client review state when present (includes decisions that may not
+    // have finished persisting yet). Fall back to stored rows if the payload is empty.
+    const storedEvents = parseStoredReviewEvents(importRecord.parsedEvents);
+    const reviewEvents = events.length > 0 ? events : storedEvents;
+
+    if (reviewEvents.length === 0) {
+      return {
+        importedCount: 0,
+        skippedCount: 0,
+        updatedCount: 0,
+        error: "No events selected to import.",
+      };
+    }
+
+    const {
+      events: inserted,
+      skippedCount,
+      updatedCount,
+    } = await insertImportedEvents(
+      reviewEvents,
+      importId,
+      undefined,
+      undefined,
+      {
+        autoApplyUpdates: false,
+      },
+    );
+
+    if (!inserted.length && updatedCount === 0) {
+      if (skippedCount > 0) {
+        await updateCalendarImportParseStatus(importId, {
+          parseStatus: "imported",
+          parseError: null,
+          parsedEvents: reviewEvents,
+          importedAt: new Date().toISOString(),
+        });
+        revalidateCalendarPaths();
+        return {
+          importedCount: 0,
+          skippedCount,
+          updatedCount: 0,
+          error: null,
+        };
+      }
+
+      return {
+        importedCount: 0,
+        skippedCount: 0,
+        updatedCount: 0,
+        error: "Unable to import events. Please try again.",
+      };
+    }
+
+    await updateCalendarImportParseStatus(importId, {
+      parseStatus: "imported",
+      parseError: null,
+      parsedEvents: reviewEvents,
+      importedAt: new Date().toISOString(),
+    });
+
+    const organization = await getLatestOrganization();
+    if (organization) {
+      // Only persist prefs for rows that were created or updated — not every
+      // already-on-calendar duplicate in a large subscribe feed.
+      const preferenceEvents = reviewEvents.filter(
+        (event) =>
+          event.status === "ready" ||
+          event.status === "needs_review" ||
+          (event.status === "update" && event.applyUpdate !== false) ||
+          Boolean(event.keepBothFromEventId),
+      );
+      await upsertImportPreferencesFromReviewEvents(
+        organization.id,
+        preferenceEvents,
+      );
+    }
+
+    revalidateCalendarPaths();
+    return {
+      importedCount: inserted.length,
+      skippedCount,
+      updatedCount,
+      error: null,
+    };
+  } catch (error) {
+    console.error("importCalendarEventsAction failed:", error);
     return {
       importedCount: 0,
       skippedCount: 0,
       updatedCount: 0,
-      error: "Unable to import events. Please try again.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while finishing this review. Please try again.",
     };
   }
-
-  await updateCalendarImportParseStatus(importId, {
-    parseStatus: "imported",
-    parseError: null,
-    parsedEvents: events,
-    importedAt: new Date().toISOString(),
-  });
-
-  const organization = await getLatestOrganization();
-  if (organization) {
-    await upsertImportPreferencesFromReviewEvents(organization.id, events);
-  }
-
-  revalidateCalendarPaths();
-  return {
-    importedCount: inserted.length,
-    skippedCount,
-    updatedCount,
-    error: null,
-  };
 }
 
 export async function deleteImportedCalendarEventsAction(

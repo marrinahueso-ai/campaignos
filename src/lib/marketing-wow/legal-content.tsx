@@ -784,44 +784,1288 @@ export function PrivacyPolicyContent() {
   );
 }
 
-/** Public Terms of Service body — from the WOW mockup funnel. */
+/** Public Terms of Service body. Version id: CURRENT_TERMS_VERSION in src/lib/legal/versions.ts */
 export function TermsOfServiceContent() {
   return (
     <>
       <h1>Terms of Service</h1>
-      <p className="updated">Last updated July 26, 2026</p>
-      <h2>Using Hey Ralli</h2>
-      <p>
-        You must have authority to create or join an organization workspace.
-        Founding access codes and invite links are personal to the intended
-        recipient.
+      <p className="updated">
+        Effective Date: August 14, 2026
+        <br />
+        Last Updated: August 14, 2026
       </p>
-      <h2>Your content</h2>
       <p>
-        You retain ownership of school and PTA content you upload. You grant us
-        a limited license to host, process, and display it so the product works —
-        including connected channels you authorize (e.g. Meta).
+        These Terms of Service (&quot;Terms&quot;) govern your access to and use
+        of Hey Ralli&apos;s websites, applications, software, artificial
+        intelligence features, communications tools, integrations, and related
+        products and services (collectively, the &quot;Services&quot;).
       </p>
-      <h2>Acceptable use</h2>
+      <p>
+        The Services are provided by <strong>Hey Ralli, LLC</strong>, a Tennessee
+        limited liability company (&quot;Hey Ralli,&quot; &quot;we,&quot;
+        &quot;us,&quot; or &quot;our&quot;).
+      </p>
+      <p>
+        By creating an account, joining an organization workspace, accepting an
+        invitation, purchasing or using a subscription, or otherwise using the
+        Services, you agree to these Terms and our Privacy Policy.
+      </p>
+      <p>
+        If you use Hey Ralli on behalf of a school, PTO, PTA, parent
+        organization, community organization, business, or other entity
+        (&quot;Organization&quot;), you represent that you have authority to
+        accept these Terms on behalf of that Organization.
+      </p>
+      <p>
+        If you do not agree to these Terms, do not use the Services.
+      </p>
+
+      <h2>1. Eligibility</h2>
+      <p>
+        Hey Ralli is offered to adults and authorized representatives of
+        organizations.
+      </p>
+      <p>
+        You must be at least 18 years old or the age of legal majority where you
+        live to create a Hey Ralli account.
+      </p>
+      <p>
+        Hey Ralli is not directed to children under 13, and children under 13 may
+        not create Hey Ralli accounts.
+      </p>
+      <p>
+        Organizations may use Hey Ralli to manage content that incidentally
+        refers to students or children. The Organization is responsible for
+        obtaining any authorization, permission, or consent required for the
+        information it chooses to provide to Hey Ralli.
+      </p>
+      <p>
+        Hey Ralli is not intended to function as a student information system or
+        electronic educational-record system.
+      </p>
+      <p>
+        These Terms do not represent that Hey Ralli is FERPA-, COPPA-, or
+        otherwise education-regulation compliant for any particular use.
+        Organizations are responsible for determining whether their intended use
+        of the Services is appropriate for their legal and organizational
+        requirements.
+      </p>
+
+      <h2>2. Organization Workspaces</h2>
+      <p>Hey Ralli operates through organization workspaces.</p>
+      <p>
+        If you create an Organization workspace, connect a third-party account,
+        invite users, or otherwise act on behalf of an Organization, you
+        represent that you have authority to do so.
+      </p>
+      <p>
+        Founding access codes, invitation links, account credentials, and similar
+        access mechanisms are personal to their intended recipients and may not
+        be shared with unauthorized individuals.
+      </p>
+      <p>
+        Organizations may assign users different roles and permissions.
+      </p>
+      <p>
+        Depending on those permissions, authorized users may be able to:
+      </p>
+      <ul>
+        <li>Create and modify events;</li>
+        <li>Generate communications using artificial intelligence;</li>
+        <li>Upload files, images, and artwork;</li>
+        <li>Create newsletters and flyers;</li>
+        <li>Coordinate volunteers;</li>
+        <li>Manage tasks;</li>
+        <li>Request, provide, or manage approvals;</li>
+        <li>Schedule or publish communications;</li>
+        <li>Access or respond to communications;</li>
+        <li>Connect third-party services; and</li>
+        <li>Perform other actions available through the Services.</li>
+      </ul>
+      <p>
+        The Organization is responsible for activity performed within its
+        workspace by its authorized users and for assigning appropriate roles and
+        permissions.
+      </p>
+
+      <h2>3. Accounts and Security</h2>
+      <p>
+        You are responsible for maintaining the confidentiality and security of
+        your account credentials.
+      </p>
+      <p>
+        You agree to provide accurate account information and keep information
+        reasonably current.
+      </p>
+      <p>You may not:</p>
       <ul>
         <li>
-          No unlawful, harassing, or misleading communications to parents or
-          volunteers
+          Share passwords or authentication credentials with unauthorized
+          persons;
         </li>
-        <li>No sharing credentials outside your organization</li>
+        <li>Access another person&apos;s account without permission;</li>
         <li>
-          Respect platform rules for Facebook, Instagram, and other integrations
+          Circumvent account, role, approval, or security controls;
+        </li>
+        <li>
+          Attempt to gain unauthorized access to another Organization&apos;s
+          workspace; or
+        </li>
+        <li>Interfere with the security or operation of Hey Ralli.</li>
+      </ul>
+      <p>
+        You must notify Hey Ralli if you reasonably believe your account has been
+        compromised.
+      </p>
+      <p>
+        We may require password resets, session termination, reauthentication, or
+        other reasonable security measures when necessary to protect users or the
+        Services.
+      </p>
+
+      <h2>4. License to Use Hey Ralli</h2>
+      <p>
+        Subject to these Terms and payment of applicable fees, Hey Ralli grants
+        you a limited, non-exclusive, non-transferable, revocable right to access
+        and use the Services for your Organization&apos;s authorized purposes.
+      </p>
+      <p>
+        This license does not give you ownership of Hey Ralli or its underlying
+        software, technology, designs, systems, models, workflows, or
+        intellectual property.
+      </p>
+      <p>Except where permitted by law, you may not:</p>
+      <ul>
+        <li>Copy or reproduce substantial portions of the Services;</li>
+        <li>Reverse engineer the Services;</li>
+        <li>Circumvent technical restrictions;</li>
+        <li>
+          Use the Services to develop a competing product through unauthorized
+          extraction or replication;
+        </li>
+        <li>Sell or sublicense access to Hey Ralli; or</li>
+        <li>
+          Use automated systems in a manner that materially interferes with the
+          Services.
         </li>
       </ul>
-      <h2>Billing</h2>
+
+      <h2>5. Organization Content and User-Provided Materials</h2>
       <p>
-        Paid plans renew monthly unless canceled. Trials and AI credit allotments
-        follow the Pricing page and Billing settings in-product.
+        Organizations and users may create, upload, import, reference, submit, or
+        store content through Hey Ralli (&quot;Organization Content&quot;).
       </p>
-      <h2>Contact</h2>
+      <p>Organization Content may include:</p>
+      <ul>
+        <li>Events and calendars;</li>
+        <li>Captions and communications;</li>
+        <li>Newsletters and flyers;</li>
+        <li>Images and artwork;</li>
+        <li>Photographs;</li>
+        <li>Logos and branding;</li>
+        <li>Inspiration or reference images;</li>
+        <li>Files and documents;</li>
+        <li>Volunteer information;</li>
+        <li>Approval requests and comments;</li>
+        <li>Messages and communications;</li>
+        <li>Tasks;</li>
+        <li>Vendor information;</li>
+        <li>Contact information; and</li>
+        <li>Other materials provided by an Organization or user.</li>
+      </ul>
       <p>
+        As between you and Hey Ralli, you retain your rights in Organization
+        Content you provide, subject to the rights of other parties and
+        applicable law.
+      </p>
+      <p>
+        You grant Hey Ralli a limited, non-exclusive license to host, store,
+        reproduce, process, transmit, display, modify as technically necessary,
+        and otherwise use Organization Content as necessary to provide, secure,
+        maintain, and improve the Services and perform actions you authorize.
+      </p>
+      <p>
+        This includes transmitting Organization Content to third-party services
+        when necessary to perform requested functionality, such as publishing to
+        connected social media accounts, sending communications, processing AI
+        requests, synchronizing messages, or operating integrations.
+      </p>
+      <h3>Responsibility for Uploaded Materials</h3>
+      <p>
+        You and the Organization you represent are responsible for determining
+        whether you have the rights, licenses, permissions, releases, consents,
+        or other legal authority necessary to upload, provide, reproduce, modify,
+        publish, distribute, or otherwise use materials through Hey Ralli.
+      </p>
+      <p>
+        By providing materials to Hey Ralli, you represent and warrant that:
+      </p>
+      <ul>
+        <li>
+          You own the materials or have sufficient rights or permission to use
+          them;
+        </li>
+        <li>
+          Your use of the materials through Hey Ralli does not infringe another
+          person&apos;s copyright, trademark, privacy, publicity, or other
+          rights;
+        </li>
+        <li>
+          You have any permissions or releases reasonably required for
+          photographs or other materials depicting identifiable individuals; and
+        </li>
+        <li>
+          You have authority to allow Hey Ralli and its service providers to
+          process the materials as necessary to provide the requested Services.
+        </li>
+      </ul>
+
+      <h2>6. Inspiration and Reference Images</h2>
+      <p>
+        Hey Ralli may allow users to upload, select, provide, or reference
+        images, artwork, photographs, designs, logos, graphics, or other
+        materials as inspiration or reference material for AI-assisted content
+        creation.
+      </p>
+      <p>
+        <strong>
+          The user and Organization providing an inspiration or reference image
+          are responsible for having the legal right or permission to use that
+          material.
+        </strong>
+      </p>
+      <p>
+        Labeling an image as &quot;inspiration,&quot; &quot;reference,&quot; or
+        similar terminology does not eliminate or modify copyright, trademark,
+        privacy, publicity, or other rights that may apply to the material.
+      </p>
+      <p>
+        You should not provide copyrighted artwork, photographs, logos, protected
+        characters, designs, branding, or other third-party materials unless you
+        have the legal right or permission to use them for the intended purpose.
+      </p>
+      <p>
+        Hey Ralli does not grant you rights in third-party materials merely
+        because the Services allow those materials to be uploaded, displayed,
+        referenced, processed, transformed, or used with an AI feature.
+      </p>
+      <p>
+        Hey Ralli does not independently verify ownership or licensing of every
+        inspiration image or other material provided by users.
+      </p>
+      <p>
+        The user and Organization remain responsible for determining whether the
+        intended use of the material is legally permitted.
+      </p>
+
+      <h2>7. Artificial Intelligence Features</h2>
+      <p>
+        Hey Ralli includes artificial intelligence features that may generate or
+        assist with:
+      </p>
+      <ul>
+        <li>Text;</li>
+        <li>Social media captions;</li>
+        <li>Images and artwork;</li>
+        <li>Flyers;</li>
+        <li>Newsletters;</li>
+        <li>Communication plans;</li>
+        <li>Event communications; and</li>
+        <li>Other materials.</li>
+      </ul>
+      <p>
+        AI functionality may be provided in part through third-party artificial
+        intelligence providers.
+      </p>
+      <h3>AI Can Make Mistakes</h3>
+      <p>
+        Artificial intelligence output may be inaccurate, incomplete,
+        inappropriate, outdated, misleading, or otherwise unsuitable for your
+        intended use.
+      </p>
+      <p>
+        <strong>
+          You are responsible for reviewing AI-generated or AI-assisted content
+          before approving, scheduling, publishing, emailing, printing,
+          distributing, or otherwise using it.
+        </strong>
+      </p>
+      <p>
+        Hey Ralli does not guarantee the accuracy, completeness, suitability,
+        originality, or non-infringement of AI-generated output.
+      </p>
+      <h3>AI-Generated Content and Intellectual Property</h3>
+      <p>
+        AI-generated output may resemble existing styles, themes, concepts,
+        designs, or other content and may not be unique.
+      </p>
+      <p>
+        Hey Ralli does not guarantee that AI-generated or AI-assisted content:
+      </p>
+      <ul>
+        <li>Is original or unique;</li>
+        <li>
+          Is eligible for copyright, trademark, or other intellectual-property
+          protection;
+        </li>
+        <li>Does not resemble content created by another person;</li>
+        <li>
+          Does not infringe intellectual-property or other rights of a third
+          party; or
+        </li>
+        <li>Is legally appropriate for every intended use.</li>
+      </ul>
+      <p>
+        If an Organization requests content incorporating or based upon
+        third-party trademarks, copyrighted characters, protected artwork,
+        photographs, branding, or other proprietary material, the Organization is
+        responsible for confirming it has the legal right to make that use.
+      </p>
+      <p>
+        Hey Ralli&apos;s generation, display, storage, approval, scheduling, or
+        publishing of content at a user&apos;s direction does not constitute a
+        legal determination that the content is non-infringing or otherwise
+        lawful.
+      </p>
+      <h3>Human Review</h3>
+      <p>
+        Users and Organizations are responsible for reviewing AI-generated
+        content before publishing, distributing, printing, emailing, posting to
+        social media, or otherwise using it.
+      </p>
+      <p>
+        The availability of AI generation, approval workflows, or other Hey Ralli
+        tools does not transfer responsibility for an Organization&apos;s
+        communications to Hey Ralli.
+      </p>
+
+      <h2>8. Approvals, Publishing, Scheduling, and Publication Failures</h2>
+      <p>
+        Hey Ralli may provide workflows allowing Organization users to create,
+        review, approve, schedule, and publish content.
+      </p>
+      <p>
+        Organizations are responsible for configuring their roles, permissions,
+        approval processes, recipients, publication times, connected accounts,
+        and communication schedules appropriately.
+      </p>
+      <p>
+        An approval status within Hey Ralli represents an action taken through
+        the Organization&apos;s configured workflow. Hey Ralli does not
+        independently verify that approved content is legally accurate, factually
+        correct, appropriate, non-infringing, or authorized by every person who
+        may have an interest in it.
+      </p>
+      <p>
+        Users should review content, recipients, dates, times, rights,
+        permissions, publication settings, and connected-account status before
+        approving or distributing communications.
+      </p>
+      <h3>Monitoring Your Posting Schedule</h3>
+      <p>
+        <strong>
+          Hey Ralli does not independently monitor an Organization&apos;s posting
+          calendar, publication schedule, campaign deadlines, communication
+          obligations, or other deadlines.
+        </strong>
+      </p>
+      <p>
+        Organizations are responsible for monitoring their own schedules,
+        approval statuses, connected accounts, publication results, and
+        communications.
+      </p>
+      <p>
+        Hey Ralli is not responsible for determining whether a post, newsletter,
+        email, or other communication has been scheduled, published, sent,
+        delivered, or received at the time intended by the Organization.
+      </p>
+      <h3>Publication and Delivery Failures</h3>
+      <p>
+        Scheduled or attempted publications or communications may fail, be
+        delayed, or be delivered differently than expected for reasons including:
+      </p>
+      <ul>
+        <li>Third-party platform outages;</li>
+        <li>API changes;</li>
+        <li>Expired, revoked, or invalid permissions or access;</li>
+        <li>
+          Changes to Facebook, Instagram, Meta, Google, email-provider, or other
+          third-party policies;
+        </li>
+        <li>Missing or incomplete approvals;</li>
+        <li>
+          Incorrect dates, times, time zones, recipients, or connected-account
+          selections;
+        </li>
+        <li>Network or infrastructure interruptions;</li>
+        <li>Platform rate limits or restrictions;</li>
+        <li>User configuration errors;</li>
+        <li>Provider delivery failures;</li>
+        <li>Spam filtering;</li>
+        <li>Account restrictions; or</li>
+        <li>Events outside Hey Ralli&apos;s reasonable control.</li>
+      </ul>
+      <p>
+        Hey Ralli does not guarantee that scheduled content or communications
+        will be published, sent, delivered, or received at a particular time.
+      </p>
+      <p>
+        To the maximum extent permitted by applicable law, Hey Ralli is not
+        responsible for losses, missed opportunities, missed deadlines,
+        reputational harm, lost revenue, or other damages resulting from delayed,
+        unsuccessful, missed, incomplete, or failed publication, scheduling,
+        delivery, or communication.
+      </p>
+      <p>
+        Organizations remain responsible for verifying important, time-sensitive,
+        safety-related, contractual, or legally required communications and for
+        maintaining any backup communication process the Organization considers
+        appropriate.
+      </p>
+
+      <h2>9. Newsletters and Other Communications</h2>
+      <p>
+        Hey Ralli may allow Organizations to create, approve, schedule, and send
+        newsletters or other communications.
+      </p>
+      <p>Organizations are responsible for:</p>
+      <ul>
+        <li>The content they send;</li>
+        <li>The recipients they select;</li>
+        <li>Having appropriate authority to contact recipients;</li>
+        <li>Maintaining accurate contact information;</li>
+        <li>Honoring applicable unsubscribe or opt-out requirements; and</li>
+        <li>Complying with applicable communications and marketing laws.</li>
+      </ul>
+      <p>
+        Hey Ralli may use third-party delivery providers to transmit
+        communications.
+      </p>
+      <p>
+        Delivery is subject to factors outside Hey Ralli&apos;s control,
+        including recipient mail systems, spam filtering, third-party service
+        availability, and provider policies.
+      </p>
+
+      <h2>10. Communication Hub and Inbox</h2>
+      <p>
+        Hey Ralli may provide a Communication Hub, inbox, or similar tools that
+        allow Organizations to view, organize, manage, and respond to messages,
+        comments, replies, or other communications received through connected
+        third-party platforms.
+      </p>
+      <p>
+        Hey Ralli provides technology that enables these communications to be
+        displayed or managed within the Services.
+      </p>
+      <p>
+        <strong>
+          Hey Ralli does not independently monitor, supervise, moderate, or
+          manage conversations conducted through an Organization&apos;s
+          Communication Hub or connected accounts.
+        </strong>
+      </p>
+      <p>The Organization is responsible for:</p>
+      <ul>
+        <li>Monitoring its Communication Hub and connected channels;</li>
+        <li>
+          Reviewing incoming messages, comments, replies, and other
+          communications;
+        </li>
+        <li>Determining whether, when, and how to respond;</li>
+        <li>Ensuring responses are accurate, appropriate, and authorized;</li>
+        <li>
+          Supervising Organization users who have access to inbox or messaging
+          features;
+        </li>
+        <li>
+          Managing roles and permissions for users authorized to communicate on
+          behalf of the Organization;
+        </li>
+        <li>
+          Complying with applicable privacy, communications, recordkeeping, and
+          third-party platform requirements; and
+        </li>
+        <li>
+          Escalating urgent, sensitive, safety-related, legal, or otherwise
+          important communications through appropriate channels.
+        </li>
+      </ul>
+      <p>
+        Organizations are responsible for conversations and responses made by
+        their authorized users through Hey Ralli or connected third-party
+        platforms.
+      </p>
+      <p>
+        <strong>
+          Hey Ralli is not responsible for statements, representations,
+          commitments, promises, advice, responses, omissions, or other
+          communications made by an Organization, its users, or third parties
+          through the Communication Hub or connected platforms.
+        </strong>
+      </p>
+      <h3>Message Synchronization and Delivery</h3>
+      <p>
+        Hey Ralli does not guarantee that every message, comment, notification,
+        reply, or other communication will be received, synchronized, displayed,
+        delivered, or surfaced within the Communication Hub.
+      </p>
+      <p>
+        Messages may be delayed, unavailable, incomplete, duplicated, or fail to
+        synchronize because of:
+      </p>
+      <ul>
+        <li>Third-party API behavior;</li>
+        <li>Platform outages;</li>
+        <li>Changes to platform functionality;</li>
+        <li>Expired or revoked permissions;</li>
+        <li>Account restrictions;</li>
+        <li>Connectivity issues;</li>
+        <li>Technical failures;</li>
+        <li>Rate limits; or</li>
+        <li>Other circumstances outside Hey Ralli&apos;s reasonable control.</li>
+      </ul>
+      <p>
+        <strong>
+          Organizations should not rely on Hey Ralli or the Communication Hub as
+          the sole means of receiving or monitoring emergency, safety-related,
+          legally required, or other time-sensitive communications.
+        </strong>
+      </p>
+      <p>
+        To the maximum extent permitted by applicable law, Hey Ralli is not
+        responsible for losses or damages arising from an Organization&apos;s
+        failure to monitor or respond to communications; missed, delayed,
+        incomplete, duplicated, or unavailable messages; unauthorized or
+        inappropriate responses by Organization users; communications from third
+        parties; or failures or delays involving connected platforms.
+      </p>
+
+      <h2>11. Facebook, Instagram, Meta, and Other Third-Party Platforms</h2>
+      <p>
+        Hey Ralli may allow authorized users to connect third-party platforms and
+        services, including Facebook, Instagram, Google services, calendar
+        providers, volunteer services, and other integrations.
+      </p>
+      <p>
+        By connecting a third-party account, you represent that you have
+        authority to connect that account or organizational asset to Hey Ralli.
+      </p>
+      <h3>Facebook and Instagram</h3>
+      <p>
+        Hey Ralli may allow authorized Organization users to connect Facebook
+        Pages and associated Instagram accounts.
+      </p>
+      <p>
+        When you authorize a Meta connection, you authorize Hey Ralli to access
+        and use information and permissions made available through Meta&apos;s
+        APIs as necessary to provide the features you request.
+      </p>
+      <p>
+        Publishing, scheduling, inbox synchronization, and related functionality
+        through Hey Ralli occur at the direction of authorized Organization
+        users.
+      </p>
+      <p>
+        You are responsible for complying with applicable Facebook, Instagram,
+        Meta, and other third-party platform terms and policies.
+      </p>
+      <p>
+        Third-party platforms control their APIs, permissions, products,
+        availability, and policies and may modify, restrict, suspend, or
+        discontinue functionality.
+      </p>
+      <p>
+        Hey Ralli cannot guarantee that a third-party integration will always
+        remain available or function in the same manner.
+      </p>
+      <p>
+        Authorized users may disconnect an Organization&apos;s Facebook and
+        Instagram connection through:
+      </p>
+      <p>
+        <strong>Settings → Facebook &amp; Instagram → Disconnect</strong>
+      </p>
+      <p>
+        Disconnecting the integration does not automatically delete Organization
+        Content already stored in Hey Ralli.
+      </p>
+      <p>Meta-associated data deletion instructions are available at:</p>
+      <p>
+        <a href="https://heyralli.com/privacy#user-data-deletion">
+          <strong>https://heyralli.com/privacy#user-data-deletion</strong>
+        </a>
+      </p>
+
+      <h2>12. Other Third-Party Services</h2>
+      <p>
+        Hey Ralli relies on third-party providers to operate portions of the
+        Services.
+      </p>
+      <p>These may support:</p>
+      <ul>
+        <li>Cloud infrastructure;</li>
+        <li>Authentication;</li>
+        <li>Artificial intelligence;</li>
+        <li>Payment processing;</li>
+        <li>Email delivery;</li>
+        <li>Social media integrations;</li>
+        <li>Calendar integrations;</li>
+        <li>Volunteer information;</li>
+        <li>Error monitoring;</li>
+        <li>Analytics;</li>
+        <li>Security; and</li>
+        <li>Other requested functionality.</li>
+      </ul>
+      <p>
+        When you choose to use a feature requiring a third-party provider, you
+        authorize Hey Ralli to transmit information reasonably necessary to
+        provide that feature.
+      </p>
+      <p>
+        Third-party services may be governed by their own terms and privacy
+        policies.
+      </p>
+      <p>
+        Hey Ralli is not responsible for changes, outages, suspensions, errors,
+        or policies of third-party services outside our reasonable control.
+      </p>
+
+      <h2>13. Copyright, Trademarks, and Other Third-Party Rights</h2>
+      <p>
+        Users and Organizations are responsible for Organization Content and
+        other materials they submit through the Services and for communications
+        or materials ultimately approved, published, sent, printed, or
+        distributed through Hey Ralli.
+      </p>
+      <p>
+        To the extent permitted by applicable law, Hey Ralli is not responsible
+        for claims resulting from a user&apos;s or Organization&apos;s
+        unauthorized use of third-party:
+      </p>
+      <ul>
+        <li>Copyrighted works;</li>
+        <li>Photographs;</li>
+        <li>Artwork;</li>
+        <li>Illustrations;</li>
+        <li>Logos;</li>
+        <li>Trademarks;</li>
+        <li>Brand assets;</li>
+        <li>Characters;</li>
+        <li>Designs;</li>
+        <li>Likenesses;</li>
+        <li>Music or media; or</li>
+        <li>Other protected materials.</li>
+      </ul>
+      <p>
+        Hey Ralli may remove, disable access to, or restrict content when we
+        reasonably believe it violates these Terms, applicable law, or the rights
+        of another person.
+      </p>
+      <p>
+        Repeated or serious infringement may result in suspension or termination
+        of access to the Services.
+      </p>
+
+      <h2>14. Copyright Complaints</h2>
+      <p>Hey Ralli respects the intellectual-property rights of others.</p>
+      <p>
+        If you believe content made available through Hey Ralli infringes a
+        copyright you own or are authorized to enforce, you may submit a
+        copyright complaint to:
+      </p>
+      <p>
+        <strong>Hey Ralli, LLC</strong>
+        <br />
+        <strong>6688 Nolensville Rd, Ste 108</strong>
+        <br />
+        <strong>Brentwood, TN 37027</strong>
+        <br />
+        <strong>United States</strong>
+      </p>
+      <p>
+        <strong>Email:</strong>{" "}
         <a href="mailto:hello@heyralli.com">hello@heyralli.com</a>
       </p>
+      <p>
+        Your notice should provide sufficient information for Hey Ralli to
+        identify and evaluate the allegedly infringing material, including
+        identification of the copyrighted work, identification or location of the
+        allegedly infringing material, your contact information, and an
+        explanation of the basis for your claim.
+      </p>
+      <p>
+        Hey Ralli may remove or disable access to material in response to a valid
+        copyright complaint and may contact the user or Organization responsible
+        for the material where appropriate.
+      </p>
+      <p>
+        Nothing in this section limits rights or obligations available under
+        applicable copyright law, including the Digital Millennium Copyright Act.
+      </p>
+
+      <h2>15. Acceptable Use</h2>
+      <p>You may not use Hey Ralli to:</p>
+      <ul>
+        <li>Violate applicable law;</li>
+        <li>
+          Infringe intellectual-property, privacy, publicity, or other rights;
+        </li>
+        <li>Upload or distribute content you do not have the right to use;</li>
+        <li>
+          Send unlawful, fraudulent, deceptive, threatening, harassing, or
+          intentionally misleading communications;
+        </li>
+        <li>Impersonate another person or Organization;</li>
+        <li>Distribute malware or malicious code;</li>
+        <li>Attempt unauthorized access to systems or accounts;</li>
+        <li>Circumvent Hey Ralli security or authorization controls;</li>
+        <li>Abuse third-party APIs or connected services;</li>
+        <li>
+          Send communications for which you do not have appropriate
+          authorization;
+        </li>
+        <li>Interfere with the operation or security of the Services; or</li>
+        <li>
+          Use Hey Ralli in violation of applicable connected-platform
+          requirements.
+        </li>
+      </ul>
+      <p>
+        We may investigate suspected misuse and may restrict or suspend access
+        when reasonably necessary to protect Hey Ralli, our users, third parties,
+        or the Services.
+      </p>
+
+      <h2>16. Subscriptions and Billing</h2>
+      <p>
+        Hey Ralli offers paid subscription plans. Current pricing and included
+        features are displayed through Hey Ralli&apos;s Pricing and Billing
+        interfaces.
+      </p>
+      <h3>Monthly Subscriptions</h3>
+      <p>
+        Paid subscriptions are billed through our payment processor and renew
+        automatically on a monthly basis unless canceled.
+      </p>
+      <p>
+        By purchasing a subscription, you authorize the applicable recurring
+        charges until cancellation.
+      </p>
+      <p>
+        Prices, plan features, usage allowances, and available tiers may change
+        over time. Changes affecting an existing paid subscription will be
+        handled subject to applicable law and any notice we provide.
+      </p>
+      <h3>Trials</h3>
+      <p>Eligible new Organizations may receive a trial period.</p>
+      <p>
+        Current product configuration may include a <strong>14-day trial</strong>{" "}
+        with temporary access to designated features and an introductory
+        AI-credit allocation.
+      </p>
+      <p>
+        A payment method may be collected during checkout, and paid billing may
+        begin automatically when the trial ends unless the subscription is
+        canceled before then.
+      </p>
+      <p>
+        The applicable checkout and Billing screens will show the current trial
+        terms.
+      </p>
+      <h3>Failed Payments</h3>
+      <p>
+        If payment fails, we or our payment processor may notify you and attempt
+        to collect payment according to the payment processor&apos;s procedures.
+      </p>
+      <p>
+        We may restrict or suspend access for nonpayment as permitted by these
+        Terms and applicable law.
+      </p>
+      <h3>Cancellation</h3>
+      <p>
+        Subscriptions may be managed or canceled through the available Billing
+        controls or payment-provider customer portal.
+      </p>
+      <p>
+        When a paid subscription is canceled, access to the Organization&apos;s
+        workspace may be paused until the Organization resubscribes.
+      </p>
+      <p>
+        Cancellation does <strong>not</strong> automatically delete Organization
+        Content.
+      </p>
+      <p>
+        An Organization whose trial expires without having started a paid
+        subscription may instead receive the limited access currently associated
+        with Hey Ralli&apos;s entry-level offering.
+      </p>
+
+      <h2>17. AI Credits and AI Reserve</h2>
+      <p>
+        Certain AI functionality uses Hey Ralli credits. The number of credits
+        required may vary by feature.
+      </p>
+      <h3>Monthly Plan Credits</h3>
+      <p>
+        AI credits included with a subscription plan reset according to Hey
+        Ralli&apos;s applicable monthly credit cycle.
+      </p>
+      <p>
+        Unused monthly plan credits <strong>do not roll over</strong> into future
+        monthly credit periods.
+      </p>
+      <h3>AI Reserve</h3>
+      <p>
+        Organizations may purchase additional AI Reserve credits separately.
+      </p>
+      <p>
+        AI Reserve credits may stack with other Reserve purchases and roll over
+        across monthly credit periods.
+      </p>
+      <p>
+        If an Organization cancels its paid subscription, unused AI Reserve may
+        remain associated with the Organization&apos;s account but may be
+        unavailable for use while the Organization&apos;s access is suspended.
+      </p>
+      <p>
+        If the Organization later resubscribes, remaining Reserve credits may
+        again become available, subject to the then-current Services and credit
+        rules.
+      </p>
+      <p>
+        Credits are not currency and have no cash value except where otherwise
+        required by applicable law.
+      </p>
+
+      <h2>18. Refunds</h2>
+      <p>
+        <strong>
+          Except where a refund is required by applicable law, including any
+          applicable requirements under Tennessee law, all payments to Hey Ralli
+          are final and non-refundable.
+        </strong>
+      </p>
+      <p>
+        This includes, except where otherwise required by law:
+      </p>
+      <ul>
+        <li>Subscription fees already charged;</li>
+        <li>Used or unused monthly AI credits;</li>
+        <li>AI Reserve purchases; and</li>
+        <li>
+          Charges for a billing period that began before cancellation.
+        </li>
+      </ul>
+      <p>
+        Canceling a subscription prevents future renewal charges after the
+        cancellation becomes effective but does not ordinarily result in a refund
+        or credit for amounts already paid.
+      </p>
+      <p>
+        Unused AI Reserve remaining after cancellation is not converted to cash
+        or refunded solely because the subscription was canceled.
+      </p>
+      <p>
+        If the Organization later resubscribes and the Reserve remains associated
+        with the Organization, those credits may again become available according
+        to the then-current credit rules.
+      </p>
+      <p>
+        Nothing in these Terms limits any refund, cancellation, or other consumer
+        right that cannot lawfully be waived.
+      </p>
+      <p>
+        If you believe you were charged incorrectly, contact{" "}
+        <a href="mailto:hello@heyralli.com">
+          <strong>hello@heyralli.com</strong>
+        </a>
+        .
+      </p>
+
+      <h2>19. Suspension and Termination</h2>
+      <p>
+        Hey Ralli may suspend or restrict access to some or all of the Services
+        when reasonably necessary because of:
+      </p>
+      <ul>
+        <li>Nonpayment;</li>
+        <li>Security concerns;</li>
+        <li>Suspected fraud;</li>
+        <li>Material violation of these Terms;</li>
+        <li>Abuse of the Services;</li>
+        <li>Legal requirements;</li>
+        <li>Intellectual-property complaints; or</li>
+        <li>
+          Risk to Hey Ralli, users, third parties, or connected platforms.
+        </li>
+      </ul>
+      <p>
+        Where reasonably practicable, we may provide notice or an opportunity to
+        resolve the issue.
+      </p>
+      <p>
+        We may terminate accounts or access for material or repeated violations
+        of these Terms.
+      </p>
+
+      <h2>20. Individual Account Deletion</h2>
+      <p>
+        You may request deletion of your individual Hey Ralli account through:
+      </p>
+      <p>
+        <strong>Settings → Account</strong>
+      </p>
+      <p>
+        Deleting an individual account removes the applicable login and
+        membership information in accordance with Hey Ralli&apos;s
+        account-deletion process.
+      </p>
+      <p>
+        Deleting your individual account does not automatically delete
+        Organization Content belonging to an Organization workspace.
+      </p>
+      <p>
+        Organization Content may remain available to other authorized
+        Organization users.
+      </p>
+      <p>
+        If you are the last administrator of an Organization workspace, Hey Ralli
+        may require that administrative responsibility be transferred before your
+        individual account can be deleted.
+      </p>
+      <p>
+        Organization-wide deletion is not currently provided as a self-service
+        account function. Contact{" "}
+        <a href="mailto:hello@heyralli.com">
+          <strong>hello@heyralli.com</strong>
+        </a>{" "}
+        regarding an Organization-level request.
+      </p>
+      <p>Additional information is available at:</p>
+      <p>
+        <a href="https://heyralli.com/privacy">
+          <strong>https://heyralli.com/privacy</strong>
+        </a>
+      </p>
+
+      <h2>21. Changes to the Services</h2>
+      <p>Hey Ralli is an evolving service.</p>
+      <p>
+        We may add, modify, limit, replace, or discontinue features because of:
+      </p>
+      <ul>
+        <li>Product improvements;</li>
+        <li>Security requirements;</li>
+        <li>Legal requirements;</li>
+        <li>Third-party API changes;</li>
+        <li>Provider availability;</li>
+        <li>Platform policies;</li>
+        <li>Technical limitations; or</li>
+        <li>Business decisions.</li>
+      </ul>
+      <p>
+        We do not guarantee that any specific third-party integration or feature
+        will remain available indefinitely.
+      </p>
+
+      <h2>22. Intellectual Property</h2>
+      <p>
+        Hey Ralli and its underlying software, branding, interfaces, designs,
+        workflows, documentation, and other proprietary materials are owned by
+        Hey Ralli or its licensors and are protected by applicable
+        intellectual-property laws.
+      </p>
+      <p>
+        Except for the limited right to use the Services under these Terms, these
+        Terms do not grant you ownership of Hey Ralli intellectual property.
+      </p>
+      <p>
+        Your ownership and rights in Organization Content are addressed in these
+        Terms.
+      </p>
+      <p>
+        Rights relating to AI-generated content may be affected by applicable
+        law, the nature of the generated material, and terms applicable to
+        third-party AI providers.
+      </p>
+      <p>
+        Hey Ralli does not guarantee that AI-generated content is eligible for
+        copyright protection or that exclusive intellectual-property rights will
+        arise in AI-generated output.
+      </p>
+
+      <h2>23. Feedback</h2>
+      <p>
+        If you voluntarily provide suggestions, ideas, feedback, or
+        recommendations about Hey Ralli, you authorize us to use that feedback to
+        operate and improve the Services without restriction or compensation to
+        you.
+      </p>
+      <p>
+        This does not transfer ownership of your Organization Content to Hey
+        Ralli.
+      </p>
+
+      <h2>24. Disclaimer of Warranties</h2>
+      <p>
+        TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SERVICES ARE
+        PROVIDED <strong>&quot;AS IS&quot; AND &quot;AS AVAILABLE.&quot;</strong>
+      </p>
+      <p>HEY RALLI DOES NOT WARRANT THAT:</p>
+      <ul>
+        <li>THE SERVICES WILL ALWAYS BE AVAILABLE OR UNINTERRUPTED;</li>
+        <li>THE SERVICES WILL BE ERROR-FREE;</li>
+        <li>ALL DEFECTS WILL BE CORRECTED;</li>
+        <li>
+          AI-GENERATED CONTENT WILL BE ACCURATE, COMPLETE, APPROPRIATE, ORIGINAL,
+          OR NON-INFRINGING;
+        </li>
+        <li>THIRD-PARTY INTEGRATIONS WILL REMAIN AVAILABLE;</li>
+        <li>
+          COMMUNICATIONS WILL ALWAYS BE DELIVERED OR PUBLISHED SUCCESSFULLY;
+        </li>
+        <li>
+          <strong>
+            SCHEDULED POSTS, NEWSLETTERS, EMAILS, OR OTHER COMMUNICATIONS WILL BE
+            PUBLISHED, SENT, DELIVERED, OR RECEIVED AT ANY PARTICULAR TIME;
+          </strong>
+        </li>
+        <li>
+          <strong>
+            ALL MESSAGES, COMMENTS, REPLIES, NOTIFICATIONS, OR OTHER
+            COMMUNICATIONS WILL BE RECEIVED, SYNCHRONIZED, DISPLAYED, DELIVERED,
+            OR SURFACED IN THE COMMUNICATION HUB OR THROUGH A CONNECTED
+            THIRD-PARTY PLATFORM;
+          </strong>{" "}
+          OR
+        </li>
+        <li>
+          THE SERVICES WILL MEET EVERY ORGANIZATION&apos;S PARTICULAR
+          REQUIREMENTS.
+        </li>
+      </ul>
+      <p>
+        TO THE MAXIMUM EXTENT PERMITTED BY LAW, HEY RALLI DISCLAIMS IMPLIED
+        WARRANTIES, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+        PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+      </p>
+      <p>
+        Some jurisdictions do not permit certain warranty exclusions, so portions
+        of this section may not apply to you.
+      </p>
+
+      <h2>25. Limitation of Liability</h2>
+      <p>
+        TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, HEY RALLI AND ITS
+        OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, AND SERVICE
+        PROVIDERS WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL,
+        CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, OR FOR LOSS OF PROFITS,
+        REVENUE, DATA, GOODWILL, BUSINESS OPPORTUNITY, MISSED PUBLICATIONS,
+        MISSED DEADLINES, FAILED COMMUNICATIONS, MISSED OR DELAYED MESSAGES,
+        COMMUNICATION HUB OR INBOX ACTIVITY, THIRD-PARTY MESSAGES, OR AN
+        ORGANIZATION&apos;S FAILURE TO MONITOR OR RESPOND TO COMMUNICATIONS,
+        ARISING FROM OR RELATING TO THE SERVICES.
+      </p>
+      <p>
+        This includes, to the maximum extent permitted by applicable law, losses
+        arising from failed or delayed publications, third-party platform outages
+        or restrictions, missed communications, synchronization failures, user
+        configuration errors, unauthorized Organization-user activity, or an
+        Organization&apos;s failure to monitor its posting schedules or
+        Communication Hub.
+      </p>
+      <p>
+        <strong>
+          TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, HEY RALLI&apos;S
+          TOTAL AGGREGATE LIABILITY ARISING OUT OF OR RELATING TO THE SERVICES OR
+          THESE TERMS WILL NOT EXCEED FIVE THOUSAND U.S. DOLLARS ($5,000).
+        </strong>
+      </p>
+      <p>
+        The limitations in this section apply regardless of the legal theory
+        asserted and even if Hey Ralli has been advised of the possibility of the
+        damages.
+      </p>
+      <p>
+        Nothing in these Terms excludes or limits liability to the extent such
+        liability cannot lawfully be excluded or limited.
+      </p>
+
+      <h2>26. Indemnification</h2>
+      <p>
+        To the extent permitted by applicable law, you and the Organization you
+        represent agree to defend, indemnify, and hold harmless Hey Ralli, its
+        affiliates, owners, officers, employees, and contractors from claims,
+        liabilities, damages, losses, and reasonable costs, including reasonable
+        attorneys&apos; fees where recoverable, arising out of or relating to:
+      </p>
+      <ul>
+        <li>Organization Content;</li>
+        <li>User-provided inspiration or reference materials;</li>
+        <li>
+          Alleged copyright, trademark, privacy, publicity, or other rights
+          violations arising from materials provided by you or your Organization;
+        </li>
+        <li>
+          Communications your Organization sends, publishes, or makes through the
+          Communication Hub;
+        </li>
+        <li>
+          Statements, responses, promises, commitments, or representations made
+          by Organization users;
+        </li>
+        <li>
+          Your Organization&apos;s failure to monitor or appropriately respond to
+          communications;
+        </li>
+        <li>Your Organization&apos;s use of connected third-party accounts;</li>
+        <li>Your violation of these Terms;</li>
+        <li>Your violation of applicable law;</li>
+        <li>Your infringement or violation of another person&apos;s rights;</li>
+        <li>
+          Materials your Organization provides to Hey Ralli or its AI features;
+          or
+        </li>
+        <li>
+          Actions taken by authorized users within your Organization workspace.
+        </li>
+      </ul>
+      <p>
+        Hey Ralli reserves the right to control the defense of a matter subject
+        to indemnification, and you agree to reasonably cooperate in that
+        defense.
+      </p>
+
+      <h2>27. Privacy</h2>
+      <p>
+        Our Privacy Policy explains how Hey Ralli collects, uses, shares,
+        retains, and protects information.
+      </p>
+      <p>Privacy Policy:</p>
+      <p>
+        <a href="https://heyralli.com/privacy">
+          <strong>https://heyralli.com/privacy</strong>
+        </a>
+      </p>
+      <p>Meta/Facebook/Instagram User Data Deletion Instructions:</p>
+      <p>
+        <a href="https://heyralli.com/privacy#user-data-deletion">
+          <strong>https://heyralli.com/privacy#user-data-deletion</strong>
+        </a>
+      </p>
+      <p>
+        The Privacy Policy is incorporated into these Terms by reference where
+        permitted by applicable law.
+      </p>
+
+      <h2>28. Changes to These Terms</h2>
+      <p>
+        We may update these Terms as Hey Ralli, our business, our integrations,
+        or applicable requirements change.
+      </p>
+      <p>
+        When we update these Terms, we will update the{" "}
+        <strong>Last Updated</strong> date at the top of this page.
+      </p>
+      <p>
+        If changes are material, we may provide additional notice as appropriate
+        or required by law.
+      </p>
+      <p>
+        For material changes, Hey Ralli may require users to affirmatively accept
+        updated Terms before continuing to use some or all of the Services.
+      </p>
+
+      <h2>29. Governing Law and Venue</h2>
+      <p>
+        These Terms and any dispute arising out of or relating to them or the
+        Services will be governed by the laws of the{" "}
+        <strong>State of Tennessee</strong>, without regard to its
+        conflict-of-laws principles, except to the extent applicable law requires
+        otherwise.
+      </p>
+      <p>
+        Subject to any rights or forums that cannot lawfully be waived, any legal
+        proceeding arising from or relating to these Terms or the Services will
+        be brought in a state or federal court of competent jurisdiction located
+        in Tennessee, and each party consents to the jurisdiction of those
+        courts.
+      </p>
+      <p>
+        Nothing in this section eliminates any consumer protection, statutory
+        right, or forum right that cannot lawfully be waived under applicable
+        law.
+      </p>
+
+      <h2>30. General Terms</h2>
+      <h3>Assignment</h3>
+      <p>
+        You may not assign or transfer these Terms without Hey Ralli&apos;s prior
+        written consent.
+      </p>
+      <p>
+        Hey Ralli may assign these Terms in connection with a merger,
+        acquisition, restructuring, financing, sale of assets, or similar
+        transaction.
+      </p>
+      <h3>Severability</h3>
+      <p>
+        If any provision of these Terms is determined to be invalid or
+        unenforceable, the remaining provisions will remain in effect to the
+        extent permitted by law.
+      </p>
+      <h3>No Waiver</h3>
+      <p>
+        Failure to enforce a provision of these Terms does not waive our right to
+        enforce it later.
+      </p>
+      <h3>Entire Agreement</h3>
+      <p>
+        These Terms, together with the Privacy Policy and any additional terms
+        expressly agreed between Hey Ralli and your Organization, constitute the
+        agreement between you and Hey Ralli regarding use of the Services.
+      </p>
+      <h3>Headings</h3>
+      <p>
+        Section headings are provided for convenience and do not affect
+        interpretation of these Terms.
+      </p>
+
+      <h2>31. Contact and Legal Notices</h2>
+      <p>
+        Questions about these Terms, copyright complaints, or legal notices
+        concerning the Services may be sent to:
+      </p>
+      <p>
+        <strong>Hey Ralli, LLC</strong>
+        <br />
+        <strong>6688 Nolensville Rd, Ste 108</strong>
+        <br />
+        <strong>Brentwood, TN 37027</strong>
+        <br />
+        <strong>United States</strong>
+      </p>
+      <p>
+        <strong>Email:</strong>{" "}
+        <a href="mailto:hello@heyralli.com">hello@heyralli.com</a>
+        <br />
+        <strong>Website:</strong>{" "}
+        <a href="https://heyralli.com">https://heyralli.com</a>
+      </p>
+      <p>Privacy Policy:</p>
+      <p>
+        <a href="https://heyralli.com/privacy">
+          <strong>https://heyralli.com/privacy</strong>
+        </a>
+      </p>
+      <p>User Data Deletion Instructions:</p>
+      <p>
+        <a href="https://heyralli.com/privacy#user-data-deletion">
+          <strong>https://heyralli.com/privacy#user-data-deletion</strong>
+        </a>
+      </p>
+
       <p style={{ marginTop: 28 }}>
         <Link href="/privacy" className="btn-text">
           Read Privacy Policy

@@ -24,6 +24,11 @@ import {
   DEVELOPER_AGREEMENTS_PATH,
   userMustSignDeveloperAgreements,
 } from "@/lib/developer-agreements/gate";
+import { termsAcceptanceRedirectPath } from "@/lib/legal/acceptances-pure";
+import {
+  LEGAL_ACCEPTANCE_PATH,
+  userMustAcceptCurrentTerms,
+} from "@/lib/legal/gate";
 
 const PUBLIC_PATHS = [
   "/",
@@ -304,16 +309,12 @@ export async function updateSession(request: NextRequest) {
       pathname !== "/account/change-password" &&
       pathname !== "/account/update-password" &&
       !pathname.startsWith(DEVELOPER_AGREEMENTS_PATH) &&
+      !pathname.startsWith(LEGAL_ACCEPTANCE_PATH) &&
       !isPublicPath(pathname)
     ) {
-      // Both gates below independently query `organization_users` for this
-      // same user. Fetch it once and hand both the shared snapshot, so a
-      // normal authenticated navigation costs one membership round trip
-      // (plus one canceled-lockout lookup for the resolved org) instead of
-      // up to four sequential ones. Gates are then evaluated concurrently
-      // since neither depends on the other's result — decision precedence
-      // (agreements gate before org gate) is preserved below, unchanged
-      // from the previous sequential behavior.
+      // Membership snapshot is shared by the developer-agreements and org
+      // gates. Terms acceptance is a separate user-scoped lookup, run in
+      // parallel. Precedence: Terms, then developer agreements, then org gate.
       const snapshotResult = await withTimeout(
         getEdgeMembershipSnapshot(supabase, user.id),
         GATE_TIMEOUT_MS,
@@ -321,22 +322,44 @@ export async function updateSession(request: NextRequest) {
       );
       const membershipSnapshot = snapshotResult.ok ? snapshotResult.value : null;
 
-      const [mustSignResult, gateRedirectResult] = await Promise.all([
-        withTimeout(
-          userMustSignDeveloperAgreements(
-            supabase,
-            user.id,
-            membershipSnapshot?.campaignRoles,
+      const [mustAcceptTermsResult, mustSignResult, gateRedirectResult] =
+        await Promise.all([
+          withTimeout(
+            userMustAcceptCurrentTerms(supabase, user.id),
+            GATE_TIMEOUT_MS,
+            "userMustAcceptCurrentTerms",
           ),
-          GATE_TIMEOUT_MS,
-          "userMustSignDeveloperAgreements",
-        ),
-        withTimeout(
-          resolveOrgGateRedirect(request, supabase, user.id, membershipSnapshot),
-          GATE_TIMEOUT_MS,
-          "resolveOrgGateRedirect",
-        ),
-      ]);
+          withTimeout(
+            userMustSignDeveloperAgreements(
+              supabase,
+              user.id,
+              membershipSnapshot?.campaignRoles,
+            ),
+            GATE_TIMEOUT_MS,
+            "userMustSignDeveloperAgreements",
+          ),
+          withTimeout(
+            resolveOrgGateRedirect(
+              request,
+              supabase,
+              user.id,
+              membershipSnapshot,
+            ),
+            GATE_TIMEOUT_MS,
+            "resolveOrgGateRedirect",
+          ),
+        ]);
+
+      if (mustAcceptTermsResult.ok && mustAcceptTermsResult.value) {
+        const nextPath = `${pathname}${request.nextUrl.search}`;
+        const legalUrl = new URL(
+          termsAcceptanceRedirectPath(nextPath),
+          request.nextUrl.origin,
+        );
+        const redirectResponse = NextResponse.redirect(legalUrl);
+        copyCookies(supabaseResponse, redirectResponse);
+        return redirectResponse;
+      }
 
       if (mustSignResult.ok && mustSignResult.value) {
         const agreementsUrl = new URL(

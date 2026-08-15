@@ -120,13 +120,7 @@ export function MarketingWowInviteForm({
         </Link>
 
         <AuthErrorMessage>{oauthError}</AuthErrorMessage>
-        <MarketingAuthLegalNote>
-          By joining, you agree to the Hey Ralli{" "}
-          <Link href="/terms" className="underline hover:text-cos-text">
-            Terms of Service
-          </Link>
-          .
-        </MarketingAuthLegalNote>
+        <MarketingAuthLegalNote />
       </>
     );
   }
@@ -214,13 +208,7 @@ export function MarketingWowInviteForm({
         </Link>
       </p>
 
-      <MarketingAuthLegalNote>
-        By joining, you agree to the Hey Ralli{" "}
-        <Link href="/terms" className="underline hover:text-cos-text">
-          Terms of Service
-        </Link>
-        .
-      </MarketingAuthLegalNote>
+      <MarketingAuthLegalNote />
     </>
   );
 }

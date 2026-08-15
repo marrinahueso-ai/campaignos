@@ -16,7 +16,7 @@ Public-facing privacy policy and data-handling notes for a school/PTO product.
 - Terms of Service: `/terms`
 - Homepage cookie consent (essential vs optional analytics preference in `localStorage`)
 
-Policy copy lives in `src/lib/marketing-wow/legal-content.tsx` (shipped with the marketing WOW funnel).
+Policy copy lives in `src/lib/marketing-wow/legal-content.tsx`. Terms version id is `CURRENT_TERMS_VERSION` (`2026-08-14`) in `src/lib/legal/versions.ts` — not the visible Last Updated string alone. Customer acceptance is stored append-only in `legal_acceptances` (see [database.md](../engineering/database.md)). Existing users without a row for the current Terms version are asked to accept at `/account/legal`. Developer NDA/IP signatures are a separate system.
 
 ### Meta App Dashboard URLs
 

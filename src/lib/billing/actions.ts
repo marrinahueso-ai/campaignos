@@ -157,6 +157,12 @@ export async function createPlanCheckoutSession(
       // Card on file so Stripe can charge when the trial ends.
       payment_method_collection: "always",
       allow_promotion_codes: true,
+      // Shows Stripe's Terms checkbox. Requires Terms URL in Stripe Dashboard
+      // Public details (https://heyralli.com/terms). Canonical acceptance is
+      // still recorded in Hey Ralli legal_acceptances — this is display only.
+      consent_collection: {
+        terms_of_service: "required",
+      },
     });
     if (!session.url) {
       return { success: false, error: "Stripe did not return a checkout URL." };
@@ -221,6 +227,9 @@ export async function createReserveCheckoutSession(
         organizationId: ctx.organizationId,
         reserveSku: sku,
         priceId,
+      },
+      consent_collection: {
+        terms_of_service: "required",
       },
     });
     if (!session.url) {

@@ -72,13 +72,13 @@ export function MarketingAuthLegalNote({
     <p className="mt-8 text-center text-[11px] leading-relaxed font-bold tracking-widest text-cos-muted/70 uppercase">
       {children ?? (
         <>
-          By continuing you agree to our{" "}
+          By continuing, you agree to the Hey Ralli{" "}
           <Link href="/terms" className="underline hover:text-cos-text">
-            Terms
+            Terms of Service
           </Link>{" "}
           and{" "}
           <Link href="/privacy" className="underline hover:text-cos-text">
-            Privacy
+            Privacy Policy
           </Link>
           .
         </>

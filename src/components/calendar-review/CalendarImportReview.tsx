@@ -209,18 +209,26 @@ export function CalendarImportReview({
     setActionError(null);
 
     startTransition(async () => {
-      const result = await importCalendarEventsAction(importId, events);
+      try {
+        const result = await importCalendarEventsAction(importId, events);
 
-      if (result.error) {
-        setActionError(result.error);
-        return;
+        if (result.error) {
+          setActionError(result.error);
+          return;
+        }
+
+        setImportedCount(result.importedCount);
+        setUpdatedCount(result.updatedCount);
+        setSkippedCount(result.skippedCount);
+        setImportComplete(true);
+        setParseStatus("imported");
+      } catch (error) {
+        setActionError(
+          error instanceof Error
+            ? error.message
+            : "Finish Review failed. Please try again.",
+        );
       }
-
-      setImportedCount(result.importedCount);
-      setUpdatedCount(result.updatedCount);
-      setSkippedCount(result.skippedCount);
-      setImportComplete(true);
-      setParseStatus("imported");
     });
   }
 
@@ -671,8 +679,8 @@ export function CalendarImportReview({
             >
               {isPending
                 ? isFirstImport
-                  ? "Adding…"
-                  : "Finishing…"
+                  ? "Saving…"
+                  : "Saving your calendar changes…"
                 : isFirstImport
                   ? "Add Events to Calendar"
                   : "Finish Review"}
@@ -680,7 +688,9 @@ export function CalendarImportReview({
             <p className="mt-3 text-sm text-cos-muted">
               {isFirstImport
                 ? `This will add ${eventsToAddCount} event${eventsToAddCount === 1 ? "" : "s"} to your Hey Ralli calendar.`
-                : "Finishes this review — new events are added; changes you already resolved with Update / Keep Mine / Keep Both stay as you chose."}
+                : isPending
+                  ? "This can take a few seconds on a large calendar — hang tight."
+                  : "Finishes this review — new events are added; changes you already resolved with Update / Keep Mine / Keep Both stay as you chose."}
             </p>
           </div>
         </>
