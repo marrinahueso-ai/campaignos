@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/approvals-scheduling/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { AppImage } from "@/components/images/AppImage";
 import { canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
+import { approvalArtworkUrl } from "@/lib/approvals-scheduling/approval-artwork-url";
 import {
   DEFAULT_APPROVAL_SORT_DIRECTION,
   DEFAULT_APPROVAL_SORT_FIELD,
@@ -17,7 +18,6 @@ import {
   sortApprovalItems,
 } from "@/lib/approvals-scheduling/status";
 import {
-  getUnifiedApprovalPreview,
   type ApprovalSortDirection,
   type ApprovalSortField,
   type UnifiedApprovalItem,
@@ -64,16 +64,11 @@ function SortIcon({
 }
 
 function ApprovalArtworkThumbnail({ item }: { item: UnifiedApprovalItem }) {
-  const preview = getUnifiedApprovalPreview(item);
-  const source =
-    preview.feedArtworkUrl ||
-    preview.storyArtworkUrl ||
-    item.thumbnailUrl ||
-    "";
+  const source = approvalArtworkUrl(item);
 
   return (
     <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[14px] border border-cos-border bg-cos-bg">
-      {source.trim() ? (
+      {source ? (
         <AppImage
           src={source}
           alt=""

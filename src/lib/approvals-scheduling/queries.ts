@@ -11,6 +11,7 @@ import {
   mapClassicApprovalItem,
   mapSchedulingItemRow,
 } from "@/lib/approvals-scheduling/map-items";
+import { approvalArtworkUrl } from "@/lib/approvals-scheduling/approval-artwork-url";
 import {
   dedupeUnifiedApprovalItems,
   isSchedulingRowAssignedToActor,
@@ -30,6 +31,7 @@ import type {
   UnifiedApprovalsPageData,
   UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
+import { getUnifiedApprovalPreview } from "@/lib/approvals-scheduling/types";
 import { milestoneNameMatchKey } from "@/lib/campaign-builder-v2/milestone-names";
 import {
   classicQueueNeedsPreviewEnrichment,
@@ -565,6 +567,61 @@ function isSubmittedByActor(
   return row.requested_by_user_id === actor.organizationUserId;
 }
 
+/**
+ * Classic Meta shells often lack list artwork when preview enrichment is lean.
+ * Reuse CB2 scheduling artwork already loaded for the same event so focus /
+ * Also Waiting thumbs match items that already have feed_artwork_url.
+ */
+function backfillClassicArtworkFromScheduling(
+  items: UnifiedApprovalItem[],
+): UnifiedApprovalItem[] {
+  const artByEvent = new Map<
+    string,
+    { feedArtworkUrl: string | null; storyArtworkUrl: string | null }
+  >();
+
+  for (const item of items) {
+    if (!item.schedulingItemId || !item.eventId) {
+      continue;
+    }
+    const preview = getUnifiedApprovalPreview(item);
+    const feed = preview.feedArtworkUrl?.trim() || item.thumbnailUrl?.trim() || null;
+    const story = preview.storyArtworkUrl?.trim() || null;
+    if (!feed && !story) {
+      continue;
+    }
+    if (!artByEvent.has(item.eventId)) {
+      artByEvent.set(item.eventId, {
+        feedArtworkUrl: feed,
+        storyArtworkUrl: story,
+      });
+    }
+  }
+
+  return items.map((item) => {
+    if (item.source !== "classic" || approvalArtworkUrl(item)) {
+      return item;
+    }
+    if (!item.eventId) {
+      return item;
+    }
+    const art = artByEvent.get(item.eventId);
+    if (!art?.feedArtworkUrl && !art?.storyArtworkUrl) {
+      return item;
+    }
+    const preview = getUnifiedApprovalPreview(item);
+    return {
+      ...item,
+      thumbnailUrl: art.feedArtworkUrl ?? art.storyArtworkUrl,
+      preview: {
+        ...preview,
+        feedArtworkUrl: art.feedArtworkUrl ?? preview.feedArtworkUrl,
+        storyArtworkUrl: art.storyArtworkUrl ?? preview.storyArtworkUrl,
+      },
+    };
+  });
+}
+
 async function mapSchedulingRowsToUnifiedItems(input: {
   schedulingRows: ApprovalSchedulingItemRow[];
   classicItems: UnifiedApprovalItem[];
@@ -620,7 +677,9 @@ async function mapSchedulingRowsToUnifiedItems(input: {
     );
   }
 
-  const deduped = dedupeUnifiedApprovalItems([...classicItems, ...cb2Items]);
+  const deduped = backfillClassicArtworkFromScheduling(
+    dedupeUnifiedApprovalItems([...classicItems, ...cb2Items]),
+  );
   const named = leanEnrich
     ? deduped
     : applyLiveMilestoneNames(deduped, liveNames);
@@ -658,8 +717,11 @@ async function buildUnifiedApprovalsPageData(options?: {
     await Promise.all([
       getCurrentCampaignRole(),
       getActiveMembership(),
+      // Classic Meta shells omit artwork unless enriched. Use "missing" so the
+      // hub still stays lean when previews are already present, but Fall Picnic /
+      // BooHoo classic rows get feed art for focus + Also Waiting thumbs.
       getApprovalQueueOverviewForCurrentUser(undefined, {
-        enrichPreviews: false,
+        enrichPreviews: "missing",
       }),
       fetchCampaignBuilderSchedulingItems(detailStatuses),
       deferTerminalDetailRows
@@ -1131,7 +1193,9 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
   }
 
   const named = applyLiveMilestoneNames(
-    dedupeUnifiedApprovalItems([...classicItems, ...cb2Items]),
+    backfillClassicArtworkFromScheduling(
+      dedupeUnifiedApprovalItems([...classicItems, ...cb2Items]),
+    ),
     liveNames,
   );
 

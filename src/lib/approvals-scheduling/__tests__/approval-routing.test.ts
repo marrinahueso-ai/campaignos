@@ -278,7 +278,7 @@ describe("Approval Routing — queue visibility", () => {
     );
     assert.match(queriesSource, /row\.event_id !== eventId/);
     assert.match(queriesSource, /getEventById\(eventId\)/);
-    assert.match(queriesSource, /enrichPreviews:\s*false/);
+    assert.match(queriesSource, /enrichPreviews:\s*"missing"/);
     assert.match(
       queriesSource,
       /Org-scoped scheduling rows for Approvals hub list/,

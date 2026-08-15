@@ -495,10 +495,12 @@ export async function getApprovalQueueOverviewForCurrentUser(
   eventId?: string,
   options?: {
     /**
-     * When false, skip Meta/version/step preview enrichment.
-     * Default true — standalone Approvals and dashboards keep full previews.
+     * Preview enrichment policy:
+     * - true (default): always load Meta/version/step previews (artwork + captions)
+     * - false: skip enrichment (sidebar/badge-adjacent lean paths)
+     * - "missing": enrich only when classic rows lack artwork/captions (org Approvals hub)
      */
-    enrichPreviews?: boolean;
+    enrichPreviews?: boolean | "missing";
   },
 ): Promise<{
   assignedToMe: ApprovalQueueItem[];
@@ -508,10 +510,14 @@ export async function getApprovalQueueOverviewForCurrentUser(
   actor: ApprovalActor | null;
 }> {
   const { actor, rows, items } = await resolveApprovalQueueBase(eventId);
-  const enriched =
-    options?.enrichPreviews === false
-      ? items
-      : await enrichApprovalQueuePreviews(rows, items);
+  const policy = options?.enrichPreviews;
+  const shouldEnrich =
+    policy === true ||
+    policy === undefined ||
+    (policy === "missing" && classicQueueNeedsPreviewEnrichment(items));
+  const enriched = shouldEnrich
+    ? await enrichApprovalQueuePreviews(rows, items)
+    : items;
 
   const pending = enriched.filter(
     (item) =>

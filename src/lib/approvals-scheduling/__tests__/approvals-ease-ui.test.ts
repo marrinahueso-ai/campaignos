@@ -171,9 +171,12 @@ describe("approvals ease pulse contracts", () => {
       /ApprovalsFocusCard[\s\S]*?gap-3[\s\S]*?p-3[\s\S]*?minmax\(240px,300px\)_1fr/,
     );
     // Focus art uses padding-top square lock (not aspect-square alone) and
-    // hides the rail when artwork is missing — no huge empty grey void.
+    // hides the rail when artwork URL is missing — no huge empty grey void.
+    // Load errors must not collapse the column (no onDisplayChange hide).
     assert.match(ease, /paddingTop:\s*"100%"/);
     assert.match(ease, /hideWhenEmpty/);
+    assert.match(ease, /min-h-\[220px\]/);
+    assert.doesNotMatch(ease, /onDisplayChange/);
     assert.match(ease, /approvalArtworkUrl/);
     assert.match(ease, /AppImage/);
     assert.match(ease, /resize="cover"/);
@@ -195,5 +198,66 @@ describe("approvals ease pulse contracts", () => {
     assert.match(table, /resize="cover"/);
     assert.match(table, /className="object-cover object-center"/);
     assert.match(table, /sizes="48px"/);
+  });
+
+  it("resolves focus/table artwork from feed, story, then thumbnail — not a placeholder", async () => {
+    const { approvalArtworkUrl } = await import("../approval-artwork-url.ts");
+
+    const withFeed = stubItem({
+      thumbnailUrl: "https://cdn.example/thumb-only.png",
+      preview: {
+        captionText: null,
+        storyCaptionSnippet: null,
+        feedArtworkUrl: "https://cdn.example/feed.png",
+        storyArtworkUrl: "https://cdn.example/story.png",
+      },
+    });
+    assert.equal(approvalArtworkUrl(withFeed), "https://cdn.example/feed.png");
+
+    const storyOnly = stubItem({
+      thumbnailUrl: null,
+      preview: {
+        captionText: null,
+        storyCaptionSnippet: null,
+        feedArtworkUrl: null,
+        storyArtworkUrl: "https://cdn.example/story.png",
+      },
+    });
+    assert.equal(approvalArtworkUrl(storyOnly), "https://cdn.example/story.png");
+
+    const thumbOnly = stubItem({
+      thumbnailUrl: "https://cdn.example/thumb-only.png",
+      preview: {
+        captionText: null,
+        storyCaptionSnippet: null,
+        feedArtworkUrl: null,
+        storyArtworkUrl: null,
+      },
+    });
+    assert.equal(
+      approvalArtworkUrl(thumbOnly),
+      "https://cdn.example/thumb-only.png",
+    );
+
+    const empty = stubItem();
+    assert.equal(approvalArtworkUrl(empty), "");
+  });
+
+  it("org Approvals hub enriches classic previews when artwork is missing", () => {
+    const queries = readSrc("../queries.ts");
+    const routing = readSrc(
+      "../../event-workspace/approval-routing-queries.ts",
+    );
+
+    assert.match(
+      queries,
+      /getApprovalQueueOverviewForCurrentUser\(undefined,\s*\{\s*enrichPreviews:\s*"missing"/s,
+    );
+    assert.match(queries, /backfillClassicArtworkFromScheduling/);
+    assert.match(routing, /enrichPreviews\?: boolean \| "missing"/);
+    assert.match(
+      routing,
+      /policy === "missing" && classicQueueNeedsPreviewEnrichment\(items\)/,
+    );
   });
 });

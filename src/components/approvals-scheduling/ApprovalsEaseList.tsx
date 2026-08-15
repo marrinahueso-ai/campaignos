@@ -12,20 +12,13 @@ import {
   getUnifiedApprovalPreview,
   type UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
+import { approvalArtworkUrl } from "@/lib/approvals-scheduling/approval-artwork-url";
 import { AppImage } from "@/components/images/AppImage";
 import { NewsletterApprovalCardPreview } from "@/components/newsletters/NewsletterApprovalPreview";
 import type { NewsletterComposerState } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
 
-/** Prefer feed, then story, then list thumbnail — same order as ReviewDrawer. */
-export function approvalArtworkUrl(item: UnifiedApprovalItem): string {
-  const preview = getUnifiedApprovalPreview(item);
-  const url =
-    preview.feedArtworkUrl ||
-    preview.storyArtworkUrl ||
-    item.thumbnailUrl;
-  return url?.trim() || "";
-}
+export { approvalArtworkUrl } from "@/lib/approvals-scheduling/approval-artwork-url";
 
 function artBackground(item: UnifiedApprovalItem): string {
   return approvalArtworkUrl(item);
@@ -81,11 +74,11 @@ function ArtTile({
   width,
   priority,
   /**
-   * Focus cards: hide entirely when there is no artwork (no huge grey void).
+   * Focus cards: hide entirely when there is no artwork URL (no huge grey void).
    * Queue thumbs keep a compact placeholder so the table column stays aligned.
+   * Load errors keep the rail (placeholder) — never collapse a card that has a URL.
    */
   hideWhenEmpty = false,
-  onDisplayChange,
 }: {
   item: UnifiedApprovalItem;
   className?: string;
@@ -93,23 +86,18 @@ function ArtTile({
   width: number;
   priority?: boolean;
   hideWhenEmpty?: boolean;
-  /** Fires when artwork becomes visible or is hidden (missing / load error). */
-  onDisplayChange?: (visible: boolean) => void;
 }) {
   const source = artBackground(item);
   const [failed, setFailed] = useState(false);
   const isCompact = width <= 200;
-  const showImage = Boolean(source) && !failed;
+  const hasSource = Boolean(source);
+  const showImage = hasSource && !failed;
 
   useEffect(() => {
     setFailed(false);
   }, [source]);
 
-  useEffect(() => {
-    onDisplayChange?.(showImage);
-  }, [showImage, onDisplayChange]);
-
-  if (!showImage && hideWhenEmpty) {
+  if (!hasSource && hideWhenEmpty) {
     return null;
   }
 
@@ -120,11 +108,11 @@ function ArtTile({
         // <img> clips. Padding-top spacer (not aspect-ratio alone): grid
         // stretch has collapsed focus art frames in production before.
         "relative isolate overflow-hidden rounded-[14px] bg-cos-bg",
-        !isCompact && showImage && "w-full self-start",
+        !isCompact && hasSource && "w-full min-h-[220px] self-start",
         className,
       )}
     >
-      {!isCompact && showImage ? (
+      {!isCompact && hasSource ? (
         <span
           aria-hidden
           className="block w-full"
@@ -132,30 +120,38 @@ function ArtTile({
         />
       ) : null}
       {showImage ? (
-        <span className="absolute inset-0">
-          <AppImage
-            src={source}
-            alt=""
-            fill
-            preset={isCompact ? "thumb" : "card"}
-            displayWidth={width}
-            displayHeight={width}
-            // Cover fills the rail so feed art does not leave a cream void;
-            // AppImage still falls back to the original URL if transforms fail.
-            resize="cover"
-            className="rounded-[14px] object-cover object-center"
-            style={{ objectFit: "cover" }}
-            sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
-            priority={priority}
-            onError={() => setFailed(true)}
+        <AppImage
+          src={source}
+          alt=""
+          fill
+          preset={isCompact ? "thumb" : "card"}
+          displayWidth={width}
+          displayHeight={width}
+          // Cover fills the rail so feed art does not leave a cream void;
+          // AppImage still falls back to the original URL if transforms fail.
+          resize="cover"
+          className="rounded-[14px] object-cover object-center"
+          style={{ objectFit: "cover" }}
+          sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
+          priority={priority}
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <span
+          className={cn(
+            "flex items-center justify-center text-cos-muted",
+            isCompact
+              ? "h-full w-full"
+              : "absolute inset-0",
+          )}
+        >
+          <ImageIcon
+            className={cn("opacity-50", isCompact ? "h-4 w-4" : "h-8 w-8")}
+            aria-hidden
           />
-        </span>
-      ) : isCompact ? (
-        <span className="flex h-full w-full items-center justify-center text-cos-muted">
-          <ImageIcon className="h-4 w-4 opacity-50" aria-hidden />
           <span className="sr-only">No artwork</span>
         </span>
-      ) : null}
+      )}
       {label && showImage ? (
         <span className="absolute top-3 left-3 z-10 rounded-full bg-[rgba(255,252,247,0.92)] px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] text-cos-text uppercase">
           {label}
@@ -182,12 +178,9 @@ export function ApprovalsFocusCard({
   const isNewsletter =
     item.channel === "newsletter" ||
     item.campaignMilestoneId?.startsWith("newsletter:");
-  const artworkUrl = artBackground(item);
-  const [artVisible, setArtVisible] = useState(Boolean(artworkUrl));
-
-  useEffect(() => {
-    setArtVisible(Boolean(artworkUrl));
-  }, [artworkUrl, item.id]);
+  // Keep the art column whenever a URL exists; ArtTile handles load failures
+  // with an in-rail placeholder (do not collapse the grid on transient errors).
+  const artVisible = Boolean(artBackground(item));
 
   return (
     <article
@@ -217,7 +210,6 @@ export function ApprovalsFocusCard({
           width={800}
           priority
           hideWhenEmpty
-          onDisplayChange={setArtVisible}
           label={
             preview.feedArtworkUrl
               ? "Feed"
