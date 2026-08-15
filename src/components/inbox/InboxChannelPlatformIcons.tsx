@@ -26,7 +26,7 @@ export function MessengerPlatformIcon({ className }: { className?: string }) {
 }
 
 /**
- * Instagram DM badge: gradient paper-plane outline.
+ * Instagram DM badge: round white circle with gradient paper-plane.
  * Used for `instagram_dm` channel threads.
  */
 export function InstagramDmPlatformIcon({ className }: { className?: string }) {
@@ -36,7 +36,7 @@ export function InstagramDmPlatformIcon({ className }: { className?: string }) {
   return (
     <svg
       aria-hidden
-      className={cn("shrink-0", className)}
+      className={cn("block overflow-hidden rounded-full", className)}
       viewBox="0 0 24 24"
       fill="none"
     >
@@ -56,17 +56,18 @@ export function InstagramDmPlatformIcon({ className }: { className?: string }) {
           <stop offset="100%" stopColor="#405de6" />
         </linearGradient>
       </defs>
-      {/* Paper-plane outline (Meta IG Direct style) */}
+      <circle cx="12" cy="12" r="12" fill="#fff" />
+      {/* Paper-plane outline (Meta IG Direct style), inset for round badge */}
       <path
-        d="M20.85 3.35 3.55 10.55c-.55.23-.53.99.03 1.18l4.85 1.65c.2.07.36.23.43.43l1.7 4.95c.2.58.98.65 1.28.11L20.9 4.55c.35-.62-.3-1.3-.95-1.2Z"
+        d="M19.6 5.1 5.85 10.85c-.44.18-.42.79.02.94l3.9 1.32c.16.05.29.18.34.34l1.36 3.96c.16.46.78.52 1.02.09L19.65 6.05c.28-.5-.24-1.04-.76-.95Z"
         stroke={`url(#${gradId})`}
-        strokeWidth="1.6"
+        strokeWidth="1.5"
         strokeLinejoin="round"
       />
       <path
-        d="M10.35 13.05 20.15 4.15"
+        d="M11.15 12.95 19 6.05"
         stroke={`url(#${gradId})`}
-        strokeWidth="1.6"
+        strokeWidth="1.5"
         strokeLinecap="round"
       />
     </svg>

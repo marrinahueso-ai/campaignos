@@ -1,6 +1,6 @@
 import {
-  FacebookPlatformIcon,
-  InstagramPlatformIcon,
+  FacebookIcon,
+  InstagramIcon,
 } from "@/components/communications-planning-calendar/MetaPlatformIcons";
 import {
   InstagramDmPlatformIcon,
@@ -36,10 +36,10 @@ function ChannelGlyph({
       return <InstagramDmPlatformIcon className={iconClass} />;
     case "instagram_comment":
     case "instagram_tag":
-      return <InstagramPlatformIcon className={iconClass} />;
+      return <InstagramIcon className={iconClass} />;
     case "facebook_comment":
     case "facebook_tag":
-      return <FacebookPlatformIcon className={iconClass} />;
+      return <FacebookIcon className={iconClass} />;
   }
 }
 
