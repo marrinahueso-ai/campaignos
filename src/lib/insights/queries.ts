@@ -2,6 +2,10 @@ import "server-only";
 
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import {
+  isInsightsSyncInProgress,
+  isInsightsSyncRunStaleRunning,
+} from "@/lib/insights/auto-sync";
+import {
   formatDateRangeLabel,
   getPreviousPeriod,
   resolveInsightsDateRange,
@@ -633,31 +637,66 @@ async function fetchActivityEvents(
 async function fetchLatestSyncRun(organizationId: string): Promise<{
   status: "completed" | "failed" | "running" | null;
   completedAt: string | null;
+  startedAt: string | null;
   errorMessage: string | null;
   warnings: string[];
 }> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("analytics_sync_runs")
-    .select("status, completed_at, error_message, metadata")
+    .select("status, started_at, completed_at, error_message, metadata")
     .eq("organization_id", organizationId)
     .order("started_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(5);
 
-  if (error || !data) {
-    return { status: null, completedAt: null, errorMessage: null, warnings: [] };
+  if (error || !data?.length) {
+    return {
+      status: null,
+      completedAt: null,
+      startedAt: null,
+      errorMessage: null,
+      warnings: [],
+    };
   }
 
-  const metadata = (data.metadata as { warnings?: unknown } | null) ?? null;
+  const latest = data[0];
+  const startedAt = (latest.started_at as string | null) ?? null;
+  let status = latest.status as "completed" | "failed" | "running";
+  // Stuck mid-sync must not leave the UI on "Refreshing…" forever.
+  if (
+    isInsightsSyncRunStaleRunning({
+      status,
+      startedAt,
+    })
+  ) {
+    status = "failed";
+  }
+
+  const completedRow =
+    data.find(
+      (row) =>
+        row.completed_at &&
+        (row.status === "completed" || row.status === "failed"),
+    ) ?? null;
+
+  const metadata = (latest.metadata as { warnings?: unknown } | null) ?? null;
   const warnings = Array.isArray(metadata?.warnings)
     ? metadata.warnings.filter((entry): entry is string => typeof entry === "string")
     : [];
 
+  const inProgress = isInsightsSyncInProgress({ status, startedAt });
+
   return {
-    status: data.status as "completed" | "failed" | "running",
-    completedAt: (data.completed_at as string | null) ?? null,
-    errorMessage: (data.error_message as string | null) ?? null,
+    status: inProgress ? "running" : status === "running" ? "failed" : status,
+    completedAt:
+      (completedRow?.completed_at as string | null) ??
+      (latest.completed_at as string | null) ??
+      null,
+    startedAt,
+    errorMessage:
+      status === "failed" && !inProgress && !latest.error_message
+        ? "Last refresh didn’t finish — try again."
+        : ((latest.error_message as string | null) ?? null),
     warnings,
   };
 }

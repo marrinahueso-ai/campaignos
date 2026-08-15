@@ -598,8 +598,47 @@ export async function syncOrganizationInsights(input: {
       until: untilDate,
     });
     const postFailures: PostSyncFailure[] = [];
+    const canFacebookPostInsights = hasFacebookInsightsScopes(
+      tokenHealth.grantedScopes,
+    );
+    const canInstagramPostInsights = hasInstagramInsightsScopes(
+      tokenHealth.grantedScopes,
+    );
 
     for (const candidate of candidates) {
+      const canPostInsights =
+        candidate.platform === "facebook"
+          ? canFacebookPostInsights
+          : canInstagramPostInsights;
+
+      // Without Insights scopes, skip Graph insights calls and store engagement
+      // fallbacks only — avoids noisy permission errors before reconnect.
+      if (!canPostInsights) {
+        const hasFallback =
+          candidate.likesFallback > 0 ||
+          candidate.commentsFallback > 0 ||
+          candidate.sharesFallback > 0 ||
+          Boolean(candidate.caption) ||
+          Boolean(candidate.thumbnailUrl);
+        if (!hasFallback) {
+          continue;
+        }
+        const insight = engagementFallbackInsight({
+          likes: candidate.likesFallback,
+          comments: candidate.commentsFallback,
+          shares: candidate.sharesFallback,
+        });
+        const saved = await upsertPostInsight({
+          organizationId: input.organizationId,
+          candidate,
+          insight,
+        });
+        if (saved) {
+          postsSynced += 1;
+        }
+        continue;
+      }
+
       const fetchResult =
         candidate.platform === "facebook"
           ? await fetchFacebookPostInsights({

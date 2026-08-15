@@ -13,6 +13,7 @@ import {
   loadInsightsPageDataAction,
   syncInsightsAction,
 } from "@/lib/insights/actions";
+import { shouldAutoSyncInsights } from "@/lib/insights/auto-sync";
 import {
   INSIGHTS_DATE_PRESETS,
   addDays,
@@ -537,6 +538,7 @@ export function InsightsEaseShell({
   const [recOpen, setRecOpen] = useState(false);
   const [whyOpen, setWhyOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const autoSyncAttemptedRef = useRef(false);
 
   const exportHref = `/api/insights/export?from=${encodeURIComponent(dateFrom)}&to=${encodeURIComponent(dateTo)}`;
   const showConnectEmpty = !pageData.connection.metaConnected;
@@ -731,11 +733,42 @@ export function InsightsEaseShell({
         });
         if (next) setPageData(next);
         setDataLoading(false);
+        if (selectedEventId) {
+          const nextEvent = await loadEventInsightsAction(selectedEventId);
+          if (nextEvent) setEventPanelData(nextEvent);
+        }
         return;
       }
       setSyncMessage(result.error ?? "Couldn't refresh your Page numbers.");
     });
   }
+
+  // Auto-pull once on open when empty/stale so Meta reviewers don't hunt for Refresh.
+  useEffect(() => {
+    if (autoSyncAttemptedRef.current) return;
+    if (view !== "org") return;
+    if (
+      !shouldAutoSyncInsights({
+        metaConnected: pageData.connection.metaConnected,
+        insightsScopesGranted: pageData.connection.insightsScopesGranted,
+        hasMetrics: pageData.hasAnyMetrics,
+        lastSyncAt: pageData.connection.lastSyncAt,
+        syncInProgress: pageData.syncInProgress,
+      })
+    ) {
+      return;
+    }
+    autoSyncAttemptedRef.current = true;
+    handleSync();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on mount / first eligible payload
+  }, [
+    view,
+    pageData.connection.metaConnected,
+    pageData.connection.insightsScopesGranted,
+    pageData.connection.lastSyncAt,
+    pageData.hasAnyMetrics,
+    pageData.syncInProgress,
+  ]);
 
   const metaChipLabel = pageData.connection.pageName
     ? `Meta connected · ${pageData.connection.pageName}`
@@ -1386,6 +1419,8 @@ function SyncMetaEmpty({
   syncing: boolean;
   missingScopes: string[];
 }) {
+  const needsReconnect = missingScopes.length > 0;
+
   return (
     <div className="mx-auto mt-2 flex max-w-xl flex-col items-center rounded-[22px] border border-cos-border bg-cos-card px-7 py-12 text-center shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
       <div
@@ -1403,26 +1438,41 @@ function SyncMetaEmpty({
         </svg>
       </div>
       <h2 className="font-display text-[28px] font-semibold tracking-[-0.02em] text-cos-text">
-        Refresh your Page numbers
+        {needsReconnect
+          ? "Finish Insights permissions"
+          : "Refresh your Page numbers"}
       </h2>
       <p className="mt-2.5 max-w-[38ch] text-sm leading-relaxed text-cos-muted">
-        Meta is connected, but we don’t have numbers yet. Refresh to pull
-        organic views, reach, and post performance into Hey Ralli.
+        {needsReconnect
+          ? "Meta is connected for publishing and inbox, but Page Insights still needs one more Facebook approval before we can pull organic numbers."
+          : "Meta is connected, but we don’t have numbers yet. Refresh to pull organic views, reach, and post performance into Hey Ralli."}
       </p>
-      {missingScopes.length > 0 ? (
+      {needsReconnect ? (
         <p className="mt-3 max-w-md text-xs text-[#a65a3a]">
           {formatMissingInsightsPermissionsMessage(missingScopes)}
         </p>
       ) : null}
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
-        <button
-          type="button"
-          onClick={onSync}
-          disabled={syncing}
-          className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-[#fffcf7] transition-transform hover:-translate-y-px disabled:opacity-60"
-        >
-          {syncing ? "Refreshing…" : "Refresh your Page numbers"}
-        </button>
+        {needsReconnect ? (
+          <Link
+            href={buildMetaOAuthStartPath({
+              returnTo: "/insights",
+              authType: "rerequest",
+            })}
+            className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-[#fffcf7] transition-transform hover:-translate-y-px"
+          >
+            Reconnect Facebook
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={onSync}
+            disabled={syncing}
+            className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-[#fffcf7] transition-transform hover:-translate-y-px disabled:opacity-60"
+          >
+            {syncing ? "Refreshing…" : "Refresh your Page numbers"}
+          </button>
+        )}
         <Link
           href={buildIntegrationSettingsPath("meta", "/insights")}
           className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text"

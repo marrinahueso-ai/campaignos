@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 1, 2026  
+**Last updated:** August 15, 2026  
 **Related:** [Feature list](./feature-list.md) · [Meta connection](../integrations/meta.md) · [Meta App Review use cases](../ops/meta-app-review-use-cases.md) · [Ask Ralli Assistant](../engineering/ask-ralli-assistant.md)
 
 Event-scoped Meta performance on the event detail workspace. UI-focused product surface; OAuth and Graph sync details live in [meta.md](../integrations/meta.md).
@@ -42,7 +42,7 @@ No fake donations / volunteer-loyalty charts. No comparison / “vs typical” b
 |-------|------|-----|
 | `connect` | Meta not connected | Connect with Facebook + Meta settings link (`returnTo` back to this tab) |
 | `no_posts` | Connected, zero published `meta_publication_slots` for the event | Text only: “No published posts yet” — **no** Open Approvals / Create with AI CTAs |
-| `sync` | Published slots exist but no `social_post_insights` rows yet | Sync now + Open Org Insights; warns if insights scopes are missing |
+| `sync` | Published slots exist but no `social_post_insights` rows yet | If Insights scopes are missing → **Reconnect Facebook** (`auth_type=rerequest`) primary; otherwise auto-pull on open + Refresh + Open Org Insights |
 
 ---
 
@@ -64,10 +64,12 @@ No fake donations / volunteer-loyalty charts. No comparison / “vs typical” b
 
 | Action | Behavior |
 |--------|----------|
-| Open tab | Reads **DB** only (slots + stored insights). Does **not** call Meta Graph automatically. |
+| Open tab | Reads **DB** first (slots + stored insights). When Meta is connected with Insights scopes and metrics are **empty** or last sync is **stale** (~15 min), runs **one** org-wide `syncInsightsAction` automatically (same as org `/insights`). Does not re-hit Graph on every navigation while fresh. |
 | **Refresh** / **Sync now** | Runs `syncInsightsAction` → `syncOrganizationInsights` (**org-wide** Meta sync), then refreshes the tab |
 
-Visiting the tab alone never triggers a full Meta pull.
+Stuck `analytics_sync_runs` with `status=running` older than ~10 minutes are treated as failed so the UI does not stay on “Refreshing…”.
+
+Visiting the tab alone never triggers a Graph pull when numbers are already fresh.
 
 ---
 

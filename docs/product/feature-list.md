@@ -216,7 +216,8 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
 - Approve Meta schedule failure (schedule path) flips the row to **Failed** instead of leaving infinite **Scheduled** with no Meta slots; meta-publish cron reconciles the same orphan pattern — **shipped**
 - Event Activity mirrors unified campaign approvals: sent, approved, change requested, and re-submitted; Meta publishing continues to log posted outcomes — **shipped**
 - Status summary cards as clickable workflow filters (Assigned to Me / Changes Requested / In Queue / Scheduled / Published; click again to clear to All; Posted row status remains in the table under Scheduled coverage); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.approvals_layout`; approve / request changes, assigned-to-me view scope, search, badges — **shipped**
-- Approvals hub: unused Filters button removed; broad search (events, people, dates, captions, status labels) replaces campaign dropdown filter — **shipped**
+  - Approvals hub: unused Filters button removed; broad search (events, people, dates, captions, status labels) replaces campaign dropdown filter — **shipped**
+  - Approvals Ease pulse counts recompute from the active search so “Needs you (N)” matches visible cards; Clear search control; pulse tabs still narrow within search results — **shipped**
 - Approvals customer copy: hub + event Approvals tab + open review + approve/request/retry errors + change-request email use org/Page/team language — **shipped**
 - Approvals **open review** (dimmed pop-out over grayed backdrop): forest-green identity (top strip + sage header wash + **Open review** chip) so it reads as review at a glance; campaign title + post title, Social feed · 1:1 + story · 9:16 (or Flyer print preview), review history, caption/schedule/channels/visibility sidebar; forest **Approve & publish now** (Publish now delivery) or **Approve for {date}** (Schedule delivery) / **Request changes** in header — timing card matches delivery intent — **shipped** (mockup: [`public/approvals-open-view-mockup.html`](../../public/approvals-open-view-mockup.html))
 - Approvals **Assigned to** label uses Account / edit-profile **display name** (not email) when the assignee has a login seat — **shipped**
@@ -258,7 +259,7 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
 ## Communications Hub (inbox)
 - **Communications Connect Meta Ease** — **shipped** (exact empty from [`communications-hub-ease-mockup.html?view=connect`](../../public/communications-hub-ease-mockup.html): page head + four why cards — Why we connect / What AI does / What we don’t do / Privacy — Connect with Facebook + Meta settings OAuth/`returnTo=/communications`, “Why we ask for Page messaging permissions”; live on `/communications` when Meta is not connected; shared empty also used by Inbox hub chrome; `/inbox` redirects to `/communications`; customer copy uses organization / Page / team language — not school-only PTA)
 - **Communications Hub Ease mockup** — **in progress (Meta review)** (soft cream/Fraunces shell; view pills **Inbox · Compose focus · Connect Meta**; thread list + conversation + AI draft assist + DM stickers/GIF affordances; honest organic Page Inbox / Instagram DM purpose, approve-then-send, no spam/broadcast theater; fictional Riverside Elementary PTA only; HTML at [`public/communications-hub-ease-mockup.html`](../../public/communications-hub-ease-mockup.html) — Connect Meta empty shipped above; full hub chrome still mockup-only until GO)
-- Unified Meta inbox (DMs, comments, mentions) — **shipped** (near-real-time via Meta webhooks; app-level Page/Instagram field subscriptions are ensured on Connect so messages are not stuck behind daily cron alone; webhook upserts preserve real contact names/avatars and will not overwrite them with `User {id}` placeholders; CSP allows Meta/Giphy image CDNs so profile pictures render; broken image URLs fall back to initials)
+- Unified Meta inbox (DMs, comments, mentions) — **shipped** (near-real-time via Meta webhooks; app-level Page + Instagram `messages`/`comments` field subscriptions are ensured on Connect alongside Page `subscribed_apps` — Instagram Business Account nodes have no `subscribed_apps` edge; IG DMs also require Instagram **Connected tools → Allow access to messages**; webhook upserts preserve real contact names/avatars and will not overwrite them with `User {id}` placeholders; CSP allows Meta/Giphy image CDNs so profile pictures render; broken image URLs fall back to initials)
 - Inbox SSR soft caps (50 threads, 40 messages/thread, head-count channel tallies, unread badge ≤500 threads) — **shipped** (perf; see [performance-budget.md](../qa/performance-budget.md))
 - Thread workspace, reply, mark read — **shipped**
 - Inbox AI drafts + approve-then-send — **shipped**
@@ -351,7 +352,7 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
   - Platform filter (All / Facebook / Instagram) on KPIs, chart, and top content
   - Top content by views — horizontal carousel of posts in the active platform + date range (thumbnail, caption snippet, published time, views / reactions / comments / shares); Refresh syncs recent Facebook Page posts + Instagram media in range (not only posts published through Hey Ralli); Facebook post views use `post_media_view` batch; falls back to post engagement when insights are sparse
   - Date range presets (7 / 14 / 28 / 30 days) + URL `from` / `to`
-  - Refresh from Meta + CSV export
+  - Refresh from Meta + CSV export; opening `/insights` **auto-pulls once** when Meta is connected with Insights scopes and metrics are empty or last sync is older than ~15 minutes (manual Refresh remains); stuck `running` sync runs older than ~10 minutes no longer leave Refresh disabled
   - Rule-based recommendations (“From your metrics” + details drawer); soft sync notes inline
   - Connect Meta empty state with `returnTo=/insights`
 - **Event Insights tab** (`/events/[id]?tab=insights`) — **shipped** Pilot Event Performance: creative carousel drives rotating Reach/Interactions/Clicks + charts (living: [event-insights.md](./event-insights.md))
@@ -359,8 +360,9 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
   - KPI strip: Views · Reach · Interactions · Link clicks · Likes
   - Posts for this event list (artwork/caption, platform, views, likes; outbound link when URL exists)
   - No comparison / “vs typical” banner
-  - Sync footer: last sync · Refresh (org-wide Meta sync) · link to Org Insights; opening the tab reads DB only (no automatic Graph pull)
-  - Empty states: connect Meta · no published posts yet (copy only, no Approvals/Create CTAs) · need sync (Sync now + Org Insights; scope warning when missing)
+  - Sync footer: last sync · Refresh (org-wide Meta sync) · link to Org Insights; opening the tab **auto-pulls once** when scopes are present and metrics are empty/stale (same policy as org Insights); manual Refresh remains
+  - Empty states: connect Meta · no published posts yet (copy only, no Approvals/Create CTAs) · need sync (auto-pull + Refresh when scopes OK; **Reconnect Facebook** primary when `read_insights` / `instagram_manage_insights` missing) · link to Org Insights
+  - Org `/insights` sync-empty uses the same reconnect-first pattern when Insights scopes are missing on an otherwise healthy Meta connection
   - Not on this tab: Age & gender, Top countries, Follows, Saves, organic-vs-ads / follower split, dense Views Total/By-post charts
 - Organic vs ads breakdown, page visits, follows, conversations — **deferred** (org hub)
 - Audience demographics overview (Age & gender, Top countries) — **deferred** (org + event; not requested in OAuth; classic Page age/gender insight metrics deprecated by Meta — App Review answer: [meta-app-review-use-cases.md](../ops/meta-app-review-use-cases.md#5-demographics-age--gender--definitive-answer))

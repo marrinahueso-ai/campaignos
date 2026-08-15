@@ -162,7 +162,7 @@ Do not copy older reports blindly. Status below is **code-checked**.
 | Password change does not revoke **other** sessions | Low | No | Nice-to-have | Any | Mild | **Yes** | No | S | Low |
 | Upload size/MIME uneven (calendar import no size cap; several paths trust `file.type`) | Low–Med | Low | Yes as abuse/cost | Growth | Magic-byte sniffing = later | Size caps **yes**; magic bytes **wait** | No | S–M | Low |
 | Calendar subscribe: private URLs **savable**; SSRF blocked on Refresh | Low | No | No | Any | No | Optional | No | S | Low |
-| `insights-sync` not in `vercel.json`; if scheduled, some reads still session-scoped | Medium **if scheduled** | No | Only if you enable the cron | All connected orgs sequentially | Don't schedule yet | Fix client **if** scheduling | Review before enabling | S | Low if left unscheduled |
+| `insights-sync` not in `vercel.json` (route exists; service-role slot linking fixed Aug 13) | Low while unscheduled | No | Manual Refresh / optional schedule | All connected orgs sequentially | Keep unscheduled until you want background refresh | Optional schedule after smoke | Review before enabling | S | Low if left unscheduled |
 | Graph `fetch` has **no timeout / 5xx retry** | Medium reliability | Rare | More Meta volume | ~50+ publishing orgs | Retry policy | After a short design note | **Yes — policy** | M | Medium (duplicate posts) |
 | Cron routes have **no `maxDuration`** | Medium ops | No | Hang/timeout at backlog | ~100+ | No | **Yes** (set conservatively) | Confirm limits | S | Low |
 | Legacy `status === "uploaded"` still counts as approved artwork in one helper | Low | Unlikely (legacy studio stubbed) | Low | Any leftover rows | Confirm ignore vs block | Yes if still reachable | No | S | Low |
@@ -220,7 +220,7 @@ Question: would today’s design force a **substantial rewrite** at 25 / 50 / 10
 - `src/lib/organizations/profile-actions.ts` (no `manage_people`)
 - `src/lib/communications-calendar/planning-mutations.ts` (DnD now gated — spot-check)
 - `src/lib/campaign-files/actions.ts` (update/delete now gated — spot-check)
-- `src/app/api/cron/insights-sync/route.ts` + `src/lib/meta/insights-sync.ts` (**do not schedule** until service-role reads are complete)
+- `src/app/api/cron/insights-sync/route.ts` + `src/lib/meta/insights-sync.ts` (service-role slot linking fixed; still **do not schedule** in `vercel.json` until you want org-wide background refresh — App Review can use interactive Refresh)
 
 **Tests to run, not rewrite:**
 

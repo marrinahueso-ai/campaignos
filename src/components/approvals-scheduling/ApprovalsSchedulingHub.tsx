@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { revisionPath } from "@/components/approvals-revision/map-item";
@@ -25,6 +25,7 @@ import {
   DEFAULT_APPROVALS_EASE_PULSE,
   approvalMatchesEasePulse,
   approvalsEaseSectionLabel,
+  computeApprovalsEasePulseCounts,
   type ApprovalsEasePulse,
   type ApprovalsEasePulseCounts,
 } from "@/lib/approvals-scheduling/approvals-ease-pulse";
@@ -139,7 +140,7 @@ export function ApprovalsSchedulingHub({
   const deferredLoadedRef = useRef(!defersTerminalDetailRows);
   const deferredInFlightRef = useRef(false);
   const openedReviewFromQuery = useRef<string | null>(null);
-  const pulseCounts: ApprovalsEasePulseCounts = initialPulseCounts;
+  const hasSearch = Boolean(searchQuery.trim());
 
   // Prefetch open-review + request-changes pop-outs so focus-card CTA feels instant.
   useEffect(() => {
@@ -217,21 +218,27 @@ export function ApprovalsSchedulingHub({
     [eventScopedItems, viewScope, canViewAll],
   );
 
-  const applyPulseFilter = shouldApplyApprovalsEasePulseFilter(searchQuery);
-
   const searchedItems = useMemo(
     () => filterApprovalsBySearch(viewScopedItems, searchQuery),
     [viewScopedItems, searchQuery],
   );
 
+  // Pulse tabs always filter the list. When search is active, recompute counts
+  // from search matches so "Needs you (5)" cannot disagree with one visible card.
+  const pulseCounts: ApprovalsEasePulseCounts = useMemo(
+    () =>
+      hasSearch
+        ? computeApprovalsEasePulseCounts(searchedItems)
+        : initialPulseCounts,
+    [hasSearch, searchedItems, initialPulseCounts],
+  );
+
   const scopedItems = useMemo(
     () =>
-      applyPulseFilter
-        ? searchedItems.filter((item) =>
-            approvalMatchesEasePulse(item, activeFilter),
-          )
-        : searchedItems,
-    [searchedItems, activeFilter, applyPulseFilter],
+      searchedItems.filter((item) =>
+        approvalMatchesEasePulse(item, activeFilter),
+      ),
+    [searchedItems, activeFilter],
   );
 
   const focusItem = scopedItems[0] ?? null;
@@ -460,8 +467,21 @@ export function ApprovalsSchedulingHub({
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Search events, people, dates…"
                   aria-label="Search events, people, and dates"
-                  className="w-full rounded-full border border-cos-border bg-cos-card py-2 pr-3 pl-9 text-[13px] text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
+                  className={cn(
+                    "w-full rounded-full border border-cos-border bg-cos-card py-2 pl-9 text-[13px] text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none",
+                    hasSearch ? "pr-9" : "pr-3",
+                  )}
                 />
+                {hasSearch ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-0.5 text-cos-muted hover:text-cos-text"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                  </button>
+                ) : null}
               </label>
             </div>
           </div>

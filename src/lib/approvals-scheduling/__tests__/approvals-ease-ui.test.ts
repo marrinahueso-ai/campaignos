@@ -153,6 +153,8 @@ describe("approvals ease pulse contracts", () => {
     assert.doesNotMatch(hub, /All campaigns/);
     assert.match(hub, /Search events, people, dates/);
     assert.match(hub, /shouldApplyApprovalsEasePulseFilter/);
+    assert.match(hub, /computeApprovalsEasePulseCounts\(searchedItems\)/);
+    assert.match(hub, /Clear search/);
   });
 
   it("insets focus art with rounded rails while queue thumbs stay compact", () => {

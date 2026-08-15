@@ -59,7 +59,7 @@ function stubItem(
 }
 
 describe("shouldApplyApprovalsEasePulseFilter", () => {
-  it("applies pulse tabs only when search is empty", () => {
+  it("is true only when search is empty (deferred-load gate)", () => {
     assert.equal(shouldApplyApprovalsEasePulseFilter(""), true);
     assert.equal(shouldApplyApprovalsEasePulseFilter("   "), true);
     assert.equal(shouldApplyApprovalsEasePulseFilter("play date"), false);

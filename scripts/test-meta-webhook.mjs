@@ -61,6 +61,28 @@ const standbyCollected = collectMessagingEventsFromEntry(standbyEntry);
 assert.equal(standbyCollected.events.length, 1);
 assert.deepEqual(standbyCollected.sources, ["standby"]);
 
+const sampleInstagramPayload = {
+  object: "instagram",
+  entry: [
+    {
+      id: "17841480109670002",
+      time: Date.now(),
+      messaging: [
+        {
+          sender: { id: "IGSID_USER" },
+          recipient: { id: "17841480109670002" },
+          timestamp: Date.now(),
+          message: { mid: "mid.$ig.sample", text: "Hello from Instagram" },
+        },
+      ],
+    },
+  ],
+};
+const igEntry = sampleInstagramPayload.entry[0];
+const igCollected = collectMessagingEventsFromEntry(igEntry);
+assert.equal(igCollected.events.length, 1);
+assert.equal(sampleInstagramPayload.object, "instagram");
+
 const secret = "test-app-secret";
 const body = JSON.stringify(samplePagePayload);
 const signature = `sha256=${crypto.createHmac("sha256", secret).update(body, "utf8").digest("hex")}`;

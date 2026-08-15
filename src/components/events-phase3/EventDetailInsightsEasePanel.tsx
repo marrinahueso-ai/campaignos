@@ -13,6 +13,7 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { syncInsightsAction } from "@/lib/insights/actions";
+import { shouldAutoSyncInsights } from "@/lib/insights/auto-sync";
 import { formatMissingInsightsPermissionsMessage } from "@/lib/insights/connection-messages";
 import {
   formatLastSyncTitle,
@@ -358,6 +359,7 @@ export function EventDetailInsightsEasePanel({
   const [isPending, startTransition] = useTransition();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const autoSyncAttemptedForEventRef = useRef<string | null>(null);
   const refreshInsightsTab = useEventTabMutationRefresh("insights");
 
   const posts = data.posts;
@@ -369,6 +371,53 @@ export function EventDetailInsightsEasePanel({
     setSelectedIndex(0);
     setSyncMessage(null);
   }, [data.eventId, posts.length]);
+
+  function handleSync() {
+    setSyncMessage(null);
+    startTransition(async () => {
+      const result = await syncInsightsAction();
+      if (!result.ok) {
+        setSyncMessage(result.error ?? "Couldn't refresh your Page numbers.");
+        return;
+      }
+      setSyncMessage(
+        result.postsSynced > 0
+          ? `Updated ${result.postsSynced} post${result.postsSynced === 1 ? "" : "s"} from your Page.`
+          : "Your Page numbers are up to date.",
+      );
+      await refreshInsightsTab();
+    });
+  }
+
+  // Auto-pull once when the tab opens empty/stale (Meta App Review shouldn't hunt Refresh).
+  useEffect(() => {
+    if (autoSyncAttemptedForEventRef.current === data.eventId) return;
+    if (data.emptyState === "connect" || data.emptyState === "no_posts") {
+      return;
+    }
+    if (
+      !shouldAutoSyncInsights({
+        metaConnected: data.connection.metaConnected,
+        insightsScopesGranted: data.connection.insightsScopesGranted,
+        hasMetrics: data.hasSyncedMetrics,
+        lastSyncAt: data.lastSyncAt,
+        syncInProgress: data.syncInProgress,
+      })
+    ) {
+      return;
+    }
+    autoSyncAttemptedForEventRef.current = data.eventId;
+    handleSync();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot per event payload
+  }, [
+    data.eventId,
+    data.emptyState,
+    data.connection.metaConnected,
+    data.connection.insightsScopesGranted,
+    data.hasSyncedMetrics,
+    data.lastSyncAt,
+    data.syncInProgress,
+  ]);
 
   const scrollToIndex = useCallback((index: number) => {
     const root = scrollerRef.current;
@@ -425,23 +474,6 @@ export function EventDetailInsightsEasePanel({
     </Link>
   );
 
-  function handleSync() {
-    setSyncMessage(null);
-    startTransition(async () => {
-      const result = await syncInsightsAction();
-      if (!result.ok) {
-        setSyncMessage(result.error ?? "Couldn't refresh your Page numbers.");
-        return;
-      }
-      setSyncMessage(
-        result.postsSynced > 0
-          ? `Updated ${result.postsSynced} post${result.postsSynced === 1 ? "" : "s"} from your Page.`
-          : "Your Page numbers are up to date.",
-      );
-      await refreshInsightsTab();
-    });
-  }
-
   const avgReach = useMemo(() => {
     if (posts.length === 0) return 0;
     return posts.reduce((sum, p) => sum + p.reach, 0) / posts.length;
@@ -483,13 +515,22 @@ export function EventDetailInsightsEasePanel({
   }
 
   if (data.emptyState === "sync") {
+    const needsReconnect = data.connection.missingInsightsScopes.length > 0;
     return (
       <EmptyCard
         testId="event-insights-empty-sync"
-        title="Refresh your Page numbers"
-        body={`This event has ${data.publishedSlotCount} published post${data.publishedSlotCount === 1 ? "" : "s"}, but numbers haven’t been pulled yet. Refresh to load organic views, reach, and interactions.`}
+        title={
+          needsReconnect
+            ? "Finish Insights permissions"
+            : "Refresh your Page numbers"
+        }
+        body={
+          needsReconnect
+            ? `This event has ${data.publishedSlotCount} published post${data.publishedSlotCount === 1 ? "" : "s"}, but Page Insights still needs one more Facebook approval before we can pull organic numbers.`
+            : `This event has ${data.publishedSlotCount} published post${data.publishedSlotCount === 1 ? "" : "s"}, but numbers haven’t been pulled yet. Refresh to load organic views, reach, and interactions.`
+        }
       >
-        {data.connection.missingInsightsScopes.length > 0 ? (
+        {needsReconnect ? (
           <p className="mt-3 max-w-md text-xs text-[#a65a3a]">
             {formatMissingInsightsPermissionsMessage(
               data.connection.missingInsightsScopes,
@@ -497,16 +538,28 @@ export function EventDetailInsightsEasePanel({
           </p>
         ) : null}
         <div className="mt-[22px] flex flex-wrap items-center justify-center gap-2.5">
-          <button
-            type="button"
-            onClick={handleSync}
-            disabled={isPending || data.syncInProgress}
-            className="inline-flex items-center rounded-full bg-[#2a2622] px-[18px] py-[11px] text-[13px] font-bold text-[#fffcf7] transition-transform hover:-translate-y-px disabled:opacity-60"
-          >
-            {isPending || data.syncInProgress
-              ? "Refreshing…"
-              : "Refresh your Page numbers"}
-          </button>
+          {needsReconnect ? (
+            <Link
+              href={buildMetaOAuthStartPath({
+                returnTo,
+                authType: "rerequest",
+              })}
+              className="inline-flex items-center rounded-full bg-[#2a2622] px-[18px] py-[11px] text-[13px] font-bold text-[#fffcf7] transition-transform hover:-translate-y-px"
+            >
+              Reconnect Facebook
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={isPending || data.syncInProgress}
+              className="inline-flex items-center rounded-full bg-[#2a2622] px-[18px] py-[11px] text-[13px] font-bold text-[#fffcf7] transition-transform hover:-translate-y-px disabled:opacity-60"
+            >
+              {isPending || data.syncInProgress
+                ? "Refreshing…"
+                : "Refresh your Page numbers"}
+            </button>
+          )}
           {openOrgInsightsSecondary}
         </div>
         {syncMessage ? (

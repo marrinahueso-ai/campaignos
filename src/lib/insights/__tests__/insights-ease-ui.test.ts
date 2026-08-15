@@ -189,6 +189,9 @@ describe("insights ease UI contracts", () => {
     assert.match(shell, /organization’s Facebook Page/);
     assert.match(shell, /people actually saw/);
     assert.match(shell, /Refresh your Page numbers/);
+    assert.match(shell, /Finish Insights permissions/);
+    assert.match(shell, /Reconnect Facebook/);
+    assert.match(shell, /authType: "rerequest"/);
     assert.match(shell, /formatMissingInsightsPermissionsMessage/);
     assert.match(connectionMessages, /Reconnect Facebook to finish setup/);
     assert.doesNotMatch(shell, /Missing scopes:/);
@@ -197,6 +200,21 @@ describe("insights ease UI contracts", () => {
     assert.doesNotMatch(shell, /analytics are stored|Sync insights from Meta/);
     assert.doesNotMatch(shell, /Ease shell|billing_exempt|\bRLS\b/);
     assert.doesNotMatch(connectionMessages, /read_insights and instagram_manage_insights/);
+  });
+
+  it("promotes Reconnect when Insights scopes are missing on Event sync empty", () => {
+    assert.match(eventPanel, /Finish Insights permissions/);
+    assert.match(eventPanel, /Reconnect Facebook/);
+    assert.match(eventPanel, /authType: "rerequest"/);
+    assert.match(eventPanel, /formatMissingInsightsPermissionsMessage/);
+  });
+
+  it("auto-pulls Insights once on open when empty or stale", () => {
+    const autoSync = readSrc("../auto-sync.ts");
+    assert.match(shell, /shouldAutoSyncInsights/);
+    assert.match(eventPanel, /shouldAutoSyncInsights/);
+    assert.match(autoSync, /INSIGHTS_AUTO_SYNC_STALE_MS/);
+    assert.match(autoSync, /INSIGHTS_RUNNING_STALE_MS/);
   });
 
   it("marks Insights Ease redesign as shipped in feature-list", () => {

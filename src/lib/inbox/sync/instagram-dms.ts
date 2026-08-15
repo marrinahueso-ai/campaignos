@@ -32,7 +32,8 @@ function buildInstagramDmEmptyWarning(input: {
 
   const parts = [
     "Meta returned 0 Instagram conversations.",
-    "Verify the IG Professional account is linked to this Page, Connected tools → Allow Access to Messages is enabled in the Instagram app, and the app has Advanced Access for instagram_manage_messages (Development mode only returns DMs from app admins/testers).",
+    "On Instagram: Settings → Messages and story replies → Message controls → Connected tools → Allow access to messages (required for API + live webhooks).",
+    "Also verify the IG Professional account is linked to this Page, and that senders are app admins/testers with Facebook↔Instagram linked in Accounts Center while the Meta app is in Development (or that instagram_manage_messages has Advanced Access in Live mode).",
     `Checked: ${input.attemptedEndpoints.join(", ")} (page ${input.pageId}, IG ${input.instagramAccountId}).`,
   ];
 

@@ -15,6 +15,7 @@ const PAGE_SUBSCRIBED_FIELDS = [
   "feed",
 ] as const;
 
+/** App-level Instagram object fields (comments + Instagram Messaging). */
 const INSTAGRAM_SUBSCRIBED_FIELDS = ["comments", "messages"] as const;
 
 const PAGE_SUBSCRIBED_FIELDS_CSV = PAGE_SUBSCRIBED_FIELDS.join(",");
@@ -64,6 +65,13 @@ function subscriptionFieldNames(
  * App-level Webhooks product subscriptions (/{app-id}/subscriptions).
  * Page `subscribed_apps` alone is not enough — Meta only delivers fields
  * subscribed at BOTH app and Page levels.
+ *
+ * Instagram Messaging payloads use `object: "instagram"` with entry.id =
+ * the Instagram professional account id. Those require the Instagram
+ * object `messages` (and `comments`) fields here; Page-level messaging
+ * fields are still required via `/{page-id}/subscribed_apps`.
+ * Do NOT POST `/{ig-business-account-id}/subscribed_apps` — that edge does
+ * not exist on Instagram Business Account nodes.
  */
 export async function ensureMetaAppWebhookSubscriptions(): Promise<{
   ok: boolean;
@@ -171,6 +179,18 @@ export async function ensureMetaAppWebhookSubscriptions(): Promise<{
     };
   }
 
+  const missingInstagram = INSTAGRAM_SUBSCRIBED_FIELDS.filter(
+    (f) => !instagramFields.includes(f),
+  );
+  if (missingInstagram.length > 0) {
+    return {
+      ok: false,
+      error: `App Instagram webhook missing fields: ${missingInstagram.join(", ")}`,
+      pageFields,
+      instagramFields,
+    };
+  }
+
   return { ok: true, error: null, pageFields, instagramFields };
 }
 
@@ -187,6 +207,8 @@ export async function subscribeMetaInboxWebhooks(input: {
     );
   }
 
+  // Instagram Messaging uses Page subscribed_apps + app-level Instagram
+  // object fields. IG Business Account nodes have no subscribed_apps edge.
   const pageResult = await inboxGraphPost<Record<string, unknown>>(
     `/${input.pageId}/subscribed_apps`,
     {
@@ -199,21 +221,15 @@ export async function subscribeMetaInboxWebhooks(input: {
     return { ok: false, error: pageResult.error };
   }
 
-  if (input.instagramAccountId?.trim()) {
-    const igResult = await inboxGraphPost<Record<string, unknown>>(
-      `/${input.instagramAccountId}/subscribed_apps`,
+  if (input.instagramAccountId?.trim() && !appSubscriptions.instagramFields.includes("messages")) {
+    console.warn(
+      "[inbox webhook] Instagram account linked but app Instagram messages field not confirmed:",
       {
-        subscribed_fields: INSTAGRAM_SUBSCRIBED_FIELDS_CSV,
-        access_token: input.pageAccessToken,
+        instagramAccountId: input.instagramAccountId.trim(),
+        instagramFields: appSubscriptions.instagramFields,
+        error: appSubscriptions.error,
       },
     );
-
-    if (!igResult.ok) {
-      return {
-        ok: false,
-        error: `Page subscribed; Instagram failed: ${igResult.error}`,
-      };
-    }
   }
 
   if (!appSubscriptions.ok) {

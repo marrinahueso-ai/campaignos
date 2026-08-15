@@ -120,7 +120,7 @@ function dateSearchTokens(isoDate: string | null): string {
   );
 }
 
-/** Pulse tabs filter the list only when search is empty (Events Home pattern). */
+/** True when search is empty — used to decide whether deferred terminal rows are needed. */
 export function shouldApplyApprovalsEasePulseFilter(query: string): boolean {
   return !query.trim();
 }

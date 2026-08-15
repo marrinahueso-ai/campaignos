@@ -41,4 +41,14 @@ describe("subscribeMetaInboxWebhooks / ensureMetaAppWebhookSubscriptions", () =>
     expect(pageSubscribe).toBeGreaterThan(-1);
     expect(ensureCall).toBeLessThan(pageSubscribe);
   });
+
+  it("does not POST subscribed_apps on the Instagram Business Account id", () => {
+    // That Graph edge does not exist on IG BA nodes and previously made
+    // subscribeMetaInboxWebhooks report failure even when Page + app fields succeeded.
+    expect(src).not.toContain("`/${input.instagramAccountId}/subscribed_apps`");
+  });
+
+  it("validates Instagram app webhook fields after listing subscriptions", () => {
+    expect(src).toContain("App Instagram webhook missing fields");
+  });
 });

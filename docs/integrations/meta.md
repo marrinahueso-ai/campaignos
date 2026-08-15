@@ -1,8 +1,21 @@
 # Meta connection — one-click for every surface
 
 **Status:** Thin shared OAuth CTA helpers shipped; provider token exchange still per-stack. Goal remains one click → approve use cases → done.  
-**Last updated:** July 27, 2026  
+**Last updated:** August 15, 2026  
 **Related:** [Feature list](../product/feature-list.md) · [Event Insights](../product/event-insights.md) · [Meta Calendar DnD](../qa/meta-calendar-dnd.md) · [Meta App Review use cases](../ops/meta-app-review-use-cases.md) (includes **consent screen ↔ scope** map)
+
+---
+
+## Inbox webhooks (Messenger + Instagram DMs)
+
+Live Hub delivery uses `POST /api/meta/webhook`. Meta only delivers fields subscribed at **both**:
+
+1. **App** `/{app-id}/subscriptions` — Page object (`messages`, `standby`, `feed`, …) **and** Instagram object (`messages`, `comments`)
+2. **Page** `/{page-id}/subscribed_apps` — same Page messaging/feed fields
+
+`subscribeMetaInboxWebhooks()` ensures both on Connect. Do **not** call `/{instagram-business-account-id}/subscribed_apps` (edge does not exist).
+
+Instagram Messaging also requires the IG account toggle **Settings → Messages and story replies → Message controls → Connected tools → Allow access to messages**. Without it, `/{page-id}/conversations?platform=instagram` stays empty and live IG webhooks do not arrive. In Development mode, only app-role users whose Facebook↔Instagram are linked in Accounts Center can trigger IG webhooks until `instagram_manage_messages` Advanced Access is approved and the app is Live.
 
 ---
 
@@ -57,7 +70,7 @@ Synced via Graph Page / IG account + published-post insights (`read_insights`, `
 - **Views** from `page_media_view` / `post_media_view` (unique reach kept separately)
 - **Interactions** from `page_post_engagements` / derived post reactions
 - **Top content by views** carousel from recent Facebook Page posts + Instagram media (and Hey Ralli `meta_publication_slots` when available) with synced post insights (`post_media_view` / `post_total_media_view_unique`, reactions, clicks; comments/shares from the post object); Refresh discovers Page/IG feed media so posts published outside Hey Ralli still appear. Avoid requesting invalid insights names like `post_comments` / `post_shares` — Graph rejects the whole batch (#100).
-- **Event-scoped Insights** on event detail (`/events/[id]?tab=insights`) — product UI, empty states, load-vs-sync, and gaps: [event-insights.md](../product/event-insights.md). Reuses synced `social_post_insights` via published `meta_publication_slots` for that `event_id` (`getEventInsightsPageData`). Org `/insights` hub is unchanged. Demographics (Age & gender, Top countries), Follows, and Saves remain deferred — App Review answer: [meta-app-review-use-cases.md § Demographics](../ops/meta-app-review-use-cases.md#5-demographics-age--gender--definitive-answer).
+- **Event-scoped Insights** on event detail (`/events/[id]?tab=insights`) — product UI, empty states, load-vs-sync, and gaps: [event-insights.md](../product/event-insights.md). Reuses synced `social_post_insights` via published `meta_publication_slots` for that `event_id` (`getEventInsightsPageData`). Org `/insights` hub is unchanged. Existing connections must **Reconnect** (`auth_type=rerequest`) to pick up `read_insights` / `instagram_manage_insights` if those were not granted on first Connect. Demographics (Age & gender, Top countries), Follows, and Saves remain deferred — App Review answer: [meta-app-review-use-cases.md § Demographics](../ops/meta-app-review-use-cases.md#5-demographics-age--gender--definitive-answer).
 
 ### Inbox reactions (current)
 
