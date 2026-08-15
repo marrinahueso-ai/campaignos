@@ -282,13 +282,13 @@ export function CommunicationsQueuePanel({
                 )}
                 aria-current={selected ? "true" : undefined}
               >
-                <div className="relative shrink-0">
+                <div className="flex shrink-0 flex-col items-center gap-1">
                   <InboxParticipantAvatar
                     avatarUrl={thread.participantAvatarUrl}
                     name={thread.participantName}
                     className="h-11 w-11 text-xs"
                   />
-                  <span className="absolute -right-0.5 -bottom-0.5 rounded-full bg-cos-card p-0.5 shadow-sm ring-1 ring-cos-border/60">
+                  <span className="rounded-full bg-cos-card p-0.5 shadow-sm ring-1 ring-cos-border/60">
                     <InboxPlatformIcon channelType={thread.channelType} size="sm" />
                   </span>
                 </div>

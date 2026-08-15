@@ -49,6 +49,7 @@ import { getMetaConnectionForCurrentOrg } from "@/lib/meta-publishing/connection
 import { createClient } from "@/lib/supabase/server";
 import type { InboxAiSourceUsed } from "@/types/inbox-ai-sources";
 import type { OrganizationSticker } from "@/types/organization-stickers";
+import type { InboxMessage } from "@/lib/inbox/types";
 
 export type InboxActionResult = {
   success: boolean;
@@ -358,6 +359,12 @@ export async function sendInboxReplyAction(input: {
   stickerId?: string | null;
   /** Optional Giphy CDN URL for a GIF attachment (DMs only). */
   giphyImageUrl?: string | null;
+  /**
+   * Optional timeline message to quote/reply-to (composer hover Reply).
+   * DMs: Meta `reply_to.mid` when the quoted row has a real external mid.
+   * Comments: in-app quote only (send still anchors on the reply target).
+   */
+  quotedMessageId?: string | null;
 }): Promise<InboxReplyActionResult> {
   const access = await requireInboxPermission();
   if (!access.ok) {
@@ -370,6 +377,17 @@ export async function sendInboxReplyAction(input: {
   });
   if (!message) {
     return { success: false, error: "Message not found." };
+  }
+
+  let quotedMessage: InboxMessage | null = null;
+  if (input.quotedMessageId?.trim()) {
+    quotedMessage = await getInboxMessageById({
+      organizationId: access.organizationId,
+      messageId: input.quotedMessageId.trim(),
+    });
+    if (!quotedMessage || quotedMessage.threadId !== message.threadId) {
+      return { success: false, error: "Quoted message was not found in this thread." };
+    }
   }
 
   const followUpBody = input.body?.trim() || null;
@@ -497,12 +515,18 @@ export async function sendInboxReplyAction(input: {
     }
   }
 
+  const replyToExternalMessageId =
+    quotedMessage && isDmChannel(thread.channelType)
+      ? quotedMessage.externalMessageId
+      : null;
+
   const sendResult = await sendInboxReply({
     channelType: thread.channelType,
     thread,
     inboundMessage: message,
     body: bodyToSend,
     imageUrl: attachmentImageUrl,
+    replyToExternalMessageId,
     pageId: connection.facebookPageId,
     pageAccessToken: connection.pageAccessToken,
     instagramAccountId: connection.instagramAccountId,
@@ -525,6 +549,12 @@ export async function sendInboxReplyAction(input: {
     replyToMessageId: message.id,
     followUp: isFollowUp,
   };
+  if (quotedMessage) {
+    outboundMetadata.quotedMessageId = quotedMessage.id;
+    if (quotedMessage.body?.trim()) {
+      outboundMetadata.quotedSnippet = quotedMessage.body.trim().slice(0, 160);
+    }
+  }
   if (stickerImageUrl) {
     outboundMetadata.stickerUrl = stickerImageUrl;
     outboundMetadata.stickerId = stickerId;

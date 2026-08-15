@@ -11,6 +11,11 @@ export type SendInboxReplyInput = {
   body: string;
   /** Public HTTPS URL for a custom sticker / image attachment (DMs only). */
   imageUrl?: string | null;
+  /**
+   * Meta message mid to reply-quote (Messenger / IG DM `reply_to`).
+   * Ignored for comment channels (those already reply under the comment id).
+   */
+  replyToExternalMessageId?: string | null;
   pageId: string;
   pageAccessToken: string;
   instagramAccountId?: string | null;
@@ -68,10 +73,16 @@ async function sendFacebookMessengerReply(input: {
   recipientId: string;
   body: string;
   imageUrl?: string | null;
+  replyToExternalMessageId?: string | null;
   pageAccessToken: string;
 }): Promise<SendInboxReplyResult> {
   const imageUrl = input.imageUrl?.trim() || null;
   const body = input.body.trim();
+  const replyToMid = input.replyToExternalMessageId?.trim() || null;
+  const replyToPayload =
+    replyToMid && !replyToMid.startsWith("local:")
+      ? { reply_to: { mid: replyToMid } }
+      : null;
 
   if (!imageUrl && !body) {
     return {
@@ -98,6 +109,7 @@ async function sendFacebookMessengerReply(input: {
               is_reusable: true,
             },
           },
+          ...(replyToPayload ?? {}),
         }),
         access_token: input.pageAccessToken,
       },
@@ -121,12 +133,17 @@ async function sendFacebookMessengerReply(input: {
   }
 
   if (body) {
+    // Only attach reply_to to the first payload so sticker+text doesn’t double-quote.
+    const textReplyTo = sentImage ? null : replyToPayload;
     const textResult = await inboxGraphPost<{ message_id?: string; id?: string }>(
       `/${input.pageId}/messages`,
       {
         recipient: JSON.stringify({ id: input.recipientId }),
         messaging_type: "RESPONSE",
-        message: JSON.stringify({ text: body }),
+        message: JSON.stringify({
+          text: body,
+          ...(textReplyTo ?? {}),
+        }),
         access_token: input.pageAccessToken,
       },
     );
@@ -253,6 +270,7 @@ export async function sendInboxReply(
         recipientId,
         body,
         imageUrl,
+        replyToExternalMessageId: input.replyToExternalMessageId,
         pageAccessToken: input.pageAccessToken,
       });
     }
@@ -275,6 +293,7 @@ export async function sendInboxReply(
         recipientId,
         body,
         imageUrl,
+        replyToExternalMessageId: input.replyToExternalMessageId,
         pageAccessToken: input.pageAccessToken,
       });
     }

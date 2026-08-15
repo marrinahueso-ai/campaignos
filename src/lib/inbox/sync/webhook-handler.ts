@@ -11,7 +11,7 @@ import {
   fallbackInboxParticipantName,
   preferInboxParticipantName,
 } from "@/lib/inbox/sync/participant-identity";
-import { fetchMessagingParticipantProfile } from "@/lib/inbox/sync/profile-pictures";
+import { fetchConnectedPageProfilePictures, fetchMessagingParticipantProfile } from "@/lib/inbox/sync/profile-pictures";
 import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/sync/types";
 import { touchOrganizationInboxSyncedAt } from "@/lib/inbox/settings";
 import { upsertWebhookMessage } from "@/lib/inbox/sync/upsert";
@@ -229,20 +229,38 @@ async function handleMessagingEvent(input: {
 
   let participantName = fallbackInboxParticipantName(participantId);
   let participantAvatarUrl: string | null = null;
+  let pageAvatarUrl: string | null = null;
+  let instagramAvatarUrl: string | null = null;
 
-  if (participantId) {
-    const metaConnection = await getMetaConnectionForOrganization(
-      input.connection.organizationId,
-      { useServiceRole: true },
-    );
-    if (metaConnection?.pageAccessToken) {
-      const profile = await fetchMessagingParticipantProfile({
-        participantId,
-        pageAccessToken: metaConnection.pageAccessToken,
-        preferInstagram: input.isInstagram,
-      });
+  const metaConnection = await getMetaConnectionForOrganization(
+    input.connection.organizationId,
+    { useServiceRole: true },
+  );
+
+  if (metaConnection?.pageAccessToken) {
+    const pagePicturesPromise = fetchConnectedPageProfilePictures({
+      pageId: input.connection.facebookPageId,
+      instagramAccountId: input.connection.instagramAccountId ?? "",
+      pageAccessToken: metaConnection.pageAccessToken,
+    });
+
+    if (participantId) {
+      const [profile, pagePictures] = await Promise.all([
+        fetchMessagingParticipantProfile({
+          participantId,
+          pageAccessToken: metaConnection.pageAccessToken,
+          preferInstagram: input.isInstagram,
+        }),
+        pagePicturesPromise,
+      ]);
       participantName = preferInboxParticipantName(null, profile.name) ?? participantName;
       participantAvatarUrl = profile.avatarUrl;
+      pageAvatarUrl = pagePictures.pageAvatarUrl;
+      instagramAvatarUrl = pagePictures.instagramAvatarUrl;
+    } else {
+      const pagePictures = await pagePicturesPromise;
+      pageAvatarUrl = pagePictures.pageAvatarUrl;
+      instagramAvatarUrl = pagePictures.instagramAvatarUrl;
     }
   }
 
@@ -255,6 +273,8 @@ async function handleMessagingEvent(input: {
     lastMessageAt: sentAt,
     metadata: buildAvatarMetadata({
       participantAvatarUrl,
+      pageAvatarUrl,
+      instagramAvatarUrl,
     }),
   };
 

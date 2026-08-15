@@ -25,12 +25,14 @@ function truncateCaption(caption: string): string {
 interface CommunicationsParentPostCardProps {
   thread: InboxThread;
   pageName?: string | null;
+  pagePictureUrl?: string | null;
   className?: string;
 }
 
 export function CommunicationsParentPostCard({
   thread,
   pageName = null,
+  pagePictureUrl = null,
   className,
 }: CommunicationsParentPostCardProps) {
   if (!hasCommentPostPreview(thread)) {
@@ -45,6 +47,8 @@ export function CommunicationsParentPostCard({
   const platformLabel = isInstagramChannel(thread.channelType) ? "Instagram" : "Facebook";
   const displayPageName = pageName?.trim() || platformLabel;
   const permalink = readThreadPostPermalink(thread) ?? preview.permalink;
+  const pageAvatarUrl =
+    thread.pageAvatarUrl?.trim() || pagePictureUrl?.trim() || null;
   const initials = displayPageName.slice(0, 2).toUpperCase();
 
   const content = (
@@ -56,10 +60,10 @@ export function CommunicationsParentPostCard({
     >
       <div className="flex items-start gap-2.5 px-3 pt-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-cos-bg text-[10px] font-semibold text-cos-text">
-          {thread.pageAvatarUrl ? (
+          {pageAvatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={thread.pageAvatarUrl}
+              src={pageAvatarUrl}
               alt=""
               className="h-full w-full object-cover"
               loading="lazy"

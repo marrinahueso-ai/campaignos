@@ -62,6 +62,7 @@ function ThreadMessageTimeline({
   participantAvatarUrl,
   pageAvatarUrl,
   pageName,
+  onReplyToMessage,
 }: {
   messages: InboxMessage[];
   channelType: InboxThread["channelType"];
@@ -69,6 +70,7 @@ function ThreadMessageTimeline({
   participantAvatarUrl: string | null;
   pageAvatarUrl: string | null;
   pageName: string | null;
+  onReplyToMessage?: (message: InboxMessage) => void;
 }) {
   const timelineMessages = getTimelineMessages(messages, channelType);
 
@@ -86,9 +88,7 @@ function ThreadMessageTimeline({
     <ul className="flex min-w-0 flex-col gap-3" role="list">
       {timelineMessages.map((message) => {
         const isOutbound = isOutboundTimelineMessage(message, { seedMessageId });
-        const avatarUrl = isOutbound
-          ? pageAvatarUrl
-          : participantAvatarUrl;
+        const avatarUrl = isOutbound ? pageAvatarUrl : participantAvatarUrl;
         const avatarName = isOutbound
           ? pageName
           : message.senderName ?? participantName;
@@ -100,6 +100,7 @@ function ThreadMessageTimeline({
             isOutbound={isOutbound}
             avatarUrl={avatarUrl}
             avatarName={avatarName}
+            onReplyToMessage={onReplyToMessage}
           />
         );
       })}
@@ -125,6 +126,8 @@ interface CommunicationsWorkspaceProps {
   messages: InboxMessage[];
   orgMembers?: InboxOrgMember[];
   pageName?: string | null;
+  /** Live Meta Page picture — fills gaps when thread metadata lacks page_avatar_url. */
+  pagePictureUrl?: string | null;
   showBack?: boolean;
   onBack?: () => void;
   showAiPanel?: boolean;
@@ -139,6 +142,7 @@ export function CommunicationsWorkspace({
   messages,
   orgMembers = [],
   pageName = null,
+  pagePictureUrl = null,
   showBack,
   onBack,
   showAiPanel = true,
@@ -151,11 +155,13 @@ export function CommunicationsWorkspace({
   const assignMenuId = useId();
   const [actionError, setActionError] = useState<string | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [quotedMessage, setQuotedMessage] = useState<InboxMessage | null>(null);
   const pendingActionRef = useRef<string | null>(null);
 
   useEffect(() => {
     setAssignOpen(false);
     setActionError(null);
+    setQuotedMessage(null);
     pendingActionRef.current = null;
   }, [thread?.id]);
 
@@ -566,8 +572,15 @@ export function CommunicationsWorkspace({
             channelType={thread.channelType}
             participantName={thread.participantName}
             participantAvatarUrl={thread.participantAvatarUrl}
-            pageAvatarUrl={thread.pageAvatarUrl}
+            pageAvatarUrl={
+              thread.pageAvatarUrl?.trim() || pagePictureUrl?.trim() || null
+            }
             pageName={pageName}
+            onReplyToMessage={
+              isReplyChannel(thread.channelType) && !isArchived
+                ? (message) => setQuotedMessage(message)
+                : undefined
+            }
           />
 
           {isTaggedChannel(thread.channelType) ? (
@@ -579,7 +592,12 @@ export function CommunicationsWorkspace({
 
         {isReplyChannel(thread.channelType) && !isArchived ? (
           <div className="relative z-20 shrink-0 overflow-visible">
-            <CommunicationsReplySection thread={thread} messages={messages} />
+            <CommunicationsReplySection
+              thread={thread}
+              messages={messages}
+              quotedMessage={quotedMessage}
+              onClearQuotedMessage={() => setQuotedMessage(null)}
+            />
           </div>
         ) : null}
       </div>
@@ -589,6 +607,7 @@ export function CommunicationsWorkspace({
           thread={thread}
           messages={messages}
           pageName={pageName}
+          pagePictureUrl={pagePictureUrl}
           className="hidden xl:flex"
         />
       ) : null}

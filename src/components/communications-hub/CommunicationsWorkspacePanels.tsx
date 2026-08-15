@@ -39,7 +39,7 @@ import { isCommentChannel, isDmChannel } from "@/lib/inbox/constants";
 import { deriveAiConfidenceScore } from "@/lib/inbox/queue-utils";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
 import { getJumboEmojiCount } from "@/lib/inbox/jumbo-emoji";
-import { INBOX_STICKER_PACK } from "@/lib/inbox/stickers";
+import { INBOX_STICKER_PACK, readMessageStickerUrl } from "@/lib/inbox/stickers";
 import type { GiphyGifSummary } from "@/lib/giphy/types";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 import type { OrganizationSticker } from "@/types/organization-stickers";
@@ -47,6 +47,17 @@ import { formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
 const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
+
+function readQuotedAttachmentLabel(message: InboxMessage): string | null {
+  const stickerUrl = readMessageStickerUrl(message.metadata);
+  if (!stickerUrl) {
+    return null;
+  }
+  if (message.metadata?.giphyUrl) {
+    return "GIF";
+  }
+  return "Sticker";
+}
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
   ssr: false,
@@ -82,11 +93,16 @@ function renderTextWithLinks(text: string) {
 interface CommunicationsReplySectionProps {
   thread: InboxThread;
   messages: InboxMessage[];
+  /** Message selected via bubble hover “Reply” — shown as a quote preview. */
+  quotedMessage?: InboxMessage | null;
+  onClearQuotedMessage?: () => void;
 }
 
 export function CommunicationsReplySection({
   thread,
   messages,
+  quotedMessage = null,
+  onClearQuotedMessage,
 }: CommunicationsReplySectionProps) {
   const router = useRouter();
   const replyTarget = useMemo(
@@ -157,6 +173,17 @@ export function CommunicationsReplySection({
     setPendingGif(null);
     selectionRef.current = { start: 0, end: 0 };
   }, [replyTarget?.id, initialBody, replyTarget?.status]);
+
+  useEffect(() => {
+    if (!quotedMessage) {
+      return;
+    }
+    // Bring focus to the composer when quoting from a bubble.
+    const timer = window.setTimeout(() => {
+      replyTextareaRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [quotedMessage?.id]);
 
   const loadOrgStickers = useCallback(async () => {
     setStickersLoading(true);
@@ -486,6 +513,7 @@ export function CommunicationsReplySection({
           isSent || hasImageAttachment ? bodyToSend || undefined : undefined,
         stickerId: pendingSticker?.id ?? null,
         giphyImageUrl: pendingGif?.sendUrl ?? null,
+        quotedMessageId: quotedMessage?.id ?? null,
       });
       if (!sendResult.success) {
         setActionError(sendResult.error ?? "Could not send reply.");
@@ -497,6 +525,7 @@ export function CommunicationsReplySection({
       setPendingSticker(null);
       setPendingGif(null);
       setAttachmentNotice(null);
+      onClearQuotedMessage?.();
       router.refresh();
     });
   }
@@ -612,6 +641,31 @@ export function CommunicationsReplySection({
       </div>
 
       <div className="relative z-30 mt-4 overflow-visible rounded-xl border border-cos-border bg-cos-card px-4 py-3">
+        {quotedMessage ? (
+          <div className="mb-3 flex items-start gap-2 rounded-lg border border-cos-border bg-cos-bg/60 px-3 py-2">
+            <div className="min-w-0 flex-1 border-l-2 border-cos-dark/40 pl-2.5">
+              <p className="text-[11px] font-medium text-cos-muted">
+                Replying to{" "}
+                {quotedMessage.senderName?.trim() ||
+                  thread.participantName?.trim() ||
+                  "message"}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-xs text-cos-text">
+                {quotedMessage.body?.trim() ||
+                  (readQuotedAttachmentLabel(quotedMessage) ?? "Attachment")}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onClearQuotedMessage?.()}
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-white hover:text-cos-text"
+              aria-label="Clear reply quote"
+              title="Clear"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : null}
         {pendingSticker ? (
           <div className="relative mb-3 inline-block">
             <img
@@ -964,6 +1018,7 @@ interface CommunicationsAiPanelProps {
   thread: InboxThread;
   messages: InboxMessage[];
   pageName?: string | null;
+  pagePictureUrl?: string | null;
   className?: string;
 }
 
@@ -971,6 +1026,7 @@ export function CommunicationsAiPanel({
   thread,
   messages,
   pageName = null,
+  pagePictureUrl = null,
   className,
 }: CommunicationsAiPanelProps) {
   const replyTarget = useMemo(
@@ -1007,7 +1063,11 @@ export function CommunicationsAiPanel({
                 Original Post
               </h3>
               <div className="mt-2">
-                <CommunicationsParentPostCard thread={thread} pageName={pageName} />
+                <CommunicationsParentPostCard
+                  thread={thread}
+                  pageName={pageName}
+                  pagePictureUrl={pagePictureUrl}
+                />
               </div>
             </div>
           ) : (
