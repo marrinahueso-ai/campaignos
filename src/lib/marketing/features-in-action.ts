@@ -140,7 +140,7 @@ export const FEATURES_IN_ACTION_STORIES: FeaturesInActionStory[] = [
     demoId: "communications-hub",
     eyebrow: "Communications Hub",
     heading: "Answer Facebook and Instagram in one inbox.",
-    body: "Communications Hub brings Meta DMs, comments, and mentions together. Draft a reply with Inbox AI, approve it, then send—while queues keep Unread, Follow up, and Done organized.",
+    body: "Communications Hub brings Meta DMs, comments, and tags together. Draft a reply with Inbox AI, approve it, then send—while queues keep Unread, Follow up, and Done organized.",
     benefits: [
       "Work Unread, Follow up, Done, and Deleted queues",
       "Reply to Messenger, Instagram, comments, and tags",

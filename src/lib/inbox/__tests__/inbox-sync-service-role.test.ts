@@ -58,7 +58,7 @@ describe("syncInboxForOrganization / syncAllOrganizationsInbox — cron service-
   it("syncInboxForOrganization threads useServiceRole into every RLS-protected call it makes", () => {
     const start = src.indexOf("export async function syncInboxForOrganization(");
     assert.ok(start >= 0);
-    const end = src.indexOf("export async function syncAllOrganizationsInbox(");
+    const end = src.indexOf("export async function syncMetaTagsForOrganization(");
     const body = src.slice(start, end >= 0 ? end : undefined);
 
     assert.match(body, /options\?\:\s*\{\s*useServiceRole\?\:\s*boolean\s*\}/);
@@ -79,13 +79,37 @@ describe("syncInboxForOrganization / syncAllOrganizationsInbox — cron service-
     assert.match(body, /upsertInboxBatch\(\{[\s\S]*?useServiceRole,?[\s\S]*?\}\)/);
   });
 
+  it("syncMetaTagsForOrganization threads useServiceRole and only pulls tag channels", () => {
+    const start = src.indexOf("export async function syncMetaTagsForOrganization(");
+    assert.ok(start >= 0);
+    const end = src.indexOf("export async function syncAllOrganizationsInbox(");
+    const body = src.slice(start, end >= 0 ? end : undefined);
+
+    assert.match(body, /fetchFacebookTaggedPosts\(/);
+    assert.match(body, /fetchInstagramTaggedMedia\(/);
+    assert.doesNotMatch(body, /fetchFacebookPageMessages\(/);
+    assert.doesNotMatch(body, /fetchInstagramDirectMessages\(/);
+    assert.match(body, /upsertInboxBatch\(\{[\s\S]*?useServiceRole,?[\s\S]*?\}\)/);
+  });
+
   it("syncAllOrganizationsInbox (the cron entry point) opts every org into useServiceRole: true", () => {
     const start = src.indexOf("export async function syncAllOrganizationsInbox(");
+    assert.ok(start >= 0);
+    const end = src.indexOf("export async function syncAllOrganizationsMetaTags(");
+    const body = src.slice(start, end >= 0 ? end : undefined);
+    assert.match(
+      body,
+      /syncInboxForOrganization\(organizationId, \{\s*\n?\s*useServiceRole: true,?\s*\n?\s*\}\)/,
+    );
+  });
+
+  it("syncAllOrganizationsMetaTags opts every org into useServiceRole: true", () => {
+    const start = src.indexOf("export async function syncAllOrganizationsMetaTags(");
     assert.ok(start >= 0);
     const body = src.slice(start);
     assert.match(
       body,
-      /syncInboxForOrganization\(organizationId, \{\s*\n?\s*useServiceRole: true,?\s*\n?\s*\}\)/,
+      /syncMetaTagsForOrganization\(organizationId, \{\s*\n?\s*useServiceRole: true,?\s*\n?\s*\}\)/,
     );
   });
 });

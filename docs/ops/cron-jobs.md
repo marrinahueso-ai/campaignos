@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 13, 2026 — all cron routes set maxDuration; insights-sync and inbox-sync fixed to service role  
+**Last updated:** August 15, 2026 — meta-tags-sync every 30 minutes; inbox-sync remains daily  
 **Related:** [Ops](./README.md) · [`vercel.json`](../../vercel.json) · [Env & secrets](./env-and-secrets.md) · [Architecture](../engineering/architecture.md) · [Documentation home](../README.md)
 
 ## Auth
@@ -33,7 +33,8 @@ Schedules are **UTC** (Vercel Cron).
 | `/api/cron/calendar-subscribe-sync` | `0 6 * * *` | ~1:00 AM CDT | Refresh ICS / subscribe imports |
 | `/api/cron/google-calendar-sync` | `30 6 * * *` | ~1:30 AM CDT | Sync org Google Calendar connections → review |
 | `/api/cron/meta-token-health` | `0 8 * * *` | ~3:00 AM CDT | Meta token health + approval backfill + soft-launch transactional emails (see below) |
-| `/api/cron/inbox-sync` | `0 9 * * *` | ~4:00 AM CDT | Sync Meta inbox |
+| `/api/cron/inbox-sync` | `0 9 * * *` | ~4:00 AM CDT | Full Meta inbox sync (DMs, comments, tags) |
+| `/api/cron/meta-tags-sync` | `*/30 * * * *` | Every ~30 min | Tags-only Meta sync (FB `/{page-id}/tagged` + IG `/{ig-user-id}/tags`; not @ Mentions) |
 | `/api/cron/story-post-reminders` | `0 13 * * *` | ~8:00 AM CDT | Email story post kit reminders (Resend) — service role (see below) |
 | `/api/cron/manual-upload-emails` | `30 13 * * *` | ~8:30 AM CDT | Manual IG upload reminder emails |
 | `/api/cron/meta-publish` | `*/20 * * * *` | Every ~20 min | Publish **due** Meta slots (IG feed/stories; mark native FB schedules published in DB) |
@@ -106,6 +107,7 @@ Page loads (Dashboard, Approvals, etc.) stay **DB reads only** — no Meta polli
 | Scheduled posts delayed >30 min | Check Vercel cron invocations for `meta-publish`; due backlog may exceed per-run cap (20 bundles) — clears on subsequent runs |
 | Volunteer numbers stale on Master | `volunteer-sync`; source in error or SignUpGenius page unreadable — refresh on event Volunteers tab |
 | Inbox not updating | `inbox-sync`; Meta connection scope / token |
+| Tags slow / missing | `meta-tags-sync` (30 min); confirm Tag people on Page/IG (not caption @); Sync now still runs full inbox |
 | Scheduled newsletter not sending at its due time | `newsletter-scheduled-sends`; check `NEWSLETTER_PRODUCTION_SEND_ENABLED` is `true` in that environment and the newsletter's approval/version/audience haven't drifted since scheduling (either fails the send with an explicit reason on the `newsletter_sends` row, visible on `/newsletters/[id]`) |
 | Reminder emails missing | `story-post-reminders` / `manual-upload-emails`; Resend config |
 | Cron returns 401 | Missing/wrong `CRON_SECRET` |

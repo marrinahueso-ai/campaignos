@@ -35,7 +35,7 @@ import {
 import { CommunicationsParentPostCard } from "@/components/communications-hub/CommunicationsParentPostCard";
 import { GiphyGifPicker } from "@/components/communications-hub/GiphyGifPicker";
 import { hasCommentPostPreview } from "@/lib/inbox/comment-post-preview";
-import { isCommentChannel, isDmChannel } from "@/lib/inbox/constants";
+import { isCommentChannel, isDmChannel, isTaggedChannel } from "@/lib/inbox/constants";
 import { deriveAiConfidenceScore } from "@/lib/inbox/queue-utils";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
 import { getJumboEmojiCount } from "@/lib/inbox/jumbo-emoji";
@@ -1030,6 +1030,8 @@ export function CommunicationsAiPanel({
   const confidence = deriveAiConfidenceScore(replyTarget?.aiSourceUsed ?? null);
   const sourcesChecked = replyTarget?.aiSourceUsed?.sourcesChecked ?? [];
   const showParentPost = hasCommentPostPreview(thread);
+  const taggedThread = isTaggedChannel(thread.channelType);
+  const parentPostHeading = taggedThread ? "Tagged Post" : "Original Post";
   const conversationContext =
     replyTarget?.body?.trim() ||
     thread.lastMessageSnippet?.trim() ||
@@ -1049,7 +1051,7 @@ export function CommunicationsAiPanel({
           {showParentPost ? (
             <div>
               <h3 className="text-xs font-semibold tracking-wide text-cos-muted uppercase">
-                Original Post
+                {parentPostHeading}
               </h3>
               <div className="mt-2">
                 <CommunicationsParentPostCard

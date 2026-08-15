@@ -41,7 +41,7 @@ import { formatMessageTime } from "@/lib/utils/dates";
 import { markInboxThreadReadAction } from "@/lib/inbox/actions";
 import { cn } from "@/lib/utils/cn";
 
-type CategoryFilter = "all" | "messages" | "comments" | "mentions";
+type CategoryFilter = "all" | "messages" | "comments" | "tags";
 type PlatformFilter = "all" | "instagram";
 
 interface InboxHubProps {
@@ -76,9 +76,9 @@ function threadChannelDisplayLabel(channelType: InboxChannelType): string {
     case "facebook_comment":
       return "Facebook Comment";
     case "instagram_tag":
-      return "Instagram Mention";
+      return "Instagram Tag";
     case "facebook_tag":
-      return "Facebook Mention";
+      return "Facebook Tag";
     default:
       return INBOX_CHANNEL_LABELS[channelType];
   }
@@ -99,7 +99,7 @@ function matchesCategoryFilter(
       return isMessageChannel(channelType);
     case "comments":
       return isCommentChannel(channelType);
-    case "mentions":
+    case "tags":
       return isTaggedChannel(channelType);
   }
 }
@@ -512,7 +512,7 @@ export function InboxHub({ data }: InboxHubProps) {
             Inbox
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#8a8a88]">
-            Messages, comments, and mentions from your Facebook Page and Instagram. AI suggests
+            Messages, comments, and tags from your Facebook Page and Instagram. AI suggests
             drafts — you approve before anything sends.
           </p>
         </div>
@@ -547,10 +547,10 @@ export function InboxHub({ data }: InboxHubProps) {
           }}
         />
         <FilterPill
-          label="Mentions"
-          active={categoryFilter === "mentions" && !unreadOnly}
+          label="Tags"
+          active={categoryFilter === "tags" && !unreadOnly}
           onClick={() => {
-            setCategoryFilter("mentions");
+            setCategoryFilter("tags");
             setUnreadOnly(false);
           }}
         />
@@ -587,11 +587,11 @@ export function InboxHub({ data }: InboxHubProps) {
                 ? "No unread messages"
                 : categoryFilter === "all"
                   ? "No messages yet"
-                  : categoryFilter === "mentions"
-                    ? "No mentions yet"
+                  : categoryFilter === "tags"
+                    ? "No tags yet"
                     : `No ${categoryFilter} yet`
             }
-            description="New DMs, comments, and mentions will show up here as they arrive."
+            description="New DMs, comments, and tags will show up here as they arrive."
             className="py-16"
           />
         ) : (

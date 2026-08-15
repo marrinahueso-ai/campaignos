@@ -103,7 +103,7 @@ export async function fetchFacebookTaggedPosts(input: {
       messages: [],
       error: null,
       warning:
-        "No Facebook tags found. When someone tags your Page, run Sync now to pull tagged posts.",
+        "No Facebook tags found yet. When someone tags your Page, tags usually appear in Communications within about 30 minutes.",
     };
   }
 

@@ -47,9 +47,9 @@ function threadChannelDisplayLabel(thread: InboxThread): string {
     case "facebook_comment":
       return "Facebook Comment";
     case "instagram_tag":
-      return "Instagram Mention";
+      return "Instagram Tag";
     case "facebook_tag":
-      return "Facebook Mention";
+      return "Facebook Tag";
     default:
       return INBOX_CHANNEL_LABELS[thread.channelType];
   }
@@ -567,6 +567,18 @@ export function CommunicationsWorkspace({
         ) : null}
 
         <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-5 pt-6 pb-5 scroll-pt-6 sm:pr-16">
+          {isTaggedChannel(thread.channelType) ? (
+            <p className="mb-4 text-sm leading-relaxed text-cos-text">
+              <span className="font-semibold">
+                {thread.participantName?.trim() || "Someone"}
+              </span>{" "}
+              tagged{" "}
+              <span className="font-semibold">
+                {pageName?.trim() || "your organization"}
+              </span>{" "}
+              in a post.
+            </p>
+          ) : null}
           <ThreadMessageTimeline
             messages={messages}
             channelType={thread.channelType}

@@ -29,6 +29,10 @@
       "schedule": "0 9 * * *"
     },
     {
+      "path": "/api/cron/meta-tags-sync",
+      "schedule": "*/30 * * * *"
+    },
+    {
       "path": "/api/cron/meta-token-health",
       "schedule": "0 8 * * *"
     },

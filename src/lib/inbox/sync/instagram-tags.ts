@@ -124,7 +124,7 @@ export async function fetchInstagramTaggedMedia(input: {
       messages: [],
       error: null,
       warning:
-        "No Instagram tags found. When someone tags your business account, run Sync now to pull tagged posts.",
+        "No Instagram tags found yet. When someone tags your business account with Tag people, tags usually appear in Communications within about 30 minutes.",
     };
   }
 

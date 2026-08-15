@@ -19,6 +19,15 @@ Page **comments** arrive on the Page `feed` field (`item=comment`). Photo/status
 
 Instagram Messaging also requires the IG account toggle **Settings → Messages and story replies → Message controls → Connected tools → Allow access to messages**. Without it, `/{page-id}/conversations?platform=instagram` stays empty and live IG webhooks do not arrive. In Development mode, only app-role users whose Facebook↔Instagram are linked in Accounts Center can trigger IG webhooks until `instagram_manage_messages` Advanced Access is approved and the app is Live.
 
+### Photo / media Tags (not @ Mentions)
+
+Meta does not deliver a reliable webhook for people tagging the Page / IG business account (“Tag people”). Hey Ralli polls:
+
+- Facebook: `GET /{page-id}/tagged`
+- Instagram: `GET /{ig-user-id}/tags`
+
+via **`/api/cron/meta-tags-sync` every ~30 minutes**, plus the daily full `/api/cron/inbox-sync`. Caption/comment **@ Mentions** are deferred and must not be labeled as Tags in the Hub.
+
 ---
 
 ## Native scheduling (Facebook feed)
@@ -47,7 +56,7 @@ A volunteer clicks Connect, approves the use cases Facebook shows, and that conn
 |---------|----------------------------------|
 | Publishing / scheduling | Approved posts → Facebook Page + Instagram |
 | Insights | Views / reach / interactions KPIs + sparklines, content overview chart, top content carousel (views/reactions/comments/shares), sync, export |
-| Unified Inbox | DMs, comments, mentions, reply, comment likes + DM reactions |
+| Unified Inbox | DMs, comments, photo/media tags (Tag ≠ Mention), reply, comment likes + DM reactions |
 | Approvals → publish | Same Page/IG targets |
 | Repost / comment moderation | Same engagement scopes |
 

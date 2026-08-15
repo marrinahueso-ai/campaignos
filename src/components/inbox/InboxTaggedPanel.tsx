@@ -52,7 +52,7 @@ export function InboxTaggedPanel({ thread }: InboxTaggedPanelProps) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="inline-flex items-center gap-1.5 text-xs font-medium text-cos-text">
           <InboxPlatformIcon channelType={thread.channelType} size="xs" />
-          Tagged in
+          Tagged post
         </p>
         <span
           className={cn(

@@ -281,6 +281,180 @@ export async function syncInboxForOrganization(
   };
 }
 
+/**
+ * Tags-only sync: Facebook Page tagged posts + Instagram photo/media tags.
+ * Mentions (@ in captions/comments) are not included. Used by the 30-minute
+ * cron so Tags stay fresh without re-running full inbox sync.
+ */
+export async function syncMetaTagsForOrganization(
+  organizationId: string,
+  options?: { useServiceRole?: boolean },
+): Promise<InboxSyncResult> {
+  const useServiceRole = Boolean(options?.useServiceRole);
+  const refreshed = await ensureMetaConnectionHealthyForOrganization(organizationId);
+  const connection =
+    refreshed?.connection ??
+    (await getMetaConnectionForOrganization(organizationId, { useServiceRole }));
+
+  if (refreshed && !refreshed.tokenValid) {
+    const error =
+      "Meta connection expired or was revoked. Reconnect once in Settings → Meta Publishing.";
+    await upsertOrganizationInboxSettings({
+      organizationId,
+      lastSyncError: error,
+      useServiceRole,
+    });
+
+    return {
+      ok: false,
+      threadsUpserted: 0,
+      messagesUpserted: 0,
+      channels: [],
+      error,
+      warnings: [],
+    };
+  }
+
+  if (!connection?.pageAccessToken || !connection.facebookPageId) {
+    const error = "Meta Page connection is required before tags sync.";
+    await upsertOrganizationInboxSettings({
+      organizationId,
+      lastSyncError: error,
+      useServiceRole,
+    });
+
+    return {
+      ok: false,
+      threadsUpserted: 0,
+      messagesUpserted: 0,
+      channels: [],
+      error,
+      warnings: [],
+    };
+  }
+
+  const instagramAccountId = await refreshOrganizationInstagramAccountId({
+    organizationId,
+    facebookPageId: connection.facebookPageId,
+    pageAccessToken: connection.pageAccessToken,
+    instagramAccountId: connection.instagramAccountId,
+  });
+
+  const channelResults: InboxSyncChannelResult[] = [];
+  const allThreads = [];
+  const allMessages = [];
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const facebookTags = await fetchFacebookTaggedPosts({
+    pageId: connection.facebookPageId,
+    pageAccessToken: connection.pageAccessToken,
+  });
+  channelResults.push(
+    channelResult({
+      channel: "facebook_tag",
+      threadsFound: facebookTags.threads.length,
+      messagesFound: facebookTags.messages.length,
+      error: facebookTags.error,
+      warning: facebookTags.warning,
+    }),
+  );
+  if (facebookTags.error) {
+    errors.push(`Facebook tags: ${facebookTags.error}`);
+  } else {
+    allThreads.push(...facebookTags.threads);
+    allMessages.push(...facebookTags.messages);
+  }
+  if (facebookTags.warning) {
+    warnings.push(`Facebook tags: ${facebookTags.warning}`);
+  }
+
+  if (!instagramAccountId?.trim()) {
+    channelResults.push(
+      channelResult({
+        channel: "instagram_tag",
+        threadsFound: 0,
+        messagesFound: 0,
+        error: null,
+        warning: "Skipping Instagram tags: no Instagram account linked.",
+      }),
+    );
+    warnings.push("Skipping Instagram tags: no Instagram account linked.");
+  } else {
+    const instagramTags = await fetchInstagramTaggedMedia({
+      instagramAccountId,
+      pageAccessToken: connection.pageAccessToken,
+    });
+    channelResults.push(
+      channelResult({
+        channel: "instagram_tag",
+        threadsFound: instagramTags.threads.length,
+        messagesFound: instagramTags.messages.length,
+        error: instagramTags.error,
+        warning: instagramTags.warning,
+      }),
+    );
+    if (instagramTags.error) {
+      errors.push(`Instagram tags: ${instagramTags.error}`);
+    } else {
+      allThreads.push(...instagramTags.threads);
+      allMessages.push(...instagramTags.messages);
+    }
+    if (instagramTags.warning) {
+      warnings.push(`Instagram tags: ${instagramTags.warning}`);
+    }
+  }
+
+  const { pageAvatarUrl, instagramAvatarUrl } = await fetchConnectedPageProfilePictures({
+    pageId: connection.facebookPageId,
+    instagramAccountId,
+    pageAccessToken: connection.pageAccessToken,
+  });
+
+  await enrichInboxThreadsWithAvatars({
+    threads: allThreads,
+    pageAvatarUrl,
+    instagramAvatarUrl,
+    pageAccessToken: connection.pageAccessToken,
+  });
+
+  const upserted = await upsertInboxBatch({
+    organizationId,
+    threads: allThreads,
+    messages: allMessages,
+    useServiceRole,
+  });
+
+  const hasData = upserted.threadsUpserted > 0 || upserted.messagesUpserted > 0;
+  const allFailed =
+    channelResults.length > 0 &&
+    channelResults.every((channel) => channel.error && channel.threadsFound === 0);
+  const syncIssues = [...errors, ...warnings];
+  const syncError =
+    allFailed && errors.length > 0
+      ? errors.join(" | ")
+      : syncIssues.length > 0
+        ? syncIssues.join(" | ")
+        : null;
+
+  await upsertOrganizationInboxSettings({
+    organizationId,
+    syncEnabled: hasData || errors.length < channelResults.length,
+    lastSyncedAt: new Date().toISOString(),
+    lastSyncError: syncError,
+    useServiceRole,
+  });
+
+  return {
+    ok: !allFailed,
+    threadsUpserted: upserted.threadsUpserted,
+    messagesUpserted: upserted.messagesUpserted,
+    channels: channelResults,
+    error: allFailed ? errors.join(" | ") : null,
+    warnings,
+  };
+}
+
 export async function syncAllOrganizationsInbox(): Promise<{
   organizationsProcessed: number;
   results: Array<{ organizationId: string; result: InboxSyncResult }>;
@@ -301,6 +475,37 @@ export async function syncAllOrganizationsInbox(): Promise<{
   for (const row of data) {
     const organizationId = row.organization_id as string;
     const result = await syncInboxForOrganization(organizationId, {
+      useServiceRole: true,
+    });
+    results.push({ organizationId, result });
+  }
+
+  return {
+    organizationsProcessed: results.length,
+    results,
+  };
+}
+
+export async function syncAllOrganizationsMetaTags(): Promise<{
+  organizationsProcessed: number;
+  results: Array<{ organizationId: string; result: InboxSyncResult }>;
+}> {
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
+    .from("organization_meta_connections")
+    .select("organization_id");
+
+  if (error || !data) {
+    return { organizationsProcessed: 0, results: [] };
+  }
+
+  const results: Array<{ organizationId: string; result: InboxSyncResult }> = [];
+
+  for (const row of data) {
+    const organizationId = row.organization_id as string;
+    const result = await syncMetaTagsForOrganization(organizationId, {
       useServiceRole: true,
     });
     results.push({ organizationId, result });

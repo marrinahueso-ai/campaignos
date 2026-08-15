@@ -35,21 +35,21 @@ export const INBOX_TAG_CHANNEL_TYPES: InboxChannelType[] = [
 ];
 
 export const INBOX_CHANNEL_LABELS: Record<InboxChannelType, string> = {
-  instagram_dm: "Instagram DMs",
-  facebook_message: "Facebook messages",
-  instagram_comment: "Instagram comments",
-  facebook_comment: "Facebook comments",
-  instagram_tag: "Instagram tagged",
-  facebook_tag: "Facebook tagged",
+  instagram_dm: "Instagram Message",
+  facebook_message: "Facebook Message",
+  instagram_comment: "Instagram Comment",
+  facebook_comment: "Facebook Comment",
+  instagram_tag: "Instagram Tag",
+  facebook_tag: "Facebook Tag",
 };
 
 export const INBOX_CHANNEL_SHORT_LABELS: Record<InboxChannelType, string> = {
-  instagram_dm: "IG DMs",
-  facebook_message: "FB messages",
-  instagram_comment: "IG comments",
-  facebook_comment: "FB comments",
-  instagram_tag: "IG tagged",
-  facebook_tag: "FB tagged",
+  instagram_dm: "IG Message",
+  facebook_message: "FB Message",
+  instagram_comment: "IG Comment",
+  facebook_comment: "FB Comment",
+  instagram_tag: "IG Tag",
+  facebook_tag: "FB Tag",
 };
 
 export function isCommentChannel(channelType: InboxChannelType): boolean {
