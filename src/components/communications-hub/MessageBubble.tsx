@@ -10,7 +10,6 @@ import {
   type MouseEvent as ReactMouseEvent,
   type TouchEvent as ReactTouchEvent,
 } from "react";
-import { User } from "lucide-react";
 import { isCommentChannel } from "@/lib/inbox/constants";
 import { setInboxMessageReactionAction } from "@/lib/inbox/actions";
 import { getJumboEmojiCount } from "@/lib/inbox/jumbo-emoji";
@@ -25,45 +24,16 @@ import {
 import type { InboxMessage } from "@/lib/inbox/types";
 import { formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
+import { InboxParticipantAvatar } from "@/components/inbox/InboxParticipantAvatar";
 
 const DOUBLE_TAP_MS = 320;
 const IMAGE_PLACEHOLDER_BODIES = new Set(["📎 Sticker", "📎 GIF"]);
-
-function MessageAvatar({
-  avatarUrl,
-  initials,
-}: {
-  avatarUrl: string | null;
-  initials: string;
-}) {
-  return (
-    <div
-      className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-cos-bg text-[10px] font-semibold text-cos-text"
-      aria-hidden
-    >
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt=""
-          className="h-full w-full object-cover"
-          loading="lazy"
-          referrerPolicy="no-referrer"
-        />
-      ) : initials !== "?" ? (
-        initials
-      ) : (
-        <User className="h-4 w-4 text-cos-muted" strokeWidth={1.75} />
-      )}
-    </div>
-  );
-}
 
 interface MessageBubbleProps {
   message: InboxMessage;
   isOutbound: boolean;
   avatarUrl: string | null;
   avatarName: string | null;
-  initials: string;
 }
 
 export function MessageBubble({
@@ -71,7 +41,6 @@ export function MessageBubble({
   isOutbound,
   avatarUrl,
   avatarName,
-  initials,
 }: MessageBubbleProps) {
   const [reaction, setReaction] = useState<BubbleQuickReaction | null>(() =>
     readLocalMessageReaction(message.metadata),
@@ -209,7 +178,12 @@ export function MessageBubble({
         isOutbound && "ml-auto flex-row-reverse",
       )}
     >
-      <MessageAvatar avatarUrl={avatarUrl} initials={initials} />
+      <InboxParticipantAvatar
+        avatarUrl={avatarUrl}
+        name={avatarName}
+        className="h-8 w-8 text-[10px]"
+        showUserIconFallback
+      />
       <div className="relative min-w-0 max-w-full">
         <div
           role="button"

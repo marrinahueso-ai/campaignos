@@ -57,3 +57,51 @@ export function buildAvatarMetadata(input: {
 
   return metadata;
 }
+
+/**
+ * Shallow-merge thread metadata, but never blank an existing avatar URL
+ * when the incoming patch omits it or sends an empty string/null.
+ */
+export function mergeInboxThreadMetadata(
+  existing: Record<string, unknown> | null | undefined,
+  incoming: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = {
+    ...(existing ?? {}),
+    ...(incoming ?? {}),
+  };
+
+  for (const key of Object.values(INBOX_AVATAR_METADATA_KEYS)) {
+    const incomingVal = incoming?.[key];
+    const existingVal = existing?.[key];
+    const incomingBlank =
+      incomingVal == null ||
+      (typeof incomingVal === "string" && !incomingVal.trim());
+    const existingUrl =
+      typeof existingVal === "string" && existingVal.trim()
+        ? existingVal.trim()
+        : null;
+
+    if (incomingBlank && existingUrl) {
+      merged[key] = existingUrl;
+    }
+  }
+
+  return merged;
+}
+
+/** Two-letter initials for queue/header/bubble fallbacks (e.g. "RH"). */
+export function inboxParticipantInitials(
+  name: string | null | undefined,
+): string {
+  if (!name?.trim()) {
+    return "?";
+  }
+
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+  }
+
+  return name.slice(0, 2).toUpperCase();
+}

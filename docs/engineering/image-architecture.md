@@ -92,6 +92,8 @@ const original = toDisplayImageUrl(url, { intent: "original" });
 
 `AppImage` falls back to a plain `<img>` for `blob:`, `data:`, static `/…` paths, and non-Supabase hosts (Meta avatars, GIPHY, Canva CDN).
 
+Inbox contact/page avatars use `InboxParticipantAvatar` (plain `<img>` + initials on error). CSP `img-src` in `next.config.ts` allowlists `*.fbsbx.com`, `*.fbcdn.net`, `*.cdninstagram.com`, and `*.giphy.com` so Meta lookaside/Giphy URLs are not blocked in the browser.
+
 ---
 
 ## 4. When to use originals vs transforms

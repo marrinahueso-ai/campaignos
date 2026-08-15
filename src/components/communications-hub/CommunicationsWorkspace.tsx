@@ -34,19 +34,7 @@ import {
   CommunicationsAiPanel,
   CommunicationsReplySection,
 } from "@/components/communications-hub/CommunicationsWorkspacePanels";
-
-function participantInitials(name: string | null): string {
-  if (!name?.trim()) {
-    return "?";
-  }
-
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
-  }
-
-  return name.slice(0, 2).toUpperCase();
-}
+import { InboxParticipantAvatar } from "@/components/inbox/InboxParticipantAvatar";
 
 function threadChannelDisplayLabel(thread: InboxThread): string {
   switch (thread.channelType) {
@@ -112,7 +100,6 @@ function ThreadMessageTimeline({
             isOutbound={isOutbound}
             avatarUrl={avatarUrl}
             avatarName={avatarName}
-            initials={participantInitials(avatarName)}
           />
         );
       })}
@@ -378,19 +365,11 @@ export function CommunicationsWorkspace({
             </button>
           ) : null}
 
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-cos-bg text-xs font-semibold text-cos-text">
-            {thread.participantAvatarUrl ? (
-              <img
-                src={thread.participantAvatarUrl}
-                alt=""
-                className="h-full w-full object-cover"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              participantInitials(thread.participantName)
-            )}
-          </div>
+          <InboxParticipantAvatar
+            avatarUrl={thread.participantAvatarUrl}
+            name={thread.participantName}
+            className="h-10 w-10 text-xs"
+          />
 
           <div className="min-w-0 flex-1">
             <p className="truncate text-base font-semibold text-cos-text">{displayName}</p>

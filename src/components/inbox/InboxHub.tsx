@@ -13,6 +13,7 @@ import {
 import { InstagramPlatformIcon } from "@/components/communications-planning-calendar/MetaPlatformIcons";
 import { ConnectMetaEmpty } from "@/components/communications-hub/ConnectMetaEmpty";
 import { InboxDirectPostLinkButton } from "@/components/inbox/InboxDirectPostLinkButton";
+import { InboxParticipantAvatar } from "@/components/inbox/InboxParticipantAvatar";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
 import { InboxThreadReplyPanel } from "@/components/inbox/InboxThreadReplyPanel";
@@ -81,19 +82,6 @@ function threadChannelDisplayLabel(channelType: InboxChannelType): string {
     default:
       return INBOX_CHANNEL_LABELS[channelType];
   }
-}
-
-function participantInitials(name: string | null): string {
-  if (!name?.trim()) {
-    return "?";
-  }
-
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
-  }
-
-  return name.slice(0, 2).toUpperCase();
 }
 
 function isMessageChannel(channelType: InboxChannelType): boolean {
@@ -198,23 +186,13 @@ function FilterPill({
 }
 
 function ThreadAvatar({ thread }: { thread: InboxThread }) {
-  const avatarUrl = thread.participantAvatarUrl;
-
   return (
     <div className="relative shrink-0">
-      <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#efefed] text-xs font-semibold text-[#1a1a1a]">
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt=""
-            className="h-full w-full object-cover"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          participantInitials(thread.participantName)
-        )}
-      </div>
+      <InboxParticipantAvatar
+        avatarUrl={thread.participantAvatarUrl}
+        name={thread.participantName}
+        className="h-11 w-11 bg-[#efefed] text-xs text-[#1a1a1a]"
+      />
     </div>
   );
 }

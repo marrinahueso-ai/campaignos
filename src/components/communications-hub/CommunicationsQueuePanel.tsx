@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { Layers, Star } from "lucide-react";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
+import { InboxParticipantAvatar } from "@/components/inbox/InboxParticipantAvatar";
 import { INBOX_CHANNEL_LABELS } from "@/lib/inbox/constants";
 import type { CommunicationsQueueCounts, CommunicationsQueueFilter } from "@/lib/inbox/queue-utils";
 import { classifyThreadQueueState } from "@/lib/inbox/queue-utils";
@@ -46,19 +47,6 @@ function formatListDate(iso: string | null): string {
     return `${hours}h`;
   }
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function participantInitials(name: string | null): string {
-  if (!name?.trim()) {
-    return "?";
-  }
-
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
-  }
-
-  return name.slice(0, 2).toUpperCase();
 }
 
 function threadStatusLabel(
@@ -295,19 +283,11 @@ export function CommunicationsQueuePanel({
                 aria-current={selected ? "true" : undefined}
               >
                 <div className="relative shrink-0">
-                  <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-cos-bg text-xs font-semibold text-cos-text">
-                    {thread.participantAvatarUrl ? (
-                      <img
-                        src={thread.participantAvatarUrl}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      participantInitials(thread.participantName)
-                    )}
-                  </div>
+                  <InboxParticipantAvatar
+                    avatarUrl={thread.participantAvatarUrl}
+                    name={thread.participantName}
+                    className="h-11 w-11 text-xs"
+                  />
                   <span className="absolute -right-0.5 -bottom-0.5 rounded-full bg-cos-card p-0.5 shadow-sm ring-1 ring-cos-border/60">
                     <InboxPlatformIcon channelType={thread.channelType} size="sm" />
                   </span>

@@ -5,7 +5,13 @@ import {
   buildCommentPostMetadata,
   resolveFacebookPostPermalink,
 } from "@/lib/inbox/comment-post-preview";
+import { buildAvatarMetadata } from "@/lib/inbox/avatars";
 import { snippet } from "@/lib/inbox/sync/graph-client";
+import {
+  fallbackInboxParticipantName,
+  preferInboxParticipantName,
+} from "@/lib/inbox/sync/participant-identity";
+import { fetchMessagingParticipantProfile } from "@/lib/inbox/sync/profile-pictures";
 import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/sync/types";
 import { touchOrganizationInboxSyncedAt } from "@/lib/inbox/settings";
 import { upsertWebhookMessage } from "@/lib/inbox/sync/upsert";
@@ -16,6 +22,7 @@ import {
   readMetaId,
   verifyMetaWebhookSignatureWithSecret,
 } from "@/lib/inbox/sync/webhook-payload";
+import { getMetaConnectionForOrganization } from "@/lib/meta-publishing/connection";
 import { getMetaAppSecret } from "@/lib/meta-publishing/config.server";
 
 interface MetaWebhookConnection {
@@ -220,13 +227,35 @@ async function handleMessagingEvent(input: {
 
   const sentAt = parseMetaWebhookTimestamp(input.messagingEvent.timestamp);
 
+  let participantName = fallbackInboxParticipantName(participantId);
+  let participantAvatarUrl: string | null = null;
+
+  if (participantId) {
+    const metaConnection = await getMetaConnectionForOrganization(
+      input.connection.organizationId,
+      { useServiceRole: true },
+    );
+    if (metaConnection?.pageAccessToken) {
+      const profile = await fetchMessagingParticipantProfile({
+        participantId,
+        pageAccessToken: metaConnection.pageAccessToken,
+        preferInstagram: input.isInstagram,
+      });
+      participantName = preferInboxParticipantName(null, profile.name) ?? participantName;
+      participantAvatarUrl = profile.avatarUrl;
+    }
+  }
+
   const thread: NormalizedInboxThread = {
     channelType,
     externalThreadId: conversationId,
     participantExternalId: participantId,
-    participantName: participantId ? `User ${participantId.slice(-6)}` : "Messenger user",
+    participantName,
     lastMessageSnippet: snippet(body || "(attachment)"),
     lastMessageAt: sentAt,
+    metadata: buildAvatarMetadata({
+      participantAvatarUrl,
+    }),
   };
 
   const normalizedMessage: NormalizedInboxMessage = {

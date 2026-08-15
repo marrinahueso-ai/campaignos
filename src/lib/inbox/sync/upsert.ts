@@ -2,6 +2,8 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createJobClient } from "@/lib/supabase/job-client";
+import { mergeInboxThreadMetadata } from "@/lib/inbox/avatars";
+import { preferInboxParticipantName } from "@/lib/inbox/sync/participant-identity";
 import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/sync/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -19,19 +21,28 @@ function buildThreadUpsertRow(input: {
   organizationId: string;
   thread: NormalizedInboxThread;
   now: string;
+  existingParticipantName?: string | null;
+  existingParticipantExternalId?: string | null;
+  existingMetadata?: Record<string, unknown> | null;
 }): Record<string, unknown> {
   const row: Record<string, unknown> = {
     organization_id: input.organizationId,
     channel_type: input.thread.channelType,
     external_thread_id: input.thread.externalThreadId,
     external_post_id: input.thread.externalPostId ?? null,
-    participant_name: input.thread.participantName ?? null,
-    participant_external_id: input.thread.participantExternalId ?? null,
+    participant_name: preferInboxParticipantName(
+      input.existingParticipantName,
+      input.thread.participantName,
+    ),
+    participant_external_id:
+      input.thread.participantExternalId?.trim() ||
+      input.existingParticipantExternalId?.trim() ||
+      null,
     subject: input.thread.subject ?? null,
     last_message_snippet: input.thread.lastMessageSnippet ?? null,
     last_message_at: input.thread.lastMessageAt ?? null,
     synced_at: input.now,
-    metadata: input.thread.metadata ?? {},
+    metadata: mergeInboxThreadMetadata(input.existingMetadata, input.thread.metadata),
     updated_at: input.now,
   };
 
@@ -40,6 +51,45 @@ function buildThreadUpsertRow(input: {
   }
 
   return row;
+}
+
+async function lookupExistingThread(
+  supabase: SupabaseClient,
+  input: {
+    organizationId: string;
+    channelType: string;
+    externalThreadId: string;
+  },
+): Promise<{
+  participant_name: string | null;
+  participant_external_id: string | null;
+  metadata: Record<string, unknown>;
+} | null> {
+  const { data, error } = await supabase
+    .from("inbox_threads")
+    .select("participant_name, participant_external_id, metadata")
+    .eq("organization_id", input.organizationId)
+    .eq("channel_type", input.channelType)
+    .eq("external_thread_id", input.externalThreadId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[inbox] thread lookup failed:", error.message);
+    return null;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    participant_name: (data.participant_name as string | null) ?? null,
+    participant_external_id: (data.participant_external_id as string | null) ?? null,
+    metadata:
+      data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)
+        ? (data.metadata as Record<string, unknown>)
+        : {},
+  };
 }
 
 type ExistingMessageLookup =
@@ -155,11 +205,27 @@ async function upsertInboxBatchWithClient(
   let messagesUpserted = 0;
 
   for (const thread of input.threads) {
+    const existing = await lookupExistingThread(supabase, {
+      organizationId: input.organizationId,
+      channelType: thread.channelType,
+      externalThreadId: thread.externalThreadId,
+    });
+
     const { data, error } = await supabase
       .from("inbox_threads")
-      .upsert(buildThreadUpsertRow({ organizationId: input.organizationId, thread, now }), {
-        onConflict: "organization_id,channel_type,external_thread_id",
-      })
+      .upsert(
+        buildThreadUpsertRow({
+          organizationId: input.organizationId,
+          thread,
+          now,
+          existingParticipantName: existing?.participant_name,
+          existingParticipantExternalId: existing?.participant_external_id,
+          existingMetadata: existing?.metadata,
+        }),
+        {
+          onConflict: "organization_id,channel_type,external_thread_id",
+        },
+      )
       .select("id, channel_type, external_thread_id")
       .single();
 
@@ -282,6 +348,12 @@ export async function upsertWebhookMessage(input: {
 
   const isNewMessage = !existingMessage.found;
 
+  const existingThread = await lookupExistingThread(admin, {
+    organizationId: input.organizationId,
+    channelType: input.thread.channelType,
+    externalThreadId: input.thread.externalThreadId,
+  });
+
   const { data: threadData, error: threadError } = await admin
     .from("inbox_threads")
     .upsert(
@@ -289,6 +361,9 @@ export async function upsertWebhookMessage(input: {
         organizationId: input.organizationId,
         thread: input.thread,
         now,
+        existingParticipantName: existingThread?.participant_name,
+        existingParticipantExternalId: existingThread?.participant_external_id,
+        existingMetadata: existingThread?.metadata,
       }),
       { onConflict: "organization_id,channel_type,external_thread_id" },
     )
