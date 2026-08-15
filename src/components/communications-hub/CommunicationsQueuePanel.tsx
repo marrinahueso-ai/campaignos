@@ -288,7 +288,7 @@ export function CommunicationsQueuePanel({
                     name={thread.participantName}
                     className="h-11 w-11 text-xs"
                   />
-                  <span className="pointer-events-none absolute -right-0.5 -bottom-0.5 rounded-full ring-2 ring-white">
+                  <span className="pointer-events-none absolute -right-0.5 -bottom-0.5 inline-flex size-3.5 items-center justify-center overflow-hidden rounded-full shadow-[0_0_0_1.5px_#fff]">
                     <InboxPlatformIcon channelType={thread.channelType} size="sm" />
                   </span>
                 </div>

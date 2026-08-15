@@ -187,7 +187,7 @@ export function MessageBubble({
   return (
     <li
       className={cn(
-        "flex w-fit min-w-0 max-w-[min(85%,100%)] items-end gap-2",
+        "flex w-fit min-w-0 max-w-[min(85%,100%)] items-end gap-2 overflow-visible",
         isOutbound && "ml-auto flex-row-reverse",
       )}
     >
@@ -197,10 +197,10 @@ export function MessageBubble({
         className="h-8 w-8 text-[10px]"
         showUserIconFallback
       />
-      <div className="relative min-w-0 max-w-full">
+      <div className="relative min-w-0 max-w-full overflow-visible">
         <div
           className={cn(
-            "group/bubble relative w-fit max-w-full",
+            "group/bubble relative w-fit max-w-full overflow-visible",
             reaction && "pb-3",
           )}
         >

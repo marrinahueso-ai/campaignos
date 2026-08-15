@@ -52,7 +52,11 @@ export function InboxPlatformIcon({
   const label = INBOX_CHANNEL_SHORT_LABELS[channelType];
 
   return (
-    <span className="inline-flex shrink-0" aria-label={label} title={label}>
+    <span
+      className="inline-flex shrink-0 leading-none"
+      aria-label={label}
+      title={label}
+    >
       <ChannelGlyph channelType={channelType} iconClass={iconClass} />
     </span>
   );
