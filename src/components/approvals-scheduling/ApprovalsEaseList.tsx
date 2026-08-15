@@ -1,6 +1,7 @@
 "use client";
 
-import { Eye } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Eye, ImageIcon } from "lucide-react";
 import {
   approvalOutcomeChip,
   approvalTimingListLabel,
@@ -16,13 +17,18 @@ import { NewsletterApprovalCardPreview } from "@/components/newsletters/Newslett
 import type { NewsletterComposerState } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
 
-function artBackground(item: UnifiedApprovalItem): string {
+/** Prefer feed, then story, then list thumbnail — same order as ReviewDrawer. */
+export function approvalArtworkUrl(item: UnifiedApprovalItem): string {
   const preview = getUnifiedApprovalPreview(item);
   const url =
     preview.feedArtworkUrl ||
     preview.storyArtworkUrl ||
     item.thumbnailUrl;
   return url?.trim() || "";
+}
+
+function artBackground(item: UnifiedApprovalItem): string {
+  return approvalArtworkUrl(item);
 }
 
 export function platformLabel(item: UnifiedApprovalItem): string {
@@ -74,45 +80,84 @@ function ArtTile({
   label,
   width,
   priority,
+  /**
+   * Focus cards: hide entirely when there is no artwork (no huge grey void).
+   * Queue thumbs keep a compact placeholder so the table column stays aligned.
+   */
+  hideWhenEmpty = false,
+  onDisplayChange,
 }: {
   item: UnifiedApprovalItem;
   className?: string;
   label?: string;
   width: number;
   priority?: boolean;
+  hideWhenEmpty?: boolean;
+  /** Fires when artwork becomes visible or is hidden (missing / load error). */
+  onDisplayChange?: (visible: boolean) => void;
 }) {
   const source = artBackground(item);
+  const [failed, setFailed] = useState(false);
   const isCompact = width <= 200;
+  const showImage = Boolean(source) && !failed;
+
+  useEffect(() => {
+    setFailed(false);
+  }, [source]);
+
+  useEffect(() => {
+    onDisplayChange?.(showImage);
+  }, [showImage, onDisplayChange]);
+
+  if (!showImage && hideWhenEmpty) {
+    return null;
+  }
+
   return (
     <div
       className={cn(
-        // Radius + overflow must live on this positioning root so the absolute
-        // fill <img> from AppImage is clipped (no intermediate wrapper).
+        // Radius + overflow on the positioning root so the absolute fill
+        // <img> clips. Padding-top spacer (not aspect-ratio alone): grid
+        // stretch has collapsed focus art frames in production before.
         "relative isolate overflow-hidden rounded-[14px] bg-cos-bg",
+        !isCompact && showImage && "w-full self-start",
         className,
       )}
     >
-      {source ? (
-        <AppImage
-          src={source}
-          alt=""
-          fill
-          preset={isCompact ? "thumb" : "card"}
-          displayWidth={width}
-          displayHeight={width}
-          resize={isCompact ? "cover" : "contain"}
-          className={
-            isCompact
-              ? "rounded-[14px] object-cover object-center"
-              : "rounded-[14px] object-contain object-center p-1"
-          }
-          style={{ objectFit: isCompact ? "cover" : "contain" }}
-          sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
-          priority={priority}
+      {!isCompact && showImage ? (
+        <span
+          aria-hidden
+          className="block w-full"
+          style={{ paddingTop: "100%" }}
         />
       ) : null}
-      {label ? (
-        <span className="absolute top-3 left-3 rounded-full bg-[rgba(255,252,247,0.92)] px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] text-cos-text uppercase">
+      {showImage ? (
+        <span className="absolute inset-0">
+          <AppImage
+            src={source}
+            alt=""
+            fill
+            preset={isCompact ? "thumb" : "card"}
+            displayWidth={width}
+            displayHeight={width}
+            // Cover fills the rail so feed art does not leave a cream void;
+            // AppImage still falls back to the original URL if transforms fail.
+            resize="cover"
+            className="rounded-[14px] object-cover object-center"
+            style={{ objectFit: "cover" }}
+            sizes={width > 200 ? "(max-width: 820px) 100vw, 280px" : "56px"}
+            priority={priority}
+            onError={() => setFailed(true)}
+          />
+        </span>
+      ) : isCompact ? (
+        <span className="flex h-full w-full items-center justify-center text-cos-muted">
+          <ImageIcon className="h-4 w-4 opacity-50" aria-hidden />
+          <span className="sr-only">No artwork</span>
+        </span>
+      ) : null}
+      {label && showImage ? (
+        <span className="absolute top-3 left-3 z-10 rounded-full bg-[rgba(255,252,247,0.92)] px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] text-cos-text uppercase">
           {label}
         </span>
       ) : null}
@@ -137,6 +182,12 @@ export function ApprovalsFocusCard({
   const isNewsletter =
     item.channel === "newsletter" ||
     item.campaignMilestoneId?.startsWith("newsletter:");
+  const artworkUrl = artBackground(item);
+  const [artVisible, setArtVisible] = useState(Boolean(artworkUrl));
+
+  useEffect(() => {
+    setArtVisible(Boolean(artworkUrl));
+  }, [artworkUrl, item.id]);
 
   return (
     <article
@@ -144,7 +195,9 @@ export function ApprovalsFocusCard({
         "grid gap-3 rounded-[22px] border border-cos-border bg-cos-card p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)] md:gap-4 md:p-3.5",
         isNewsletter
           ? "md:grid-cols-[minmax(160px,200px)_1fr]"
-          : "md:grid-cols-[minmax(240px,300px)_1fr]",
+          : artVisible
+            ? "md:grid-cols-[minmax(240px,300px)_1fr]"
+            : null,
       )}
     >
       {isNewsletter ? (
@@ -160,9 +213,11 @@ export function ApprovalsFocusCard({
       ) : (
         <ArtTile
           item={item}
-          className="aspect-square w-full overflow-hidden rounded-[14px]"
+          className="w-full overflow-hidden rounded-[14px]"
           width={800}
           priority
+          hideWhenEmpty
+          onDisplayChange={setArtVisible}
           label={
             preview.feedArtworkUrl
               ? "Feed"

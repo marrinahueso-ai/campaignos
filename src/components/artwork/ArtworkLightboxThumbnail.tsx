@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArtworkV2ReviewLightbox } from "@/components/artwork-v2/ArtworkV2ReviewLightbox";
 import { AppImage } from "@/components/images/AppImage";
 import { cn } from "@/lib/utils/cn";
@@ -25,13 +25,19 @@ export function ArtworkLightboxThumbnail({
   placeholder = "No image",
 }: ArtworkLightboxThumbnailProps) {
   const [open, setOpen] = useState(false);
+  const [broken, setBroken] = useState(false);
   const url = src?.trim() || null;
+  const showImage = Boolean(url) && !broken;
   // Story frames are 9:16; cover crops square/feed art. Contain shows the full image.
   const fit = variant === "story" ? "contain" : "cover";
 
+  useEffect(() => {
+    setBroken(false);
+  }, [url]);
+
   return (
     <div className={cn("flex flex-col gap-2", wrapperClassName)}>
-      {url ? (
+      {showImage && url ? (
         <>
           <button
             type="button"
@@ -57,16 +63,17 @@ export function ArtworkLightboxThumbnail({
               resize={fit}
               sizes="(max-width: 768px) 45vw, 220px"
               className={fit === "contain" ? "object-contain" : "object-cover"}
+              onError={() => setBroken(true)}
             />
           </button>
-          {open && (
+          {open ? (
             <ArtworkV2ReviewLightbox
               src={url}
               alt={alt}
               variant={variant}
               onClose={() => setOpen(false)}
             />
-          )}
+          ) : null}
         </>
       ) : (
         <div

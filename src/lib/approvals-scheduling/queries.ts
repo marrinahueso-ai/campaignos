@@ -1115,6 +1115,10 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
     );
     cb2Items.push({
       ...mapped,
+      thumbnailUrl:
+        assets?.feedArtworkUrl ??
+        assets?.storyArtworkUrl ??
+        mapped.thumbnailUrl,
       preview: assets
         ? {
             captionText: assets.captionText,

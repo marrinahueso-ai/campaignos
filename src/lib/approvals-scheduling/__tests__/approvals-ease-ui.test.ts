@@ -170,14 +170,14 @@ describe("approvals ease pulse contracts", () => {
       ease,
       /ApprovalsFocusCard[\s\S]*?gap-3[\s\S]*?p-3[\s\S]*?minmax\(240px,300px\)_1fr/,
     );
-    assert.match(
-      ease,
-      /aspect-square w-full overflow-hidden rounded-\[14px\]/,
-    );
+    // Focus art uses padding-top square lock (not aspect-square alone) and
+    // hides the rail when artwork is missing — no huge empty grey void.
+    assert.match(ease, /paddingTop:\s*"100%"/);
+    assert.match(ease, /hideWhenEmpty/);
+    assert.match(ease, /approvalArtworkUrl/);
     assert.match(ease, /AppImage/);
-    assert.match(ease, /resize=\{isCompact \? "cover" : "contain"\}/);
+    assert.match(ease, /resize="cover"/);
     assert.match(ease, /object-cover object-center/);
-    assert.match(ease, /object-contain object-center p-1/);
     assert.match(ease, /bg-cos-bg/);
     assert.match(ease, /sizes=\{width > 200 \?[\s\S]*: "56px"\}/);
     assert.match(ease, /ApprovalsQueueRow[\s\S]*ArtTile/);

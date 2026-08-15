@@ -1,7 +1,7 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import {
   canOptimizeWithNextImage,
@@ -85,11 +85,15 @@ export function AppImage(props: AppImageProps) {
 
   const originalSrc = src.trim();
   const [currentSrc, setCurrentSrc] = useState(resolvedSrc);
-  const [triedOriginalFallback, setTriedOriginalFallback] = useState(false);
+  // Refs keep onError fallback correct even if the browser fires error before
+  // the next React render (stale closure used to clear the src too early).
+  const currentSrcRef = useRef(resolvedSrc);
+  const triedOriginalFallbackRef = useRef(false);
 
   useEffect(() => {
+    currentSrcRef.current = resolvedSrc;
+    triedOriginalFallbackRef.current = false;
     setCurrentSrc(resolvedSrc);
-    setTriedOriginalFallback(false);
   }, [resolvedSrc]);
 
   if (!currentSrc) {
@@ -98,11 +102,18 @@ export function AppImage(props: AppImageProps) {
 
   const handleError = () => {
     // Transform / next/image can fail while the original object URL still works.
-    if (!triedOriginalFallback && originalSrc && currentSrc !== originalSrc) {
-      setTriedOriginalFallback(true);
+    const active = currentSrcRef.current;
+    if (
+      !triedOriginalFallbackRef.current &&
+      originalSrc &&
+      active !== originalSrc
+    ) {
+      triedOriginalFallbackRef.current = true;
+      currentSrcRef.current = originalSrc;
       setCurrentSrc(originalSrc);
       return;
     }
+    currentSrcRef.current = "";
     setCurrentSrc("");
     onError?.();
   };
