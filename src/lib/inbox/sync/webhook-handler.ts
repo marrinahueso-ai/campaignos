@@ -15,9 +15,11 @@ import { fetchConnectedPageProfilePictures, fetchMessagingParticipantProfile } f
 import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/sync/types";
 import { touchOrganizationInboxSyncedAt } from "@/lib/inbox/settings";
 import { upsertWebhookMessage } from "@/lib/inbox/sync/upsert";
+import { inboxGraphGet } from "@/lib/inbox/sync/graph-client";
 import {
   collectMessagingEventsFromEntry,
   describeMessagingSkipReason,
+  parseFeedCommentChange,
   parseMetaWebhookTimestamp,
   readMetaId,
   verifyMetaWebhookSignatureWithSecret,
@@ -307,64 +309,229 @@ async function handleMessagingEvent(input: {
   return saved;
 }
 
+async function enrichFeedCommentFromGraph(input: {
+  organizationId: string;
+  commentId: string;
+  postId: string;
+  message: string;
+  senderName: string;
+  senderId: string | null;
+  createdTimeIso: string;
+  facebookPageId: string;
+  instagramAccountId: string | null;
+}): Promise<{
+  message: string;
+  senderName: string;
+  senderId: string | null;
+  createdTimeIso: string;
+  postCaption: string | null;
+  postImageUrl: string | null;
+  postPublishedAt: string | null;
+  participantAvatarUrl: string | null;
+  pageAvatarUrl: string | null;
+  instagramAvatarUrl: string | null;
+}> {
+  let message = input.message;
+  let senderName = input.senderName;
+  let senderId = input.senderId;
+  let createdTimeIso = input.createdTimeIso;
+  let postCaption: string | null = null;
+  let postImageUrl: string | null = null;
+  let postPublishedAt: string | null = null;
+  let participantAvatarUrl: string | null = null;
+  let pageAvatarUrl: string | null = null;
+  let instagramAvatarUrl: string | null = null;
+
+  const needsCommentEnrichment =
+    !message.trim() ||
+    !senderId ||
+    senderName === "Facebook user";
+
+  const metaConnection = await getMetaConnectionForOrganization(input.organizationId, {
+    useServiceRole: true,
+  });
+  const pageAccessToken = metaConnection?.pageAccessToken;
+  if (!pageAccessToken) {
+    return {
+      message,
+      senderName,
+      senderId,
+      createdTimeIso,
+      postCaption,
+      postImageUrl,
+      postPublishedAt,
+      participantAvatarUrl,
+      pageAvatarUrl,
+      instagramAvatarUrl,
+    };
+  }
+
+  if (needsCommentEnrichment) {
+    const commentResult = await inboxGraphGet<Record<string, unknown>>(
+      `/${input.commentId}`,
+      {
+        fields: "id,message,from,created_time",
+        access_token: pageAccessToken,
+      },
+    );
+    if (commentResult.ok) {
+      const from = commentResult.data.from;
+      if ((!message.trim()) && typeof commentResult.data.message === "string") {
+        message = commentResult.data.message;
+      }
+      if (from && typeof from === "object") {
+        const fromRecord = from as Record<string, unknown>;
+        const graphName =
+          typeof fromRecord.name === "string" ? fromRecord.name.trim() : "";
+        if (graphName && (senderName === "Facebook user" || !senderName.trim())) {
+          senderName = graphName;
+        }
+        senderId = readMetaId(fromRecord.id) ?? senderId;
+      }
+      if (commentResult.data.created_time != null) {
+        createdTimeIso = parseMetaWebhookTimestamp(commentResult.data.created_time);
+      }
+    }
+  }
+
+  const postResultPromise = inboxGraphGet<Record<string, unknown>>(`/${input.postId}`, {
+    fields: "id,message,full_picture,created_time,permalink_url",
+    access_token: pageAccessToken,
+  });
+  const pagePicturesPromise = fetchConnectedPageProfilePictures({
+    pageId: input.facebookPageId,
+    instagramAccountId: input.instagramAccountId ?? "",
+    pageAccessToken,
+  });
+  const participantProfilePromise = senderId
+    ? fetchMessagingParticipantProfile({
+        participantId: senderId,
+        pageAccessToken,
+        preferInstagram: false,
+      })
+    : Promise.resolve({ name: null, avatarUrl: null });
+
+  const [postResult, pagePictures, participantProfile] = await Promise.all([
+    postResultPromise,
+    pagePicturesPromise,
+    participantProfilePromise,
+  ]);
+
+  if (postResult.ok) {
+    postCaption =
+      typeof postResult.data.message === "string" ? postResult.data.message : null;
+    postImageUrl =
+      typeof postResult.data.full_picture === "string"
+        ? postResult.data.full_picture
+        : null;
+    if (typeof postResult.data.created_time === "string") {
+      const parsed = Date.parse(postResult.data.created_time);
+      if (Number.isFinite(parsed)) {
+        postPublishedAt = new Date(parsed).toISOString();
+      }
+    }
+  }
+
+  pageAvatarUrl = pagePictures.pageAvatarUrl;
+  instagramAvatarUrl = pagePictures.instagramAvatarUrl;
+  participantAvatarUrl = participantProfile.avatarUrl;
+  if (
+    participantProfile.name?.trim() &&
+    (senderName === "Facebook user" || !senderName.trim())
+  ) {
+    senderName = participantProfile.name.trim();
+  }
+
+  return {
+    message,
+    senderName,
+    senderId,
+    createdTimeIso,
+    postCaption,
+    postImageUrl,
+    postPublishedAt,
+    participantAvatarUrl,
+    pageAvatarUrl,
+    instagramAvatarUrl,
+  };
+}
+
 async function handleFeedCommentChange(input: {
   connection: MetaWebhookConnection;
   value: Record<string, unknown>;
 }): Promise<boolean> {
-  const value = input.value;
-  const commentId = typeof value.comment_id === "string" ? value.comment_id : null;
-  const postId = typeof value.post_id === "string" ? value.post_id : null;
-  const message = typeof value.message === "string" ? value.message : "";
-  const senderName =
-    typeof value.from === "object" && value.from !== null
-      ? ((value.from as Record<string, unknown>).name as string | undefined) ?? "Facebook user"
-      : "Facebook user";
-  const senderId =
-    typeof value.from === "object" && value.from !== null
-      ? readMetaId((value.from as Record<string, unknown>).id)
-      : null;
-  const createdTime =
-    typeof value.created_time === "number"
-      ? new Date(value.created_time * 1000).toISOString()
-      : new Date().toISOString();
-
-  if (!commentId || !postId) {
+  const parsed = parseFeedCommentChange(input.value);
+  if (!parsed.shouldPersist) {
+    // Reactions / likes / removes are normal feed noise — don't error-log them.
+    if (
+      parsed.skipReason?.startsWith("non_comment_item:") ||
+      parsed.skipReason?.startsWith("ignored_verb:")
+    ) {
+      return false;
+    }
     console.error("[inbox webhook] skipped feed comment:", {
-      reason: "missing_comment_or_post_id",
+      reason: parsed.skipReason,
       pageId: input.connection.facebookPageId,
+      item: input.value.item,
+      verb: parsed.verb,
+      hasPostId: Boolean(readMetaId(input.value.post_id)),
+      hasParentId: Boolean(readMetaId(input.value.parent_id)),
+      hasCommentId: Boolean(parsed.commentId),
     });
     return false;
   }
 
-  const threadExternalId = `${postId}:${commentId}`;
-  const postMetadata = buildCommentPostMetadata({
-    caption: null,
-    imageUrl: null,
-    permalink: resolveFacebookPostPermalink({ postId }),
-    postId,
+  const enriched = await enrichFeedCommentFromGraph({
+    organizationId: input.connection.organizationId,
+    commentId: parsed.commentId,
+    postId: parsed.postId,
+    message: parsed.message,
+    senderName: parsed.senderName,
+    senderId: parsed.senderId,
+    createdTimeIso: parsed.createdTimeIso,
+    facebookPageId: input.connection.facebookPageId,
+    instagramAccountId: input.connection.instagramAccountId,
   });
+
+  const threadExternalId = `${parsed.postId}:${parsed.commentId}`;
+  const postMetadata = {
+    ...buildCommentPostMetadata({
+      caption: enriched.postCaption,
+      imageUrl: enriched.postImageUrl,
+      permalink: resolveFacebookPostPermalink({ postId: parsed.postId }),
+      postId: parsed.postId,
+      publishedAt: enriched.postPublishedAt,
+    }),
+    ...buildAvatarMetadata({
+      participantAvatarUrl: enriched.participantAvatarUrl,
+      pageAvatarUrl: enriched.pageAvatarUrl,
+      instagramAvatarUrl: enriched.instagramAvatarUrl,
+    }),
+  };
   const thread: NormalizedInboxThread = {
     channelType: "facebook_comment",
     externalThreadId: threadExternalId,
-    externalPostId: postId,
-    participantName: senderName,
-    participantExternalId: senderId,
-    subject: "Facebook post comment",
-    lastMessageSnippet: snippet(message),
-    lastMessageAt: createdTime,
+    externalPostId: parsed.postId,
+    participantName: enriched.senderName,
+    participantExternalId: enriched.senderId,
+    subject: enriched.postCaption
+      ? snippet(enriched.postCaption, 80)
+      : "Facebook post comment",
+    lastMessageSnippet: snippet(enriched.message),
+    lastMessageAt: enriched.createdTimeIso,
     metadata: postMetadata,
   };
 
   const normalizedMessage: NormalizedInboxMessage = {
     channelType: "facebook_comment",
     externalThreadId: threadExternalId,
-    externalMessageId: commentId,
+    externalMessageId: parsed.commentId,
     // Seed comments are inbound for inbox UX even when Meta attributes the Page.
     direction: "inbound",
-    body: message,
-    senderName,
-    senderExternalId: senderId,
-    sentAt: createdTime,
+    body: enriched.message,
+    senderName: enriched.senderName,
+    senderExternalId: enriched.senderId,
+    sentAt: enriched.createdTimeIso,
     metadata: postMetadata,
   };
 
@@ -533,7 +700,7 @@ export async function processMetaWebhookPayload(
       }
 
       let saved = false;
-      if (field === "feed" && value.item === "comment") {
+      if (field === "feed") {
         saved = await handleFeedCommentChange({ connection, value });
       } else if (field === "comments") {
         saved = await handleInstagramCommentChange({ connection, value });

@@ -152,6 +152,7 @@ export async function enrichInboxThreadsWithAvatars(input: {
   pageAccessToken: string;
 }): Promise<void> {
   const cache = new InboxProfilePictureCache(input.pageAccessToken);
+  const avatarByParticipantId = new Map<string, string>();
 
   for (const thread of input.threads) {
     const metadata: Record<string, unknown> = {
@@ -162,22 +163,69 @@ export async function enrichInboxThreadsWithAvatars(input: {
       }),
     };
 
-    const participantId = thread.participantExternalId?.trim();
-    if (participantId) {
-      const isInstagramChannel = thread.channelType.startsWith("instagram");
-      let participantAvatarUrl = isInstagramChannel
-        ? await cache.resolveInstagramPicture(participantId)
-        : await cache.resolveFacebookPicture(participantId);
+    const existingParticipantAvatar =
+      typeof metadata.participant_avatar_url === "string" &&
+      metadata.participant_avatar_url.trim()
+        ? metadata.participant_avatar_url.trim()
+        : null;
 
-      if (!participantAvatarUrl && isInstagramChannel) {
-        participantAvatarUrl = await cache.resolveFacebookPicture(participantId);
+    const participantId = thread.participantExternalId?.trim();
+    if (participantId && existingParticipantAvatar) {
+      avatarByParticipantId.set(participantId, existingParticipantAvatar);
+    }
+
+    if (participantId && !existingParticipantAvatar) {
+      const isInstagramChannel = thread.channelType.startsWith("instagram");
+      let participantAvatarUrl: string | null = null;
+
+      if (isInstagramChannel) {
+        participantAvatarUrl = await cache.resolveInstagramPicture(participantId);
+        if (!participantAvatarUrl) {
+          const profile = await cache.resolveMessagingParticipantProfile(participantId, {
+            preferInstagram: false,
+          });
+          participantAvatarUrl = profile.avatarUrl;
+        }
+      } else {
+        const profile = await cache.resolveMessagingParticipantProfile(participantId, {
+          preferInstagram: false,
+        });
+        participantAvatarUrl = profile.avatarUrl;
+        if (!participantAvatarUrl) {
+          participantAvatarUrl = await cache.resolveFacebookPicture(participantId);
+        }
       }
 
       if (participantAvatarUrl) {
         metadata.participant_avatar_url = participantAvatarUrl;
+        avatarByParticipantId.set(participantId, participantAvatarUrl);
       }
     }
 
     thread.metadata = metadata;
+  }
+
+  // Same contact can appear on DM + comment threads; share a resolved picture
+  // when Graph already returned one for that participant id in this batch.
+  for (const thread of input.threads) {
+    const participantId = thread.participantExternalId?.trim();
+    if (!participantId) {
+      continue;
+    }
+    const existing =
+      typeof thread.metadata?.participant_avatar_url === "string" &&
+      thread.metadata.participant_avatar_url.trim()
+        ? thread.metadata.participant_avatar_url.trim()
+        : null;
+    if (existing) {
+      continue;
+    }
+    const shared = avatarByParticipantId.get(participantId);
+    if (shared) {
+      thread.metadata = {
+        ...(thread.metadata ?? {}),
+        participant_avatar_url: shared,
+      };
+    }
   }
 }

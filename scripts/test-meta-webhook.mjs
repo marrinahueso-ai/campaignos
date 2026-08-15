@@ -6,8 +6,10 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import {
   collectMessagingEventsFromEntry,
+  parseFeedCommentChange,
   parseMetaWebhookTimestamp,
   readMetaId,
+  resolveFeedCommentPostId,
   verifyMetaWebhookSignatureWithSecret,
 } from "../src/lib/inbox/sync/webhook-payload.ts";
 
@@ -102,5 +104,58 @@ assert.equal(
   }),
   false,
 );
+
+const sparsePhotoComment = {
+  item: "comment",
+  verb: "add",
+  comment_id: "122120917863387536_1336063851845687",
+  parent_id: "1252891557897483_122120917863387536",
+  sender_id: "27810140111947479",
+  created_time: 1786817963,
+};
+assert.equal(
+  resolveFeedCommentPostId(sparsePhotoComment),
+  "1252891557897483_122120917863387536",
+);
+const sparseParsed = parseFeedCommentChange(sparsePhotoComment);
+assert.equal(sparseParsed.shouldPersist, true);
+assert.equal(sparseParsed.commentId, "122120917863387536_1336063851845687");
+assert.equal(sparseParsed.postId, "1252891557897483_122120917863387536");
+assert.equal(sparseParsed.senderId, "27810140111947479");
+assert.equal(sparseParsed.senderName, "Facebook user");
+assert.match(sparseParsed.createdTimeIso, /^2026-08-15T/);
+
+const fullComment = {
+  item: "comment",
+  verb: "add",
+  comment_id: "122120917863387536_1336063851845687",
+  post_id: "1252891557897483_122120917863387536",
+  parent_id: "1252891557897483_122120917863387536",
+  message: "hello",
+  from: { id: "27810140111947479", name: "Ricardo Hueso" },
+  created_time: "2026-08-15T18:19:23+0000",
+};
+const fullParsed = parseFeedCommentChange(fullComment);
+assert.equal(fullParsed.shouldPersist, true);
+assert.equal(fullParsed.message, "hello");
+assert.equal(fullParsed.senderName, "Ricardo Hueso");
+assert.equal(fullParsed.createdTimeIso, "2026-08-15T18:19:23.000Z");
+
+const reaction = parseFeedCommentChange({
+  item: "reaction",
+  verb: "add",
+  post_id: "1252891557897483_1",
+  reaction_type: "like",
+});
+assert.equal(reaction.shouldPersist, false);
+assert.match(reaction.skipReason ?? "", /^non_comment_item:/);
+
+const removed = parseFeedCommentChange({
+  item: "comment",
+  verb: "remove",
+  comment_id: "1_2",
+  post_id: "page_1",
+});
+assert.equal(removed.shouldPersist, false);
 
 console.log("Meta webhook payload tests passed.");

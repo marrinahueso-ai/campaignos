@@ -89,29 +89,39 @@ export function CommunicationsParentPostCard({
         </div>
       </div>
 
-      {preview.caption ? (
-        <p className="mt-2 px-3 text-sm leading-relaxed whitespace-pre-wrap text-cos-text">
-          {truncateCaption(preview.caption)}
-        </p>
-      ) : (
-        <p className="mt-2 px-3 text-sm text-cos-muted italic">No caption</p>
-      )}
-
       {preview.imageUrl ? (
-        <div className="mt-2.5 border-t border-cos-border bg-cos-bg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={preview.imageUrl}
-            alt={`${platformLabel} post artwork`}
-            className="max-h-56 w-full object-cover"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        </div>
+        <>
+          <div className="mt-2.5 border-t border-cos-border bg-cos-bg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={preview.imageUrl}
+              alt={`${platformLabel} post artwork`}
+              className="max-h-56 w-full object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          {preview.caption ? (
+            <p className="mt-2.5 px-3 pb-3 text-sm leading-relaxed whitespace-pre-wrap text-cos-text">
+              {truncateCaption(preview.caption)}
+            </p>
+          ) : (
+            <p className="mt-2.5 px-3 pb-3 text-sm text-cos-muted italic">No caption</p>
+          )}
+        </>
       ) : (
-        <p className="mt-2 px-3 pb-3 text-[11px] text-cos-muted">
-          Image unavailable — text-only post, or refresh inbox to update media.
-        </p>
+        <>
+          {preview.caption ? (
+            <p className="mt-2 px-3 text-sm leading-relaxed whitespace-pre-wrap text-cos-text">
+              {truncateCaption(preview.caption)}
+            </p>
+          ) : (
+            <p className="mt-2 px-3 text-sm text-cos-muted italic">No caption</p>
+          )}
+          <p className="mt-2 px-3 pb-3 text-[11px] text-cos-muted">
+            Image unavailable — text-only post, or refresh inbox to update media.
+          </p>
+        </>
       )}
 
     </article>
