@@ -185,7 +185,7 @@ export function MessageBubble({
   return (
     <li
       className={cn(
-        "group/bubble flex w-fit min-w-0 max-w-[min(85%,100%)] items-end gap-2",
+        "flex w-fit min-w-0 max-w-[min(85%,100%)] items-end gap-2",
         isOutbound && "ml-auto flex-row-reverse",
       )}
     >
@@ -196,7 +196,12 @@ export function MessageBubble({
         showUserIconFallback
       />
       <div className="relative min-w-0 max-w-full">
-        <div className={cn("relative w-fit max-w-full", reaction && "pb-3")}>
+        <div
+          className={cn(
+            "group/bubble relative w-fit max-w-full",
+            reaction && "pb-3",
+          )}
+        >
           <div
             role="button"
             tabIndex={0}
@@ -248,49 +253,51 @@ export function MessageBubble({
             ) : null}
           </div>
 
-          {/* Messenger-style hover actions (desktop + keyboard focus). */}
+          {/* Hover actions: pad (not margin) so bubble→icon path stays in the group. */}
           <div
             ref={actionsRef}
             className={cn(
-              "pointer-events-none absolute top-1/2 z-20 hidden -translate-y-1/2 items-center gap-0.5 rounded-full border border-cos-border bg-white p-0.5 shadow-sm opacity-0 transition-opacity sm:flex",
+              "pointer-events-none absolute top-1/2 z-20 hidden -translate-y-1/2 opacity-0 transition-opacity sm:flex",
               "group-hover/bubble:pointer-events-auto group-hover/bubble:opacity-100",
               "group-focus-within/bubble:pointer-events-auto group-focus-within/bubble:opacity-100",
               pickerOpen && "pointer-events-auto opacity-100",
-              isOutbound ? "right-full mr-1.5" : "left-full ml-1.5",
+              isOutbound ? "right-full pr-1.5" : "left-full pl-1.5",
             )}
             role="toolbar"
             aria-label="Message actions"
           >
-            <button
-              type="button"
-              tabIndex={0}
-              onClick={(event) => {
-                event.stopPropagation();
-                openPicker();
-              }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text focus-visible:bg-cos-bg focus-visible:text-cos-text focus-visible:outline-none"
-              aria-label="Choose emoji reaction"
-              aria-expanded={pickerOpen}
-              aria-haspopup="true"
-              title="React"
-            >
-              <Smile className="h-3.5 w-3.5" aria-hidden />
-            </button>
-            {showHoverReply ? (
+            <div className="flex items-center gap-0.5 rounded-full border border-cos-border bg-white p-0.5 shadow-sm">
               <button
                 type="button"
                 tabIndex={0}
                 onClick={(event) => {
                   event.stopPropagation();
-                  onReplyToMessage?.(message);
+                  openPicker();
                 }}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text focus-visible:bg-cos-bg focus-visible:text-cos-text focus-visible:outline-none"
-                aria-label="Reply to this message"
-                title="Reply"
+                aria-label="Choose emoji reaction"
+                aria-expanded={pickerOpen}
+                aria-haspopup="true"
+                title="React"
               >
-                <Reply className="h-3.5 w-3.5" aria-hidden />
+                <Smile className="h-3.5 w-3.5" aria-hidden />
               </button>
-            ) : null}
+              {showHoverReply ? (
+                <button
+                  type="button"
+                  tabIndex={0}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onReplyToMessage?.(message);
+                  }}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text focus-visible:bg-cos-bg focus-visible:text-cos-text focus-visible:outline-none"
+                  aria-label="Reply to this message"
+                  title="Reply"
+                >
+                  <Reply className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {pickerOpen ? (
