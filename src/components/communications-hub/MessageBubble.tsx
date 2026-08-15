@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useTransition,
@@ -10,6 +11,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type TouchEvent as ReactTouchEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import { Reply, Smile } from "lucide-react";
 import { isCommentChannel } from "@/lib/inbox/constants";
 import { setInboxMessageReactionAction } from "@/lib/inbox/actions";
@@ -30,6 +32,14 @@ import { InboxParticipantAvatar } from "@/components/inbox/InboxParticipantAvata
 
 const DOUBLE_TAP_MS = 320;
 const IMAGE_PLACEHOLDER_BODIES = new Set(["📎 Sticker", "📎 GIF"]);
+const REACTION_PICKER_EST_HEIGHT = 72;
+const REACTION_PICKER_EST_WIDTH = 120;
+
+type ReactionPickerCoords = {
+  top: number;
+  left: number;
+  openUp: boolean;
+};
 
 interface MessageBubbleProps {
   message: InboxMessage;
@@ -59,10 +69,14 @@ export function MessageBubble({
   const [reactionError, setReactionError] = useState<string | null>(null);
   const [reactionWarning, setReactionWarning] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerCoords, setPickerCoords] = useState<ReactionPickerCoords | null>(
+    null,
+  );
   const [isPending, startTransition] = useTransition();
   const lastTapRef = useRef(0);
   const pickerRef = useRef<HTMLDivElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
+  const bubbleRef = useRef<HTMLDivElement>(null);
   const stickerUrl = readMessageStickerUrl(message.metadata);
   const textBody = message.body?.trim() ?? "";
   const showTextBody =
@@ -80,6 +94,47 @@ export function MessageBubble({
     setMappedToLike(readMetaReactionMappedToLike(message.metadata));
     setLocalOnly(readLocalReactionOnly(message.metadata));
   }, [message.id, message.metadata]);
+
+  useLayoutEffect(() => {
+    if (!pickerOpen || !bubbleRef.current) {
+      setPickerCoords(null);
+      return;
+    }
+
+    function place() {
+      const rect = bubbleRef.current?.getBoundingClientRect();
+      if (!rect) {
+        return;
+      }
+
+      const spaceAbove = rect.top;
+      const openUp =
+        spaceAbove >= REACTION_PICKER_EST_HEIGHT + 12 ||
+        spaceAbove > window.innerHeight - rect.bottom;
+
+      let left = isOutbound
+        ? rect.right - REACTION_PICKER_EST_WIDTH
+        : rect.left;
+      left = Math.min(
+        Math.max(8, left),
+        window.innerWidth - REACTION_PICKER_EST_WIDTH - 8,
+      );
+
+      setPickerCoords({
+        top: openUp ? rect.top - 8 : rect.bottom + 8,
+        left,
+        openUp,
+      });
+    }
+
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [pickerOpen, isOutbound]);
 
   useEffect(() => {
     if (!pickerOpen) {
@@ -199,6 +254,7 @@ export function MessageBubble({
       />
       <div className="relative min-w-0 max-w-full overflow-visible">
         <div
+          ref={bubbleRef}
           className={cn(
             "group/bubble relative w-fit max-w-full overflow-visible",
             reaction && "pb-3",
@@ -337,50 +393,60 @@ export function MessageBubble({
             </div>
           </div>
 
-          {pickerOpen ? (
-            <div
-              ref={pickerRef}
-              className={cn(
-                "absolute z-20 flex flex-col gap-1 rounded-2xl border border-cos-border bg-white px-1.5 py-1.5 shadow-md",
-                isOutbound ? "right-0 bottom-full mb-2" : "left-0 bottom-full mb-2",
-              )}
-              role="toolbar"
-              aria-label="Quick reactions"
-            >
-              <div className="flex items-center gap-1">
-                {BUBBLE_QUICK_REACTIONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    disabled={isPending}
-                    onClick={() => applyReaction(emoji)}
-                    className={cn(
-                      "inline-flex h-8 w-8 items-center justify-center rounded-full text-base transition-colors hover:bg-cos-bg",
-                      reaction === emoji && "bg-cos-bg ring-1 ring-cos-border",
-                    )}
-                    aria-label={
-                      commentsLikeOnly && emoji === "❤️"
-                        ? "React with heart (posts as Like on comments)"
-                        : `React with ${emoji}`
-                    }
-                    aria-pressed={reaction === emoji}
-                    title={
-                      commentsLikeOnly && emoji === "❤️"
-                        ? "Comments only support Like — this posts as Like"
-                        : undefined
-                    }
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-              {commentsLikeOnly ? (
-                <p className="max-w-[11rem] px-1 pb-0.5 text-[10px] leading-snug text-cos-muted">
-                  Comments support Like only — ❤️ posts as Like
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+          {pickerOpen &&
+          pickerCoords &&
+          typeof document !== "undefined"
+            ? createPortal(
+                <div
+                  ref={pickerRef}
+                  className="fixed z-[80] flex flex-col gap-1 rounded-2xl border border-cos-border bg-white px-1.5 py-1.5 shadow-md"
+                  style={{
+                    top: pickerCoords.top,
+                    left: pickerCoords.left,
+                    transform: pickerCoords.openUp
+                      ? "translateY(-100%)"
+                      : undefined,
+                  }}
+                  role="toolbar"
+                  aria-label="Quick reactions"
+                >
+                  <div className="flex items-center gap-1">
+                    {BUBBLE_QUICK_REACTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => applyReaction(emoji)}
+                        className={cn(
+                          "inline-flex h-8 w-8 items-center justify-center rounded-full text-base transition-colors hover:bg-cos-bg",
+                          reaction === emoji &&
+                            "bg-cos-bg ring-1 ring-cos-border",
+                        )}
+                        aria-label={
+                          commentsLikeOnly && emoji === "❤️"
+                            ? "React with heart (posts as Like on comments)"
+                            : `React with ${emoji}`
+                        }
+                        aria-pressed={reaction === emoji}
+                        title={
+                          commentsLikeOnly && emoji === "❤️"
+                            ? "Comments only support Like — this posts as Like"
+                            : undefined
+                        }
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                  {commentsLikeOnly ? (
+                    <p className="max-w-[11rem] px-1 pb-0.5 text-[10px] leading-snug text-cos-muted">
+                      Comments support Like only — ❤️ posts as Like
+                    </p>
+                  ) : null}
+                </div>,
+                document.body,
+              )
+            : null}
 
           {reaction ? (
             <span
