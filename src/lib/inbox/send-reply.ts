@@ -1,6 +1,10 @@
 import "server-only";
 
 import { isCommentChannel } from "@/lib/inbox/constants";
+import {
+  buildMessengerSendParams,
+  looksLikeReplyToFailure,
+} from "@/lib/inbox/messenger-send-params";
 import { inboxGraphPost } from "@/lib/inbox/sync/graph-client";
 import type { InboxChannelType, InboxMessage, InboxThread } from "@/lib/inbox/types";
 
@@ -67,6 +71,64 @@ function formatSendReplyError(input: {
   }
 }
 
+async function postMessengerMessage(input: {
+  channelType: "facebook_message" | "instagram_dm";
+  pageId: string;
+  recipientId: string;
+  message: Record<string, unknown>;
+  replyToMid: string | null;
+  pageAccessToken: string;
+}): Promise<SendInboxReplyResult> {
+  const path = `/${input.pageId}/messages`;
+  const withQuote = buildMessengerSendParams({
+    recipientId: input.recipientId,
+    message: input.message,
+    replyToMid: input.replyToMid,
+    pageAccessToken: input.pageAccessToken,
+  });
+
+  let result = await inboxGraphPost<{ message_id?: string; id?: string }>(
+    path,
+    withQuote,
+  );
+
+  // Soft fallback: invalid/expired mid must not block the reply itself.
+  if (
+    !result.ok &&
+    input.replyToMid &&
+    looksLikeReplyToFailure(result.error, result.errorCode)
+  ) {
+    result = await inboxGraphPost<{ message_id?: string; id?: string }>(
+      path,
+      buildMessengerSendParams({
+        recipientId: input.recipientId,
+        message: input.message,
+        replyToMid: null,
+        pageAccessToken: input.pageAccessToken,
+      }),
+    );
+  }
+
+  if (!result.ok) {
+    return {
+      success: false,
+      externalSendId: null,
+      error: formatSendReplyError({
+        channelType: input.channelType,
+        graphError: result.error,
+        errorCode: result.errorCode,
+      }),
+    };
+  }
+
+  return {
+    success: true,
+    externalSendId:
+      String(result.data.message_id ?? result.data.id ?? "") || null,
+    error: null,
+  };
+}
+
 async function sendFacebookMessengerReply(input: {
   channelType: "facebook_message" | "instagram_dm";
   pageId: string;
@@ -79,10 +141,6 @@ async function sendFacebookMessengerReply(input: {
   const imageUrl = input.imageUrl?.trim() || null;
   const body = input.body.trim();
   const replyToMid = input.replyToExternalMessageId?.trim() || null;
-  const replyToPayload =
-    replyToMid && !replyToMid.startsWith("local:")
-      ? { reply_to: { mid: replyToMid } }
-      : null;
 
   if (!imageUrl && !body) {
     return {
@@ -96,59 +154,43 @@ async function sendFacebookMessengerReply(input: {
   let sentImage = false;
 
   if (imageUrl) {
-    const imageResult = await inboxGraphPost<{ message_id?: string; id?: string }>(
-      `/${input.pageId}/messages`,
-      {
-        recipient: JSON.stringify({ id: input.recipientId }),
-        messaging_type: "RESPONSE",
-        message: JSON.stringify({
-          attachment: {
-            type: "image",
-            payload: {
-              url: imageUrl,
-              is_reusable: true,
-            },
+    const imageResult = await postMessengerMessage({
+      channelType: input.channelType,
+      pageId: input.pageId,
+      recipientId: input.recipientId,
+      message: {
+        attachment: {
+          type: "image",
+          payload: {
+            url: imageUrl,
+            is_reusable: true,
           },
-          ...(replyToPayload ?? {}),
-        }),
-        access_token: input.pageAccessToken,
+        },
       },
-    );
+      // Only attach reply_to to the first payload so sticker+text doesn’t double-quote.
+      replyToMid,
+      pageAccessToken: input.pageAccessToken,
+    });
 
-    if (!imageResult.ok) {
-      return {
-        success: false,
-        externalSendId: null,
-        error: formatSendReplyError({
-          channelType: input.channelType,
-          graphError: imageResult.error,
-          errorCode: imageResult.errorCode,
-        }),
-      };
+    if (!imageResult.success) {
+      return imageResult;
     }
 
-    lastExternalSendId =
-      String(imageResult.data.message_id ?? imageResult.data.id ?? "") || null;
+    lastExternalSendId = imageResult.externalSendId;
     sentImage = true;
   }
 
   if (body) {
-    // Only attach reply_to to the first payload so sticker+text doesn’t double-quote.
-    const textReplyTo = sentImage ? null : replyToPayload;
-    const textResult = await inboxGraphPost<{ message_id?: string; id?: string }>(
-      `/${input.pageId}/messages`,
-      {
-        recipient: JSON.stringify({ id: input.recipientId }),
-        messaging_type: "RESPONSE",
-        message: JSON.stringify({
-          text: body,
-          ...(textReplyTo ?? {}),
-        }),
-        access_token: input.pageAccessToken,
-      },
-    );
+    const textResult = await postMessengerMessage({
+      channelType: input.channelType,
+      pageId: input.pageId,
+      recipientId: input.recipientId,
+      message: { text: body },
+      replyToMid: sentImage ? null : replyToMid,
+      pageAccessToken: input.pageAccessToken,
+    });
 
-    if (!textResult.ok) {
+    if (!textResult.success) {
       // Image may already have been delivered — surface the text failure clearly.
       const prefix = sentImage
         ? "Sticker was sent, but the text reply failed: "
@@ -157,19 +199,11 @@ async function sendFacebookMessengerReply(input: {
         success: false,
         externalSendId: lastExternalSendId,
         sentImage,
-        error:
-          prefix +
-          formatSendReplyError({
-            channelType: input.channelType,
-            graphError: textResult.error,
-            errorCode: textResult.errorCode,
-          }),
+        error: prefix + (textResult.error ?? "Text reply failed."),
       };
     }
 
-    lastExternalSendId =
-      String(textResult.data.message_id ?? textResult.data.id ?? "") ||
-      lastExternalSendId;
+    lastExternalSendId = textResult.externalSendId ?? lastExternalSendId;
   }
 
   return {

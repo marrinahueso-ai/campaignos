@@ -14,6 +14,7 @@ import { Reply, Smile } from "lucide-react";
 import { isCommentChannel } from "@/lib/inbox/constants";
 import { setInboxMessageReactionAction } from "@/lib/inbox/actions";
 import { getJumboEmojiCount } from "@/lib/inbox/jumbo-emoji";
+import { readQuotedMessagePreview } from "@/lib/inbox/message-quote";
 import {
   BUBBLE_QUICK_REACTIONS,
   readLocalMessageReaction,
@@ -72,6 +73,7 @@ export function MessageBubble({
     showTextBody && !stickerUrl ? getJumboEmojiCount(textBody) : null;
   const commentsLikeOnly = isCommentChannel(message.channelType);
   const showHoverReply = Boolean(onReplyToMessage);
+  const quotedPreview = readQuotedMessagePreview(message.metadata);
 
   useEffect(() => {
     setReaction(readLocalMessageReaction(message.metadata));
@@ -218,7 +220,7 @@ export function MessageBubble({
               "max-w-full select-none rounded-2xl touch-manipulation",
               jumboEmojiCount
                 ? "px-3 py-2"
-                : stickerUrl && !showTextBody
+                : stickerUrl && !showTextBody && !quotedPreview
                   ? "p-2"
                   : "px-4 py-3 text-sm leading-relaxed",
               isOutbound
@@ -227,6 +229,41 @@ export function MessageBubble({
               isPending && "opacity-80",
             )}
           >
+            {quotedPreview ? (
+              <div
+                className={cn(
+                  "mb-2 rounded-lg border-l-[3px] px-2.5 py-1.5",
+                  isOutbound
+                    ? "border-l-[#f6f2eb]/55 bg-white/10"
+                    : "border-l-cos-dark/35 bg-black/[0.04]",
+                )}
+                aria-label={
+                  quotedPreview.senderName
+                    ? `Replying to ${quotedPreview.senderName}`
+                    : "Replying to a message"
+                }
+              >
+                {quotedPreview.senderName ? (
+                  <p
+                    className={cn(
+                      "text-[11px] font-semibold leading-tight",
+                      isOutbound ? "text-[#f6f2eb]/80" : "text-cos-muted",
+                    )}
+                  >
+                    {quotedPreview.senderName}
+                  </p>
+                ) : null}
+                <p
+                  className={cn(
+                    "line-clamp-2 text-xs leading-snug",
+                    quotedPreview.senderName && "mt-0.5",
+                    isOutbound ? "text-[#f6f2eb]/70" : "text-cos-muted",
+                  )}
+                >
+                  {quotedPreview.snippet}
+                </p>
+              </div>
+            ) : null}
             {stickerUrl ? (
               <img
                 src={stickerUrl}

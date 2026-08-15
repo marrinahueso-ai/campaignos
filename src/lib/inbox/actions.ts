@@ -14,6 +14,7 @@ import {
 import { buildInboxOrgMembers } from "@/lib/inbox/org-members";
 import { canApproveReplyAnchor } from "@/lib/inbox/reply-target";
 import { refreshInboxScopesFromPageToken, getOrganizationInboxSettings } from "@/lib/inbox/settings";
+import { buildQuotedSnippet } from "@/lib/inbox/message-quote";
 import { sendInboxReply } from "@/lib/inbox/send-reply";
 import {
   missingFacebookCommentReplyScopes,
@@ -551,8 +552,10 @@ export async function sendInboxReplyAction(input: {
   };
   if (quotedMessage) {
     outboundMetadata.quotedMessageId = quotedMessage.id;
-    if (quotedMessage.body?.trim()) {
-      outboundMetadata.quotedSnippet = quotedMessage.body.trim().slice(0, 160);
+    outboundMetadata.quotedSnippet = buildQuotedSnippet(quotedMessage);
+    const quotedSender = quotedMessage.senderName?.trim();
+    if (quotedSender) {
+      outboundMetadata.quotedSenderName = quotedSender;
     }
   }
   if (stickerImageUrl) {

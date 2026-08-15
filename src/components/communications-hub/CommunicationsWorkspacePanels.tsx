@@ -39,7 +39,8 @@ import { isCommentChannel, isDmChannel } from "@/lib/inbox/constants";
 import { deriveAiConfidenceScore } from "@/lib/inbox/queue-utils";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
 import { getJumboEmojiCount } from "@/lib/inbox/jumbo-emoji";
-import { INBOX_STICKER_PACK, readMessageStickerUrl } from "@/lib/inbox/stickers";
+import { buildQuotedSnippet } from "@/lib/inbox/message-quote";
+import { INBOX_STICKER_PACK } from "@/lib/inbox/stickers";
 import type { GiphyGifSummary } from "@/lib/giphy/types";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 import type { OrganizationSticker } from "@/types/organization-stickers";
@@ -47,17 +48,6 @@ import { formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
 const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
-
-function readQuotedAttachmentLabel(message: InboxMessage): string | null {
-  const stickerUrl = readMessageStickerUrl(message.metadata);
-  if (!stickerUrl) {
-    return null;
-  }
-  if (message.metadata?.giphyUrl) {
-    return "GIF";
-  }
-  return "Sticker";
-}
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
   ssr: false,
@@ -651,8 +641,7 @@ export function CommunicationsReplySection({
                   "message"}
               </p>
               <p className="mt-0.5 line-clamp-2 text-xs text-cos-text">
-                {quotedMessage.body?.trim() ||
-                  (readQuotedAttachmentLabel(quotedMessage) ?? "Attachment")}
+                {buildQuotedSnippet(quotedMessage)}
               </p>
             </div>
             <button
