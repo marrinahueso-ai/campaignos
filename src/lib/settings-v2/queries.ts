@@ -16,6 +16,7 @@ import { getCustomInboxAiSources } from "@/lib/organizations/inbox-ai-sources/qu
 import { getOrganizationIntelligence } from "@/lib/organization-intelligence/queries";
 import { WRITING_STYLES } from "@/lib/organization-intelligence/constants";
 import { getSchoolProfile } from "@/lib/organizations/queries";
+import { getInboxConnectionStatus } from "@/lib/inbox/queries";
 import {
   getMetaConnectionForCurrentOrg,
   isMetaConnectionConfigured,
@@ -496,6 +497,8 @@ export interface SettingsEaseIntegrationsData {
   organizationName: string | null;
   meta: {
     connected: boolean;
+    /** Stored connection exists but Meta says the Page token is invalid/expired. */
+    reconnectRequired: boolean;
     available: boolean;
   };
   googleCalendar: {
@@ -518,15 +521,19 @@ export async function getIntegrationsSettingsData(): Promise<{
   ease: SettingsEaseIntegrationsData;
 }> {
   const bundle = await loadSettingsOverviewBundle();
+  const inboxConnection = await getInboxConnectionStatus();
 
   const integrations = bundle.integrations.filter((item) => item.available);
+  const metaConnected = isMetaConnectionConfigured(bundle.metaConnection);
 
   return {
     integrations,
     ease: {
       organizationName: bundle.organization?.name ?? null,
       meta: {
-        connected: isMetaConnectionConfigured(bundle.metaConnection),
+        connected: metaConnected,
+        reconnectRequired:
+          metaConnected && inboxConnection.metaReconnectRequired,
         available: isMetaIntegrationConfigured(),
       },
       googleCalendar: {

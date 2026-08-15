@@ -16,7 +16,7 @@ function StatusPill({
   tone,
   children,
 }: {
-  tone: "ok" | "off";
+  tone: "ok" | "off" | "warn";
   children: React.ReactNode;
 }) {
   return (
@@ -24,7 +24,9 @@ function StatusPill({
       className={
         tone === "ok"
           ? "inline-flex items-center gap-1.5 rounded-full bg-[rgba(47,74,60,0.1)] px-2.5 py-1 text-xs font-bold text-[#2f4a3c]"
-          : "inline-flex items-center gap-1.5 rounded-full bg-[rgba(122,113,102,0.12)] px-2.5 py-1 text-xs font-bold text-[#7a7166]"
+          : tone === "warn"
+            ? "inline-flex items-center gap-1.5 rounded-full bg-[rgba(166,124,0,0.14)] px-2.5 py-1 text-xs font-bold text-[#8a6700]"
+            : "inline-flex items-center gap-1.5 rounded-full bg-[rgba(122,113,102,0.12)] px-2.5 py-1 text-xs font-bold text-[#7a7166]"
       }
     >
       {tone === "ok" ? (
@@ -136,8 +138,20 @@ export function SettingsEaseIntegrations({ data }: SettingsEaseIntegrationsProps
             description="Connect your Facebook Page and linked Instagram account to publish posts, reply in inbox, and pull Insights."
             actions={
               <>
-                <StatusPill tone={data.meta.connected ? "ok" : "off"}>
-                  {data.meta.connected ? "Connected" : "Not connected"}
+                <StatusPill
+                  tone={
+                    data.meta.reconnectRequired
+                      ? "warn"
+                      : data.meta.connected
+                        ? "ok"
+                        : "off"
+                  }
+                >
+                  {data.meta.reconnectRequired
+                    ? "Reconnect needed"
+                    : data.meta.connected
+                      ? "Connected"
+                      : "Not connected"}
                 </StatusPill>
                 {data.meta.connected ? (
                   <Link href="/settings/meta" className={btnSecondaryClassName}>

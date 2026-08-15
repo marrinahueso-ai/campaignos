@@ -299,6 +299,16 @@ export function SettingsEaseMeta({
                   your administrator.
                 </p>
               )}
+              {reconnectRequired && !configuredViaEnv ? (
+                <button
+                  type="button"
+                  className={btnGhostClassName}
+                  disabled={isPending}
+                  onClick={handleDisconnect}
+                >
+                  Disconnect
+                </button>
+              ) : null}
             </div>
           </>
         )}

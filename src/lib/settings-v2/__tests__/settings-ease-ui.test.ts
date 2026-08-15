@@ -456,6 +456,8 @@ describe("settings ease UI contracts", () => {
     assert.match(integrationsEase, /Facebook & Instagram/);
     assert.match(integrationsEase, /Google Calendar/);
     assert.match(integrationsEase, /Connect Canva/);
+    assert.match(integrationsEase, /Reconnect needed/);
+    assert.match(integrationsEase, /data\.meta\.reconnectRequired/);
     assert.doesNotMatch(integrationsEase, /Monday\.com/);
     assert.doesNotMatch(integrationsEase, /Gmail · Dropbox/);
     assert.doesNotMatch(integrationsEase, /SignUpGenius/);
@@ -496,6 +498,7 @@ describe("settings ease UI contracts", () => {
     assert.match(metaEase, /buildMetaOAuthStartPath/);
     assert.match(metaEase, /Reconnect/);
     assert.match(metaEase, /Disconnect/);
+    assert.match(metaEase, /reconnectRequired && !configuredViaEnv/);
     assert.match(metaEase, /font-fraunces/);
     assert.match(metaEase, /#fffcf7|#2f4a3c/);
     assert.doesNotMatch(metaEase, /SettingsV2Card/);
