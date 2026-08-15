@@ -12,6 +12,7 @@ import {
   type TouchEvent as ReactTouchEvent,
 } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { Reply, Smile } from "lucide-react";
 import { isCommentChannel } from "@/lib/inbox/constants";
 import { setInboxMessageReactionAction } from "@/lib/inbox/actions";
@@ -57,6 +58,7 @@ export function MessageBubble({
   avatarName,
   onReplyToMessage,
 }: MessageBubbleProps) {
+  const router = useRouter();
   const [reaction, setReaction] = useState<BubbleQuickReaction | null>(() =>
     readLocalMessageReaction(message.metadata),
   );
@@ -214,9 +216,11 @@ export function MessageBubble({
           setMappedToLike(Boolean(resolved && commentsLikeOnly));
           setLocalOnly(false);
         }
+        // Refresh queue labels (Needs Reply clears when a Page reaction is the reply).
+        router.refresh();
       });
     },
-    [commentsLikeOnly, localOnly, mappedToLike, message.id, reaction],
+    [commentsLikeOnly, localOnly, mappedToLike, message.id, reaction, router],
   );
 
   function handleDoubleActivate() {

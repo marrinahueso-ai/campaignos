@@ -1,5 +1,9 @@
 import { isReplyChannel } from "@/lib/inbox/constants";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
+import {
+  readLocalMessageReaction,
+  readMetaReactionMappedToLike,
+} from "@/lib/inbox/stickers";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 
 /** Primary inbox folders + Deleted (Manage). */
@@ -28,6 +32,14 @@ export interface ThreadQueueState {
   followUp: boolean;
   /** Manually marked done (Check action) — Done folder. */
   completed: boolean;
+}
+
+/** Page/org 👍/❤️ (or Meta Like) on the reply target counts as handling the thread. */
+export function messageHasPageReaction(message: InboxMessage): boolean {
+  return (
+    Boolean(readLocalMessageReaction(message.metadata)) ||
+    readMetaReactionMappedToLike(message.metadata)
+  );
 }
 
 export function classifyThreadQueueState(
@@ -71,14 +83,21 @@ export function classifyThreadQueueState(
 
   // Manual Done (marked_done) still wins until a new inbound clears it.
   // Sent/approved reply status drives AI workflow labels, not the Done folder.
+  // A Page emoji reaction (👍/❤️ / Like on Meta) is the reply — no red Needs Reply.
+  const reacted = messageHasPageReaction(replyTarget);
   const replySettled =
-    replyTarget.status === "sent" || replyTarget.status === "archived";
+    replyTarget.status === "sent" ||
+    replyTarget.status === "archived" ||
+    reacted;
   const needsReply =
     unread && !completed && !replySettled && replyTarget.status === "pending";
   const waitingOnAi =
     needsReply && !replyTarget.aiDraftBody?.trim() && !replyTarget.approvedBody?.trim();
   const readyToSend =
-    unread && !completed && replyTarget.status === "approved";
+    unread &&
+    !completed &&
+    !reacted &&
+    replyTarget.status === "approved";
 
   return {
     needsReply,
