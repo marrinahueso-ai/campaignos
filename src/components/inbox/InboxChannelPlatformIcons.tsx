@@ -4,12 +4,17 @@ import { useId } from "react";
 import { cn } from "@/lib/utils/cn";
 
 /**
- * Messenger DM badge: blue circle with white lightning bolt.
+ * Messenger DM badge: clean blue circle with white lightning bolt.
+ * No speech-bubble tail / white corner chrome — perfect circle only.
  * Used for `facebook_message` channel threads.
  */
 export function MessengerPlatformIcon({ className }: { className?: string }) {
   return (
-    <svg aria-hidden className={className} viewBox="0 0 24 24">
+    <svg
+      aria-hidden
+      className={cn("block overflow-hidden rounded-full", className)}
+      viewBox="0 0 24 24"
+    >
       <circle cx="12" cy="12" r="12" fill="#0084FF" />
       {/* Lightning bolt: upper-left → lower-right */}
       <path

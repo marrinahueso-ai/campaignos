@@ -273,7 +273,7 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
 - Queue model: Unread is the default home (not Done, not Deleted; Follow up stays in Unread); Follow up = starred and not deleted; Done = marked done; Deleted via Manage — **shipped**
 - Queue UI: Meta-style horizontal filter chips (Unread, Follow up, Done); Manage menu has Deleted only (AI workflow folders removed); list rows with platform badge, follow-up star, accent selected edge — **shipped** (search stays in top bar only)
 - Top bar: search + Meta connection badge only — All Campaigns / All Channels dropdowns and AI Queue button removed (queues are Unread / Follow up / Done / Deleted) — **shipped**
-- Platform badges by channel: Messenger bolt for `facebook_message`, IG paper-plane for `instagram_dm`, Facebook “f” / Instagram logo for comments & tags — **shipped** (centered under queue avatar + thread header)
+- Platform badges by channel: Messenger bolt for `facebook_message`, IG paper-plane for `instagram_dm`, Facebook “f” / Instagram logo for comments & tags — **shipped** (plain circular marks centered under queue avatars with gap — no speech-bubble tail or white pad chrome; thread header keeps channel icon in the action row)
 - Non-interactive Open status chip removed from thread header — **shipped**
 - Campaign filter — **deferred**
 - Gmail inbox — **deferred**
