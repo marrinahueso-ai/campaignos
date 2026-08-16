@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering (Hey Ralli)  
-**Last updated:** August 7, 2026 — Header + footer buttonCount (1 | 2) · full month snapshots
+**Last updated:** August 16, 2026 — Homepage card blurb variety (no “Join us” default)
 **Related:** [QA guide](../qa/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Image architecture](./image-architecture.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Billing / AI credits](../ops/billing-and-access.md)
 
 Client-heavy Membership Toolkit homepage builder. Server actions cover AI blurbs and artwork hosting; drafts stay in the browser.
@@ -101,7 +101,7 @@ Legacy drafts without month maps migrate into `monthDrafts` + `monthSaved` for t
 
 - Auth: current organization required.
 - Impl: `generateHomepageCardBlurb` → `generateText` with fast draft model.
-- Prompt: ≤2 sentences, PTO voice; uses org brand-voice profile when present.
+- Prompt: ≤2 sentences, PTO voice; uses org brand-voice profile when present. Infers card angle (info / spirit / volunteer / meeting / fundraiser / general), bans “Join us” / “Don’t miss” openers, and receives sibling card openings so a homepage of cards does not all start the same way. Weak leftover “Join us for {title}” seeds are ignored. A last-resort strip removes those openers if the model still uses them. Temperature 0.85; regenerate passes a variety nonce.
 - Usage / credits: `actionType: "homepage_composer_blurb"`, `feature: "homepage_composer_blurb"`.
 - Ledger label: **Homepage Blurb** (`usage-breakdown-pure.ts`).
 

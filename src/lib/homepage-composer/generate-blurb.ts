@@ -7,6 +7,7 @@ import {
   buildHomepageBlurbUserPrompt,
   clampBlurbToMaxSentences,
   normalizeHomepageBlurbText,
+  stripStaleHomepageBlurbOpener,
 } from "@/lib/homepage-composer/generate-blurb-prompt";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getAiProfileByOrganizationId } from "@/lib/organization-intelligence/queries";
@@ -21,6 +22,8 @@ export type GenerateHomepageBlurbInput = {
   alwaysOn?: boolean;
   linkUrl?: string | null;
   eventId?: string | null;
+  siblingBlurbs?: string[];
+  varietyNonce?: number;
 };
 
 export type GenerateHomepageBlurbResult = {
@@ -79,10 +82,12 @@ export async function generateHomepageCardBlurb(
       organizationName: organization?.name ?? null,
       brandVoiceSummary:
         brandVoiceSummary ||
-        "Warm, welcoming, community-first organization voice.",
+        "Warm, specific, community-first organization voice.",
+      siblingBlurbs: input.siblingBlurbs ?? [],
+      varietyNonce: input.varietyNonce ?? 0,
     }),
     maxTokens: HOMEPAGE_BLURB_MAX_TOKENS,
-    temperature: 0.7,
+    temperature: 0.85,
     usage: {
       actionType: "homepage_composer_blurb",
       eventId: input.eventId ?? null,
@@ -99,8 +104,8 @@ export async function generateHomepageCardBlurb(
     };
   }
 
-  const blurb = clampBlurbToMaxSentences(
-    normalizeHomepageBlurbText(result.text),
+  const blurb = stripStaleHomepageBlurbOpener(
+    clampBlurbToMaxSentences(normalizeHomepageBlurbText(result.text)),
   );
   if (!blurb) {
     return {

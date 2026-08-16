@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA (Hey Ralli)  
-**Last updated:** August 6, 2026 — Header 1/2 button toggle  
+**Last updated:** August 16, 2026 — Homepage card blurb variety (no “Join us” default)  
 **Related:** [Engineering companion](../engineering/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Create with AI artwork inputs](./create-with-ai-artwork-inputs.md) · [Storage RLS](../engineering/storage-rls.md) · [Launch checklist](./launch-checklist.md)
 
 Soft-launch Membership Toolkit–style homepage builder. Managers work ahead by month (Working on strip): **Save this month** keeps the full homepage (header, footer, cards, announcements, resources) for that YYYY-MM, preview on/off dates, and export full-page HTML for external hosting.
@@ -74,7 +74,7 @@ Draft status shows in the chrome (“Saving draft…”, “Draft saved”).
 6. Set card face **date** distinct from on/off dates → face shows display date; visibility follows starts/expires/always-on.
 7. Toggle **Always on** vs on/off dates → Preview full-month shows all; scrubber hides out-of-window cards.
 8. Upload JPG/PNG/WebP artwork → card shows hosted `https://` URL (not a giant data URL in Export).
-9. **Generate text** with title or notes → ≤2 sentences; blurb fills; credits ledger shows Homepage Blurb / `homepage_composer_blurb` when AI is configured.
+9. **Generate text** with title or notes → ≤2 sentences; blurb fills; credits ledger shows Homepage Blurb / `homepage_composer_blurb` when AI is configured. Generate on two different cards (e.g. Early Release + Spirit Week) — openings should differ and should **not** both start with “Join us”. Schedule notices stay practical (what families need to know), not invitational. Regenerating the same card can change the lead.
 10. Create with AI icon on an event card → opens Social / campaign builder for that event (not a dead link).
 
 ### Preview / export

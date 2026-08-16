@@ -3,7 +3,10 @@ import { describe, it } from "node:test";
 
 import {
   buildAnnouncementTextFromEvent,
+  buildEventBlurb,
   formatEventWhen,
+  inferHomepageCardAngle,
+  isWeakInvitationSeed,
 } from "@/lib/homepage-composer/blurbs";
 
 describe("buildAnnouncementTextFromEvent", () => {
@@ -42,5 +45,72 @@ describe("formatEventWhen", () => {
 
   it("preserves already-friendly 12h time", () => {
     assert.equal(formatEventWhen("2026-03-15", "6:00 PM"), "Mar 15 · 6:00 PM");
+  });
+});
+
+describe("inferHomepageCardAngle", () => {
+  it("treats early release as informational", () => {
+    assert.equal(inferHomepageCardAngle("Early Release"), "info");
+  });
+
+  it("treats spirit week as spirit", () => {
+    assert.equal(
+      inferHomepageCardAngle("Spirit Week - EES School Spirit - Monday"),
+      "spirit",
+    );
+  });
+});
+
+describe("buildEventBlurb", () => {
+  it("does not default to Join us for schedule notices", () => {
+    const blurb = buildEventBlurb({
+      title: "Early Release",
+      description: "",
+      date: "2026-09-16",
+      time: null,
+    });
+    assert.match(blurb, /Early Release is Sep 16/);
+    assert.doesNotMatch(blurb, /Join us/i);
+  });
+
+  it("varies spirit-day seed copy", () => {
+    const blurb = buildEventBlurb({
+      title: "Spirit Week - Monday",
+      description: "",
+      date: "2026-09-14",
+      time: null,
+    });
+    assert.match(blurb, /Spirit Week/);
+    assert.doesNotMatch(blurb, /Join us/i);
+  });
+
+  it("keeps a real event description as the seed", () => {
+    const blurb = buildEventBlurb({
+      title: "Early Release",
+      description:
+        "Please review your school dismissal pick-up plan so the afternoon goes smoothly.",
+      date: "2026-09-16",
+      time: null,
+    });
+    assert.match(blurb, /dismissal pick-up plan/);
+  });
+});
+
+describe("isWeakInvitationSeed", () => {
+  it("flags leftover Join us title restates", () => {
+    assert.equal(
+      isWeakInvitationSeed("Join us for Early Release — Sep 16.", "Early Release"),
+      true,
+    );
+  });
+
+  it("keeps invitation copy that still has useful facts", () => {
+    assert.equal(
+      isWeakInvitationSeed(
+        "Join us for Early Release. Please review your school dismissal pick-up plan.",
+        "Early Release",
+      ),
+      false,
+    );
   });
 });

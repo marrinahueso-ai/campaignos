@@ -567,6 +567,12 @@ export function HomepageComposer({
           alwaysOn: card.alwaysOn,
           linkUrl: card.linkUrl,
           eventId: card.eventId,
+          siblingBlurbs: state.cards
+            .filter((other) => other.id !== card.id)
+            .map((other) => other.blurb.trim())
+            .filter(Boolean)
+            .slice(0, 12),
+          varietyNonce: Date.now(),
         });
         if (!result.success || !result.blurb) {
           setBlurbGenerateError({
@@ -580,7 +586,7 @@ export function HomepageComposer({
         setGeneratingBlurbCardId(null);
       }
     },
-    [generatingBlurbCardId, updateCard],
+    [generatingBlurbCardId, state.cards, updateCard],
   );
 
   /** Pull volunteer page URLs into empty event-card links (drafts + new events). */
