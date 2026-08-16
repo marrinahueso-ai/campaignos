@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { toMetaSettingsConnectionView } from "../connection-utils.ts";
+import {
+  getMetaCapabilityStatusLabels,
+  getMetaConnectUiPhase,
+  toMetaSettingsConnectionView,
+} from "../connection-utils.ts";
 import type { MetaConnection } from "../types.ts";
 
 function sampleConnection(
@@ -66,5 +70,76 @@ describe("toMetaSettingsConnectionView", () => {
     );
     assert.ok(view);
     assert.equal(view.hasInstagram, false);
+  });
+});
+
+describe("getMetaConnectUiPhase", () => {
+  it("maps not connected", () => {
+    assert.equal(
+      getMetaConnectUiPhase({
+        connected: false,
+        hasInstagram: false,
+        reconnectRequired: false,
+      }),
+      "not_connected",
+    );
+  });
+
+  it("maps Facebook Page without Instagram", () => {
+    assert.equal(
+      getMetaConnectUiPhase({
+        connected: true,
+        hasInstagram: false,
+        reconnectRequired: false,
+      }),
+      "facebook_only",
+    );
+  });
+
+  it("maps fully connected", () => {
+    assert.equal(
+      getMetaConnectUiPhase({
+        connected: true,
+        hasInstagram: true,
+        reconnectRequired: false,
+      }),
+      "fully_connected",
+    );
+  });
+
+  it("prefers reconnect_required when token health says so", () => {
+    assert.equal(
+      getMetaConnectUiPhase({
+        connected: true,
+        hasInstagram: true,
+        reconnectRequired: true,
+      }),
+      "reconnect_required",
+    );
+  });
+});
+
+describe("getMetaCapabilityStatusLabels", () => {
+  it("never marks messaging Ready from connection alone", () => {
+    const labels = getMetaCapabilityStatusLabels({
+      connected: true,
+      hasInstagram: true,
+      reconnectRequired: false,
+      messagingReady: false,
+    });
+    assert.equal(labels.facebookPage, "Connected");
+    assert.equal(labels.instagram, "Connected");
+    assert.equal(labels.messaging, "Needs setup");
+    assert.equal(labels.publishing, "Available");
+  });
+
+  it("marks messaging Ready only when messagingReady is true", () => {
+    const labels = getMetaCapabilityStatusLabels({
+      connected: true,
+      hasInstagram: true,
+      reconnectRequired: false,
+      messagingReady: true,
+    });
+    assert.equal(labels.messaging, "Ready");
   });
 });

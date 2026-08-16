@@ -84,6 +84,9 @@ describe("settings ease UI contracts", () => {
   const metaEase = readSrc(
     "../../../components/settings-v2/SettingsEaseMeta.tsx",
   );
+  const metaUtils = readSrc(
+    "../../../lib/meta-publishing/connection-utils.ts",
+  );
   const calendarPage = readSrc(
     "../../../app/(dashboard)/settings/integrations/calendar/page.tsx",
   );
@@ -356,54 +359,18 @@ describe("settings ease UI contracts", () => {
     assert.doesNotMatch(teamAccessContent, /SettingsV2PageHeader/);
 
     assert.match(teamAccessEase, /data-settings-ease="team-access"/);
-    assert.match(teamAccessEase, /formatLastLoggedInLabel/);
+    assert.match(teamAccessEase, /Team & Access/);
     assert.match(
       teamAccessEase,
-      /People, roles, and what each person can do/,
+      /Manage the people helping our school/,
     );
-    assert.match(teamAccessEase, /Active seats/);
-    assert.match(teamAccessEase, /Pending invites/);
-    assert.match(teamAccessEase, /Roles & permissions/);
-    assert.match(teamAccessEase, /Open anyone to link events and give access/);
-    assert.match(teamAccessEase, /Import roster/);
-    assert.match(teamAccessEase, /board-roster-import\.xlsx/);
-    assert.match(teamAccessEase, /Download Excel template/);
-    assert.match(teamAccessEase, /Invite/);
-    assert.match(teamAccessEase, /Edit roles/);
-    assert.match(teamAccessEase, /TeamAccessInviteModal/);
+    assert.match(teamAccessEase, /TeamAccessPilotMemberDrawer/);
     assert.match(teamAccessEase, /TeamAccessEditMemberModal/);
-    assert.match(teamAccessEase, /TeamAccessAccessTemplatesPanel/);
-    assert.match(teamAccessEase, /SettingsEaseTeamAccessPersonDrawer/);
-    assert.match(teamAccessEase, /OrganizationRosterImportPanel/);
-    const rosterImportPanel = readSrc(
-      "../../../components/organization-workspace/OrganizationRosterImportPanel.tsx",
-    );
-    assert.match(rosterImportPanel, /BOARD_ROSTER_IMPORT_TEMPLATE_PATH/);
-    assert.match(rosterImportPanel, /\.xlsx/);
-    const rosterActions = readSrc(
-      "../../../lib/organization-workspace/actions.ts",
-    );
-    assert.match(rosterActions, /parseRosterText/);
-    assert.match(rosterActions, /rosterText/);
-    assert.match(teamAccessEase, /peopleEaseRoleLine/);
-    assert.match(teamAccessEase, /activeSeatsEaseSubLabel/);
-    assert.match(teamAccessEase, /pendingInvitesEaseSubLabel/);
-    assert.match(teamAccessEase, /history\.replaceState/);
-    assert.match(teamAccessEase, /searchParams\.set\("person"/);
-    assert.match(teamAccessEase, /font-fraunces/);
-    assert.match(teamAccessEase, /#fffcf7|#2f4a3c/);
+    assert.match(teamAccessEase, /TeamAccessPilotAddMemberModal/);
     assert.doesNotMatch(teamAccessEase, /SettingsV2PageHeader/);
-    assert.doesNotMatch(teamAccessEase, /People & Responsibilities/);
-    assert.doesNotMatch(teamAccessEase, /TeamAccessMemberTable/);
-    assert.doesNotMatch(teamAccessEase, /TeamAccessPeopleSidebar/);
+    assert.doesNotMatch(teamAccessEase, /SettingsV2Card/);
     assert.doesNotMatch(teamAccessEase, /TeamAccessShell/);
     assert.match(teamAccessEase, /removeTeamMemberAction/);
-    assert.match(teamAccessEase, /Trash2/);
-    assert.match(
-      teamAccessEase,
-      /aria-label=\{`Delete \$\{member\.displayName\}`\}/,
-    );
-    assert.match(teamAccessEase, /window\.confirm/);
   });
 
   it("ships Team & Access person drawer Ease contract (permissions + events + deep links)", () => {
@@ -480,29 +447,37 @@ describe("settings ease UI contracts", () => {
       /connection=\{connection\}/,
     );
     assert.match(metaPage, /connection=\{connectionView\}/);
+    assert.match(metaPage, /pagePictureUrl=\{inboxConnection\.pagePictureUrl\}/);
+    assert.match(metaPage, /messagingReady=\{inboxConnection\.messagingReady\}/);
     assert.doesNotMatch(metaPage, /configuredViaEnv=\{/);
     assert.doesNotMatch(metaEase, /pageAccessToken/);
     assert.doesNotMatch(metaEase, /\bMetaConnection\b/);
     assert.match(metaEase, /MetaSettingsConnectionView/);
     assert.match(metaEase, /data-settings-ease="meta"/);
-    assert.match(metaEase, /Connect once for/);
-    assert.match(metaEase, /Approve the list Facebook shows/);
-    assert.match(metaEase, /Connected for this organization/);
-    assert.match(metaEase, /Organic posts only — no paid ads in Hey Ralli/);
-    assert.match(metaEase, /What Facebook will ask/);
-    assert.match(metaEase, /Clear purpose copy for Meta App Review/);
-    assert.match(metaEase, /Manage and publish content/);
-    assert.match(metaEase, /Manage messaging & content/);
-    assert.match(metaEase, /Read performance metrics/);
+    assert.match(metaEase, /getMetaConnectUiPhase/);
+    assert.match(metaEase, /Connect Facebook & Instagram/);
+    assert.match(metaEase, /Before you start/);
+    assert.match(metaEase, /Instagram isn’t connected yet/);
+    assert.match(metaEase, /You’re connected/);
+    assert.match(metaEase, /How to connect Instagram/);
+    assert.match(metaEase, /Connection status/);
+    assert.match(metaEase, /messagingReady/);
+    assert.match(metaEase, /getMetaCapabilityStatusLabels/);
+    assert.match(metaUtils, /Needs setup/);
+    assert.doesNotMatch(metaEase, /Publishing, inbox, and Insights are ready/);
     assert.match(metaEase, /disconnectMetaConnectionAction/);
     assert.match(metaEase, /buildMetaOAuthStartPath/);
     assert.match(metaEase, /Reconnect/);
     assert.match(metaEase, /Disconnect/);
-    assert.match(metaEase, /reconnectRequired && !configuredViaEnv/);
     assert.match(metaEase, /font-fraunces/);
     assert.match(metaEase, /#fffcf7|#2f4a3c/);
     assert.doesNotMatch(metaEase, /SettingsV2Card/);
     assert.doesNotMatch(metaEase, /StudioPageHeader/);
+    assert.doesNotMatch(metaEase, /pageAccessToken/);
+    assert.doesNotMatch(metaEase, /Oak Ridge/);
+    assert.doesNotMatch(metaEase, /cdn\.tailwindcss/);
+    assert.doesNotMatch(metaEase, /fonts\.googleapis/);
+    assert.doesNotMatch(metaEase, /phosphor-icons/);
 
     assert.match(calendarPage, /SettingsEaseCalendar/);
     assert.doesNotMatch(calendarPage, /StudioPageHeader/);

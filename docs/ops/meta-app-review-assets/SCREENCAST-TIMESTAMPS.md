@@ -1,78 +1,147 @@
-# Meta App Review — screencast shot list & capture log
+# Meta App Review — demo & capture list (fresh start)
 
-**Captured:** July 29, 2026  
-**Environment:** https://heyralli.com (production)  
-**Test seat:** `local.developer@heyralli.dev` (`HEY_RALLI_TEST_*` in `.env.local`)  
-**Automation:** `node scripts/capture-meta-app-review.mjs --base-url https://heyralli.com`
-
----
-
-## Capture summary
-
-| # | File | Status | Notes |
-|---|------|--------|-------|
-| 0 | `00-login-page.png` | ✅ Captured | Login page before sign-in (bonus) |
-| 1 | `01-login.png` | ✅ Captured | Signed-in dashboard after login |
-| 2 | `02-settings-integrations.png` | ✅ Captured | Settings → Integrations, Facebook & Instagram row |
-| 3 | `03-meta-consent.png` | ⊘ Skipped | Meta already connected on test org — consent only on fresh Connect. Founder: Disconnect (or use fresh org) → Connect → capture full permission list |
-| 4 | `04-meta-connected.png` | ✅ Captured | `/settings/meta` — Page + Linked Instagram chips |
-| 5 | `05-approvals-publish.png` | ✅ Captured | Approvals queue at `/approvals` |
-| 6 | `06-page-post-live.png` | ⊘ Skipped | Requires Facebook.com as Meta app tester — screenshot published post on test Page |
-| 7 | `07-communications-hub.png` | ✅ Captured | Communications Hub thread list / empty state |
-| 8 | `08-inbox-reply.png` | ⊘ Skipped | No visible threads — seed tester Messenger or IG DM, open thread, show reply composer (do not need to send) |
-| 9 | `09-comment-engagement.png` | ⊘ Skipped | No comment threads — comment on test Page/IG post, open in hub, show reply or 👍 |
-| 10 | `10-insights-org.png` | ✅ Captured | Org Insights at `/insights` |
-| 11 | `11-insights-event.png` | ✅ Captured | Event → Insights tab |
-| 12 | `12-webhook-config.png` | ⊘ Skipped | Meta Developer App → Webhooks → callback `https://heyralli.com/api/meta/webhook` |
-
-**Score:** 8 PNGs captured (+1 bonus login page), 5 founder-only skips.
-
-Re-run capture after seeding inbox data or reconnecting Meta:
-
-```bash
-node scripts/capture-meta-app-review.mjs --base-url https://heyralli.com
-```
+**Last updated:** August 15, 2026  
+**Status:** List only — nothing re-captured yet under this plan  
+**Do not submit App Review until this pack is finished and product demo looks correct on Production.**
 
 ---
 
-## Suggested screencast (~6–8 minutes)
+## Packet (what this list covers)
 
-Record **one continuous organic demo** (no Ads Manager). Replace bracketed timestamps after editing.
+| In this Review | Out of this Review |
+|----------------|--------------------|
+| Connect (Page + linked IG) | Mentions (@ in captions/comments) |
+| Publish Now / schedule to Page + IG | Tag-people as a Review chapter (product Tags exist; don’t demo for Review) |
+| Facebook Messenger inbox + reply | Ads, boosting, demographics, Reels-only |
+| Facebook Page comments + reply / 👍 | |
+| **Instagram DMs (messages) + reply** | |
+| **Instagram comments + reply / 👍** | |
+| Org Insights + Event Insights | |
+| Webhooks (callback proof) | |
 
-| Marker | Scene | Duration (est.) | Proves |
-|--------|-------|-----------------|--------|
-| **0:00** | Open https://heyralli.com/login → sign in as reviewer test user | 0:30 | Account access |
-| **0:30** | Land on dashboard — briefly show org context | 0:20 | Signed-in workspace |
-| **0:50** | Header ⚙ Settings → Integrations → Facebook & Instagram | 0:25 | Connect entry |
-| **1:15** | **Connect with Facebook** → full Meta consent (all 15 permission lines) → select test Business, Page, linked IG | 1:30 | All scopes at consent |
-| **2:45** | `/settings/meta` — connected Page name + Linked Instagram chip | 0:35 | `pages_show_list`, `business_management`, `instagram_basic` |
-| **3:20** | Sidebar → Approvals → row with **Publish Now** or scheduled slot → approve/publish | 1:00 | `pages_manage_posts`, `instagram_content_publish` |
-| **4:20** | Cut to test Facebook Page — show live (or scheduled) post | 0:30 | Published content proof |
-| **4:50** | Sidebar → Communications Hub → open Messenger thread → type reply (approve-then-send if AI draft) | 0:55 | `pages_messaging`, `pages_manage_metadata` |
-| **5:45** | Same hub — Page comment reply + 👍; optional IG DM + sticker/GIF | 1:00 | Inbox + engagement scopes |
-| **6:45** | Navigate to `/insights` → **Refresh** → KPI cards, “no ads / no demographics” copy | 0:45 | `read_insights` |
-| **7:30** | Sidebar → Events → [event] → **Insights** tab | 0:35 | `instagram_manage_insights`, event scope |
-| **8:05** | (Optional) Inbound DM updates thread without manual Sync | 0:25 | Webhooks |
-| **8:30** | End card — Privacy https://heyralli.com/privacy | 0:10 | Compliance |
+**Product:** https://heyralli.com  
+**Meta app:** Hey Ralli Connect (App Admin = husband; Marrina stays off Developers)  
+**Demo Page:** Hey Ralli (`1252891557897483`) · **IG:** `@heyralli_`  
+**Demo org:** Edmondson Elementary (or current Production test org with Meta connected)
 
-**Total:** ~8:40 with optional webhook beat; trim consent or publish if targeting 6:00.
+**Archive:** Jul 29 PNGs under `meta-app-review-assets/` are **stale**. Treat every shot below as **not done** until re-captured against current UI + Hey Ralli Connect.
 
 ---
 
-## Founder-only follow-ups
+## A. Prerequisites (before any screenshot)
 
-1. **Consent (`03-meta-consent.png`)** — Use Meta tester Facebook session. If org already connected, use **Reconnect with Facebook** or a disposable test org. Scroll so all 15 permission lines are visible.
-2. **Live Page post (`06-page-post-live.png`)** — After Publish Now from Approvals, open facebook.com → test Page → Posts.
-3. **Inbox (`08`, `09`)** — From a second Meta tester account: DM the Page, comment on a Page post, comment on IG media. In Hey Ralli: Sync → open threads.
-4. **Webhooks (`12-webhook-config.png`)** — developers.facebook.com → Hey Ralli app → Webhooks → Page + Instagram subscriptions pointing at `/api/meta/webhook`.
-5. **Screencast upload** — Export 1080p MP4; fill §10.1 screencast URL and chapter timestamps in [meta-app-review-use-cases.md](../meta-app-review-use-cases.md).
-6. **Shared credentials block** — Fill test Page name/ID, IG handle, Business name in §10.1 (not in git).
+| # | Item | Who | Status |
+|---|------|-----|--------|
+| P1 | Production deploy includes Hub/webhook/insights fixes you care about for Review footage | Eng | Not done |
+| P2 | Meta dashboard: privacy, terms, deletion **instructions** URL, OAuth redirect, webhook URL + verify token match Vercel | Husband | Not done |
+| P3 | App Testers: husband + second personal Facebook with IG linked in Accounts Center (not Marrina as Admin) | Husband | Not done |
+| P4 | Hey Ralli Connect connected on demo org → `/settings/meta` shows Page + Linked Instagram | You | Not done |
+| P5 | IG **Allow access to messages** ON for `@heyralli_` + Insights scopes granted (Reconnect if `/insights` asks) | You | Not done |
 
 ---
 
-## Narration cues (optional)
+## B. Seed data (before screenshots / screencast)
 
-- “Hey Ralli is a PTA communications workspace — organic Page and Instagram only, no ads.”
-- “One Connect OAuth grants publish, inbox, and insights for the school’s Page.”
-- “Insights shows organic metrics only — we do not request or display age/gender demographics.”
-- “Inbox replies are approve-then-send; stickers and GIFs are DM-only.”
+| # | Seed | How | Status |
+|---|------|-----|--------|
+| S1 | Live Page post | Approvals → **Publish Now** → confirm on facebook.com → Page Hey Ralli | Not done |
+| S2 | Live IG post | Same approve → confirm on Instagram `@heyralli_` | Not done |
+| S3 | Facebook Messenger thread | Second tester DMs the Page | Not done |
+| S4 | Facebook Page comment | Same tester comments on the live Page post | Not done |
+| S5 | Instagram DM thread | Tester IG (Accounts Center–linked) DMs `@heyralli_` | Not done |
+| S6 | Instagram comment | Tester comments on the live IG post | Not done |
+| S7 | Hub FB Messenger reply | `/communications` → Facebook Message → send short reply | Not done |
+| S8 | Hub FB comment reply / 👍 | Hub → Facebook comment → reply and/or 👍 | Not done |
+| S9 | Hub IG DM reply | Hub → Instagram Message → send reply | Not done |
+| S10 | Hub IG comment reply / 👍 | Hub → Instagram comment → reply and/or 👍 | Not done |
+| S11 | Org + Event Insights | `/insights` → **Refresh**; Events → [event] → Insights (optional) | Not done |
+
+**Do not seed for this packet:** Mentions, Tag-people Review demos.
+
+---
+
+## C. Screenshot checklist (re-capture all)
+
+Save into `docs/ops/meta-app-review-assets/` with these filenames.
+
+| # | Filename | What to show | Who | Status |
+|---|----------|--------------|-----|--------|
+| 01 | `01-login.png` | Signed in on heyralli.com (email/password seat) | You | Not done |
+| 02 | `02-settings-integrations.png` | Settings → Integrations → Facebook & Instagram row | You | Not done |
+| 03 | `03-meta-consent.png` | Connect/Reconnect consent — **all** permission lines visible | You (husband’s FB) | Not done |
+| 04 | `04-meta-connected.png` | `/settings/meta` — Page **Hey Ralli** + Linked Instagram chips | You | Not done |
+| 05 | `05-approvals-publish.png` | Approvals with Publish Now / approved Meta row | You | Not done |
+| 06 | `06-page-post-live.png` | Published post on facebook.com Page Hey Ralli | You | Not done |
+| 07 | `07-ig-post-live.png` | Same content live on Instagram `@heyralli_` | You | Not done |
+| 08 | `08-communications-hub.png` | Hub queue with FB + IG threads | You | Not done |
+| 09 | `09-messenger-reply.png` | Facebook Messenger thread with **sent** reply | You | Not done |
+| 10 | `10-fb-comment-engagement.png` | Facebook comment reply and/or 👍 | You | Not done |
+| 11 | `11-ig-dm-reply.png` | Instagram Message thread with **sent** reply | You | Not done |
+| 12 | `12-ig-comment-engagement.png` | Instagram comment reply and/or 👍 | You | Not done |
+| 13 | `13-insights-org.png` | `/insights` KPIs / top content | You | Not done |
+| 14 | `14-insights-event.png` | Event → Insights tab | You | Not done |
+| 15 | `15-webhook-config.png` | Developers → Webhooks → `https://heyralli.com/api/meta/webhook` | Husband | Not done |
+| 16 | `16-privacy-deletion.png` | https://heyralli.com/privacy#user-data-deletion | You | Not done |
+
+Optional bonus: `00-login-page.png` (logged-out login screen).
+
+---
+
+## D. Screencast checklist (one continuous video)
+
+Target **~8–10 minutes**, 1080p MP4. Organic only.
+
+| Beat | Scene | Proves | Status |
+|------|-------|--------|--------|
+| 1 | `/login` → email/password (not Facebook for the product seat) | Reviewer entry | Not done |
+| 2 | Settings → Integrations → Connect/Reconnect → consent → Page + IG | Connect scopes | Not done |
+| 3 | `/settings/meta` chips | Page + linked IG | Not done |
+| 4 | Approvals → **Publish Now** → live Page + IG | Publish scopes | Not done |
+| 5 | Communications Hub → Facebook Messenger reply | `pages_messaging` | Not done |
+| 6 | Hub → Facebook comment reply + 👍 | `pages_read_user_content`, `pages_manage_engagement` | Not done |
+| 7 | Hub → Instagram Message reply | `instagram_manage_messages` | Not done |
+| 8 | Hub → Instagram comment reply + 👍 | `instagram_manage_comments`, `instagram_manage_engagement` | Not done |
+| 9 | `/insights` → Refresh → say “organic only, no ads, no demographics” | `read_insights` | Not done |
+| 10 | Event → Insights (optional) | `instagram_manage_insights` | Not done |
+| 11 | Optional: inbound FB or IG message without Sync | Webhooks | Not done |
+| 12 | End on `/privacy` — say Mentions are **not** in this review | Compliance | Not done |
+
+---
+
+## E. Scopes to Request (match the demo)
+
+**Request (full inbox + publish + insights):**
+
+- `pages_show_list`
+- `business_management`
+- `instagram_basic`
+- `pages_manage_posts`
+- `pages_read_engagement`
+- `instagram_content_publish`
+- `pages_messaging`
+- `pages_manage_metadata`
+- `pages_read_user_content`
+- `pages_manage_engagement`
+- `instagram_manage_messages`
+- `instagram_manage_comments`
+- `instagram_manage_engagement`
+- `read_insights`
+- `instagram_manage_insights`
+
+**Hold this pass:** Mentions product demo / Tag-people Review chapter (not separate Mentions scopes).
+
+---
+
+## F. After the pack
+
+| # | Item | Status |
+|---|------|--------|
+| F1 | Fill screencast URL + chapter timestamps in `meta-app-review-use-cases.md` §10 | Not done |
+| F2 | Paste reviewer test login + Page/IG/Business names in submission notes (not in git) | Not done |
+| F3 | Husband: Request permission for demonstrated scopes only (includes IG messaging + comments) | Not done |
+
+---
+
+## Automation note
+
+`node scripts/capture-meta-app-review.mjs --base-url https://heyralli.com` can refresh **in-app** shots after seeding. It will **not** replace consent, facebook.com, Instagram, or Developers webhook shots. Update script filenames when you next run automation so they match §C.

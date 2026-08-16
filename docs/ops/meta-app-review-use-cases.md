@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product / Engineering  
-**Last updated:** July 29, 2026 — App Review screenshot pack captured (8/12); checklist matrix + UI paths verified  
+**Last updated:** August 15, 2026 — App Review capture list restarted (packet: publish + FB/IG messages & comments + Insights; Mentions out)  
 **Related:** [Meta connection](../integrations/meta.md) · [Feature list](../product/feature-list.md) · [Event Insights](../product/event-insights.md) · [Privacy & data](../security/privacy-and-data.md) · [Env & secrets](./env-and-secrets.md) · Insights mockup [`/insights-ease-mockup.html`](../../public/insights-ease-mockup.html) · Communications Hub mockup [`/communications-hub-ease-mockup.html`](../../public/communications-hub-ease-mockup.html)
 
 Living brief for **Meta App Review** (Facebook + Instagram) and internal prep. Honest to shipped product only — deferred items are marked **deferred**, not described as live.
@@ -223,18 +223,18 @@ Living matrix for Meta App Review packet fields. **15 scopes** from `META_COMBIN
 | **OAuth redirect** | `{origin}/api/meta/oauth/callback` | ✅ |
 | **Webhook callback** | `{origin}/api/meta/webhook` | ✅ |
 | **Privacy policy** | https://heyralli.com/privacy | ✅ |
-| **Screenshot pack** | [`meta-app-review-assets/`](./meta-app-review-assets/) — [capture log + shot list](./meta-app-review-assets/SCREENCAST-TIMESTAMPS.md) (8/12 PNGs, Jul 29 2026) | ✅ partial |
+| **Screenshot pack** | [`meta-app-review-assets/`](./meta-app-review-assets/) — **fresh list Aug 15** in [SCREENCAST-TIMESTAMPS.md](./meta-app-review-assets/SCREENCAST-TIMESTAMPS.md) (Jul 29 PNGs stale; all shots ☐). Packet = publish + **FB + IG messages/comments** + Insights; Mentions out | 🔲 restart |
 | **Screencast file** | `[FOUNDER: upload URL or filename]` | 🔲 |
-| **Screencast total length** | `[FOUNDER: mm:ss — see SCREENCAST-TIMESTAMPS.md ~6–8 min script]` | 🔲 |
+| **Screencast total length** | `[FOUNDER: mm:ss — see SCREENCAST-TIMESTAMPS.md ~8–10 min script]` | 🔲 |
 
 ### 10.2 Completion summary
 
 | Category | Rows | Code/docs complete | Founder still needed |
 |----------|------|--------------------|----------------------|
-| Connect & Page identity (6 scopes) | 6 | Why, feature, UI path, denial, expected result | Video timestamps; partial screenshots (`04`, `05`; 🔲 consent + live Page) |
-| Inbox & engagement (7 scopes) | 7 | Same | Video timestamps; partial (`07` hub only; 🔲 threads, webhook) |
-| Insights (2 scopes) | 2 | Same | Video timestamps; screenshots `10`, `11` captured |
-| **Total permissions** | **15** | **15 / 15** narrative fields | **8 / 12** checklist PNGs; **15 / 15** video timestamps; test Page credentials |
+| Connect & Page identity | Narrative ✅ | Why / UI / denial | Fresh screenshots + video (§10.5–10.6 all ☐) |
+| Inbox & engagement (FB + IG messages/comments) | Narrative ✅ | Same | Seed FB+IG threads; shots 08–12 |
+| Insights | Narrative ✅ | Same | Shots 13–14 + Refresh with real posts |
+| **Capture pack** | — | List restarted Aug 15 (IG DMs + comments in) | **0 / 16** shots · **0 / 1** screencast |
 
 ### 10.3 Permission matrix
 
@@ -285,41 +285,47 @@ Living matrix for Meta App Review packet fields. **15 scopes** from `META_COMBIN
 | Webhooks | `pages_manage_metadata` (+ messaging scopes for payload content) |
 | Login with Facebook (account) | **None of the 15 Page scopes** — Supabase identity at `/login`, `/signup` only |
 
-### 10.5 Screencast shot list (single video covering all permissions)
+### 10.5 Screencast shot list (single video covering packet permissions)
 
-Record **one continuous organic demo** (no Ads Manager). Suggested chapter markers — replace timestamps after editing:
+Record **one continuous organic demo** (no Ads Manager). Packet = Connect + Publish + **Facebook + Instagram messages/comments** + Insights. **Out:** Mentions. Full beat table: [SCREENCAST-TIMESTAMPS.md](./meta-app-review-assets/SCREENCAST-TIMESTAMPS.md) §D.
 
-| # | Scene | Proves scopes | Suggested marker |
-|---|-------|---------------|------------------|
-| 1 | `/login` → sign in as reviewer test user | — | `[FOUNDER: 0:00]` |
-| 2 | Settings → Integrations → Facebook & Instagram → **Connect with Facebook** → full consent screen → select test Page + Business + IG | All 15 at consent | `[FOUNDER: ]` |
-| 3 | Connected state on `/settings/meta` (Page + Linked Instagram chips) | `pages_show_list`, `business_management`, `instagram_basic` | `[FOUNDER: ]` |
-| 4 | Sidebar → Approvals → approve → **Publish Now** → show live Page post | `pages_manage_posts`, `pages_read_engagement`, `instagram_content_publish` | `[FOUNDER: ]` |
-| 5 | Sidebar → Communications Hub → Messenger reply | `pages_messaging`, `pages_manage_metadata` | `[FOUNDER: ]` |
-| 6 | Comment reply + 👍 on Page comment; IG DM reply + sticker/GIF | `pages_read_user_content`, `pages_manage_engagement`, `instagram_manage_messages`, `instagram_manage_comments`, `instagram_manage_engagement` | `[FOUNDER: ]` |
-| 7 | Navigate to `/insights` → Refresh → KPIs / top content (state “no ads / no demographics”) | `read_insights`, `instagram_manage_insights` | `[FOUNDER: ]` |
-| 8 | Events → [event] → Insights tab | Event-scoped insights | `[FOUNDER: ]` |
-| 9 | (Optional) inbound DM updates thread without manual sync | Webhooks / `pages_manage_metadata` | `[FOUNDER: ]` |
+| # | Scene | Proves scopes | Status |
+|---|-------|---------------|--------|
+| 1 | `/login` → email/password | — | ☐ |
+| 2 | Connect/Reconnect → consent → Page + IG | Connect scopes | ☐ |
+| 3 | `/settings/meta` chips | `pages_show_list`, `business_management`, `instagram_basic` | ☐ |
+| 4 | Approvals → Publish Now → live Page (+ IG) | `pages_manage_posts`, `instagram_content_publish` | ☐ |
+| 5 | Hub → Facebook Messenger reply | `pages_messaging`, `pages_manage_metadata` | ☐ |
+| 6 | Hub → Facebook comment reply + 👍 | `pages_read_user_content`, `pages_manage_engagement` | ☐ |
+| 7 | Hub → Instagram Message reply | `instagram_manage_messages` | ☐ |
+| 8 | Hub → Instagram comment reply + 👍 | `instagram_manage_comments`, `instagram_manage_engagement` | ☐ |
+| 9 | `/insights` → Refresh (no ads / no demographics) | `read_insights` | ☐ |
+| 10 | Event → Insights (optional) | `instagram_manage_insights` | ☐ |
+| 11 | Optional inbound FB/IG message without Sync | Webhooks | ☐ |
+| 12 | End on `/privacy` — Mentions not in this review | Compliance | ☐ |
 
 ### 10.6 Screenshot checklist
 
-Minimum set for Meta portal uploads (capture after Connect with test Page). **Pack:** [`meta-app-review-assets/`](./meta-app-review-assets/) — automated via `node scripts/capture-meta-app-review.mjs` (Jul 29, 2026: 8/12 captured; see [SCREENCAST-TIMESTAMPS.md](./meta-app-review-assets/SCREENCAST-TIMESTAMPS.md)).
+**Fresh start Aug 15, 2026.** Jul 29 files are stale — treat all as ☐ until re-captured. Source of truth: [SCREENCAST-TIMESTAMPS.md](./meta-app-review-assets/SCREENCAST-TIMESTAMPS.md) §C.
 
-| # | Filename suggestion | Capture | Status |
-|---|---------------------|---------|--------|
-| 0 | `00-login-page.png` | Login page (bonus) | ✅ |
-| 1 | `01-login.png` | `/login` signed-in dashboard | ✅ |
-| 2 | `02-settings-integrations.png` | Settings → Integrations with Facebook & Instagram row | ✅ |
-| 3 | `03-meta-consent.png` | Facebook Login for Business consent (all permission lines visible) | 🔲 [skipped](./meta-app-review-assets/03-meta-consent.SKIPPED.txt) — org already connected |
-| 4 | `04-meta-connected.png` | `/settings/meta` connected chips (Page + Linked Instagram) | ✅ |
-| 5 | `05-approvals-publish.png` | Approvals queue with Publish Now / scheduled item | ✅ |
-| 6 | `06-page-post-live.png` | Published post on test Facebook Page (browser) | 🔲 [skipped](./meta-app-review-assets/06-page-post-live.SKIPPED.txt) |
-| 7 | `07-communications-hub.png` | Communications Hub thread list | ✅ |
-| 8 | `08-inbox-reply.png` | Reply sent in Messenger or IG DM thread | 🔲 [skipped](./meta-app-review-assets/08-inbox-reply.SKIPPED.txt) |
-| 9 | `09-comment-engagement.png` | Page or IG comment with reply / like | 🔲 [skipped](./meta-app-review-assets/09-comment-engagement.SKIPPED.txt) |
-| 10 | `10-insights-org.png` | `/insights` Org KPI view (note: not in sidebar — use direct URL) | ✅ |
-| 11 | `11-insights-event.png` | Event → Insights tab | ✅ |
-| 12 | `12-webhook-config.png` | Meta Developer App → Webhooks → `/api/meta/webhook` (optional) | 🔲 [skipped](./meta-app-review-assets/12-webhook-config.SKIPPED.txt) |
+| # | Filename | Capture | Status |
+|---|----------|---------|--------|
+| 01 | `01-login.png` | Signed-in heyralli.com | ☐ |
+| 02 | `02-settings-integrations.png` | Settings → Integrations → Facebook & Instagram | ☐ |
+| 03 | `03-meta-consent.png` | Consent with all permission lines visible | ☐ |
+| 04 | `04-meta-connected.png` | `/settings/meta` Page + Linked Instagram | ☐ |
+| 05 | `05-approvals-publish.png` | Approvals Publish Now / Meta row | ☐ |
+| 06 | `06-page-post-live.png` | Live post on Page Hey Ralli | ☐ |
+| 07 | `07-ig-post-live.png` | Live post on `@heyralli_` | ☐ |
+| 08 | `08-communications-hub.png` | Hub queue with FB + IG threads | ☐ |
+| 09 | `09-messenger-reply.png` | Facebook Messenger sent reply | ☐ |
+| 10 | `10-fb-comment-engagement.png` | Facebook comment reply and/or 👍 | ☐ |
+| 11 | `11-ig-dm-reply.png` | Instagram Message sent reply | ☐ |
+| 12 | `12-ig-comment-engagement.png` | Instagram comment reply and/or 👍 | ☐ |
+| 13 | `13-insights-org.png` | `/insights` Org view | ☐ |
+| 14 | `14-insights-event.png` | Event → Insights | ☐ |
+| 15 | `15-webhook-config.png` | Developers → Webhooks → `/api/meta/webhook` | ☐ |
+| 16 | `16-privacy-deletion.png` | `/privacy#user-data-deletion` | ☐ |
 
 ### 10.7 Denial / partial-grant behavior (global)
 

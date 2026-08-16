@@ -38,10 +38,13 @@ export default async function MetaPublishingSettingsPage({
   const connectionView = toMetaSettingsConnectionView(connection);
   const isConnected = isMetaConnectionConfigured(connection);
   const integrationConfigured = isMetaIntegrationConfigured();
+  const hasInstagram = Boolean(connectionView?.hasInstagram);
 
   const statusMessage =
     params.connected === "1"
-      ? "You're connected. Publishing, inbox, and Insights are ready."
+      ? hasInstagram
+        ? "Facebook and Instagram are connected for this organization."
+        : "Facebook Page connected. Link Instagram to this Page in Meta, then reconnect if it doesn’t appear."
       : getMetaOAuthErrorMessage(params.error);
   const statusHint = params.error && params.hint ? params.hint : null;
   const statusTone: "success" | "error" | null =
@@ -55,6 +58,8 @@ export default async function MetaPublishingSettingsPage({
       reconnectRequired={
         isConnected && inboxConnection.metaReconnectRequired
       }
+      pagePictureUrl={inboxConnection.pagePictureUrl}
+      messagingReady={inboxConnection.messagingReady}
       returnTo={safeOAuthReturnTo(params.returnTo, "/settings/meta")}
       statusMessage={statusMessage}
       statusHint={statusHint}

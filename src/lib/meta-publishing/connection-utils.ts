@@ -54,6 +54,70 @@ export function toMetaSettingsConnectionView(
   };
 }
 
+/** UI phase for Settings → Facebook & Instagram (one route, three visual states). */
+export type MetaConnectUiPhase =
+  | "not_connected"
+  | "facebook_only"
+  | "fully_connected"
+  | "reconnect_required";
+
+export function getMetaConnectUiPhase(input: {
+  connected: boolean;
+  hasInstagram: boolean;
+  reconnectRequired: boolean;
+}): MetaConnectUiPhase {
+  if (input.reconnectRequired && input.connected) {
+    return "reconnect_required";
+  }
+  if (!input.connected) {
+    return "not_connected";
+  }
+  if (!input.hasInstagram) {
+    return "facebook_only";
+  }
+  return "fully_connected";
+}
+
+/**
+ * Honest capability labels for Settings — never "Ready" from OAuth alone.
+ * Messaging uses real inbox scope readiness; publishing is "Available" only
+ * when the Page token connection is healthy (not a Graph publish smoke test).
+ */
+export function getMetaCapabilityStatusLabels(input: {
+  connected: boolean;
+  hasInstagram: boolean;
+  reconnectRequired: boolean;
+  messagingReady: boolean;
+}): {
+  facebookPage: string;
+  instagram: string;
+  messaging: string;
+  publishing: string;
+} {
+  if (input.reconnectRequired) {
+    return {
+      facebookPage: "Reconnect needed",
+      instagram: input.hasInstagram ? "Reconnect needed" : "Not linked yet",
+      messaging: "Reconnect needed",
+      publishing: "Reconnect needed",
+    };
+  }
+  if (!input.connected) {
+    return {
+      facebookPage: "Not connected",
+      instagram: "Waiting…",
+      messaging: "Waiting…",
+      publishing: "Waiting…",
+    };
+  }
+  return {
+    facebookPage: "Connected",
+    instagram: input.hasInstagram ? "Connected" : "Not linked yet",
+    messaging: input.messagingReady ? "Ready" : "Needs setup",
+    publishing: "Available",
+  };
+}
+
 const META_OAUTH_ERROR_MESSAGES: Record<string, string> = {
   no_pages:
     "Facebook sign-in worked, but we couldn’t find a Page to connect. Confirm you admin a Facebook Page, then try Connect with Facebook again.",
