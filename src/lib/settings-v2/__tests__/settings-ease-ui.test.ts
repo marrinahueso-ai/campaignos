@@ -448,6 +448,9 @@ describe("settings ease UI contracts", () => {
     );
     assert.match(metaPage, /connection=\{connectionView\}/);
     assert.match(metaPage, /pagePictureUrl=\{inboxConnection\.pagePictureUrl\}/);
+    assert.match(metaPage, /instagramUsername=\{instagramUsername\}/);
+    assert.match(metaPage, /instagramPictureUrl=\{instagramPictureUrl\}/);
+    assert.match(metaPage, /fetchInstagramProfessionalProfile/);
     assert.match(metaPage, /messagingReady=\{inboxConnection\.messagingReady\}/);
     assert.doesNotMatch(metaPage, /configuredViaEnv=\{/);
     assert.doesNotMatch(metaEase, /pageAccessToken/);
@@ -463,6 +466,9 @@ describe("settings ease UI contracts", () => {
     assert.match(metaEase, /Connection status/);
     assert.match(metaEase, /messagingReady/);
     assert.match(metaEase, /getMetaCapabilityStatusLabels/);
+    assert.match(metaEase, /InstagramAvatar/);
+    assert.match(metaEase, /instagramUsername/);
+    assert.doesNotMatch(metaEase, /Linked to this Page/);
     assert.match(metaUtils, /Needs setup/);
     assert.doesNotMatch(metaEase, /Publishing, inbox, and Insights are ready/);
     assert.match(metaEase, /disconnectMetaConnectionAction/);

@@ -23,6 +23,10 @@ interface SettingsEaseMetaProps {
   reconnectRequired: boolean;
   /** From inbox connection status — Page picture CDN URL when available. */
   pagePictureUrl: string | null;
+  /** Instagram Professional username without @ — null if Graph did not return it. */
+  instagramUsername: string | null;
+  /** Instagram Professional profile picture URL when available. */
+  instagramPictureUrl: string | null;
   /** Real inbox scope readiness — not OAuth completion alone. */
   messagingReady: boolean;
   returnTo: string;
@@ -191,6 +195,41 @@ function PageAvatar({
   );
 }
 
+function InstagramAvatar({
+  username,
+  pictureUrl,
+}: {
+  username: string | null;
+  pictureUrl: string | null;
+}) {
+  const initial = (username?.trim().charAt(0) || "I").toUpperCase();
+  return (
+    <div className="relative shrink-0">
+      {pictureUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- Meta CDN avatar
+        <img
+          src={pictureUrl}
+          alt=""
+          className="h-12 w-12 rounded-full border-2 border-white object-cover shadow-sm"
+        />
+      ) : (
+        <span
+          className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-[rgba(193,53,132,0.12)] text-sm font-bold text-[#c13584] shadow-sm"
+          aria-hidden
+        >
+          {initial}
+        </span>
+      )}
+      <span
+        className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-[#c13584] text-[9px] font-bold text-white"
+        aria-hidden
+      >
+        IG
+      </span>
+    </div>
+  );
+}
+
 function CapabilityRow({
   label,
   value,
@@ -258,6 +297,8 @@ export function SettingsEaseMeta({
   integrationConfigured,
   reconnectRequired,
   pagePictureUrl,
+  instagramUsername,
+  instagramPictureUrl,
   messagingReady,
   returnTo,
   statusMessage,
@@ -573,18 +614,16 @@ export function SettingsEaseMeta({
 
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[rgba(193,53,132,0.12)] text-sm font-bold text-[#c13584]"
-                    aria-hidden
-                  >
-                    IG
-                  </span>
+                  <InstagramAvatar
+                    username={instagramUsername}
+                    pictureUrl={instagramPictureUrl}
+                  />
                   <div className="min-w-0">
-                    <p className="m-0 font-bold text-[#2a2622]">
-                      Instagram Professional
+                    <p className="m-0 truncate font-bold text-[#2a2622]">
+                      {instagramUsername?.trim() || "Instagram"}
                     </p>
                     <p className="m-0 mt-0.5 text-xs font-medium text-[#c13584]">
-                      Linked to this Page
+                      Instagram
                     </p>
                   </div>
                 </div>

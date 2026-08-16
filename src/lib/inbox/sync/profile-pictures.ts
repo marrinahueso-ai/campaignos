@@ -145,6 +145,35 @@ export async function fetchConnectedPageProfilePictures(input: {
   return { pageAvatarUrl, instagramAvatarUrl };
 }
 
+/**
+ * Instagram Professional profile for Settings UI (username + picture).
+ * Server-only — uses Page token; never return the token to the client.
+ */
+export async function fetchInstagramProfessionalProfile(input: {
+  instagramAccountId: string;
+  pageAccessToken: string;
+}): Promise<{ username: string | null; profilePictureUrl: string | null }> {
+  const igId = input.instagramAccountId.trim();
+  if (!igId || !input.pageAccessToken.trim()) {
+    return { username: null, profilePictureUrl: null };
+  }
+
+  const result = await inboxGraphGet<Record<string, unknown>>(`/${igId}`, {
+    fields: "username,profile_picture_url",
+    access_token: input.pageAccessToken,
+  });
+
+  if (!result.ok) {
+    return { username: null, profilePictureUrl: null };
+  }
+
+  const rawUsername = readString(result.data.username);
+  const username = rawUsername?.replace(/^@+/, "").trim() || null;
+  const profilePictureUrl = readString(result.data.profile_picture_url);
+
+  return { username, profilePictureUrl };
+}
+
 export async function enrichInboxThreadsWithAvatars(input: {
   threads: NormalizedInboxThread[];
   pageAvatarUrl: string | null;

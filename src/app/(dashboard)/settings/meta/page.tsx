@@ -1,5 +1,6 @@
 import { SettingsEaseMeta } from "@/components/settings-v2/SettingsEaseMeta";
 import { getInboxConnectionStatus } from "@/lib/inbox/queries";
+import { fetchInstagramProfessionalProfile } from "@/lib/inbox/sync/profile-pictures";
 import { safeOAuthReturnTo } from "@/lib/integrations/oauth";
 import {
   getMetaConnectionForCurrentOrg,
@@ -40,6 +41,23 @@ export default async function MetaPublishingSettingsPage({
   const integrationConfigured = isMetaIntegrationConfigured();
   const hasInstagram = Boolean(connectionView?.hasInstagram);
 
+  let instagramUsername: string | null = null;
+  let instagramPictureUrl: string | null = null;
+  if (
+    connection &&
+    isConnected &&
+    hasInstagram &&
+    connection.instagramAccountId.trim() &&
+    connection.pageAccessToken.trim()
+  ) {
+    const igProfile = await fetchInstagramProfessionalProfile({
+      instagramAccountId: connection.instagramAccountId,
+      pageAccessToken: connection.pageAccessToken,
+    });
+    instagramUsername = igProfile.username;
+    instagramPictureUrl = igProfile.profilePictureUrl;
+  }
+
   const statusMessage =
     params.connected === "1"
       ? hasInstagram
@@ -59,6 +77,8 @@ export default async function MetaPublishingSettingsPage({
         isConnected && inboxConnection.metaReconnectRequired
       }
       pagePictureUrl={inboxConnection.pagePictureUrl}
+      instagramUsername={instagramUsername}
+      instagramPictureUrl={instagramPictureUrl}
       messagingReady={inboxConnection.messagingReady}
       returnTo={safeOAuthReturnTo(params.returnTo, "/settings/meta")}
       statusMessage={statusMessage}
