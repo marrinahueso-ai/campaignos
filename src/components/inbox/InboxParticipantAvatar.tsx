@@ -36,7 +36,7 @@ export function InboxParticipantAvatar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-cos-bg font-semibold text-cos-text",
+        "relative shrink-0 overflow-hidden rounded-full bg-cos-bg font-semibold text-cos-text",
         className,
       )}
       aria-hidden
@@ -45,17 +45,21 @@ export function InboxParticipantAvatar({
         <img
           src={trimmedUrl!}
           alt=""
-          className="h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
           loading="lazy"
-          referrerPolicy="no-referrer"
+          decoding="async"
           onError={() => setFailed(true)}
         />
-      ) : initials !== "?" ? (
-        initials
-      ) : showUserIconFallback ? (
-        <User className="h-4 w-4 text-cos-muted" strokeWidth={1.75} />
       ) : (
-        initials
+        <span className="flex h-full w-full items-center justify-center">
+          {initials !== "?" ? (
+            initials
+          ) : showUserIconFallback ? (
+            <User className="h-4 w-4 text-cos-muted" strokeWidth={1.75} />
+          ) : (
+            initials
+          )}
+        </span>
       )}
     </div>
   );

@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** 2026-08-08 — Events home AppImage hero/Also Ahead  
+**Last updated:** 2026-08-16 — Inbox avatars: nested fbcdn CSP + no no-referrer  
 **Related:** [Architecture](./architecture.md) · [Storage RLS](./storage-rls.md) · [Feature list](../product/feature-list.md) · [Performance budget](../qa/performance-budget.md) · [Homepage Composer](./homepage-composer.md) · [Newsletter Composer](./newsletter-composer.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 This is the **canonical guide** for how images are uploaded, stored, displayed, published, and consumed by AI across Hey Ralli. Follow it for every new image-heavy feature.
@@ -92,7 +92,7 @@ const original = toDisplayImageUrl(url, { intent: "original" });
 
 `AppImage` falls back to a plain `<img>` for `blob:`, `data:`, static `/…` paths, and non-Supabase hosts (Meta avatars, GIPHY, Canva CDN).
 
-Inbox contact/page avatars use `InboxParticipantAvatar` (plain `<img>` + initials on error). CSP `img-src` in `next.config.ts` allowlists `*.fbsbx.com`, `*.fbcdn.net`, `*.cdninstagram.com`, and `*.giphy.com` so Meta lookaside/Giphy URLs are not blocked in the browser.
+Inbox contact/page avatars use `InboxParticipantAvatar` (plain `<img>` + initials on error). CSP `img-src` in `next.config.ts` allowlists Meta lookaside (`*.fbsbx.com`), nested Facebook CDNs (`*.fbcdn.net`, `*.xx.fbcdn.net`, `*.fna.fbcdn.net`), `*.cdninstagram.com`, `graph.facebook.com`, and `*.giphy.com` so profile pictures are not blocked. Do not set `referrerPolicy="no-referrer"` on those `<img>`s — signed Meta CDNs often fail without a referrer.
 
 ---
 

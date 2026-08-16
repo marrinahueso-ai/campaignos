@@ -84,13 +84,18 @@ const SCRIPT_SRC =
     ? "script-src 'self' 'unsafe-inline'"
     : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
 
+// Meta avatars often live on nested hosts (scontent-*.xx.fbcdn.net,
+// *.fna.fbcdn.net). A single `*.fbcdn.net` token only matches one label.
+const IMG_SRC =
+  "img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net https://*.fbsbx.com https://*.fbcdn.net https://*.xx.fbcdn.net https://*.fna.fbcdn.net https://*.cdninstagram.com https://graph.facebook.com https://*.giphy.com";
+
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   SCRIPT_SRC,
   "style-src 'self' 'unsafe-inline'",
-  // Meta lookaside / fbcdn / IG CDN for inbox avatars + attachment thumbs;
+  // Meta lookaside / nested fbcdn / IG CDN for inbox avatars + thumbs;
   // Giphy for DM GIF stickers rendered in the timeline.
-  "img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net https://*.fbsbx.com https://*.fbcdn.net https://*.cdninstagram.com https://*.giphy.com",
+  IMG_SRC,
   "font-src 'self' data:",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.us.sentry.io https://vitals.vercel-insights.com",
   "frame-src 'self'",
@@ -121,7 +126,7 @@ const FLYER_EMBED_CSP = [
   "default-src 'self'",
   SCRIPT_SRC,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data: blob: https://*.supabase.co https://cdn.jsdelivr.net https://*.fbsbx.com https://*.fbcdn.net https://*.cdninstagram.com https://*.giphy.com",
+  IMG_SRC,
   "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.us.sentry.io https://vitals.vercel-insights.com",
   "frame-src 'self'",
