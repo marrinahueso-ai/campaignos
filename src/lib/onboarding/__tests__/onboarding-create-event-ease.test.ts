@@ -59,6 +59,11 @@ describe("Onboarding Ease page 1 — Create your first event", () => {
     assert.match(actions, /redirect\("\/events\/create\?onboarding=1"\)/);
   });
 
+  it("New School Handoff is a full-viewport auth card, not dashboard header height", () => {
+    assert.match(welcome, /min-h-dvh/);
+    assert.doesNotMatch(welcome, /Open navigation/);
+  });
+
   it("marks Ease page 1 shipped in feature-list", () => {
     assert.match(
       featureList,

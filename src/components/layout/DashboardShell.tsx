@@ -26,6 +26,11 @@ interface DashboardShellProps {
   aiCredits?: AiCreditsWidgetData | null;
   /** Streams the sidebar-only balance instead of blocking every dashboard page. */
   aiCreditsPromise?: Promise<AiCreditsWidgetData | null>;
+  /**
+   * Workspace nav (sidebar, mobile menu, Home / Ask Ralli / Settings).
+   * Off until the user has an active organization — setup stays auth-card, not app chrome.
+   */
+  showAppChrome?: boolean;
 }
 
 function SidebarWithBadgePromise({
@@ -129,34 +134,16 @@ export function DashboardShell({
   showOwnerOps = false,
   aiCredits = null,
   aiCreditsPromise,
+  showAppChrome = true,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-cos-bg">
       <ChunkLoadRecovery />
-      <div className="hidden shrink-0 lg:block">
-        <ShellSidebar
-          badgeCountsPromise={badgeCountsPromise}
-          assignedApprovalsCount={assignedApprovalsCount}
-          changeRequestsCount={changeRequestsCount}
-          inboxUnreadCount={inboxUnreadCount}
-          activeOrganizationId={activeOrganizationId}
-          showOwnerOps={showOwnerOps}
-          aiCredits={aiCredits}
-          aiCreditsPromise={aiCreditsPromise}
-        />
-      </div>
-
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            aria-label="Close navigation"
-            className="absolute inset-0 bg-cos-dark/40 backdrop-blur-[2px]"
-            onClick={() => setMobileOpen(false)}
-          />
-          <div className="relative h-full w-72">
+      {showAppChrome ? (
+        <>
+          <div className="hidden shrink-0 lg:block">
             <ShellSidebar
               badgeCountsPromise={badgeCountsPromise}
               assignedApprovalsCount={assignedApprovalsCount}
@@ -166,24 +153,57 @@ export function DashboardShell({
               showOwnerOps={showOwnerOps}
               aiCredits={aiCredits}
               aiCreditsPromise={aiCreditsPromise}
-              forceExpanded
-              onNavigate={() => setMobileOpen(false)}
             />
           </div>
-        </div>
-      )}
+
+          {mobileOpen ? (
+            <div className="fixed inset-0 z-50 lg:hidden">
+              <button
+                type="button"
+                aria-label="Close navigation"
+                className="absolute inset-0 bg-cos-dark/40 backdrop-blur-[2px]"
+                onClick={() => setMobileOpen(false)}
+              />
+              <div className="relative h-full w-72">
+                <ShellSidebar
+                  badgeCountsPromise={badgeCountsPromise}
+                  assignedApprovalsCount={assignedApprovalsCount}
+                  changeRequestsCount={changeRequestsCount}
+                  inboxUnreadCount={inboxUnreadCount}
+                  activeOrganizationId={activeOrganizationId}
+                  showOwnerOps={showOwnerOps}
+                  aiCredits={aiCredits}
+                  aiCreditsPromise={aiCreditsPromise}
+                  forceExpanded
+                  onNavigate={() => setMobileOpen(false)}
+                />
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : null}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <DashboardHeader
-          userEmail={userEmail}
-          userDisplayName={userDisplayName}
-          mobileOpen={mobileOpen}
-          onToggleMobile={() => setMobileOpen((open) => !open)}
-          organizations={organizations}
-          activeOrganizationId={activeOrganizationId}
-        />
+        {showAppChrome ? (
+          <DashboardHeader
+            userEmail={userEmail}
+            userDisplayName={userDisplayName}
+            mobileOpen={mobileOpen}
+            onToggleMobile={() => setMobileOpen((open) => !open)}
+            organizations={organizations}
+            activeOrganizationId={activeOrganizationId}
+          />
+        ) : null}
 
-        <main className="flex-1 px-4 py-8 lg:px-8 lg:py-10">{children}</main>
+        <main
+          className={
+            showAppChrome
+              ? "flex-1 px-4 py-8 lg:px-8 lg:py-10"
+              : "flex-1"
+          }
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

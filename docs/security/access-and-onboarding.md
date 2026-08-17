@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 8, 2026  
+**Last updated:** August 17, 2026  
 **Related:** [Access control (templates / RLS)](../engineering/access-control.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md) · [Feature list](../product/feature-list.md) · [Owner AI & APIs](../product/ai-and-apis.md) · [Architecture](../engineering/architecture.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 How a person gets into **Hey Ralli** (CampaignOS), joins an organization (tenant), switches tenants, and what blocks access.
@@ -35,7 +35,7 @@ There is **no open self-serve “create org without a code”** path when foundi
 
 Stripe / paid plan gates: **shipped** (live in Production; see [billing-and-access.md](../ops/billing-and-access.md)). Valid founding codes set `billing_exempt_at` on the org when used.
 
-Auth chrome: centered cream **auth-card** shell shared across Get Started, Welcome, founding activation, login, recovery, invite, and New School Handoff — **no parallel auth or setup systems**.
+Auth chrome: centered cream **auth-card** shell shared across Get Started, Welcome, founding activation, login, recovery, invite, and New School Handoff — **no parallel auth or setup systems**. Dashboard sidebar, mobile menu, and header icons (Home · Ask Ralli · Settings) stay hidden until the signed-in user has an **active organization membership**.
 
 ---
 

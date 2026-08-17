@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 16, 2026 — Approvals sidebar badges match Needs you / Changes requested
+**Last updated:** August 17, 2026 — Setup hides dashboard nav until an active organization exists
 
 ---
 
@@ -40,7 +40,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - **Ease page 2 shipped:** Calendar + Brand combined optional screen at `/onboarding/essentials` — “2 of 3” meter, per-section Skip + footer Skip for now / Continue (exact from [`onboarding-setup-ease-mockup.html?view=essentials`](../../public/onboarding-setup-ease-mockup.html)); reuses real calendar import / Google OAuth + brand kit save; after Continue/Skip → `/onboarding/connect`
   - **Ease page 3 shipped:** Team + Meta combined optional screen at `/onboarding/connect` — “3 of 3” meter, per-section Skip invite / Skip Meta + footer Skip for now / Go to {event} (exact from [`onboarding-setup-ease-mockup.html?view=connect`](../../public/onboarding-setup-ease-mockup.html)); reuses real team invite + Meta OAuth; after Continue/Skip → created event with page-4 finale
   - **Ease page 4 shipped:** Land on created event with dismissible “You’re set — here’s your event” toast (exact from [`onboarding-setup-ease-mockup.html?view=done`](../../public/onboarding-setup-ease-mockup.html)); `?welcome=1` handoff from page 3; sets `promptsFinishedAt` on `organizations.onboarding_state`; no second step plan / no home checklist finale
-  - Org bootstrap glue only when no membership (`/onboarding` New School Handoff card → optional name → Continue); restart / replay → `/events/create?onboarding=1` (not a second school-setup wizard)
+  - Org bootstrap glue only when no membership (`/onboarding` New School Handoff card → optional name → Continue); **no dashboard chrome** (hamburger / left rail / Home · Ask Ralli · Settings) until the user has an active organization; restart / replay → `/events/create?onboarding=1` (not a second school-setup wizard)
   - After first-event save: routes to `/onboarding/essentials` (not the old calendar-only overlay); legacy `?onboarding=calendar|brand|invite|meta` on the event redirects to essentials/connect
   - Legacy `/onboarding/invite` and `/onboarding/meta` redirect to `/onboarding/connect`
   - Helpful next steps on **home/dashboard** until done: **Set up now** + **Later**; Settings → Get started shows the same simple cards (no wizard); checklist invite/meta “Set up now” → `/onboarding/connect`

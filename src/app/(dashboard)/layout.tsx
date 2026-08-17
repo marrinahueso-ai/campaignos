@@ -28,16 +28,20 @@ export default async function DashboardLayout({
 
   const activeOrganizationId =
     normalizeOrganizationId(activeMembership?.organizationId) ?? null;
+  const showAppChrome = Boolean(activeOrganizationId);
 
   const userDisplayName =
     activeMembership?.user.displayName?.trim() ||
     user?.displayName?.trim() ||
     null;
 
-  // This may perform billing and balance writes. Keep it off the page body’s
-  // critical path; the sidebar already has a loading state.
-  const aiCreditsPromise = getOrgAiCreditsWidgetData(activeOrganizationId);
-  const badgeCountsPromise = loadDashboardBadgeCounts();
+  // Sidebar-only work — skip until the user has a workspace (New School Handoff).
+  const aiCreditsPromise = showAppChrome
+    ? getOrgAiCreditsWidgetData(activeOrganizationId)
+    : undefined;
+  const badgeCountsPromise = showAppChrome
+    ? loadDashboardBadgeCounts()
+    : undefined;
 
   return (
     <DashboardShell
@@ -48,6 +52,7 @@ export default async function DashboardLayout({
       activeOrganizationId={activeOrganizationId}
       showOwnerOps={showOwnerOps}
       aiCreditsPromise={aiCreditsPromise}
+      showAppChrome={showAppChrome}
     >
       {children}
       <Suspense fallback={null}>

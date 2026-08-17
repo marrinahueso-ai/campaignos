@@ -35,7 +35,7 @@ export function OnboardingWelcome({
 
   return (
     <div
-      className="-mx-4 -my-8 flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center bg-cos-bg px-5 pb-16 pt-5 lg:-mx-8 lg:-my-10"
+      className="flex min-h-dvh flex-col items-center justify-center bg-cos-bg px-5 pb-16 pt-5"
       data-onboarding-ease="bootstrap"
     >
       <Link href="/" className="mb-10 md:mb-12">
