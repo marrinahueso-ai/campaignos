@@ -122,10 +122,10 @@ Approvals hub → Review drawer → **Request changes** (comment required):
 `layout.tsx` merges:
 
 1. **Scheduling lean counts** — `getSidebarSchedulingBadgeCounts()`
-   - Pending (red): head-count `workflow_status ∈ {assigned_to_me, in_queue}` (approvers: all scoped events; others: assigned to them)
-   - Change requests (amber): head-count `workflow_status = changes_requested` **and** `requested_by_user_id = current user` (creator’s “sent back” cue)
-2. **Classic lean counts** — `getApprovalSidebarCountsForCurrentUser()` on `approval_requests`
-3. Display: `Math.max(classic, scheduling)` for each badge type
+   - Pending (red / Needs you): head-count `workflow_status ∈ {assigned_to_me, in_queue}` for event-scoped rows **and** org-scoped rows (`event_id` IS NULL — newsletters and event-less flyers). Approvers: all scoped items; others: assigned to them.
+   - Change requests (amber): head-count `workflow_status = changes_requested` on the same event + org scopes. Approvers: every sent-back row (matches the **Changes requested** pulse). Creators: `requested_by_user_id = current user`.
+2. **Classic lean counts** — `getApprovalSidebarCountsForCurrentUser()` on `approval_requests` (approvers: all pending / all changes; others: assigned / own sent-back rows)
+3. Display: **sum** classic + scheduling for each badge type (same merge as Approvals hub pulse tabs). `Math.max` dropped flyers and newsletters when a smaller classic queue existed.
 
 Rendered on **Approvals** nav via `NavNotificationBadge`:
 
@@ -168,7 +168,7 @@ Stability P0: sidebar uses `{ count: "exact", head: true }` — not full row mat
 - Live generation depends on AI providers + event Inspiration completeness; 3–8+ min is normal.
 - If all milestones already Complete, Part 1 skips re-generation to avoid overwriting staging art.
 - Request-changes exercise is opt-in to avoid mutating shared staging queues.
-- Sidebar change-request badge counts **submitter** rows — an approver who requests changes may not see that badge increase on their own nav.
+- Sidebar change-request badge: **approvers** see every `changes_requested` row (matches the Changes requested pulse). **Creators** still see only rows they submitted (`requested_by_user_id`).
 - Email delivery cannot be asserted in Playwright without mailbox access; code path logs to `approval_notification_log`.
 
 ---

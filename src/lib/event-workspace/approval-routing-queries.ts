@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { displayDraftContent } from "@/lib/ai/content";
 import { resolveApprovalAssigneeLabel } from "@/lib/approvals-scheduling/assignee-display-name";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
@@ -215,9 +216,8 @@ async function fetchApprovalSidebarAssignedRows(
   return (data ?? []) as unknown as ApprovalSidebarCountRow[];
 }
 
-async function countApprovalSidebarChangeRequests(
+async function countApprovalSidebarAllPending(
   eventIds: string[],
-  organizationUserId: string,
 ): Promise<number> {
   if (eventIds.length === 0) {
     return 0;
@@ -230,9 +230,46 @@ async function countApprovalSidebarChangeRequests(
       count: "exact",
       head: true,
     })
-    .eq("requested_by_user_id", organizationUserId)
+    .eq("status", "pending")
+    .in("event_id", eventIds)
+    .in("communication_items.status", [...APPROVABLE_COMMUNICATION_STATUSES]);
+
+  if (error?.code === "42P01") {
+    return 0;
+  }
+  if (error) {
+    console.error(
+      "Failed to count approval sidebar pending rows:",
+      error.message,
+    );
+    return 0;
+  }
+  return count ?? 0;
+}
+
+async function countApprovalSidebarChangeRequests(
+  eventIds: string[],
+  options: { organizationUserId?: string; submitterOnly: boolean },
+): Promise<number> {
+  if (eventIds.length === 0) {
+    return 0;
+  }
+
+  const supabase = await createClient();
+  let query = supabase
+    .from("approval_requests")
+    .select("id, communication_items!inner(status)", {
+      count: "exact",
+      head: true,
+    })
     .in("event_id", eventIds)
     .eq("communication_items.status", "changes_requested");
+
+  if (options.submitterOnly && options.organizationUserId) {
+    query = query.eq("requested_by_user_id", options.organizationUserId);
+  }
+
+  const { count, error } = await query;
 
   if (error?.code === "42P01") {
     return 0;
@@ -431,9 +468,10 @@ export const getApprovalSidebarCountsForCurrentUser = cache(
     assignedApprovalsCount: number;
     changeRequestsCount: number;
   }> {
-    const [membership, eventIds] = await Promise.all([
+    const [membership, eventIds, canApprove] = await Promise.all([
       getActiveMembership(),
       resolveScopedApprovalEventIds(),
+      hasPermission("approve_comms"),
     ]);
 
     const actor: ApprovalActor | null = membership
@@ -448,9 +486,20 @@ export const getApprovalSidebarCountsForCurrentUser = cache(
       return { assignedApprovalsCount: 0, changeRequestsCount: 0 };
     }
 
+    if (canApprove) {
+      const [assignedApprovalsCount, changeRequestsCount] = await Promise.all([
+        countApprovalSidebarAllPending(eventIds),
+        countApprovalSidebarChangeRequests(eventIds, { submitterOnly: false }),
+      ]);
+      return { assignedApprovalsCount, changeRequestsCount };
+    }
+
     const [assignedRows, changeRequestsCount] = await Promise.all([
       fetchApprovalSidebarAssignedRows(eventIds),
-      countApprovalSidebarChangeRequests(eventIds, actor.organizationUserId),
+      countApprovalSidebarChangeRequests(eventIds, {
+        organizationUserId: actor.organizationUserId,
+        submitterOnly: true,
+      }),
     ]);
 
     const dedupedAssigned = dedupePendingApprovalQueueRows(assignedRows);

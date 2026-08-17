@@ -15,7 +15,7 @@ describe("Attention counts stay lean for default dashboard", () => {
   it("uses sidebar approval + scheduling badge counts for reviewCount", () => {
     assert.match(source, /getApprovalSidebarCountsForCurrentUser/);
     assert.match(source, /getSidebarSchedulingBadgeCounts/);
-    assert.match(source, /Math\.max\(/);
+    assert.match(source, /mergeApprovalBadgeCounts/);
   });
 
   it("short-circuits volunteers when no event_volunteer_sources exist", () => {

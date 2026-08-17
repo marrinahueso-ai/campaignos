@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { filterTasksForMyView } from "@/lib/tasks-v2/my-tasks-filter";
 import { getDashboardTaskItems } from "@/lib/today/dashboard-task-items";
 import { filterDashboardUnderfilledVolunteerEvents } from "@/lib/today/dashboard-volunteer-events";
+import { mergeApprovalBadgeCounts } from "@/lib/layout/merge-approval-badge-counts";
 import { getTodayDateString } from "@/lib/utils/dates";
 import type { TodayAttentionCounts } from "@/types/today";
 
@@ -105,10 +106,8 @@ export async function getTodayAttentionCounts(): Promise<TodayAttentionCounts> {
     ]);
 
   return {
-    reviewCount: Math.max(
-      classicCounts.assignedApprovalsCount,
-      schedulingCounts.assignedApprovalsCount,
-    ),
+    reviewCount: mergeApprovalBadgeCounts(classicCounts, schedulingCounts)
+      .assignedApprovalsCount,
     volunteerCount,
     tasksThisWeekCount,
   };

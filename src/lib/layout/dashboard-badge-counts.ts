@@ -3,6 +3,7 @@ import "server-only";
 import { getSidebarSchedulingBadgeCounts } from "@/lib/approvals-scheduling/queries";
 import { getApprovalSidebarCountsForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
 import { getInboxUnreadCountForCurrentOrg } from "@/lib/inbox/queries";
+import { mergeApprovalBadgeCounts } from "@/lib/layout/merge-approval-badge-counts";
 import type { DashboardBadgeCounts } from "@/lib/layout/dashboard-badge-types";
 
 export type { DashboardBadgeCounts };
@@ -21,14 +22,7 @@ export async function loadDashboardBadgeCounts(): Promise<DashboardBadgeCounts> 
     ]);
 
   return {
-    assignedApprovalsCount: Math.max(
-      sidebarCounts.assignedApprovalsCount,
-      schedulingBadgeCounts.assignedApprovalsCount,
-    ),
-    changeRequestsCount: Math.max(
-      sidebarCounts.changeRequestsCount,
-      schedulingBadgeCounts.changeRequestsCount,
-    ),
+    ...mergeApprovalBadgeCounts(sidebarCounts, schedulingBadgeCounts),
     inboxUnreadCount,
   };
 }

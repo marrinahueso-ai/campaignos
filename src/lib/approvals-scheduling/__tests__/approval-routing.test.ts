@@ -268,6 +268,8 @@ describe("Approval Routing — queue visibility", () => {
     );
     assert.match(queriesSource, /schedulingAssigneeOrFilter/);
     assert.match(queriesSource, /getSidebarSchedulingBadgeCounts/);
+    assert.match(queriesSource, /\.is\("event_id", null\)/);
+    assert.match(queriesSource, /resolveSchedulingOrganizationId/);
     // Hub list uses lean columns; caption preview loads on demand.
     assert.match(queriesSource, /fetchCampaignBuilderSchedulingItems/);
     assert.match(queriesSource, /SCHEDULING_LIST_SELECT/);
@@ -315,6 +317,8 @@ describe("Approval Routing — queue visibility", () => {
       /select\("id, communication_items!inner\(status\)", \{\s*count: "exact",\s*head: true,/s,
     );
     assert.match(routingSource, /isActorAssignedToApproval/);
+    assert.match(routingSource, /countApprovalSidebarAllPending/);
+    assert.match(routingSource, /hasPermission\("approve_comms"\)/);
     // Sidebar path must not resolve the full queue base.
     const sidebarFn = routingSource.slice(
       routingSource.indexOf(

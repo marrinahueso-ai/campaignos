@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 16, 2026 — Inbox profile photos + channel badge fill
+**Last updated:** August 16, 2026 — Approvals sidebar badges match Needs you / Changes requested
 
 ---
 
@@ -209,7 +209,7 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
 - Weekly posting summary emails — **removed** (orphaned placeholder; not a product feature)
 
 ## Approvals & scheduling
-- Unified Approvals hub (pending, changes, scheduled, published) — **shipped**
+- Unified Approvals hub (pending, changes, scheduled, published) — **shipped** (sidebar red/amber badges match **Needs you** / **Changes requested**: event + org-scoped flyer/newsletter rows; classic + scheduling counts are added, not maxed)
 - Approvals page post-response Meta approval backfill runs in `after()` with a render-time cookie snapshot (Server Components cannot call `cookies()` inside `after()`) — **shipped**
 - **Revision workspace (change request)** — **partial** — `/approvals/revision` creator shell (UX Pilot): **Update this post** · Changes requested chip · left **Preview** (feed 1:1 + story 9:16) + editable caption/schedule · right **What they asked for** (note + checklist) + **Instruct AI** (framed as non-literal revision direction) + regenerate feed/story/both/caption · forest **Send for re-approval**. Approver mode remains note+tags pop-out from hub. Flyer: single print preview + Open Flyer composer. Mockups: [`public/approvals-change-request-mockup.html`](../../public/approvals-change-request-mockup.html), [`public/approvals-revision-ai-regenerate-mockup.html`](../../public/approvals-revision-ai-regenerate-mockup.html). Approval emails send app-built HTML (`sendEmail`) with artwork thumbnails — not Resend template variables (2,000-char limit + HTML escaping). Flyer vs social copy uses Print flyer · Open Flyer composer labels. Later: deeper multi-round history, adapters (newsletter · homepage · website pages)
 - Approvals Ease outcomes: **Posted** / **Failed** (with **Retry**) as first-class filters + pills; **Draft** chip on draft-only rows (no dedicated Drafts filter tab for soft launch); Retry wires Meta republish — **shipped**

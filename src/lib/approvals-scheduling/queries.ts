@@ -875,19 +875,39 @@ export async function getUnifiedApprovalsDeferredPulseItems(
   });
 }
 
+function schedulingHeadCount(
+  result: {
+    count: number | null;
+    error: { code?: string; message: string } | null;
+  },
+  label: string,
+): number {
+  if (result.error?.code === "42P01") {
+    return 0;
+  }
+  if (result.error) {
+    console.error(label, result.error.message);
+    return 0;
+  }
+  return result.count ?? 0;
+}
+
 /**
  * Lean sidebar scheduling badge totals — head-count queries only.
  * Does not materialize full approval_scheduling_items rows.
+ * Includes event-scoped social/flyer rows and org-scoped newsletter/flyer
+ * rows (`event_id` IS NULL) so nav badges match Approvals hub pulse tabs.
  */
 export const getSidebarSchedulingBadgeCounts = cache(
   async function getSidebarSchedulingBadgeCounts(): Promise<{
     assignedApprovalsCount: number;
     changeRequestsCount: number;
   }> {
-    const [membership, canApprove, eventIds] = await Promise.all([
+    const [membership, canApprove, eventIds, organizationId] = await Promise.all([
       getActiveMembership(),
       hasPermission("approve_comms"),
       resolveScopedSchedulingEventIds(),
+      resolveSchedulingOrganizationId(),
     ]);
 
     const actor: ApprovalActor | null = membership
@@ -898,61 +918,94 @@ export const getSidebarSchedulingBadgeCounts = cache(
         }
       : null;
 
-    if (!actor?.organizationUserId || eventIds.length === 0) {
+    if (!actor?.organizationUserId || (!eventIds.length && !organizationId)) {
       return { assignedApprovalsCount: 0, changeRequestsCount: 0 };
     }
 
     const supabase = await createClient();
 
-    let assignedQuery = supabase
-      .from("approval_scheduling_items")
-      .select("id", { count: "exact", head: true })
-      .in("event_id", eventIds)
-      .in("workflow_status", [...PENDING_SCHEDULING_STATUSES]);
-
-    // Approvers see every pending item; others only rows assigned to them.
-    if (!canApprove) {
-      assignedQuery = assignedQuery.or(schedulingAssigneeOrFilter(actor));
+    function pendingQuery() {
+      return supabase
+        .from("approval_scheduling_items")
+        .select("id", { count: "exact", head: true })
+        .in("workflow_status", [...PENDING_SCHEDULING_STATUSES]);
     }
 
-    const changeRequestsQuery = supabase
-      .from("approval_scheduling_items")
-      .select("id", { count: "exact", head: true })
-      .in("event_id", eventIds)
-      .eq("workflow_status", "changes_requested")
-      .eq("requested_by_user_id", actor.organizationUserId);
-
-    const [assignedResult, changeRequestsResult] = await Promise.all([
-      assignedQuery,
-      changeRequestsQuery,
-    ]);
-
-    if (assignedResult.error?.code !== "42P01" && assignedResult.error) {
-      console.error(
-        "Failed to count assigned scheduling badges:",
-        assignedResult.error.message,
-      );
+    function changesQuery() {
+      return supabase
+        .from("approval_scheduling_items")
+        .select("id", { count: "exact", head: true })
+        .eq("workflow_status", "changes_requested");
     }
-    if (
-      changeRequestsResult.error?.code !== "42P01" &&
-      changeRequestsResult.error
-    ) {
-      console.error(
-        "Failed to count change-request scheduling badges:",
-        changeRequestsResult.error.message,
-      );
-    }
+
+    const eventPending =
+      eventIds.length > 0
+        ? (() => {
+            let query = pendingQuery().in("event_id", eventIds);
+            if (!canApprove) {
+              query = query.or(schedulingAssigneeOrFilter(actor));
+            }
+            return query;
+          })()
+        : Promise.resolve({ count: 0, error: null });
+
+    const orgPending = organizationId
+      ? (() => {
+          let query = pendingQuery()
+            .eq("organization_id", organizationId)
+            .is("event_id", null);
+          if (!canApprove) {
+            query = query.or(schedulingAssigneeOrFilter(actor));
+          }
+          return query;
+        })()
+      : Promise.resolve({ count: 0, error: null });
+
+    const eventChanges =
+      eventIds.length > 0
+        ? (() => {
+            let query = changesQuery().in("event_id", eventIds);
+            if (!canApprove) {
+              query = query.eq("requested_by_user_id", actor.organizationUserId);
+            }
+            return query;
+          })()
+        : Promise.resolve({ count: 0, error: null });
+
+    const orgChanges = organizationId
+      ? (() => {
+          let query = changesQuery()
+            .eq("organization_id", organizationId)
+            .is("event_id", null);
+          if (!canApprove) {
+            query = query.eq("requested_by_user_id", actor.organizationUserId);
+          }
+          return query;
+        })()
+      : Promise.resolve({ count: 0, error: null });
+
+    const [eventPendingResult, orgPendingResult, eventChangesResult, orgChangesResult] =
+      await Promise.all([eventPending, orgPending, eventChanges, orgChanges]);
 
     return {
       assignedApprovalsCount:
-        assignedResult.error && assignedResult.error.code !== "42P01"
-          ? 0
-          : (assignedResult.count ?? 0),
+        schedulingHeadCount(
+          eventPendingResult,
+          "Failed to count assigned scheduling badges:",
+        ) +
+        schedulingHeadCount(
+          orgPendingResult,
+          "Failed to count org-scoped assigned scheduling badges:",
+        ),
       changeRequestsCount:
-        changeRequestsResult.error &&
-        changeRequestsResult.error.code !== "42P01"
-          ? 0
-          : (changeRequestsResult.count ?? 0),
+        schedulingHeadCount(
+          eventChangesResult,
+          "Failed to count change-request scheduling badges:",
+        ) +
+        schedulingHeadCount(
+          orgChangesResult,
+          "Failed to count org-scoped change-request scheduling badges:",
+        ),
     };
   },
 );
