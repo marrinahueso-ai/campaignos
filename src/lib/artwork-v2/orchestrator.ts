@@ -184,24 +184,42 @@ function buildUserContent(request: ArtworkV2OrchestrationRequest): ResponseConte
 
 async function buildResponsesInput(
   request: ArtworkV2OrchestrationRequest,
-): Promise<ResponseContentPart[]> {
+): Promise<{ content: ResponseContentPart[]; error: string | null }> {
   const content = buildUserContent(request);
 
   if (request.kind === "adjust") {
     const previousImage = await resolveImagePart(request.previousImageUrl);
-    if (previousImage) {
-      content.push(previousImage);
+    if (!previousImage) {
+      return {
+        content,
+        error: "Could not load the previous artwork to edit. Try again.",
+      };
     }
+    content.push(previousImage);
   }
 
+  let missingInspiration = 0;
   for (const inspirationImageUrl of request.inspirationImageUrls) {
     const inspirationImage = await resolveImagePart(inspirationImageUrl);
     if (inspirationImage) {
       content.push(inspirationImage);
+    } else {
+      missingInspiration += 1;
     }
   }
 
-  return content;
+  if (missingInspiration > 0) {
+    const total = request.inspirationImageUrls.length;
+    return {
+      content,
+      error:
+        total === missingInspiration
+          ? "None of the inspiration images could be sent to the AI. Re-upload them and try again."
+          : `${missingInspiration} of ${total} inspiration images could not be sent to the AI. Re-upload them and try again.`,
+    };
+  }
+
+  return { content, error: null };
 }
 
 function resolveImageGenerationAction(
@@ -283,7 +301,18 @@ export async function generateArtworkV2ImageNative(
     };
   }
 
-  const content = await buildResponsesInput(request);
+  const assembled = await buildResponsesInput(request);
+  if (assembled.error) {
+    return {
+      success: false,
+      imageBase64: null,
+      revisedPrompt: null,
+      model,
+      ...emptyUsage,
+      error: assembled.error,
+    };
+  }
+  const content = assembled.content;
 
   const response = await fetch(OPENAI_RESPONSES_URL, {
     method: "POST",

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   ARTWORK_V2_MAX_INSPIRATION_IMAGES,
   DEFAULT_ARTWORK_IMAGE_QUALITY,
@@ -79,8 +81,8 @@ const checks = [
     ok: createAudit.valid && createAudit.inspirationImageCount === 2,
   },
   {
-    name: "max inspiration limit is 4",
-    ok: ARTWORK_V2_MAX_INSPIRATION_IMAGES === 4,
+    name: "max inspiration limit is 10",
+    ok: ARTWORK_V2_MAX_INSPIRATION_IMAGES === 10,
   },
   {
     name: "adjust orchestration includes previous image",
@@ -180,6 +182,34 @@ const checks = [
   {
     name: "approved download filename is slugged",
     ok: buildArtworkDownloadFilename("Instagram Feed") === "instagram-feed-approved.png",
+  },
+  {
+    name: "social generation uses high quality and medium reasoning, not Quick",
+    ok: (() => {
+      const source = readFileSync(
+        fileURLToPath(
+          new URL("../src/lib/campaign-builder-v2/generation.ts", import.meta.url),
+        ),
+        "utf8",
+      );
+      return (
+        !source.includes('resolveArtworkGenerationProfile("quick")') &&
+        source.includes('quality: "high"') &&
+        source.includes('reasoning: "medium"')
+      );
+    })(),
+  },
+  {
+    name: "orchestrator fails when inspiration images cannot be sent",
+    ok: (() => {
+      const source = readFileSync(
+        fileURLToPath(
+          new URL("../src/lib/artwork-v2/orchestrator.ts", import.meta.url),
+        ),
+        "utf8",
+      );
+      return source.includes("could not be sent to the AI");
+    })(),
   },
 ];
 

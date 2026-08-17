@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA (Hey Ralli)  
-**Last updated:** 2026-07-21  
+**Last updated:** 2026-08-17  
 **Related:** [Testing guide](./testing-guide.md) · [Feature list](../product/feature-list.md) · [Image architecture](../engineering/image-architecture.md) · [Campaign Builder debug](../../.cursor/rules/campaign-builder-debug.mdc) · Playwright Layer A `tests/hey-ralli/smoke/13-create-with-ai-artwork-inputs.spec.ts` · Layer C `tests/hey-ralli/smoke/13b-create-with-ai-artwork-generation-inputs.spec.ts` · Prompt contracts `src/lib/campaign-builder-v2/__tests__/artwork-prompts.test.ts`
 
 Inventory of every Create with AI control that feeds **artwork** generation (feed + story). Use Layer A for wiring/persistence, unit prompt contracts for “UI saved but AI ignored,” and Layer C only for a small opt-in golden set that actually calls the model.
@@ -47,7 +47,7 @@ Do **not** generate full feed+story for every dropdown value in CI.
 
 | # | Control | Field(s) | Feeds artwork? | Layer A / verify |
 |---|---------|----------|----------------|------------------|
-| 4–6 | Upload / choose / remove images | `inspirationImages[]` | Yes — reference images | Optional (upload permission) |
+| 4–6 | Upload / choose / remove images | `inspirationImages[]` | Yes — reference images (max **10**; all must reach OpenAI or generate fails; logos/sponsor/product photos in those files are placed in the art) | Optional (upload permission) |
 | 7 | Per-image comment | `inspirationImages[].comment` | Yes | Unit + manual |
 | 8 | Overall inspiration comment | `inspirationOverallComment` | Yes | Fill → continue → return; value persists |
 

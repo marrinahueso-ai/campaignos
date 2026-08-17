@@ -4,7 +4,7 @@ import type { ArtworkV2ReviewVersion } from "@/lib/artwork-v2/types";
 export const ARTWORK_V2_VERSION_COUNT = 2;
 
 /** Maximum inspiration images the user can attach in Artwork v2. */
-export const ARTWORK_V2_MAX_INSPIRATION_IMAGES = 4;
+export const ARTWORK_V2_MAX_INSPIRATION_IMAGES = 10;
 
 export const DEFAULT_ARTWORK_ORCHESTRATOR_MODEL = "gpt-5.5";
 

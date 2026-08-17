@@ -43,6 +43,7 @@ import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getAuthUser } from "@/lib/auth/queries";
 import { applyGenerationResultsToSession } from "@/lib/campaign-builder-v2/generation-session";
 import { ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
+import { capInspirationImageUrls } from "@/lib/campaign-builder-v2/inspiration-utils";
 import {
   getCanvaConnectionForCurrentOrg,
   getValidCanvaAccessToken,
@@ -660,9 +661,10 @@ export async function generateAllContentAction(
         excludeMilestoneId: milestone.id,
       });
       const inspirationImageUrls = styleReferenceUrl
-        ? Array.from(
-            new Set([styleReferenceUrl, ...resolved.inspirationImageUrls]),
-          ).slice(0, 4)
+        ? capInspirationImageUrls([
+            ...resolved.inspirationImageUrls,
+            styleReferenceUrl,
+          ])
         : resolved.inspirationImageUrls;
 
       const artworkGeneration = await generateArtworkForMilestone({

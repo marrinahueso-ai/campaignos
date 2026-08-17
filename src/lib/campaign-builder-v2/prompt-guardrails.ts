@@ -7,10 +7,11 @@ export const CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES = [
 ].join(" ");
 
 export const CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES = [
-  "Use only verified facts and user-provided direction.",
+  "Use only verified facts, user-provided direction, and content visible in attached inspiration images.",
   "Never invent times, gate hours, parking lots, balloon colors, locations, schedules, sponsors, or logistics.",
+  "Sponsors, vendors, and logos that appear in attached inspiration images are verified — include those visuals.",
   "Do not use the school, PTO, organization, or campaign name as on-graphic text unless user notes explicitly request it.",
-  "Never render logo labels, brand kit names, or attached logo filenames as text.",
+  "Never render logo labels, brand kit names, or attached logo filenames as text — use the logo artwork itself.",
 ].join(" ");
 
 export const CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES = [
@@ -22,7 +23,7 @@ export const CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES = [
 ].join(" ");
 
 export const CAMPAIGN_BUILDER_LOGO_RULES = [
-  "When a logo image is attached, include it as a visual brand element only.",
+  "When a logo image is attached (brand kit or inspiration), include the visual mark in the design.",
   "Never spell out the logo label, school name, or organization name as headline or body text unless user notes explicitly request it.",
 ].join(" ");
 
@@ -40,9 +41,17 @@ export const CAMPAIGN_BUILDER_ANTI_CLICHE_VISUAL_RULES = [
 
 /** Social posts should not look like spreadsheets or semester calendars unless asked. */
 export const CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES = [
-  "Do not lay out the graphic as a spreadsheet, data table, grid of cells, comparison chart, or multi-column tabular schedule.",
+  "Do not lay out the graphic as a spreadsheet, data table, grid of cells, comparison chart, month calendar, or checklist table unless the user explicitly asks for a table or calendar layout.",
   "Do not invent month boxes, calendar grids, or checklist tables unless the user explicitly asks for a table or calendar layout.",
-  "Prefer a single clear poster-style composition with hierarchy (hero, headline, short supporting text) over rows and columns of cells.",
+  "Clustered sponsor logos, food or product photos, ribbons, and callout groups on a 1:1 poster are not tables — include them when those images are attached.",
+  "Prefer a designed poster with clear hierarchy, not rows of empty cells.",
+].join(" ");
+
+/** Attached inspiration is source material to place — not mood-only clipart. */
+export const CAMPAIGN_BUILDER_INSPIRATION_IMAGE_RULES = [
+  "Use every attached inspiration image.",
+  "If an attached image is a logo, sponsor mark, food photo, product photo, or other identifiable brand art, include that visual in the design — do not replace it with emoji, clipart, or a generic stand-in.",
+  "Do not invent extra sponsors, vendors, or logos that are not in the attached images or user notes.",
 ].join(" ");
 
 /** When Edit Post "Keep style locked" is on — previous art is the source of truth. */

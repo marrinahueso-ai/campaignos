@@ -8,6 +8,7 @@ import {
   CAMPAIGN_BUILDER_ANTI_CLICHE_VISUAL_RULES,
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
   CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
+  CAMPAIGN_BUILDER_INSPIRATION_IMAGE_RULES,
   CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
   CAMPAIGN_BUILDER_LOGO_RULES,
   CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
@@ -148,7 +149,8 @@ export function buildCampaignBuilderArtworkPrompt(input: {
       "",
       input.storyFromFeed
         ? "The attached feed image is the source of truth for this story. Preserve its look, hierarchy, and on-graphic text; only adapt layout for vertical story safe zones."
-        : "Use the attached inspiration images for composition, layout, visual hierarchy, style, color palette, and visual mood.",
+        : "Use every attached inspiration image for composition, layout, visual hierarchy, style, color palette, visual mood, and any logos, sponsors, or product photos they contain.",
+      CAMPAIGN_BUILDER_INSPIRATION_IMAGE_RULES,
     );
 
     const imageComments = input.inspiration.inspirationImages

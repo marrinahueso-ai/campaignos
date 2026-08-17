@@ -100,6 +100,8 @@ describe("buildCampaignBuilderArtworkPrompt", () => {
     assert.match(prompt, /Per-image inspiration notes/);
     assert.match(prompt, /Image 1 \(poster\): Keep the sunset gradient/);
     assert.match(prompt, /Image 2 \(flyer\): Bold headline treatment/);
+    assert.match(prompt, /Use every attached inspiration image/);
+    assert.match(prompt, /do not replace it with emoji, clipart/);
   });
 
   it("does not require or surface legacy globalAiGuidance (Notes to AI)", () => {
@@ -204,6 +206,8 @@ describe("buildCampaignBuilderArtworkPrompt", () => {
     const prompt = buildPrompt();
     assert.match(prompt, /spreadsheet|data table/i);
     assert.match(prompt, /calendar grids/i);
+    assert.match(prompt, /Clustered sponsor logos/);
+    assert.doesNotMatch(prompt, /Use every attached inspiration image/);
   });
 
   it("includes style lock rules when styleLocked is on", () => {

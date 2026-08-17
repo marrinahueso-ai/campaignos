@@ -11,12 +11,14 @@ import {
   resolveSelectedLogoForGeneration,
 } from "@/lib/campaign-builder-v2/brand-context";
 import { resolveMilestoneInspiration } from "@/lib/campaign-builder-v2/creative-config";
-import { mergeInspirationImageUrls } from "@/lib/campaign-builder-v2/inspiration-utils";
+import {
+  capInspirationImageUrls,
+  mergeInspirationImageUrls,
+} from "@/lib/campaign-builder-v2/inspiration-utils";
 import {
   generateArtworkV2ImageNative,
   type ArtworkV2UsageAttribution,
 } from "@/lib/artwork-v2/orchestrator";
-import { resolveArtworkGenerationProfile } from "@/lib/artwork-v2/generation-mode";
 import { resolveMetaCaptionModel } from "@/lib/meta-captions/constants";
 import { getEventById, requireEventAccess } from "@/lib/events/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
@@ -79,7 +81,12 @@ async function generateArtworkVariations(input: {
 
   const imageSizePreset = imageSizePresetForView(input.view);
   const size = resolveOpenAiImageSize(imageSizePreset);
-  const profile = resolveArtworkGenerationProfile("quick");
+  // Social Create with AI needs ChatGPT-like fidelity: high quality + medium
+  // reasoning (not Quick). Keep a single version so latency stays one pass.
+  const profile = {
+    quality: "high" as const,
+    reasoning: "medium" as const,
+  };
   const urls: string[] = [];
 
   for (let index = 1; index <= input.versionCount; index += 1) {
@@ -217,7 +224,10 @@ export async function generateCampaignBuilderArtwork(input: {
   );
   const inspirationUrls =
     input.storyFromFeed && input.previousImageUrl
-      ? [input.previousImageUrl, ...baseInspirationUrls].slice(0, 4)
+      ? capInspirationImageUrls([
+          input.previousImageUrl,
+          ...baseInspirationUrls,
+        ])
       : baseInspirationUrls;
 
   const userPrompt = buildCampaignBuilderArtworkPrompt({

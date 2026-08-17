@@ -22,6 +22,7 @@ import {
 import {
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
   CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
+  CAMPAIGN_BUILDER_INSPIRATION_IMAGE_RULES,
   CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
   CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
   CAMPAIGN_BUILDER_STYLE_LOCK_RULES,
@@ -263,12 +264,28 @@ describe("brand-kit helpers", () => {
 });
 
 describe("mergeInspirationImageUrls", () => {
-  it("prioritizes brand logos and caps at four images", () => {
+  it("keeps user inspiration ahead of brand logos", () => {
     const merged = mergeInspirationImageUrls(
       ["insp-1", "insp-2", "insp-3", "insp-4"],
       ["logo-1", "logo-2"],
     );
-    assert.deepEqual(merged, ["logo-1", "logo-2", "insp-1", "insp-2"]);
+    assert.deepEqual(merged, [
+      "insp-1",
+      "insp-2",
+      "insp-3",
+      "insp-4",
+      "logo-1",
+      "logo-2",
+    ]);
+  });
+
+  it("does not drop user inspiration to make room for logos", () => {
+    const inspiration = Array.from(
+      { length: 10 },
+      (_, index) => `insp-${index + 1}`,
+    );
+    const merged = mergeInspirationImageUrls(inspiration, ["logo-1", "logo-2"]);
+    assert.deepEqual(merged, inspiration);
   });
 });
 
@@ -1112,9 +1129,13 @@ describe("prompt guardrails for artwork generation", () => {
       CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
       /Do not use the school, PTO, organization, or campaign name as on-graphic text/,
     );
+    assert.match(
+      CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
+      /Sponsors, vendors, and logos that appear in attached inspiration/,
+    );
   });
 
-  it("discourages table layouts on social artwork", () => {
+  it("discourages table layouts on social artwork without treating sponsor clusters as tables", () => {
     assert.match(
       CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
       /spreadsheet|data table/,
@@ -1122,6 +1143,22 @@ describe("prompt guardrails for artwork generation", () => {
     assert.match(
       CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
       /calendar grids/,
+    );
+    assert.match(
+      CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
+      /Clustered sponsor logos/,
+    );
+    assert.doesNotMatch(
+      CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
+      /multi-column tabular schedule/,
+    );
+  });
+
+  it("requires placing logos and product photos from attached inspiration", () => {
+    assert.match(CAMPAIGN_BUILDER_INSPIRATION_IMAGE_RULES, /Use every attached inspiration image/);
+    assert.match(
+      CAMPAIGN_BUILDER_INSPIRATION_IMAGE_RULES,
+      /do not replace it with emoji, clipart/,
     );
   });
 
