@@ -59,6 +59,8 @@ export type DatePopoverFieldProps = {
   /** Compact trigger (announcement row). */
   size?: "sm" | "md";
   clearable?: boolean;
+  /** Month to show when the field is empty (e.g. the paired On date). Not selected. */
+  anchorDate?: string | null;
 };
 
 /**
@@ -73,15 +75,15 @@ export function DatePopoverField({
   className,
   size = "md",
   clearable = true,
+  anchorDate = null,
 }: DatePopoverFieldProps) {
   const listboxId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const selected = parseIsoDate(value);
   const [viewMonth, setViewMonth] = useState(() =>
-    startOfMonth(selected ?? new Date()),
+    startOfMonth(parseIsoDate(value) ?? parseIsoDate(anchorDate) ?? new Date()),
   );
   const [coords, setCoords] = useState<{
     top: number;
@@ -96,8 +98,10 @@ export function DatePopoverField({
 
   useEffect(() => {
     if (!open) return;
-    setViewMonth(startOfMonth(selected ?? new Date()));
-  }, [open, selected]);
+    setViewMonth(
+      startOfMonth(parseIsoDate(value) ?? parseIsoDate(anchorDate) ?? new Date()),
+    );
+  }, [open, value, anchorDate]);
 
   useLayoutEffect(() => {
     if (!open || !triggerRef.current) return;
@@ -133,19 +137,28 @@ export function DatePopoverField({
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") setOpen(false);
     }
-    function onPointer(event: MouseEvent) {
-      const target = event.target as Node;
-      if (triggerRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
+    function onPointer(event: PointerEvent) {
+      const path = event.composedPath();
+      if (
+        (triggerRef.current && path.includes(triggerRef.current)) ||
+        (panelRef.current && path.includes(panelRef.current))
+      ) {
+        return;
+      }
       setOpen(false);
     }
     document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("pointerdown", onPointer);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("pointerdown", onPointer);
     };
   }, [open]);
+
+  function chooseDate(iso: string) {
+    onChange(iso);
+    setOpen(false);
+  }
 
   const cells = buildMonthCells(viewMonth);
   const monthLabel = viewMonth.toLocaleDateString("en-US", {
@@ -162,6 +175,7 @@ export function DatePopoverField({
             role="dialog"
             aria-label={`${label} calendar`}
             className="fixed z-[200] rounded-2xl border border-cos-border bg-cos-card p-3 shadow-[0_16px_40px_rgba(42,38,34,0.18)]"
+            onPointerDown={(event) => event.stopPropagation()}
             style={{
               top: coords.top,
               left: coords.left,
@@ -217,12 +231,13 @@ export function DatePopoverField({
                   return <span key={`empty-${index}`} className="h-8" />;
                 }
                 const iso = toIsoDate(day);
-                const isSelected = value === iso;
+                const isSelected = Boolean(value) && value === iso;
                 const isToday = toIsoDate(new Date()) === iso;
                 return (
                   <button
                     key={iso}
                     type="button"
+                    aria-pressed={isSelected}
                     className={cn(
                       "h-8 rounded-lg text-sm font-semibold transition-colors",
                       isSelected
@@ -231,9 +246,14 @@ export function DatePopoverField({
                           ? "bg-cos-bg text-cos-text ring-1 ring-cos-border"
                           : "text-cos-text hover:bg-cos-bg",
                     )}
-                    onClick={() => {
-                      onChange(iso);
-                      setOpen(false);
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      chooseDate(iso);
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      chooseDate(iso);
                     }}
                   >
                     {day.getDate()}
@@ -245,26 +265,39 @@ export function DatePopoverField({
               <button
                 type="button"
                 className="rounded-lg px-2 py-1 text-xs font-semibold text-cos-muted hover:bg-cos-bg hover:text-cos-text"
-                onClick={() => {
-                  const today = toIsoDate(new Date());
-                  onChange(today);
-                  setOpen(false);
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  chooseDate(toIsoDate(new Date()));
+                }}
+                onClick={(event) => {
+                  event.preventDefault();
+                  chooseDate(toIsoDate(new Date()));
                 }}
               >
                 Today
               </button>
-              {clearable ? (
+              {clearable && value ? (
                 <button
                   type="button"
                   className="rounded-lg px-2 py-1 text-xs font-semibold text-cos-muted hover:bg-cos-bg hover:text-cos-text"
-                  onClick={() => {
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onChange(null);
+                    setOpen(false);
+                  }}
+                  onClick={(event) => {
+                    event.preventDefault();
                     onChange(null);
                     setOpen(false);
                   }}
                 >
                   Clear
                 </button>
-              ) : null}
+              ) : (
+                <span />
+              )}
             </div>
           </div>,
           document.body,

@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering (Hey Ralli)  
-**Last updated:** August 16, 2026 — Homepage card blurb variety (no “Join us” default)
+**Last updated:** August 17, 2026 — Homepage date picker: click a day to set it (Clear optional)
 **Related:** [QA guide](../qa/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Image architecture](./image-architecture.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Billing / AI credits](../ops/billing-and-access.md)
 
 Client-heavy Membership Toolkit homepage builder. Server actions cover AI blurbs and artwork hosting; drafts stay in the browser.
@@ -29,7 +29,7 @@ Header and footer CTAs both use `buttonCount` (`1 | 2`) with Volunteer-style **H
 | Path | Role |
 |------|------|
 | `src/components/homepage-composer/HomepageComposer.tsx` | Step UI, autosave flush, card CRUD, preview scrubber, export UX |
-| `src/components/homepage-composer/DatePopoverField.tsx` | Portal date picker (cards + announcements; no layout expand) |
+| `src/components/homepage-composer/DatePopoverField.tsx` | Portal date picker (cards + announcements; click a day to set; Clear only when a date is already set) |
 | `src/components/homepage-composer/SettingsBox.tsx` | Shared settings panel chrome (also used by Newsletter) |
 | `src/lib/homepage-composer/types.ts` | State + card/header/footer shapes (`cardsSectionTitle`, `workingMonth`, `monthDrafts`, `monthSaved`) |
 | `src/lib/homepage-composer/defaults.ts` | Initial state, `cardFromEvent`, normalize / migrate fields (legacy → current-month save) |

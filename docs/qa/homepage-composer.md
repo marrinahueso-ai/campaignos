@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA (Hey Ralli)  
-**Last updated:** August 16, 2026 — Homepage card blurb variety (no “Join us” default)  
+**Last updated:** August 17, 2026 — Homepage date picker: click a day to set it (Clear optional)  
 **Related:** [Engineering companion](../engineering/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Create with AI artwork inputs](./create-with-ai-artwork-inputs.md) · [Storage RLS](../engineering/storage-rls.md) · [Launch checklist](./launch-checklist.md)
 
 Soft-launch Membership Toolkit–style homepage builder. Managers work ahead by month (Working on strip): **Save this month** keeps the full homepage (header, footer, cards, announcements, resources) for that YYYY-MM, preview on/off dates, and export full-page HTML for external hosting.
@@ -49,7 +49,7 @@ Draft status shows in the chrome (“Saving draft…”, “Draft saved”).
 - Header **1 or 2 buttons** segmented control (same pattern as Volunteer Composer) — button 2 fields hide when set to 1; preview/export respect the count
 - Event cards seeded from campaign events (title, description, date/time, approved square art, volunteer signup URL when present)
 - Evergreen **custom** cards with optional link URL, editable **link label**, card face **date** (display only — not visibility), **on date** / **off date** / **always on**
-- Card / announcement dates use a floating calendar **popover** (`DatePopoverField`) — does not expand the editor layout (Safari native `type="date"` expand hack removed)
+- Card / announcement dates use a floating calendar **popover** (`DatePopoverField`) — click a day to set it (Clear is only to blank a date already filled; not required first); does not expand the editor layout (Safari native `type="date"` expand hack removed)
 - Hosted 1:1 artwork: compress → upload → public URL (not base64 in export)
 - Create with AI deep-link icons on event cards (open Social for that event / milestones)
 - AI **Generate text** on card description (≤2 sentences; spends credits as `homepage_composer_blurb`)
@@ -72,7 +72,7 @@ Draft status shows in the chrome (“Saving draft…”, “Draft saved”).
 4. Select an event for the current month → card appears with title/blurb/date/art when available.
 5. Set **link label** (e.g. “Sign up →”) + link URL → Preview/Export show that label (default “Learn More →” when empty).
 6. Set card face **date** distinct from on/off dates → face shows display date; visibility follows starts/expires/always-on.
-7. Toggle **Always on** vs on/off dates → Preview full-month shows all; scrubber hides out-of-window cards.
+7. Toggle **Always on** vs on/off dates → Preview full-month shows all; scrubber hides out-of-window cards. Open **Off date** and click a day — the field fills (do **not** require **Clear** first). **Clear** only appears after a date is set, to blank it.
 8. Upload JPG/PNG/WebP artwork → card shows hosted `https://` URL (not a giant data URL in Export).
 9. **Generate text** with title or notes → ≤2 sentences; blurb fills; credits ledger shows Homepage Blurb / `homepage_composer_blurb` when AI is configured. Generate on two different cards (e.g. Early Release + Spirit Week) — openings should differ and should **not** both start with “Join us”. Schedule notices stay practical (what families need to know), not invitational. Regenerating the same card can change the lead.
 10. Create with AI icon on an event card → opens Social / campaign builder for that event (not a dead link).

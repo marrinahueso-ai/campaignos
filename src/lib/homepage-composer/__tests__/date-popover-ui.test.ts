@@ -20,4 +20,11 @@ describe("homepage composer date popover", () => {
     assert.match(datePopoverSource, /createPortal/);
     assert.match(datePopoverSource, /fixed z-\[200\]/);
   });
+
+  it("lets a calendar day choose the date without requiring Clear first", () => {
+    assert.match(datePopoverSource, /function chooseDate\(iso: string\)/);
+    assert.match(datePopoverSource, /Boolean\(value\) && value === iso/);
+    assert.match(datePopoverSource, /clearable && value/);
+    assert.match(homepageSource, /anchorDate=\{card\.startsOn \?\? card\.date\}/);
+  });
 });

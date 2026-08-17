@@ -1692,6 +1692,7 @@ export function HomepageComposer({
                             size="sm"
                             disabled={announcement.alwaysOn}
                             value={announcement.expiresOn}
+                            anchorDate={announcement.startsOn}
                             onChange={(expiresOn) =>
                               updateAnnouncement(announcement.id, {
                                 expiresOn,
@@ -2463,10 +2464,11 @@ export function HomepageComposer({
                                   Always on
                                 </label>
                                 <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2">
-                                  <DatePopoverField
+                                <DatePopoverField
                                     label="On date"
                                     disabled={card.alwaysOn}
                                     value={card.startsOn}
+                                    anchorDate={card.date}
                                     onChange={(startsOn) =>
                                       updateCard(card.id, {
                                         startsOn,
@@ -2478,6 +2480,7 @@ export function HomepageComposer({
                                     label="Off date"
                                     disabled={card.alwaysOn}
                                     value={card.expiresOn}
+                                    anchorDate={card.startsOn ?? card.date}
                                     onChange={(expiresOn) =>
                                       updateCard(card.id, {
                                         expiresOn,

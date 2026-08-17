@@ -1453,6 +1453,7 @@ export function VolunteerComposer({
                                       <DatePopoverField
                                         label="Off date"
                                         value={op.expiresOn}
+                                        anchorDate={op.startsOn}
                                         onChange={(expiresOn) =>
                                           patchOpportunity(op.id, {
                                             expiresOn,
