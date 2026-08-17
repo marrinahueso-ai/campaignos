@@ -31,6 +31,7 @@ import {
 import {
   generateAllContentAction,
   getPlaybookMilestoneStepsAction,
+  persistCreativeSetupInspirationAction,
   suggestMilestonesAction,
   uploadInspirationImageAction,
 } from "@/lib/campaign-builder-v2/actions";
@@ -74,7 +75,9 @@ import {
   persistArtworkBackup,
 } from "@/lib/campaign-builder-v2/artwork-backup";
 import {
+  isPendingInspirationBlob,
   mergeInspirationAfterGeneration,
+  resolveInspirationImagesForContinue,
   resolveInspirationImagesForStorage,
 } from "@/lib/campaign-builder-v2/inspiration-preserve";
 import {
@@ -648,7 +651,9 @@ export function CampaignBuilderProvider({
   }, [currentStep, eventId]);
 
   const saveSessionToServer = useCallback(async (next: CampaignBuilderSession) => {
-    const serialized = JSON.stringify(next);
+    const previouslyStored = readStoredLocalSession(next.eventId);
+    const slimmed = slimSessionForLocalStorage(next, previouslyStored);
+    const serialized = JSON.stringify(slimmed);
     if (
       lastServerSavedJsonRef.current != null &&
       lastServerSavedJsonRef.current === serialized
@@ -657,7 +662,7 @@ export function CampaignBuilderProvider({
     }
     setIsSaving(true);
     try {
-      await saveCampaignBuilderSessionAction(next);
+      await saveCampaignBuilderSessionAction(slimmed);
       lastServerSavedJsonRef.current = serialized;
     } finally {
       setIsSaving(false);
@@ -818,15 +823,36 @@ export function CampaignBuilderProvider({
    * to milestones. Never generates artwork/captions or marks milestones complete.
    */
   const saveCreativeSetupAndContinue = useCallback(async () => {
-    const pendingUpload = sessionRef.current.inspiration.inspirationImages.some(
-      (image) => !image.url && image.previewUrl?.startsWith("blob:"),
-    );
-    if (pendingUpload) {
-      return {
-        success: false,
-        message:
-          "Wait for inspiration image uploads to finish before continuing.",
+    const liveImages = sessionRef.current.inspiration.inspirationImages ?? [];
+
+    if (liveImages.some(isPendingInspirationBlob)) {
+      const previouslyStored = readStoredLocalSession(eventId);
+      let persistedFromServer: typeof liveImages | undefined;
+      try {
+        const prepared = await prepareInspirationImagesForServer(liveImages);
+        const persistResult = await persistCreativeSetupInspirationAction(
+          eventId,
+          prepared,
+        );
+        persistedFromServer = persistResult.updatedImages;
+      } catch {
+        // Stale blob previews (already-saved files, remounts) must not block Preview.
+      }
+
+      const nextImages = resolveInspirationImagesForContinue(
+        liveImages,
+        persistedFromServer,
+        previouslyStored?.inspiration?.inspirationImages,
+      );
+      const withImages: CampaignBuilderSession = {
+        ...sessionRef.current,
+        inspiration: {
+          ...sessionRef.current.inspiration,
+          inspirationImages: nextImages,
+        },
       };
+      sessionRef.current = withImages;
+      setSession(withImages);
     }
 
     if (saveTimerRef.current) {
@@ -866,7 +892,7 @@ export function CampaignBuilderProvider({
     setCurrentStep("preview");
     await persistSession(next);
     return { success: true };
-  }, [persistSession, syncMilestonesToSelectedPlaybook]);
+  }, [eventId, persistSession, syncMilestonesToSelectedPlaybook]);
 
   const updateSession = useCallback(
     (updater: (prev: CampaignBuilderSession) => CampaignBuilderSession) => {

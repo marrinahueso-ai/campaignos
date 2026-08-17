@@ -1037,6 +1037,47 @@ describe("mergeCampaignBuilderSessions", () => {
     assert.equal(merged.previewContents?.[0]?.artwork.feedUrl, "https://x/14-days.png");
     assert.equal(merged.milestonesPlaybookId, "pb-back-to-school");
   });
+
+  it("does not prefer blob-only inspiration over saved http inspiration", () => {
+    const defaults = buildDefaultSession("evt-3", "Back to School Fair", "2026-08-17");
+    const saved = {
+      ...defaults,
+      inspiration: {
+        ...defaults.inspiration,
+        inspirationImages: [
+          {
+            id: "img-1",
+            label: "poster",
+            url: "https://cdn.example/saved.png",
+            previewUrl: "https://cdn.example/saved.png",
+          },
+        ],
+      },
+    };
+    const blobOnly = {
+      ...defaults,
+      inspiration: {
+        ...defaults.inspiration,
+        inspirationImages: [
+          {
+            id: "img-1",
+            label: "poster",
+            url: null,
+            previewUrl: "blob:http://localhost/stale",
+          },
+          {
+            id: "img-2",
+            label: "extra",
+            url: null,
+            previewUrl: "blob:http://localhost/extra",
+          },
+        ],
+      },
+    };
+
+    const merged = mergeCampaignBuilderSessions(saved, blobOnly);
+    assert.equal(merged.inspiration.inspirationImages[0]?.url, "https://cdn.example/saved.png");
+  });
 });
 
 describe("stripStaleClearedArtwork — must not delete new generations", () => {

@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import {
+  isPendingInspirationBlob,
+  isPersistedInspirationUrl,
   mergeInspirationAfterGeneration,
+  resolveInspirationImagesForContinue,
   resolveInspirationImagesForStorage,
   slimInspirationImagesForStorage,
 } from "../inspiration-preserve.ts";
@@ -172,5 +176,87 @@ describe("inspiration-preserve", () => {
     const resolved = resolveInspirationImagesForStorage(live, previous);
     assert.equal(resolved.length, 1);
     assert.equal(resolved[0]?.url, "https://cdn.example/new.png");
+  });
+
+  it("treats blob previews without an http url as pending, not saved", () => {
+    assert.equal(
+      isPendingInspirationBlob({
+        id: "pending",
+        label: "new",
+        url: null,
+        previewUrl: "blob:http://localhost/pending",
+      }),
+      true,
+    );
+    assert.equal(
+      isPendingInspirationBlob({
+        id: "saved",
+        label: "poster",
+        url: "https://cdn.example/a.png",
+        previewUrl: "blob:http://localhost/stale",
+      }),
+      false,
+    );
+    assert.equal(isPersistedInspirationUrl("https://cdn.example/a.png"), true);
+    assert.equal(isPersistedInspirationUrl("blob:http://localhost/x"), false);
+  });
+
+  it("Save Preview keeps saved http inspiration and drops leftover blobs", () => {
+    const live = [
+      {
+        id: "img-1",
+        label: "poster",
+        url: null,
+        previewUrl: "blob:http://localhost/stale",
+      },
+    ];
+    const previouslyStored = [
+      {
+        id: "img-1",
+        label: "poster",
+        url: "https://cdn.example/saved.png",
+        previewUrl: "https://cdn.example/saved.png",
+      },
+    ];
+
+    const recovered = resolveInspirationImagesForContinue(
+      live,
+      [],
+      previouslyStored,
+    );
+    assert.equal(recovered.length, 1);
+    assert.equal(recovered[0]?.url, "https://cdn.example/saved.png");
+
+    const fromServer = resolveInspirationImagesForContinue(
+      live,
+      [
+        {
+          id: "img-1",
+          label: "poster",
+          url: "https://cdn.example/uploaded.png",
+          previewUrl: "https://cdn.example/uploaded.png",
+        },
+      ],
+      previouslyStored,
+    );
+    assert.equal(fromServer[0]?.url, "https://cdn.example/uploaded.png");
+  });
+});
+
+describe("Creative Setup Save → Preview", () => {
+  it("does not wait on leftover inspiration blob thumbnails", () => {
+    const source = readFileSync(
+      new URL(
+        "../../../components/campaign-builder-v2/CampaignBuilderProvider.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    assert.doesNotMatch(
+      source,
+      /Wait for inspiration image uploads to finish before continuing/,
+    );
+    assert.match(source, /persistCreativeSetupInspirationAction/);
+    assert.match(source, /resolveInspirationImagesForContinue/);
   });
 });

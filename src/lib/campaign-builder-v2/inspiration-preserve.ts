@@ -16,6 +16,19 @@ function isHttpUrl(url: string | null | undefined): boolean {
   return trimmed.startsWith("http://") || trimmed.startsWith("https://");
 }
 
+export function isPersistedInspirationUrl(
+  url: string | null | undefined,
+): boolean {
+  return isHttpUrl(url);
+}
+
+/** Optimistic file preview that has not been stored as an http(s) URL yet. */
+export function isPendingInspirationBlob(image: InspirationImage): boolean {
+  return (
+    !isHttpUrl(image.url) && Boolean(image.previewUrl?.startsWith("blob:"))
+  );
+}
+
 export function countHttpInspirationImages(
   images: InspirationImage[] | null | undefined,
 ): number {
@@ -101,6 +114,24 @@ export function resolveInspirationImagesForStorage(
   }
 
   return httpInspirationImagesForStorage(previouslyStoredImages);
+}
+
+/**
+ * Images to keep when leaving Creative Setup. Prefer newly persisted http
+ * URLs; otherwise keep live/stored http and drop leftover blob previews.
+ */
+export function resolveInspirationImagesForContinue(
+  liveImages: InspirationImage[] | null | undefined,
+  persistedFromServer?: InspirationImage[] | null,
+  previouslyStoredImages?: InspirationImage[] | null,
+): InspirationImage[] {
+  const fromServer = (persistedFromServer ?? []).filter((image) =>
+    isPersistedInspirationUrl(image.url),
+  );
+  if (fromServer.length > 0) {
+    return fromServer;
+  }
+  return resolveInspirationImagesForStorage(liveImages, previouslyStoredImages);
 }
 
 /**

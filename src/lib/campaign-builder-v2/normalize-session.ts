@@ -27,6 +27,7 @@ import { isFirstCampaignMilestone } from "./first-milestone.ts";
 import { normalizeDeliveryMethod } from "./delivery-method.ts";
 import { normalizeMilestoneName } from "./milestone-names.ts";
 import { resyncSessionToEventDate } from "./resync-event-date.ts";
+import { countHttpInspirationImages } from "./inspiration-preserve.ts";
 import type {
   CampaignBuilderMilestone,
   CampaignBuilderSession,
@@ -397,30 +398,12 @@ export function mergeCampaignBuilderSessions(
       ? (secondary.milestonesPlaybookId ?? primary.milestonesPlaybookId ?? null)
       : (primary.milestonesPlaybookId ?? secondary.milestonesPlaybookId ?? null);
 
-  const primaryInspirationCount = (
-    primary.inspiration?.inspirationImages ?? []
-  ).filter(
-    (image) =>
-      Boolean(
-        image.url?.startsWith("http://") ||
-          image.url?.startsWith("https://") ||
-          image.previewUrl?.startsWith("http://") ||
-          image.previewUrl?.startsWith("https://") ||
-          image.previewUrl?.startsWith("blob:"),
-      ),
-  ).length;
-  const secondaryInspirationCount = (
-    secondary.inspiration?.inspirationImages ?? []
-  ).filter(
-    (image) =>
-      Boolean(
-        image.url?.startsWith("http://") ||
-          image.url?.startsWith("https://") ||
-          image.previewUrl?.startsWith("http://") ||
-          image.previewUrl?.startsWith("https://") ||
-          image.previewUrl?.startsWith("blob:"),
-      ),
-  ).length;
+  const primaryInspirationCount = countHttpInspirationImages(
+    primary.inspiration?.inspirationImages,
+  );
+  const secondaryInspirationCount = countHttpInspirationImages(
+    secondary.inspiration?.inspirationImages,
+  );
   const inspiration =
     secondaryInspirationCount > primaryInspirationCount
       ? (secondary.inspiration ?? primary.inspiration)

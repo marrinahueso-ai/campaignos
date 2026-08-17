@@ -960,6 +960,29 @@ export async function uploadInspirationImageAction(
   };
 }
 
+/** Store Creative Setup inspiration (http URLs + pending data URLs) without generating. */
+export async function persistCreativeSetupInspirationAction(
+  eventId: string,
+  inspirationImages: InspirationImagePayload[],
+): Promise<{
+  success: boolean;
+  updatedImages: InspirationImagePayload[];
+  message?: string;
+}> {
+  const persisted = await persistInspirationImages(eventId, inspirationImages);
+  if (persisted.error) {
+    return {
+      success: false,
+      updatedImages: [],
+      message: persisted.error,
+    };
+  }
+  return {
+    success: true,
+    updatedImages: persisted.updatedImages as InspirationImagePayload[],
+  };
+}
+
 /** Export a Canva design as PNG and store it as Creative Setup inspiration. */
 export async function importCanvaDesignAsCampaignInspirationAction(
   eventId: string,
