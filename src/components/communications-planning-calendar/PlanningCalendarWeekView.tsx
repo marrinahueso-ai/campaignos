@@ -23,6 +23,7 @@ import {
   type PostingHeatmapData,
 } from "@/lib/posting-analytics/types";
 import { getWeekDates } from "@/lib/communications-calendar/workload";
+import { preferSearchMatches } from "@/lib/communications-calendar/calendar-home-search";
 import { cn } from "@/lib/utils/cn";
 import {
   formatLocalDate,
@@ -40,6 +41,7 @@ type DropHour = "allday" | number;
 interface PlanningCalendarWeekViewProps {
   items: EnrichedItem[];
   anchorDate: string;
+  highlightedItemIds?: ReadonlySet<string> | null;
   onSelectItem: (item: PlanningCalendarItem) => void;
   onOptimisticReschedule: (
     payload: PlanningDragPayload,
@@ -60,6 +62,7 @@ const HOUR_ROWS = Array.from(
 export function PlanningCalendarWeekView({
   items,
   anchorDate,
+  highlightedItemIds = null,
   onSelectItem,
   onOptimisticReschedule,
   onRescheduleFailed,
@@ -239,11 +242,14 @@ export function PlanningCalendarWeekView({
                 >
                   {placement.allDay.length > 0 ? (
                     <div>
-                      {placement.allDay.slice(0, 4).map((item) => (
+                      {preferSearchMatches(placement.allDay, highlightedItemIds)
+                        .slice(0, 4)
+                        .map((item) => (
                         <PlanningCalendarItemChip
                           key={item.id}
                           item={item}
                           compact
+                          highlighted={Boolean(highlightedItemIds?.has(item.id))}
                           onSelect={onSelectItem}
                           onDragError={handleDragError}
                         />
@@ -280,12 +286,15 @@ export function PlanningCalendarWeekView({
                     >
                       {hourItems.length > 0 && (
                         <div className="absolute inset-x-0 top-0 z-10 space-y-0.5 p-0.5">
-                          {hourItems.slice(0, 2).map((item) => (
+                          {preferSearchMatches(hourItems, highlightedItemIds)
+                            .slice(0, 2)
+                            .map((item) => (
                             <PlanningCalendarItemChip
                               key={item.id}
                               item={item}
                               compact
                               elevatedOnHeatmap={showPostingHeatmap}
+                              highlighted={Boolean(highlightedItemIds?.has(item.id))}
                               onSelect={onSelectItem}
                               onDragError={handleDragError}
                             />

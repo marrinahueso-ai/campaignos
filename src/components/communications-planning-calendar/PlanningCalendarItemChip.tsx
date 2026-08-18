@@ -66,6 +66,7 @@ interface PlanningCalendarItemChipProps {
   compact?: boolean;
   /** Solid white card + shadow so chips read clearly on heatmap cells. */
   elevatedOnHeatmap?: boolean;
+  highlighted?: boolean;
   onSelect?: (item: PlanningCalendarItem) => void;
   onDragError?: (message: string) => void;
 }
@@ -74,6 +75,7 @@ export function PlanningCalendarItemChip({
   item,
   compact = false,
   elevatedOnHeatmap = false,
+  highlighted = false,
   onSelect,
   onDragError,
 }: PlanningCalendarItemChipProps) {
@@ -161,6 +163,7 @@ export function PlanningCalendarItemChip({
         tabIndex={0}
         aria-label={displayTitle}
         data-testid={`calendar-chip-${item.id}`}
+        data-search-match={highlighted ? "true" : undefined}
         data-draggable={isDraggable ? "true" : "false"}
         className={cn(
           "calendar-drag-chip group mb-1 block w-full rounded-[10px] border-0 border-l-[3px] px-[7px] py-[5px] text-left shadow-[0_1px_0_rgba(42,38,34,0.04)] transition",
@@ -170,6 +173,8 @@ export function PlanningCalendarItemChip({
           elevatedOnHeatmap
             ? "bg-white shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
             : "bg-[rgba(255,252,247,0.9)] hover:bg-cos-card",
+          highlighted &&
+            "bg-cos-card ring-2 ring-[#c4922e] ring-offset-1 ring-offset-[#fffcf7]",
         )}
         style={{ borderLeftColor: accent }}
       >
@@ -194,6 +199,7 @@ export function PlanningCalendarItemChip({
       tabIndex={0}
       aria-label={displayTitle}
       data-testid={`calendar-chip-${item.id}`}
+      data-search-match={highlighted ? "true" : undefined}
       data-draggable={isDraggable ? "true" : "false"}
       style={tone?.style}
       className={cn(
@@ -210,6 +216,7 @@ export function PlanningCalendarItemChip({
             : cn(statusStyles.bg, statusStyles.border)),
         tone && "border-transparent",
         item.isToday && displayStatus !== "overdue" && !tone && "ring-2 ring-cos-primary/40",
+        highlighted && "ring-2 ring-[#c4922e] ring-offset-1",
         "px-2 py-2",
       )}
     >

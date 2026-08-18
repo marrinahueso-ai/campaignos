@@ -170,7 +170,7 @@ flowchart LR
 | Stage | Key modules | Persistence |
 |-------|-------------|-------------|
 | Calendar intake | `calendar-import`, `google-calendar`, school-year subscribe feeds | `calendar_imports`, `organization_google_calendar_connections`, `school_years.calendar_subscribe_url` — dedupe: [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md) |
-| Events / year calendar | `events`, `communications-calendar`, `unified-calendar` UI | `events`, publication slots on calendar |
+| Events / year calendar | `events`, `communications-calendar`, `unified-calendar` UI | `events`, publication slots on calendar; search jumps Month/Week to the matching event |
 | Create with AI — Social | `campaign-builder-v2`, `ai`, `ai-artwork`, `artwork-v2`, `meta-captions` | Creative assets in Storage; campaign/milestone state in DB |
 | Create with AI — Flyer | `flyer-composer`, `flyers` | React library + builder + approver review; durable `flyers` rows; Approvals via `approval_scheduling_items` (`flyer-composer:{id}`); optional Files saves via `/api/flyer-composer/save` |
 | Create with AI — Homepage / Newsletter | `homepage-composer`, `newsletter-composer` | Drafts: localStorage + IndexedDB; artwork uploads (homepage may use service role — see storage-rls); AI blurbs metered (`homepage_composer_blurb`) |

@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   calendarItemMatchesSearch,
+  calendarFocusFromItem,
   filterCalendarItemsBySearch,
+  pickCalendarSearchFocusItem,
+  preferSearchMatches,
 } from "../calendar-home-search.ts";
 import type { PlanningCalendarItem } from "../../../types/communications-calendar.ts";
 
@@ -84,5 +87,48 @@ describe("calendarItemMatchesSearch", () => {
     assert.equal(filterCalendarItemsBySearch(items, "winter").length, 1);
     assert.equal(filterCalendarItemsBySearch(items, "gala").length, 1);
     assert.equal(filterCalendarItemsBySearch(items, "missing").length, 0);
+  });
+
+  it("jumps search focus to the upcoming matching event", () => {
+    const past = itemStub({
+      id: "past",
+      eventTitle: "Art Night",
+      title: "Art Night",
+      scheduledDate: "2026-01-10",
+    });
+    const upcoming = itemStub({
+      id: "soon",
+      eventTitle: "Art Night & Bake Off",
+      title: "Art Night & Bake Off",
+      scheduledDate: "2027-04-06",
+    });
+    const relatedPost = itemStub({
+      id: "post",
+      eventTitle: "Art Night & Bake Off",
+      title: "Save the date — Meta",
+      communicationType: "meta_milestone",
+      sourceType: "meta_milestone",
+      scheduledDate: "2027-03-01",
+    });
+
+    const focus = pickCalendarSearchFocusItem(
+      [past, upcoming, relatedPost],
+      "2026-08-18",
+    );
+    assert.equal(focus?.id, "soon");
+    assert.deepEqual(calendarFocusFromItem(focus!), {
+      year: 2027,
+      month: 3,
+      weekAnchor: "2027-04-06",
+    });
+  });
+
+  it("keeps search matches first so they are not hidden behind +more", () => {
+    const items = [
+      itemStub({ id: "other", title: "Staff Meeting" }),
+      itemStub({ id: "hit", title: "Art Night" }),
+    ];
+    const ordered = preferSearchMatches(items, new Set(["hit"]));
+    assert.equal(ordered[0]?.id, "hit");
   });
 });

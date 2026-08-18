@@ -37,7 +37,11 @@ import {
   getDefaultActiveLayers,
   type CalendarLayerId,
 } from "@/lib/communications-calendar/unified-calendar-layers";
-import { filterCalendarItemsBySearch } from "@/lib/communications-calendar/calendar-home-search";
+import {
+  calendarFocusFromItem,
+  filterCalendarItemsBySearch,
+  pickCalendarSearchFocusItem,
+} from "@/lib/communications-calendar/calendar-home-search";
 import {
   enrichItemFlags,
   getInitialCalendarFocus,
@@ -179,6 +183,36 @@ export function UnifiedCalendarShell({
     [layerFilteredItems, searchQuery],
   );
 
+  const searchMatchIds = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return null;
+    }
+    return new Set(filteredItems.map((item) => item.id));
+  }, [searchQuery, filteredItems]);
+
+  function handleSearchQueryChange(query: string) {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      return;
+    }
+    const matches = filterCalendarItemsBySearch(layerFilteredItems, query);
+    const focusItem = pickCalendarSearchFocusItem(matches, today);
+    if (!focusItem) {
+      return;
+    }
+    const focus = calendarFocusFromItem(focusItem);
+    setYear(focus.year);
+    setMonth(focus.month);
+    setWeekAnchor(focus.weekAnchor);
+  }
+
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const match = document.querySelector("[data-search-match='true']");
+    if (!(match instanceof HTMLElement)) return;
+    match.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [searchQuery, year, month, weekAnchor, view]);
+
   const monthGridDates = useMemo(
     () => (view === "month" ? getMonthGridDates(year, month) : []),
     [view, year, month],
@@ -316,7 +350,7 @@ export function UnifiedCalendarShell({
           layerColors={layerColors}
           layerColorOverrides={layout.colors ?? {}}
           searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
+          onSearchQueryChange={handleSearchQueryChange}
           onViewChange={handleViewChange}
           onPrevious={goPrevious}
           onNext={goNext}
@@ -337,7 +371,7 @@ export function UnifiedCalendarShell({
 
         {showSearchNoMatchesInPeriod ? (
           <p className="text-sm text-cos-muted">
-            No matches in {periodLabel}. Browse other weeks or clear search.
+            No matches in {periodLabel}. Other months still match this search.
           </p>
         ) : null}
 
@@ -366,6 +400,7 @@ export function UnifiedCalendarShell({
             items={filteredItems}
             year={year}
             month={month}
+            highlightedItemIds={searchMatchIds}
             onSelectItem={setSelectedItem}
             onOptimisticReschedule={handleOptimisticReschedule}
             onRescheduleFailed={handleRescheduleFailed}
@@ -376,6 +411,7 @@ export function UnifiedCalendarShell({
           <PlanningCalendarWeekView
             items={filteredItems}
             anchorDate={weekAnchor}
+            highlightedItemIds={searchMatchIds}
             onSelectItem={setSelectedItem}
             onOptimisticReschedule={handleOptimisticReschedule}
             onRescheduleFailed={handleRescheduleFailed}

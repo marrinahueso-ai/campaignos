@@ -20,6 +20,7 @@ interface PlanningCalendarMonthViewProps {
   items: (PlanningCalendarItem & { isOverdue: boolean; isToday: boolean })[];
   year: number;
   month: number;
+  highlightedItemIds?: ReadonlySet<string> | null;
   onSelectItem: (item: PlanningCalendarItem) => void;
   onOptimisticReschedule: (payload: PlanningDragPayload, date: string) => void;
   onRescheduleFailed: (payload: PlanningDragPayload) => void;
@@ -30,6 +31,7 @@ export function PlanningCalendarMonthView({
   items,
   year,
   month,
+  highlightedItemIds = null,
   onSelectItem,
   onOptimisticReschedule,
   onRescheduleFailed,
@@ -110,6 +112,10 @@ export function PlanningCalendarMonthView({
             const dayItems = itemsByDate.get(date) ?? [];
             const isToday = date === today;
             const isLastCol = (index + 1) % 7 === 0;
+            const hasSearchHit = Boolean(
+              highlightedItemIds &&
+                dayItems.some((item) => highlightedItemIds.has(item.id)),
+            );
 
             return (
               <div
@@ -141,6 +147,8 @@ export function PlanningCalendarMonthView({
                   isToday
                     ? "bg-[radial-gradient(ellipse_at_top_left,rgba(47,74,60,0.08),transparent_60%),#fffcf7]"
                     : "bg-[rgba(255,252,247,0.35)]",
+                  hasSearchHit &&
+                    "bg-[radial-gradient(ellipse_at_top_left,rgba(196,146,46,0.16),transparent_55%),#fffcf7] ring-1 ring-inset ring-[#c4922e]/35",
                 )}
               >
                 <div className="mb-1.5">
@@ -162,6 +170,7 @@ export function PlanningCalendarMonthView({
                   compact
                   itemLimit={5}
                   ease
+                  highlightedItemIds={highlightedItemIds}
                 />
               </div>
             );

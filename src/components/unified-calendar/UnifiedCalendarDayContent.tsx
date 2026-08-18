@@ -5,6 +5,7 @@ import {
   groupItemsByDaySection,
   type CalendarDaySection,
 } from "@/lib/communications-calendar/unified-calendar-layers";
+import { preferSearchMatches } from "@/lib/communications-calendar/calendar-home-search";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 
 const SECTION_LABELS: Record<CalendarDaySection, string> = {
@@ -20,6 +21,7 @@ interface UnifiedCalendarDayContentProps {
   itemLimit?: number;
   /** Mockup-faithful flat chip list (no Events/Posts section labels). */
   ease?: boolean;
+  highlightedItemIds?: ReadonlySet<string> | null;
 }
 
 export function UnifiedCalendarDayContent({
@@ -29,9 +31,11 @@ export function UnifiedCalendarDayContent({
   compact = false,
   itemLimit = 6,
   ease = false,
+  highlightedItemIds = null,
 }: UnifiedCalendarDayContentProps) {
   if (ease || compact) {
-    const visible = items.slice(0, itemLimit);
+    const ordered = preferSearchMatches(items, highlightedItemIds);
+    const visible = ordered.slice(0, itemLimit);
     const hidden = items.length - visible.length;
 
     if (visible.length === 0) {
@@ -45,6 +49,7 @@ export function UnifiedCalendarDayContent({
             key={item.id}
             item={item}
             compact
+            highlighted={Boolean(highlightedItemIds?.has(item.id))}
             onSelect={onSelectItem}
             onDragError={onDragError}
           />
@@ -93,6 +98,7 @@ export function UnifiedCalendarDayContent({
                 <PlanningCalendarItemChip
                   key={item.id}
                   item={item}
+                  highlighted={Boolean(highlightedItemIds?.has(item.id))}
                   onSelect={onSelectItem}
                   onDragError={onDragError}
                 />

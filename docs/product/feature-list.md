@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 18, 2026 — Team & Access lists roster people without login
+**Last updated:** August 18, 2026 — calendar search jumps to the matching month
 
 ---
 
@@ -237,6 +237,7 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
 - Calendar Ease shell: compact framed header + soft view pills aligned to cleanup mockup; month view no longer shows **Coming up · Next 7 days** — **shipped**
 - Calendar chrome (shell, import, review, Google/subscribe feed) customer copy — org/team/year + refresh language; Settings **School year** feature name retained — **shipped**
 - School-year calendar (month / week / agenda) — **shipped**
+- Calendar search jumps Month / Week / Best times to the matching event’s month (soonest upcoming school event) and highlights that chip — **shipped**
 - Layer toggles, detail panel — **shipped**
 - Calendar detail drawer (right-side pop-out; Event / Scheduled Post / Published Post from calendar chips; Escape/X; switch item in place; real artwork/caption/platforms/schedule; Open Event → Event Workspace; Open Post / View Post Details → Create with AI preview; View Insights → event Insights when available) — **shipped**
 - Calendar detail panel **Archive** / **Delete** for school events (confirm dialog; permanent delete requires typing DELETE) — reuses event archive/delete actions + membership/`getEventById` gates; Meta post chips open Create with AI preview — **shipped**

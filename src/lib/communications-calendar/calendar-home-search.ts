@@ -184,3 +184,55 @@ export function filterCalendarItemsBySearch<T extends PlanningCalendarItem>(
   }
   return items.filter((item) => calendarItemMatchesSearch(item, query));
 }
+
+/**
+ * When search matches items, jump Month/Week to the soonest upcoming match
+ * (prefer school events over posts). Falls back to the earliest match.
+ */
+export function pickCalendarSearchFocusItem<T extends PlanningCalendarItem>(
+  matches: T[],
+  today: string,
+): T | null {
+  if (matches.length === 0) {
+    return null;
+  }
+
+  const events = matches.filter((item) => item.communicationType === "event");
+  const pool = events.length > 0 ? events : matches;
+  const sorted = [...pool].sort((left, right) =>
+    normalizeDateOnly(left.scheduledDate).localeCompare(
+      normalizeDateOnly(right.scheduledDate),
+    ),
+  );
+  const upcoming = sorted.find(
+    (item) => normalizeDateOnly(item.scheduledDate) >= today,
+  );
+  return upcoming ?? sorted[0] ?? null;
+}
+
+export function calendarFocusFromItem(item: PlanningCalendarItem): {
+  year: number;
+  month: number;
+  weekAnchor: string;
+} {
+  const date = parseLocalDate(normalizeDateOnly(item.scheduledDate));
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth(),
+    weekAnchor: normalizeDateOnly(item.scheduledDate),
+  };
+}
+
+export function preferSearchMatches<T extends { id: string }>(
+  items: T[],
+  highlightedIds: ReadonlySet<string> | null | undefined,
+): T[] {
+  if (!highlightedIds || highlightedIds.size === 0) {
+    return items;
+  }
+  return [...items].sort((left, right) => {
+    const leftHit = highlightedIds.has(left.id) ? 0 : 1;
+    const rightHit = highlightedIds.has(right.id) ? 0 : 1;
+    return leftHit - rightHit;
+  });
+}

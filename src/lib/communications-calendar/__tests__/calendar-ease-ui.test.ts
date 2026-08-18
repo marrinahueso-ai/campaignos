@@ -50,6 +50,9 @@ describe("calendar ease UI contracts", () => {
     assert.match(panel, /Search events, times, dates/);
     assert.match(shell, /filterCalendarItemsBySearch/);
     assert.match(shell, /searchQuery/);
+    assert.match(shell, /pickCalendarSearchFocusItem/);
+    assert.match(shell, /handleSearchQueryChange/);
+    assert.match(shell, /highlightedItemIds/);
     assert.match(panel, /SHOW_CALENDAR_SEARCH/);
   });
 });
