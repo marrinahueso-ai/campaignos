@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 18, 2026 — hide Communications Hub and Ask Ralli public demos until narrated videos exist
+**Last updated:** August 18, 2026 — Lincoln Elementary demo roster (School B)
 
 ---
 
@@ -65,6 +65,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Built-in role presets (Owner, President, VP, Chair, Volunteer, Viewer) — **shipped**
 - See vs work (view all / work assigned, or strict assigned-only) — **shipped**
 - Invite / resend / cancel invite; deactivate / remove members — **shipped**
+- Lincoln Elementary (School B) demo roster — **ops** (fictional `@example.com` people on that org’s Team & Access only; roster-only, no Auth users / invite email; script `scripts/lincoln-elementary-demo-roster.mjs`; does not seed Edmondson or other schools)
 - Event assignments — **shipped**
 - Permission gates (artwork, approve, publish, people, integrations, etc.) — **shipped**
 - Multi-tenant / IDOR app-layer gates on event-scoped mutations (CB2 upload/generate/session, event details, approvals scheduling, AI credit billing, org scope resolution) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#multi-tenant--idor-hardening-august-2026))

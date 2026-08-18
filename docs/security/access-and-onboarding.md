@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 17, 2026  
+**Last updated:** August 18, 2026  
 **Related:** [Access control (templates / RLS)](../engineering/access-control.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md) · [Feature list](../product/feature-list.md) · [Owner AI & APIs](../product/ai-and-apis.md) · [Architecture](../engineering/architecture.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 How a person gets into **Hey Ralli** (CampaignOS), joins an organization (tenant), switches tenants, and what blocks access.
@@ -82,6 +82,16 @@ Source: `src/lib/auth/founding-access.ts`.
 Admins can **resend** / **cancel** invites and **reinvite** deactivated members. Deactivated seats → `/login?error=account_deactivated` (cannot use the app).
 
 **Not supported for join:** domain allowlists, open org directories, self-serve “request access.”
+
+---
+
+## Lincoln Elementary demo roster (School B)
+
+Owner demo workspace `Lincoln Elementary` (`0a7efc8a-ff81-4d68-8a5d-a695d2df5476`) can be filled with fictional Team & Access people via `scripts/lincoln-elementary-demo-roster.mjs`.
+
+- Roster-only `organization_members` (no Auth users, no `organization_users` invites, **no email**).
+- Emails are `@example.com` and unique **per organization**; the script refuses Edmondson ids and aborts if those emails exist on another org.
+- Re-run is idempotent (updates names/roles for the same emails on Lincoln only).
 
 ---
 
