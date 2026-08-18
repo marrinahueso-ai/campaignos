@@ -1,6 +1,7 @@
 import {
   EVENT_SOCIAL_INSPIRATION_LABEL,
   parseFlyerInspirationPhotoSource,
+  type FlyerInspirationPhotoSource,
 } from "@/lib/flyer-composer/inspiration-source";
 import type { FlyerComposerGenerateInput } from "@/lib/flyer-composer/types";
 import type { FlyerPrintSize } from "@/lib/flyers/types";
@@ -45,7 +46,7 @@ export type FlyerGeneratePayloadInput = {
   brandKit?: FlyerGenerateBrandKit | null;
   selectedLogoId?: string | null;
   inspirationPhotoUrl?: string | null;
-  inspirationPhotoSource?: "upload" | "library" | "event" | null;
+  inspirationPhotoSource?: FlyerInspirationPhotoSource | null;
   inspirationPhotoLabel?: string | null;
   /** Image-only prior flyer / active preview used as custom template reference. */
   previousFlyerUrl?: string | null;
