@@ -120,9 +120,19 @@ export function buildFlyerComposerImagePrompt(
     formatPrintFormatInstructions(input),
     "Readable from a few feet away. Real text on the flyer — not lorem ipsum.",
     "Typography style: clean, confident lettering — NO speed lines, sparkle bursts, comic emphasis rays, starbursts, or hash-mark accents beside words or headlines.",
-    "No people in the artwork — no photos, illustrations, cartoons, silhouettes, or crowds of people, families, kids, or skaters.",
     "No grid-like icon rows, icon strips, emoji tiles, or dotted/line dividers between icons — keep the layout open with bold typography and atmosphere, not a row of labeled icons.",
   ];
+
+  const eventSocialInspiration = input.assets.inspirationPhotoSource === "event";
+  if (eventSocialInspiration) {
+    lines.push(
+      "Do not invent people who are not in the attached social artwork. If that artwork includes people, keep them as they appear — do not replace the scene to avoid them.",
+    );
+  } else {
+    lines.push(
+      "No people in the artwork — no photos, illustrations, cartoons, silhouettes, or crowds of people, families, kids, or skaters.",
+    );
+  }
 
   if (direction) {
     lines.push(
@@ -130,9 +140,17 @@ export function buildFlyerComposerImagePrompt(
       "Volunteer direction (this is the main brief — design the flyer to match):",
       direction,
       "",
-      "Include the theme, activities, and any dates/times named in that direction on the flyer.",
-      "Suggest the activity with scenery, props, color, and type — never by drawing people or a bottom icon grid.",
     );
+    if (eventSocialInspiration) {
+      lines.push(
+        "Follow that direction for copy, type, and layout, but keep the attached social artwork as the scene — do not invent a different setting.",
+      );
+    } else {
+      lines.push(
+        "Include the theme, activities, and any dates/times named in that direction on the flyer.",
+        "Suggest the activity with scenery, props, color, and type — never by drawing people or a bottom icon grid.",
+      );
+    }
   } else {
     lines.push(
       "",
@@ -172,7 +190,20 @@ export function buildFlyerComposerImagePrompt(
     );
   }
 
-  if (hasRefs) {
+  if (eventSocialInspiration) {
+    lines.push(
+      "",
+      "The attached image is this event’s existing social-media artwork.",
+      "Keep the same scene, colors, style, logos, and subject — expand that artwork into this flyer size (extend the canvas; do not crop it back to a square).",
+      "Do not replace it with a different illustration, playground, or generic school scene.",
+      "Add flyer typography and the real date/time on top of (or around) that same visual — not a bare crop with no type.",
+    );
+    if (logoAttached) {
+      lines.push(
+        "The logo attachment is a brand mark — place it as a logo, not as the hero photo.",
+      );
+    }
+  } else if (hasRefs) {
     lines.push(
       "",
       "Attached image(s): use as the visual foundation (hero / background / mood).",

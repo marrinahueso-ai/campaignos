@@ -1,3 +1,5 @@
+import type { FlyerInspirationPhotoSource } from "@/lib/flyer-composer/inspiration-source";
+
 export type FlyerStatus =
   | "draft"
   | "needs_approval"
@@ -37,7 +39,7 @@ export type FlyerComposerState = {
   brandEnabled?: boolean;
   selectedLogoId?: string | null;
   inspirationPhotoUrl?: string | null;
-  inspirationPhotoSource?: "upload" | "library" | "sample" | null;
+  inspirationPhotoSource?: FlyerInspirationPhotoSource | null;
   inspirationPhotoLabel?: string | null;
   /** Image-only reference to a prior flyer. */
   previousFlyerUrl?: string | null;

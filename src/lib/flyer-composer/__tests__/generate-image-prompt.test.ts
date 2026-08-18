@@ -127,6 +127,34 @@ describe("flyer composer image prompt", () => {
     assert.match(prompt, /no white borders/i);
   });
 
+  it("adapts attached event social artwork instead of inventing a new scene", () => {
+    const input = buildSampleDirectionInput({
+      assets: {
+        inspirationPhotoPresent: true,
+        inspirationPhotoSource: "event",
+        inspirationPhotoLabel: "This event’s social artwork",
+        inspirationPhotoNote: null,
+        inspirationPhotoUrl: "https://cdn.example/play-date-social.png",
+        customTemplatePresent: false,
+        customTemplateFileName: null,
+        customTemplateFileType: null,
+        customTemplateNote: null,
+        customTemplateImageUrl: null,
+      },
+      fields: {
+        aiDirection:
+          "new families and kindergarten get together to play and meet families",
+      },
+    });
+    const prompt = buildFlyerComposerImagePrompt(input);
+
+    assert.match(prompt, /existing social-media artwork/i);
+    assert.match(prompt, /Keep the same scene/i);
+    assert.match(prompt, /Do not replace it with a different illustration/i);
+    assert.doesNotMatch(prompt, /No people in the artwork/i);
+    assert.doesNotMatch(prompt, /generic stock crowd/i);
+  });
+
   it("treats attached photo as hero/mood and asks for a full designed flyer", () => {
     const input = buildSampleDirectionInput({
       fields: {

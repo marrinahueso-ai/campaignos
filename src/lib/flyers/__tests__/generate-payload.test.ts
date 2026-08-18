@@ -105,6 +105,53 @@ describe("flyer generate-payload", () => {
     assert.equal(payload.fields.location, "School Playground");
   });
 
+  it("uses the linked event’s social artwork as inspiration when none was uploaded", () => {
+    const payload = buildFlyerGeneratePayload({
+      printSize: "letter",
+      aiDirection: "Welcome play date flyer",
+      qrEnabled: false,
+      brandEnabled: false,
+      event: {
+        title: "New Family and Kindergarten Play date",
+        date: "2026-08-08",
+        time: "10:00 AM",
+        location: "Playground",
+        imageUrl: "https://cdn.example/play-date-social.png",
+      },
+    });
+
+    assert.equal(payload.assets.inspirationPhotoPresent, true);
+    assert.equal(payload.assets.inspirationPhotoSource, "event");
+    assert.equal(
+      payload.assets.inspirationPhotoUrl,
+      "https://cdn.example/play-date-social.png",
+    );
+    assert.match(payload.assets.inspirationPhotoLabel ?? "", /social artwork/i);
+  });
+
+  it("keeps an uploaded inspiration photo over the event’s social artwork", () => {
+    const payload = buildFlyerGeneratePayload({
+      printSize: "letter",
+      aiDirection: "Custom look",
+      qrEnabled: false,
+      brandEnabled: false,
+      inspirationPhotoUrl: "https://cdn.example/upload.png",
+      inspirationPhotoSource: "upload",
+      inspirationPhotoLabel: "My photo",
+      event: {
+        title: "Play date",
+        imageUrl: "https://cdn.example/play-date-social.png",
+      },
+    });
+
+    assert.equal(payload.assets.inspirationPhotoSource, "upload");
+    assert.equal(
+      payload.assets.inspirationPhotoUrl,
+      "https://cdn.example/upload.png",
+    );
+    assert.equal(payload.assets.inspirationPhotoLabel, "My photo");
+  });
+
   it("keeps an explicit flyer title over the event title", () => {
     const payload = buildFlyerGeneratePayload({
       printSize: "letter",

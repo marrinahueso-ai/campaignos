@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireFlyerComposerGenerateAccess } from "@/lib/flyer-composer/api-auth";
+import { parseFlyerInspirationPhotoSource } from "@/lib/flyer-composer/inspiration-source";
 import { generateFlyerComposer } from "@/lib/flyer-composer/generate";
 import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { isSameOriginRequest } from "@/lib/security/verify-same-origin";
@@ -88,13 +89,9 @@ function parseAssets(raw: Record<string, unknown> | null): FlyerComposerAssetCon
   const fileTypeRaw = readString(raw?.customTemplateFileType).trim();
   const fileType =
     fileTypeRaw === "pdf" || fileTypeRaw === "image" ? fileTypeRaw : null;
-  const photoSourceRaw = readString(raw?.inspirationPhotoSource).trim();
-  const photoSource =
-    photoSourceRaw === "sample" ||
-    photoSourceRaw === "upload" ||
-    photoSourceRaw === "library"
-      ? photoSourceRaw
-      : null;
+  const photoSource = parseFlyerInspirationPhotoSource(
+    readString(raw?.inspirationPhotoSource),
+  );
   const inspirationPhotoPresent =
     raw?.inspirationPhotoPresent === true && photoSource !== null;
 

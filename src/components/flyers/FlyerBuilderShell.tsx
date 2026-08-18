@@ -35,6 +35,11 @@ import type {
   FlyerVersion,
 } from "@/lib/flyers/types";
 import type { NewsletterComposerEvent } from "@/lib/newsletter-composer/types";
+import {
+  parseFlyerInspirationPhotoSource,
+  resolveFlyerInspirationForEvent,
+  type FlyerInspirationPhotoSource,
+} from "@/lib/flyer-composer/inspiration-source";
 import { cn } from "@/lib/utils/cn";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error" | "generating";
@@ -105,6 +110,14 @@ export function FlyerBuilderShell({
   const [isPending, startTransition] = useTransition();
 
   const initial = flyer.composerState ?? {};
+  const initialEvent =
+    events.find((event) => event.id === flyer.eventId) ?? null;
+  const seededInspiration = resolveFlyerInspirationForEvent({
+    currentUrl: initial.inspirationPhotoUrl ?? null,
+    currentSource: initial.inspirationPhotoSource ?? null,
+    currentLabel: initial.inspirationPhotoLabel ?? null,
+    eventImageUrl: initialEvent?.imageUrl ?? null,
+  });
   const [title, setTitle] = useState(flyer.title || "");
   const [eventId, setEventId] = useState<string | null>(flyer.eventId);
   const [printSize, setPrintSize] = useState<FlyerPrintSize>(
@@ -121,19 +134,14 @@ export function FlyerBuilderShell({
     initial.selectedLogoId ?? brandKit?.logos[0]?.id ?? null,
   );
   const [inspirationPhotoUrl, setInspirationPhotoUrl] = useState<string | null>(
-    initial.inspirationPhotoUrl ?? null,
+    seededInspiration.url,
   );
   const [inspirationPhotoSource, setInspirationPhotoSource] = useState<
-    "upload" | "library" | null
-  >(
-    initial.inspirationPhotoSource === "upload" ||
-      initial.inspirationPhotoSource === "library"
-      ? initial.inspirationPhotoSource
-      : null,
-  );
+    FlyerInspirationPhotoSource | null
+  >(parseFlyerInspirationPhotoSource(seededInspiration.source));
   const [inspirationPhotoLabel, setInspirationPhotoLabel] = useState<
     string | null
-  >(initial.inspirationPhotoLabel ?? null);
+  >(seededInspiration.label);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(
     flyer.previewImageUrl,
   );
@@ -171,6 +179,15 @@ export function FlyerBuilderShell({
     if (event && !title.trim()) {
       setTitle(event.title);
     }
+    const next = resolveFlyerInspirationForEvent({
+      currentUrl: inspirationPhotoUrl,
+      currentSource: inspirationPhotoSource,
+      currentLabel: inspirationPhotoLabel,
+      eventImageUrl: event?.imageUrl ?? null,
+    });
+    setInspirationPhotoUrl(next.url);
+    setInspirationPhotoSource(next.source);
+    setInspirationPhotoLabel(next.label);
   }
 
   function composerStatePatch(
@@ -264,6 +281,7 @@ export function FlyerBuilderShell({
             date: selectedEvent.date,
             time: selectedEvent.time,
             location: selectedEvent.location,
+            imageUrl: selectedEvent.imageUrl,
           }
         : null,
       qrEnabled,
@@ -536,6 +554,12 @@ export function FlyerBuilderShell({
                   Clear event
                 </button>
               ) : null}
+              {selectedEvent?.imageUrl &&
+              inspirationPhotoSource === "event" ? (
+                <p className="text-[11px] text-cos-muted">
+                  Using this event’s social artwork as inspiration.
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-2">
@@ -630,9 +654,14 @@ export function FlyerBuilderShell({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={inspirationPhotoUrl}
-                    alt=""
+                    alt={inspirationPhotoLabel || "Inspiration"}
                     className="h-28 w-full object-cover"
                   />
+                  {inspirationPhotoLabel ? (
+                    <p className="border-t border-cos-border px-3 py-2 text-[11px] text-cos-muted">
+                      {inspirationPhotoLabel}
+                    </p>
+                  ) : null}
                   {!readOnly ? (
                     <button
                       type="button"
@@ -1048,7 +1077,7 @@ export function FlyerBuilderShell({
         selectedEventId={eventId}
         multiSelect={false}
         title="Link an event"
-        description="Choose an event you've already created — name, date, time, and location are included when you generate."
+        description="Choose an event you've already created — name, date, time, location, and social artwork are included when you generate."
         onClose={() => setEventPickerOpen(false)}
         onSelect={(event) => {
           applySelectedEvent(event);

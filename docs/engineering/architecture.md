@@ -5,7 +5,7 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel · Stripe  
-**Last updated:** August 10, 2026 — Newsletter → Approval → Send pipeline  
+**Last updated:** August 17, 2026 — Flyer uses linked event social artwork as inspiration  
 **Related:** [Feature list](../product/feature-list.md) · [Image architecture](./image-architecture.md) · [Storage RLS](./storage-rls.md) · [Access control](./access-control.md) · [Billing & access](../ops/billing-and-access.md) · [Stripe integration](./stripe-integration.md) · [QA architecture overview](../qa/architecture-overview.md) · [Launch checklist](../qa/launch-checklist.md) · [Ask Ralli Assistant](./ask-ralli-assistant.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
@@ -87,7 +87,7 @@ CampignOS/
 |-------|------|
 | `/create-with-ai` | Chooser: Home Page · Social Media · Newsletter · Flyer |
 | `/create-with-ai/social` | Campaign Builder v2 (Creative Setup → Review & Approve) |
-| `/create-with-ai/flyer` | React Flyer builder (`FlyerBuilderShell`); creates/loads durable `flyers` drafts (`?flyerId=` / `?eventId=`); generate via `/api/flyer-composer/generate`; Approvals via `/api/flyer-composer/send-for-approval` |
+| `/create-with-ai/flyer` | React Flyer builder (`FlyerBuilderShell`); creates/loads durable `flyers` drafts (`?flyerId=` / `?eventId=`); generate via `/api/flyer-composer/generate`; linking an event attaches that event’s campaign/social artwork as inspiration unless a volunteer already uploaded or picked a gallery image; Approvals via `/api/flyer-composer/send-for-approval` |
 | `/flyers` | Flyer library (grid + status filters); cards deep-link to builder / `/flyers/[id]/review` / `/flyers/[id]/changes` |
 | `/homepage-composer` | Membership Toolkit / homepage HTML export |
 | `/newsletter-composer` | Scoop-style family email HTML export |

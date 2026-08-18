@@ -1,3 +1,7 @@
+import {
+  EVENT_SOCIAL_INSPIRATION_LABEL,
+  parseFlyerInspirationPhotoSource,
+} from "@/lib/flyer-composer/inspiration-source";
 import type { FlyerComposerGenerateInput } from "@/lib/flyer-composer/types";
 import type { FlyerPrintSize } from "@/lib/flyers/types";
 
@@ -31,6 +35,8 @@ export type FlyerGeneratePayloadInput = {
     date?: string | null;
     time?: string | null;
     location?: string | null;
+    /** Campaign / social artwork for this event — used as flyer inspiration when none was uploaded. */
+    imageUrl?: string | null;
   } | null;
   qrEnabled: boolean;
   qrUrl?: string | null;
@@ -39,7 +45,7 @@ export type FlyerGeneratePayloadInput = {
   brandKit?: FlyerGenerateBrandKit | null;
   selectedLogoId?: string | null;
   inspirationPhotoUrl?: string | null;
-  inspirationPhotoSource?: "upload" | "library" | null;
+  inspirationPhotoSource?: "upload" | "library" | "event" | null;
   inspirationPhotoLabel?: string | null;
   /** Image-only prior flyer / active preview used as custom template reference. */
   previousFlyerUrl?: string | null;
@@ -142,17 +148,28 @@ export function buildFlyerGeneratePayload(
 ): FlyerComposerGenerateInput {
   const printSize = input.printSize === "half" ? "half" : "letter";
   const template = templateForPrintSize(printSize);
-  const inspirationUrl = isImageReferenceUrl(input.inspirationPhotoUrl)
+  const uploadedInspirationUrl = isImageReferenceUrl(input.inspirationPhotoUrl)
     ? input.inspirationPhotoUrl!.trim()
     : null;
-  const inspirationSource =
-    inspirationUrl &&
-    (input.inspirationPhotoSource === "upload" ||
-      input.inspirationPhotoSource === "library")
-      ? input.inspirationPhotoSource
-      : inspirationUrl
-        ? "upload"
-        : null;
+  const eventInspirationUrl = isImageReferenceUrl(input.event?.imageUrl)
+    ? input.event!.imageUrl!.trim()
+    : null;
+  const inspirationUrl = uploadedInspirationUrl || eventInspirationUrl;
+  const parsedSource = parseFlyerInspirationPhotoSource(
+    input.inspirationPhotoSource,
+  );
+  const inspirationSource = uploadedInspirationUrl
+    ? parsedSource === "upload" ||
+      parsedSource === "library" ||
+      parsedSource === "event"
+      ? parsedSource
+      : "upload"
+    : eventInspirationUrl
+      ? "event"
+      : null;
+  const inspirationLabel =
+    input.inspirationPhotoLabel?.trim() ||
+    (inspirationSource === "event" ? EVENT_SOCIAL_INSPIRATION_LABEL : null);
 
   const previousUrl = isImageReferenceUrl(input.previousFlyerUrl)
     ? input.previousFlyerUrl!.trim()
@@ -213,7 +230,7 @@ export function buildFlyerGeneratePayload(
     assets: {
       inspirationPhotoPresent: Boolean(inspirationUrl && inspirationSource),
       inspirationPhotoSource: inspirationSource,
-      inspirationPhotoLabel: input.inspirationPhotoLabel?.trim() || null,
+      inspirationPhotoLabel: inspirationLabel,
       inspirationPhotoNote: null,
       inspirationPhotoUrl: inspirationUrl,
       customTemplatePresent: Boolean(previousUrl),
