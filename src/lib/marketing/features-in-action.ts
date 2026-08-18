@@ -40,7 +40,7 @@ export const FEATURES_IN_ACTION_HERO = {
   eyebrow: "See Hey Ralli in Action",
   title: "One event. Every message, task, and detail in one place.",
   description:
-    "Hey Ralli helps school and community teams plan the year, create with AI (homepage HTML, family newsletters, and social campaigns), move approvals, see volunteer gaps, answer Meta messages, and know what to do next.",
+    "Hey Ralli helps school and community teams plan the year, create with AI (homepage HTML, family newsletters, and social campaigns), move approvals, and see volunteer gaps.",
   primaryCta: "Get Started",
   secondaryCta: "Explore Create with AI",
   workflowAnchor: "create-with-ai-modules",
@@ -160,6 +160,14 @@ export const FEATURES_IN_ACTION_STORIES: FeaturesInActionStory[] = [
     ],
   },
 ];
+
+/**
+ * Public `/features` and Resources deep links only show stories with a Screen
+ * Studio product demo. Communications Hub and Ask Ralli stay in the full
+ * registry (and `/dev/motion-engine`) until narrated videos exist.
+ */
+export const PUBLIC_FEATURES_IN_ACTION_STORIES =
+  FEATURES_IN_ACTION_STORIES.filter((story) => story.productDemoId != null);
 
 /** @deprecated Use FEATURES_IN_ACTION_STORIES[0] */
 export const FEATURES_CREATE_WITH_AI_STORY = FEATURES_IN_ACTION_STORIES[0];

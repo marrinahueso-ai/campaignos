@@ -37,6 +37,10 @@ Preserve audio on every copy/transcode. Do not strip AAC.
 - Deep link: `/resources?tutorial=<id>`
 - Captions: optional `captionsSrc` WebVTT. **None authored yet** — dialog notes when missing.
 
+## Held until videos exist
+
+Communications Hub and Ask Ralli are **not** on `/resources` Browse by Topic and are **not** on public `/features` until narrated Screen Studio walkthroughs exist. Motion-engine specs remain at `/dev/motion-engine`.
+
 ## Adding a tutorial
 
 1. Add MP4 + poster under the paths above (clean kebab filename).

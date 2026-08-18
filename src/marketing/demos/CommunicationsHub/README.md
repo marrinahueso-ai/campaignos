@@ -2,4 +2,4 @@
 
 Unread Meta inbox → AI draft → Approve & send.
 
-Preview: `/dev/motion-engine` or `/features#communications-hub`
+Preview: `/dev/motion-engine` (not on public `/features` until a narrated video exists)

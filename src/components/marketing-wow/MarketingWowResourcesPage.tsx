@@ -15,7 +15,6 @@ import {
   FolderTree,
   HeartHandshake,
   HelpCircle,
-  MailOpen,
   Play,
   PlayCircle,
   Rocket,
@@ -44,10 +43,10 @@ interface MarketingWowResourcesPageProps {
 }
 
 /**
- * Real destinations only — the public `/features` "See Hey Ralli in Action" page
- * ships live Motion-engine demos (not fabricated screenshots) with stable anchors
- * per `FEATURES_IN_ACTION_STORIES`. Pricing covers billing/AI Reserve/permissions
- * accurately. There is no dedicated public tutorial-video or FAQ system yet.
+ * Real destinations only — public `/features` stories with Screen Studio videos
+ * (`PUBLIC_FEATURES_IN_ACTION_STORIES`). Communications Hub and Ask Ralli stay
+ * off this page until narrated demos exist. Pricing covers billing/AI Reserve/
+ * permissions accurately.
  */
 const TOPICS = [
   { id: "getting-started", label: "Getting Started", icon: Flag, href: "/get-started" },
@@ -56,15 +55,14 @@ const TOPICS = [
   { id: "volunteers", label: "Volunteers", icon: HeartHandshake, href: "/features#volunteer-intelligence" },
   { id: "approvals", label: "Approvals", icon: CheckCheck, href: "/features#approvals" },
   { id: "social-publishing", label: "Social Publishing", icon: Camera, href: "/features#create-with-ai" },
-  { id: "communications-hub", label: "Communications Hub", icon: MailOpen, href: "/features#communications-hub" },
   { id: "team-permissions", label: "Team & Permissions", icon: UsersRound, href: "/pricing" },
   { id: "files", label: "Files", icon: FolderTree, href: "/features" },
   { id: "billing-credits", label: "Billing & AI Credits", icon: CreditCard, href: "/pricing" },
 ] as const;
 
 /**
- * Featured Tutorials — mix of narrated Resource videos (reusable registry) and
- * live `/features` demos. Video cards never autoplay; MP4 loads only in the viewer.
+ * Featured Tutorials — narrated Resource videos (reusable registry).
+ * Video cards never autoplay; MP4 loads only in the viewer.
  */
 type FeaturedLinkTutorial = {
   kind: "link";

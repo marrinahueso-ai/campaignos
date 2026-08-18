@@ -10,7 +10,7 @@ import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path";
 import {
   FEATURES_IN_ACTION_FINAL_CTA,
   FEATURES_IN_ACTION_HERO,
-  FEATURES_IN_ACTION_STORIES,
+  PUBLIC_FEATURES_IN_ACTION_STORIES,
 } from "@/lib/marketing/features-in-action";
 
 interface StudioFeaturesPageProps {
@@ -58,7 +58,7 @@ export function StudioFeaturesPage({
 
       <CreateWithAiModulesSection />
 
-      {FEATURES_IN_ACTION_STORIES.map((story, index) => (
+      {PUBLIC_FEATURES_IN_ACTION_STORIES.map((story, index) => (
         <ProductStorySection
           key={story.id}
           id={story.id}
