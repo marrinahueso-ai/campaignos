@@ -109,6 +109,14 @@ function rowStatus(member: UnifiedTeamMember): {
       pausedStyle: true,
     };
   }
+  if (login === "not_invited") {
+    return {
+      label: "Not invited",
+      className: "bg-[#ece8e1] text-[#737373]",
+      pendingStyle: false,
+      pausedStyle: false,
+    };
+  }
   return {
     label: "Active",
     className: "bg-[#eef2f0] text-[#586c63]",
@@ -209,14 +217,8 @@ export function SettingsEaseTeamAccess({
     }));
   }, [members, workspace, workload, lastSignInAtByUserId, accessLabels]);
 
-  const loginPeople = useMemo(() => {
-    const source = localMembers ?? unifiedMembers;
-    const people = source.filter((member) => {
-      const status = peopleLoginStatus(member);
-      return (
-        status === "active" || status === "invited" || status === "inactive"
-      );
-    });
+  const listedPeople = useMemo(() => {
+    const people = localMembers ?? unifiedMembers;
 
     return [...people].sort((left, right) => {
       const leftSelf = isCurrentUserTeamMember(left, currentUserEmail) ? 0 : 1;
@@ -228,8 +230,9 @@ export function SettingsEaseTeamAccess({
       const statusRank = (member: UnifiedTeamMember) => {
         const status = peopleLoginStatus(member);
         if (status === "active") return 0;
-        if (status === "invited") return 1;
-        return 2;
+        if (status === "not_invited") return 1;
+        if (status === "invited") return 2;
+        return 3;
       };
       const byStatus = statusRank(left) - statusRank(right);
       if (byStatus !== 0) return byStatus;
@@ -245,41 +248,41 @@ export function SettingsEaseTeamAccess({
     let active = 0;
     let pending = 0;
     let inactive = 0;
-    for (const member of loginPeople) {
+    for (const member of listedPeople) {
       const status = peopleLoginStatus(member);
       if (status === "active") active += 1;
       else if (status === "invited") pending += 1;
-      else inactive += 1;
+      else if (status === "inactive") inactive += 1;
     }
     return {
-      all: loginPeople.length,
+      all: listedPeople.length,
       active,
       pending,
       inactive,
     };
-  }, [loginPeople]);
+  }, [listedPeople]);
 
   const visiblePeople = useMemo(() => {
-    return loginPeople.filter(
+    return listedPeople.filter(
       (member) =>
         matchesTab(member, peopleTab) &&
         memberMatchesPeopleSearch(member, search, eventTitlesById),
     );
-  }, [loginPeople, peopleTab, search, eventTitlesById]);
+  }, [listedPeople, peopleTab, search, eventTitlesById]);
 
   const drawerMember = useMemo(
     () =>
       drawerMemberId
-        ? (loginPeople.find((member) => member.id === drawerMemberId) ??
+        ? (listedPeople.find((member) => member.id === drawerMemberId) ??
           unifiedMembers.find((member) => member.id === drawerMemberId) ??
           null)
         : null,
-    [drawerMemberId, loginPeople, unifiedMembers],
+    [drawerMemberId, listedPeople, unifiedMembers],
   );
 
   const drawerAvatarIndex = Math.max(
     0,
-    loginPeople.findIndex((member) => member.id === drawerMemberId),
+    listedPeople.findIndex((member) => member.id === drawerMemberId),
   );
 
   useEffect(() => {
@@ -288,13 +291,13 @@ export function SettingsEaseTeamAccess({
     const person = params.get("person");
     if (!person) return;
     const match =
-      loginPeople.find((member) => member.id === person) ??
-      loginPeople.find((member) =>
+      listedPeople.find((member) => member.id === person) ??
+      listedPeople.find((member) =>
         member.displayName.toLowerCase().startsWith(person.toLowerCase()),
       ) ??
       null;
     if (match) setDrawerMemberId(match.id);
-  }, [loginPeople]);
+  }, [listedPeople]);
 
   function openPerson(member: UnifiedTeamMember) {
     setInviteFeedback(null);
@@ -531,7 +534,7 @@ export function SettingsEaseTeamAccess({
         </div>
       </div>
 
-      {loginPeople.length === 0 ? (
+      {listedPeople.length === 0 ? (
         <div className="mx-auto flex min-h-[50vh] max-w-md flex-col items-center justify-center space-y-6 text-center">
           <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#f5f2eb] text-3xl text-[#737373]">
             ◯

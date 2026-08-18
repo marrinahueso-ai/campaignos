@@ -89,7 +89,7 @@ Admins can **resend** / **cancel** invites and **reinvite** deactivated members.
 
 Owner demo workspace `Lincoln Elementary` (`0a7efc8a-ff81-4d68-8a5d-a695d2df5476`) can be filled with fictional Team & Access people via `scripts/lincoln-elementary-demo-roster.mjs`.
 
-- Roster-only `organization_members` (no Auth users, no `organization_users` invites, **no email**).
+- Roster-only `organization_members` (no Auth users, no `organization_users` invites, **no email**). Ease Team & Access **All** lists them as **Not invited**; Active seats stay the real logins.
 - Emails are `@example.com` and unique **per organization**; the script refuses Edmondson ids and aborts if those emails exist on another org.
 - Re-run is idempotent (updates names/roles for the same emails on Lincoln only).
 

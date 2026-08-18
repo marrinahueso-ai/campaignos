@@ -30,6 +30,10 @@ const profileSource = readFileSync(
   join(here, "../TeamAccessPersonProfile.tsx"),
   "utf8",
 );
+const easeSource = readFileSync(
+  join(here, "../../SettingsEaseTeamAccess.tsx"),
+  "utf8",
+);
 
 function orgUser(
   overrides: Partial<OrganizationUser> &
@@ -220,6 +224,13 @@ describe("Team & Access people simplification", () => {
     assert.equal(peopleLoginStatusLabel("not_invited"), "Not Invited");
     assert.equal(memberStatusLabel("roster", true), "Not Invited");
     assert.doesNotMatch(julie.statusLabel, /Roster Only/i);
+
+    assert.match(easeSource, /listedPeople/);
+    assert.match(easeSource, /Not invited/);
+    assert.doesNotMatch(
+      easeSource,
+      /status === "active" \|\| status === "invited" \|\| status === "inactive"/,
+    );
 
     const withLogins = buildUnifiedTeamMembers(orgUsers, {
       roles: [],
