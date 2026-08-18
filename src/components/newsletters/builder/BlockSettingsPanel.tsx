@@ -14,6 +14,7 @@ import {
   calendarChipFromEvent,
   newCanvasButton,
   newId,
+  shiftCanvasColumn,
 } from "@/lib/newsletter-composer/defaults";
 import type {
   NewsletterButtonLayout,
@@ -31,7 +32,7 @@ import type {
   NewsletterTextAlign,
 } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
-import { Copy, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Plus, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 type PatchState = (fn: (prev: NewsletterComposerState) => NewsletterComposerState) => void;
@@ -1636,26 +1637,61 @@ function SocialsSettings({
 
 function ColumnCardEditor({
   col,
+  index,
+  total,
   onChange,
+  onMove,
   onRemove,
   upload,
   busy,
 }: {
   col: NewsletterCanvasColumn;
+  index: number;
+  total: number;
   onChange: (patch: Partial<NewsletterCanvasColumn>) => void;
+  onMove: (delta: -1 | 1) => void;
   onRemove?: () => void;
   upload: UploadFn;
   busy: Record<string, boolean>;
 }) {
+  const label = col.heading.trim() || `Card ${index + 1}`;
   return (
     <div className="space-y-2 rounded-xl border border-cos-border bg-cos-card p-3">
-      {onRemove ? (
-        <div className="flex justify-end">
-          <button type="button" onClick={onRemove} className="text-cos-muted hover:text-cos-error">
-            <Trash2 className="h-3.5 w-3.5" />
+      <div className="flex items-center justify-between gap-2">
+        <p className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wide text-cos-muted">
+          {label}
+        </p>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            disabled={index === 0}
+            onClick={() => onMove(-1)}
+            className="rounded-md p-1 text-cos-muted hover:bg-cos-bg hover:text-cos-text disabled:cursor-not-allowed disabled:opacity-30"
+            aria-label={`Move ${label} earlier`}
+          >
+            <ChevronUp className="h-3.5 w-3.5" />
           </button>
+          <button
+            type="button"
+            disabled={index >= total - 1}
+            onClick={() => onMove(1)}
+            className="rounded-md p-1 text-cos-muted hover:bg-cos-bg hover:text-cos-text disabled:cursor-not-allowed disabled:opacity-30"
+            aria-label={`Move ${label} later`}
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+          {onRemove ? (
+            <button
+              type="button"
+              onClick={onRemove}
+              className="rounded-md p-1 text-cos-muted hover:text-cos-error"
+              aria-label={`Remove ${label}`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
         </div>
-      ) : null}
+      </div>
       <ImageFieldEditor
         imageUrl={col.imageUrl}
         imageLink={col.imageLink}
@@ -1715,13 +1751,25 @@ function ColumnsSettings({
 
   return (
     <div className="space-y-3">
-      {block.columns.map((col) => (
+      {block.columns.length > 1 ? (
+        <p className="text-xs text-cos-muted">
+          Drag cards on the canvas, or use the arrows here, to rearrange them.
+        </p>
+      ) : null}
+      {block.columns.map((col, index) => (
         <ColumnCardEditor
           key={col.id}
           col={col}
+          index={index}
+          total={block.columns.length}
           upload={upload}
           busy={busy}
           onChange={(patch) => updateColumn(col.id, patch)}
+          onMove={(delta) =>
+            onPatchBlock({
+              columns: shiftCanvasColumn(block.columns, col.id, delta),
+            })
+          }
           onRemove={
             block.columns.length > 1
               ? () => onPatchBlock({ columns: block.columns.filter((c) => c.id !== col.id) })

@@ -429,6 +429,35 @@ export function addCanvasColumn(block: NewsletterCanvasBlock): NewsletterCanvasB
   return { ...block, columns: [...block.columns, newCanvasColumn()] };
 }
 
+/** Move a grid/columns/carousel card next to another card (canvas or settings drag). */
+export function moveCanvasColumn(
+  columns: NewsletterCanvasColumn[],
+  fromId: string,
+  overId: string,
+): NewsletterCanvasColumn[] {
+  if (fromId === overId) return columns;
+  const fromIdx = columns.findIndex((column) => column.id === fromId);
+  const toIdx = columns.findIndex((column) => column.id === overId);
+  if (fromIdx < 0 || toIdx < 0) return columns;
+  const next = [...columns];
+  const [moved] = next.splice(fromIdx, 1);
+  next.splice(toIdx, 0, moved!);
+  return next;
+}
+
+/** Nudge a card earlier (−1) or later (+1) in a grid/columns/carousel block. */
+export function shiftCanvasColumn(
+  columns: NewsletterCanvasColumn[],
+  columnId: string,
+  delta: -1 | 1,
+): NewsletterCanvasColumn[] {
+  const fromIdx = columns.findIndex((column) => column.id === columnId);
+  if (fromIdx < 0) return columns;
+  const toIdx = fromIdx + delta;
+  if (toIdx < 0 || toIdx >= columns.length) return columns;
+  return moveCanvasColumn(columns, columnId, columns[toIdx]!.id);
+}
+
 export function addCanvasListItem(block: NewsletterCanvasBlock): NewsletterCanvasBlock {
   return { ...block, items: [...block.items, newCanvasListItem()] };
 }

@@ -11,6 +11,7 @@ import {
   ensureStoriesForEvents,
   insertCanvasBlockAfter,
   insertCanvasBlocksAfter,
+  moveCanvasColumn,
   newCanvasBlock,
   normalizeComposerState,
 } from "@/lib/newsletter-composer/defaults";
@@ -133,6 +134,9 @@ export function NewsletterBlockBuilder({
   const newsletterIdRef = useRef(initialNewsletterId);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragIdRef = useRef<string | null>(null);
+  const columnDragRef = useRef<{ blockId: string; columnId: string } | null>(
+    null,
+  );
   const canvasScrollRef = useRef<HTMLElement | null>(null);
   /** Skip the mount effect — hydrated props are already durable. */
   const skipNextAutosaveRef = useRef(true);
@@ -471,11 +475,13 @@ export function NewsletterBlockBuilder({
   }
 
   function handleDragStart(blockId: string) {
+    columnDragRef.current = null;
     dragIdRef.current = blockId;
   }
 
   function handleDragOver(e: DragEvent, overId: string) {
     e.preventDefault();
+    if (columnDragRef.current) return;
     const fromId = dragIdRef.current;
     if (!fromId || fromId === overId) return;
     patch((prev) => {
@@ -488,6 +494,33 @@ export function NewsletterBlockBuilder({
       next.splice(toIdx, 0, moved!);
       return { ...prev, canvasBlocks: next };
     });
+  }
+
+  function handleColumnDragStart(blockId: string, columnId: string) {
+    dragIdRef.current = null;
+    columnDragRef.current = { blockId, columnId };
+  }
+
+  function handleColumnDragOver(
+    e: DragEvent,
+    blockId: string,
+    overColumnId: string,
+  ) {
+    e.preventDefault();
+    const drag = columnDragRef.current;
+    if (!drag || drag.blockId !== blockId || drag.columnId === overColumnId) {
+      return;
+    }
+    patch((prev) => ({
+      ...prev,
+      canvasBlocks: (prev.canvasBlocks ?? []).map((block) => {
+        if (block.id !== blockId) return block;
+        return {
+          ...block,
+          columns: moveCanvasColumn(block.columns, drag.columnId, overColumnId),
+        };
+      }),
+    }));
   }
 
   const isChangesRequested = status === "changes_requested" && Boolean(changeRequestNote);
@@ -623,6 +656,16 @@ export function NewsletterBlockBuilder({
                   onDelete={() => handleDelete(block.id)}
                   onDragStart={() => handleDragStart(block.id)}
                   onDragOver={(e) => handleDragOver(e, block.id)}
+                  onColumnDragStart={(columnId) =>
+                    handleColumnDragStart(block.id, columnId)
+                  }
+                  onColumnDragOver={(e, columnId) =>
+                    handleColumnDragOver(e, block.id, columnId)
+                  }
+                  onDragEnd={() => {
+                    dragIdRef.current = null;
+                    columnDragRef.current = null;
+                  }}
                 />
               ))
             )}

@@ -1,6 +1,9 @@
 "use client";
 
-import { exportCanvasBlockFragment } from "@/lib/newsletter-composer/export-html";
+import {
+  exportCanvasBlockFragment,
+  exportCanvasColumnFragment,
+} from "@/lib/newsletter-composer/export-html";
 import type {
   NewsletterCanvasBlock,
   NewsletterComposerState,
@@ -18,7 +21,14 @@ type Props = {
   onDelete: () => void;
   onDragStart: () => void;
   onDragOver: (e: DragEvent) => void;
+  onColumnDragStart?: (columnId: string) => void;
+  onColumnDragOver?: (e: DragEvent, columnId: string) => void;
+  onDragEnd?: () => void;
 };
+
+function isColumnCardBlock(kind: NewsletterCanvasBlock["kind"]): boolean {
+  return kind === "grid" || kind === "columns" || kind === "carousel";
+}
 
 /** Hoverable / selectable wrapper — the block content itself is the exact email-export HTML. */
 export function CanvasBlockFrame({
@@ -30,43 +40,19 @@ export function CanvasBlockFrame({
   onDelete,
   onDragStart,
   onDragOver,
+  onColumnDragStart,
+  onColumnDragOver,
+  onDragEnd,
 }: Props) {
   const fragment = exportCanvasBlockFragment(block, state);
-  if (!fragment.trim()) {
-    return (
-      <div
-        role="button"
-        tabIndex={0}
-        draggable
-        data-canvas-block-id={block.id}
-        onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onPointerDown={onSelect}
-        onClick={onSelect}
-        className={cn(
-          "group relative cursor-pointer border border-dashed px-6 py-4 text-center text-xs font-semibold text-cos-muted transition",
-          selected
-            ? "border-cos-brand-sage bg-cos-brand-sage-soft"
-            : "border-cos-border hover:border-cos-brand-sage/60",
-        )}
-      >
-        Empty {block.kind} block — click to edit in the panel on the right.
-        <BlockControls
-          visible={selected}
-          onDuplicate={onDuplicate}
-          onDelete={onDelete}
-        />
-      </div>
-    );
-  }
+  const showColumnCards =
+    isColumnCardBlock(block.kind) && block.columns.length > 0;
 
   return (
     <div
       role="button"
       tabIndex={0}
-      draggable
       data-canvas-block-id={block.id}
-      onDragStart={onDragStart}
       onDragOver={onDragOver}
       onPointerDown={onSelect}
       onClick={onSelect}
@@ -74,15 +60,88 @@ export function CanvasBlockFrame({
         "group relative cursor-pointer border border-transparent px-6 py-3 transition [&_a]:pointer-events-none",
         selected
           ? "border-cos-brand-sage shadow-[0_0_0_1px_var(--cos-brand-sage)]"
-          : "hover:border-cos-brand-sage/40",
+          : showColumnCards
+            ? "hover:border-cos-brand-sage/40"
+            : fragment.trim()
+              ? "hover:border-cos-brand-sage/40"
+              : "border-dashed border-cos-border hover:border-cos-brand-sage/60",
+        !fragment.trim() && !showColumnCards
+          ? "bg-cos-brand-sage-soft/0 py-4 text-center text-xs font-semibold text-cos-muted"
+          : null,
       )}
     >
-      <div dangerouslySetInnerHTML={{ __html: fragment }} />
+      {showColumnCards ? (
+        <ColumnCardGrid
+          block={block}
+          onColumnDragStart={onColumnDragStart}
+          onColumnDragOver={onColumnDragOver}
+          onDragEnd={onDragEnd}
+        />
+      ) : fragment.trim() ? (
+        <div dangerouslySetInnerHTML={{ __html: fragment }} />
+      ) : (
+        <>Empty {block.kind} block — click to edit in the panel on the right.</>
+      )}
       <BlockControls
         visible={selected}
         onDuplicate={onDuplicate}
         onDelete={onDelete}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
       />
+    </div>
+  );
+}
+
+function ColumnCardGrid({
+  block,
+  onColumnDragStart,
+  onColumnDragOver,
+  onDragEnd,
+}: {
+  block: NewsletterCanvasBlock;
+  onColumnDragStart?: (columnId: string) => void;
+  onColumnDragOver?: (e: DragEvent, columnId: string) => void;
+  onDragEnd?: () => void;
+}) {
+  const columnCount =
+    block.kind === "grid" ? 2 : Math.min(Math.max(block.columns.length, 1), 3);
+
+  return (
+    <div
+      className="grid gap-3"
+      style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+    >
+      {block.columns.map((column) => (
+        <article
+          key={column.id}
+          draggable
+          data-canvas-column-id={column.id}
+          onDragStart={(event) => {
+            event.stopPropagation();
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", column.id);
+            onColumnDragStart?.(column.id);
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onColumnDragOver?.(event, column.id);
+          }}
+          onDragEnd={onDragEnd}
+          className="relative cursor-grab rounded-xl border border-transparent p-1 hover:border-cos-brand-sage/50"
+        >
+          <span className="pointer-events-none absolute top-2 left-2 z-[1] flex h-7 w-7 items-center justify-center rounded-full border border-cos-border bg-white/95 text-cos-muted shadow-sm">
+            <GripVertical className="h-3.5 w-3.5" />
+          </span>
+          <div
+            className="[&_img]:pointer-events-none"
+            dangerouslySetInnerHTML={{
+              __html: exportCanvasColumnFragment(column),
+            }}
+          />
+        </article>
+      ))}
     </div>
   );
 }
@@ -91,10 +150,14 @@ function BlockControls({
   visible,
   onDuplicate,
   onDelete,
+  onDragStart,
+  onDragEnd,
 }: {
   visible: boolean;
   onDuplicate: () => void;
   onDelete: () => void;
+  onDragStart: () => void;
+  onDragEnd?: () => void;
 }) {
   return (
     <div
@@ -104,7 +167,18 @@ function BlockControls({
       )}
     >
       <div className="pointer-events-auto flex items-center rounded-full border border-cos-border bg-white/95 p-1 shadow-[0_8px_20px_rgba(28,36,48,0.14)] backdrop-blur-sm">
-        <span className="flex h-8 w-8 cursor-grab items-center justify-center text-cos-muted">
+        <span
+          draggable
+          aria-label="Reorder block"
+          onDragStart={(event) => {
+            event.stopPropagation();
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", "block");
+            onDragStart();
+          }}
+          onDragEnd={onDragEnd}
+          className="flex h-8 w-8 cursor-grab items-center justify-center text-cos-muted"
+        >
           <GripVertical className="h-3.5 w-3.5" />
         </span>
         <div className="mx-1 h-4 w-px bg-cos-border" />

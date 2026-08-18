@@ -2,7 +2,7 @@
 
 **Status:** Living
 **Owner:** Engineering / QA (Hey Ralli)
-**Last updated:** August 10, 2026
+**Last updated:** August 17, 2026 — Grid/column cards can be rearranged on the canvas
 **Related:** [Engineering companion](../engineering/newsletter-composer.md) · [Feature list](../product/feature-list.md) · [Homepage Composer QA](./homepage-composer.md) · [Access control](../engineering/access-control.md) · [Launch checklist](./launch-checklist.md)
 
 Community email builder plus a durable **Newsletter → Approval → Send** workflow: draft in the composer, submit for approval through the org Approvals hub, then send/schedule separately once approved.
@@ -46,6 +46,7 @@ Draft status shows while editing ("Saving draft…", "Draft saved"). **The old s
 ## What shipped
 
 - Scoop-style sections with distinct band styles (news, calendar, volunteer, sponsors, links, follow); stories from events + manual; featured star; include toggles sync into layout blocks; calendar chips, volunteer asks, sponsors with required logo; header/story/sponsor/volunteer image upload → hosted HTTPS URLs; desktop + phone preview; HTML export + Membership Toolkit export (unchanged from soft launch)
+- Block builder Event **Grid / 2⁄3 column / Carousel**: drag a card on the canvas (or arrows in Block settings) to rearrange; export order follows
 - Browser-local draft autosave (localStorage + IndexedDB v2 envelope, newest-wins, flush on hide/unload) **plus** a server-durable save once a draft has an id (`newsletters` row)
 - Immutable version snapshots on submit, with a content fingerprint that auto-invalidates approval when content or audience changes after approval
 - Submit-for-approval bridges into the org Approvals hub (same queue as Social/Flyer); approve / request-changes there **only marks the newsletter approved — it does not send**
@@ -79,6 +80,7 @@ Draft status shows while editing ("Saving draft…", "Draft saved"). **The old s
 7. Must-dos: add calendar chip; volunteer ask with signup URL; sponsor with **logo** (required) + name.
 8. Footer: enable Instagram/Facebook/website; set CTA — Preview shows chips + fine print.
 9. Layout: drag a block — Preview/Export order follows layout (featured stories before "More news & events" band when applicable).
+9b. Block builder Grid (or 2⁄3 column): drag one event card onto another — cards swap order; Preview/Export match. Arrows in Block settings also move a card.
 
 ### Preview / export (unchanged)
 

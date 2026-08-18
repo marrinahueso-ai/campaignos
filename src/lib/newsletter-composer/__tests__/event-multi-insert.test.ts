@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import {
   buildBlocksFromEventSelection,
   ensureStoriesForEvents,
   insertCanvasBlocksAfter,
+  moveCanvasColumn,
   newCanvasBlock,
+  shiftCanvasColumn,
 } from "@/lib/newsletter-composer/defaults";
 import type { NewsletterComposerEvent } from "@/lib/newsletter-composer/types";
 
@@ -86,5 +89,86 @@ describe("insertCanvasBlocksAfter", () => {
       next.map((block) => block.id),
       ["a", "c", "d", "b"],
     );
+  });
+});
+
+describe("moveCanvasColumn", () => {
+  it("reorders grid cards without dropping any", () => {
+    const columns = [
+      { id: "early", heading: "Early Release" },
+      { id: "lights", heading: "Friday Night Lights" },
+      { id: "club", heading: "Explorer Book Club" },
+    ].map((col) => ({
+      id: col.id,
+      heading: col.heading,
+      text: "",
+      imageUrl: null,
+      imageLink: "",
+      imageAlt: "",
+      buttonLabel: "",
+      buttonUrl: "",
+    }));
+
+    const moved = moveCanvasColumn(columns, "early", "lights");
+    assert.deepEqual(
+      moved.map((column) => column.id),
+      ["lights", "early", "club"],
+    );
+
+    const shifted = shiftCanvasColumn(columns, "club", -1);
+    assert.deepEqual(
+      shifted.map((column) => column.id),
+      ["early", "club", "lights"],
+    );
+  });
+
+  it("does nothing when the card is already first or last", () => {
+    const columns = [
+      {
+        id: "a",
+        heading: "A",
+        text: "",
+        imageUrl: null,
+        imageLink: "",
+        imageAlt: "",
+        buttonLabel: "",
+        buttonUrl: "",
+      },
+      {
+        id: "b",
+        heading: "B",
+        text: "",
+        imageUrl: null,
+        imageLink: "",
+        imageAlt: "",
+        buttonLabel: "",
+        buttonUrl: "",
+      },
+    ];
+    assert.equal(shiftCanvasColumn(columns, "a", -1), columns);
+    assert.equal(shiftCanvasColumn(columns, "b", 1), columns);
+  });
+});
+
+describe("newsletter grid card rearrange", () => {
+  it("lets canvas cards drag independently of the block grip", () => {
+    const canvas = readFileSync(
+      new URL(
+        "../../../components/newsletters/builder/CanvasBlockFrame.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    const settings = readFileSync(
+      new URL(
+        "../../../components/newsletters/builder/BlockSettingsPanel.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    assert.match(canvas, /data-canvas-column-id/);
+    assert.match(canvas, /onColumnDragStart/);
+    assert.match(settings, /shiftCanvasColumn/);
+    assert.match(settings, /Move \$\{label\} earlier/);
   });
 });

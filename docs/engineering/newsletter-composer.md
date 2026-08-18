@@ -2,7 +2,7 @@
 
 **Status:** Living
 **Owner:** Engineering (Hey Ralli)
-**Last updated:** August 10, 2026
+**Last updated:** August 17, 2026 — Grid/column cards can be rearranged on the canvas
 **Related:** [QA guide](../qa/newsletter-composer.md) · [Feature list](../product/feature-list.md) · [Access control](./access-control.md) · [Multi-tenant isolation](../security/multi-tenant-isolation.md) · [Cron jobs](../ops/cron-jobs.md) · [Resend email templates](../ops/resend-email-templates.md) · [Homepage Composer eng](./homepage-composer.md) · [Architecture](./architecture.md)
 
 Two layers: a block-builder UI (Library → Template → Builder → Preview & Send Details) on top of a **durable Newsletter → Approval → Schedule → Send pipeline** (same tables/RPCs). UX Pilot references live under `public/ux-newsletter/`.
@@ -281,6 +281,7 @@ Steps today: `header` → `message` → `stories` → `mustdos` → `footer` →
 | Area | Path | Role |
 |------|------|------|
 | Composer UI | `src/components/newsletter-composer/NewsletterComposer.tsx` | Multi-step UI, local draft hydrate/save, durable save wiring, Preview (test send / send for approval / exports) |
+| Block builder | `src/components/newsletters/builder/*` | Canvas + palette + settings; grid/column cards reorder via `moveCanvasColumn` |
 | Composer preview | `src/components/newsletter-composer/EmailPreviewPhone.tsx` | Phone / desktop preview shells |
 | Composer types/state | `src/lib/newsletter-composer/types.ts`, `defaults.ts`, `draft-storage.ts` | Local state, layout sync, browser-local draft store |
 | Export | `src/lib/newsletter-composer/export-html.ts`, `export-mtk.ts` | Full HTML export + Membership Toolkit rich fragment (shared by composer preview, versions, and test send) |

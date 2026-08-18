@@ -669,6 +669,11 @@ function renderColumnCard(col: NewsletterCanvasColumn): string {
       ${cta}`;
 }
 
+/** Builder canvas uses the same card HTML as email export. */
+export function exportCanvasColumnFragment(col: NewsletterCanvasColumn): string {
+  return renderColumnCard(col);
+}
+
 function nonEmptyColumns(block: NewsletterCanvasBlock): NewsletterCanvasColumn[] {
   return block.columns.filter((c) => c.imageUrl || c.heading.trim() || c.text.trim());
 }
