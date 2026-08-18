@@ -118,8 +118,37 @@ export function MarketingProductTour() {
           volunteers. Keep everyone on the same page.
         </p>
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-start lg:gap-10">
-          <ol className="order-2 grid gap-0 lg:order-1">
+        <div
+          className="mt-8 flex gap-2 overflow-x-auto pb-1 lg:hidden"
+          role="tablist"
+          aria-label="Product tour videos"
+        >
+          {PRODUCT_TOUR_STEPS.map((step) => {
+            const selected = step.id === activeId;
+            return (
+              <button
+                key={step.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setActiveId(step.id)}
+                onPointerEnter={() => warmMarketingDemo(step.id)}
+                onFocus={() => warmMarketingDemo(step.id)}
+                className={cn(
+                  "shrink-0 rounded-full border px-3 py-2 text-[11px] font-bold tracking-[0.08em] uppercase transition-colors",
+                  selected
+                    ? "border-cos-brand-sage bg-cos-brand-sage-soft text-cos-text"
+                    : "border-cos-border bg-cos-card text-cos-muted hover:border-cos-brand-sage hover:text-cos-text",
+                )}
+              >
+                {step.area}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-8 grid gap-8 lg:mt-12 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-start lg:gap-10">
+          <ol className="order-2 hidden gap-0 lg:order-1 lg:grid">
             {PRODUCT_TOUR_STEPS.map((step, index) => {
               const selected = step.id === activeId;
               return (

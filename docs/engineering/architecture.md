@@ -5,7 +5,7 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel · Stripe  
-**Last updated:** August 17, 2026 — Flyer uses linked event social artwork as inspiration  
+**Last updated:** August 17, 2026 — Flyer inspiration from Social campaign Event Image  
 **Related:** [Feature list](../product/feature-list.md) · [Image architecture](./image-architecture.md) · [Storage RLS](./storage-rls.md) · [Access control](./access-control.md) · [Billing & access](../ops/billing-and-access.md) · [Stripe integration](./stripe-integration.md) · [QA architecture overview](../qa/architecture-overview.md) · [Launch checklist](../qa/launch-checklist.md) · [Ask Ralli Assistant](./ask-ralli-assistant.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
@@ -77,7 +77,7 @@ CampignOS/
 
 **Marketing demo generator:** authoring contract at `src/marketing/demo-generator` — typed `DemoSpec`, validation, and private `demoRegistry`. Demos stay harness-private until intentionally integrated.
 
-**Marketing WOW (shipped public funnel):** live React surfaces under `src/components/marketing-wow` + `src/lib/marketing-wow` — cinematic home (`/`), auth/legal chrome, floating bottom nav, cookie consent. Feature explorer at `/features` documents Create with AI modules (Home Page · Social · Newsletter) plus Motion demos. Resources (`/resources`) Featured Tutorials mix narrated MP4s (`src/lib/marketing/resource-tutorials.ts`, assets under `public/videos/resources/` + `public/images/resources/tutorials/`, lightbox with native controls — user-initiated, not homepage silent autoplay; shipped: `create-an-event`, `create-with-ai`, `approvals-scheduling`) and live `/features` demos. Product/calendar cinematic HTML mockups + `public/demos/calendar-demo.webm` exist as assets; a “Watch product demo” CTA on live `/` stays **in progress** until GO (see feature list).
+**Marketing WOW (shipped public funnel):** live React surfaces under `src/components/marketing-wow` + `src/lib/marketing-wow` — cinematic home (`/`), auth/legal chrome, floating bottom nav, cookie consent. Feature explorer at `/features` documents Create with AI modules (Home Page · Social · Newsletter) plus Motion demos. Resources (`/resources`) Featured Tutorials mix narrated MP4s (`src/lib/marketing/resource-tutorials.ts`, assets under `public/videos/resources/` + `public/images/resources/tutorials/`, lightbox with native controls — user-initiated, not homepage silent autoplay; shipped: `create-an-event`, `create-with-ai`, `approvals-scheduling`) and live `/features` demos. Marketing header hides the top links below `md` and opens the same destinations (Why Hey Ralli · Pricing · Resources · About) from a hamburger menu; the footer also links Resources. Homepage Product Tour uses mobile video chips. Product/calendar cinematic HTML mockups + `public/demos/calendar-demo.webm` exist as assets; a “Watch product demo” CTA on live `/` stays **in progress** until GO (see feature list).
 
 **Primary product nav:** `/dashboard`, `/calendar`, `/events`, `/volunteers`, `/create-with-ai` (chooser), `/approvals`, `/tasks`, `/communications` (Communications Hub / inbox), `/files`, `/vendors`, `/insights`, plus Settings Ease subtree. **Top rail:** Home · Ask Ralli (**?**) · Settings. Help Center at `/help` (browse from Ask Ralli dialog). Ask Ralli is not sidebar-pinned.
 
@@ -87,7 +87,7 @@ CampignOS/
 |-------|------|
 | `/create-with-ai` | Chooser: Home Page · Social Media · Newsletter · Flyer |
 | `/create-with-ai/social` | Campaign Builder v2 (Creative Setup → Review & Approve) |
-| `/create-with-ai/flyer` | React Flyer builder (`FlyerBuilderShell`); creates/loads durable `flyers` drafts (`?flyerId=` / `?eventId=`); generate via `/api/flyer-composer/generate`; linking an event attaches that event’s campaign/social artwork as inspiration unless a volunteer already uploaded or picked a gallery image; Approvals via `/api/flyer-composer/send-for-approval` |
+| `/create-with-ai/flyer` | React Flyer builder (`FlyerBuilderShell`); creates/loads durable `flyers` drafts (`?flyerId=` / `?eventId=`); generate via `/api/flyer-composer/generate`; linking an event attaches that event’s Social campaign Event Image / first feed post (`campaign_builder_sessions`) as inspiration (then event-workspace hero / approved square) unless a volunteer already uploaded or picked a gallery image; Approvals via `/api/flyer-composer/send-for-approval` |
 | `/flyers` | Flyer library (grid + status filters); cards deep-link to builder / `/flyers/[id]/review` / `/flyers/[id]/changes` |
 | `/homepage-composer` | Membership Toolkit / homepage HTML export |
 | `/newsletter-composer` | Scoop-style family email HTML export |

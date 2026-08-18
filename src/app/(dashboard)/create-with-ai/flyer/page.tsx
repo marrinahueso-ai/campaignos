@@ -3,10 +3,12 @@ import { notFound, redirect } from "next/navigation";
 import { FlyerBuilderShell } from "@/components/flyers/FlyerBuilderShell";
 import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
+import { getCampaignSocialFeedUrlMap } from "@/lib/campaign-builder-v2/social-feed-artwork";
 import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
 import { getFlyerComposerBrandKit } from "@/lib/flyer-composer/brand-kit";
 import { createFlyer, updateFlyerDraft } from "@/lib/flyers/actions";
+import { resolveFlyerEventInspirationUrl } from "@/lib/flyers/event-inspiration";
 import { getFlyerById } from "@/lib/flyers/queries";
 import { getEventVolunteerSignupUrls } from "@/lib/homepage-composer/volunteer-links";
 import type { NewsletterComposerEvent } from "@/lib/newsletter-composer/types";
@@ -82,9 +84,10 @@ export default async function FlyerComposerPage({
 
   if (!flyer) notFound();
 
-  const [volunteerUrls, artworkByEvent] = await Promise.all([
+  const [volunteerUrls, artworkByEvent, socialFeedByEvent] = await Promise.all([
     getEventVolunteerSignupUrls(campaignEvents.map((event) => event.id)),
     getEventArtworkMap(campaignEvents.map((event) => event.id)),
+    getCampaignSocialFeedUrlMap(campaignEvents.map((event) => event.id)),
   ]);
 
   const events: NewsletterComposerEvent[] = campaignEvents.map((event) => {
@@ -96,7 +99,11 @@ export default async function FlyerComposerPage({
       date: event.date,
       time: event.time,
       location: event.location ?? null,
-      imageUrl: artworkUrl || event.approvedSquareImageUrl || null,
+      imageUrl: resolveFlyerEventInspirationUrl({
+        socialFeedUrl: socialFeedByEvent.get(event.id) ?? null,
+        heroArtworkUrl: artworkUrl,
+        approvedSquareUrl: event.approvedSquareImageUrl,
+      }),
       volunteerSignupUrl: volunteerUrls.get(event.id) ?? "",
     };
   });

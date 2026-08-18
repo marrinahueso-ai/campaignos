@@ -19,8 +19,17 @@ export function MarketingWowFooter() {
             <Link href="/#tour" className="hover:text-[#f6f2eb]">
               Product tour
             </Link>
+            <Link href="/why-hey-ralli" className="hover:text-[#f6f2eb]">
+              Why Hey Ralli
+            </Link>
             <Link href="/pricing" className="hover:text-[#f6f2eb]">
               Pricing
+            </Link>
+            <Link href="/resources" className="hover:text-[#f6f2eb]">
+              Resources
+            </Link>
+            <Link href="/about" className="hover:text-[#f6f2eb]">
+              About
             </Link>
             <Link href="/get-started" className="hover:text-[#f6f2eb]">
               Start organization

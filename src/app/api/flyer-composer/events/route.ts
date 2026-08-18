@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireFlyerComposerGenerateAccess } from "@/lib/flyer-composer/api-auth";
+import { getCampaignSocialFeedUrlMap } from "@/lib/campaign-builder-v2/social-feed-artwork";
 import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
+import { requireFlyerComposerGenerateAccess } from "@/lib/flyer-composer/api-auth";
+import { resolveFlyerEventInspirationUrl } from "@/lib/flyers/event-inspiration";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +17,17 @@ export async function GET() {
   }
 
   const events = await getCampaignPageEvents(access.organizationId);
+  const socialFeedByEvent = await getCampaignSocialFeedUrlMap(
+    events.map((event) => event.id),
+  );
   return NextResponse.json({
     success: true,
     error: null,
     events: events.map((event) => {
-      const socialImageUrl = event.approvedSquareImageUrl?.trim() || null;
+      const socialImageUrl = resolveFlyerEventInspirationUrl({
+        socialFeedUrl: socialFeedByEvent.get(event.id) ?? null,
+        approvedSquareUrl: event.approvedSquareImageUrl,
+      });
       return {
         id: event.id,
         title: event.title,

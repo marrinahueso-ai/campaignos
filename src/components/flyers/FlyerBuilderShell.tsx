@@ -531,7 +531,16 @@ export function FlyerBuilderShell({
                 className="flex w-full items-center justify-between gap-3 rounded-xl border border-cos-border bg-white px-4 py-3 text-left transition hover:border-[#0d7e5e] disabled:opacity-60"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <CalendarDays className="h-4 w-4 shrink-0 text-[#0d7e5e]" />
+                  {selectedEvent?.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={selectedEvent.imageUrl}
+                      alt=""
+                      className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <CalendarDays className="h-4 w-4 shrink-0 text-[#0d7e5e]" />
+                  )}
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-cos-text">
                       {selectedEvent?.title ?? "Choose an event…"}
@@ -559,73 +568,12 @@ export function FlyerBuilderShell({
                 <p className="text-[11px] text-cos-muted">
                   Using this event’s social artwork as inspiration.
                 </p>
+              ) : selectedEvent && !selectedEvent.imageUrl ? (
+                <p className="text-[11px] text-cos-muted">
+                  This event doesn’t have social artwork yet — Generate will
+                  invent a scene, or upload inspiration below.
+                </p>
               ) : null}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold tracking-widest text-cos-muted uppercase">
-                Page Size
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {(
-                  [
-                    { id: "letter" as const, label: "Letter (8.5×11)", tall: true },
-                    {
-                      id: "half" as const,
-                      label: "Half (8.5×5.5)",
-                      tall: false,
-                    },
-                  ] as const
-                ).map((size) => {
-                  const active = printSize === size.id;
-                  return (
-                    <button
-                      key={size.id}
-                      type="button"
-                      disabled={readOnly}
-                      onClick={() => setPrintSize(size.id)}
-                      className={cn(
-                        "flex flex-col items-center gap-1 rounded-xl border bg-white p-3 transition-all disabled:opacity-60",
-                        active
-                          ? "border-2 border-[#0d7e5e]"
-                          : "border-cos-border hover:border-[#0d7e5e]",
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "rounded-sm border",
-                          size.tall ? "h-8 w-6" : "h-5 w-8",
-                          active
-                            ? "border-[#0d7e5e]/30 bg-[#e6f3ee]/50"
-                            : "border-cos-border bg-[#fffcf7]",
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          "text-[10px] font-bold",
-                          !active && "text-cos-muted",
-                        )}
-                      >
-                        {size.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold tracking-widest text-cos-muted uppercase">
-                AI Prompt / Description
-              </label>
-              <textarea
-                rows={4}
-                disabled={readOnly}
-                value={aiDirection}
-                onChange={(e) => setAiDirection(e.target.value)}
-                placeholder="Describe your flyer… e.g. A fun, colorful flyer for a school BBQ."
-                className="w-full resize-none rounded-xl border border-cos-border bg-white p-3 text-sm focus:border-[#0d7e5e] focus:outline-none disabled:opacity-60"
-              />
             </div>
 
             <div className="space-y-2">
@@ -698,6 +646,72 @@ export function FlyerBuilderShell({
               >
                 Browse Gallery
               </button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold tracking-widest text-cos-muted uppercase">
+                Page Size
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { id: "letter" as const, label: "Letter (8.5×11)", tall: true },
+                    {
+                      id: "half" as const,
+                      label: "Half (8.5×5.5)",
+                      tall: false,
+                    },
+                  ] as const
+                ).map((size) => {
+                  const active = printSize === size.id;
+                  return (
+                    <button
+                      key={size.id}
+                      type="button"
+                      disabled={readOnly}
+                      onClick={() => setPrintSize(size.id)}
+                      className={cn(
+                        "flex flex-col items-center gap-1 rounded-xl border bg-white p-3 transition-all disabled:opacity-60",
+                        active
+                          ? "border-2 border-[#0d7e5e]"
+                          : "border-cos-border hover:border-[#0d7e5e]",
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "rounded-sm border",
+                          size.tall ? "h-8 w-6" : "h-5 w-8",
+                          active
+                            ? "border-[#0d7e5e]/30 bg-[#e6f3ee]/50"
+                            : "border-cos-border bg-[#fffcf7]",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "text-[10px] font-bold",
+                          !active && "text-cos-muted",
+                        )}
+                      >
+                        {size.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold tracking-widest text-cos-muted uppercase">
+                AI Prompt / Description
+              </label>
+              <textarea
+                rows={4}
+                disabled={readOnly}
+                value={aiDirection}
+                onChange={(e) => setAiDirection(e.target.value)}
+                placeholder="Describe your flyer… e.g. A fun, colorful flyer for a school BBQ."
+                className="w-full resize-none rounded-xl border border-cos-border bg-white p-3 text-sm focus:border-[#0d7e5e] focus:outline-none disabled:opacity-60"
+              />
             </div>
 
             <div className="space-y-2">

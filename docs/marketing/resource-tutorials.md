@@ -2,12 +2,14 @@
 
 **Status:** Living  
 **Owner:** Marketing / Engineering  
-**Last updated:** 2026-08-09  
+**Last updated:** 2026-08-17  
 **Related:** [Feature list](../product/feature-list.md) · [Architecture](../engineering/architecture.md)
 
 ## Purpose
 
 User-initiated narrated walkthroughs on `/resources` Featured Tutorials. Separate from silent homepage Product Tour demos (`product-demo-videos.ts`).
+
+On phones, `/resources` is in the marketing header **menu** (the top links hide below `md`) and in the footer. Homepage Product Tour video switching uses chips above the clip.
 
 ## Shipped tutorials
 
