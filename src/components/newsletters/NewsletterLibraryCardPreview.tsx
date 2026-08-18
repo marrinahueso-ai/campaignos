@@ -27,16 +27,18 @@ export function NewsletterLibraryCardPreview({
   const [scale, setScale] = useState(0);
 
   useLayoutEffect(() => {
-    const el = frameRef.current;
-    if (!el || !fragment) return;
+    if (!fragment) return;
+    const node = frameRef.current;
+    if (!node) return;
 
-    function update() {
-      setScale(newsletterLibraryPreviewScale(el.clientWidth));
-    }
+    const update = () => {
+      const width = frameRef.current?.clientWidth ?? 0;
+      setScale(newsletterLibraryPreviewScale(width));
+    };
 
     update();
     const observer = new ResizeObserver(update);
-    observer.observe(el);
+    observer.observe(node);
     return () => observer.disconnect();
   }, [fragment]);
 
