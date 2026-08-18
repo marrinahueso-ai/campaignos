@@ -1,18 +1,18 @@
 "use client";
 
 import { tryExportNewsletterPreviewFragment } from "@/lib/newsletter-composer/export-html";
+import {
+  NEWSLETTER_LIBRARY_PREVIEW_SOURCE_WIDTH,
+  newsletterLibraryPreviewScale,
+} from "@/lib/newsletter/library-card-preview";
 import type { NewsletterComposerState } from "@/lib/newsletter-composer/types";
 import { cn } from "@/lib/utils/cn";
-
-/** Email content width used when scaling into the card thumbnail. */
-const PREVIEW_SOURCE_WIDTH = 560;
-/** Fits ~160px-tall preview windows across the library grid. */
-const PREVIEW_SCALE = 0.32;
+import { useLayoutEffect, useRef, useState } from "react";
 
 /**
  * Miniature newsletter thumbnail for Library cards.
- * Renders the same saved composer HTML as the desktop email preview —
- * scaled and cropped to the top of the issue (no duplicate preview store).
+ * Renders the same saved composer HTML as the desktop email preview,
+ * scaled to fill the card (no gray side bands).
  * Never throws — a bad snapshot must not blank the Library page.
  */
 export function NewsletterLibraryCardPreview({
@@ -23,6 +23,22 @@ export function NewsletterLibraryCardPreview({
   className?: string;
 }) {
   const fragment = tryExportNewsletterPreviewFragment(state);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = frameRef.current;
+    if (!el || !fragment) return;
+
+    function update() {
+      setScale(newsletterLibraryPreviewScale(el.clientWidth));
+    }
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fragment]);
 
   if (!fragment) {
     return (
@@ -39,24 +55,24 @@ export function NewsletterLibraryCardPreview({
 
   return (
     <div
-      className={cn(
-        "relative isolate overflow-hidden bg-[#e8e4dc]",
-        className,
-      )}
+      ref={frameRef}
+      className={cn("relative isolate overflow-hidden bg-white", className)}
     >
-      <div
-        className="pointer-events-none absolute left-0 top-0 origin-top-left"
-        style={{
-          width: PREVIEW_SOURCE_WIDTH,
-          transform: `scale(${PREVIEW_SCALE})`,
-        }}
-        aria-hidden
-      >
+      {scale > 0 ? (
         <div
-          className="bg-white px-4 py-3 shadow-sm [&_a]:pointer-events-none"
-          dangerouslySetInnerHTML={{ __html: fragment }}
-        />
-      </div>
+          className="pointer-events-none absolute top-0 left-0 origin-top-left"
+          style={{
+            width: NEWSLETTER_LIBRARY_PREVIEW_SOURCE_WIDTH,
+            transform: `scale(${scale})`,
+          }}
+          aria-hidden
+        >
+          <div
+            className="bg-white [&_a]:pointer-events-none"
+            dangerouslySetInnerHTML={{ __html: fragment }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

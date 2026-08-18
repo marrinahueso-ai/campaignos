@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 17, 2026 — Newsletter grid cards can be rearranged
+**Last updated:** August 17, 2026 — Newsletter library cards fill their preview area
 
 ---
 
@@ -172,7 +172,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Newsletter Composer
 Community email builder plus a durable Newsletter → Approval → Schedule → Send workflow. Living docs: [QA](../qa/newsletter-composer.md) · [Engineering](../engineering/newsletter-composer.md).
 
-- **Library** — `/newsletters` is the Newsletter home (filters: All · In Progress · Waiting · Changes Requested · Scheduled · Sent · Templates). Compact library cards (~300px, up to 4 columns on wide screens) show a scaled thumbnail of each issue’s saved composer content plus title, status, audience, and schedule/sent time; drafts and other non-sent issues can be deleted from the card; Contacts stays one click away — **shipped**
+- **Library** — `/newsletters` is the Newsletter home (filters: All · In Progress · Waiting · Changes Requested · Scheduled · Sent · Templates). Compact library cards (~300px, up to 4 columns on wide screens) show a scaled thumbnail of each issue’s saved composer content **filling the card preview** (no gray side bands) plus title, status, audience, and schedule/sent time; drafts and other non-sent issues can be deleted from the card; Contacts stays one click away — **shipped**
 - **Template selection** — `/newsletters/new`; V1 **Standard School Update** opens the same block builder (other templates shown as coming soon) — **shipped**
 - **Block builder** — `/newsletter-composer` (Create with AI → Newsletter → New, or from Library). Palette: From Hey Ralli (Event / Upcoming / Volunteer / Artwork / Sponsor) + Add Your Own blocks; drag/reorder/duplicate/delete; Event picker supports multi-select plus layouts (Featured / Card / Artwork only / Compact / Text + image / 2⁄3 column / Grid) that fill from the chosen events; **Grid / 2⁄3 column / Carousel cards can be rearranged** (drag on the canvas or arrows in Block settings); Heading/Text blocks support color, font, size, alignment (Heading also supports a fixed-ratio optional image); Button blocks support up to two CTAs with per-button colors and side-by-side or stacked layout; Header and Footer support background/text/font styling plus an optional CTA; images support Replace / Link / Alt; autosave; Preview & Send Details (or Preview & Resubmit after changes requested) — **shipped**
 - **Preview + Send Details (before approval)** — `/newsletters/[id]/preview` collects recipients (audience drawer), send date/time, and approval context; package is persisted on the newsletter; resubmit preserves recipients/datetime unless changed — **shipped**

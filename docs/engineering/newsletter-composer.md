@@ -282,6 +282,7 @@ Steps today: `header` → `message` → `stories` → `mustdos` → `footer` →
 |------|------|------|
 | Composer UI | `src/components/newsletter-composer/NewsletterComposer.tsx` | Multi-step UI, local draft hydrate/save, durable save wiring, Preview (test send / send for approval / exports) |
 | Block builder | `src/components/newsletters/builder/*` | Canvas + palette + settings; grid/column cards reorder via `moveCanvasColumn` |
+| Library cards | `src/components/newsletters/NewsletterLibraryCardPreview.tsx` | Scales saved composer HTML to fill the card thumbnail |
 | Composer preview | `src/components/newsletter-composer/EmailPreviewPhone.tsx` | Phone / desktop preview shells |
 | Composer types/state | `src/lib/newsletter-composer/types.ts`, `defaults.ts`, `draft-storage.ts` | Local state, layout sync, browser-local draft store |
 | Export | `src/lib/newsletter-composer/export-html.ts`, `export-mtk.ts` | Full HTML export + Membership Toolkit rich fragment (shared by composer preview, versions, and test send) |

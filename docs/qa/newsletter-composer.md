@@ -68,6 +68,7 @@ Draft status shows while editing ("Saving draft…", "Draft saved"). **The old s
 
 1. `/create-with-ai` → **Newsletter** → `/newsletter-composer`.
 2. Edit subject + leadership message → navigate away → return — draft restored for the org.
+2b. `/newsletters` library cards: preview fills the top of the card edge-to-edge (no gray side bands around a tiny thumbnail).
 3. Refresh — draft still present.
 3b. **Chrome:** Edit subject → wait for "Draft saved" → hard-refresh — latest subject returns (not an older IndexedDB copy). Re-check Safari for parity.
 3c. Save once with a `newsletterId` present (e.g. reopened from `/newsletters/[id]`) → confirm the durable `newsletters` row updates too (check `/newsletters/[id]` reflects the new subject after a save), not just the local draft.
