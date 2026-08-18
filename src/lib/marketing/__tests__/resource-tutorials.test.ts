@@ -39,7 +39,20 @@ describe("resource-tutorials registry", () => {
     assert.equal(tutorial.captionsSrc, null);
   });
 
-  it("exports approvals-scheduling as the third narrated tutorial", () => {
+  it("exports create-a-flyer as a narrated tutorial", () => {
+    assert.ok(RESOURCE_TUTORIAL_IDS.includes("create-a-flyer"));
+    const tutorial = RESOURCE_TUTORIALS["create-a-flyer"];
+    assert.equal(tutorial.title, "Create a flyer");
+    assert.match(tutorial.description, /flyer/i);
+    assert.equal(tutorial.src, "/videos/resources/create-a-flyer-tutorial.mp4");
+    assert.equal(
+      tutorial.poster,
+      "/images/resources/tutorials/create-a-flyer-tutorial.jpg",
+    );
+    assert.equal(tutorial.captionsSrc, null);
+  });
+
+  it("exports approvals-scheduling as a narrated tutorial", () => {
     assert.ok(RESOURCE_TUTORIAL_IDS.includes("approvals-scheduling"));
     const tutorial = RESOURCE_TUTORIALS["approvals-scheduling"];
     assert.equal(tutorial.title, "Approving & scheduling content");
@@ -72,6 +85,7 @@ describe("resource-tutorials registry", () => {
   it("resolves tutorials by id and documents captions status", () => {
     assert.equal(getResourceTutorial("create-an-event")?.id, "create-an-event");
     assert.equal(getResourceTutorial("create-with-ai")?.id, "create-with-ai");
+    assert.equal(getResourceTutorial("create-a-flyer")?.id, "create-a-flyer");
     assert.equal(
       getResourceTutorial("approvals-scheduling")?.id,
       "approvals-scheduling",

@@ -85,6 +85,7 @@ const FEATURED_TUTORIALS: ReadonlyArray<
 > = [
   { kind: "video", tutorialId: "create-an-event" },
   { kind: "video", tutorialId: "create-with-ai" },
+  { kind: "video", tutorialId: "create-a-flyer" },
   { kind: "video", tutorialId: "approvals-scheduling" },
 ];
 

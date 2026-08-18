@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Marketing / Engineering  
-**Last updated:** 2026-08-17  
+**Last updated:** 2026-08-18  
 **Related:** [Feature list](../product/feature-list.md) · [Architecture](../engineering/architecture.md)
 
 ## Purpose
@@ -17,6 +17,7 @@ On phones, `/resources` is in the marketing header **menu** (the top links hide 
 |----|-------|-----|--------|
 | `create-an-event` | Create your first event | `create-an-event-tutorial.mp4` | `create-an-event-tutorial.jpg` |
 | `create-with-ai` | Creating social posts with AI | `create-with-ai-tutorial.mp4` | `create-with-ai-tutorial.jpg` |
+| `create-a-flyer` | Create a flyer | `create-a-flyer-tutorial.mp4` | `create-a-flyer-tutorial.jpg` |
 | `approvals-scheduling` | Approving & scheduling content | `approvals-scheduling-tutorial.mp4` | `approvals-scheduling-tutorial.jpg` |
 
 ## Assets

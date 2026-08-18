@@ -10,6 +10,7 @@
 export type ResourceTutorialId =
   | "create-an-event"
   | "create-with-ai"
+  | "create-a-flyer"
   | "approvals-scheduling";
 
 export type ResourceTutorial = {
@@ -48,6 +49,16 @@ export const RESOURCE_TUTORIALS: Record<ResourceTutorialId, ResourceTutorial> = 
     src: "/videos/resources/create-with-ai-tutorial.mp4",
     poster: "/images/resources/tutorials/create-with-ai-tutorial.jpg",
     label: "Creating social posts with AI — narrated Hey Ralli tutorial",
+    captionsSrc: null,
+  },
+  "create-a-flyer": {
+    id: "create-a-flyer",
+    title: "Create a flyer",
+    description:
+      "See how to generate a print-ready school flyer from an event with Create with AI — then refine it and send it for approval.",
+    src: "/videos/resources/create-a-flyer-tutorial.mp4",
+    poster: "/images/resources/tutorials/create-a-flyer-tutorial.jpg",
+    label: "Create a flyer — narrated Hey Ralli tutorial",
     captionsSrc: null,
   },
   "approvals-scheduling": {
