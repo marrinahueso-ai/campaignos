@@ -65,7 +65,7 @@
     "test:load:data-scale:100school:50vu:warmup": "K6_TRACK_HOLD_SLOW=true k6 run load-tests/k6/data-scale-100school-50vu-warmup.js",
     "test:load:data-scale:100school:75vu": "K6_TRACK_HOLD_SLOW=true k6 run load-tests/k6/data-scale-100school-75vu.js",
     "test:load:data-scale:100school:75vu:warmup": "K6_TRACK_HOLD_SLOW=true k6 run load-tests/k6/data-scale-100school-75vu-warmup.js",
-    "test:security": "npx tsx --test 'src/lib/security/__tests__/*.test.ts'",
+    "test:security": "tsx --test $(find src/lib/security/__tests__ -name '*.test.ts' | sort)",
     "audit:ci": "npm audit --audit-level=high"
   },
   "dependencies": {
@@ -108,6 +108,7 @@
     "eslint-config-next": "^15.5.19",
     "playwright": "^1.61.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }

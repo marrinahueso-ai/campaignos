@@ -41,6 +41,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Expand test files in the shell (Node 20's test runner does not
+      # treat a quoted *.test.ts glob as a file list). tsx comes from the lockfile.
       - name: Security unit tests
         run: npm run test:security
 

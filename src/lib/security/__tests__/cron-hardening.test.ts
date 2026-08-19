@@ -1,26 +1,25 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 import { isSentryTestAuthorized } from "@/lib/monitoring/sentry-verify";
 
-const CRON_ROUTE_DIRS = [
-  "calendar-subscribe-sync",
-  "google-calendar-sync",
-  "inbox-sync",
-  "insights-sync",
-  "manual-upload-emails",
-  "meta-publish",
-  "meta-token-health",
-  "newsletter-scheduled-sends",
-  "story-post-reminders",
-  "volunteer-sync",
-];
+const CRON_ROOT = fileURLToPath(new URL("../../../app/api/cron", import.meta.url));
+
+function listCronRouteDirs(): string[] {
+  return readdirSync(CRON_ROOT, { withFileTypes: true })
+    .filter(
+      (entry) =>
+        entry.isDirectory() &&
+        existsSync(join(CRON_ROOT, entry.name, "route.ts")),
+    )
+    .map((entry) => entry.name)
+    .sort();
+}
 
 function readCronRouteSrc(dir: string): string {
-  return readFileSync(
-    new URL(`../../../app/api/cron/${dir}/route.ts`, import.meta.url),
-    "utf8",
-  );
+  return readFileSync(join(CRON_ROOT, dir, "route.ts"), "utf8");
 }
 
 /**
@@ -34,7 +33,16 @@ function readCronRouteSrc(dir: string): string {
  *    never accepts the secret via a URL query string.
  */
 describe("cron routes declare an explicit maxDuration", () => {
-  for (const dir of CRON_ROUTE_DIRS) {
+  const cronRouteDirs = listCronRouteDirs();
+
+  it("discovers at least one /api/cron/*/route.ts", () => {
+    assert.ok(
+      cronRouteDirs.length > 0,
+      "expected to find cron route.ts files under src/app/api/cron",
+    );
+  });
+
+  for (const dir of cronRouteDirs) {
     it(`/api/cron/${dir} sets maxDuration`, () => {
       const src = readCronRouteSrc(dir);
       assert.match(

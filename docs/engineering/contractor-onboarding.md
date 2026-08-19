@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / Founder  
-**Last updated:** August 18, 2026  
+**Last updated:** August 19, 2026  
 **Related:** [Local setup](../getting-started/local-setup.md) · [Environments](../getting-started/environments.md) · [Env & secrets](../ops/env-and-secrets.md) · [Architecture](./architecture.md) · [Commercial-readiness handoff](../ops/commercial-readiness-engineer-handoff.md) · [`.env.contractor.example`](../../.env.contractor.example) · [Documentation home](../README.md)
 
 Safe workflow for a temporary full-stack contractor: clone Hey Ralli, run it locally against **staging**, open pull requests, use Vercel Preview, and never touch production credentials.
@@ -320,6 +320,6 @@ They do **not** need permission to edit Production environment variables or to c
 ## What this repo already wired for you
 
 - [`.env.contractor.example`](../../.env.contractor.example) — staging-first template  
-- [`.github/workflows/pr-checks.yml`](../../.github/workflows/pr-checks.yml) — lint, `npm run test:security`, `npm run build` on every PR (dummy public env only; no production secrets)  
+- [`.github/workflows/pr-checks.yml`](../../.github/workflows/pr-checks.yml) — lint, `npm run test:security`, `npm run build` on every PR and on push to `main` (dummy public env only; no production secrets). `tsx` is a lockfile devDependency so CI can run the security tests without a laptop `npx` cache.  
 - `.nvmrc` → Node 20  
 - `package.json` `engines.node` ≥ 20  
