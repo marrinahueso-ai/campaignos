@@ -87,6 +87,24 @@ function openFile(file: CampaignFile) {
   window.open(`/api/files/${file.id}/download`, "_blank", "noopener,noreferrer");
 }
 
+/** Snapshot every dropped file immediately — Safari on a `<button>` often exposes only the first. */
+function filesFromDataTransfer(transfer: DataTransfer | null): File[] {
+  if (!transfer) return [];
+  const fromItems: File[] = [];
+  const items = transfer.items;
+  if (items && items.length > 0) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === "file") {
+        const file = item.getAsFile();
+        if (file) fromItems.push(file);
+      }
+    }
+  }
+  if (fromItems.length > 0) return fromItems;
+  return Array.from(transfer.files ?? []);
+}
+
 export function EventDetailFilesEasePanel({
   eventId,
   data,
@@ -116,6 +134,7 @@ export function EventDetailFilesEasePanel({
   );
   const [progress, setProgress] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   const folders = data.foldersByEventId[eventId] ?? [];
   const generatedPostAssets = data.generatedPostAssets ?? [];
@@ -162,20 +181,22 @@ export function EventDetailFilesEasePanel({
 
   const unfiledCount = eventFiles.filter((file) => !file.folderId).length;
 
-  const uploadMany = (files: File[]) => {
-    if (files.length === 0 || uploading) return;
+  const uploadMany = (incoming: File[]) => {
+    const files = Array.from(incoming);
+    if (files.length === 0) return;
+    if (uploading) {
+      setError("Wait until this upload finishes, then drop the rest.");
+      return;
+    }
+    setUploading(true);
+    setError(null);
+    setProgress(`Uploading 1 of ${files.length}…`);
     void (async () => {
-      setUploading(true);
-      setError(null);
       let uploaded = 0;
       let lastPrompt: UploadCategoryPromptState | null = null;
       try {
         for (const file of files) {
-          setProgress(
-            files.length === 1
-              ? "Uploading…"
-              : `Uploading ${uploaded + 1} of ${files.length}…`,
-          );
+          setProgress(`Uploading ${uploaded + 1} of ${files.length}…`);
           const formData = new FormData();
           formData.set("eventId", eventId);
           formData.set("category", "auto");
@@ -300,40 +321,63 @@ export function EventDetailFilesEasePanel({
         Filed automatically by type
       </p>
 
-      <button
-        type="button"
-        disabled={uploading || pending || !data.tablesAvailable}
-        onClick={() => inputRef.current?.click()}
+      <div
+        onDragEnter={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!uploading && data.tablesAvailable) setDragOver(true);
+        }}
         onDragOver={(event) => {
           event.preventDefault();
+          event.stopPropagation();
           event.dataTransfer.dropEffect = "copy";
+          if (!uploading && data.tablesAvailable) setDragOver(true);
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (event.currentTarget.contains(event.relatedTarget as Node)) return;
+          setDragOver(false);
         }}
         onDrop={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          const files = Array.from(event.dataTransfer.files ?? []);
+          setDragOver(false);
+          if (!data.tablesAvailable) return;
+          const files = filesFromDataTransfer(event.dataTransfer);
           if (files.length > 0) uploadMany(files);
         }}
-        className="mb-3.5 w-full rounded-[18px] border-[1.5px] border-dashed border-[rgba(42,38,34,0.2)] bg-[rgba(255,252,247,0.45)] px-5 py-4 text-center text-[13px] font-semibold text-cos-muted transition hover:bg-[rgba(255,252,247,0.75)] disabled:opacity-60"
+        className={cn(
+          "mb-3.5 w-full rounded-[18px] border-[1.5px] border-dashed text-center text-[13px] font-semibold text-cos-muted transition",
+          dragOver
+            ? "border-[#6b8171] bg-[rgba(107,129,113,0.1)]"
+            : "border-[rgba(42,38,34,0.2)] bg-[rgba(255,252,247,0.45)] hover:bg-[rgba(255,252,247,0.75)]",
+          (uploading || pending || !data.tablesAvailable) && "opacity-60",
+        )}
       >
-        {progress
-          ? progress
-          : uploading
-            ? "Uploading…"
-            : "Drop files here — they’ll link to this event and sort by type."}
-      </button>
-      <input
-        ref={inputRef}
-        type="file"
-        multiple
-        className="hidden"
-        accept=".pdf,.docx,.doc,.xlsx,.xls,.png,.jpg,.jpeg"
-        onChange={(event) => {
-          const files = Array.from(event.target.files ?? []);
-          if (files.length > 0) uploadMany(files);
-          event.target.value = "";
-        }}
-      />
+        <label className="block cursor-pointer px-5 py-4">
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            className="sr-only"
+            disabled={uploading || pending || !data.tablesAvailable}
+            accept=".pdf,.docx,.doc,.xlsx,.xls,.png,.jpg,.jpeg"
+            onChange={(event) => {
+              const files = Array.from(event.target.files ?? []);
+              if (files.length > 0) uploadMany(files);
+              event.target.value = "";
+            }}
+          />
+          <span aria-live="polite">
+            {progress
+              ? progress
+              : uploading
+                ? "Uploading…"
+                : "Drop files here — they’ll link to this event and sort by type."}
+          </span>
+        </label>
+      </div>
 
       {categoryPrompt ? (
         <div className="mb-3.5">

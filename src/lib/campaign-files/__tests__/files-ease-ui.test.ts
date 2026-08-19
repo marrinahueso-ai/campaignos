@@ -104,10 +104,17 @@ describe("files ease UI contracts", () => {
 
   it("event Files drop and picker upload every selected file, not only the first", () => {
     assert.match(eventFiles, /uploadMany/);
-    assert.match(eventFiles, /Array\.from\(event\.dataTransfer\.files/);
+    assert.match(eventFiles, /filesFromDataTransfer/);
+    assert.match(eventFiles, /getAsFile/);
+    assert.match(eventFiles, /Array\.from\(transfer\.files/);
     assert.match(eventFiles, /Array\.from\(event\.target\.files/);
     assert.match(eventFiles, /multiple/);
+    assert.match(eventFiles, /stopPropagation/);
+    assert.match(eventFiles, /aria-live="polite"/);
     assert.match(eventFiles, /Uploading \$\{uploaded \+ 1\} of \$\{files\.length\}/);
+    assert.match(eventFiles, /Uploading 1 of \$\{files\.length\}/);
+    assert.match(eventFiles, /<div\s+onDragEnter=/);
+    assert.doesNotMatch(eventFiles, /<button[\s\n]+type="button"[\s\S]{0,240}onDrop=/);
     assert.doesNotMatch(eventFiles, /files\?\.\[0\]/);
   });
 
