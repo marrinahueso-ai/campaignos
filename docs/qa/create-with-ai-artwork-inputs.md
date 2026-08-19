@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA (Hey Ralli)  
-**Last updated:** 2026-08-17  
+**Last updated:** 2026-08-19  
 **Related:** [Testing guide](./testing-guide.md) · [Feature list](../product/feature-list.md) · [Image architecture](../engineering/image-architecture.md) · [Campaign Builder debug](../../.cursor/rules/campaign-builder-debug.mdc) · Playwright Layer A `tests/hey-ralli/smoke/13-create-with-ai-artwork-inputs.spec.ts` · Layer C `tests/hey-ralli/smoke/13b-create-with-ai-artwork-generation-inputs.spec.ts` · Prompt contracts `src/lib/campaign-builder-v2/__tests__/artwork-prompts.test.ts`
 
 Inventory of every Create with AI control that feeds **artwork** generation (feed + story). Use Layer A for wiring/persistence, unit prompt contracts for “UI saved but AI ignored,” and Layer C only for a small opt-in golden set that actually calls the model.
@@ -63,10 +63,11 @@ Do **not** generate full feed+story for every dropdown value in CI.
 
 | # | Control | Field(s) | Feeds artwork? | Layer A / verify |
 |---|---------|----------|----------------|------------------|
-| 13 | Colors None | `colorMode: "none"` | Yes | Sidebar Colors = None |
-| 14 | Organization palette | `colorMode: "organization_palette"` | Yes | If school colors saved |
-| 15 | Inspiration palette | `colorMode: "inspiration_palette"` | Yes | Needs inspiration images |
+| 13 | Colors None | `colorMode: "none"` | Yes | Sidebar Colors = None; Social Setup: remove every Brand Colors swatch |
+| 14 | Organization palette | `colorMode: "organization_palette"` | Yes | If school colors saved (legacy Inspiration step) |
+| 15 | Inspiration palette | `colorMode: "inspiration_palette"` | Yes | Needs inspiration images (legacy Inspiration step) |
 | 16–18 | Custom palette / swatches | `custom_palette`, `customPaletteColors[]` | Yes | Sidebar Custom |
+| 16a | **Social Setup Brand Colors** | click swatch / **+** / **×** → `custom_palette` + `customPaletteColors[]` | Yes | Voice & Colors: swatches are the color picker (not display-only). Brand-kit primary/secondary may appear as suggestions; clicking, adding, or removing writes the campaign custom palette generation already reads. Unit: `creative-config.test.ts` (setup brand colors) + `social-composer-brand-colors-ui.test.ts` |
 
 ### Voice and tone (Creative Setup §4)
 

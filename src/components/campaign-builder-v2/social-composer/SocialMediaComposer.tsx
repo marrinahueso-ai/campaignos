@@ -26,6 +26,15 @@ import {
 } from "@/lib/campaign-builder-v2/actions";
 import { brandKitIdForAi } from "@/lib/campaign-builder-v2/brand-kit";
 import {
+  SETUP_BRAND_COLOR_MAX,
+  addSetupBrandColor,
+  commitSetupBrandColors,
+  removeSetupBrandColor,
+  replaceSetupBrandColor,
+  resolveSetupBrandColors,
+  toSetupColorInputValue,
+} from "@/lib/campaign-builder-v2/creative-config";
+import {
   getSharedCaptionText,
   syncCaptionsToPlatforms,
 } from "@/lib/campaign-builder-v2/caption-utils";
@@ -535,11 +544,18 @@ function SetupPanel({
     [session.milestones],
   );
   const handle = handleize(campaignTitle);
-  const colors = [
-    inspiration.primarySchoolColor,
-    inspiration.secondarySchoolColor,
-    ...(inspiration.customPaletteColors ?? []),
-  ].filter((color): color is string => Boolean(color));
+  const colors = resolveSetupBrandColors(inspiration);
+  const canAddBrandColor = colors.length < SETUP_BRAND_COLOR_MAX;
+
+  function commitBrandColors(next: string[]) {
+    updateInspiration(commitSetupBrandColors(next));
+  }
+
+  function chooseShownBrandColors() {
+    if (inspiration.colorMode === "custom_palette") return;
+    if (colors.length === 0) return;
+    commitBrandColors(colors);
+  }
 
   async function handleSave() {
     setError(null);
@@ -893,23 +909,76 @@ function SetupPanel({
 
             <div className="setup-voice-row">
               <div className="setup-colors-block">
-                <label className="field-label">Brand Colors</label>
-                <div className="color-row">
-                  {colors.length > 0 ? (
-                    colors.map((color, index) => (
+                <label className="field-label" id="setup-brand-colors-label">
+                  Brand Colors
+                </label>
+                <div
+                  className="color-row"
+                  role="group"
+                  aria-labelledby="setup-brand-colors-label"
+                >
+                  {colors.map((color, index) => {
+                    const inputValue = toSetupColorInputValue(color);
+                    return (
                       <div
                         key={`${color}-${index}`}
-                        className="swatch"
-                        style={{ background: color }}
-                        title={color}
-                      />
-                    ))
-                  ) : (
-                    <p className="desc" style={{ margin: 0 }}>
-                      No colors yet — set them in your brand kit.
-                    </p>
-                  )}
+                        className="swatch-item"
+                      >
+                        <label
+                          className="swatch swatch-pick"
+                          style={{ background: inputValue }}
+                          title={`${inputValue} — click to change`}
+                        >
+                          <input
+                            type="color"
+                            value={inputValue}
+                            aria-label={`Brand color ${index + 1}`}
+                            onFocus={chooseShownBrandColors}
+                            onChange={(event) =>
+                              commitBrandColors(
+                                replaceSetupBrandColor(
+                                  colors,
+                                  index,
+                                  event.target.value,
+                                ),
+                              )
+                            }
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="swatch-remove"
+                          aria-label={`Remove brand color ${index + 1}`}
+                          onClick={() =>
+                            commitBrandColors(
+                              removeSetupBrandColor(colors, index),
+                            )
+                          }
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {canAddBrandColor ? (
+                    <button
+                      type="button"
+                      className="swatch-add"
+                      aria-label="Add brand color"
+                      title="Add a color"
+                      onClick={() =>
+                        commitBrandColors(addSetupBrandColor(colors))
+                      }
+                    >
+                      +
+                    </button>
+                  ) : null}
                 </div>
+                <p className="setup-colors-hint">
+                  {colors.length > 0
+                    ? "Click a color to change it, or add another. These guide the artwork."
+                    : "Add the colors you want in the artwork."}
+                </p>
               </div>
               <div className="setup-voice-block">
                 <label className="field-label" htmlFor="setup-caption-voice">

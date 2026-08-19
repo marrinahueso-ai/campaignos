@@ -194,6 +194,137 @@ export function applyColorMode(
   };
 }
 
+/** Quiet cap so Setup Brand Colors stays a short row of pills, not a dump. */
+export const SETUP_BRAND_COLOR_MAX = 6;
+export const SETUP_BRAND_COLOR_FALLBACK = "#2f4a3c";
+export const SETUP_NEW_BRAND_COLOR = "#ffffff";
+
+/** Normalize a stored color to a native `<input type="color">` value. */
+export function toSetupColorInputValue(
+  value: string,
+  fallback = SETUP_BRAND_COLOR_FALLBACK,
+): string {
+  const cleaned = value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(cleaned)) return cleaned.toLowerCase();
+  if (/^[0-9a-fA-F]{6}$/.test(cleaned)) return `#${cleaned.toLowerCase()}`;
+  if (/^#[0-9a-fA-F]{3}$/.test(cleaned)) {
+    const r = cleaned[1];
+    const g = cleaned[2];
+    const b = cleaned[3];
+    return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
+  }
+  return fallback;
+}
+
+function compactSetupColors(
+  colors: Array<string | null | undefined>,
+): string[] {
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const color of colors) {
+    if (typeof color !== "string") continue;
+    const trimmed = color.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    next.push(trimmed);
+    if (next.length >= SETUP_BRAND_COLOR_MAX) break;
+  }
+  return next;
+}
+
+/**
+ * Colors shown on Social Creative Setup Brand Colors.
+ * Chosen custom / org palette first; otherwise brand-kit colors as suggestions.
+ */
+export function resolveSetupBrandColors(
+  inspiration: CampaignBuilderInspiration,
+): string[] {
+  const colorMode = isCreativeColorMode(inspiration.colorMode)
+    ? inspiration.colorMode
+    : "none";
+
+  if (colorMode === "custom_palette") {
+    return compactSetupColors(inspiration.customPaletteColors ?? []);
+  }
+
+  if (colorMode === "organization_palette") {
+    return compactSetupColors([
+      inspiration.primarySchoolColor,
+      inspiration.secondarySchoolColor,
+    ]);
+  }
+
+  // none / inspiration_palette — brand-kit values are suggestions only until
+  // the user clicks, adds, or removes a swatch (then they become custom).
+  return compactSetupColors([
+    inspiration.primarySchoolColor,
+    inspiration.secondarySchoolColor,
+  ]);
+}
+
+/**
+ * Persist Setup Brand Colors as the custom palette generation already reads.
+ * Empty list = explicit None (no color guidance).
+ */
+export function commitSetupBrandColors(
+  colors: string[],
+): Partial<CampaignBuilderInspiration> {
+  const next = compactSetupColors(
+    colors.map((color) => toSetupColorInputValue(color)),
+  );
+
+  if (next.length === 0) {
+    return {
+      colorMode: "none",
+      useSchoolColors: false,
+      customPaletteColors: [],
+    };
+  }
+
+  return {
+    colorMode: "custom_palette",
+    useSchoolColors: false,
+    customPaletteColors: next,
+  };
+}
+
+export function replaceSetupBrandColor(
+  current: string[],
+  index: number,
+  color: string,
+): string[] {
+  if (index < 0 || index >= current.length) return current;
+  const next = [...current];
+  next[index] = toSetupColorInputValue(color);
+  return compactSetupColors(next);
+}
+
+const SETUP_ADD_COLOR_CANDIDATES = [
+  SETUP_NEW_BRAND_COLOR,
+  SETUP_BRAND_COLOR_FALLBACK,
+  "#c4922e",
+  "#0b2f5b",
+  "#6b8171",
+];
+
+export function addSetupBrandColor(current: string[]): string[] {
+  if (current.length >= SETUP_BRAND_COLOR_MAX) return current;
+  const existing = new Set(current.map((color) => toSetupColorInputValue(color)));
+  const next =
+    SETUP_ADD_COLOR_CANDIDATES.find((color) => !existing.has(color)) ??
+    SETUP_NEW_BRAND_COLOR;
+  return [...current, next];
+}
+
+export function removeSetupBrandColor(
+  current: string[],
+  index: number,
+): string[] {
+  return current.filter((_, itemIndex) => itemIndex !== index);
+}
+
 export function clearAllCreativeSelections(
   inspiration: CampaignBuilderInspiration,
 ): CampaignBuilderInspiration {

@@ -753,11 +753,80 @@
       overflow: hidden;
       white-space: pre-wrap;
     }
-.smc .color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.smc .color-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.smc .swatch-item { position: relative; }
 .smc .swatch {
       width: 36px; height: 36px; border-radius: 12px;
       border: 2px solid rgba(255,255,255,.8);
       box-shadow: 0 0 0 1px var(--line);
+    }
+.smc .swatch-pick {
+      position: relative;
+      display: block;
+      padding: 0;
+      overflow: hidden;
+      cursor: pointer;
+    }
+.smc .swatch-pick:hover,
+.smc .swatch-pick:focus-within {
+      box-shadow: 0 0 0 1px var(--line), 0 0 0 3px rgba(47, 74, 60, 0.18);
+    }
+.smc .swatch-pick input[type="color"] {
+      position: absolute;
+      inset: -6px;
+      width: calc(100% + 12px);
+      height: calc(100% + 12px);
+      padding: 0;
+      border: none;
+      cursor: pointer;
+      opacity: 0;
+    }
+.smc .swatch-remove {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--cream);
+      color: var(--ink-soft);
+      font-size: 11px;
+      line-height: 1;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+.smc .swatch-remove:hover {
+      background: var(--white);
+      color: var(--ink);
+    }
+.smc .swatch-add {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 2px dashed var(--line);
+      background: var(--ivory);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+.smc .swatch-add:hover {
+      color: var(--ink);
+      background: rgba(232, 226, 217, 0.45);
+    }
+.smc .setup-colors-hint {
+      margin: 8px 0 0;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--muted);
+      max-width: 220px;
     }
 
     /* Logos from Setup */

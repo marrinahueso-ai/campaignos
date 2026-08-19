@@ -2,13 +2,20 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  SETUP_BRAND_COLOR_MAX,
+  addSetupBrandColor,
   applyColorMode,
   clearAllCreativeSelections,
+  commitSetupBrandColors,
   migrateLegacyCreativeFields,
   normalizeCreativeSelections,
   normalizeMilestoneCreativeOverrides,
+  removeSetupBrandColor,
+  replaceSetupBrandColor,
   resolveMilestoneInspiration,
+  resolveSetupBrandColors,
   toCreativeConfiguration,
+  toSetupColorInputValue,
 } from "../creative-config.ts";
 import { buildDefaultInspiration } from "../seed-data.ts";
 import type { CampaignBuilderInspiration } from "../types.ts";
@@ -378,6 +385,62 @@ describe("normalizeMilestoneCreativeOverrides", () => {
   it("returns undefined for an empty/undefined override (inherit)", () => {
     assert.equal(normalizeMilestoneCreativeOverrides(undefined), undefined);
     assert.equal(normalizeMilestoneCreativeOverrides({}), undefined);
+  });
+});
+
+describe("setup brand colors", () => {
+  it("normalizes hex for the native color input", () => {
+    assert.equal(toSetupColorInputValue("#2F4A3C"), "#2f4a3c");
+    assert.equal(toSetupColorInputValue("C4922E"), "#c4922e");
+    assert.equal(toSetupColorInputValue("#abc"), "#aabbcc");
+    assert.equal(toSetupColorInputValue("navy", "#123456"), "#123456");
+  });
+
+  it("shows brand-kit colors as suggestions when none is selected", () => {
+    const colors = resolveSetupBrandColors(
+      sampleInspiration({
+        colorMode: "none",
+        primarySchoolColor: "#0b7a75",
+        secondarySchoolColor: "#4c8a4a",
+        customPaletteColors: [],
+      }),
+    );
+    assert.deepEqual(colors, ["#0b7a75", "#4c8a4a"]);
+  });
+
+  it("prefers the chosen custom palette over brand-kit suggestions", () => {
+    const colors = resolveSetupBrandColors(
+      sampleInspiration({
+        colorMode: "custom_palette",
+        primarySchoolColor: "#0b7a75",
+        secondarySchoolColor: "#4c8a4a",
+        customPaletteColors: ["#ff00aa"],
+      }),
+    );
+    assert.deepEqual(colors, ["#ff00aa"]);
+  });
+
+  it("commits edits as the custom palette generation reads", () => {
+    const patch = commitSetupBrandColors(["#0B7A75", "#4c8a4a"]);
+    assert.equal(patch.colorMode, "custom_palette");
+    assert.equal(patch.useSchoolColors, false);
+    assert.deepEqual(patch.customPaletteColors, ["#0b7a75", "#4c8a4a"]);
+  });
+
+  it("clears color guidance when the last swatch is removed", () => {
+    const afterReplace = replaceSetupBrandColor(["#111111", "#222222"], 0, "#abcdef");
+    assert.deepEqual(afterReplace, ["#abcdef", "#222222"]);
+    const afterRemove = removeSetupBrandColor(["#abcdef"], 0);
+    const patch = commitSetupBrandColors(afterRemove);
+    assert.equal(patch.colorMode, "none");
+    assert.deepEqual(patch.customPaletteColors, []);
+  });
+
+  it("adds a new swatch without exceeding the quiet cap", () => {
+    const one = addSetupBrandColor(["#0b7a75"]);
+    assert.equal(one.length, 2);
+    const full = Array.from({ length: SETUP_BRAND_COLOR_MAX }, (_, i) => `#00000${i}`);
+    assert.deepEqual(addSetupBrandColor(full), full);
   });
 });
 
