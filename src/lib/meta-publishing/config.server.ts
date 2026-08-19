@@ -119,7 +119,7 @@ export function getMetaAppAccessToken(): string {
   return `${getMetaAppId()}|${getMetaAppSecret()}`;
 }
 
-/** Facebook Login for Business configuration ID (optional). When set, OAuth uses config_id instead of scope. */
+/** Facebook Login for Business configuration ID (optional). When set, OAuth start sends config_id and still sets scope to META_COMBINED_OAUTH_SCOPES_FOR_AUTHORIZE. */
 export function getMetaOAuthConfigId(): string | null {
   const configId = process.env.META_OAUTH_CONFIG_ID?.trim();
   return configId || null;

@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product / Engineering  
-**Last updated:** August 15, 2026 — App Review capture list restarted (packet: publish + FB/IG messages & comments + Insights; Mentions out)  
+**Last updated:** August 19, 2026 — live Connect authorize omits `pages_messaging` until Messenger use case shows Found in N use cases; App Review packet still lists the intended 15-scope set  
 **Related:** [Meta connection](../integrations/meta.md) · [Feature list](../product/feature-list.md) · [Event Insights](../product/event-insights.md) · [Privacy & data](../security/privacy-and-data.md) · [Env & secrets](./env-and-secrets.md) · Insights mockup [`/insights-ease-mockup.html`](../../public/insights-ease-mockup.html) · Communications Hub mockup [`/communications-hub-ease-mockup.html`](../../public/communications-hub-ease-mockup.html)
 
 Living brief for **Meta App Review** (Facebook + Instagram) and internal prep. Honest to shipped product only — deferred items are marked **deferred**, not described as live.
@@ -38,14 +38,14 @@ Connection model: Facebook Login for Business / Page OAuth → org stores encryp
 
 ## 3. Use cases table
 
-Scopes below are what Hey Ralli requests today (`META_COMBINED_OAUTH_SCOPE_LIST` in `src/lib/meta-publishing/oauth-scopes.ts`). When `META_OAUTH_CONFIG_ID` is set, Login for Business config is the Meta-side source of truth; the app still sends the combined scope list.
+Scopes below are the **intended** full set (`META_COMBINED_OAUTH_SCOPE_LIST` in `src/lib/meta-publishing/oauth-scopes.ts`). **Live Connect authorize currently sends 14 of 15** — `pages_messaging` is omitted (`META_COMBINED_OAUTH_SCOPES_FOR_AUTHORIZE`) until the Messenger use case shows **Found in N use cases**. Ready for testing alone still yields Invalid Scopes. When `META_OAUTH_CONFIG_ID` is set, Login for Business config is the Meta-side source of truth; the app still also sends that 14-scope authorize list (not the 15-scope combined list). Keep the config aligned with authorize. See [integrations/meta.md](../integrations/meta.md).
 
 | Use case name | Where in product (URL) | How used | Permissions / scopes | User value |
 |---------------|------------------------|----------|----------------------|------------|
 | **Connect Facebook Page + Instagram** | Header ⚙ Settings → Integrations → Facebook & Instagram (`/settings/integrations` → `/settings/meta`); also Connect CTAs at Sidebar → **Communications Hub** (`/communications`; `/inbox` redirects), `/insights?view=connect`, `/onboarding/connect` | One OAuth: volunteer with `manage_integrations` connects the school Page and linked IG Professional account. Login for Business may show **Business / Page / Instagram asset pickers** — reviewers should select the **test Page + linked IG** (and any Business that owns them) | `pages_show_list`, `business_management`, `instagram_basic` (+ all scopes below in one consent) | Single org connection for publish, inbox, insights |
 | **Publish & schedule to Facebook + Instagram** | Sidebar → **Approvals** (`/approvals`); Sidebar → **Events** → [event] → **Approvals** tab (`/events/[id]?tab=approvals`); Sidebar → **Create with AI** (`/create-with-ai/social`); Sidebar → **Calendar** (`/calendar`); `/publishing` redirects to Approvals | Approved artwork + captions → Facebook Page feed (native Graph schedule when in window) and/or Instagram; stories often publish-when-due or manual kit email | `pages_manage_posts`, `pages_read_engagement`, `instagram_content_publish`, `instagram_basic` | School posts go out on time without leaving Hey Ralli |
 | **Approvals → Meta** | Sidebar → **Approvals** (`/approvals`); Events → [event] → **Approvals** tab | Approve / request changes; **Publish Now** or schedule posts Meta on approval | Same publish scopes | Volunteer governance before anything hits Meta |
-| **Communications Hub / Inbox** | Sidebar → **Communications Hub** (`/communications`; `/inbox` redirects); Connect Meta empty when not connected; gear → Settings → Integrations → Facebook & Instagram for manage/reconnect | Sync & reply to Facebook Page Messenger, Instagram DMs, Page/IG comments & tags; AI draft assist with **approve-then-send** | `pages_messaging`, `pages_manage_metadata`, `pages_read_user_content`, `pages_manage_engagement`, `instagram_manage_messages`, `instagram_manage_comments`, `instagram_manage_engagement` | One place for organic parent questions (no broadcast spam) |
+| **Communications Hub / Inbox** | Sidebar → **Communications Hub** (`/communications`; `/inbox` redirects); Connect Meta empty when not connected; gear → Settings → Integrations → Facebook & Instagram for manage/reconnect | Sync & reply to Facebook Page Messenger, Instagram DMs, Page/IG comments & tags; AI draft assist with **approve-then-send**. **Live Connect does not yet send `pages_messaging`** — Page Messenger DMs need a reconnect after Meta attaches the Messenger use case | `pages_messaging` (intended; omitted on authorize today), `pages_manage_metadata`, `pages_read_user_content`, `pages_manage_engagement`, `instagram_manage_messages`, `instagram_manage_comments`, `instagram_manage_engagement` | One place for organic parent questions (no broadcast spam) |
 | **Inbox reactions & engagement** | Sidebar → **Communications Hub** → thread → bubble **👍** / **❤️** | Comment likes via Graph; DM react/unreact via Messenger/IG APIs when supported | `pages_manage_engagement`, `instagram_manage_engagement`, `pages_messaging`, `instagram_manage_messages` | Quick acknowledgment of parent comments/messages |
 | **Org stickers + GIFs in DMs** | Sidebar → **Communications Hub** → DM thread → reply toolbar (Sticker / GIF) | Upload org image stickers (`organization_stickers`); send as Meta image attachments on Messenger / IG DMs only; GIPHY via server proxy (not a Meta permission) | Same messaging scopes; stickers use Meta DM image attachment path | Friendly PTA replies with school branding |
 | **Organic Insights (org)** | Direct URL `/insights` (Org view — **not** in sidebar during soft launch); view pill **Org**; Connect Meta pill at `/insights?view=connect` | Sync Page / IG account + post metrics; KPIs (Views, Reach, Interactions, Likes, Comments), content overview, top content carousel, CSV export, rule-based tips | `read_insights`, `instagram_manage_insights` (+ `pages_read_engagement`) | Boards see what organic posts performed — **no ads data** |
@@ -53,7 +53,11 @@ Scopes below are what Hey Ralli requests today (`META_COMBINED_OAUTH_SCOPE_LIST`
 | **Webhooks (near-real-time inbox)** | Callback `POST/GET /api/meta/webhook`; subscribe via inbox/Meta connection tooling | **App-level** `/{app-id}/subscriptions` **and** Page `subscribed_apps` must both include the same fields (Meta delivers only the intersection). Page: messages, messaging_postbacks, deliveries, reads, standby, feed; IG: comments, messages. Connect/sync calls `ensureMetaAppWebhookSubscriptions` so app fields are not left empty after a new Meta app cutover. | `pages_manage_metadata` (+ messaging scopes for content) | Faster inbox updates without constant polling |
 | **Login with Facebook (account)** | `/login`, `/signup` — “Continue with Facebook” | Supabase Auth social sign-in for Hey Ralli account identity | Standard Facebook Login for identity (via Supabase) — **not** Page scopes | Optional alternate sign-in; **does not** connect the school Page |
 
-### Scopes requested today (complete list)
+### Scopes — intended full set vs live authorize
+
+**Intended (App Review packet / `META_COMBINED_OAUTH_SCOPE_LIST`):** 15 scopes below.
+
+**Live Connect (`/api/meta/oauth/start`):** sends the same list **minus `pages_messaging`**. Do not tell a reviewer they will see “Manage and access Page conversations in Messenger” on Connect until that omit is restored.
 
 ```
 pages_show_list
@@ -62,7 +66,7 @@ pages_manage_posts
 business_management
 instagram_basic
 instagram_content_publish
-pages_messaging
+pages_messaging          ← intended; omitted on live authorize today
 pages_manage_metadata
 pages_read_user_content
 pages_manage_engagement
@@ -86,7 +90,7 @@ Verified against a live Login for Business access request for the Hey Ralli Meta
 | Create and manage content on your Page | `pages_manage_posts` | Publish / schedule Page posts |
 | Read content posted on the Page | `pages_read_engagement` | Read Page posts & engagement for publish + insights context |
 | Manage comments on your Page | `pages_manage_engagement` | Reply / react to Page comments |
-| Manage and access Page conversations in Messenger | `pages_messaging` | Page Messenger inbox |
+| Manage and access Page conversations in Messenger | `pages_messaging` | Page Messenger inbox — **omitted on live authorize until Messenger use case is attached** |
 | Manage accounts, settings, and webhooks, and access content enforcement data for a Page | `pages_manage_metadata` | Webhooks + Page conversation metadata |
 | Read user content on your Page | `pages_read_user_content` | Read Page comments (author + body) for inbox |
 | Access your Page and App insights | `read_insights` | Organic Page Insights (no ads / no demographics) |
@@ -97,7 +101,9 @@ Verified against a live Login for Business access request for the Hey Ralli Meta
 | Manage engagement on behalf of the selected Instagram account | `instagram_manage_engagement` | Like / engage IG comments |
 | Access insights for the Instagram account | `instagram_manage_insights` | Organic IG Insights |
 
-**Match check (July 27, 2026):** All 15 consent lines map 1:1 to the 15 scopes above. No unexpected ads or demographic permissions appeared on the access request.
+**Match check (July 27, 2026):** All 15 consent lines mapped 1:1 to the 15 scopes above on a Login for Business access request that included Messenger. No unexpected ads or demographic permissions appeared.
+
+**Live Connect (August 2026):** authorize omits `pages_messaging`, so reviewers / volunteers **will not** see the Messenger consent line until Meta attaches the use case and we restore the scope. Instagram messaging (`instagram_manage_messages`) is still on the authorize list.
 
 ---
 
@@ -203,7 +209,7 @@ Do not demo these as shipped:
 
 ## 10. App Review submission checklist
 
-Living matrix for Meta App Review packet fields. **15 scopes** from `META_COMBINED_OAUTH_SCOPE_LIST` (`src/lib/meta-publishing/oauth-scopes.ts`) — all requested in **one** Connect OAuth (`/api/meta/oauth/start`).
+Living matrix for Meta App Review packet fields. **15 scopes** from `META_COMBINED_OAUTH_SCOPE_LIST` (`src/lib/meta-publishing/oauth-scopes.ts`) — the **intended** one-Connect set. Live authorize currently omits `pages_messaging` (`META_COMBINED_OAUTH_SCOPES_FOR_AUTHORIZE`). Restore that scope before filming a Messenger consent line; until then, demo Page Messenger only on a connection that already has the permission, or after Meta attaches the use case.
 
 **Legend:** ✅ = filled from code/docs · 🔲 = **NEEDS YOU** (founder-only)
 
@@ -238,7 +244,7 @@ Living matrix for Meta App Review packet fields. **15 scopes** from `META_COMBIN
 
 ### 10.3 Permission matrix
 
-**Connect entry points (all scopes):** Header ⚙ **Settings** → **Integrations** → **Facebook & Instagram** → **Connect with Facebook** (`/settings/integrations` → `/settings/meta`); or Sidebar → **Communications Hub** → **Connect with Facebook** (`/communications`); or `/insights?view=connect`; or first-time `/onboarding/connect`. Requires `manage_integrations`.
+**Connect entry points:** Header ⚙ **Settings** → **Integrations** → **Facebook & Instagram** → **Connect with Facebook** (`/settings/integrations` → `/settings/meta`); or Sidebar → **Communications Hub** → **Connect with Facebook** (`/communications`); or `/insights?view=connect`; or first-time `/onboarding/connect`. Requires `manage_integrations`. Live authorize = 14 scopes (Messenger omitted); App Review packet still describes the intended 15.
 
 #### A — Connect, publishing & Page identity
 

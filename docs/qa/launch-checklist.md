@@ -66,7 +66,7 @@ Product work shipped for soft launch (see [feature-list.md](../product/feature-l
 | Insights Ease + `social_analytics` on all plans | **Done** | Soft-launch / Meta App Review reachability |
 | Vendors Ease (contact-first) | **Done** | Directory shell shipped |
 | Calendar / Events / Tasks / Files / Approvals / Volunteers Ease shells | **Done** | Product UI shipped; depth rows still Needs you where noted |
-| Create with AI landing / chooser | **Done** | `/create-with-ai` — Start here Social · Flyer (two-up) + Also available (Homepage · Volunteer · Newsletter · Sponsorship soon) |
+| Create with AI landing / chooser | **Done** | `/create-with-ai` — Start here Social · Flyer (two-up) + Also available (Homepage · Volunteer · Newsletter) |
 | Soft-launch nav trim | **Done** | Vendors + Insights off left rail; remain on event `?tab=` |
 | Create with AI — Social / campaign | **Done** | `/create-with-ai/social` 4-step Campaign Builder (Creative Setup → Review) |
 | Create with AI — Homepage / webpage HTML composer | **Done** | `/homepage-composer`; draft persist + export; AI blurbs polish OK for launch |

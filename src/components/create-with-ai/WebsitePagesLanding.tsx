@@ -64,21 +64,6 @@ function VolunteerArt() {
   );
 }
 
-function SponsorshipArt() {
-  return (
-    <div className="cwai-art relative h-[9.5rem] overflow-hidden rounded-[18px] opacity-90">
-      <div className="absolute inset-0 bg-[linear-gradient(160deg,#ebe4d9,#f6f2eb_55%,#e8f0ec)]" />
-      <div className="absolute inset-x-6 top-5 bottom-4 rounded-[12px] border border-dashed border-[rgba(47,74,60,0.28)] bg-white/70 p-3">
-        <div className="h-2 w-20 rounded-full bg-[#d4a84b]/50" />
-        <div className="mt-3 space-y-2">
-          <div className="h-8 rounded-[8px] bg-[#f6f2eb]" />
-          <div className="h-8 rounded-[8px] bg-[#f0faf7]" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const PAGES = [
   {
     id: "homepage" as const,
@@ -97,15 +82,6 @@ const PAGES = [
     href: "/volunteer-composer",
     Art: VolunteerArt,
     enabled: true as const,
-  },
-  {
-    id: "sponsorship" as const,
-    title: "Sponsorship page",
-    status: "Coming soon",
-    description: "Partner tiers and sponsor highlights — coming next.",
-    href: null,
-    Art: SponsorshipArt,
-    enabled: false as const,
   },
 ];
 
@@ -164,7 +140,7 @@ export function WebsitePagesLanding({
         </p>
       </header>
 
-      <div className="relative grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="relative grid gap-5 sm:grid-cols-2">
         {PAGES.map((page, index) => {
           const body = (
             <>

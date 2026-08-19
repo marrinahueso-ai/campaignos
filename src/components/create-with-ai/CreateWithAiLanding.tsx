@@ -58,9 +58,8 @@ function MiniArt({
 type AlsoItem = {
   id: string;
   title: string;
-  href: string | null;
+  href: string;
   artClass: string;
-  status: "live" | "soon";
 };
 
 const ALSO_AVAILABLE: AlsoItem[] = [
@@ -69,28 +68,18 @@ const ALSO_AVAILABLE: AlsoItem[] = [
     title: "Homepage",
     href: "/homepage-composer",
     artClass: "bg-[linear-gradient(145deg,#2f4a3c,#6b8171_50%,#b8c9bc)]",
-    status: "live",
   },
   {
     id: "volunteer",
     title: "Volunteer page",
     href: "/volunteer-composer",
     artClass: "bg-[linear-gradient(145deg,#1a4a6e,#2a7a86_55%,#a8d4dc)]",
-    status: "live",
   },
   {
     id: "newsletter",
     title: "Newsletter",
     href: "/newsletters",
     artClass: "bg-[linear-gradient(155deg,#0b2f5b,#2f9fb3_50%,#7fd0df)]",
-    status: "live",
-  },
-  {
-    id: "sponsorship",
-    title: "Sponsorship",
-    href: null,
-    artClass: "bg-[linear-gradient(145deg,#5c4030,#c4922e_60%,#f0e0c0)]",
-    status: "soon",
   },
 ];
 
@@ -244,60 +233,23 @@ export function CreateWithAiLanding({
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {ALSO_AVAILABLE.map((item, index) => {
-            const live = item.status === "live" && item.href;
-            const body = (
-              <>
-                <MiniArt className={item.artClass} />
-                <h3 className="text-[13px] font-bold leading-snug text-cos-text">
-                  {item.title}
-                </h3>
-                <span
-                  className={cn(
-                    "mt-auto inline-flex self-start rounded-full px-2 py-0.5 text-[10px] font-bold",
-                    live
-                      ? "bg-cos-brand-sage/15 text-cos-brand-sage"
-                      : "bg-cos-bg-alt text-cos-muted",
-                  )}
-                >
-                  {live ? "Open" : "Coming soon"}
-                </span>
-              </>
-            );
-
-            const cardClass = cn(
-              "cwai-card-enter flex min-h-[108px] flex-col rounded-2xl border border-cos-border/80 bg-cos-card/90 p-3 text-left",
-              live &&
-                "transition-[border-color,transform] hover:-translate-y-0.5 hover:border-cos-brand-sage/40",
-              !live && "cursor-default opacity-75",
-            );
-            const style = { animationDelay: `${140 + index * 50}ms` };
-
-            if (live && item.href) {
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={cardClass}
-                  style={style}
-                >
-                  {body}
-                </Link>
-              );
-            }
-
-            return (
-              <div
-                key={item.id}
-                className={cardClass}
-                style={style}
-                aria-disabled
-              >
-                {body}
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {ALSO_AVAILABLE.map((item, index) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              className="cwai-card-enter flex min-h-[108px] flex-col rounded-2xl border border-cos-border/80 bg-cos-card/90 p-3 text-left transition-[border-color,transform] hover:-translate-y-0.5 hover:border-cos-brand-sage/40"
+              style={{ animationDelay: `${140 + index * 50}ms` }}
+            >
+              <MiniArt className={item.artClass} />
+              <h3 className="text-[13px] font-bold leading-snug text-cos-text">
+                {item.title}
+              </h3>
+              <span className="mt-auto inline-flex self-start rounded-full bg-cos-brand-sage/15 px-2 py-0.5 text-[10px] font-bold text-cos-brand-sage">
+                Open
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
     </div>

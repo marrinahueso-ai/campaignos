@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 18, 2026  
+**Last updated:** August 19, 2026  
 **Related:** [Ops](./README.md) · [`.env.contractor.example`](../../.env.contractor.example) · [`.env.local.example`](../../.env.local.example) · [Contractor onboarding](../engineering/contractor-onboarding.md) · [Local setup](../getting-started/local-setup.md) · [Cron jobs](./cron-jobs.md) · [Documentation home](../README.md)
 
 ## Rules
@@ -47,10 +47,15 @@ Git Production branch: **`main`**. Deploy from `main` (or promote a deployment o
 
 | Variable | Notes |
 |----------|-------|
-| `META_APP_ID` / `META_APP_SECRET` | OAuth Connect |
-| `META_REDIRECT_URI` | Must match Meta app + environment |
-| `META_WEBHOOK_VERIFY_TOKEN` | Webhooks |
+| `META_APP_ID` / `META_APP_SECRET` | OAuth Connect (Login for Business / Page) |
+| `META_REDIRECT_URI` | Must match Meta app Valid OAuth Redirect URIs; default `{origin}/api/meta/oauth/callback` |
+| `META_OAUTH_CONFIG_ID` | Optional Login for Business configuration id — keep aligned with live authorize scopes |
+| `META_WEBHOOK_VERIFY_TOKEN` | Webhook hub.verify_token (`GET/POST /api/meta/webhook`) |
+| `META_GRAPH_API_VERSION` | Optional Graph version; default `v21.0` |
+| `META_FACEBOOK_PAGE_ID` | Optional OAuth fallback when Page list is empty |
 | Legacy `META_PAGE_ACCESS_TOKEN` etc. | Optional fallback — prefer org OAuth connection |
+
+Living: [integrations/meta.md](../integrations/meta.md).
 
 ### Google Calendar
 
