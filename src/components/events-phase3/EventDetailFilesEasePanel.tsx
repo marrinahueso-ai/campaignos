@@ -114,6 +114,8 @@ export function EventDetailFilesEasePanel({
   const [categoryPrompt, setCategoryPrompt] = useState<UploadCategoryPromptState | null>(
     null,
   );
+  const [progress, setProgress] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const folders = data.foldersByEventId[eventId] ?? [];
   const generatedPostAssets = data.generatedPostAssets ?? [];
@@ -160,28 +162,50 @@ export function EventDetailFilesEasePanel({
 
   const unfiledCount = eventFiles.filter((file) => !file.folderId).length;
 
-  const upload = (file: File) => {
-    startTransition(async () => {
+  const uploadMany = (files: File[]) => {
+    if (files.length === 0 || uploading) return;
+    void (async () => {
+      setUploading(true);
       setError(null);
-      const formData = new FormData();
-      formData.set("eventId", eventId);
-      formData.set("category", "auto");
-      formData.set("uploadContext", "event_files");
-      formData.set("file", file);
-      const result = await uploadCampaignFileAction(formData);
-      if (!result.success) {
-        setError(result.error ?? "Unable to upload.");
-        return;
+      let uploaded = 0;
+      let lastPrompt: UploadCategoryPromptState | null = null;
+      try {
+        for (const file of files) {
+          setProgress(
+            files.length === 1
+              ? "Uploading…"
+              : `Uploading ${uploaded + 1} of ${files.length}…`,
+          );
+          const formData = new FormData();
+          formData.set("eventId", eventId);
+          formData.set("category", "auto");
+          formData.set("uploadContext", "event_files");
+          formData.set("file", file);
+          const result = await uploadCampaignFileAction(formData);
+          if (!result.success) {
+            setError(
+              result.error ??
+                `Could not upload “${file.name}”. ${uploaded} file${uploaded === 1 ? "" : "s"} uploaded before this.`,
+            );
+            if (uploaded > 0) await refresh();
+            return;
+          }
+          uploaded += 1;
+          if (result.fileId && result.fileName && result.documentCategory) {
+            lastPrompt = {
+              fileId: result.fileId,
+              fileName: result.fileName,
+              documentCategory: result.documentCategory,
+            };
+          }
+        }
+        if (lastPrompt) setCategoryPrompt(lastPrompt);
+        await refresh();
+      } finally {
+        setProgress(null);
+        setUploading(false);
       }
-      if (result.fileId && result.fileName && result.documentCategory) {
-        setCategoryPrompt({
-          fileId: result.fileId,
-          fileName: result.fileName,
-          documentCategory: result.documentCategory,
-        });
-      }
-      await refresh();
-    });
+    })();
   };
 
   function handleFoldersChanged() {
@@ -278,30 +302,35 @@ export function EventDetailFilesEasePanel({
 
       <button
         type="button"
-        disabled={pending || !data.tablesAvailable}
+        disabled={uploading || pending || !data.tablesAvailable}
         onClick={() => inputRef.current?.click()}
         onDragOver={(event) => {
           event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
         }}
         onDrop={(event) => {
           event.preventDefault();
-          const file = event.dataTransfer.files?.[0];
-          if (file) upload(file);
+          event.stopPropagation();
+          const files = Array.from(event.dataTransfer.files ?? []);
+          if (files.length > 0) uploadMany(files);
         }}
         className="mb-3.5 w-full rounded-[18px] border-[1.5px] border-dashed border-[rgba(42,38,34,0.2)] bg-[rgba(255,252,247,0.45)] px-5 py-4 text-center text-[13px] font-semibold text-cos-muted transition hover:bg-[rgba(255,252,247,0.75)] disabled:opacity-60"
       >
-        {pending
-          ? "Uploading…"
-          : "Drop files here — they’ll link to this event and sort by type."}
+        {progress
+          ? progress
+          : uploading
+            ? "Uploading…"
+            : "Drop files here — they’ll link to this event and sort by type."}
       </button>
       <input
         ref={inputRef}
         type="file"
+        multiple
         className="hidden"
         accept=".pdf,.docx,.doc,.xlsx,.xls,.png,.jpg,.jpeg"
         onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) upload(file);
+          const files = Array.from(event.target.files ?? []);
+          if (files.length > 0) uploadMany(files);
           event.target.value = "";
         }}
       />

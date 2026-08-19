@@ -102,6 +102,15 @@ describe("files ease UI contracts", () => {
     assert.match(eventFiles, /Folders \(optional\)/);
   });
 
+  it("event Files drop and picker upload every selected file, not only the first", () => {
+    assert.match(eventFiles, /uploadMany/);
+    assert.match(eventFiles, /Array\.from\(event\.dataTransfer\.files/);
+    assert.match(eventFiles, /Array\.from\(event\.target\.files/);
+    assert.match(eventFiles, /multiple/);
+    assert.match(eventFiles, /Uploading \$\{uploaded \+ 1\} of \$\{files\.length\}/);
+    assert.doesNotMatch(eventFiles, /files\?\.\[0\]/);
+  });
+
   it("exposes event-scoped folders for create, rename, delete, reorder, and move", () => {
     assert.match(folderBar, /New folder/);
     assert.match(folderBar, /All files/);
