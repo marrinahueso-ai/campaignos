@@ -1,10 +1,11 @@
 # Engineering
 
 **Purpose:** System structure, database, access control, auth emails, image pipeline.  
-**Last updated:** August 7, 2026
+**Last updated:** August 18, 2026
 
 | Doc | Status |
 |-----|--------|
+| [contractor-onboarding.md](./contractor-onboarding.md) | **Living** — staging-only local setup, PR workflow, access matrix, founder checklists |
 | [architecture.md](./architecture.md) | **Living** |
 | [image-architecture.md](./image-architecture.md) | **Living** — upload, Storage, `AppImage` / transforms, AI, Meta, migration checklist |
 | [ask-ralli-assistant.md](./ask-ralli-assistant.md) | **Living** — routing, sources, extend guide, QA matrix |

@@ -1,7 +1,7 @@
 # Operations
 
 **Purpose:** Deploy, environments, cron jobs, support, observability.  
-**Last updated:** August 13, 2026
+**Last updated:** August 18, 2026
 
 | Doc | Status |
 |-----|--------|
@@ -14,7 +14,8 @@
 | [incident-response.md](./incident-response.md) | Planned stub |
 | [billing-and-access.md](./billing-and-access.md) | **Living** (billing, access, AI credits) · eng wiring: [stripe-integration](../engineering/stripe-integration.md) |
 | [commercial-readiness-engineer-handoff.md](./commercial-readiness-engineer-handoff.md) | **Living** — short independent-engineer package (do not repeat completed security/load work) |
+| [Contractor onboarding](../engineering/contractor-onboarding.md) | **Living** — staging-only contractor access, PR workflow, founder checklists |
 
-See also: [`vercel.json`](../../vercel.json) · [`.env.local.example`](../../.env.local.example)
+See also: [`vercel.json`](../../vercel.json) · [`.env.contractor.example`](../../.env.contractor.example) · [`.env.local.example`](../../.env.local.example)
 
 **Back:** [Documentation home](../README.md)

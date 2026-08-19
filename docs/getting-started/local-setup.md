@@ -2,15 +2,17 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 20, 2026  
-**Related:** [Getting started](./README.md) · [`.env.local.example`](../../.env.local.example) · [Env & secrets](../ops/env-and-secrets.md) · [Database](../engineering/database.md) · [Documentation home](../README.md)
+**Last updated:** August 18, 2026  
+**Related:** [Getting started](./README.md) · [`.env.contractor.example`](../../.env.contractor.example) · [`.env.local.example`](../../.env.local.example) · [Env & secrets](../ops/env-and-secrets.md) · [Contractor onboarding](../engineering/contractor-onboarding.md) · [Database](../engineering/database.md) · [Documentation home](../README.md)
+
+**Contractors:** use [contractor onboarding](../engineering/contractor-onboarding.md) and `cp .env.contractor.example .env.local`. Do not copy a teammate’s `.env.local`. Local development uses **staging** Supabase (`heyralli-staging` / `hdoujyngcqrsgtvqehyt`), not production.
 
 ## Prerequisites
 
-- Node.js 20+ (matches Vercel / Next.js 15)
+- Node.js **20** LTS (`.nvmrc`; `package.json` `engines.node` ≥ 20)
 - npm
-- A Supabase project (shared staging or your own)
-- Optional for full features: OpenAI, Meta, Google Calendar, Resend keys (see [env catalog](../../.env.local.example))
+- A **staging** Supabase project (shared `heyralli-staging`, not production `zyllfqieeihshnwpakiv`)
+- Optional for full features: OpenAI, Meta, Google Calendar, Resend keys (see [contractor template](../../.env.contractor.example) and [env catalog](../../.env.local.example))
 
 ## 1. Install
 
@@ -23,7 +25,8 @@ npm install
 ## 2. Environment
 
 ```bash
-cp .env.local.example .env.local
+cp .env.contractor.example .env.local   # contractors — staging only
+# or: cp .env.local.example .env.local  # full catalog of names
 ```
 
 **Minimum to sign in and load the app**
@@ -38,7 +41,7 @@ cp .env.local.example .env.local
 | Variable | Why |
 |----------|-----|
 | `SUPABASE_SERVICE_ROLE_KEY` | Team invites, founding welcome email, some admin paths |
-| `CAMPAIGNOS_REQUIRE_ACCESS_CODE=false` | Skip founding-code gate while developing |
+| `CAMPAIGNOS_REQUIRE_ACCESS_CODE=false` | Skip founding-code gate while developing (required for contractor local signup) |
 | `OPENAI_API_KEY` | Create with AI, captions, calendar AI fix |
 
 Leave `NEXT_PUBLIC_SITE_URL` **unset** for local OAuth so callbacks default to `http://localhost:3000`. If it points at Production, Google/Monday/Canva redirects will leave localhost.
@@ -107,6 +110,7 @@ npm run dev:clean
 
 ## Where next
 
+- [Contractor onboarding](../engineering/contractor-onboarding.md)  
 - [Architecture](../engineering/architecture.md)  
 - [Feature list](../product/feature-list.md)  
 - [QA testing guide](../qa/testing-guide.md)

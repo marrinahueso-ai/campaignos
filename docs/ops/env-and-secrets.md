@@ -2,22 +2,23 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 20, 2026  
-**Related:** [Ops](./README.md) · [`.env.local.example`](../../.env.local.example) · [Local setup](../getting-started/local-setup.md) · [Cron jobs](./cron-jobs.md) · [Documentation home](../README.md)
+**Last updated:** August 18, 2026  
+**Related:** [Ops](./README.md) · [`.env.contractor.example`](../../.env.contractor.example) · [`.env.local.example`](../../.env.local.example) · [Contractor onboarding](../engineering/contractor-onboarding.md) · [Local setup](../getting-started/local-setup.md) · [Cron jobs](./cron-jobs.md) · [Documentation home](../README.md)
 
 ## Rules
 
 1. **Never commit** `.env.local`, service-role keys, OAuth secrets, or `CRON_SECRET`.
-2. **Source catalog** for names and comments: [`.env.local.example`](../../.env.local.example) (keep it in sync when you add vars).
-3. **Production / Preview** secrets live in the Vercel project (`campaignos` / team `campignos`). Prefer Vercel → Settings → Environment Variables over pasting into chat or tickets.
-4. **Public vs server:** only `NEXT_PUBLIC_*` is exposed to the browser. Everything else is server-only.
+2. **Contractors** copy [`.env.contractor.example`](../../.env.contractor.example), fill **staging** values, and set `CAMPAIGNOS_REQUIRE_ACCESS_CODE=false`. Never copy a laptop that is pointed at production.
+3. **Source catalog** for names and comments: [`.env.local.example`](../../.env.local.example) (keep it in sync when you add vars).
+4. **Production / Preview** secrets live in the Vercel project (`campaignos` / team `campignos`). Prefer Vercel → Settings → Environment Variables over pasting into chat or tickets.
+5. **Public vs server:** only `NEXT_PUBLIC_*` is exposed to the browser. Everything else is server-only.
 
 ## Environments
 
 | Env | Where values live | Notes |
 |-----|-------------------|--------|
-| **Local** | `.env.local` | Leave `NEXT_PUBLIC_SITE_URL` unset for OAuth on localhost |
-| **Preview** | Vercel Preview env | Branch / PR deployments |
+| **Local (contractor)** | `.env.local` from `.env.contractor.example` | Staging Supabase `hdoujyngcqrsgtvqehyt`; leave `NEXT_PUBLIC_SITE_URL` unset |
+| **Preview** | Vercel Preview env | Must use staging database — confirm before inviting contractors |
 | **Production** | Vercel Production env | [heyralli.com](https://heyralli.com); `NEXT_PUBLIC_SITE_URL` must be the public site |
 
 Git Production branch: **`main`**. Deploy from `main` (or promote a deployment of `main`).

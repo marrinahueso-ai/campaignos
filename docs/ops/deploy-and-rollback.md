@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 22, 2026  
+**Last updated:** August 18, 2026  
 **Related:** [Ops](./README.md) · [Env & secrets](./env-and-secrets.md) · [Launch QA checklist](../qa/launch-checklist.md) · [Documentation home](../README.md)
 
 ## Project
@@ -28,8 +28,9 @@ After changing Environment Variables, **redeploy** Production so new serverless 
 ## Preview
 
 - Every PR / branch push gets a Preview URL (e.g. `campaignos-*-campignos.vercel.app`).
-- Use Preview for QA before merge.
-- Preview env vars are separate from Production — keep secrets in both if Preview must exercise OAuth/cron.
+- Preview URLs currently require a Vercel login (Deployment Protection). Keep that on.
+- Preview **must** use staging Supabase (`hdoujyngcqrsgtvqehyt`), not production. Confirm before inviting contractors — [contractor-onboarding.md](../engineering/contractor-onboarding.md).
+- Contractors never run `vercel deploy --prod`. Merge to `main` is how Production updates.
 
 ## Deploy checklist (Production)
 

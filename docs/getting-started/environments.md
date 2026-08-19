@@ -1,16 +1,20 @@
 # Environments
 
-**Status:** Planned stub  
-**Owner:** TBD  
-**Last updated:** July 20, 2026  
-**Related:** [Getting started](./README.md) · [ops/env-and-secrets.md](../ops/env-and-secrets.md) · [Documentation home](../README.md)
+**Status:** Living  
+**Owner:** Engineering  
+**Last updated:** August 18, 2026  
+**Related:** [Getting started](./README.md) · [Contractor onboarding](../engineering/contractor-onboarding.md) · [Env & secrets](../ops/env-and-secrets.md) · [Documentation home](../README.md)
 
-## Purpose
+How Local, Vercel Preview, and Production differ. Contractors use **staging**, never production.
 
-Describe Local vs Vercel Preview vs Production: URLs, env vars, OAuth redirect hosts, and what data each environment uses.
+| Environment | App URL | Database | Who uses it |
+|-------------|---------|----------|-------------|
+| **Local** | http://localhost:3000 | Staging Supabase `heyralli-staging` (`hdoujyngcqrsgtvqehyt`) | Founder (today still on production — do not copy that laptop env) and contractors (staging only) |
+| **Preview** | `campaignos-*-campignos.vercel.app` (Vercel login required) | Must be staging. Founder must confirm `NEXT_PUBLIC_SUPABASE_URL` before inviting anyone. | PR review |
+| **Production** | [heyralli.com](https://heyralli.com) | `zyllfqieeihshnwpakiv` | Live site. Founder-only credentials. |
 
-## TODO
+OAuth: leave `NEXT_PUBLIC_SITE_URL` unset on localhost. Production site URL is `https://heyralli.com`. Register `http://localhost:3000/auth/callback` on the **staging** Supabase project.
 
-- [ ] Document heyralli.com vs Preview URLs
-- [ ] Note OAuth redirect URI requirements per environment
-- [ ] Assign owner
+Git production branch: **`main`**. Merging to `main` deploys Production.
+
+Full contractor workflow, access matrix, and founder checklists: [contractor-onboarding.md](../engineering/contractor-onboarding.md).

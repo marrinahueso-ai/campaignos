@@ -1,0 +1,48 @@
+# Pull-request safety net. Does not use production secrets, staging credentials,
+# or Playwright logins. Vercel still builds Preview deployments separately.
+name: PR checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: pr-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, security tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Dummy public placeholders so `next build` can compile. Not real projects.
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: example-anon-key
+      SENTRY_ENABLED: "false"
+      CAMPAIGNOS_REQUIRE_ACCESS_CODE: "false"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Security unit tests
+        run: npm run test:security
+
+      - name: Production build
+        run: npm run build
