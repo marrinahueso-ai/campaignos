@@ -22,6 +22,7 @@ import {
 import { uploadHomepageComposerArtworkAction } from "@/lib/homepage-composer/artwork-actions";
 import { generateHomepageComposerBlurbAction } from "@/lib/homepage-composer/blurb-actions";
 import { compressImageForUpload } from "@/lib/homepage-composer/compress-image";
+import { downloadArtworkImage } from "@/lib/artwork-v2/download";
 import {
   loadComposerDraftRaw,
   parseComposerDraftRaw,
@@ -222,6 +223,15 @@ function eventMonthOptions(events: HomepageComposerEvent[]): string[] {
   return [...months].sort();
 }
 
+function homepageCardDownloadFilename(title: string): string {
+  const slug = title
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `${slug || "homepage-card"}.png`;
+}
+
 /** Discrete dates for the preview scrubber (event boundaries + a few anchors). */
 function buildPreviewSliderDates(
   cards: HomepageCard[],
@@ -285,6 +295,9 @@ export function HomepageComposer({
     defaultEventFilterMonth(events),
   );
   const [compressingCardId, setCompressingCardId] = useState<string | null>(
+    null,
+  );
+  const [downloadingCardId, setDownloadingCardId] = useState<string | null>(
     null,
   );
   const [generatingBlurbCardId, setGeneratingBlurbCardId] = useState<
@@ -761,6 +774,23 @@ export function HomepageComposer({
   const openArtworkPicker = (cardId: string) => {
     artworkCardIdRef.current = cardId;
     artworkInputRef.current?.click();
+  };
+
+  const downloadCardArtwork = (card: HomepageCard) => {
+    if (!card.imageUrl || downloadingCardId) return;
+    void (async () => {
+      setDownloadingCardId(card.id);
+      try {
+        await downloadArtworkImage(
+          card.imageUrl!,
+          homepageCardDownloadFilename(card.title),
+        );
+      } catch {
+        window.alert("Could not download that image. Try again.");
+      } finally {
+        setDownloadingCardId(null);
+      }
+    })();
   };
 
   const onArtworkSelected = (event: ChangeEvent<HTMLInputElement>) => {
@@ -2255,12 +2285,35 @@ export function HomepageComposer({
                             <div className="space-y-1.5">
                               <div className="aspect-square h-[72px] w-[72px] overflow-hidden rounded-[14px] bg-cos-bg-alt">
                                 {card.imageUrl ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    src={card.imageUrl}
-                                    alt=""
-                                    className="h-full w-full object-cover"
-                                  />
+                                  <button
+                                    type="button"
+                                    title={
+                                      downloadingCardId === card.id
+                                        ? "Downloading…"
+                                        : "Download image"
+                                    }
+                                    aria-label={
+                                      downloadingCardId === card.id
+                                        ? `Downloading ${card.title || "card"} artwork`
+                                        : `Download ${card.title || "card"} artwork`
+                                    }
+                                    disabled={downloadingCardId !== null}
+                                    onClick={() => downloadCardArtwork(card)}
+                                    className="group relative h-full w-full disabled:opacity-60"
+                                  >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={card.imageUrl}
+                                      alt=""
+                                      className="h-full w-full object-cover"
+                                    />
+                                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[rgba(42,38,34,0.35)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                                      <Download
+                                        className="h-4 w-4 text-white"
+                                        strokeWidth={2}
+                                      />
+                                    </span>
+                                  </button>
                                 ) : (
                                   <div className="flex h-full items-center justify-center text-[10px] font-bold text-cos-brand-sage">
                                     1:1

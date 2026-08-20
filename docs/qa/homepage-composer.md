@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA (Hey Ralli)  
-**Last updated:** August 17, 2026 — Homepage date picker: click a day to set it (Clear optional)  
+**Last updated:** August 20, 2026 — Homepage Composer card image click downloads the file  
 **Related:** [Engineering companion](../engineering/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Create with AI artwork inputs](./create-with-ai-artwork-inputs.md) · [Storage RLS](../engineering/storage-rls.md) · [Launch checklist](./launch-checklist.md)
 
 Soft-launch Membership Toolkit–style homepage builder. Managers work ahead by month (Working on strip): **Save this month** keeps the full homepage (header, footer, cards, announcements, resources) for that YYYY-MM, preview on/off dates, and export full-page HTML for external hosting.
@@ -35,7 +35,7 @@ No separate sidebar nav item — entry is Create with AI → Home Page (or direc
 |------|-------|------------|
 | 1 | **Header** | Title, message, up to **3 CTAs**, **cards section title**, announcements for the **Working on** month (emoji + text + optional on/off dates on one row), header colors |
 | 2 | **Footer** | CTA title/body + up to **2 buttons** + colors; helpful resource chips (emoji, label, URL) |
-| 3 | **Cards** | Pick events (month/year filter) and/or add evergreen custom cards; edit title, blurb, link URL + **link label**, card face **date**, on/off visibility, always-on; upload artwork or deep-link to Create with AI for milestones; sort/reorder |
+| 3 | **Cards** | Pick events (month/year filter) and/or add evergreen custom cards; edit title, blurb, link URL + **link label**, card face **date**, on/off visibility, always-on; upload artwork or deep-link to Create with AI; **click the card image to download** it; sort/reorder |
 | 4 | **Preview** | Full-page preview; **full month** (all cards) or date scrubber for on/off visibility; full-month **Open page** / **Save as PDF** (share page print) |
 | 5 | **Export** | Live export preview iframe + copy full-page Membership Toolkit HTML (auto-refreshes when draft changes) |
 
