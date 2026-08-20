@@ -4,6 +4,7 @@ import type {
   CalendarImportSource,
   CalendarReviewEvent,
 } from "@/types/calendar-review";
+import { isCalendarAllDayClockTime } from "@/lib/calendar-import/calendar-time";
 
 function normalizeEventNameKey(name: string): string {
   return name.toLowerCase().replace(/\s+/g, " ").trim();
@@ -30,7 +31,7 @@ export function calendarEventDedupeKey(name: string, date: string): string {
 export function normalizeEventTimeKey(
   time: string | null | undefined,
 ): string {
-  if (!time?.trim()) {
+  if (!time?.trim() || isCalendarAllDayClockTime(time)) {
     return "";
   }
   const parts = time.trim().split(":");

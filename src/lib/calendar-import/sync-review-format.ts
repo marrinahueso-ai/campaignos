@@ -1,4 +1,5 @@
 import { formatEventTime } from "@/lib/utils/dates";
+import { isCalendarAllDayClockTime } from "@/lib/calendar-import/calendar-time";
 
 /** Format a short date for change chips (e.g. Sept 18). */
 export function formatSyncReviewShortDate(date: string): string {
@@ -13,7 +14,7 @@ export function formatSyncReviewShortDate(date: string): string {
 
 export function formatSyncReviewTime(value: string | null | undefined): string {
   const trimmed = value?.trim() || "";
-  if (!trimmed) {
+  if (!trimmed || isCalendarAllDayClockTime(trimmed)) {
     return "No time";
   }
   return formatEventTime(trimmed) ?? trimmed;

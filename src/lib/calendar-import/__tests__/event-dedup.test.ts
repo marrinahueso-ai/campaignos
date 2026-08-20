@@ -384,6 +384,19 @@ END:VCALENDAR`;
     assert.equal(events[0]?.time, "18:30:00");
     assert.equal(events[0]?.location, "Main Gym");
   });
+
+  it("treats midnight DTSTART as all-day (no clock time)", () => {
+    const ics = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:midnight-allday@example.com
+DTSTART:20261015T000000
+SUMMARY:2nd grade music program
+END:VEVENT
+END:VCALENDAR`;
+    const events = parseIcsToReviewEvents(ics, null, "subscribe");
+    assert.equal(events.length, 1);
+    assert.equal(events[0]?.time, null);
+  });
 });
 
 describe("AI fingerprint", () => {

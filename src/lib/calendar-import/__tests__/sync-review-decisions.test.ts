@@ -8,6 +8,7 @@ import {
   partitionSyncReviewSections,
   resolveCalendarReviewMode,
 } from "../sync-review-decisions.ts";
+import { formatSyncReviewTime } from "../sync-review-format.ts";
 import type { CalendarReviewEvent } from "../../../types/calendar-review.ts";
 
 function event(
@@ -163,6 +164,29 @@ describe("getSyncReviewChangeDiffs", () => {
     assert.equal(diffs[0]?.to, "2:00 PM");
     assert.equal(diffs[1]?.from, "Gym");
     assert.equal(diffs[1]?.to, "Field");
+  });
+
+  it("does not treat midnight as a real time change from No time", () => {
+    const diffs = getSyncReviewChangeDiffs(
+      event({
+        name: "2nd grade music program",
+        date: "2026-08-21",
+        time: "00:00:00",
+        status: "update",
+        existingEventName: "2nd grade music program",
+        existingEventDate: "2026-08-21",
+        existingEventTime: null,
+      }),
+    );
+    assert.equal(
+      diffs.find((diff) => diff.label === "Time"),
+      undefined,
+    );
+  });
+
+  it("formats midnight chips as No time", () => {
+    assert.equal(formatSyncReviewTime("00:00:00"), "No time");
+    assert.equal(formatSyncReviewTime("00:00"), "No time");
   });
 
   it("includes multiple simultaneous field changes", () => {

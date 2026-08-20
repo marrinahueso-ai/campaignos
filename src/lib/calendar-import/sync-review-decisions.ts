@@ -1,4 +1,5 @@
 import type { CalendarReviewEvent } from "@/types/calendar-review";
+import { normalizeEventTimeKey } from "@/lib/calendar-import/event-dedup";
 import {
   formatSyncReviewLocation,
   formatSyncReviewShortDate,
@@ -284,9 +285,9 @@ export function getSyncReviewChangeDiffs(event: CalendarReviewEvent): Array<{
   const diffs: Array<{ label: string; from: string; to: string }> = [];
   const existingName = event.existingEventName?.trim();
   const existingDate = event.existingEventDate?.trim();
-  const existingTime = event.existingEventTime?.trim() || "";
+  const existingTime = normalizeEventTimeKey(event.existingEventTime);
   const existingLocation = event.existingEventLocation?.trim() || "";
-  const incomingTime = event.time?.trim() || "";
+  const incomingTime = normalizeEventTimeKey(event.time);
   const incomingLocation = event.location?.trim() || "";
 
   if (existingName && existingName !== event.name) {
@@ -304,8 +305,8 @@ export function getSyncReviewChangeDiffs(event: CalendarReviewEvent): Array<{
   if (existingTime !== incomingTime) {
     diffs.push({
       label: "Time",
-      from: formatSyncReviewTime(existingTime),
-      to: formatSyncReviewTime(incomingTime),
+      from: formatSyncReviewTime(event.existingEventTime),
+      to: formatSyncReviewTime(event.time),
     });
   }
 

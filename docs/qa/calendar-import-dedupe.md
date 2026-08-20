@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** August 12, 2026  
+**Last updated:** August 20, 2026  
 **Related:** [feature-list.md](../product/feature-list.md) · [testing-guide.md](./testing-guide.md) · [google-calendar.md](../integrations/google-calendar.md) · [architecture.md](../engineering/architecture.md)
 
 > **Not the same as Meta Calendar DnD.** This doc covers **school-year event intake** (ICS / Google / PDF → `events` rows). Rescheduling **approved Meta posts** on the calendar is a separate feature — see [meta-calendar-dnd.md](./meta-calendar-dnd.md).
@@ -65,7 +65,7 @@ Org scoping: events are unique per **school year** (`school_year_id` + source + 
 
 ### Interactive review vs cron / overnight sync
 
-- **Import review UI:** Two modes on the same review surface. **First Import** (no prior completed import): summary of events found / ready to add / need review; **Ready to import** list; primary **Add Events to Calendar**. **Sync Review** (later Google/RSS refresh): summary of new / changed / needs attention; Changes show human-readable old → new; primary **Finish Review**. Empty later sync (prior import exists, no staged rows): **You’re all caught up** with **View imported events** / **Back to Calendar**. After apply: **Calendar updated** with added / updated / duplicate skipped counts and the same CTAs. Statuses **New / Duplicate / Update / Conflict** (+ `needs_review`). Change rows: **Update** (patch existing; preserve identity + source mapping) · **Keep Mine** (skip + durable dismiss snapshot) · **Keep Both** (insert copy without source id; dismiss rematch on original). Attention cards: **Currently in Hey Ralli** · **From your calendar** (first) / **From your connected calendar** (sync) with **Use Calendar Event** / **Use Calendar Update** · **Keep Mine** · **Keep Both**. Both modes use the same create / patch / skip import path.
+- **Import review UI:** Two modes on the same review surface. **First Import** (no prior completed import): summary of events found / ready to add / need review; **Ready to import** list; primary **Add Events to Calendar**. **Sync Review** (later Google/RSS refresh): summary of new / changed / needs attention; Changes show human-readable old → new; primary **Finish Review**. Empty later sync (prior import exists, no staged rows): **You’re all caught up** with **View imported events** / **Back to Calendar**. After apply: **Calendar updated** with added / updated / duplicate skipped counts and the same CTAs. Statuses **New / Duplicate / Update / Conflict** (+ `needs_review`). Change rows: **Update** (patch existing; preserve identity + source mapping) · **Keep Mine** (skip + durable dismiss snapshot) · **Keep Both** (insert copy without source id; dismiss rematch on original). Attention cards: **Currently in Hey Ralli** · **From your calendar** (first) / **From your connected calendar** (sync) with **Use Calendar Event** / **Use Calendar Update** · **Keep Mine** · **Keep Both**. Both modes use the same create / patch / skip import path. **Midnight / all-day ICS times** (`DTSTART` with `T000000`, often used instead of `VALUE=DATE`) are treated as **No time** — not 12:00 AM — for parse, dedupe, and Sync Review diffs (`calendar-time.ts`).
 - **Subscribe cron / Google overnight:** same classification; New/Update/Conflict **stage into Review** (not auto-applied). Unchanged ids skipped; prior-year dates filtered out.
 
 ---

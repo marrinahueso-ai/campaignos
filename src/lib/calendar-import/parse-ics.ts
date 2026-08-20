@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { defaultStrategyForCalendarImport } from "@/lib/events/communication-strategy";
 import { inferEventTypeFromTitle } from "@/lib/events/event-type-inference";
+import { isCalendarAllDayClockTime } from "@/lib/calendar-import/calendar-time";
 import { markWithinFileConflicts } from "@/lib/calendar-import/event-dedup";
 import { normalizeCalendarReviewEvents } from "@/lib/calendar-import/review-event-normalize";
 import type {
@@ -56,7 +57,7 @@ function parseIcsDateValue(raw: string): string | null {
   return `${year}-${month}-${day}`;
 }
 
-/** Extract HH:MM:SS from DTSTART; date-only values return null. */
+/** Extract HH:MM:SS from DTSTART; date-only / midnight-all-day values return null. */
 export function parseIcsTimeValue(raw: string): string | null {
   const value = raw.trim();
   if (!value || !value.includes("T")) {
@@ -71,7 +72,12 @@ export function parseIcsTimeValue(raw: string): string | null {
   const hours = match[1]!;
   const minutes = match[2]!;
   const seconds = match[3] ?? "00";
-  return `${hours}:${minutes}:${seconds}`;
+  const candidate = `${hours}:${minutes}:${seconds}`;
+  // School calendars often encode all-day as T000000 instead of VALUE=DATE.
+  if (isCalendarAllDayClockTime(candidate)) {
+    return null;
+  }
+  return candidate;
 }
 
 function getIcsPropertyValue(
