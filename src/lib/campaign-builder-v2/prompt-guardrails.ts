@@ -54,6 +54,12 @@ export const CAMPAIGN_BUILDER_INSPIRATION_IMAGE_RULES = [
   "Do not invent extra sponsors, vendors, or logos that are not in the attached images or user notes.",
 ].join(" ");
 
+/** Unlocked regenerates: keep logos, do not re-invent white rounded plates. */
+export const CAMPAIGN_BUILDER_ANTI_LOGO_PLATE_RULES = [
+  "Do not place logos, sponsor marks, or product photos inside white rounded rectangles, cards, or plate-like boxes unless the user explicitly asks for framed tiles.",
+  "Integrate those marks into the poster (edges, corners, natural clusters) instead of a row of boxed tiles.",
+].join(" ");
+
 /** When Edit Post "Keep style locked" is on — previous art is the source of truth. */
 export const CAMPAIGN_BUILDER_STYLE_LOCK_RULES = [
   "Style lock is ON: the attached previous image is the source of truth.",

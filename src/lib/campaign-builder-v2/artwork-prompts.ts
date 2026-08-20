@@ -7,6 +7,7 @@ import { isFirstCampaignMilestone } from "./first-milestone.ts";
 import {
   CAMPAIGN_BUILDER_ANTI_CLICHE_VISUAL_RULES,
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
+  CAMPAIGN_BUILDER_ANTI_LOGO_PLATE_RULES,
   CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
   CAMPAIGN_BUILDER_INSPIRATION_IMAGE_RULES,
   CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
@@ -138,6 +139,8 @@ export function buildCampaignBuilderArtworkPrompt(input: {
 
   if (input.styleLocked) {
     lines.push("", CAMPAIGN_BUILDER_STYLE_LOCK_RULES);
+  } else {
+    lines.push("", CAMPAIGN_BUILDER_ANTI_LOGO_PLATE_RULES);
   }
 
   if (input.brandGuidance) {

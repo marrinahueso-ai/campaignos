@@ -92,7 +92,8 @@ Do **not** generate full feed+story for every dropdown value in CI.
 |---|---------|----------|----------------|-------|
 | 27 | Generate this / next / sparkles | generation action | Yes | **C** (opt-in) |
 | 28 | Edit Artwork → instructions | `extraInstructions` | Yes (regenerate) | **C** |
-| 29 | Edit Artwork → style strength | `styleStrength` | Yes — regenerate only | Unit + manual |
+| 29 | Edit Post → style strength | `styleStrength` | Yes — regenerate only | Unit + manual. Slider is sent. **More Creative** (`< 35`) + style lock **off** generates a new image (no `previousImage` edit canvas) and prefixes a restyle instruction so layout can change. Balanced / More similar still image-edit the current feed. |
+| 29a | Edit Post → Keep style locked | `styleLocked` | Yes — regenerate only | On: STYLE LOCK prefix + adjust existing art. Off: no preserve-as-is prefix; More Creative restyles as above. Unlocked prompts include anti-logo-plate (no white rounded boxes unless asked). |
 | 30–31 | Apply / Resend for approval | persist / approval | No model call | Skip for artwork matrix |
 
 ---
@@ -159,7 +160,7 @@ npm run test:campaign-builder-v2 -- --test-name-pattern "buildCampaignBuilderArt
 npm run test:campaign-builder-v2
 ```
 
-Asserts Overall inspiration comment + per-image comments appear in the built prompt; `globalAiGuidance` is not the primary path; voice/color/logo lines; style strength on regenerate.
+Asserts Overall inspiration comment + per-image comments appear in the built prompt; `globalAiGuidance` is not the primary path; voice/color/logo lines; style strength on regenerate; style lock vs anti-logo-plate; More Creative + unlocked restyle uses generate (not image-edit).
 
 Prior-milestone style reference is wired in `actions.ts` (`firstCampaignStyleReferenceUrl`) — not a pure exported helper; covered by this doc + Layer C behavior, not a unit assert.
 
@@ -174,6 +175,8 @@ Prior-milestone style reference is wired in `actions.ts` (`firstCampaignStyleRef
 | `voiceTone` | `Voice / tone: …` |
 | `colorMode` | Org colors / inspiration palette / custom palette lines |
 | `includeLogoInArtwork` + attached logo | Include attached logo line |
-| `artworkNotes` + Edit `extraInstructions` | Artwork direction from the user |
+| `artworkNotes` + Edit `extraInstructions` | Artwork direction from the user. More Creative + unlocked also prefixes `RESTYLE: Do not copy the previous artwork's layout…` and sends those notes as create instructions (not image-edit comments). |
+| `styleStrength` | More creative / balanced / stay-close-to-reference line on regenerate |
+| `styleLocked` | On: style-lock preserve rules. Off: anti-logo-plate (no white rounded logo boxes unless asked) |
 | `globalAiGuidance` | **Not included** in artwork prompts |
-| Prior milestone artwork URL | Prepended to inspiration image URLs on generate (automatic) |
+| Prior milestone artwork URL | Prepended to inspiration image URLs on **first generate** of later milestones (automatic). Edit Post More Creative restyle does **not** send the current feed as an edit canvas. |

@@ -4,6 +4,7 @@ import {
   STYLE_LOCK_INSTRUCTION_PREFIX,
   applyStyleLockToInstructions,
   resolveStyleStrengthForLock,
+  shouldRestyleUnlockedArtwork,
 } from "../style-lock.ts";
 
 describe("style-lock helpers", () => {
@@ -31,5 +32,13 @@ describe("style-lock helpers", () => {
     assert.equal(resolveStyleStrengthForLock(40, true), 90);
     assert.equal(resolveStyleStrengthForLock(95, true), 95);
     assert.equal(resolveStyleStrengthForLock(40, false), 40);
+  });
+
+  it("restyles only when unlocked and More Creative", () => {
+    assert.equal(shouldRestyleUnlockedArtwork(false, 0), true);
+    assert.equal(shouldRestyleUnlockedArtwork(false, 20), true);
+    assert.equal(shouldRestyleUnlockedArtwork(false, 35), false);
+    assert.equal(shouldRestyleUnlockedArtwork(false, 50), false);
+    assert.equal(shouldRestyleUnlockedArtwork(true, 0), false);
   });
 });

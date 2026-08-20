@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   resolveMilestoneArtworkGenerationPass,
   STORY_FROM_FEED_ADJUST_INSTRUCTION,
+  UNLOCKED_RESTYLE_INSTRUCTION,
 } from "../artwork-generation-mode.ts";
 
 describe("resolveMilestoneArtworkGenerationPass", () => {
@@ -68,5 +69,61 @@ describe("resolveMilestoneArtworkGenerationPass", () => {
     assert.equal(pass.previousImageUrl, null);
     assert.equal(pass.extraInstructions, "bright school supply collage");
     assert.equal(pass.adjustmentComments, null);
+  });
+
+  it("restyles existing feed when unlocked and More Creative (no image-edit canvas)", () => {
+    const pass = resolveMilestoneArtworkGenerationPass({
+      view: "feed",
+      existingUrl: "https://cdn.example/feed.png",
+      feedUrl: "https://cdn.example/feed.png",
+      lockedInstructions: "thank you to our wonderful sponsors.",
+      styleLocked: false,
+      styleStrength: 0,
+    });
+
+    assert.equal(pass.isAdjust, false);
+    assert.equal(pass.previousImageUrl, null);
+    assert.equal(pass.adjustmentComments, null);
+    assert.match(pass.extraInstructions ?? "", new RegExp(UNLOCKED_RESTYLE_INSTRUCTION));
+    assert.match(pass.extraInstructions ?? "", /thank you to our wonderful sponsors/);
+  });
+
+  it("still image-edits existing feed when unlocked but Balanced or More similar", () => {
+    const balanced = resolveMilestoneArtworkGenerationPass({
+      view: "feed",
+      existingUrl: "https://cdn.example/feed.png",
+      feedUrl: "https://cdn.example/feed.png",
+      lockedInstructions: "warmer tones",
+      styleLocked: false,
+      styleStrength: 50,
+    });
+    assert.equal(balanced.isAdjust, true);
+    assert.equal(balanced.previousImageUrl, "https://cdn.example/feed.png");
+
+    const similar = resolveMilestoneArtworkGenerationPass({
+      view: "feed",
+      existingUrl: "https://cdn.example/feed.png",
+      feedUrl: "https://cdn.example/feed.png",
+      lockedInstructions: "warmer tones",
+      styleLocked: false,
+      styleStrength: 80,
+    });
+    assert.equal(similar.isAdjust, true);
+    assert.equal(similar.previousImageUrl, "https://cdn.example/feed.png");
+  });
+
+  it("keeps image-edit when style lock is on even if the slider is More Creative", () => {
+    const pass = resolveMilestoneArtworkGenerationPass({
+      view: "feed",
+      existingUrl: "https://cdn.example/feed.png",
+      feedUrl: "https://cdn.example/feed.png",
+      lockedInstructions: "bigger headline",
+      styleLocked: true,
+      styleStrength: 0,
+    });
+
+    assert.equal(pass.isAdjust, true);
+    assert.equal(pass.previousImageUrl, "https://cdn.example/feed.png");
+    assert.equal(pass.extraInstructions, null);
   });
 });

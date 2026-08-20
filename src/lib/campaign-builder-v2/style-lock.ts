@@ -67,6 +67,9 @@ export function applyStyleLockToInstructions(
   return `${STYLE_LOCK_INSTRUCTION_PREFIX}\n${trimmed}`;
 }
 
+/** Footer slider "More creative" band — matches artwork prompt labels. */
+export const MORE_CREATIVE_STYLE_STRENGTH = 35;
+
 /** When locked, push the slider toward "More similar". */
 export function resolveStyleStrengthForLock(
   styleStrength: number,
@@ -76,4 +79,15 @@ export function resolveStyleStrengthForLock(
     return styleStrength;
   }
   return Math.max(styleStrength, 90);
+}
+
+/**
+ * Unlocked + More Creative must not image-edit the previous canvas — that
+ * keeps boxed logos even when the founder asked for a restyle.
+ */
+export function shouldRestyleUnlockedArtwork(
+  styleLocked: boolean,
+  styleStrength: number,
+): boolean {
+  return !styleLocked && styleStrength < MORE_CREATIVE_STYLE_STRENGTH;
 }

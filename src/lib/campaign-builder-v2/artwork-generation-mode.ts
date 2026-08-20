@@ -1,3 +1,4 @@
+import { shouldRestyleUnlockedArtwork } from "./style-lock.ts";
 import { isPlaceholderArtworkUrl } from "./platform-utils.ts";
 import type { ArtworkView } from "./types.ts";
 
@@ -7,6 +8,10 @@ import type { ArtworkView } from "./types.ts";
  */
 export const STORY_FROM_FEED_ADJUST_INSTRUCTION =
   "Adapt this exact design to vertical 9:16 story format. Keep the same artwork, colors, typography, subjects, and on-graphic text. Only recompose layout for story safe zones — do not invent a new concept or new CTAs.";
+
+/** Prefixed when More Creative + style lock off so generate does not clone the last layout. */
+export const UNLOCKED_RESTYLE_INSTRUCTION =
+  "RESTYLE: Do not copy the previous artwork's layout, composition, or framing. Compose a new design on brief.";
 
 export type MilestoneArtworkGenerationPass = {
   view: ArtworkView;
@@ -29,8 +34,9 @@ function usableUrl(url: string | null | undefined): string | null {
 
 /**
  * Decide how to generate one artwork slot. Feed regenerations with direction
- * adjust the existing feed; Story always adjusts from the latest feed when
- * available, using the same user direction.
+ * usually adjust the existing feed; More Creative + style lock off restyles
+ * via generate (no previous-image edit canvas). Story always adjusts from
+ * the latest feed when available, using the same user direction.
  */
 export function resolveMilestoneArtworkGenerationPass(input: {
   view: ArtworkView;
@@ -38,13 +44,29 @@ export function resolveMilestoneArtworkGenerationPass(input: {
   feedUrl: string | null | undefined;
   /** Style-lock-prefixed Edit Post / artwork notes (may be empty). */
   lockedInstructions: string;
+  styleLocked?: boolean;
+  styleStrength?: number;
 }): MilestoneArtworkGenerationPass {
   const existingUrl = usableUrl(input.existingUrl);
   const feedUrl = usableUrl(input.feedUrl);
   const storyFromFeed = input.view === "story" && Boolean(feedUrl);
   const instructions = input.lockedInstructions.trim();
+  const restyleExisting = shouldRestyleUnlockedArtwork(
+    Boolean(input.styleLocked),
+    input.styleStrength ?? 50,
+  );
 
   if (input.view === "feed" && existingUrl && instructions) {
+    if (restyleExisting) {
+      return {
+        view: "feed",
+        storyFromFeed: false,
+        isAdjust: false,
+        previousImageUrl: null,
+        extraInstructions: `${UNLOCKED_RESTYLE_INSTRUCTION}\n${instructions}`,
+        adjustmentComments: null,
+      };
+    }
     return {
       view: "feed",
       storyFromFeed: false,

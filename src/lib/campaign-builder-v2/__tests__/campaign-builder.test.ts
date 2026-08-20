@@ -21,6 +21,7 @@ import {
 } from "../stale-seed-migration.ts";
 import {
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
+  CAMPAIGN_BUILDER_ANTI_LOGO_PLATE_RULES,
   CAMPAIGN_BUILDER_ANTI_TABLE_LAYOUT_RULES,
   CAMPAIGN_BUILDER_INSPIRATION_IMAGE_RULES,
   CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
@@ -1209,6 +1210,11 @@ describe("prompt guardrails for artwork generation", () => {
       CAMPAIGN_BUILDER_STYLE_LOCK_RULES,
       /Apply ONLY the user's explicit change list/,
     );
+  });
+
+  it("defines anti-logo-plate rules for unlocked artwork", () => {
+    assert.match(CAMPAIGN_BUILDER_ANTI_LOGO_PLATE_RULES, /white rounded rectangles/);
+    assert.match(CAMPAIGN_BUILDER_ANTI_LOGO_PLATE_RULES, /boxed tiles/);
   });
 });
 

@@ -270,6 +270,8 @@ async function generateArtworkForMilestone(input: {
       existingUrl,
       feedUrl: artwork.feedUrl,
       lockedInstructions,
+      styleLocked,
+      styleStrength,
     });
 
     const artworkResult = await generateCampaignBuilderArtwork({

@@ -49,6 +49,7 @@ function buildPrompt(
     hasAttachedLogo?: boolean;
     extraInstructions?: string | null;
     styleStrength?: number;
+    styleLocked?: boolean;
   } = {},
 ) {
   return buildCampaignBuilderArtworkPrompt({
@@ -61,6 +62,7 @@ function buildPrompt(
     hasAttachedLogo: overrides.hasAttachedLogo ?? false,
     extraInstructions: overrides.extraInstructions,
     styleStrength: overrides.styleStrength,
+    styleLocked: overrides.styleLocked,
   });
 }
 
@@ -211,17 +213,17 @@ describe("buildCampaignBuilderArtworkPrompt", () => {
   });
 
   it("includes style lock rules when styleLocked is on", () => {
-    const prompt = buildCampaignBuilderArtworkPrompt({
-      inspiration: baseInspiration,
-      milestone: baseMilestone,
-      view: "feed",
-      brandGuidance: null,
-      hasInspirationImages: false,
-      storyFromFeed: false,
-      styleLocked: true,
-    });
+    const prompt = buildPrompt({ styleLocked: true });
     assert.match(prompt, /Style lock is ON/);
     assert.match(prompt, /Apply ONLY the user's explicit change list/);
+    assert.doesNotMatch(prompt, /white rounded rectangles/);
+  });
+
+  it("includes anti-logo-plate rules when style lock is off", () => {
+    const prompt = buildPrompt({ styleLocked: false });
+    assert.match(prompt, /white rounded rectangles/);
+    assert.match(prompt, /boxed tiles/);
+    assert.doesNotMatch(prompt, /Style lock is ON/);
   });
 
   it("includes brand kit guidance block when provided", () => {
