@@ -194,14 +194,13 @@ export function SettingsEaseOverview({ data }: SettingsEaseOverviewProps) {
 
         <SoftCard
           title="Branding"
-          description="Voice, inbox sources, communication plans, brand kit, school year."
+          description="Inbox sources, communication plans, brand kit, school year."
           actionHref="/settings/branding"
           actionLabel="Open"
         >
           <div className="mb-3.5 inline-flex items-center gap-2 rounded-full border border-[rgba(47,74,60,0.14)] bg-[rgba(47,74,60,0.08)] px-3.5 py-2 text-[13px] font-bold text-[#2f4a3c]">
             Active year · {data.schoolYearLabel}
           </div>
-          <DetailRow label="AI Brain">{data.aiBrainStatusLabel}</DetailRow>
           <DetailRow label="Inbox sources">
             {data.inboxSourcesCount === 1
               ? "1 active"

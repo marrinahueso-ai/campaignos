@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 31, 2026  
+**Last updated:** August 19, 2026  
 **Related:** [Architecture](./architecture.md) · [Feature list](../product/feature-list.md) · [QA overview](../qa/architecture-overview.md) · [Testing guide](../qa/testing-guide.md)
 
 In-app coach + product guide for Hey Ralli. Users open **Hey Ralli Assistant** from the top-rail **?** (not sidebar-pinned). Curated how-tos live at `/help` via **Browse Help Center** in the dialog.
@@ -141,7 +141,7 @@ Unit tests: `src/lib/ralli-assistant/__tests__/*.test.ts`.
 - [ ] How-to answers (faq / ai / pto) include a **Help Center** chip (`/help` or `/help#{article}`) plus the destination route
 - [ ] Ambiguity: dated event option chips → click regenerates with that event (same question)
 - [ ] Answer body does not show raw markdown `[Label](/path)` when chips are present
-- [ ] Close dialog / backdrop works; AI Brain note links to Settings
+- [ ] Close dialog / backdrop works; do **not** link to Settings → AI Brain (customer Brain / Training Library unshipped for launch)
 
 ### Three known regression bugs (must stay fixed)
 

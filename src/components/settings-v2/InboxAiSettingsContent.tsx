@@ -56,7 +56,7 @@ export function InboxAiSettingsContent({
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-[#5c554c]">
             Hey Ralli matches incoming messages to your connected sources and
-            drafts replies using your AI Brain voice.
+            drafts replies in a friendly school-volunteer tone.
           </p>
           <div className="mt-4 rounded-[14px] border border-[rgba(42,38,34,0.1)] bg-[rgba(246,242,235,0.55)] px-3.5 py-3">
             <p className="m-0 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#7a7166]">

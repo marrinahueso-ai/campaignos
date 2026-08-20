@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import {
   SETTINGS_EASE_BRANDING_SECTIONS,
-  brandingSectionHref,
   type SettingsEaseBrandingHubData,
   type SettingsEaseBrandingSection,
 } from "@/lib/settings-v2/settings-ease-branding-section";
@@ -30,7 +29,6 @@ const btnSecondaryClassName =
 
 const SECTION_LABELS: Record<SettingsEaseBrandingSection, string> = {
   hub: "Hub",
-  "ai-brain": "AI Brain",
   "ai-inbox": "AI Inbox",
   playbook: "Communication Plan",
   "colors-logos": "Colors & Logos",
@@ -117,27 +115,10 @@ function SoftCard({
 function HubTileIcon({
   kind,
 }: {
-  kind: "brain" | "inbox" | "playbook" | "colors" | "year";
+  kind: "inbox" | "playbook" | "colors" | "year";
 }) {
   const className = "h-[18px] w-[18px]";
   switch (kind) {
-    case "brain":
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-hidden>
-          <path
-            d="M12 3a4 4 0 0 1 4 4v1h1a3 3 0 0 1 0 6h-1v1a4 4 0 0 1-8 0v-1H7a3 3 0 0 1 0-6h1V7a4 4 0 0 1 4-4z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-          />
-          <path
-            d="M9.5 12h.01M14.5 12h.01"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-          />
-        </svg>
-      );
     case "inbox":
       return (
         <svg viewBox="0 0 24 24" className={className} aria-hidden>
@@ -232,7 +213,7 @@ function HubTile({
   onOpen,
   wide,
 }: {
-  kind: "brain" | "inbox" | "playbook" | "colors" | "year";
+  kind: "inbox" | "playbook" | "colors" | "year";
   title: string;
   description: string;
   meta: ReactNode;
@@ -295,8 +276,8 @@ export function SettingsEaseBranding({
             Branding
           </h1>
           <p className="mt-1.5 mb-0 max-w-[52ch] text-sm leading-snug text-[#5c554c]">
-            How {orgName} sounds, looks, and plans the year — voice, inbox
-            sources, communication plans, brand kit, and school year in one calm home.
+            How {orgName} looks and plans the year — inbox sources,
+            communication plans, brand kit, and school year in one calm home.
           </p>
         </div>
       </div>
@@ -332,18 +313,6 @@ export function SettingsEaseBranding({
           className="grid grid-cols-1 gap-3.5 sm:grid-cols-2"
           data-branding-panel="hub"
         >
-          <HubTile
-            kind="brain"
-            title="AI Brain"
-            description="Org voice, writing style, and training docs that shape drafts, captions, and replies."
-            meta={
-              <StatusPill tone={data.aiBrainConfigured ? "ok" : "off"}>
-                {data.aiBrainStatusLabel}
-              </StatusPill>
-            }
-            linkLabel="Configure →"
-            onOpen={() => setSection("ai-brain")}
-          />
           <HubTile
             kind="inbox"
             title="AI Inbox"
@@ -409,63 +378,6 @@ export function SettingsEaseBranding({
         </div>
       ) : null}
 
-      {activeSection === "ai-brain" ? (
-        <div
-          className="grid grid-cols-1 gap-3.5 lg:grid-cols-2"
-          data-branding-panel="ai-brain"
-        >
-          <SoftCard
-            title="How AI Brain works"
-            description="Maps to shipped /settings/ai-brain — voice, style, and training docs for drafts (not integrations)."
-            headerAside={
-              <StatusPill tone={data.aiBrainConfigured ? "ok" : "off"}>
-                {data.aiBrainConfigured ? "Configured" : "Not set"}
-              </StatusPill>
-            }
-            className="lg:col-span-2"
-          >
-            <p className="mb-0 text-[13px] leading-snug text-[#5c554c]">
-              Changes here affect campaign drafts, inbox AI replies, and creative
-              suggestions — the same org intelligence profile product already
-              stores.
-            </p>
-            <div className="mt-3.5 flex flex-wrap gap-2">
-              <Link href="/settings/ai-brain" className={btnPrimaryClassName}>
-                Open AI Brain
-              </Link>
-              <Link
-                href={brandingSectionHref("hub")}
-                className={btnSecondaryClassName}
-                onClick={(event) => {
-                  event.preventDefault();
-                  setSection("hub");
-                }}
-              >
-                Back to hub
-              </Link>
-            </div>
-          </SoftCard>
-          <SoftCard
-            title="Organization voice"
-            description="Personality behind every generated message."
-          >
-            <DetailRow label="Writing style">
-              {data.writingStyleLabel ?? "Not set"}
-            </DetailRow>
-            <DetailRow label="Status">{data.aiBrainStatusLabel}</DetailRow>
-          </SoftCard>
-          <SoftCard
-            title="Communication preferences"
-            description="Rules Hey Ralli follows when drafting."
-          >
-            <p className="mb-0 text-[13px] leading-snug text-[#5c554c]">
-              Configure default CTAs, emoji usage, and training docs on the full
-              AI Brain settings page.
-            </p>
-          </SoftCard>
-        </div>
-      ) : null}
-
       {activeSection === "ai-inbox" ? (
         <div
           className="grid grid-cols-1 gap-3.5 lg:grid-cols-2"
@@ -483,8 +395,8 @@ export function SettingsEaseBranding({
           >
             <p className="mb-3.5 text-[13px] leading-snug text-[#5c554c]">
               Hey Ralli matches incoming messages to these sources and drafts
-              replies using your AI Brain voice. No invented FAQ engine — just
-              the sources product already syncs.
+              replies in a friendly school-volunteer tone. No invented FAQ
+              engine — just the sources product already syncs.
             </p>
             <DetailRow label="Active sources">
               {data.inboxSourcesCount}
@@ -507,7 +419,7 @@ export function SettingsEaseBranding({
           >
             <ul className="m-0 list-disc space-y-2 pl-5 text-[13px] leading-snug text-[#5c554c]">
               <li>Matches messages to connected source URLs</li>
-              <li>Drafts in AI Brain voice — not a separate persona</li>
+              <li>Drafts in a friendly default tone — not a separate persona</li>
               <li>Requires Professional+ for AI Inbox replies (plan gate)</li>
             </ul>
           </SoftCard>

@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 19, 2026 — Edit Post More Creative + unlocked restyles layout
+**Last updated:** August 19, 2026 — Customer AI Brain / Training Library unshipped for launch
 
 ---
 
@@ -381,7 +381,8 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
 - Standalone Event Communication Plans nav → redirects to Events
 
 ## AI Brain & assistant
-- Org voice / style / audience prefs — **shipped**
+- Org voice / style / audience prefs (Settings → AI Brain) — **removed** for launch (customer form, Branding tile, and `/settings/ai-brain` unrouted; page redirects to Branding). Create with AI still calls `getAiProfileByOrganizationId` and uses generic defaults when the profile is empty. Backend tables stay in place for a later restore.
+- Training Library (upload brand docs / source material) — **removed** for launch (UI hidden; uploads were never read). Storage bucket `training-library` is **not** dropped.
 - Inbox AI sources — **shipped**
 - Help Center — **shipped** (`/help` curated how-tos for getting started, team invite, Meta connect, Create with AI, Approvals, billing; support email `hello@heyralli.com`; opened via **Browse Help Center** in the Ask Ralli dialog)
 - Hey Ralli Assistant (Ask Ralli) — **shipped** (Phases 1–5 ops coach complete: Phase 1 event ops + Phase 2 org/role briefings + Phase 3 volunteers/communications depth + Phase 4 content draft helper + Phase 5 insights/health/risk recommendations via campaign-director health/risks/next-action and Meta Insights when metrics exist — otherwise honest “no performance data yet” + highest-impact ops fallback; PTO communication plan tips (`source: pto`) for recruitment/timeline/checklist/getting-started/parent-perspective advice; “what should I work on today?” / “what would you do?” / “catch me up” map to live org briefing or numbered priority lists; experienced-PTO-president voice across coaches; deep links to Insights / event / Approvals / Create with AI; ops/org still win for “what’s next” / “today’s summary” / “what do I have this week” / milestone progress (“are all my milestones done for this week”); product-help FAQ retained for how-to (bare “milestones” no longer steals status asks); when an event isn’t named, ops/content offer upcoming campaign chips instead of only Campaigns links; ambiguous event matches return dated chips that re-ask with a forced eventId; answer body strips markdown links when chips are shown; **demoted from sidebar pin** — top-rail **?** opens Ask Ralli; how-to answers (faq/ai/pto) always include a **Help Center** chip (`/help` or `/help#{article}`) plus the destination route; dialog header Browse Help Center; dialog chunk lazy-loads on open — **shipped** perf). Living eng/QA doc: [ask-ralli-assistant.md](../engineering/ask-ralli-assistant.md); Playwright: `tests/hey-ralli/smoke/12-ask-ralli-assistant.spec.ts`
@@ -399,7 +400,7 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
   - Phase 5: Integrations (+ Meta / Calendar detail) — **shipped**
   - Phase 6: Billing & Plan — **shipped**
   - Phase 7: Account (profile · notifications · sign-out · erase account) — **shipped**
-- **Branding settings hub** — soft left nav School year → Branding; hub + section pills for AI Brain · AI Inbox · Communication Plan · Colors & Logos · School Year (nested); wired to `/settings/ai-brain`, `/settings/inbox-ai`, `/settings/playbooks-milestones`, `/onboarding/brand?standalone=1`, and nested Ease school-year panels; route `/settings/branding` (`?section=`); mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
+- **Branding settings hub** — soft left nav School year → Branding; hub + section pills for AI Inbox · Communication Plan · Colors & Logos · School Year (nested); wired to `/settings/inbox-ai`, `/settings/playbooks-milestones`, `/onboarding/brand?standalone=1`, and nested Ease school-year panels; route `/settings/branding` (`?section=`; `?section=ai-brain` lands on hub); `/settings/ai-brain` redirects to Branding; mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
 - Header settings gear → `/settings` (Ease hub; section list is Settings left nav, not a header dropdown) — **shipped**
 - Overview (Ease hub summary cards + Connected + Branding snapshot) — **shipped** (Phase 1; Branding card replaces School year card)
 - Organization (profile with full mailing address · weather location · preferences · posting — Ease cream/Fraunces panels; Branding home → `/settings/branding`; Save changes + Edit schedule wired) — **shipped** (Phase 2)

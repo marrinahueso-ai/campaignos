@@ -137,18 +137,6 @@ export const PERMISSION_MATRIX: PermissionRow[] = [
     },
   },
   {
-    id: "ai_brain",
-    label: "Edit AI Brain",
-    levels: {
-      owner: "allowed",
-      president: "allowed",
-      vp: "limited",
-      chair: "denied",
-      volunteer: "denied",
-      viewer: "denied",
-    },
-  },
-  {
     id: "inbox_ai",
     label: "Edit Inbox AI",
     levels: {

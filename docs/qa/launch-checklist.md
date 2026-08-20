@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product / QA  
-**Last updated:** July 28, 2026 — Product Completion Master closeout aligned  
+**Last updated:** August 19, 2026 — Customer AI Brain UI unshipped for launch  
 **Related:** [Product completion master](./product-completion-master.md) · [QA hub](./README.md) · [Pre-handoff readiness](./pre-handoff-readiness.md) · [Architecture overview](./architecture-overview.md) · [Testing guide](./testing-guide.md) · [Feature list](../product/feature-list.md) · [Deploy checklist](../ops/deploy-and-rollback.md)
 
 ## Phase 1 master map
@@ -59,7 +59,7 @@ Product work shipped for soft launch (see [feature-list.md](../product/feature-l
 |------|--------|-------|
 | Marketing WOW homepage + auth/legal | **Done** | `/`, login, signup, forgot, invite, privacy, terms |
 | Signup plan-first (Starter / Pro / Premium) | **Done** | Catalog → founding code checkout path |
-| Settings Ease Phases 1–7 + Branding hub | **Done** | Overview → Account; Branding nests school year + AI Brain / Inbox / Communication Plans / Colors |
+| Settings Ease Phases 1–7 + Branding hub | **Done** | Overview → Account; Branding nests school year + Inbox / Communication Plans / Colors (AI Brain customer UI unshipped; `/settings/ai-brain` → Branding) |
 | Header settings gear → `/settings` | **Done** | Direct link (no section dropdown); Ease left nav is the section list |
 | Team Access person drawer | **Done** | Soft pills + Overview / Events / Access drawer (`?person=`) |
 | Billing Ease (Usage · Plans · Payment) | **Done** | AI meters, category breakdown, Stripe invoices / portal / payment summary |

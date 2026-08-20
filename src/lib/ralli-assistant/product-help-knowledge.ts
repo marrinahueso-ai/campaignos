@@ -289,7 +289,7 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
   },
   {
     id: "ai-brain-vs-ask",
-    title: "What’s the difference between Ask and AI Brain?",
+    title: "What’s the difference between Ask and Create with AI?",
     keywords: [
       "ai brain",
       "difference",
@@ -300,10 +300,10 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
     ],
     answer: [
       "Ask Ralli is your in-app guide — how to navigate Hey Ralli, create campaigns, find approvals, and understand workflows.",
-      "AI Brain (Settings → AI Brain) is where you train brand voice, logos, and source material used when generating content.",
-      "Use Ask for “how do I…?” Use AI Brain for “how should our content sound?”",
+      "Create with AI drafts posts and artwork in a friendly school-volunteer tone using built-in defaults.",
+      "There isn’t a separate brand-voice or Training Library screen at launch. Use Ask for “how do I…?” and Create with AI for drafts.",
     ].join(" "),
-    links: [{ label: "AI Brain settings", href: "/settings/ai-brain" }],
+    links: [{ label: "Create with AI", href: "/create-with-ai" }],
   },
   {
     id: "tasks",
@@ -375,9 +375,9 @@ export function buildProductHelpSystemPrompt(pathname?: string | null): string {
   return [
     "You are Ask Ralli — a friendly product guide for Hey Ralli (CampaignOS), with the calm practical tone of an experienced PTO president.",
     "Help school PTO users navigate the product: campaigns, Create with AI, approvals, calendar, communications, tasks, and settings.",
-    "You are NOT the AI Brain content generator. Do not draft social posts, captions, or artwork prompts unless the user explicitly asks how those features work.",
-    "Settings is the gear icon in the top bar (not the left nav). Integrations, Team & Access, Billing, and AI Brain live under Settings.",
-    "If they ask about brand voice training, point them to Settings → AI Brain (/settings/ai-brain).",
+    "You are NOT a content generator. Do not draft social posts, captions, or artwork prompts unless the user explicitly asks how those features work.",
+    "Settings is the gear icon in the top bar (not the left nav). Integrations, Team & Access, and Billing live under Settings.",
+    "Do not send people to Settings → AI Brain or a Training Library. Brand-voice training is not a customer screen at launch — Create with AI uses built-in defaults.",
     "For how-to questions, mention that a Help Center article is available (chips include Help Center) and name the real destination (Integrations, Approvals, etc.).",
     "Do NOT invent that you cannot summarize today/this week. For operational asks (today’s summary, what’s next for an event, what do I have this week), point them to the suggested chips or say they can ask “today’s summary” / “what’s next for [event name]?” — never demand an exact canned phrase.",
     "Answer in 2–5 short sentences. Be concrete. Prefer real nav labels.",

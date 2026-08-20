@@ -37,8 +37,8 @@ describe("settings ease UI contracts", () => {
   const sectionChrome = readSrc(
     "../../../components/settings-v2/SettingsEaseSectionChrome.tsx",
   );
-  const aiBrainContent = readSrc(
-    "../../../components/settings-v2/AiBrainSettingsContent.tsx",
+  const aiBrainPage = readSrc(
+    "../../../app/(dashboard)/settings/ai-brain/page.tsx",
   );
   const inboxAiContent = readSrc(
     "../../../components/settings-v2/InboxAiSettingsContent.tsx",
@@ -129,6 +129,7 @@ describe("settings ease UI contracts", () => {
     assert.doesNotMatch(nav, /School year/);
     assert.doesNotMatch(nav, /href: "\/settings\/school-year"/);
     assert.doesNotMatch(nav, /AI Brain/);
+    assert.doesNotMatch(nav, /href: "\/settings\/ai-brain"/);
     assert.doesNotMatch(nav, /Playbooks/);
     assert.match(nav, /pathname\.startsWith\("\/settings\/school-year"\)/);
     assert.match(nav, /pathname\.startsWith\("\/settings\/ai-brain"\)/);
@@ -156,11 +157,11 @@ describe("settings ease UI contracts", () => {
     assert.match(overview, /Active year ·/);
     assert.match(overview, /title="Branding"/);
     assert.match(overview, /actionHref="\/settings\/branding"/);
-    assert.match(overview, /Voice, inbox sources, communication plans, brand kit, school year/);
+    assert.match(overview, /Inbox sources, communication plans, brand kit, school year/);
     assert.match(overview, /Tools ready for your active year/);
     assert.match(overview, /font-fraunces/);
     assert.doesNotMatch(overview, /SettingsV2Card/);
-    assert.doesNotMatch(overview, /AI Brain Snapshot/);
+    assert.doesNotMatch(overview, /AI Brain/);
     assert.doesNotMatch(overview, /Quick Actions/);
     assert.doesNotMatch(overview, /Account Health/);
     assert.doesNotMatch(overview, /actionHref="\/settings\/school-year"/);
@@ -178,7 +179,7 @@ describe("settings ease UI contracts", () => {
     assert.match(brandingSection, /SettingsEaseBrandingSection/);
     assert.match(brandingSection, /brandingEaseSectionFromParam/);
     assert.match(brandingSection, /"hub"/);
-    assert.match(brandingSection, /"ai-brain"/);
+    assert.match(brandingSection, /value === "ai-brain"/);
     assert.match(brandingSection, /"ai-inbox"/);
     assert.match(brandingSection, /"playbook"/);
     assert.match(brandingSection, /"colors-logos"/);
@@ -187,16 +188,16 @@ describe("settings ease UI contracts", () => {
     assert.match(brandingEase, /data-settings-ease="branding"/);
     assert.match(
       brandingEase,
-      /sounds, looks, and plans the year — voice, inbox/,
+      /looks and plans the year — inbox sources/,
     );
     assert.match(brandingEase, /role="tablist"/);
     assert.match(brandingEase, /aria-label="Branding sections"/);
-    assert.match(brandingEase, /AI Brain/);
+    assert.doesNotMatch(brandingEase, /AI Brain/);
+    assert.doesNotMatch(brandingEase, /href="\/settings\/ai-brain"/);
     assert.match(brandingEase, /AI Inbox/);
     assert.match(brandingEase, /Communication Plan/);
     assert.match(brandingEase, /Branding Colors and Logos/);
     assert.match(brandingEase, /School Year/);
-    assert.match(brandingEase, /href="\/settings\/ai-brain"/);
     assert.match(brandingEase, /href="\/settings\/inbox-ai"/);
     assert.match(brandingEase, /href="\/settings\/playbooks-milestones"/);
     assert.match(brandingEase, /onboarding\/brand\?standalone=1/);
@@ -210,12 +211,14 @@ describe("settings ease UI contracts", () => {
 
     assert.match(sectionChrome, /SettingsEaseSectionChrome/);
     assert.match(sectionChrome, /← Branding/);
-    assert.match(aiBrainContent, /SettingsEaseSectionChrome/);
-    assert.match(aiBrainContent, /data-settings-ease="ai-brain"/);
     assert.match(inboxAiContent, /SettingsEaseSectionChrome/);
     assert.match(inboxAiContent, /data-settings-ease="ai-inbox"/);
     assert.match(playbooksContent, /SettingsEaseSectionChrome/);
     assert.match(playbooksContent, /data-settings-ease="playbook"/);
+
+    assert.match(aiBrainPage, /redirect\("\/settings\/branding"\)/);
+    assert.doesNotMatch(aiBrainPage, /AiBrainSettingsContent/);
+    assert.doesNotMatch(aiBrainPage, /TrainingLibrarySection/);
   });
 
   it("wires Account to Ease panels (Phase 7 — no dense V2 chrome blend)", () => {
@@ -313,7 +316,7 @@ describe("settings ease UI contracts", () => {
     assert.match(organizationEase, /data-settings-ease="organization"/);
     assert.match(
       organizationEase,
-      /Organization profile and workspace preferences\. Voice, logos, and year[\s\S]*live under Branding/,
+      /Organization profile and workspace preferences\. Logos and year[\s\S]*live under Branding/,
     );
     assert.match(organizationEase, /Shown across Hey Ralli for this workspace/);
     assert.match(organizationEase, /Street address/);
@@ -327,7 +330,7 @@ describe("settings ease UI contracts", () => {
     assert.match(organizationEase, /Branding home/);
     assert.match(
       organizationEase,
-      /Colors, logos, AI voice, inbox sources, communication plans, and school year moved here/,
+      /Colors, logos, inbox sources, communication plans, and school year moved here/,
     );
     assert.match(organizationEase, /Language and school details/);
     assert.match(organizationEase, /Default windows for Meta publishing/);
@@ -339,6 +342,7 @@ describe("settings ease UI contracts", () => {
     assert.match(organizationEase, /font-fraunces/);
     assert.match(organizationEase, /#fffcf7|#2f4a3c/);
     assert.match(organizationEase, /href="\/settings\/branding"/);
+    assert.doesNotMatch(organizationEase, /AI Brain/);
     assert.match(organizationEase, /updateOrganizationProfileAction/);
     assert.match(organizationEase, /savePostingPreferencesAction/);
     assert.doesNotMatch(organizationEase, /SettingsV2Card/);

@@ -15,7 +15,6 @@ const SETTINGS_TABS = [
   ...(isMondayIntegrationEnabled()
     ? [{ href: "/settings/monday" as const, label: "Monday" as const }]
     : []),
-  { href: "/settings/ai-brain", label: "AI Brain" },
   { href: "/settings/inbox-ai-sources", label: "Inbox AI" },
   { href: "/settings/playbooks-milestones", label: "Communication Plans" },
 ] as const;

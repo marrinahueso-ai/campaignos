@@ -44,11 +44,6 @@ export const SETTINGS_V2_NAV_ITEMS: SettingsV2NavItem[] = [
     description: "Connect tools and platforms",
   },
   {
-    href: "/settings/ai-brain",
-    label: "AI Brain",
-    description: "How Hey Ralli thinks and writes",
-  },
-  {
     href: "/settings/inbox-ai",
     label: "Inbox AI",
     description: "Sources and FAQ content",
@@ -86,7 +81,7 @@ export const SETTINGS_TAB_REDIRECTS: Record<string, string> = {
   meta: "/settings/integrations",
   canva: "/settings/integrations",
   monday: "/settings/integrations",
-  "ai-brain": "/settings/ai-brain",
+  "ai-brain": "/settings/branding",
   "inbox-ai": "/settings/inbox-ai",
   "inbox-ai-sources": "/settings/inbox-ai",
   playbooks: "/settings/playbooks-milestones",

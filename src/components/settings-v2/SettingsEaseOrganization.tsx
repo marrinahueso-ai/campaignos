@@ -198,7 +198,7 @@ export function SettingsEaseOrganization({
             Organization
           </h1>
           <p className="mt-1.5 mb-0 max-w-[48ch] text-sm leading-snug text-[#5c554c]">
-            Organization profile and workspace preferences. Voice, logos, and year
+            Organization profile and workspace preferences. Logos and year
             live under Branding.
           </p>
         </div>
@@ -427,14 +427,13 @@ export function SettingsEaseOrganization({
 
         <SoftCard
           title="Branding home"
-          description="Colors, logos, AI voice, inbox sources, communication plans, and school year moved here."
+          description="Colors, logos, inbox sources, communication plans, and school year moved here."
         >
           <DetailRow label="Brand kit">
             {brandAssets?.primaryColor || brandAssets?.ptoLogo || brandAssets?.schoolLogo
               ? "Primary · accent · logos"
               : "Open Branding to set kit"}
           </DetailRow>
-          <DetailRow label="AI Brain">Org voice · writing style</DetailRow>
           <DetailRow label="Inbox AI">Reply sources · FAQ pages</DetailRow>
           <div className="mt-3.5 flex flex-wrap gap-2">
             <Link href="/settings/branding" className={btnSecondaryClassName}>

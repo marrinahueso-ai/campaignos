@@ -40,6 +40,15 @@ describe("matchProductHelpTopic", () => {
     assert.equal(topic?.id, "after-approval");
   });
 
+  it("does not send brand-voice questions to a customer AI Brain screen", () => {
+    const topic = matchProductHelpTopic("where is AI Brain training library?");
+    assert.equal(topic?.id, "ai-brain-vs-ask");
+    assert.doesNotMatch(formatTopicAnswer(topic!), /Settings → AI Brain/);
+    assert.ok(
+      topic!.links.every((link) => link.href !== "/settings/ai-brain"),
+    );
+  });
+
   it("returns null for unrelated questions", () => {
     assert.equal(matchProductHelpTopic("write me a facebook caption"), null);
   });

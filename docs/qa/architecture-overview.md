@@ -3,7 +3,7 @@
 **Audience:** QA engineers reviewing the application  
 **Product brand:** Hey Ralli (codebase / deploy project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
-**Last updated:** August 8, 2026  
+**Last updated:** August 19, 2026  
 
 This document is a short orientation guide: what the product does, how it is built, how the main AI → publish path works, how systems connect, and what is still incomplete.
 
@@ -91,7 +91,7 @@ Appears on Calendar / Approvals “published” · feeds Insights & heatmap hist
 - **Inbox AI drafts** — suggest replies; approve-then-send to Meta  
 - **Ask Ralli** — in-app assistant widget  
 - **Tasks AI suggestions** — optional task ideas  
-- **AI Brain** — org voice / style prefs that influence generation tone  
+- **Org tone** — `getAiProfileByOrganizationId` still grounds prompts; empty profile → generic defaults. Customer **AI Brain** / Training Library settings are **unshipped** for launch  
 
 **Principle for QA:** AI drafts; humans approve and publish. There is no silent auto-post of campaign creative without the Approvals / publish path.
 

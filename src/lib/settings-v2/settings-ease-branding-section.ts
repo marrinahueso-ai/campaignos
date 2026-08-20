@@ -24,7 +24,6 @@ export interface SettingsEaseBrandingHubData {
 
 export type SettingsEaseBrandingSection =
   | "hub"
-  | "ai-brain"
   | "ai-inbox"
   | "playbook"
   | "colors-logos"
@@ -32,7 +31,6 @@ export type SettingsEaseBrandingSection =
 
 export const SETTINGS_EASE_BRANDING_SECTIONS: SettingsEaseBrandingSection[] = [
   "hub",
-  "ai-brain",
   "ai-inbox",
   "playbook",
   "colors-logos",
@@ -43,13 +41,16 @@ export function brandingEaseSectionFromParam(
   value: string | undefined,
 ): SettingsEaseBrandingSection {
   if (
-    value === "ai-brain" ||
     value === "ai-inbox" ||
     value === "playbook" ||
     value === "colors-logos" ||
     value === "school-year"
   ) {
     return value;
+  }
+  // Former AI Brain deep links land on the hub — customer Brain UI is unshipped.
+  if (value === "ai-brain") {
+    return "hub";
   }
   if (value === "colors" || value === "logos" || value === "brand-kit") {
     return "colors-logos";

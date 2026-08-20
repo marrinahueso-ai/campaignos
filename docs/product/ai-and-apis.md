@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product / Engineering  
-**Last updated:** July 24, 2026  
+**Last updated:** August 19, 2026  
 **Related:** [Feature list](./feature-list.md) · [Billing, access & AI credits](../ops/billing-and-access.md) · [Access & onboarding](../security/access-and-onboarding.md) · [QA: Owner AI & APIs](../qa/owner-ai-apis.md) · [Owner Ops](../engineering/developer-agreements.md)
 
 Platform Owner page for monitoring **AI usage**, **connected API usage**, **operating costs**, **org AI credits**, and **customer consumption**. Internal ops only — not org-member Insights.
@@ -10,6 +10,8 @@ Platform Owner page for monitoring **AI usage**, **connected API usage**, **oper
 **Implementation status:** Phases 0–5 eng complete. UI + warehouse + reconcile CLI/tests ship. Feature-list stays **partial** until Owner completes QA § F sign-off (soak + OpenAI reconcile). Production warehouse collects live app logs from 2026-07-23. Optional **one-time** OpenAI Usage API history import (Admin key) attributes pre–collecting-since account usage to Edmondson Elementary; School B is pinned at $0 until it has live logs. Not a recurring sync.
 
 **Org AI credits:** Phases 1–6 shipped: metering, sidebar widget, Owner Credits monitoring/grants, billing catalog, Stripe Checkout/Portal/webhooks, 14-day trial + core plan gates, hard-block AI at 0.
+
+**Customer AI Brain / Training Library:** Unshipped for launch. Schools do not see or edit org voice settings or a training-doc library. Create with AI and other generators still call `getAiProfileByOrganizationId` and use generic defaults when the profile is empty. Owner usage/credits on this page are unchanged. See [feature-list.md](./feature-list.md#ai-brain--assistant).
 
 ---
 

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Brain,
   Building2,
   CheckCircle2,
   Crown,
@@ -150,38 +149,6 @@ export function SettingsOverviewContent({ data }: SettingsOverviewContentProps) 
               ))}
             </ul>
           )}
-        </SettingsV2Card>
-
-        <SettingsV2Card
-          title="AI Brain Snapshot"
-          footer={
-            <OverviewLink href="/settings/ai-brain">Edit AI Brain settings</OverviewLink>
-          }
-        >
-          <div className="flex items-start gap-3">
-            <Brain className="mt-0.5 h-5 w-5 shrink-0 text-cos-accent" strokeWidth={1.5} />
-            <div className="space-y-3 text-sm">
-              <div>
-                <p className="font-medium text-cos-text">Your AI Brand Voice</p>
-                <p className="mt-1 leading-relaxed text-cos-muted">
-                  {data.aiVoiceSnippet ??
-                    "Configure your organization voice so Hey Ralli writes in your school&apos;s tone."}
-                </p>
-              </div>
-              <div>
-                <p className="font-medium text-cos-text">Writing style</p>
-                <p className="mt-0.5 text-cos-muted">
-                  {data.writingStyleLabel ?? "Not configured"}
-                </p>
-              </div>
-              <div>
-                <p className="font-medium text-cos-text">Inbox AI sources</p>
-                <p className="mt-0.5 text-cos-muted">
-                  {data.inboxSourcesCount} sources connected
-                </p>
-              </div>
-            </div>
-          </div>
         </SettingsV2Card>
 
         <SettingsV2Card title="Quick Actions">

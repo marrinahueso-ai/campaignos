@@ -90,19 +90,6 @@ export function SettingsPreferencesForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>AI Brain</CardTitle>
-          <CardDescription>
-            Teach Hey Ralli your organization voice, channel tone, and communication
-            preferences before AI generation.
-          </CardDescription>
-        </CardHeader>
-        <Button href="/settings/ai-brain" variant="secondary">
-          Configure AI Brain
-        </Button>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle>Organization Workspace</CardTitle>
           <CardDescription>
             How your PTO works — roles, members, channel ownership, and committee
