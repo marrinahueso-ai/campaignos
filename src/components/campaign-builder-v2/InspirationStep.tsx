@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Input } from "@/components/ui/Input";
 import { ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
+import { filesFromDataTransfer } from "@/lib/campaign-builder-v2/inspiration-utils";
 import { importCanvaDesignAsCampaignInspirationAction } from "@/lib/campaign-builder-v2/actions";
 import {
   applyColorMode,
@@ -145,7 +146,7 @@ export function InspirationStep() {
     updateInspiration,
     setPlaybookId,
     selectCampaign,
-    addInspirationImage,
+    addInspirationImages,
     addInspirationFromLibrary,
     removeInspirationImage,
     updateInspirationImage,
@@ -442,24 +443,35 @@ export function InspirationStep() {
                 >
                   {canUploadArtwork && (
                     <>
-                      <button
-                        type="button"
+                      <div
+                        role="button"
+                        tabIndex={0}
                         aria-label="Upload inspiration images"
                         onClick={() => inspirationInputRef.current?.click()}
-                        onDragOver={(event) => event.preventDefault()}
-                        onDrop={(event) => {
-                          event.preventDefault();
-                          const files = Array.from(
-                            event.dataTransfer.files ?? [],
-                          );
-                          for (const file of files) {
-                            if (file.type.startsWith("image/")) {
-                              addInspirationImage(file);
-                            }
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            inspirationInputRef.current?.click();
                           }
                         }}
+                        onDragEnter={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        onDragOver={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          event.dataTransfer.dropEffect = "copy";
+                        }}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          addInspirationImages(
+                            filesFromDataTransfer(event.dataTransfer),
+                          );
+                        }}
                         className={cn(
-                          "flex min-h-[9rem] flex-col items-center justify-center border border-dashed border-cos-border bg-cos-bg/30 px-4 py-6 text-center transition-colors",
+                          "flex min-h-[9rem] cursor-pointer flex-col items-center justify-center border border-dashed border-cos-border bg-cos-bg/30 px-4 py-6 text-center transition-colors",
                           "hover:border-cos-accent hover:bg-cos-bg/50",
                         )}
                       >
@@ -473,7 +485,7 @@ export function InspirationStep() {
                         <p className="mt-1 text-xs text-cos-muted">
                           PNG, JPG up to 10 MB
                         </p>
-                      </button>
+                      </div>
                       <input
                         ref={inspirationInputRef}
                         type="file"
@@ -482,10 +494,9 @@ export function InspirationStep() {
                         aria-label="Choose inspiration images"
                         className="hidden"
                         onChange={(event) => {
-                          const files = Array.from(event.target.files ?? []);
-                          for (const file of files) {
-                            addInspirationImage(file);
-                          }
+                          addInspirationImages(
+                            Array.from(event.target.files ?? []),
+                          );
                           event.target.value = "";
                         }}
                       />

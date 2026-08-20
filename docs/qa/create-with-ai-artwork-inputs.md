@@ -47,7 +47,7 @@ Do **not** generate full feed+story for every dropdown value in CI.
 
 | # | Control | Field(s) | Feeds artwork? | Layer A / verify |
 |---|---------|----------|----------------|------------------|
-| 4–6 | Upload / choose / remove images | `inspirationImages[]` | Yes — reference images (max **10**; all must reach OpenAI or generate fails; logos/sponsor/product photos in those files are placed in the art) | Optional (upload permission) |
+| 4–6 | Upload / choose / remove images | `inspirationImages[]` | Yes — reference images (max **10**; all must reach OpenAI or generate fails; logos/sponsor/product photos in those files are placed in the art). Social Setup: **+ Add Images**, **+ Upload**, drop, or **Browse Gallery**. Drop/pick snapshots every file (`items.getAsFile` + `Array.from`); tiles get unique ids (not `Date.now()`); merge skips the same name+size+lastModified so five sponsor logos stay five distinct tiles. Brand logos (PTO / School / No Logo) stay a single Setup pick — extra sponsor marks go here. | Optional (upload permission). Unit: `inspiration-files.test.ts` + `inspiration-upload-ui.test.ts` |
 | 7 | Per-image comment | `inspirationImages[].comment` | Yes | Unit + manual |
 | 8 | Overall inspiration comment | `inspirationOverallComment` | Yes | Fill → continue → return; value persists |
 

@@ -120,6 +120,11 @@ import type {
 } from "@/lib/campaign-builder-v2/types";
 import type { SetupLogoOption } from "@/lib/artwork-v2/setup-logos";
 import { ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
+import {
+  createInspirationImageId,
+  inspirationFileKey,
+  selectNewInspirationFiles,
+} from "@/lib/campaign-builder-v2/inspiration-utils";
 
 export interface CampaignBuilderSchoolColors {
   primary: string | null;
@@ -178,6 +183,7 @@ interface CampaignBuilderContextValue {
   ) => Promise<{ success: boolean; message?: string }>;
   selectCampaign: (campaignId: string) => void;
   addInspirationImage: (file: File) => void;
+  addInspirationImages: (files: File[] | FileList | null | undefined) => void;
   /** Attach a published Background Library URL as inspiration (bumps usage). */
   addInspirationFromLibrary: (asset: {
     id: string;
@@ -1373,8 +1379,8 @@ export function CampaignBuilderProvider({
     [campaignOptions, eventId, flushSave, router, updateSession],
   );
 
-  const addInspirationImage = useCallback(
-    (file: File) => {
+  const addInspirationImages = useCallback(
+    (incoming: File[] | FileList | null | undefined) => {
       if (!canUploadArtwork) {
         setInspirationUploadError(
           "You do not have permission to upload artwork.",
@@ -1382,8 +1388,36 @@ export function CampaignBuilderProvider({
         return;
       }
 
-      const imageId = `inspiration-${Date.now()}`;
-      const previewUrl = URL.createObjectURL(file);
+      const files = Array.from(incoming ?? []).filter((file) =>
+        file.type.startsWith("image/"),
+      );
+      if (files.length === 0) return;
+
+      const existing = sessionRef.current.inspiration.inspirationImages ?? [];
+      const remaining = ARTWORK_V2_MAX_INSPIRATION_IMAGES - existing.length;
+      if (remaining <= 0) {
+        const message = `You can attach up to ${ARTWORK_V2_MAX_INSPIRATION_IMAGES} inspiration images.`;
+        setInspirationUploadError(message);
+        return;
+      }
+
+      const existingKeys = existing
+        .map((image) => image.sourceKey)
+        .filter((key): key is string => Boolean(key));
+      const selected = selectNewInspirationFiles(files, existingKeys, remaining);
+      if (selected.length === 0) return;
+
+      const pending = selected.map((file) => {
+        const imageId = createInspirationImageId();
+        const previewUrl = URL.createObjectURL(file);
+        return {
+          imageId,
+          previewUrl,
+          file,
+          sourceKey: inspirationFileKey(file),
+        };
+      });
+
       setInspirationUploadError(null);
       updateSession((prev) => ({
         ...prev,
@@ -1391,59 +1425,69 @@ export function CampaignBuilderProvider({
           ...prev.inspiration,
           inspirationImages: [
             ...prev.inspiration.inspirationImages,
-            {
+            ...pending.map(({ imageId, previewUrl, file, sourceKey }) => ({
               id: imageId,
               label: file.name,
               url: null,
               previewUrl,
-            },
+              sourceKey,
+            })),
           ],
         },
       }));
 
-      void (async () => {
-        const formData = new FormData();
-        formData.set("file", file);
-        formData.set("label", file.name);
-        formData.set("id", imageId);
-        const result = await uploadInspirationImageAction(eventId, formData);
-        if (!result.success || !result.image?.url) {
-          setInspirationUploadError(
-            result.message || "Could not upload inspiration image.",
-          );
+      for (const { imageId, previewUrl, file } of pending) {
+        void (async () => {
+          const formData = new FormData();
+          formData.set("file", file);
+          formData.set("label", file.name);
+          formData.set("id", imageId);
+          const result = await uploadInspirationImageAction(eventId, formData);
+          if (!result.success || !result.image?.url) {
+            setInspirationUploadError(
+              result.message || "Could not upload inspiration image.",
+            );
+            updateSession((prev) => ({
+              ...prev,
+              inspiration: {
+                ...prev.inspiration,
+                inspirationImages: prev.inspiration.inspirationImages.filter(
+                  (image) => image.id !== imageId,
+                ),
+              },
+            }));
+            if (previewUrl.startsWith("blob:")) {
+              URL.revokeObjectURL(previewUrl);
+            }
+            return;
+          }
+
           updateSession((prev) => ({
             ...prev,
             inspiration: {
               ...prev.inspiration,
-              inspirationImages: prev.inspiration.inspirationImages.filter(
-                (image) => image.id !== imageId,
+              inspirationImages: prev.inspiration.inspirationImages.map((image) =>
+                image.id === imageId
+                  ? {
+                      ...image,
+                      url: result.image!.url,
+                      previewUrl: result.image!.url,
+                    }
+                  : image,
               ),
             },
           }));
-          if (previewUrl.startsWith("blob:")) {
-            URL.revokeObjectURL(previewUrl);
-          }
-          return;
-        }
-
-        updateSession((prev) => ({
-          ...prev,
-          inspiration: {
-            ...prev.inspiration,
-            inspirationImages: prev.inspiration.inspirationImages.map((image) =>
-              image.id === imageId
-                ? {
-                    ...image,
-                    url: result.image!.url,
-                    previewUrl: result.image!.url,
-                  }
-                : image,
-            ),
-          },
-        }));
-      })();
+        })();
+      }
     },
     [canUploadArtwork, eventId, updateSession],
+  );
+
+  const addInspirationImage = useCallback(
+    (file: File) => {
+      addInspirationImages([file]);
+    },
+    [addInspirationImages],
   );
 
   const addInspirationFromLibrary = useCallback(
@@ -1469,7 +1513,9 @@ export function CampaignBuilderProvider({
         return { success: true };
       }
 
-      const imageId = `inspiration-library-${asset.id}-${Date.now()}`;
+      const imageId = createInspirationImageId(
+        `inspiration-library-${asset.id}`,
+      );
       const label = asset.title?.trim() || "Library background";
       setInspirationUploadError(null);
       updateSession((prev) => ({
@@ -1483,6 +1529,7 @@ export function CampaignBuilderProvider({
               label,
               url,
               previewUrl: url,
+              sourceKey: url,
             },
           ],
         },
@@ -2558,6 +2605,7 @@ export function CampaignBuilderProvider({
       setPlaybookId,
       selectCampaign,
       addInspirationImage,
+      addInspirationImages,
       addInspirationFromLibrary,
       removeInspirationImage,
       updateInspirationImage,
@@ -2614,6 +2662,7 @@ export function CampaignBuilderProvider({
       setPlaybookId,
       selectCampaign,
       addInspirationImage,
+      addInspirationImages,
       addInspirationFromLibrary,
       removeInspirationImage,
       updateInspirationImage,

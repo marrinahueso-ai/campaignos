@@ -68,6 +68,7 @@ import type {
   PlatformFormat,
 } from "@/lib/campaign-builder-v2/types";
 import "./social-composer.css";
+import { filesFromDataTransfer } from "@/lib/campaign-builder-v2/inspiration-utils";
 import { SocialComposerEventPicker } from "./SocialComposerEventPicker";
 
 const EditMilestoneModal = dynamic(
@@ -505,7 +506,7 @@ function SetupPanel({
     updateInspiration,
     setPlaybookId,
     selectCampaign,
-    addInspirationImage,
+    addInspirationImages,
     addInspirationFromLibrary,
     removeInspirationImage,
     saveCreativeSetupAndContinue,
@@ -526,12 +527,7 @@ function SetupPanel({
   const [libraryOpen, setLibraryOpen] = useState(false);
 
   function addInspirationFiles(fileList: FileList | File[] | null | undefined) {
-    const files = Array.from(fileList ?? []);
-    for (const file of files) {
-      if (file.type.startsWith("image/")) {
-        addInspirationImage(file);
-      }
-    }
+    addInspirationImages(Array.from(fileList ?? []));
   }
 
   const selectedLogo = logoOptions.find((logo) => logo.id === inspiration.selectedLogoId) ?? null;
@@ -838,7 +834,7 @@ function SetupPanel({
                   event.preventDefault();
                   event.stopPropagation();
                   setInspDragOver(false);
-                  addInspirationFiles(event.dataTransfer.files);
+                  addInspirationFiles(filesFromDataTransfer(event.dataTransfer));
                 }}
               >
                 {inspiration.inspirationImages.map((image) => (
@@ -861,15 +857,14 @@ function SetupPanel({
                     </button>
                   </div>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                <label
+                  htmlFor="social-composer-inspiration-input"
                   className="insp-tile insp-tile-upload"
                   aria-label="Add inspiration image"
                 >
                   <span aria-hidden="true">+</span>
                   <span className="insp-tile-upload-label">Upload</span>
-                </button>
+                </label>
               </div>
               <button
                 type="button"
@@ -883,13 +878,14 @@ function SetupPanel({
                 Upload a photo to use as inspiration or to set the color palette.
               </p>
               <input
+                id="social-composer-inspiration-input"
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 multiple
                 className="hidden"
                 onChange={(event) => {
-                  addInspirationFiles(event.target.files);
+                  addInspirationFiles(Array.from(event.target.files ?? []));
                   event.target.value = "";
                 }}
               />

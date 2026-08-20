@@ -58,6 +58,8 @@ export interface InspirationImage {
   previewUrl?: string | null;
   /** Optional per-image note for AI (Creative Setup). */
   comment?: string;
+  /** name::size::lastModified — used to skip duplicate drops of the same file. */
+  sourceKey?: string;
 }
 
 /** Client-to-server payload — includes base64 for blob previews pending upload. */
