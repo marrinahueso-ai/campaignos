@@ -222,6 +222,12 @@ describe("settings ease UI contracts", () => {
     assert.doesNotMatch(brandingEase, /Create communication plan/);
     assert.match(inboxAiContent, /backHref="\/settings\/branding"/);
     assert.doesNotMatch(inboxAiContent, /section=ai-inbox/);
+    assert.match(inboxAiContent, /InboxAiSourcesPanel/);
+    assert.doesNotMatch(inboxAiContent, /How Inbox AI Works/);
+    assert.doesNotMatch(inboxAiContent, /Background refresh active/);
+    assert.doesNotMatch(inboxAiContent, /Last refresh/);
+    assert.doesNotMatch(inboxAiContent, /Math\.min\(totalActiveSources, 10\)/);
+    assert.doesNotMatch(inboxAiContent, /lg:grid-cols-3/);
     assert.match(playbooksContent, /backHref="\/settings\/branding"/);
     assert.doesNotMatch(playbooksContent, /section=playbook/);
     assert.match(brandingEase, /onboarding\/brand\?standalone=1/);

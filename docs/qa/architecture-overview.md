@@ -3,7 +3,7 @@
 **Audience:** QA engineers reviewing the application  
 **Product brand:** Hey Ralli (codebase / deploy project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
-**Last updated:** August 19, 2026 — Canva customer UI unshipped for launch  
+**Last updated:** August 19, 2026 — Inbox AI settings is Connected Sources only (no health / last-refresh scoreboard)
 
 This document is a short orientation guide: what the product does, how it is built, how the main AI → publish path works, how systems connect, and what is still incomplete.
 
@@ -88,7 +88,7 @@ Appears on Calendar / Approvals “published” · feeds Insights & heatmap hist
 ### Other AI touchpoints (not on the main publish path)
 
 - **Calendar AI fix** — improve parsed dates/titles during import review  
-- **Inbox AI drafts** — suggest replies; approve-then-send to Meta  
+- **Inbox AI drafts** — suggest replies from Connected Sources (`/settings/inbox-ai`); approve-then-send to Meta. Settings page is the sources list — no decorative health / last-refresh scoreboard.
 - **Ask Ralli** — in-app assistant widget  
 - **Tasks AI suggestions** — optional task ideas  
 - **Org tone** — `getAiProfileByOrganizationId` still grounds prompts; empty profile → generic defaults. Customer **AI Brain** / Training Library settings are **unshipped** for launch  
