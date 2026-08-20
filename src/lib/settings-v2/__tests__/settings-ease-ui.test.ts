@@ -462,8 +462,13 @@ describe("settings ease UI contracts", () => {
     const createRoleDrawer = readSrc(
       "../../../components/settings-v2/team-access/TeamAccessCreateRoleDrawer.tsx",
     );
+    const sharedDialog = readSrc(
+      "../../../components/settings-v2/team-access/TeamAccessPilotDialog.tsx",
+    );
     assert.match(overlayPortal, /createPortal/);
     assert.match(overlayPortal, /document\.body/);
+    assert.match(sharedDialog, /flex items-center justify-center/);
+    assert.match(sharedDialog, /max-h-\[90vh\]/);
     assert.match(addMemberModal, /TeamAccessPilotDialog/);
     assert.match(changeAccessModal, /TeamAccessPilotDialog/);
     assert.match(createRoleDrawer, /TeamAccessBodyPortal/);
