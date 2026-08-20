@@ -12,8 +12,8 @@ interface TeamAccessPilotDialogProps {
 }
 
 /**
- * Viewport-centered Team & Access pop-out (Add member, Role, person profile).
- * Sizes to content up to 90vh; body scroll stays inside the card.
+ * Viewport-centered Team & Access pop-out (Add member, Role, Create role,
+ * person profile). Sizes to content up to 90vh; body scroll stays inside the card.
  */
 export function TeamAccessPilotDialog({
   onClose,

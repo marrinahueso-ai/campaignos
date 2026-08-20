@@ -456,15 +456,19 @@ describe("Team & Access people simplification", () => {
       join(here, "../TeamAccessPilotMemberDrawer.tsx"),
       "utf8",
     );
+    const createRole = readFileSync(
+      join(here, "../TeamAccessCreateRoleDrawer.tsx"),
+      "utf8",
+    );
     assert.match(addMember, /TeamAccessPilotDialog/);
     assert.match(changeAccess, /TeamAccessPilotDialog/);
     assert.match(personProfile, /TeamAccessPilotDialog/);
+    assert.match(createRole, /TeamAccessPilotDialog/);
 
     const overlaySources = [
       readFileSync(join(here, "../TeamAccessModal.tsx"), "utf8"),
       readFileSync(join(here, "../TeamAccessDrawer.tsx"), "utf8"),
       readFileSync(join(here, "../TeamAccessPilotConfirmDialog.tsx"), "utf8"),
-      readFileSync(join(here, "../TeamAccessCreateRoleDrawer.tsx"), "utf8"),
     ];
 
     for (const source of overlaySources) {
@@ -491,5 +495,20 @@ describe("Team & Access people simplification", () => {
     assert.doesNotMatch(personProfile, /max-w-\[480px\]/);
     assert.doesNotMatch(personProfile, /h-full w-full/);
     assert.doesNotMatch(personProfile, /<aside/);
+  });
+
+  it("19. Create role is a centered dialog, not a full-height right rail", () => {
+    const createRole = readFileSync(
+      join(here, "../TeamAccessCreateRoleDrawer.tsx"),
+      "utf8",
+    );
+    assert.match(createRole, /TeamAccessPilotDialog/);
+    assert.match(createRole, /className="max-w-3xl"/);
+    assert.match(createRole, /Live access summary/);
+    assert.match(createRole, /Create role/);
+    assert.doesNotMatch(createRole, /flex justify-end/);
+    assert.doesNotMatch(createRole, /max-w-\[850px\]/);
+    assert.doesNotMatch(createRole, /h-full w-full/);
+    assert.doesNotMatch(createRole, /<aside/);
   });
 });

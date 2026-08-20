@@ -471,7 +471,9 @@ describe("settings ease UI contracts", () => {
     assert.match(sharedDialog, /max-h-\[90vh\]/);
     assert.match(addMemberModal, /TeamAccessPilotDialog/);
     assert.match(changeAccessModal, /TeamAccessPilotDialog/);
-    assert.match(createRoleDrawer, /TeamAccessBodyPortal/);
+    assert.match(createRoleDrawer, /TeamAccessPilotDialog/);
+    assert.doesNotMatch(createRoleDrawer, /flex justify-end/);
+    assert.doesNotMatch(createRoleDrawer, /<aside/);
     const personProfile = readSrc(
       "../../../components/settings-v2/team-access/TeamAccessPilotMemberDrawer.tsx",
     );
