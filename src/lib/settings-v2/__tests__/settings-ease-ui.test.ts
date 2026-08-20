@@ -25,6 +25,7 @@ describe("settings ease UI contracts", () => {
   const brandingSection = readSrc(
     "../../../lib/settings-v2/settings-ease-branding-section.ts",
   );
+  const brandingQueries = readSrc("../../../lib/settings-v2/queries.ts");
   const schoolYearPage = readSrc(
     "../../../app/(dashboard)/settings/school-year/page.tsx",
   );
@@ -201,6 +202,23 @@ describe("settings ease UI contracts", () => {
     assert.match(brandingEase, /href="\/settings\/inbox-ai"/);
     assert.match(brandingEase, /href="\/settings\/playbooks-milestones"/);
     assert.match(brandingEase, /onboarding\/brand\?standalone=1/);
+    assert.match(brandingEase, /AppImage/);
+    assert.match(brandingEase, /preset="thumb"/);
+    assert.match(brandingEase, /data-settings-ease="logo-thumb"/);
+    assert.match(brandingEase, /data\.ptoLogoUrl/);
+    assert.match(brandingEase, /data\.schoolLogoUrl/);
+    assert.match(brandingEase, /alt="PTO logo"/);
+    assert.match(brandingEase, /alt="School logo"/);
+    assert.match(brandingEase, /Not uploaded/);
+    assert.doesNotMatch(
+      brandingEase,
+      /ptoLogoUploaded \? "Uploaded"/,
+    );
+    assert.match(brandingSection, /ptoLogoUrl/);
+    assert.match(brandingSection, /schoolLogoUrl/);
+    assert.match(brandingQueries, /resolveAssetImageUrl/);
+    assert.match(brandingQueries, /ptoLogoUrl:/);
+    assert.match(brandingQueries, /schoolLogoUrl:/);
     assert.match(brandingEase, /schoolYearPanel/);
     assert.match(brandingEase, /history\.replaceState/);
     assert.match(brandingEase, /searchParams\.set\("section"/);

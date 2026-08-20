@@ -19,6 +19,9 @@ export interface SettingsEaseBrandingHubData {
   mascotLabel: string;
   ptoLogoUploaded: boolean;
   schoolLogoUploaded: boolean;
+  /** Original public URL (or storage path resolved to public). Preview via AppImage. */
+  ptoLogoUrl: string | null;
+  schoolLogoUrl: string | null;
   brandKitReady: boolean;
 }
 

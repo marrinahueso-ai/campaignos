@@ -34,6 +34,7 @@ import { isGoogleCalendarIntegrationConfigured } from "@/lib/google-calendar/con
 import { planById } from "@/lib/billing/plan-catalog";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { IntegrationStatus } from "@/lib/settings-v2/integration-types";
+import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
 import type { SettingsEaseBrandingHubData } from "@/lib/settings-v2/settings-ease-branding-section";
 
 export type { IntegrationId, IntegrationStatus } from "@/lib/settings-v2/integration-types";
@@ -489,6 +490,14 @@ export async function getSettingsEaseBrandingHubData(): Promise<SettingsEaseBran
     mascotLabel: organization?.mascot?.trim() || "Not set",
     ptoLogoUploaded: Boolean(brandAssets?.ptoLogo),
     schoolLogoUploaded: Boolean(brandAssets?.schoolLogo),
+    ptoLogoUrl:
+      resolveAssetImageUrl(brandAssets?.ptoLogo ?? null) ??
+      brandAssets?.ptoLogo ??
+      null,
+    schoolLogoUrl:
+      resolveAssetImageUrl(brandAssets?.schoolLogo ?? null) ??
+      brandAssets?.schoolLogo ??
+      null,
     brandKitReady,
   };
 }

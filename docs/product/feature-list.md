@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 19, 2026 — Customer AI Brain / Training Library unshipped for launch
+**Last updated:** August 19, 2026 — Colors & Logos shows PTO / school logo thumbs
 
 ---
 
@@ -401,6 +401,7 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
   - Phase 6: Billing & Plan — **shipped**
   - Phase 7: Account (profile · notifications · sign-out · erase account) — **shipped**
 - **Branding settings hub** — soft left nav School year → Branding; hub + section pills for AI Inbox · Communication Plan · Colors & Logos · School Year (nested); wired to `/settings/inbox-ai`, `/settings/playbooks-milestones`, `/onboarding/brand?standalone=1`, and nested Ease school-year panels; route `/settings/branding` (`?section=`; `?section=ai-brain` lands on hub); `/settings/ai-brain` redirects to Branding; mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
+  - **Colors & Logos** preview — Brand kit colors + **PTO / school logo thumbnails** (`AppImage` `thumb` preset) when uploaded; empty “Not uploaded”; files still change via Edit branding — **shipped**
 - Header settings gear → `/settings` (Ease hub; section list is Settings left nav, not a header dropdown) — **shipped**
 - Overview (Ease hub summary cards + Connected + Branding snapshot) — **shipped** (Phase 1; Branding card replaces School year card)
 - Organization (profile with full mailing address · weather location · preferences · posting — Ease cream/Fraunces panels; Branding home → `/settings/branding`; Save changes + Edit schedule wired) — **shipped** (Phase 2)

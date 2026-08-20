@@ -5,7 +5,7 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel · Stripe  
-**Last updated:** August 19, 2026 — Customer AI Brain UI unshipped for launch  
+**Last updated:** August 19, 2026 — Colors & Logos logo thumbs; AI Brain UI unshipped  
 **Related:** [Feature list](../product/feature-list.md) · [Image architecture](./image-architecture.md) · [Storage RLS](./storage-rls.md) · [Access control](./access-control.md) · [Billing & access](../ops/billing-and-access.md) · [Stripe integration](./stripe-integration.md) · [QA architecture overview](../qa/architecture-overview.md) · [Launch checklist](../qa/launch-checklist.md) · [Ask Ralli Assistant](./ask-ralli-assistant.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
@@ -93,7 +93,7 @@ CampignOS/
 | `/newsletter-composer` | Scoop-style family email HTML export |
 | `/ops/background-library` | Owner-only Background Library (source upload → generate 10, or bulk upload finished assets → vision auto-tag → approve/delete); `platform-backgrounds` + `background_*` tables; display via shared `AppImage` ([image-architecture.md](./image-architecture.md)). School picker: Social **Browse Gallery** + Flyer **Browse Gallery** (rich metadata search/assortment + usage count) |
 
-**Settings Ease left nav:** Overview · Organization · Branding · Team & Access · Integrations · Billing & Plan · Account. Header settings gear → `/settings` (no section dropdown). Branding hub (`/settings/branding`) nests AI Inbox · Playbook · Colors & Logos · School Year (`?section=`); standalone `/settings/school-year` still works. Customer **AI Brain** / Training Library UI is unshipped for launch (`/settings/ai-brain` redirects to Branding).
+**Settings Ease left nav:** Overview · Organization · Branding · Team & Access · Integrations · Billing & Plan · Account. Header settings gear → `/settings` (no section dropdown). Branding hub (`/settings/branding`) nests AI Inbox · Playbook · Colors & Logos · School Year (`?section=`); standalone `/settings/school-year` still works. Colors & Logos previews PTO / school logos via `AppImage` (edit files on Edit branding). Customer **AI Brain** / Training Library UI is unshipped for launch (`/settings/ai-brain` redirects to Branding).
 
 ---
 

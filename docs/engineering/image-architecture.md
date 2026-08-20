@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** 2026-08-16 — Inbox avatars: nested fbcdn CSP + no no-referrer  
+**Last updated:** 2026-08-19 — Settings Colors & Logos: PTO / school logo thumbs via AppImage  
 **Related:** [Architecture](./architecture.md) · [Storage RLS](./storage-rls.md) · [Feature list](../product/feature-list.md) · [Performance budget](../qa/performance-budget.md) · [Homepage Composer](./homepage-composer.md) · [Newsletter Composer](./newsletter-composer.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 This is the **canonical guide** for how images are uploaded, stored, displayed, published, and consumed by AI across Hey Ralli. Follow it for every new image-heavy feature.
@@ -177,7 +177,7 @@ Expect a much smaller body than the original (often `image/webp`) and `cf-cache-
 | AI / Artwork V2 / CB2 | `event-assets` | Hubs via shared thumbs; builder still migrating | Generation + inspiration URLs |
 | Approvals / Volunteers / Events / Today | URLs from event / approval rows | Shared pipeline | Download / Meta from original columns |
 | Campaign lists | Hero artwork URL | `CampaignThumbnail` | — |
-| School / PTO logos | `school-assets` | Prefer `AppImage` for new UI | Overlay into AI / composers as original |
+| School / PTO logos | `school-assets` | Settings → Branding → Colors & Logos thumbs (`AppImage` `thumb`); onboarding Edit branding still uses `LogoThumb` `<img>` | Overlay into AI / composers as original |
 | Vendors | `vendor-documents` | Signed URL (`VendorLogoMark`) | — |
 | Stickers / GIPHY | Stickers bucket / GIPHY CDN | Raw `<img>` today | Meta DM attachment = original / CDN send URL |
 | Newsletter / Homepage / Volunteer composers | `event-assets` (often compressed) | In-app tiles migrating | Export HTML uses hosted URL |
@@ -209,7 +209,7 @@ Owner reviews/edits in the detail panel (**Auto-tag from image** re-runs analysi
 
 ### On shared pipeline
 
-Background Library · Approvals · Volunteers · Events Ease (list, focus, upcoming) · Campaign thumbs · Today/Dashboard widgets · `ArtworkHoverThumbnail` · `ArtworkLightboxThumbnail` (tile) · `EventArtworkPreview`
+Background Library · Approvals · Volunteers · Events Ease (list, focus, upcoming) · Campaign thumbs · Today/Dashboard widgets · `ArtworkHoverThumbnail` · `ArtworkLightboxThumbnail` (tile) · `EventArtworkPreview` · Settings Colors & Logos PTO/school logo preview
 
 ### Still to migrate (use `AppImage` when touching)
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import { AppImage } from "@/components/images/AppImage";
 import {
   SETTINGS_EASE_BRANDING_SECTIONS,
   type SettingsEaseBrandingHubData,
@@ -75,6 +76,42 @@ function DetailRow({
       <span className="text-[#7a7166]">{label}</span>
       <span className="text-right font-semibold text-[#2a2622]">{children}</span>
     </div>
+  );
+}
+
+function LogoPreview({
+  url,
+  alt,
+}: {
+  url: string | null;
+  alt: string;
+}) {
+  if (!url) {
+    return (
+      <span className="text-right font-semibold text-[#2a2622]">
+        Not uploaded
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="inline-flex h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[rgba(42,38,34,0.1)] bg-white"
+      data-settings-ease="logo-thumb"
+    >
+      <AppImage
+        src={url}
+        alt={alt}
+        width={56}
+        height={56}
+        preset="thumb"
+        displayWidth={128}
+        displayHeight={128}
+        resize="contain"
+        className="h-full w-full object-contain object-center p-1"
+        sizes="56px"
+      />
+    </span>
   );
 }
 
@@ -502,12 +539,14 @@ export function SettingsEaseBranding({
             title="Logos"
             description="PTO + school marks used when creators opt into brand kit."
           >
-            <DetailRow label="PTO logo">
-              {data.ptoLogoUploaded ? "Uploaded" : "Not uploaded"}
-            </DetailRow>
-            <DetailRow label="School logo">
-              {data.schoolLogoUploaded ? "Uploaded" : "Not uploaded"}
-            </DetailRow>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-b border-[rgba(42,38,34,0.1)] py-[11px] text-sm">
+              <span className="text-[#7a7166]">PTO logo</span>
+              <LogoPreview url={data.ptoLogoUrl} alt="PTO logo" />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 py-[11px] text-sm">
+              <span className="text-[#7a7166]">School logo</span>
+              <LogoPreview url={data.schoolLogoUrl} alt="School logo" />
+            </div>
             <p className="mt-3.5 mb-0 text-[13px] leading-snug text-[#5c554c]">
               Artwork guidance: logo / brand colors are explicit opt-in in Create
               with AI — the kit is not auto-applied.
