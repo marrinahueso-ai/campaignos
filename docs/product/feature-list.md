@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 19, 2026 — Colors & Logos shows PTO / school logo thumbs
+**Last updated:** August 19, 2026 — Canva customer UI unshipped for launch; Branding AI Inbox / Communication Plan tabs open shipped pages
 
 ---
 
@@ -191,7 +191,7 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
 ## Artwork & creative
 - AI artwork generation (feed + story), approve/deny/adjust — **shipped**
 - Logo in artwork — **shipped**
-- Canva import — **shipped** (config-dependent; Creative Setup Inspiration: **Import from Canva** → design picker → PNG stored as inspiration image; org Connect in Settings → Canva)
+- Canva import — **removed** for launch (customer Connect / Import from Canva / Choose from Canva UI hidden; `/settings/canva` redirects to Integrations). OAuth routes, token storage, and import actions stay in the repo for a later restore.
 - Legacy Creative Studio — **stub** / redirected away
 
 ## Captions, Meta & publishing
@@ -400,7 +400,7 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
   - Phase 5: Integrations (+ Meta / Calendar detail) — **shipped**
   - Phase 6: Billing & Plan — **shipped**
   - Phase 7: Account (profile · notifications · sign-out · erase account) — **shipped**
-- **Branding settings hub** — soft left nav School year → Branding; hub + section pills for AI Inbox · Communication Plan · Colors & Logos · School Year (nested); wired to `/settings/inbox-ai`, `/settings/playbooks-milestones`, `/onboarding/brand?standalone=1`, and nested Ease school-year panels; route `/settings/branding` (`?section=`; `?section=ai-brain` lands on hub); `/settings/ai-brain` redirects to Branding; mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
+- **Branding settings hub** — soft left nav School year → Branding; hub + section pills for AI Inbox · Communication Plan · Colors & Logos · School Year (nested); **AI Inbox** and **Communication Plan** pills (and hub tiles) go straight to `/settings/inbox-ai` (manage sources) and `/settings/playbooks-milestones` (library) — no intermediate health/library cards; Colors & Logos + School Year stay nested (`?section=`); `?section=ai-inbox` / `playbook` (and aliases) redirect to those routes; `?section=ai-brain` lands on hub; `/settings/ai-brain` redirects to Branding; Colors & Logos still wired to `/onboarding/brand?standalone=1`; mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
   - **Colors & Logos** preview — Brand kit colors + **PTO / school logo thumbnails** (`AppImage` `thumb` preset) when uploaded; empty “Not uploaded”; files still change via Edit branding — **shipped**
 - Header settings gear → `/settings` (Ease hub; section list is Settings left nav, not a header dropdown) — **shipped**
 - Overview (Ease hub summary cards + Connected + Branding snapshot) — **shipped** (Phase 1; Branding card replaces School year card)
@@ -413,14 +413,14 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
   - Customer-facing copy on Ease Team Access (list, invite, drawer, roles, permission chips) — **shipped** (org/team language; Jul 27 sweep)
   - **UX Pilot Team & Access complete flow** — People tabs + search; Add member (Invite by email · Create login with **username + temporary password, no email**); member drawer without per-person permission edits; multi-event picker with search/upcoming/past; Roles & permissions page with Create role (event access modes + communication/admin toggles); cancel invite + pause/restore confirmations; Role definitions footer removed (Manage roles at top) — **shipped**
   - **Username Create Login** — user-facing username mapped via `auth_usernames` to Supabase Auth password user with internal `*@users.heyralli.invalid` identity; login field accepts email or username (server-side resolution, generic errors); admin **Reset login** for username seats; first login forces `/account/change-password`; Invite by email unchanged — **shipped**
-- Integrations hub (Ease cream/Fraunces list: Facebook & Instagram · Google Calendar · Canva; Monday + Gmail/Dropbox hidden until needed) — **shipped** (Phase 5)
+- Integrations hub (Ease cream/Fraunces list: Facebook & Instagram · Google Calendar; Canva + Monday + Gmail/Dropbox hidden until needed) — **shipped** (Phase 5)
 - Facebook & Instagram Settings connect UX (`/settings/meta`): progressive not-connected → Page-only → fully connected states; honest messaging/publishing status from real readiness signals; help link for Page↔IG linking (Hey Ralli does not create that link) — **shipped**
 - Meta detail (honest App Review copy · Page/IG chips · Reconnect/Disconnect; Disconnect also on Reconnect-needed) — **shipped** (Phase 5; `/settings/meta`)
 - Integrations list shows Meta **Reconnect needed** (not Connected) when the stored Page token is invalid — **shipped**
 - Meta Connect OAuth temporarily omits `pages_messaging` until the Meta app attaches it to the Messenger use case (Ready for testing alone still Invalid Scopes) — **shipped**; restore after Meta shows Found in N use cases
 - Google Calendar detail (Sign-in · Sync · Open Import · Disconnect · subscribe URL Save feed) — **shipped** (Phase 5; `/settings/integrations/calendar`)
-- Integrations: Google Calendar (Sign-in + ICS + upload — live), Meta, Canva, Monday — **shipped**; Gmail / Dropbox / Constant Contact — **deferred**; SignUpGenius — **shipped** as public URL connect + review-before-import on event Volunteers (OAuth deferred until Pro is common)
-- Meta / Canva / Monday / Google Calendar: one Connect CTA → provider consent → done (`src/lib/integrations/oauth.ts`); shared health framework — **partial** (see [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md))
+- Integrations: Google Calendar (Sign-in + ICS + upload — live), Meta — **shipped**; Canva — **deferred** (customer UI unshipped; OAuth remains); Monday — **shipped** (hidden until needed); Gmail / Dropbox / Constant Contact — **deferred**; SignUpGenius — **shipped** as public URL connect + review-before-import on event Volunteers (OAuth deferred until Pro is common)
+- Meta / Monday / Google Calendar: one Connect CTA → provider consent → done (`src/lib/integrations/oauth.ts`); Canva Connect stays in the backend only — **partial** (see [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md), [canva.md](../integrations/canva.md))
 - OAuth provider tokens (Meta/Canva/Monday/Google Calendar) encrypted at rest (AES-256-GCM, backward-compatible with pre-existing plaintext rows) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#low--info-cleanup-not-launch-blocking); ops: [env-and-secrets.md](../ops/env-and-secrets.md#oauth-token-encryption-at-rest))
 - Billing & Plan UI — **shipped** (Phase 6 Ease on `/settings/billing-plan`; soft pills Usage · Plans · Payment via `?view=`; real Stripe portal / Checkout / Reserve; canceled orgs still land on `/billing/canceled`; eng: [stripe-integration.md](../engineering/stripe-integration.md))
 - **Billing usage / overage / upgrade** — **shipped** (Ease pass matching [`settings-billing-ease-mockup.html`](../../public/settings-billing-ease-mockup.html): period meters for AI credits · Reserve · seats · Meta posts, **Buy more Reserve** on Period snapshot, category breakdown when data exists, honest soft-warn → Reserve → hard-block copy with no surprise overage charges, Starter / Professional / Premium catalog + Stripe upgrade, Payment card / renewals / invoices / portal; founding/`billing_exempt` keeps unlimited credits + waived copy but does **not** hide plan catalog or manage CTAs; eng: [stripe-integration.md](../engineering/stripe-integration.md))

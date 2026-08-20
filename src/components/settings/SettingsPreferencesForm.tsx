@@ -103,20 +103,6 @@ export function SettingsPreferencesForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Canva</CardTitle>
-          <CardDescription>
-            Import designs directly into campaign artwork — no manual download step.
-          </CardDescription>
-        </CardHeader>
-        <div className="px-6 pb-6">
-          <Button href="/settings/canva" variant="secondary">
-            Connect Canva
-          </Button>
-        </div>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle>Meta Publishing</CardTitle>
           <CardDescription>
             Connect Facebook and Instagram for automatic posting to feed and/or story after

@@ -65,11 +65,11 @@ const FEATURES: FeatureDefinition[] = [
     icon: ImageIcon,
     title: "Artwork studio for every post",
     summary:
-      "Create feed and story graphics in one flow — no Canva juggling unless you want it.",
+      "Create feed and story graphics in one flow — no extra design tools required.",
     details: [
       "One creation flow per post (1:1 feed + 9:16 story)",
       "AI-assisted prompts using your school brand",
-      "Import from Canva when you're already there",
+      "Upload inspiration images when you already have a look",
     ],
   },
   {

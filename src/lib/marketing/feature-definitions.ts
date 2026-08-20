@@ -110,12 +110,12 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
     navLabel: "Artwork",
     title: "Artwork studio for every milestone",
     summary:
-      "Create feed and story graphics in one flow — no Canva juggling unless you want it.",
-    highlights: ["Feed + story pairs", "Brand-aware AI", "Canva import"],
+      "Create feed and story graphics in one flow — no extra design tools required.",
+    highlights: ["Feed + story pairs", "Brand-aware AI", "Upload inspiration"],
     details: [
       "One creation flow per milestone (1:1 feed + 9:16 story)",
       "AI-assisted prompts using your school brand",
-      "Import from Canva when you're already there",
+      "Upload inspiration images when you already have a look",
     ],
   }),
   withMedia({

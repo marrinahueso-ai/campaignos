@@ -20,7 +20,7 @@ export function PlaybooksMilestonesContent({
       data-settings-ease="playbook"
       title="Communication Plan"
       description="Create, duplicate, and manage countdown communication plans for every event type."
-      backHref="/settings/branding?section=playbook"
+      backHref="/settings/branding"
       actions={
         <Link
           href="/settings/playbooks/new"

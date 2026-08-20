@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { CheckCircle2, ExternalLink, ImageIcon, Upload, X } from "lucide-react";
+import { CheckCircle2, ImageIcon, Upload, X } from "lucide-react";
 import { ArtworkGenerationModePicker } from "@/components/artwork-v2/ArtworkGenerationModePicker";
 import { Button } from "@/components/ui/Button";
 import {
@@ -47,10 +47,6 @@ export function ArtworkV2CreatorScreen({
   prompt,
   references,
   approvedArtworkAssets,
-  canvaUrl,
-  canImportFromCanva = false,
-  canvaIntegrationConfigured = false,
-  canvaConnectHref = "/settings/canva",
   isGenerating = false,
   isApprovingInspiration = false,
   error = null,
@@ -59,7 +55,6 @@ export function ArtworkV2CreatorScreen({
   onBack,
   onGenerate,
   onApproveInspiration,
-  onOpenCanvaPicker,
 }: ArtworkV2CreatorScreenProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showApprovedPicker, setShowApprovedPicker] = useState(false);
@@ -177,7 +172,7 @@ export function ArtworkV2CreatorScreen({
           </CardTitle>
           <CardDescription>
             {isPhaseItem
-              ? "Upload artwork from Canva, a designer, or another source — then approve it directly without generating. Or reuse approved artwork from this event as inspiration for AI."
+              ? "Upload artwork from a designer or another source — then approve it directly without generating. Or reuse approved artwork from this event as inspiration for AI."
               : `Add up to ${ARTWORK_V2_MAX_INSPIRATION_IMAGES} inspiration images. All attached images are sent to OpenAI with your prompt.`}
           </CardDescription>
         </CardHeader>
@@ -187,58 +182,20 @@ export function ArtworkV2CreatorScreen({
             {isPhaseItem ? (
               <ol className="list-decimal space-y-1 pl-4 text-xs leading-relaxed text-cos-muted">
                 <li>
-                  Pick a Canva design with{" "}
-                  <span className="font-medium text-cos-text">Choose from Canva</span> — it
-                  imports as inspiration without downloading.
-                </li>
-                <li>
-                  Generate AI artwork inspired by it, or click{" "}
+                  Upload a file, then click{" "}
                   <span className="font-medium text-cos-text">Use as approved</span> to skip
-                  generation.
+                  generation — or generate AI artwork inspired by it.
                 </li>
                 <li>
-                  For manual export: Share → Download → PNG, then{" "}
-                  <span className="font-medium text-cos-text">Upload exported file</span>.
+                  Reuse approved artwork from this event as a reference.
                 </li>
               </ol>
             ) : (
               <ol className="list-decimal space-y-1 pl-4 text-xs leading-relaxed text-cos-muted">
-                <li>
-                  Pick a Canva design with{" "}
-                  <span className="font-medium text-cos-text">Choose from Canva</span> — no
-                  download needed.
-                </li>
-                <li>It appears below as a reference image for AI generation.</li>
-                <li>Use Generate Artwork to create versions inspired by your Canva design.</li>
+                <li>Upload a reference image for AI generation.</li>
+                <li>Use Generate Artwork to create versions inspired by it.</li>
               </ol>
             )}
-            <div className="flex shrink-0 flex-col gap-2">
-              {canImportFromCanva && onOpenCanvaPicker ? (
-                <Button type="button" size="sm" onClick={onOpenCanvaPicker}>
-                  Choose from Canva
-                </Button>
-              ) : canvaIntegrationConfigured ? (
-                <Button href={canvaConnectHref} size="sm" variant="secondary">
-                  Connect Canva to import
-                </Button>
-              ) : (
-                <Button href={canvaConnectHref} size="sm" variant="secondary">
-                  <ExternalLink className="h-4 w-4" />
-                  Open Canva
-                </Button>
-              )}
-              {canImportFromCanva && (
-                <a
-                  href={canvaUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-8 items-center justify-center gap-2 border border-cos-border bg-cos-card px-3 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Edit in Canva
-                </a>
-              )}
-            </div>
           </div>
         </div>
 

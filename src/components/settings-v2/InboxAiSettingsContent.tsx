@@ -32,7 +32,7 @@ export function InboxAiSettingsContent({
       data-settings-ease="ai-inbox"
       title="AI Inbox"
       description="Add sources with names, descriptions, and links so Hey Ralli can match inbox questions to the right page."
-      backHref="/settings/branding?section=ai-inbox"
+      backHref="/settings/branding"
       actions={
         <Link href="#add-source" className={settingsEasePrimaryBtnClassName}>
           Add source

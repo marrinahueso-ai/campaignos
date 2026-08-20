@@ -185,11 +185,6 @@ export function SettingsEaseOverview({ data }: SettingsEaseOverviewProps) {
               {data.googleCalendarConnected ? "Connected" : "Not connected"}
             </StatusPill>
           </DetailRow>
-          <DetailRow label="Canva">
-            <StatusPill tone={data.canvaConnected ? "ok" : "off"}>
-              {data.canvaConnected ? "Connected" : "Not connected"}
-            </StatusPill>
-          </DetailRow>
         </SoftCard>
 
         <SoftCard

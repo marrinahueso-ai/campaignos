@@ -5,6 +5,8 @@ import { useState, type ReactNode } from "react";
 import { AppImage } from "@/components/images/AppImage";
 import {
   SETTINGS_EASE_BRANDING_SECTIONS,
+  brandingEaseDirectRoute,
+  brandingSectionHref,
   type SettingsEaseBrandingHubData,
   type SettingsEaseBrandingSection,
 } from "@/lib/settings-v2/settings-ease-branding-section";
@@ -24,9 +26,6 @@ const softCardClassName =
 
 const btnPrimaryClassName =
   "inline-flex items-center justify-center gap-1.5 rounded-full border-none bg-[#2a2622] px-[18px] py-[11px] text-[13px] font-bold text-[#fffcf7] transition-transform duration-100 hover:-translate-y-px";
-
-const btnSecondaryClassName =
-  "inline-flex items-center justify-center gap-1.5 rounded-full border-[1.5px] border-[rgba(42,38,34,0.1)] bg-[#fffcf7] px-[18px] py-[11px] text-[13px] font-bold text-[#2a2622] transition-transform duration-100 hover:-translate-y-px";
 
 const SECTION_LABELS: Record<SettingsEaseBrandingSection, string> = {
   hub: "Hub",
@@ -247,6 +246,7 @@ function HubTile({
   description,
   meta,
   linkLabel,
+  href,
   onOpen,
   wide,
 }: {
@@ -255,15 +255,13 @@ function HubTile({
   description: string;
   meta: ReactNode;
   linkLabel: string;
-  onOpen: () => void;
+  href?: string;
+  onOpen?: () => void;
   wide?: boolean;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className={`w-full rounded-[22px] border border-[rgba(42,38,34,0.1)] bg-[#fffcf7] px-[22px] py-5 text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)] ${wide ? "sm:col-span-2" : ""}`}
-    >
+  const className = `w-full rounded-[22px] border border-[rgba(42,38,34,0.1)] bg-[#fffcf7] px-[22px] py-5 text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)] ${wide ? "sm:col-span-2" : ""}`;
+  const body = (
+    <>
       <div className="mb-3 grid h-9 w-9 place-items-center rounded-xl bg-[rgba(47,74,60,0.1)] text-[#2f4a3c]">
         <HubTileIcon kind={kind} />
       </div>
@@ -280,6 +278,20 @@ function HubTile({
         {meta}
         <span className="text-[13px] font-bold text-[#2f4a3c]">{linkLabel}</span>
       </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {body}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onOpen} className={className}>
+      {body}
     </button>
   );
 }
@@ -325,18 +337,33 @@ export function SettingsEaseBranding({
         aria-label="Branding sections"
       >
         {SETTINGS_EASE_BRANDING_SECTIONS.map((id) => {
-          const active = activeSection === id;
+          const directHref = brandingEaseDirectRoute(id);
+          const active = !directHref && activeSection === id;
+          const className = active
+            ? "rounded-full border-[1.5px] border-[#2f4a3c] bg-[#2f4a3c] px-4 py-2 text-[13px] font-bold text-[#f6f2eb] transition-transform duration-100 hover:-translate-y-px"
+            : "rounded-full border-[1.5px] border-[rgba(42,38,34,0.1)] bg-[rgba(246,242,235,0.7)] px-4 py-2 text-[13px] font-bold text-[#5c554c] transition-transform duration-100 hover:-translate-y-px hover:text-[#2a2622]";
+
+          if (directHref) {
+            return (
+              <Link
+                key={id}
+                href={directHref}
+                role="tab"
+                aria-selected={false}
+                className={className}
+              >
+                {SECTION_LABELS[id]}
+              </Link>
+            );
+          }
+
           return (
             <button
               key={id}
               type="button"
               role="tab"
               aria-selected={active}
-              className={
-                active
-                  ? "rounded-full border-[1.5px] border-[#2f4a3c] bg-[#2f4a3c] px-4 py-2 text-[13px] font-bold text-[#f6f2eb] transition-transform duration-100 hover:-translate-y-px"
-                  : "rounded-full border-[1.5px] border-[rgba(42,38,34,0.1)] bg-[rgba(246,242,235,0.7)] px-4 py-2 text-[13px] font-bold text-[#5c554c] transition-transform duration-100 hover:-translate-y-px hover:text-[#2a2622]"
-              }
+              className={className}
               onClick={() => setSection(id)}
             >
               {SECTION_LABELS[id]}
@@ -362,7 +389,7 @@ export function SettingsEaseBranding({
               </StatusPill>
             }
             linkLabel="Manage sources →"
-            onOpen={() => setSection("ai-inbox")}
+            href={brandingSectionHref("ai-inbox")}
           />
           <HubTile
             kind="playbook"
@@ -376,7 +403,7 @@ export function SettingsEaseBranding({
               </StatusPill>
             }
             linkLabel="Open library →"
-            onOpen={() => setSection("playbook")}
+            href={brandingSectionHref("playbook")}
           />
           <HubTile
             kind="colors"
@@ -412,86 +439,6 @@ export function SettingsEaseBranding({
             onOpen={() => setSection("school-year")}
             wide
           />
-        </div>
-      ) : null}
-
-      {activeSection === "ai-inbox" ? (
-        <div
-          className="grid grid-cols-1 gap-3.5 lg:grid-cols-2"
-          data-branding-panel="ai-inbox"
-        >
-          <SoftCard
-            title="Inbox AI sources"
-            description="Maps to shipped /settings/inbox-ai — named pages and links for reply drafting."
-            headerAside={
-              <Link href="/settings/inbox-ai" className={btnPrimaryClassName}>
-                Manage sources
-              </Link>
-            }
-            className="lg:col-span-2"
-          >
-            <p className="mb-3.5 text-[13px] leading-snug text-[#5c554c]">
-              Hey Ralli matches incoming messages to these sources and drafts
-              replies in a friendly school-volunteer tone. No invented FAQ
-              engine — just the sources product already syncs.
-            </p>
-            <DetailRow label="Active sources">
-              {data.inboxSourcesCount}
-            </DetailRow>
-          </SoftCard>
-          <SoftCard
-            title="Health"
-            description="Same health readout as Inbox AI settings."
-          >
-            <DetailRow label="Sources score">
-              <span className="text-[22px] font-semibold" style={frauncesStyle}>
-                {Math.min(data.inboxSourcesCount, 10)}/10
-              </span>
-            </DetailRow>
-            <DetailRow label="Last refresh">Background refresh active</DetailRow>
-          </SoftCard>
-          <SoftCard
-            title="How Inbox AI works"
-            description="Honest product behavior."
-          >
-            <ul className="m-0 list-disc space-y-2 pl-5 text-[13px] leading-snug text-[#5c554c]">
-              <li>Matches messages to connected source URLs</li>
-              <li>Drafts in a friendly default tone — not a separate persona</li>
-              <li>Requires Professional+ for AI Inbox replies (plan gate)</li>
-            </ul>
-          </SoftCard>
-        </div>
-      ) : null}
-
-      {activeSection === "playbook" ? (
-        <div
-          className="grid grid-cols-1 gap-3.5"
-          data-branding-panel="playbook"
-        >
-          <SoftCard
-            title="Communication Plans"
-            description="Maps to shipped /settings/playbooks-milestones — countdown communication plans by event type."
-            headerAside={
-              <Link
-                href="/settings/playbooks-milestones"
-                className={btnPrimaryClassName}
-              >
-                Open library
-              </Link>
-            }
-          >
-            <DetailRow label="Communication Plans in library">
-              {data.playbookCount}
-            </DetailRow>
-            <div className="mt-3.5 flex flex-wrap gap-2">
-              <Link
-                href="/settings/playbooks/new"
-                className={btnSecondaryClassName}
-              >
-                Create communication plan
-              </Link>
-            </div>
-          </SoftCard>
         </div>
       ) : null}
 

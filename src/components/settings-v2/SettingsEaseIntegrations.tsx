@@ -91,15 +91,10 @@ function IntegrationRow({
 }
 
 export function SettingsEaseIntegrations({ data }: SettingsEaseIntegrationsProps) {
-  const connectedCount = [
-    data.meta.connected,
-    data.googleCalendar.connected,
-    data.canva.connected,
-  ].filter(Boolean).length;
-
-  const canvaConnectHref = data.canva.configured
-    ? buildOAuthStartPath("canva", { returnTo: "/settings/canva" })
-    : "/settings/canva";
+  // Canva OAuth stays in the repo; customer connect UI is unshipped for launch.
+  const connectedCount = [data.meta.connected, data.googleCalendar.connected].filter(
+    Boolean,
+  ).length;
 
   return (
     <section data-settings-ease="integrations">
@@ -204,28 +199,6 @@ export function SettingsEaseIntegrations({ data }: SettingsEaseIntegrationsProps
                   >
                     Connect
                   </Link>
-                )}
-              </>
-            }
-          />
-
-          <IntegrationRow
-            kind="canva"
-            title="Canva"
-            description="Import designs as inspiration images for Creative Setup."
-            actions={
-              <>
-                <StatusPill tone={data.canva.connected ? "ok" : "off"}>
-                  {data.canva.connected ? "Connected" : "Not connected"}
-                </StatusPill>
-                {data.canva.connected ? (
-                  <Link href="/settings/canva" className={btnSecondaryClassName}>
-                    Manage
-                  </Link>
-                ) : (
-                  <a href={canvaConnectHref} className={btnPrimaryClassName}>
-                    Connect Canva
-                  </a>
                 )}
               </>
             }

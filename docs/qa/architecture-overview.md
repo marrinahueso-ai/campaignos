@@ -3,7 +3,7 @@
 **Audience:** QA engineers reviewing the application  
 **Product brand:** Hey Ralli (codebase / deploy project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
-**Last updated:** August 19, 2026  
+**Last updated:** August 19, 2026 — Canva customer UI unshipped for launch  
 
 This document is a short orientation guide: what the product does, how it is built, how the main AI → publish path works, how systems connect, and what is still incomplete.
 
@@ -32,7 +32,7 @@ Hey Ralli is an AI communications operating system for school PTO / PTA voluntee
 | Calendar OAuth | **Google Calendar API** | Org OAuth → `organization_google_calendar_connections` |
 | Email | **Resend** | Invites / welcome magic links (config-dependent) |
 | Error monitoring | **Sentry** (`@sentry/nextjs`) | “Report a problem” + server/client capture |
-| Optional integrations | **Canva**, **Monday.com** | OAuth; not required for core publish path |
+| Optional integrations | **Monday.com** (hidden until needed); **Canva** OAuth in repo, customer UI unshipped | OAuth; not required for core publish path |
 | E2E smoke | **Playwright** (`tests/hey-ralli/smoke/`) | e.g. Tasks, Insights, Ask Ralli (`12-ask-ralli-assistant`) |
 
 **Typical request shape**
@@ -177,7 +177,7 @@ flowchart LR
 
 - Users belong to one or more **organizations** via memberships.  
 - Almost all product data is **organization-scoped** (enforced in app queries + Postgres RLS).  
-- Integrations (Meta, Google Calendar, Canva, Monday) are stored **per organization**, not per user.  
+- Integrations (Meta, Google Calendar, Canva, Monday) are stored **per organization**, not per user. Customer Canva connect UI is unshipped for launch.  
 - Switching org (when the user has multiple) changes which calendar, Meta Page, and campaigns you see.
 
 ### Background jobs (Vercel Cron)
@@ -220,7 +220,7 @@ Use this as a **do-not-file-as-regression** / expected-gap list unless the ticke
 4. **Google / Meta OAuth “Testing”** — Only listed test users can Connect until apps are published / verified.  
 5. **Google Calendar = primary calendar** — No multi-calendar picker yet.  
 6. **Posting heatmap ≠ Meta Insights engagement** — Scores are prefs + when you published, not reach/engagement heat.  
-7. **Canva / Monday / OpenAI** — Features no-op or show “not configured” without env credentials.  
+7. **Monday / OpenAI** — Features no-op or show “not configured” without env credentials. Canva OAuth remains in the repo; customer connect/import UI is unshipped for launch.  
 8. **Legacy surfaces** — Old Creative Studio / Publishing Center redirect; prefer Create with AI + Approvals.  
 9. **Role permissions** — Artwork, approve, publish, people, integrations are gated; test with more than one role when validating access.  
 10. **Founding access / invites** — Sign-up may require access code; invite links set password via `/invite/[token]`.

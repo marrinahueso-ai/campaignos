@@ -41,6 +41,9 @@ describe("settings ease UI contracts", () => {
   const aiBrainPage = readSrc(
     "../../../app/(dashboard)/settings/ai-brain/page.tsx",
   );
+  const canvaPage = readSrc(
+    "../../../app/(dashboard)/settings/canva/page.tsx",
+  );
   const inboxAiContent = readSrc(
     "../../../components/settings-v2/InboxAiSettingsContent.tsx",
   );
@@ -155,6 +158,8 @@ describe("settings ease UI contracts", () => {
     assert.match(overview, /Manage billing →/);
     assert.match(overview, /Facebook & Instagram/);
     assert.match(overview, /Google Calendar/);
+    assert.doesNotMatch(overview, /label="Canva"/);
+    assert.doesNotMatch(overview, />Canva</);
     assert.match(overview, /Active year ·/);
     assert.match(overview, /title="Branding"/);
     assert.match(overview, /actionHref="\/settings\/branding"/);
@@ -199,8 +204,26 @@ describe("settings ease UI contracts", () => {
     assert.match(brandingEase, /Communication Plan/);
     assert.match(brandingEase, /Branding Colors and Logos/);
     assert.match(brandingEase, /School Year/);
-    assert.match(brandingEase, /href="\/settings\/inbox-ai"/);
-    assert.match(brandingEase, /href="\/settings\/playbooks-milestones"/);
+    assert.match(brandingEase, /brandingSectionHref\("ai-inbox"\)/);
+    assert.match(brandingEase, /brandingSectionHref\("playbook"\)/);
+    assert.match(brandingEase, /brandingEaseDirectRoute/);
+    assert.match(brandingSection, /brandingEaseDirectRoute/);
+    assert.match(brandingSection, /return "\/settings\/inbox-ai"/);
+    assert.match(brandingSection, /return "\/settings\/playbooks-milestones"/);
+    assert.match(brandingPage, /brandingEaseDirectRoute/);
+    assert.match(brandingPage, /redirect\(directHref\)/);
+    assert.doesNotMatch(brandingEase, /data-branding-panel="ai-inbox"/);
+    assert.doesNotMatch(brandingEase, /data-branding-panel="playbook"/);
+    assert.doesNotMatch(brandingEase, /Maps to shipped \/settings\/inbox-ai/);
+    assert.doesNotMatch(brandingEase, /Sources score/);
+    assert.doesNotMatch(brandingEase, /Communication Plans in library/);
+    assert.doesNotMatch(brandingEase, />Manage sources</);
+    assert.doesNotMatch(brandingEase, />Open library</);
+    assert.doesNotMatch(brandingEase, /Create communication plan/);
+    assert.match(inboxAiContent, /backHref="\/settings\/branding"/);
+    assert.doesNotMatch(inboxAiContent, /section=ai-inbox/);
+    assert.match(playbooksContent, /backHref="\/settings\/branding"/);
+    assert.doesNotMatch(playbooksContent, /section=playbook/);
     assert.match(brandingEase, /onboarding\/brand\?standalone=1/);
     assert.match(brandingEase, /AppImage/);
     assert.match(brandingEase, /preset="thumb"/);
@@ -237,6 +260,15 @@ describe("settings ease UI contracts", () => {
     assert.match(aiBrainPage, /redirect\("\/settings\/branding"\)/);
     assert.doesNotMatch(aiBrainPage, /AiBrainSettingsContent/);
     assert.doesNotMatch(aiBrainPage, /TrainingLibrarySection/);
+  });
+
+  it("unships Canva customer connect UI for launch (OAuth stays; /settings/canva redirects)", () => {
+    assert.match(canvaPage, /redirect\("\/settings\/integrations"\)/);
+    assert.doesNotMatch(canvaPage, /CanvaConnectionPanel/);
+    assert.doesNotMatch(canvaPage, /Connect Canva/);
+    assert.doesNotMatch(integrationsEase, /Connect Canva/);
+    assert.doesNotMatch(integrationsEase, /title="Canva"/);
+    assert.doesNotMatch(overview, /label="Canva"/);
   });
 
   it("wires Account to Ease panels (Phase 7 — no dense V2 chrome blend)", () => {
@@ -444,7 +476,8 @@ describe("settings ease UI contracts", () => {
     assert.match(integrationsEase, /Meta review–friendly labels/);
     assert.match(integrationsEase, /Facebook & Instagram/);
     assert.match(integrationsEase, /Google Calendar/);
-    assert.match(integrationsEase, /Connect Canva/);
+    assert.doesNotMatch(integrationsEase, /Connect Canva/);
+    assert.doesNotMatch(integrationsEase, /title="Canva"/);
     assert.match(integrationsEase, /Reconnect needed/);
     assert.match(integrationsEase, /data\.meta\.reconnectRequired/);
     assert.doesNotMatch(integrationsEase, /Monday\.com/);

@@ -67,9 +67,20 @@ export function brandingEaseSectionFromParam(
   return "hub";
 }
 
+/** Shipped pages for Branding pills that must not land on a summary card. */
+export function brandingEaseDirectRoute(
+  section: SettingsEaseBrandingSection,
+): string | null {
+  if (section === "ai-inbox") return "/settings/inbox-ai";
+  if (section === "playbook") return "/settings/playbooks-milestones";
+  return null;
+}
+
 export function brandingSectionHref(
   section: SettingsEaseBrandingSection,
 ): string {
+  const direct = brandingEaseDirectRoute(section);
+  if (direct) return direct;
   if (section === "hub") return "/settings/branding";
   return `/settings/branding?section=${section}`;
 }

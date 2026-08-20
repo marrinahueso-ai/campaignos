@@ -362,20 +362,12 @@ export async function getSettingsEaseOverviewData(): Promise<SettingsEaseOvervie
     organization?.timezone ?? null,
   ].filter(Boolean);
 
-  const connectedDisplayNames = bundle.activeIntegrations
-    .filter(
-      (item) =>
-        item.id === "meta" ||
-        item.id === "google-calendar" ||
-        item.id === "canva",
-    )
-    .map((item) =>
-      item.id === "meta"
-        ? "Meta"
-        : item.id === "google-calendar"
-          ? "Google Calendar"
-          : "Canva",
-    );
+  const customerFacingIntegrations = bundle.activeIntegrations.filter(
+    (item) => item.id === "meta" || item.id === "google-calendar",
+  );
+  const connectedDisplayNames = customerFacingIntegrations.map((item) =>
+    item.id === "meta" ? "Meta" : "Google Calendar",
+  );
   const connectedIntegrationsLabel =
     connectedDisplayNames.length > 0
       ? connectedDisplayNames.join(" · ")
@@ -434,7 +426,7 @@ export async function getSettingsEaseOverviewData(): Promise<SettingsEaseOvervie
       locationParts.length > 0 ? locationParts.join(" · ") : "Location not set",
     teamCount: bundle.teamCount,
     pendingInviteCount: bundle.pendingInviteCount,
-    activeIntegrationsCount: bundle.activeIntegrations.length,
+    activeIntegrationsCount: customerFacingIntegrations.length,
     connectedIntegrationsLabel,
     planLabel: bundle.planLabel,
     planSubLabel,

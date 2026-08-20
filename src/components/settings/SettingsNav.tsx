@@ -11,7 +11,6 @@ const SETTINGS_TABS = [
   { href: "/settings/team", label: "Team" },
   { href: "/settings/organization", label: "Organization" },
   { href: "/settings/meta", label: "Meta" },
-  { href: "/settings/canva", label: "Canva" },
   ...(isMondayIntegrationEnabled()
     ? [{ href: "/settings/monday" as const, label: "Monday" as const }]
     : []),

@@ -2,18 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { ImagePlus, Upload, X } from "lucide-react";
-import { CanvaDesignPicker } from "@/components/canva/CanvaDesignPicker";
 import { BackgroundLibraryPicker } from "@/components/background-library/BackgroundLibraryPicker";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { CampaignBuilderFooter } from "@/components/campaign-builder-v2/CampaignBuilderFooter";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Input } from "@/components/ui/Input";
-import { ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
 import { filesFromDataTransfer } from "@/lib/campaign-builder-v2/inspiration-utils";
-import { importCanvaDesignAsCampaignInspirationAction } from "@/lib/campaign-builder-v2/actions";
 import {
   applyColorMode,
   clearAllCreativeSelections,
@@ -21,9 +18,7 @@ import {
   DEFAULT_VOICE_TONE_CHOICES,
   toCreativeConfiguration,
 } from "@/lib/campaign-builder-v2/creative-config";
-import { buildOAuthStartPath } from "@/lib/integrations/oauth";
 import type { CreativeColorMode } from "@/lib/campaign-builder-v2/types";
-import type { CanvaDesignSummary } from "@/lib/canva/types";
 import { cn } from "@/lib/utils/cn";
 
 function isOptimizableImageUrl(url: string): boolean {
@@ -94,20 +89,6 @@ function SectionHeader({
   );
 }
 
-function CanvaMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <defs>
-        <linearGradient id="canvaInspoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#00C4CC" />
-          <stop offset="100%" stopColor="#7D2AE8" />
-        </linearGradient>
-      </defs>
-      <circle cx="12" cy="12" r="11" fill="url(#canvaInspoGrad)" />
-    </svg>
-  );
-}
-
 function SelectionCard({
   selected,
   disabled,
@@ -169,17 +150,7 @@ export function InspirationStep() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [playbookError, setPlaybookError] = useState<string | null>(null);
   const [isUpdatingPlaybook, setIsUpdatingPlaybook] = useState(false);
-  const [canvaPickerOpen, setCanvaPickerOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [importingCanvaDesignId, setImportingCanvaDesignId] = useState<
-    string | null
-  >(null);
-  const [canvaImportError, setCanvaImportError] = useState<string | null>(null);
-  const [, startCanvaImport] = useTransition();
-
-  const canvaConnectHref = buildOAuthStartPath("canva", {
-    returnTo: `/events/${encodeURIComponent(session.eventId)}/campaign-builder#inspiration`,
-  });
 
   const { inspiration } = session;
   const config = useMemo(
@@ -193,51 +164,6 @@ export function InspirationStep() {
   const inspirationImages = inspiration.inspirationImages ?? [];
   const hasInspirationImages = inspirationImages.length > 0;
 
-  function handleImportCanvaDesign(design: CanvaDesignSummary) {
-    if (!canUploadArtwork) {
-      setCanvaImportError("You do not have permission to import artwork.");
-      return;
-    }
-    if (inspirationImages.length >= ARTWORK_V2_MAX_INSPIRATION_IMAGES) {
-      setCanvaImportError(
-        `You can attach up to ${ARTWORK_V2_MAX_INSPIRATION_IMAGES} inspiration images.`,
-      );
-      return;
-    }
-
-    setCanvaImportError(null);
-    setImportingCanvaDesignId(design.id);
-    const existingImages = inspirationImages;
-    startCanvaImport(async () => {
-      const result = await importCanvaDesignAsCampaignInspirationAction(
-        session.eventId,
-        design.id,
-        design.title,
-      );
-      setImportingCanvaDesignId(null);
-
-      if (!result.success || !result.image?.url) {
-        setCanvaImportError(
-          result.message || "Could not import design from Canva.",
-        );
-        return;
-      }
-
-      updateInspiration({
-        inspirationImages: [
-          ...existingImages.filter((image) => image.id !== result.image!.id),
-          {
-            id: result.image.id,
-            label: result.image.label,
-            url: result.image.url,
-            previewUrl: result.image.url,
-            comment: result.image.comment ?? "",
-          },
-        ],
-      });
-      setCanvaPickerOpen(false);
-    });
-  }
   const colorMode: CreativeColorMode = inspiration.colorMode ?? "none";
   const voiceValues = inspiration.voiceToneValues ?? [];
   const selectedLogo =
@@ -424,7 +350,7 @@ export function InspirationStep() {
                   title="Inspiration"
                   description={
                     canUploadArtwork
-                      ? "Optional. Upload images or import a design from Canva — add notes per image if you like."
+                      ? "Optional. Upload images or pick from the gallery — add notes per image if you like."
                       : "Optional visual references for this campaign. Uploading new images is not available for your access level."
                   }
                 />
@@ -567,17 +493,6 @@ export function InspirationStep() {
                         >
                           Browse Library
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCanvaImportError(null);
-                            setCanvaPickerOpen(true);
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-[#00C4CC]/40 bg-[#00C4CC]/10 px-3 py-1.5 text-xs font-medium text-[#0D7377] transition-colors hover:bg-[#00C4CC]/18"
-                        >
-                          <CanvaMark className="h-3.5 w-3.5" />
-                          Import from Canva
-                        </button>
                       </div>
                     )}
                   </div>
@@ -608,30 +523,6 @@ export function InspirationStep() {
                     >
                       Dismiss
                     </button>
-                  </p>
-                )}
-                {canvaImportError && (
-                  <p
-                    className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                    role="alert"
-                  >
-                    {canvaImportError}{" "}
-                    {canvaImportError.includes("Connect Canva") ? (
-                      <Link
-                        href={canvaConnectHref}
-                        className="font-medium underline hover:no-underline"
-                      >
-                        Connect Canva
-                      </Link>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setCanvaImportError(null)}
-                        className="font-medium underline hover:no-underline"
-                      >
-                        Dismiss
-                      </button>
-                    )}
                   </p>
                 )}
               </section>
@@ -1057,13 +948,6 @@ export function InspirationStep() {
         continueLoading={isContinuing || isSaving}
       />
 
-      <CanvaDesignPicker
-        open={canvaPickerOpen}
-        onClose={() => setCanvaPickerOpen(false)}
-        onSelect={handleImportCanvaDesign}
-        importingDesignId={importingCanvaDesignId}
-        connectHref={canvaConnectHref}
-      />
       <BackgroundLibraryPicker
         open={libraryOpen}
         onClose={() => setLibraryOpen(false)}
