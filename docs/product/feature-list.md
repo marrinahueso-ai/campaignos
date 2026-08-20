@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 19, 2026 — Inbox AI settings is Connected Sources only (no health / last-refresh scoreboard)
+**Last updated:** August 19, 2026 — Team & Access dialogs portal to the viewport (Add member / Role)
 
 ---
 
@@ -400,7 +400,7 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
   - Phase 5: Integrations (+ Meta / Calendar detail) — **shipped**
   - Phase 6: Billing & Plan — **shipped**
   - Phase 7: Account (profile · notifications · sign-out · erase account) — **shipped**
-- **Branding settings hub** — soft left nav School year → Branding; hub + section pills for AI Inbox · Communication Plan · Colors & Logos · School Year (nested); **AI Inbox** and **Communication Plan** pills (and hub tiles) go straight to `/settings/inbox-ai` (manage sources) and `/settings/playbooks-milestones` (library) — no intermediate health/library cards; Colors & Logos + School Year stay nested (`?section=`); `?section=ai-inbox` / `playbook` (and aliases) redirect to those routes; `?section=ai-brain` lands on hub; `/settings/ai-brain` redirects to Branding; Colors & Logos still wired to `/onboarding/brand?standalone=1`; mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
+- **Branding settings hub** — soft left nav School year → Branding; even **2×2 equal-height** hub cards (whole card is the click; quiet status pills; school-chair copy) for AI Inbox · Communication Plan · Colors & Logos · School Year; section pills match; **AI Inbox** and **Communication Plan** go straight to `/settings/inbox-ai` (manage sources) and `/settings/playbooks-milestones` (library) — no intermediate health/library cards; Colors & Logos + School Year stay nested (`?section=`); `?section=ai-inbox` / `playbook` (and aliases) redirect to those routes; `?section=ai-brain` lands on hub; `/settings/ai-brain` redirects to Branding; Colors & Logos still wired to `/onboarding/brand?standalone=1`; mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
   - **Colors & Logos** preview — Brand kit colors + **PTO / school logo thumbnails** (`AppImage` `thumb` preset) when uploaded; empty “Not uploaded”; files still change via Edit branding — **shipped**
 - Header settings gear → `/settings` (Ease hub; section list is Settings left nav, not a header dropdown) — **shipped**
 - Overview (Ease hub summary cards + Connected + Branding snapshot) — **shipped** (Phase 1; Branding card replaces School year card)
@@ -413,6 +413,7 @@ Community email builder plus a durable Newsletter → Approval → Schedule → 
   - Customer-facing copy on Ease Team Access (list, invite, drawer, roles, permission chips) — **shipped** (org/team language; Jul 27 sweep)
   - **UX Pilot Team & Access complete flow** — People tabs + search; Add member (Invite by email · Create login with **username + temporary password, no email**); member drawer without per-person permission edits; multi-event picker with search/upcoming/past; Roles & permissions page with Create role (event access modes + communication/admin toggles); cancel invite + pause/restore confirmations; Role definitions footer removed (Manage roles at top) — **shipped**
   - **Username Create Login** — user-facing username mapped via `auth_usernames` to Supabase Auth password user with internal `*@users.heyralli.invalid` identity; login field accepts email or username (server-side resolution, generic errors); admin **Reset login** for username seats; first login forces `/account/change-password`; Invite by email unchanged — **shipped**
+  - **Viewport-centered overlays** — Add team member, change access / Role, create role, invite/edit shells, confirm and reset-login dialogs, and person drawers portal to `document.body` so `fixed` is viewport-relative (not trapped by Settings Ease rise animation / tall People list) — **shipped**
 - Integrations hub (Ease cream/Fraunces list: Facebook & Instagram · Google Calendar; Canva + Monday + Gmail/Dropbox hidden until needed) — **shipped** (Phase 5)
 - Facebook & Instagram Settings connect UX (`/settings/meta`): progressive not-connected → Page-only → fully connected states; honest messaging/publishing status from real readiness signals; help link for Page↔IG linking (Hey Ralli does not create that link) — **shipped**
 - Meta detail (honest App Review copy · Page/IG chips · Reconnect/Disconnect; Disconnect also on Reconnect-needed) — **shipped** (Phase 5; `/settings/meta`)

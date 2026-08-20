@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Plus, Search, Shield } from "lucide-react";
+import { TeamAccessBodyPortal } from "@/components/settings-v2/team-access/TeamAccessBodyPortal";
 import { TeamAccessEditMemberModal } from "@/components/settings-v2/team-access/TeamAccessEditMemberModal";
 import { TeamAccessPilotAddMemberModal } from "@/components/settings-v2/team-access/TeamAccessPilotAddMemberModal";
 import {
@@ -795,6 +796,7 @@ export function SettingsEaseTeamAccess({
       />
 
       {resetCredentials ? (
+        <TeamAccessBodyPortal>
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
           <button
             type="button"
@@ -853,6 +855,7 @@ export function SettingsEaseTeamAccess({
             </div>
           </div>
         </div>
+        </TeamAccessBodyPortal>
       ) : null}
     </section>
   );

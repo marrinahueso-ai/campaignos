@@ -192,20 +192,30 @@ describe("settings ease UI contracts", () => {
     assert.match(brandingSection, /"school-year"/);
 
     assert.match(brandingEase, /data-settings-ease="branding"/);
-    assert.match(
-      brandingEase,
-      /looks and plans the year — inbox sources/,
-    );
+    assert.match(brandingEase, /looks and how the year is planned/);
     assert.match(brandingEase, /role="tablist"/);
     assert.match(brandingEase, /aria-label="Branding sections"/);
     assert.doesNotMatch(brandingEase, /AI Brain/);
     assert.doesNotMatch(brandingEase, /href="\/settings\/ai-brain"/);
     assert.match(brandingEase, /AI Inbox/);
     assert.match(brandingEase, /Communication Plan/);
-    assert.match(brandingEase, /Branding Colors and Logos/);
+    assert.match(brandingEase, /Colors & Logos/);
     assert.match(brandingEase, /School Year/);
-    assert.match(brandingEase, /brandingSectionHref\("ai-inbox"\)/);
-    assert.match(brandingEase, /brandingSectionHref\("playbook"\)/);
+    assert.match(brandingSection, /SETTINGS_EASE_BRANDING_HUB_TILES/);
+    assert.match(brandingSection, /Pages and links Inbox AI uses/);
+    assert.match(brandingSection, /When to send what, for each kind of event/);
+    assert.match(brandingSection, /School colors, logos, and mascot/);
+    assert.match(
+      brandingSection,
+      /The year your calendar and events are planned against/,
+    );
+    assert.match(brandingEase, /SETTINGS_EASE_BRANDING_HUB_TILES/);
+    assert.match(brandingEase, /data-branding-hub="tiles"/);
+    assert.match(brandingEase, /data-branding-hub-tile/);
+    assert.match(brandingEase, /items-stretch/);
+    assert.match(brandingEase, /sm:grid-cols-2/);
+    assert.match(brandingEase, /h-full/);
+    assert.match(brandingEase, /brandingSectionHref\(tile.id\)/);
     assert.match(brandingEase, /brandingEaseDirectRoute/);
     assert.match(brandingSection, /brandingEaseDirectRoute/);
     assert.match(brandingSection, /return "\/settings\/inbox-ai"/);
@@ -217,8 +227,15 @@ describe("settings ease UI contracts", () => {
     assert.doesNotMatch(brandingEase, /Maps to shipped \/settings\/inbox-ai/);
     assert.doesNotMatch(brandingEase, /Sources score/);
     assert.doesNotMatch(brandingEase, /Communication Plans in library/);
-    assert.doesNotMatch(brandingEase, />Manage sources</);
-    assert.doesNotMatch(brandingEase, />Open library</);
+    assert.doesNotMatch(brandingEase, /Manage sources/);
+    assert.doesNotMatch(brandingEase, /Open library/);
+    assert.doesNotMatch(brandingEase, /Edit brand kit/);
+    assert.doesNotMatch(brandingEase, /Manage year/);
+    assert.doesNotMatch(brandingEase, /Named sources and links/);
+    assert.doesNotMatch(brandingEase, /Same surface as onboarding/);
+    assert.doesNotMatch(brandingEase, /still here, nested/);
+    assert.doesNotMatch(brandingEase, /Branding Colors and Logos/);
+    assert.doesNotMatch(brandingEase, /sm:col-span-2/);
     assert.doesNotMatch(brandingEase, /Create communication plan/);
     assert.match(inboxAiContent, /backHref="\/settings\/branding"/);
     assert.doesNotMatch(inboxAiContent, /section=ai-inbox/);
@@ -431,6 +448,31 @@ describe("settings ease UI contracts", () => {
     assert.doesNotMatch(teamAccessEase, /SettingsV2Card/);
     assert.doesNotMatch(teamAccessEase, /TeamAccessShell/);
     assert.match(teamAccessEase, /removeTeamMemberAction/);
+    assert.match(teamAccessEase, /TeamAccessBodyPortal/);
+
+    const overlayPortal = readSrc(
+      "../../../components/settings-v2/team-access/TeamAccessBodyPortal.tsx",
+    );
+    const addMemberModal = readSrc(
+      "../../../components/settings-v2/team-access/TeamAccessPilotAddMemberModal.tsx",
+    );
+    const changeAccessModal = readSrc(
+      "../../../components/settings-v2/team-access/TeamAccessPilotChangeAccessModal.tsx",
+    );
+    const createRoleDrawer = readSrc(
+      "../../../components/settings-v2/team-access/TeamAccessCreateRoleDrawer.tsx",
+    );
+    assert.match(overlayPortal, /createPortal/);
+    assert.match(overlayPortal, /document\.body/);
+    assert.match(addMemberModal, /TeamAccessPilotDialog/);
+    assert.match(changeAccessModal, /TeamAccessPilotDialog/);
+    assert.match(createRoleDrawer, /TeamAccessBodyPortal/);
+    const personProfile = readSrc(
+      "../../../components/settings-v2/team-access/TeamAccessPilotMemberDrawer.tsx",
+    );
+    assert.match(personProfile, /TeamAccessPilotDialog/);
+    assert.doesNotMatch(personProfile, /flex justify-end/);
+    assert.doesNotMatch(personProfile, /<aside/);
   });
 
   it("ships Team & Access person drawer Ease contract (permissions + events + deep links)", () => {
@@ -464,6 +506,7 @@ describe("settings ease UI contracts", () => {
     assert.doesNotMatch(personDrawer, /TeamAccessDrawer/);
     assert.doesNotMatch(personDrawer, /SettingsV2Card/);
     assert.doesNotMatch(personDrawer, /bg-cos-card/);
+    assert.match(personDrawer, /TeamAccessBodyPortal/);
   });
 
   it("wires Integrations hub + Meta + Calendar to Ease panels (Phase 5 — no dense V2 chrome blend)", () => {

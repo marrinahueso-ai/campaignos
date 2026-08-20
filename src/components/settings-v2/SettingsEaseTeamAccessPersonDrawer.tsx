@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
+import { TeamAccessBodyPortal } from "@/components/settings-v2/team-access/TeamAccessBodyPortal";
 import {
   canResendTeamInvite,
   formatLastLoggedInLabel,
@@ -299,6 +300,7 @@ export function SettingsEaseTeamAccessPersonDrawer({
   }
 
   return (
+    <TeamAccessBodyPortal>
     <div className="fixed inset-0 z-50" data-settings-ease="person-drawer">
       <button
         type="button"
@@ -697,5 +699,6 @@ export function SettingsEaseTeamAccessPersonDrawer({
         </div>
       </aside>
     </div>
+    </TeamAccessBodyPortal>
   );
 }

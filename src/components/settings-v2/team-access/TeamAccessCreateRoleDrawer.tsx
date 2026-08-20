@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Check } from "lucide-react";
+import { TeamAccessBodyPortal } from "@/components/settings-v2/team-access/TeamAccessBodyPortal";
 import {
   CREATE_ROLE_ADMIN_KEYS,
   CREATE_ROLE_COMM_KEYS,
@@ -216,6 +217,7 @@ export function TeamAccessCreateRoleDrawer({
   }
 
   return (
+    <TeamAccessBodyPortal>
     <div className="fixed inset-0 z-[70] flex justify-end bg-[rgba(32,27,23,0.35)] backdrop-blur-[2px]">
       <button
         type="button"
@@ -513,5 +515,6 @@ export function TeamAccessCreateRoleDrawer({
         </div>
       </aside>
     </div>
+    </TeamAccessBodyPortal>
   );
 }

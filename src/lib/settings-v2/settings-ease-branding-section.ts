@@ -84,3 +84,45 @@ export function brandingSectionHref(
   if (section === "hub") return "/settings/branding";
   return `/settings/branding?section=${section}`;
 }
+
+export type SettingsEaseBrandingHubTileKind =
+  | "inbox"
+  | "playbook"
+  | "colors"
+  | "year";
+
+/** Hub 2×2 — school-chair copy; destinations via brandingSectionHref. */
+export interface SettingsEaseBrandingHubTile {
+  id: Exclude<SettingsEaseBrandingSection, "hub">;
+  kind: SettingsEaseBrandingHubTileKind;
+  title: string;
+  description: string;
+}
+
+export const SETTINGS_EASE_BRANDING_HUB_TILES: readonly SettingsEaseBrandingHubTile[] =
+  [
+    {
+      id: "ai-inbox",
+      kind: "inbox",
+      title: "AI Inbox",
+      description: "Pages and links Inbox AI uses to answer family questions.",
+    },
+    {
+      id: "playbook",
+      kind: "playbook",
+      title: "Communication Plan",
+      description: "When to send what, for each kind of event.",
+    },
+    {
+      id: "colors-logos",
+      kind: "colors",
+      title: "Colors & Logos",
+      description: "School colors, logos, and mascot for posts and flyers.",
+    },
+    {
+      id: "school-year",
+      kind: "year",
+      title: "School Year",
+      description: "The year your calendar and events are planned against.",
+    },
+  ];

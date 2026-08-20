@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { AppImage } from "@/components/images/AppImage";
 import {
+  SETTINGS_EASE_BRANDING_HUB_TILES,
   SETTINGS_EASE_BRANDING_SECTIONS,
   brandingEaseDirectRoute,
   brandingSectionHref,
   type SettingsEaseBrandingHubData,
+  type SettingsEaseBrandingHubTile,
+  type SettingsEaseBrandingHubTileKind,
   type SettingsEaseBrandingSection,
 } from "@/lib/settings-v2/settings-ease-branding-section";
 
@@ -151,7 +154,7 @@ function SoftCard({
 function HubTileIcon({
   kind,
 }: {
-  kind: "inbox" | "playbook" | "colors" | "year";
+  kind: SettingsEaseBrandingHubTileKind;
 }) {
   const className = "h-[18px] w-[18px]";
   switch (kind) {
@@ -240,59 +243,93 @@ function HubTileIcon({
   }
 }
 
+function hubTileMeta(
+  tile: SettingsEaseBrandingHubTile,
+  data: SettingsEaseBrandingHubData,
+): ReactNode {
+  switch (tile.id) {
+    case "ai-inbox":
+      return (
+        <StatusPill tone={data.inboxSourcesCount > 0 ? "ok" : "off"}>
+          {data.inboxSourcesCount === 1
+            ? "1 source"
+            : data.inboxSourcesCount === 0
+              ? "No sources yet"
+              : `${data.inboxSourcesCount} sources`}
+        </StatusPill>
+      );
+    case "playbook":
+      return (
+        <StatusPill tone={data.playbookCount > 0 ? "ok" : "off"}>
+          {data.playbookCount === 1
+            ? "1 plan"
+            : data.playbookCount === 0
+              ? "No plans yet"
+              : `${data.playbookCount} plans`}
+        </StatusPill>
+      );
+    case "colors-logos":
+      return (
+        <StatusPill tone={data.brandKitReady ? "ok" : "off"}>
+          {data.brandKitReady ? "Colors set" : "Add colors"}
+        </StatusPill>
+      );
+    case "school-year":
+      return (
+        <StatusPill tone="ok">{data.schoolYearLabel}</StatusPill>
+      );
+  }
+}
+
 function HubTile({
-  kind,
-  title,
-  description,
+  tile,
   meta,
-  linkLabel,
   href,
   onOpen,
-  wide,
 }: {
-  kind: "inbox" | "playbook" | "colors" | "year";
-  title: string;
-  description: string;
+  tile: SettingsEaseBrandingHubTile;
   meta: ReactNode;
-  linkLabel: string;
-  href?: string;
+  href: string;
   onOpen?: () => void;
-  wide?: boolean;
 }) {
-  const className = `w-full rounded-[22px] border border-[rgba(42,38,34,0.1)] bg-[#fffcf7] px-[22px] py-5 text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)] ${wide ? "sm:col-span-2" : ""}`;
-  const body = (
-    <>
+  return (
+    <Link
+      href={href}
+      data-branding-hub-tile={tile.id}
+      className="flex h-full flex-col rounded-[22px] border border-[rgba(42,38,34,0.1)] bg-[#fffcf7] px-[22px] py-5 text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(42,38,34,0.12)]"
+      onClick={
+        onOpen
+          ? (event) => {
+              if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+              ) {
+                return;
+              }
+              event.preventDefault();
+              onOpen();
+            }
+          : undefined
+      }
+    >
       <div className="mb-3 grid h-9 w-9 place-items-center rounded-xl bg-[rgba(47,74,60,0.1)] text-[#2f4a3c]">
-        <HubTileIcon kind={kind} />
+        <HubTileIcon kind={tile.kind} />
       </div>
       <h3
         className="m-0 text-xl font-semibold tracking-[-0.01em] text-[#2a2622]"
         style={frauncesStyle}
       >
-        {title}
+        {tile.title}
       </h3>
       <p className="mt-1.5 mb-0 text-[13px] leading-snug text-[#5c554c]">
-        {description}
+        {tile.description}
       </p>
-      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2">
-        {meta}
-        <span className="text-[13px] font-bold text-[#2f4a3c]">{linkLabel}</span>
-      </div>
-    </>
-  );
-
-  if (href) {
-    return (
-      <Link href={href} className={className}>
-        {body}
-      </Link>
-    );
-  }
-
-  return (
-    <button type="button" onClick={onOpen} className={className}>
-      {body}
-    </button>
+      <div className="mt-3.5">{meta}</div>
+    </Link>
   );
 }
 
@@ -325,8 +362,7 @@ export function SettingsEaseBranding({
             Branding
           </h1>
           <p className="mt-1.5 mb-0 max-w-[52ch] text-sm leading-snug text-[#5c554c]">
-            How {orgName} looks and plans the year — inbox sources,
-            communication plans, brand kit, and school year in one calm home.
+            How {orgName} looks and how the year is planned.
           </p>
         </div>
       </div>
@@ -374,71 +410,22 @@ export function SettingsEaseBranding({
 
       {activeSection === "hub" ? (
         <div
-          className="grid grid-cols-1 gap-3.5 sm:grid-cols-2"
+          className="grid grid-cols-1 items-stretch gap-3.5 sm:grid-cols-2"
           data-branding-panel="hub"
+          data-branding-hub="tiles"
         >
-          <HubTile
-            kind="inbox"
-            title="AI Inbox"
-            description="Named sources and links so Inbox AI can match questions to the right school page."
-            meta={
-              <StatusPill tone={data.inboxSourcesCount > 0 ? "ok" : "off"}>
-                {data.inboxSourcesCount === 1
-                  ? "1 source"
-                  : `${data.inboxSourcesCount} sources`}
-              </StatusPill>
-            }
-            linkLabel="Manage sources →"
-            href={brandingSectionHref("ai-inbox")}
-          />
-          <HubTile
-            kind="playbook"
-            title="Communication Plan"
-            description="Communication Plans and countdown plans assigned by event type."
-            meta={
-              <StatusPill tone={data.playbookCount > 0 ? "ok" : "off"}>
-                {data.playbookCount === 1
-                  ? "1 communication plan"
-                  : `${data.playbookCount} communication plans`}
-              </StatusPill>
-            }
-            linkLabel="Open library →"
-            href={brandingSectionHref("playbook")}
-          />
-          <HubTile
-            kind="colors"
-            title="Branding Colors and Logos"
-            description="Brand kit — PTO + school logos, colors, mascot. Same surface as onboarding Edit branding."
-            meta={
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  className="h-3.5 w-3.5 rounded"
-                  style={{ background: data.primaryColor }}
-                  aria-hidden
-                />
-                <span
-                  className="h-3.5 w-3.5 rounded"
-                  style={{ background: data.accentColor }}
-                  aria-hidden
-                />
-              </span>
-            }
-            linkLabel="Edit brand kit →"
-            onOpen={() => setSection("colors-logos")}
-          />
-          <HubTile
-            kind="year"
-            title="School Year"
-            description="Active year scopes calendar, events, and import review — still here, nested under Branding."
-            meta={
-              <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(47,74,60,0.14)] bg-[rgba(47,74,60,0.08)] px-3.5 py-2 text-[13px] font-bold text-[#2f4a3c]">
-                Active · {data.schoolYearLabel}
-              </span>
-            }
-            linkLabel="Manage year →"
-            onOpen={() => setSection("school-year")}
-            wide
-          />
+          {SETTINGS_EASE_BRANDING_HUB_TILES.map((tile) => {
+            const directHref = brandingEaseDirectRoute(tile.id);
+            return (
+              <HubTile
+                key={tile.id}
+                tile={tile}
+                href={brandingSectionHref(tile.id)}
+                meta={hubTileMeta(tile, data)}
+                onOpen={directHref ? undefined : () => setSection(tile.id)}
+              />
+            );
+          })}
         </div>
       ) : null}
 
@@ -449,7 +436,7 @@ export function SettingsEaseBranding({
         >
           <SoftCard
             title="Brand kit"
-            description="Maps to shipped /onboarding/brand?standalone=1 — Edit branding from Organization today."
+            description="Your colors, logos, and mascot. Change them with Edit branding."
             headerAside={
               <Link
                 href="/onboarding/brand?standalone=1"
@@ -484,7 +471,7 @@ export function SettingsEaseBranding({
           </SoftCard>
           <SoftCard
             title="Logos"
-            description="PTO + school marks used when creators opt into brand kit."
+            description="PTO and school marks you can add when you create posts or flyers."
           >
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-b border-[rgba(42,38,34,0.1)] py-[11px] text-sm">
               <span className="text-[#7a7166]">PTO logo</span>
@@ -495,8 +482,8 @@ export function SettingsEaseBranding({
               <LogoPreview url={data.schoolLogoUrl} alt="School logo" />
             </div>
             <p className="mt-3.5 mb-0 text-[13px] leading-snug text-[#5c554c]">
-              Artwork guidance: logo / brand colors are explicit opt-in in Create
-              with AI — the kit is not auto-applied.
+              Logos and colors are optional in Create with AI — they are not
+              added automatically.
             </p>
           </SoftCard>
         </div>

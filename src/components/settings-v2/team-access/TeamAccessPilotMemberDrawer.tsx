@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { TeamAccessPilotChangeAccessModal } from "@/components/settings-v2/team-access/TeamAccessPilotChangeAccessModal";
+import { TeamAccessPilotDialog } from "@/components/settings-v2/team-access/TeamAccessPilotDialog";
 import { TeamAccessPilotEventPicker } from "@/components/settings-v2/team-access/TeamAccessPilotEventPicker";
 import {
   deriveEventAccessMode,
@@ -303,20 +304,12 @@ export function TeamAccessPilotMemberDrawer({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex justify-end">
-        <button
-          type="button"
-          aria-label="Close drawer"
-          className="absolute inset-0 bg-[rgba(32,27,23,0.35)] backdrop-blur-[2px]"
-          onClick={onClose}
-        />
-        <aside
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="pilot-member-drawer-title"
-          className="relative flex h-full w-full max-w-[480px] flex-col bg-white shadow-2xl"
-        >
-          <div className="flex-1 overflow-y-auto px-8 pb-8 pt-8">
+      <TeamAccessPilotDialog
+        onClose={onClose}
+        labelledBy="pilot-member-dialog-title"
+        className="max-w-xl"
+      >
+          <div className="min-h-0 flex-1 overflow-y-auto px-8 pb-4 pt-8 sm:px-10">
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 items-start gap-4">
                 <div
@@ -330,7 +323,7 @@ export function TeamAccessPilotMemberDrawer({
                 </div>
                 <div className="min-w-0">
                   <h2
-                    id="pilot-member-drawer-title"
+                    id="pilot-member-dialog-title"
                     className="text-2xl font-bold tracking-tight text-[#201b17]"
                     style={{ fontFamily: pilotSerif }}
                   >
@@ -653,7 +646,7 @@ export function TeamAccessPilotMemberDrawer({
             showPause ||
             showRestore ||
             showRemove) ? (
-            <div className="space-y-2 border-t border-[#e5e1d8] bg-[#fdfcf7] px-8 py-6">
+            <div className="shrink-0 space-y-2 border-t border-[#e5e1d8] bg-[#fdfcf7] px-8 py-6">
               {showResend &&
               (member.status === "invited" || inviteExpired) ? (
                 <>
@@ -728,8 +721,7 @@ export function TeamAccessPilotMemberDrawer({
               ) : null}
             </div>
           ) : null}
-        </aside>
-      </div>
+      </TeamAccessPilotDialog>
 
       <TeamAccessPilotChangeAccessModal
         open={changeAccessOpen}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { TeamAccessPilotDialog } from "@/components/settings-v2/team-access/TeamAccessPilotDialog";
 import {
   pilotBtnPrimary,
   pilotBtnSecondary,
@@ -71,21 +72,15 @@ export function TeamAccessPilotChangeAccessModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-      <button
-        type="button"
-        aria-label="Close"
-        className="absolute inset-0 bg-[rgba(32,27,23,0.4)] backdrop-blur-[4px]"
-        onClick={onClose}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="relative z-10 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-[3rem] border border-[#e5e1d8] bg-white shadow-2xl"
-      >
+    <TeamAccessPilotDialog
+      onClose={onClose}
+      labelledBy="change-access-modal-title"
+      className="max-w-xl"
+    >
         <div className="flex items-start justify-between gap-4 p-8 pb-4 sm:p-10">
           <div>
             <h2
+              id="change-access-modal-title"
               className="mb-2 text-3xl font-bold tracking-tight text-[#201b17] sm:text-4xl"
               style={{ fontFamily: pilotSerif }}
             >
@@ -220,7 +215,6 @@ export function TeamAccessPilotChangeAccessModal({
             {pending ? "Saving…" : "Save access"}
           </button>
         </div>
-      </div>
-    </div>
+    </TeamAccessPilotDialog>
   );
 }

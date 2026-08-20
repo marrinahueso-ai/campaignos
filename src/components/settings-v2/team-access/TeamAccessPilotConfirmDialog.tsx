@@ -1,5 +1,6 @@
 "use client";
 
+import { TeamAccessBodyPortal } from "@/components/settings-v2/team-access/TeamAccessBodyPortal";
 import {
   pilotBtnPrimary,
   pilotBtnSecondary,
@@ -81,6 +82,7 @@ export function TeamAccessPilotConfirmDialog({
   const copy = COPY[kind];
 
   return (
+    <TeamAccessBodyPortal>
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <button
         type="button"
@@ -135,5 +137,6 @@ export function TeamAccessPilotConfirmDialog({
         </div>
       </div>
     </div>
+    </TeamAccessBodyPortal>
   );
 }

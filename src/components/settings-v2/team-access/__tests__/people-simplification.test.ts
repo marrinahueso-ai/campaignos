@@ -434,4 +434,62 @@ describe("Team & Access people simplification", () => {
       "Expires in 5 days",
     );
   });
+
+  it("17. Team & Access overlays portal to document.body (viewport-centered)", () => {
+    const portal = readFileSync(join(here, "../TeamAccessBodyPortal.tsx"), "utf8");
+    const dialog = readFileSync(join(here, "../TeamAccessPilotDialog.tsx"), "utf8");
+    assert.match(portal, /createPortal/);
+    assert.match(portal, /document\.body/);
+    assert.match(dialog, /TeamAccessBodyPortal/);
+    assert.match(dialog, /fixed inset-0 z-\[70\] flex items-center justify-center/);
+    assert.match(dialog, /max-h-\[90vh\]/);
+
+    const addMember = readFileSync(
+      join(here, "../TeamAccessPilotAddMemberModal.tsx"),
+      "utf8",
+    );
+    const changeAccess = readFileSync(
+      join(here, "../TeamAccessPilotChangeAccessModal.tsx"),
+      "utf8",
+    );
+    const personProfile = readFileSync(
+      join(here, "../TeamAccessPilotMemberDrawer.tsx"),
+      "utf8",
+    );
+    assert.match(addMember, /TeamAccessPilotDialog/);
+    assert.match(changeAccess, /TeamAccessPilotDialog/);
+    assert.match(personProfile, /TeamAccessPilotDialog/);
+
+    const overlaySources = [
+      readFileSync(join(here, "../TeamAccessModal.tsx"), "utf8"),
+      readFileSync(join(here, "../TeamAccessDrawer.tsx"), "utf8"),
+      readFileSync(join(here, "../TeamAccessPilotConfirmDialog.tsx"), "utf8"),
+      readFileSync(join(here, "../TeamAccessCreateRoleDrawer.tsx"), "utf8"),
+    ];
+
+    for (const source of overlaySources) {
+      assert.match(source, /TeamAccessBodyPortal/);
+      assert.match(source, /fixed inset-0/);
+    }
+
+    assert.match(easeSource, /TeamAccessBodyPortal/);
+    assert.match(
+      easeSource,
+      /fixed inset-0 z-\[80\] flex items-center justify-center/,
+    );
+  });
+
+  it("18. Person profile is a centered dialog, not a full-height right rail", () => {
+    const personProfile = readFileSync(
+      join(here, "../TeamAccessPilotMemberDrawer.tsx"),
+      "utf8",
+    );
+    assert.match(personProfile, /TeamAccessPilotDialog/);
+    assert.match(personProfile, /className="max-w-xl"/);
+    assert.match(personProfile, /Pause access/);
+    assert.doesNotMatch(personProfile, /flex justify-end/);
+    assert.doesNotMatch(personProfile, /max-w-\[480px\]/);
+    assert.doesNotMatch(personProfile, /h-full w-full/);
+    assert.doesNotMatch(personProfile, /<aside/);
+  });
 });

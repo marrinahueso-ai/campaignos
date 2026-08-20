@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Copy, Mail, UserPlus } from "lucide-react";
+import { TeamAccessPilotDialog } from "@/components/settings-v2/team-access/TeamAccessPilotDialog";
 import { TeamAccessPilotEventPicker } from "@/components/settings-v2/team-access/TeamAccessPilotEventPicker";
 import {
   pilotBtnPrimary,
@@ -706,19 +707,11 @@ export function TeamAccessPilotAddMemberModal({
       : "Next";
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-      <button
-        type="button"
-        aria-label="Close"
-        className="absolute inset-0 bg-[rgba(32,27,23,0.4)] backdrop-blur-[4px]"
-        onClick={handleClose}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-member-modal-title"
-        className="relative z-10 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[3rem] border border-[#e5e1d8] bg-white shadow-2xl"
-      >
+    <TeamAccessPilotDialog
+      onClose={handleClose}
+      labelledBy="add-member-modal-title"
+      className="max-w-3xl"
+    >
         <div className="flex items-start justify-between gap-4 p-8 pb-4 sm:p-10">
           <div>
             <h2
@@ -779,7 +772,6 @@ export function TeamAccessPilotAddMemberModal({
             </button>
           )}
         </div>
-      </div>
-    </div>
+    </TeamAccessPilotDialog>
   );
 }
