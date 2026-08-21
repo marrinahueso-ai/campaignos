@@ -127,6 +127,29 @@ describe("flyer composer image prompt", () => {
     assert.match(prompt, /no white borders/i);
   });
 
+  it("asks for one half-page flyer only (2-up is export, not generation)", () => {
+    const half = buildSampleDirectionInput({
+      start: {
+        path: "new",
+        pathLabel: "New flyer",
+        printSize: "half",
+        printSizeLabel: "Half page",
+      },
+      template: {
+        templateId: "simple-half",
+        templateName: "Simple flyer · Half page",
+        isCustom: false,
+        ratio: "8.5/5.5",
+        hasQr: false,
+      },
+    });
+    const prompt = buildFlyerComposerImagePrompt(half);
+    assert.match(prompt, /one single flyer/i);
+    assert.match(prompt, /Do NOT place two copies/i);
+    assert.match(prompt, /export will print two copies/i);
+    assert.doesNotMatch(prompt, /two copies on one canvas/i);
+  });
+
   it("adapts attached event social artwork instead of inventing a new scene", () => {
     const input = buildSampleDirectionInput({
       assets: {

@@ -93,7 +93,7 @@ function isHalfPageFlyer(input: FlyerComposerGenerateInput): boolean {
 
 function formatPrintFormatInstructions(input: FlyerComposerGenerateInput): string {
   if (isHalfPageFlyer(input)) {
-    return "Format: US half-page 8.5×5.5 inch landscape flyer — full-bleed edge-to-edge artwork filling the entire canvas, no white borders/margins/frames, not a square social crop.";
+    return "Format: US half-page 8.5×5.5 inch landscape flyer — one single flyer filling the entire canvas edge-to-edge, no white borders/margins/frames, not a square social crop. Do NOT place two copies, a cut line, or a full Letter sheet in the image — export will print two copies per page later.";
   }
   return "Format: US Letter 8.5×11 inch portrait flyer — full-bleed edge-to-edge artwork filling the entire canvas, no white borders/margins/frames, not a square social crop.";
 }

@@ -40,6 +40,10 @@ import {
   resolveFlyerInspirationForEvent,
   type FlyerInspirationPhotoSource,
 } from "@/lib/flyer-composer/inspiration-source";
+import {
+  buildHalfPagePrintHtml,
+  composeHalfPageLetterSheetPngBlob,
+} from "@/lib/flyer-composer/half-page-sheet";
 import { cn } from "@/lib/utils/cn";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error" | "generating";
@@ -89,12 +93,38 @@ async function downloadPng(url: string, filename: string) {
   URL.revokeObjectURL(objectUrl);
 }
 
-function printImage(url: string) {
+async function downloadFlyerExport(input: {
+  imageUrl: string;
+  filenameBase: string;
+  printSize: FlyerPrintSize;
+}) {
+  const safeBase = input.filenameBase.replace(/\s+/g, "-").toLowerCase() || "flyer";
+  if (input.printSize === "half") {
+    // 2-up Letter sheet at download time only — AI still generates one half flyer.
+    const sheetBlob = await composeHalfPageLetterSheetPngBlob(input.imageUrl);
+    const objectUrl = URL.createObjectURL(sheetBlob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = `${safeBase}-letter-2up.png`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(objectUrl);
+    return;
+  }
+  await downloadPng(input.imageUrl, `${safeBase}.png`);
+}
+
+function printFlyerExport(imageUrl: string, printSize: FlyerPrintSize) {
   const popup = window.open("", "_blank", "noopener,noreferrer");
   if (!popup) return;
-  popup.document.write(
-    `<!doctype html><html><head><title>Print flyer</title></head><body style="margin:0;background:#fff;display:flex;justify-content:center;"><img src="${url.replace(/"/g, "&quot;")}" alt="Flyer" style="max-width:100%;height:auto;" onload="window.focus();window.print();" /></body></html>`,
-  );
+  if (printSize === "half") {
+    popup.document.write(buildHalfPagePrintHtml(imageUrl));
+  } else {
+    popup.document.write(
+      `<!doctype html><html><head><title>Print flyer</title></head><body style="margin:0;background:#fff;display:flex;justify-content:center;"><img src="${imageUrl.replace(/"/g, "&quot;")}" alt="Flyer" style="max-width:100%;height:auto;" onload="window.focus();window.print();" /></body></html>`,
+    );
+  }
   popup.document.close();
 }
 
@@ -992,22 +1022,29 @@ export function FlyerBuilderShell({
                 disabled={!previewImageUrl}
                 onClick={() => {
                   if (!previewImageUrl) return;
-                  void downloadPng(
-                    previewImageUrl,
-                    `${(title || "flyer").replace(/\s+/g, "-").toLowerCase()}.png`,
-                  );
+                  void downloadFlyerExport({
+                    imageUrl: previewImageUrl,
+                    filenameBase: title || "flyer",
+                    printSize,
+                  }).catch(() => {
+                    setError("Could not download flyer.");
+                  });
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-cos-border bg-white py-3 text-xs font-bold transition hover:bg-cos-bg disabled:opacity-50"
               >
-                <Download className="h-3.5 w-3.5" /> Download PNG
+                <Download className="h-3.5 w-3.5" />{" "}
+                {isHalf ? "Download PNG (2 per page)" : "Download PNG"}
               </button>
               <button
                 type="button"
                 disabled={!previewImageUrl}
-                onClick={() => previewImageUrl && printImage(previewImageUrl)}
+                onClick={() =>
+                  previewImageUrl && printFlyerExport(previewImageUrl, printSize)
+                }
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-cos-border bg-white py-3 text-xs font-bold transition hover:bg-cos-bg disabled:opacity-50"
               >
-                <Printer className="h-3.5 w-3.5" /> Print
+                <Printer className="h-3.5 w-3.5" />{" "}
+                {isHalf ? "Print (2 per page)" : "Print"}
               </button>
               {eventId && previewImageUrl ? (
                 <button
