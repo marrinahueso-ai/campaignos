@@ -89,6 +89,11 @@ describe("events ease UI contracts", () => {
     assert.match(overview, /Attention Needed/);
     assert.match(overview, / Volunteer staffing isn't set up yet|Volunteer staffing isn&apos;t set up yet|isn&apos;t set up yet/);
     assert.match(overview, /preset="hero"/);
+    assert.match(overview, /aspect-square/);
+    assert.match(overview, /lg:w-\[400px\]/);
+    assert.match(overview, /object-contain/);
+    assert.doesNotMatch(overview, /lg:h-\[380px\]/);
+    assert.doesNotMatch(overview, /lg:w-3\/5/);
     assert.doesNotMatch(overview, /\b9 Roles\b/);
   });
 

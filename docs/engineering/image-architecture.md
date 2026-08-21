@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** 2026-08-19 — Settings Colors & Logos: PTO / school logo thumbs via AppImage  
+**Last updated:** 2026-08-21 — Events home Featured Event 1:1 ~400px AppImage frame  
 **Related:** [Architecture](./architecture.md) · [Storage RLS](./storage-rls.md) · [Feature list](../product/feature-list.md) · [Performance budget](../qa/performance-budget.md) · [Homepage Composer](./homepage-composer.md) · [Newsletter Composer](./newsletter-composer.md) · [Release checkpoint 2026-08-08](../qa/release-checkpoint-2026-08-08-events-workspace.md)
 
 This is the **canonical guide** for how images are uploaded, stored, displayed, published, and consumed by AI across Hey Ralli. Follow it for every new image-heavy feature.
@@ -117,7 +117,7 @@ Inbox contact/page avatars use `InboxParticipantAvatar` (plain `<img>` + initial
 | Background Library grids / detail | `AppImage` |
 | Approvals Ease + table | Focus cards: inset `p-3` + `rounded-[14px]` art wells (not flush); compact queue/table thumbs: square transform + `object-cover` |
 | Volunteers Ease | Same focus inset + `rounded-[14px]`; cover for compact queue thumbs; contain for larger focus art |
-| Events Ease list / focus / upcoming | Legacy ease list helpers remain for thumbs; **Events home selected hero** uses `AppImage` `preset="hero"` + `object-cover`; **Also Ahead** uses `preset="thumb"` |
+| Events Ease list / focus / upcoming | Legacy ease list helpers remain for thumbs; **Events home selected hero** uses `AppImage` `preset="hero"` in a **1:1 ~400px** frame (`object-contain`, not landscape crop); **Also Ahead** uses `preset="thumb"` |
 | Event ID overview poster | `AppImage` `preset="card"` (detail variant) |
 | Campaign list thumbs | `CampaignThumbnail` → `AppImage` |
 | Today / Dashboard widgets | `AppImage` |

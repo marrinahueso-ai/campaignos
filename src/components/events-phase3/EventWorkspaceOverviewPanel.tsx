@@ -406,34 +406,41 @@ export function EventWorkspaceOverviewPanel({
   return (
     <div
       className={cn(
-        "mx-auto flex w-full flex-col gap-10",
-        isHome ? "max-w-none" : "max-w-[1240px]",
+        "mx-auto flex w-full flex-col",
+        isHome ? "max-w-none gap-8" : "max-w-[1240px] gap-10",
         statsPending ? "opacity-90" : null,
       )}
       aria-busy={statsPending || undefined}
     >
       {isHome ? (
         <section className={cn(ewCard, "relative overflow-hidden")}>
-          <div className="relative flex flex-col lg:h-[380px] lg:flex-row lg:items-stretch">
-            <div className="relative min-h-[180px] w-full overflow-hidden bg-[#f4f0ea] lg:h-full lg:min-h-0 lg:w-3/5">
+          {/*
+            Featured Event: 1:1 social artwork (~400×400 desktop) with details
+            stretched to match image height — not a landscape banner crop.
+          */}
+          <div className="relative flex flex-col lg:flex-row lg:items-stretch">
+            <div className="relative aspect-square w-full shrink-0 overflow-hidden border-b border-[#e6dfd5] bg-[#f4f0ea] lg:w-[400px] lg:max-w-[400px] lg:border-r lg:border-b-0 lg:border-[#e6dfd5]">
               {imageUrl ? (
                 <AppImage
                   src={imageUrl}
                   alt=""
                   fill
                   preset="hero"
-                  className="object-cover object-center"
-                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  displayWidth={800}
+                  displayHeight={800}
+                  resize="contain"
+                  className="object-contain object-center"
+                  sizes="(max-width: 1024px) 100vw, 400px"
                   priority
                 />
               ) : (
-                <div className="flex h-full min-h-[180px] w-full items-center justify-center bg-gradient-to-br from-[#1c352d] via-[#5a7568] to-[#c5a880] px-6 text-center text-sm font-medium text-white/90 lg:min-h-0">
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1c352d] via-[#5a7568] to-[#c5a880] px-6 text-center text-sm font-medium text-white/90">
                   Official artwork appears here after Create with AI
                 </div>
               )}
             </div>
 
-            <div className="flex w-full flex-col justify-between gap-5 p-5 lg:w-2/5 lg:px-7 lg:py-6">
+            <div className="flex w-full flex-1 flex-col justify-between gap-5 p-5 lg:min-h-[400px] lg:px-7 lg:py-6">
               <div className="min-h-0 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

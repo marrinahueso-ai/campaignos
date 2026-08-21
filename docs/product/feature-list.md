@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 20, 2026 — Sync Review treats midnight ICS as No time (not 12:00 AM)
+**Last updated:** August 21, 2026 — Events Home Featured Event uses 1:1 ~400px artwork
 
 ---
 
@@ -97,7 +97,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Events Home ease filters (soft pills: **Upcoming** default · **Next month** · **All** · **Archived**; counts scoped to school-year filter + search; status badges on cards/rows — not filter tabs) — **shipped**
 - Events Home **selected-event workspace** — **shipped** (living eng: [architecture.md §5.4](../engineering/architecture.md); QA checkpoint: [release-checkpoint-2026-08-08-events-workspace.md](../qa/release-checkpoint-2026-08-08-events-workspace.md))
   - Selection via `?event=` (`replace`); inaccessible ids fall back; default = soonest upcoming in current lens
-  - Hierarchy: compact featured hero (`AppImage` hero preset, ~380px desktop) · **Also Ahead** (excludes selected; collapse 4 / Show all) · operational summary · **Attention Needed** · **Staffing Status** (volunteer **spots**, empty when not configured) · **Event Workspace** cards with muted top accents
+  - Hierarchy: compact featured hero (`AppImage` hero preset, **1:1 square ~400×400 desktop** beside details — not a landscape banner) · **Also Ahead** (excludes selected; collapse 4 / Show all) · operational summary · **Attention Needed** · **Staffing Status** (volunteer **spots**, empty when not configured) · **Event Workspace** cards with muted top accents
   - Workspace cards open **in-shell** on `/events?event=<id>&tab=…` (Planning · Approvals · Volunteers · Community) — shared Event Detail shell bootstraps once per selected event; deep links `/events/[id]?tab=…` still work
   - Invite Team Member on home when `manage_people`; `(...)` **Edit / Archive event / Delete event**
   - **No What’s Next** on home; **Next Best Action not implemented**; Event ID overview still has What’s Next
