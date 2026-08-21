@@ -77,6 +77,9 @@ describe("events ease UI contracts", () => {
   it("wires invite drawer + event manage copy on Events home", () => {
     assert.match(home, /InviteEventMemberDrawer/);
     assert.match(home, /canManagePeople/);
+    assert.doesNotMatch(home, /showOperationalSummary/);
+    assert.match(overview, /event-invite-team-member-ops/);
+    assert.match(overview, /countdown\.label/);
     assert.match(home, /manageEntityNoun="event"/);
     assert.match(manageMenu, /entityNoun/);
     assert.match(manageMenu, /Archive \$\{nounTitle\}/);

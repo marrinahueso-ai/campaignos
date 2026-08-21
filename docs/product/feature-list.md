@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 21, 2026 — Events Home Featured Event uses 1:1 ~400px artwork
+**Last updated:** August 21, 2026 — Events Home Featured card hosts invite + days-away; ops strip removed
 
 ---
 
@@ -97,15 +97,15 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Events Home ease filters (soft pills: **Upcoming** default · **Next month** · **All** · **Archived**; counts scoped to school-year filter + search; status badges on cards/rows — not filter tabs) — **shipped**
 - Events Home **selected-event workspace** — **shipped** (living eng: [architecture.md §5.4](../engineering/architecture.md); QA checkpoint: [release-checkpoint-2026-08-08-events-workspace.md](../qa/release-checkpoint-2026-08-08-events-workspace.md))
   - Selection via `?event=` (`replace`); inaccessible ids fall back; default = soonest upcoming in current lens
-  - Hierarchy: compact featured hero (`AppImage` hero preset, **1:1 square ~400×400 desktop** beside details — not a landscape banner) · **Also Ahead** (excludes selected; collapse 4 / Show all) · operational summary · **Attention Needed** · **Staffing Status** (volunteer **spots**, empty when not configured) · **Event Workspace** cards with muted top accents
+  - Hierarchy: compact featured hero (`AppImage` hero preset, **1:1 square ~400×400 desktop** beside details — not a landscape banner; days-away + Invite on the card) · **Also Ahead** (excludes selected; collapse 4 / Show all) · **Attention Needed** · **Staffing Status** (volunteer **spots**, empty when not configured) · **Event Workspace** cards with muted top accents
   - Workspace cards open **in-shell** on `/events?event=<id>&tab=…` (Planning · Approvals · Volunteers · Community) — shared Event Detail shell bootstraps once per selected event; deep links `/events/[id]?tab=…` still work
-  - Invite Team Member on home when `manage_people`; `(...)` **Edit / Archive event / Delete event**
+  - Invite Team Member on Featured Event card when `manage_people`; `(...)` **Edit / Archive event / Delete event**
   - **No What’s Next** on home; **Next Best Action not implemented**; Event ID overview still has What’s Next
   - Does **not** delete or auto-redirect all `/events/[id]` deep links
 - Events list filtered PDF export (All Events header download; current list filters only — not upcoming carousel) — **shipped**
 - Event detail workspace (tabs: Overview default, Planning→Tasks/Notes/Files, Approvals, Volunteers, Community→Team/Vendors, Insights, Activity, Create with AI [handoff]; deep links `?tab=` preserved) — **shipped**
 - Event detail **Invite team member** drawer (Community → Team; new org invite via existing `inviteTeamMemberAction` with current event pre-assigned, or add existing active member to this event without changing org role; roles from access templates / campaign roles; Manage advanced access → Team & Access) — **shipped**
-- Event **Invite Team** entry points (Events home ops strip + Community **+ Invite**; Event ID header secondary CTA + Community **+ Invite**; authorized via `manage_people`; local pending/active collaborator preview until refresh) — **shipped**
+- Event **Invite Team** entry points (Events home Featured Event card + Community **+ Invite**; Event ID header secondary CTA + Community **+ Invite**; authorized via `manage_people`; local pending/active collaborator preview until refresh) — **shipped**
 - Event detail shell (Event Workspace redesign): Overview landing (artwork hero · attention · workspace cards · What’s Next) · condensed context header on other tabs · top-level nav (**Planning** · Approvals · Volunteers · **Community** · Insights · Activity); Planning wraps existing Tasks/Notes/Files panels; Community combines Team + Vendors; **Back to Events → `/events?event=<id>`** (preserves selection); Events home cards use the same shell in-place via `/events?event=&tab=` — **shipped**
 - Event Tasks tab: Pilot **Task List** card (Ask AI for tasks · New Task · Done/Task/Priority/Status/Due/Assignee table; icon-only delete with confirm; Overdue badge; empty Create with AI / Add manually) — **shipped**
 - Event detail **Notes** tab (UX Pilot stationery redesign): empty state · search · New note compose (title + optional details) · Shared Notes card list with author/relative time · inline edit · in-app delete confirm; create/update/delete gated by event access (`getEventById` + RLS); title/body encoded in existing `content` column (no parallel notes system); no Scratchpads / lined-paper chrome; no unscoped note-draft localStorage — **shipped**

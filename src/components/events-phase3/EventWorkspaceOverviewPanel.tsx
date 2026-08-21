@@ -465,6 +465,16 @@ export function EventWorkspaceOverviewPanel({
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
+                    {!countdown.isPast ? (
+                      <p
+                        className={cn(
+                          "mt-1.5 text-sm font-semibold",
+                          ew.ink,
+                        )}
+                      >
+                        {countdown.label}
+                      </p>
+                    ) : null}
                   </div>
                   <span
                     className={cn(
@@ -557,18 +567,31 @@ export function EventWorkspaceOverviewPanel({
                     />
                   </div>
                 </div>
-                <Link
-                  href={createHref}
-                  prefetch={false}
-                  onClick={(clickEvent) => {
-                    clickEvent.preventDefault();
-                    window.location.assign(createHref);
-                  }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1c352d] px-6 py-3 text-xs font-bold tracking-wide text-white uppercase transition hover:bg-[#5e6b65]"
-                >
-                  <Sparkles className="h-4 w-4" aria-hidden />
-                  Generate Event Plan
-                </Link>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                  <Link
+                    href={createHref}
+                    prefetch={false}
+                    onClick={(clickEvent) => {
+                      clickEvent.preventDefault();
+                      window.location.assign(createHref);
+                    }}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#1c352d] px-6 py-3 text-xs font-bold tracking-wide text-white uppercase transition hover:bg-[#5e6b65]"
+                  >
+                    <Sparkles className="h-4 w-4" aria-hidden />
+                    Generate Event Plan
+                  </Link>
+                  {onInviteTeamMember ? (
+                    <button
+                      type="button"
+                      onClick={onInviteTeamMember}
+                      data-testid="event-invite-team-member-ops"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#e6dfd5] bg-[#faf8f5] px-5 py-3 text-xs font-semibold text-[#1c352d] transition hover:bg-[#f4f0ea] sm:shrink-0"
+                    >
+                      <UserPlus className="h-4 w-4" aria-hidden />
+                      Invite Team Member
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>

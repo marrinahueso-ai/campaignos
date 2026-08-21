@@ -591,7 +591,6 @@ export function EventsHomeContent({
           }
           showWhatsNext={false}
           attentionTitle="Attention Needed"
-          showOperationalSummary
           manageEntityNoun="event"
           afterHeroSlot={
             <EventsAlsoAheadList
