@@ -41,9 +41,10 @@ import {
   type FlyerInspirationPhotoSource,
 } from "@/lib/flyer-composer/inspiration-source";
 import {
-  buildHalfPagePrintHtml,
-  composeHalfPageLetterSheetPngBlob,
-} from "@/lib/flyer-composer/half-page-sheet";
+  downloadFlyerExport,
+  printFlyerExport,
+  saveFlyerToEventFiles,
+} from "@/lib/flyer-composer/flyer-export-client";
 import { cn } from "@/lib/utils/cn";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error" | "generating";
@@ -78,54 +79,6 @@ function readFileAsDataUrl(file: File): Promise<string> {
     reader.onerror = () => reject(new Error("Could not read that image."));
     reader.readAsDataURL(file);
   });
-}
-
-async function downloadPng(url: string, filename: string) {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = objectUrl;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(objectUrl);
-}
-
-async function downloadFlyerExport(input: {
-  imageUrl: string;
-  filenameBase: string;
-  printSize: FlyerPrintSize;
-}) {
-  const safeBase = input.filenameBase.replace(/\s+/g, "-").toLowerCase() || "flyer";
-  if (input.printSize === "half") {
-    // 2-up Letter sheet at download time only — AI still generates one half flyer.
-    const sheetBlob = await composeHalfPageLetterSheetPngBlob(input.imageUrl);
-    const objectUrl = URL.createObjectURL(sheetBlob);
-    const anchor = document.createElement("a");
-    anchor.href = objectUrl;
-    anchor.download = `${safeBase}-letter-2up.png`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(objectUrl);
-    return;
-  }
-  await downloadPng(input.imageUrl, `${safeBase}.png`);
-}
-
-function printFlyerExport(imageUrl: string, printSize: FlyerPrintSize) {
-  const popup = window.open("", "_blank", "noopener,noreferrer");
-  if (!popup) return;
-  if (printSize === "half") {
-    popup.document.write(buildHalfPagePrintHtml(imageUrl));
-  } else {
-    popup.document.write(
-      `<!doctype html><html><head><title>Print flyer</title></head><body style="margin:0;background:#fff;display:flex;justify-content:center;"><img src="${imageUrl.replace(/"/g, "&quot;")}" alt="Flyer" style="max-width:100%;height:auto;" onload="window.focus();window.print();" /></body></html>`,
-    );
-  }
-  popup.document.close();
 }
 
 export function FlyerBuilderShell({
@@ -1054,37 +1007,17 @@ export function FlyerBuilderShell({
                     setError(null);
                     startTransition(async () => {
                       try {
-                        const response = await fetch("/api/flyer-composer/save", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            eventId,
-                            imageUrl: previewImageUrl,
-                            headline: title.trim() || null,
-                            title: title.trim() || null,
-                            versionId: activeVersionId,
-                          }),
+                        const result = await saveFlyerToEventFiles({
+                          eventId,
+                          imageUrl: previewImageUrl,
+                          title: title.trim() || null,
+                          versionId: activeVersionId,
                         });
-                        const data = (await response.json()) as {
-                          success?: boolean;
-                          message?: string;
-                          error?: string;
-                          filesHref?: string | null;
-                        };
-                        if (!response.ok || !data.success) {
-                          setError(
-                            data.error ||
-                              data.message ||
-                              "Couldn’t save to Files.",
-                          );
+                        if (!result.ok) {
+                          setError(result.error);
                           return;
                         }
-                        setSendMessage(
-                          data.message ||
-                            (data.filesHref
-                              ? "Saved to the event’s Files tab."
-                              : "Saved to Files."),
-                        );
+                        setSendMessage(result.message);
                       } catch {
                         setError("Couldn’t save to Files. Try again.");
                       }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { X } from "lucide-react";
+import { Download, Printer, X } from "lucide-react";
 
 import { FlyerStatusBadge } from "@/components/flyers/FlyerStatusBadge";
 import type { RevisionTag } from "@/components/approvals-revision/types";
@@ -12,6 +12,11 @@ import {
   approveUnifiedItemAction,
   requestUnifiedChangesAction,
 } from "@/lib/approvals-scheduling/actions";
+import {
+  downloadFlyerExport,
+  printFlyerExport,
+  saveFlyerToEventFiles,
+} from "@/lib/flyer-composer/flyer-export-client";
 import { printSizeLabel } from "@/lib/flyers/generate-payload";
 import type { Flyer } from "@/lib/flyers/types";
 import { cn } from "@/lib/utils/cn";
@@ -56,7 +61,12 @@ export function FlyerApproverReviewShell({
   const [note, setNote] = useState("");
   const [tags, setTags] = useState<RevisionTag[]>(["Artwork", "Layout"]);
   const [error, setError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [status, setStatus] = useState(flyer.status);
+
+  const previewImageUrl = flyer.previewImageUrl;
+  const isHalf = flyer.printSize === "half";
+  const canExport = status === "approved" && Boolean(previewImageUrl);
 
   const schedulingItemId = flyer.approvalSchedulingItemId;
   const waitingAsCreator =
@@ -116,6 +126,80 @@ export function FlyerApproverReviewShell({
       router.push(`/flyers/${flyer.id}/changes`);
     });
   }
+
+  const exportActions = canExport ? (
+    <div className="space-y-3">
+      <label className="text-[10px] font-bold tracking-widest text-cos-muted uppercase">
+        Export & Actions
+      </label>
+      <button
+        type="button"
+        onClick={() => {
+          if (!previewImageUrl) return;
+          setError(null);
+          void downloadFlyerExport({
+            imageUrl: previewImageUrl,
+            filenameBase: flyer.title || "flyer",
+            printSize: flyer.printSize,
+          }).catch(() => {
+            setError("Could not download flyer.");
+          });
+        }}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-cos-border bg-white py-3 text-xs font-bold transition hover:bg-cos-bg"
+      >
+        <Download className="h-3.5 w-3.5" />{" "}
+        {isHalf ? "Download PNG (2 per page)" : "Download PNG"}
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          previewImageUrl && printFlyerExport(previewImageUrl, flyer.printSize)
+        }
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-cos-border bg-white py-3 text-xs font-bold transition hover:bg-cos-bg"
+      >
+        <Printer className="h-3.5 w-3.5" />{" "}
+        {isHalf ? "Print (2 per page)" : "Print"}
+      </button>
+      {flyer.eventId ? (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            if (!previewImageUrl || !flyer.eventId) return;
+            setError(null);
+            setSaveMessage(null);
+            startTransition(async () => {
+              try {
+                const result = await saveFlyerToEventFiles({
+                  eventId: flyer.eventId,
+                  imageUrl: previewImageUrl,
+                  title: flyer.title?.trim() || null,
+                  versionId: flyer.composerState.activeVersionId ?? null,
+                });
+                if (!result.ok) {
+                  setError(result.error);
+                  return;
+                }
+                setSaveMessage(result.message);
+              } catch {
+                setError("Couldn’t save to Files. Try again.");
+              }
+            });
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-cos-border bg-white py-3 text-xs font-bold transition hover:bg-cos-bg disabled:opacity-50"
+        >
+          {pending ? "Saving…" : "Save to Files"}
+        </button>
+      ) : (
+        <p className="text-[11px] leading-snug text-cos-muted">
+          Link this flyer to an event in the builder to save it to Files.
+        </p>
+      )}
+      {saveMessage ? (
+        <p className="text-[11px] font-medium text-[#0d7e5e]">{saveMessage}</p>
+      ) : null}
+    </div>
+  ) : null;
 
   return (
     <div className="-mx-4 -my-8 flex h-[calc(100dvh-3.75rem)] min-h-[560px] flex-col overflow-hidden bg-[#fffcf7] lg:-mx-8 lg:-my-10">
@@ -201,6 +285,12 @@ export function FlyerApproverReviewShell({
         </div>
       ) : null}
 
+      {canExport ? (
+        <div className="border-b border-cos-border px-4 py-3 md:hidden">
+          {exportActions}
+        </div>
+      ) : null}
+
       <main className="flex min-h-0 flex-1 overflow-hidden">
         <aside className="hidden w-80 shrink-0 flex-col gap-8 overflow-y-auto border-r border-cos-border bg-cos-bg p-8 md:flex">
           <div className="space-y-4">
@@ -256,6 +346,10 @@ export function FlyerApproverReviewShell({
                 : "No description provided."}
             </p>
           </div>
+
+          {canExport ? (
+            <div className="border-t border-cos-border pt-6">{exportActions}</div>
+          ) : null}
         </aside>
 
         <section className="flex flex-1 items-start justify-center overflow-y-auto bg-[#fffcf7] p-6 sm:p-12 [background-image:radial-gradient(circle_at_1px_1px,rgba(44,40,37,0.1)_1px,transparent_0)] [background-size:24px_24px]">
