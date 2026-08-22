@@ -13,6 +13,7 @@ import type {
   FlyerPrintSize,
   FlyerStatus,
 } from "@/lib/flyers/types";
+import { isFlyerPrintSize } from "@/lib/flyers/types";
 import { createClient } from "@/lib/supabase/server";
 
 function revalidateFlyer(flyerId?: string | null) {
@@ -57,12 +58,10 @@ async function requireFlyerContext(): Promise<
   return { ok: true, organizationId: organization.id, actorUserId };
 }
 
-const PRINT_SIZES = new Set<FlyerPrintSize>(["letter", "half"]);
-
 function normalizePrintSize(value: unknown): FlyerPrintSize | undefined {
   if (typeof value !== "string") return undefined;
-  const trimmed = value.trim() as FlyerPrintSize;
-  return PRINT_SIZES.has(trimmed) ? trimmed : undefined;
+  const trimmed = value.trim();
+  return isFlyerPrintSize(trimmed) ? trimmed : undefined;
 }
 
 export type CreateFlyerResult =

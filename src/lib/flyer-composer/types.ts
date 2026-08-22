@@ -1,6 +1,8 @@
 import type { FlyerInspirationPhotoSource } from "@/lib/flyer-composer/inspiration-source";
+import type { FlyerPrintSize } from "@/lib/flyers/types";
 
 export type { FlyerInspirationPhotoSource };
+export type { FlyerPrintSize as FlyerComposerPrintSize } from "@/lib/flyers/types";
 
 export type FlyerComposerSlotFields = {
   orgName: string;
@@ -24,13 +26,11 @@ export type FlyerComposerSlotFields = {
 
 export type FlyerComposerStartPath = "update" | "proven" | "new";
 
-export type FlyerComposerPrintSize = "letter" | "half";
-
 export type FlyerComposerStartContext = {
   /** update last year | proven layout | new flyer */
   path: FlyerComposerStartPath | null;
   pathLabel: string | null;
-  printSize: FlyerComposerPrintSize | null;
+  printSize: FlyerPrintSize | null;
   printSizeLabel: string | null;
 };
 

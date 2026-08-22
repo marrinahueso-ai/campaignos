@@ -17,7 +17,11 @@ import {
   printFlyerExport,
   saveFlyerToEventFiles,
 } from "@/lib/flyer-composer/flyer-export-client";
-import { printSizeLabel } from "@/lib/flyers/generate-payload";
+import {
+  flyerPrintSizeAspectClass,
+  flyerPrintSizeMaxWidthClass,
+  printSizeLabel,
+} from "@/lib/flyers/generate-payload";
 import type { Flyer } from "@/lib/flyers/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -165,13 +169,14 @@ export function FlyerApproverReviewShell({
           type="button"
           disabled={pending}
           onClick={() => {
-            if (!previewImageUrl || !flyer.eventId) return;
+            const eventId = flyer.eventId;
+            if (!previewImageUrl || !eventId) return;
             setError(null);
             setSaveMessage(null);
             startTransition(async () => {
               try {
                 const result = await saveFlyerToEventFiles({
-                  eventId: flyer.eventId,
+                  eventId,
                   imageUrl: previewImageUrl,
                   title: flyer.title?.trim() || null,
                   versionId: flyer.composerState.activeVersionId ?? null,
@@ -356,7 +361,7 @@ export function FlyerApproverReviewShell({
           <div
             className={cn(
               "w-full overflow-hidden border border-cos-border bg-white",
-              flyer.printSize === "half" ? "max-w-[720px]" : "max-w-[700px]",
+              flyerPrintSizeMaxWidthClass(flyer.printSize),
             )}
           >
             {flyer.previewImageUrl ? (
@@ -366,13 +371,16 @@ export function FlyerApproverReviewShell({
                 alt={flyer.title || "Flyer preview"}
                 className={cn(
                   "w-full object-contain",
-                  flyer.printSize === "half"
-                    ? "aspect-[8.5/5.5]"
-                    : "aspect-[8.5/11]",
+                  flyerPrintSizeAspectClass(flyer.printSize),
                 )}
               />
             ) : (
-              <div className="flex aspect-[8.5/11] items-center justify-center text-sm text-cos-muted">
+              <div
+                className={cn(
+                  "flex items-center justify-center text-sm text-cos-muted",
+                  flyerPrintSizeAspectClass(flyer.printSize),
+                )}
+              >
                 No preview available
               </div>
             )}

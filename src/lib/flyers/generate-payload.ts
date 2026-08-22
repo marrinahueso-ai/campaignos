@@ -116,9 +116,16 @@ export function resolveFlyerEventFacts(input: {
 }
 
 export function printSizeLabel(printSize: FlyerPrintSize): string {
-  return printSize === "half"
-    ? "Half (8.5×5.5)"
-    : "Letter (8.5×11)";
+  switch (printSize) {
+    case "half":
+      return "Half (8.5×5.5)";
+    case "school_poster":
+      return "School Poster (11×17)";
+    case "event_poster":
+      return "Event Poster (18×24)";
+    default:
+      return "Letter (8.5×11)";
+  }
 }
 
 export function templateForPrintSize(printSize: FlyerPrintSize): {
@@ -133,11 +140,93 @@ export function templateForPrintSize(printSize: FlyerPrintSize): {
       ratio: "8.5/5.5",
     };
   }
+  if (printSize === "school_poster") {
+    return {
+      templateId: "simple-school-poster",
+      templateName: "Simple flyer · School Poster (11×17)",
+      ratio: "11/17",
+    };
+  }
+  if (printSize === "event_poster") {
+    return {
+      templateId: "simple-event-poster",
+      templateName: "Simple flyer · Event Poster (18×24)",
+      ratio: "18/24",
+    };
+  }
   return {
     templateId: "simple-letter",
     templateName: "Simple flyer · Letter",
     ratio: "8.5/11",
   };
+}
+
+export const FLYER_PRINT_SIZE_OPTIONS: Array<{
+  id: FlyerPrintSize;
+  label: string;
+  hint: string | null;
+  recommended: boolean;
+  landscape: boolean;
+  iconClass: string;
+}> = [
+  {
+    id: "letter",
+    label: "Letter (8.5×11)",
+    hint: null,
+    recommended: false,
+    landscape: false,
+    iconClass: "h-8 w-6",
+  },
+  {
+    id: "half",
+    label: "Half (8.5×5.5)",
+    hint: null,
+    recommended: false,
+    landscape: true,
+    iconClass: "h-5 w-8",
+  },
+  {
+    id: "school_poster",
+    label: "School Poster (11×17)",
+    hint: "Great for hallways and bulletin boards.",
+    recommended: true,
+    landscape: false,
+    iconClass: "h-9 w-6",
+  },
+  {
+    id: "event_poster",
+    label: "Event Poster (18×24)",
+    hint: "For larger, more visible event signage.",
+    recommended: false,
+    landscape: false,
+    iconClass: "h-10 w-7",
+  },
+];
+
+export function flyerPrintSizeAspectClass(printSize: FlyerPrintSize): string {
+  switch (printSize) {
+    case "half":
+      return "aspect-[8.5/5.5]";
+    case "school_poster":
+      return "aspect-[11/17]";
+    case "event_poster":
+      return "aspect-[18/24]";
+    default:
+      return "aspect-[8.5/11]";
+  }
+}
+
+export function flyerPrintSizeMaxWidthClass(printSize: FlyerPrintSize): string {
+  switch (printSize) {
+    case "half":
+      return "max-w-[720px]";
+    case "school_poster":
+      return "max-w-[520px]";
+    case "event_poster":
+      return "max-w-[560px]";
+    default:
+      return "max-w-[600px]";
+  }
 }
 
 /**
@@ -147,7 +236,7 @@ export function templateForPrintSize(printSize: FlyerPrintSize): {
 export function buildFlyerGeneratePayload(
   input: FlyerGeneratePayloadInput,
 ): FlyerComposerGenerateInput {
-  const printSize = input.printSize === "half" ? "half" : "letter";
+  const printSize = input.printSize;
   const template = templateForPrintSize(printSize);
   const uploadedInspirationUrl = isImageReferenceUrl(input.inspirationPhotoUrl)
     ? input.inspirationPhotoUrl!.trim()

@@ -39,11 +39,36 @@ export async function downloadFlyerExport(input: {
   await downloadPng(input.imageUrl, `${safeBase}.png`);
 }
 
+function buildSinglePagePrintHtml(
+  imageUrl: string,
+  page: { width: string; height: string },
+): string {
+  const safe = imageUrl.replace(/"/g, "&quot;");
+  return `<!doctype html><html><head><title>Print flyer</title>
+<style>
+  @page { size: ${page.width} ${page.height}; margin: 0; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  img { display: block; width: ${page.width}; height: ${page.height}; object-fit: fill; }
+</style>
+</head>
+<body>
+  <img src="${safe}" alt="Flyer" onload="window.focus();window.print();" />
+</body></html>`;
+}
+
 export function printFlyerExport(imageUrl: string, printSize: FlyerPrintSize) {
   const popup = window.open("", "_blank", "noopener,noreferrer");
   if (!popup) return;
   if (printSize === "half") {
     popup.document.write(buildHalfPagePrintHtml(imageUrl));
+  } else if (printSize === "school_poster") {
+    popup.document.write(
+      buildSinglePagePrintHtml(imageUrl, { width: "11in", height: "17in" }),
+    );
+  } else if (printSize === "event_poster") {
+    popup.document.write(
+      buildSinglePagePrintHtml(imageUrl, { width: "18in", height: "24in" }),
+    );
   } else {
     popup.document.write(
       `<!doctype html><html><head><title>Print flyer</title></head><body style="margin:0;background:#fff;display:flex;justify-content:center;"><img src="${imageUrl.replace(/"/g, "&quot;")}" alt="Flyer" style="max-width:100%;height:auto;" onload="window.focus();window.print();" /></body></html>`,

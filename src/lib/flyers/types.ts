@@ -13,7 +13,18 @@ export const FLYER_STATUSES: FlyerStatus[] = [
   "approved",
 ];
 
-export type FlyerPrintSize = "letter" | "half";
+export const FLYER_PRINT_SIZES = [
+  "letter",
+  "half",
+  "school_poster",
+  "event_poster",
+] as const;
+
+export type FlyerPrintSize = (typeof FLYER_PRINT_SIZES)[number];
+
+export function isFlyerPrintSize(value: string): value is FlyerPrintSize {
+  return (FLYER_PRINT_SIZES as readonly string[]).includes(value);
+}
 
 export type FlyerVersion = {
   id: string;

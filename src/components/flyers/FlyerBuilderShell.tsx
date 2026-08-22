@@ -24,6 +24,9 @@ import { EventPickerModal } from "@/components/newsletters/builder/EventPickerMo
 import { updateFlyerDraft } from "@/lib/flyers/actions";
 import {
   buildFlyerGeneratePayload,
+  FLYER_PRINT_SIZE_OPTIONS,
+  flyerPrintSizeAspectClass,
+  flyerPrintSizeMaxWidthClass,
   formatFlyerEventDate,
   printSizeLabel,
   type FlyerGenerateBrandKit,
@@ -636,16 +639,7 @@ export function FlyerBuilderShell({
                 Page Size
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {(
-                  [
-                    { id: "letter" as const, label: "Letter (8.5×11)", tall: true },
-                    {
-                      id: "half" as const,
-                      label: "Half (8.5×5.5)",
-                      tall: false,
-                    },
-                  ] as const
-                ).map((size) => {
+                {FLYER_PRINT_SIZE_OPTIONS.map((size) => {
                   const active = printSize === size.id;
                   return (
                     <button
@@ -654,7 +648,7 @@ export function FlyerBuilderShell({
                       disabled={readOnly}
                       onClick={() => setPrintSize(size.id)}
                       className={cn(
-                        "flex flex-col items-center gap-1 rounded-xl border bg-white p-3 transition-all disabled:opacity-60",
+                        "flex flex-col items-center gap-1 rounded-xl border bg-white p-3 text-center transition-all disabled:opacity-60",
                         active
                           ? "border-2 border-[#0d7e5e]"
                           : "border-cos-border hover:border-[#0d7e5e]",
@@ -663,7 +657,7 @@ export function FlyerBuilderShell({
                       <div
                         className={cn(
                           "rounded-sm border",
-                          size.tall ? "h-8 w-6" : "h-5 w-8",
+                          size.iconClass,
                           active
                             ? "border-[#0d7e5e]/30 bg-[#e6f3ee]/50"
                             : "border-cos-border bg-[#fffcf7]",
@@ -671,12 +665,18 @@ export function FlyerBuilderShell({
                       />
                       <span
                         className={cn(
-                          "text-[10px] font-bold",
+                          "text-[10px] font-bold leading-tight",
                           !active && "text-cos-muted",
                         )}
                       >
+                        {size.recommended ? "⭐ " : ""}
                         {size.label}
                       </span>
+                      {size.hint ? (
+                        <span className="text-[9px] leading-snug text-cos-muted">
+                          {size.hint}
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })}
@@ -806,7 +806,8 @@ export function FlyerBuilderShell({
               <div
                 className={cn(
                   "relative w-full overflow-hidden border border-cos-border bg-white p-12",
-                  isHalf ? "max-w-[720px] aspect-[8.5/5.5]" : "max-w-[600px] aspect-[8.5/11]",
+                  flyerPrintSizeMaxWidthClass(printSize),
+                  flyerPrintSizeAspectClass(printSize),
                 )}
               >
                 <div className="space-y-6">
@@ -825,7 +826,7 @@ export function FlyerBuilderShell({
               <div
                 className={cn(
                   "w-full overflow-hidden border border-cos-border bg-white shadow-sm",
-                  isHalf ? "max-w-[720px]" : "max-w-[600px]",
+                  flyerPrintSizeMaxWidthClass(printSize),
                 )}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -834,7 +835,7 @@ export function FlyerBuilderShell({
                   alt={title || "Flyer preview"}
                   className={cn(
                     "w-full object-contain",
-                    isHalf ? "aspect-[8.5/5.5]" : "aspect-[8.5/11]",
+                    flyerPrintSizeAspectClass(printSize),
                   )}
                 />
               </div>

@@ -8,12 +8,16 @@ import {
 } from "@/lib/flyers/generate-payload";
 
 describe("flyer generate-payload", () => {
-  it("maps letter and half templates with landscape half label", () => {
+  it("maps letter, half, and poster templates", () => {
     assert.equal(printSizeLabel("letter"), "Letter (8.5×11)");
     assert.equal(printSizeLabel("half"), "Half (8.5×5.5)");
+    assert.equal(printSizeLabel("school_poster"), "School Poster (11×17)");
+    assert.equal(printSizeLabel("event_poster"), "Event Poster (18×24)");
     assert.equal(templateForPrintSize("letter").templateId, "simple-letter");
     assert.equal(templateForPrintSize("half").templateId, "simple-half");
     assert.equal(templateForPrintSize("half").ratio, "8.5/5.5");
+    assert.equal(templateForPrintSize("school_poster").ratio, "11/17");
+    assert.equal(templateForPrintSize("event_poster").ratio, "18/24");
   });
 
   it("builds a new-path generate body with image-only inspiration and previous flyer", () => {
@@ -169,6 +173,17 @@ describe("flyer generate-payload", () => {
 
     assert.equal(payload.fields.headline, "Custom Flyer Title");
     assert.equal(payload.fields.location, "Gym");
+  });
+
+  it("keeps school poster print size instead of collapsing to letter", () => {
+    const payload = buildFlyerGeneratePayload({
+      printSize: "school_poster",
+      aiDirection: "Hallway poster",
+      qrEnabled: false,
+      brandEnabled: false,
+    });
+    assert.equal(payload.start.printSize, "school_poster");
+    assert.equal(payload.template.ratio, "11/17");
   });
 });
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, MessageSquare } from "lucide-react";
 
-import { printSizeLabel } from "@/lib/flyers/generate-payload";
+import { flyerPrintSizeAspectClass, printSizeLabel } from "@/lib/flyers/generate-payload";
 import { flyerComposerEditHref } from "@/lib/flyer-composer/approval";
 import type { Flyer } from "@/lib/flyers/types";
 import { cn } from "@/lib/utils/cn";
@@ -65,9 +65,7 @@ export function FlyerChangesRequestedShell({
             <div
               className={cn(
                 "relative w-full overflow-hidden rounded-xl border border-cos-border bg-white",
-                flyer.printSize === "half"
-                  ? "aspect-[8.5/5.5]"
-                  : "aspect-[8.5/11]",
+                flyerPrintSizeAspectClass(flyer.printSize),
               )}
             >
               {flyer.previewImageUrl ? (

@@ -150,6 +150,43 @@ describe("flyer composer image prompt", () => {
     assert.doesNotMatch(prompt, /two copies on one canvas/i);
   });
 
+  it("asks for 11×17 school poster and 18×24 event poster formats", () => {
+    const school = buildSampleDirectionInput({
+      start: {
+        path: "new",
+        pathLabel: "New flyer",
+        printSize: "school_poster",
+        printSizeLabel: "School Poster (11×17)",
+      },
+      template: {
+        templateId: "simple-school-poster",
+        templateName: "Simple flyer · School Poster (11×17)",
+        isCustom: false,
+        ratio: "11/17",
+        hasQr: false,
+      },
+    });
+    const event = buildSampleDirectionInput({
+      start: {
+        path: "new",
+        pathLabel: "New flyer",
+        printSize: "event_poster",
+        printSizeLabel: "Event Poster (18×24)",
+      },
+      template: {
+        templateId: "simple-event-poster",
+        templateName: "Simple flyer · Event Poster (18×24)",
+        isCustom: false,
+        ratio: "18/24",
+        hasQr: false,
+      },
+    });
+    assert.match(buildFlyerComposerImagePrompt(school), /11×17/);
+    assert.match(buildFlyerComposerImagePrompt(event), /18×24/);
+    assert.equal(resolveFlyerComposerImageSize(school), "1024x1536");
+    assert.equal(resolveFlyerComposerImageSize(event), "1024x1536");
+  });
+
   it("adapts attached event social artwork instead of inventing a new scene", () => {
     const input = buildSampleDirectionInput({
       assets: {

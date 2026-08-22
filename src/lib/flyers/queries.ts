@@ -7,6 +7,7 @@ import type {
   FlyerRow,
   FlyerStatus,
 } from "@/lib/flyers/types";
+import { isFlyerPrintSize } from "@/lib/flyers/types";
 import { createClient } from "@/lib/supabase/server";
 
 const FLYER_STATUSES = new Set<FlyerStatus>([
@@ -16,8 +17,6 @@ const FLYER_STATUSES = new Set<FlyerStatus>([
   "approved",
 ]);
 
-const PRINT_SIZES = new Set<FlyerPrintSize>(["letter", "half"]);
-
 function asFlyerStatus(value: unknown): FlyerStatus {
   return FLYER_STATUSES.has(value as FlyerStatus)
     ? (value as FlyerStatus)
@@ -25,9 +24,7 @@ function asFlyerStatus(value: unknown): FlyerStatus {
 }
 
 function asPrintSize(value: unknown): FlyerPrintSize {
-  return PRINT_SIZES.has(value as FlyerPrintSize)
-    ? (value as FlyerPrintSize)
-    : "letter";
+  return typeof value === "string" && isFlyerPrintSize(value) ? value : "letter";
 }
 
 export function mapFlyerRow(row: FlyerRow): Flyer {

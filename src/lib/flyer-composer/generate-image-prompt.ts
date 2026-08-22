@@ -95,6 +95,20 @@ function formatPrintFormatInstructions(input: FlyerComposerGenerateInput): strin
   if (isHalfPageFlyer(input)) {
     return "Format: US half-page 8.5×5.5 inch landscape flyer — one single flyer filling the entire canvas edge-to-edge, no white borders/margins/frames, not a square social crop. Do NOT place two copies, a cut line, or a full Letter sheet in the image — export will print two copies per page later.";
   }
+  if (
+    input.start.printSize === "school_poster" ||
+    input.template.templateId === "simple-school-poster" ||
+    input.template.ratio === "11/17"
+  ) {
+    return "Format: US School Poster 11×17 inch portrait — full-bleed edge-to-edge hallway/bulletin-board poster filling the entire canvas, no white borders/margins/frames, not a square social crop and not a Letter-size flyer.";
+  }
+  if (
+    input.start.printSize === "event_poster" ||
+    input.template.templateId === "simple-event-poster" ||
+    input.template.ratio === "18/24"
+  ) {
+    return "Format: US Event Poster 18×24 inch portrait — full-bleed edge-to-edge large event signage filling the entire canvas, no white borders/margins/frames, not a square social crop and not a Letter-size flyer.";
+  }
   return "Format: US Letter 8.5×11 inch portrait flyer — full-bleed edge-to-edge artwork filling the entire canvas, no white borders/margins/frames, not a square social crop.";
 }
 

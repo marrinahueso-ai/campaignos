@@ -4,6 +4,7 @@ import { parseFlyerInspirationPhotoSource } from "@/lib/flyer-composer/inspirati
 import { generateFlyerComposer } from "@/lib/flyer-composer/generate";
 import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { isSameOriginRequest } from "@/lib/security/verify-same-origin";
+import { isFlyerPrintSize } from "@/lib/flyers/types";
 import type {
   FlyerComposerAssetContext,
   FlyerComposerBrandKit,
@@ -38,7 +39,6 @@ const SLOT_KEYS: (keyof FlyerComposerSlotFields)[] = [
 ];
 
 const START_PATHS = new Set<FlyerComposerStartPath>(["update", "proven", "new"]);
-const PRINT_SIZES = new Set<FlyerComposerPrintSize>(["letter", "half"]);
 
 function readString(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -59,7 +59,7 @@ function parseStart(raw: Record<string, unknown>): FlyerComposerStartContext {
     ? (pathRaw as FlyerComposerStartPath)
     : null;
   const printSizeRaw = readString(raw.printSize).trim();
-  const printSize = PRINT_SIZES.has(printSizeRaw as FlyerComposerPrintSize)
+  const printSize = isFlyerPrintSize(printSizeRaw)
     ? (printSizeRaw as FlyerComposerPrintSize)
     : null;
 
