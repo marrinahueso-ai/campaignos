@@ -27,7 +27,7 @@ export async function getTodayWeatherContext(
     }
 
     const timezone =
-      organization.timezone?.trim() || "America/Chicago";
+      organization?.timezone?.trim() || "America/Chicago";
     const apiKey = process.env.WEATHER_API_KEY?.trim();
     if (apiKey) {
       const live = await fetchWeatherFromApi(location, apiKey, timezone);
