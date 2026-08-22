@@ -1,4 +1,8 @@
-import { buildMockHourly, formatHourLabel } from "@/lib/weather/mock";
+import {
+  DEFAULT_WEATHER_TIMEZONE,
+  buildMockHourly,
+  formatHourLabel,
+} from "@/lib/weather/mock";
 import type {
   OrganizationLocation,
   WeatherHourlyPoint,
@@ -22,7 +26,7 @@ interface OpenWeatherForecastResponse {
 
 interface OpenMeteoHourlyResponse {
   hourly?: {
-    time?: string[];
+    time?: Array<number | string>;
     temperature_2m?: (number | null)[];
     weather_code?: (number | null)[];
   };
@@ -37,6 +41,7 @@ interface OpenMeteoHourlyResponse {
 export async function fetchWeatherFromApi(
   location: OrganizationLocation,
   apiKey: string,
+  timeZone: string = DEFAULT_WEATHER_TIMEZONE,
 ): Promise<WeatherSnapshot | null> {
   const url = new URL("https://api.openweathermap.org/data/2.5/weather");
   if (location.zip) {
@@ -70,21 +75,22 @@ export async function fetchWeatherFromApi(
 
   let hourly =
     lat !== undefined && lon !== undefined
-      ? await fetchHourlyFromOpenMeteo(lat, lon)
+      ? await fetchHourlyFromOpenMeteo(lat, lon, timeZone)
       : [];
 
   if (hourly.length < 4) {
     const fromForecast = await fetchHourlyFromOpenWeatherForecast(
       location,
       apiKey,
+      timeZone,
     );
     if (fromForecast.length > hourly.length) {
       hourly = fromForecast;
     }
   }
 
-  if (hourly.length < 4) {
-    hourly = buildMockHourly(temp, humanCondition, location.label);
+  if (hourly.length === 0) {
+    hourly = buildMockHourly(temp, humanCondition, location.label, timeZone);
   }
 
   return {
@@ -98,6 +104,7 @@ export async function fetchWeatherFromApi(
 async function fetchHourlyFromOpenMeteo(
   lat: number,
   lon: number,
+  timeZone: string,
 ): Promise<WeatherHourlyPoint[]> {
   try {
     const url = new URL("https://api.open-meteo.com/v1/forecast");
@@ -105,8 +112,9 @@ async function fetchHourlyFromOpenMeteo(
     url.searchParams.set("longitude", String(lon));
     url.searchParams.set("hourly", "temperature_2m,weather_code");
     url.searchParams.set("temperature_unit", "fahrenheit");
-    url.searchParams.set("forecast_hours", "6");
-    url.searchParams.set("timezone", "auto");
+    url.searchParams.set("forecast_hours", "24");
+    url.searchParams.set("timeformat", "unixtime");
+    url.searchParams.set("timezone", timeZone);
 
     const response = await fetch(url.toString(), {
       next: { revalidate: 1800 },
@@ -124,13 +132,13 @@ async function fetchHourlyFromOpenMeteo(
 
     for (let i = 0; i < times.length && points.length < 4; i += 1) {
       const time = times[i];
-      if (!time) continue;
-      const at = new Date(time);
-      if (at.getTime() <= now) continue;
+      if (time == null || time === "") continue;
+      const at = unixOrIsoToDate(time);
+      if (!at || at.getTime() <= now) continue;
       const temperature = temps[i];
       if (temperature == null) continue;
       points.push({
-        hourLabel: formatHourLabel(at),
+        hourLabel: formatHourLabel(at, timeZone),
         temperatureF: Math.round(temperature),
         condition: conditionFromWmoCode(codes[i] ?? null),
       });
@@ -145,6 +153,7 @@ async function fetchHourlyFromOpenMeteo(
 async function fetchHourlyFromOpenWeatherForecast(
   location: OrganizationLocation,
   apiKey: string,
+  timeZone: string,
 ): Promise<WeatherHourlyPoint[]> {
   try {
     const url = new URL("https://api.openweathermap.org/data/2.5/forecast");
@@ -176,7 +185,7 @@ async function fetchHourlyFromOpenWeatherForecast(
         entry.weather?.[0]?.main ?? entry.weather?.[0]?.description ?? null;
       if (temperature === undefined || !raw) continue;
       points.push({
-        hourLabel: formatHourLabel(new Date(entry.dt * 1000)),
+        hourLabel: formatHourLabel(new Date(entry.dt * 1000), timeZone),
         temperatureF: Math.round(temperature),
         condition: humanizeCondition(raw),
       });
@@ -186,6 +195,22 @@ async function fetchHourlyFromOpenWeatherForecast(
   } catch {
     return [];
   }
+}
+
+function unixOrIsoToDate(value: number | string): Date | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const ms = value > 1_000_000_000_000 ? value : value * 1000;
+    const date = new Date(ms);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && /^\d+$/.test(String(value).trim())) {
+    const ms = numeric > 1_000_000_000_000 ? numeric : numeric * 1000;
+    const date = new Date(ms);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function conditionFromWmoCode(code: number | null): string {

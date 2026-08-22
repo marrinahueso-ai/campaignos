@@ -146,9 +146,9 @@ function HourlyStrip({ hours }: { hours: WeatherHourlyPoint[] }) {
         Next hours
       </p>
       <ul className="grid grid-cols-4 gap-1">
-        {hours.slice(0, 4).map((hour) => (
+        {hours.slice(0, 4).map((hour, index) => (
           <li
-            key={hour.hourLabel}
+            key={`${hour.hourLabel}-${index}`}
             className="flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-center"
           >
             <span className="text-[11px] text-cos-muted">{hour.hourLabel}</span>

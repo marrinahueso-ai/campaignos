@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** August 21, 2026 — Half flyer download/print is 2-up Letter (AI stays single)
+**Last updated:** August 21, 2026 — Dashboard weather next-hours uses org timezone
 
 ---
 
@@ -86,7 +86,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Optional library widgets (off by default, Add catalog phase 3): **Posts this week** (Mine/Everyone — scheduled, drafts, and needs-approval posts for the week; DB-only via unified scheduling rows), **Waiting on others** (Mine/Everyone — approvals you submitted that are blocked on teammates + org bottleneck counts), **Event coverage** (upcoming events missing an event lead or co-lead; deep links to event detail / Team & Access) — **shipped**
 - **Weather** pinned top-right with the greeting; left column stacks greeting → Add/Edit → **Up Next** (independent of weather height so no blank gap); rail stacks Weather → **Calendar**; weather tile includes next 4 hours + fun tip — **shipped**
 - **Attention** metric rows: to review → Approvals · need volunteers → Volunteers · tasks this week → Tasks (`?scope=mine&pulse=week`) — **shipped**
-- Live weather from org Weather ZIP preferred, then city/state + `WEATHER_API_KEY`; hourly via Open-Meteo when coords available (else OWM 3h / seasonal mock); creative tip ties forecast to school events today/tomorrow (hot → water/sunscreen, cold → bundle up, rain → Plan B) — **shipped**
+- Live weather from org Weather ZIP preferred, then city/state + `WEATHER_API_KEY`; hourly via Open-Meteo (unix times, next 4 local hours in the org timezone) when coords available (else OWM 3h / seasonal mock, also labeled in org timezone); creative tip ties forecast to school events today/tomorrow and **rotates daily** (same line on refresh; new line the next day) — **shipped**
 - Mini calendar school events for the month; This Week school **events** only — **shipped**
 - Approvals/published pulse cards + waiting-on companion lists on home (pre-overview) — **removed**
 

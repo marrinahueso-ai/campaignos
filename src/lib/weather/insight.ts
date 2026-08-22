@@ -16,7 +16,7 @@ type WeatherMood =
 
 /**
  * Fun, short tip tying local weather to school events today or tomorrow.
- * Stable for a given event + condition so the card doesn't shuffle on refresh.
+ * Stable within a calendar day (refresh doesn't shuffle); rotates each day.
  */
 export function getWeatherEventInsight(
   weather: WeatherSnapshot | null,
@@ -28,14 +28,14 @@ export function getWeatherEventInsight(
   const mood = resolveWeatherMood(weather);
   const event = pickPrimaryEvent(nearbyEvents, today);
   if (!event) {
-    return weatherOnlyTip(mood, weather);
+    return weatherOnlyTip(mood, today);
   }
 
   const when = event.date === today ? "today" : "tomorrow";
   const title = shortenEventTitle(event.title);
   const outdoor = event.isOutdoor;
   const lines = eventAwareTips(mood, { title, when, outdoor });
-  return pickStable(lines, `${event.id}:${mood}:${weather.condition}`);
+  return pickStable(lines, `${today}:${event.id}:${mood}`);
 }
 
 export function collectNearbyWeatherEvents(
@@ -200,47 +200,75 @@ function eventAwareTips(
   }
 }
 
-function weatherOnlyTip(mood: WeatherMood, weather: WeatherSnapshot): string {
+function weatherOnlyTip(mood: WeatherMood, today: string): string {
   const lines: Record<WeatherMood, string[]> = {
     scorching: [
       "Heat advisory energy - water first, heroics second.",
       "It's a melty one. Sunscreen is basically a love language today.",
+      "This heat is not playing. Shade breaks are part of the job.",
+      "Scorching out. Move the clipboards into the AC when you can.",
+      "High-heat day. Hydrate early, then hydrate again.",
     ],
     hot: [
       "Hot day ahead - hydrate like your clipboard depends on it.",
       "Sun's out. Sunscreen and a cold drink wouldn't hurt.",
+      "It's toasty. Light layers, extra water, fewer heroics.",
+      "A warm one. The porch can wait; the water bottle cannot.",
+      "Hot stretch in the forecast. Keep volunteers in the shade.",
     ],
     warm: [
       "Warm and friendly out there - a good day to get outside for a minute.",
       "Nice weather day. Windows down, stress levels optional.",
+      "Pretty day for a walk between tasks. The sky is doing its job.",
+      "Soft warmth out there - enjoy it before the next weather plot twist.",
+      "Goldilocks weather. Not a crisis. Maybe even a little treat.",
+      "The kind of day that makes pickup line feel slightly less chaotic.",
     ],
     mild: [
       "Mild and easy - the forecast is basically a deep breath.",
       "Comfortable skies today. Enjoy the calm while it lasts.",
+      "No weather drama. That's a gift. Spend it wisely.",
+      "Jacket optional. Good mood recommended.",
+      "Gentle forecast. A fine day to check one thing off the list.",
     ],
     cool: [
       "Cool air rolling in - grab a layer before you head out.",
       "Crisp day vibes. Jacket now, gratitude later.",
+      "A little snap in the air. Sweater weather has entered the chat.",
+      "Cool enough to notice. Not cool enough to cancel anything.",
+      "Bring a layer. Future you will not want to argue with the breeze.",
     ],
     cold: [
       "Bundle up - it's a cold one out there.",
       "Chilly forecast. Warm coat, warmer coffee.",
+      "Cold air is doing the most. Hats are not optional today.",
+      "Brisk doesn't cover it. Warm hands, warmer greetings.",
+      "Frosty energy. Start the car early and pack the patience.",
     ],
     rainy: [
       "Rain on the radar - umbrella beats optimism alone.",
       "Wet sidewalks ahead. Cute boots encouraged.",
+      "Showers possible. The clipboard would like a ziplock, please.",
+      "A drippy day. Extra umbrellas at the door never hurt.",
+      "Rain plans > rain regrets. Keep a backup in your pocket.",
     ],
     stormy: [
       "Stormy stretch possible - keep an eye on the sky.",
       "Dramatic weather incoming. Charge the phone, watch the alerts.",
+      "The sky has opinions today. Safety first, then the rest of the list.",
+      "Storm watch energy. Have an indoor Plan B before you need it.",
+      "Wild clouds possible. Check updates before folks head out.",
     ],
     snowy: [
       "Snow day energy - leave early and drive like a librarian.",
       "Flurries possible. Cozy layers and careful roads.",
+      "A dusting might show up. Boots beat cute shoes today.",
+      "Winter is participating. Extra time, extra cocoa, extra grace.",
+      "Snow vibes. Leave early and assume the parking lot has feelings.",
     ],
   };
 
-  return pickStable(lines[mood], `solo:${mood}:${Math.round(weather.temperatureF)}`);
+  return pickStable(lines[mood], `solo:${mood}:${today}`);
 }
 
 function shortenEventTitle(title: string): string {

@@ -14,8 +14,11 @@ const MOCK_CONDITIONS = [
 /** Seasonal placeholder temps when no weather API is configured. */
 const MONTHLY_TYPICAL_HIGH_F = [48, 52, 58, 67, 74, 82, 86, 85, 78, 67, 56, 49];
 
+export const DEFAULT_WEATHER_TIMEZONE = "America/Chicago";
+
 export function getMockWeatherSnapshot(
   location: OrganizationLocation,
+  timeZone: string = DEFAULT_WEATHER_TIMEZONE,
 ): WeatherSnapshot {
   const month = new Date().getMonth();
   const baseTemp = MONTHLY_TYPICAL_HIGH_F[month] ?? 68;
@@ -28,7 +31,7 @@ export function getMockWeatherSnapshot(
     temperatureF,
     condition,
     source: "mock",
-    hourly: buildMockHourly(temperatureF, condition, location.label),
+    hourly: buildMockHourly(temperatureF, condition, location.label, timeZone),
   };
 }
 
@@ -36,24 +39,37 @@ export function buildMockHourly(
   temperatureF: number,
   condition: string,
   seed: string,
+  timeZone: string = DEFAULT_WEATHER_TIMEZONE,
 ): WeatherHourlyPoint[] {
   const drift = (simpleHash(seed) % 5) - 2;
-  const now = new Date();
+  const now = Date.now();
+  const startIndex = simpleHash(`${seed}:sky`) % MOCK_CONDITIONS.length;
   return Array.from({ length: 4 }, (_, index) => {
-    const at = new Date(now.getTime() + (index + 1) * 60 * 60 * 1000);
+    const at = new Date(now + (index + 1) * 60 * 60 * 1000);
+    const hourCondition =
+      MOCK_CONDITIONS[(startIndex + index) % MOCK_CONDITIONS.length]!;
     return {
-      hourLabel: formatHourLabel(at),
-      temperatureF: Math.round(temperatureF + drift * ((index + 1) / 4)),
-      condition,
+      hourLabel: formatHourLabel(at, timeZone),
+      temperatureF: Math.round(temperatureF + drift * (index + 1)),
+      condition: index === 0 ? condition : hourCondition,
     };
   });
 }
 
-export function formatHourLabel(date: Date): string {
-  const hours = date.getHours();
-  const hour12 = hours % 12 || 12;
-  const suffix = hours < 12 ? "am" : "pm";
-  return `${hour12}${suffix}`;
+/** Hour label in the org timezone — never the Vercel UTC clock. */
+export function formatHourLabel(
+  date: Date,
+  timeZone: string = DEFAULT_WEATHER_TIMEZONE,
+): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "numeric",
+    hour12: true,
+  }).formatToParts(date);
+  const hour = parts.find((part) => part.type === "hour")?.value ?? "12";
+  const dayPeriod = parts.find((part) => part.type === "dayPeriod")?.value ?? "AM";
+  const suffix = dayPeriod.toLowerCase().startsWith("p") ? "pm" : "am";
+  return `${hour}${suffix}`;
 }
 
 function simpleHash(value: string): number {

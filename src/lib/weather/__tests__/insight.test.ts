@@ -74,7 +74,36 @@ describe("getWeatherEventInsight", () => {
     );
 
     assert.ok(tip);
-    assert.match(tip.toLowerCase(), /heat|sunscreen|hydrat|melty|water/);
+    assert.match(tip.toLowerCase(), /heat|sunscreen|hydrat|melty|water|shade/);
+  });
+
+  it("keeps the same weather-only tip on refresh the same day", () => {
+    const weather = snapshot({
+      temperatureF: 79,
+      condition: "Clear",
+      hourly: [],
+    });
+    const first = getWeatherEventInsight(weather, [], "2026-08-21");
+    const second = getWeatherEventInsight(weather, [], "2026-08-21");
+    assert.equal(first, second);
+  });
+
+  it("rotates warm weather-only copy across days", () => {
+    const weather = snapshot({
+      temperatureF: 79,
+      condition: "Clear",
+      hourly: [],
+    });
+    const tips = new Set(
+      Array.from({ length: 14 }, (_, index) => {
+        const day = String(index + 1).padStart(2, "0");
+        return getWeatherEventInsight(weather, [], `2026-08-${day}`);
+      }),
+    );
+    assert.ok(
+      tips.size >= 3,
+      `expected several tips, got ${[...tips].join(" | ")}`,
+    );
   });
 
   it("prefers today's event over tomorrow", () => {

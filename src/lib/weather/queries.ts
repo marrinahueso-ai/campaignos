@@ -26,9 +26,11 @@ export async function getTodayWeatherContext(
       return UNAVAILABLE;
     }
 
+    const timezone =
+      organization.timezone?.trim() || "America/Chicago";
     const apiKey = process.env.WEATHER_API_KEY?.trim();
     if (apiKey) {
-      const live = await fetchWeatherFromApi(location, apiKey);
+      const live = await fetchWeatherFromApi(location, apiKey, timezone);
       if (live) {
         return {
           location,
@@ -38,7 +40,7 @@ export async function getTodayWeatherContext(
       }
     }
 
-    const mock = getMockWeatherSnapshot(location);
+    const mock = getMockWeatherSnapshot(location, timezone);
     return {
       location,
       weather: mock,
