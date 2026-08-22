@@ -3,20 +3,20 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Download, Printer, X } from "lucide-react";
+import { X } from "lucide-react";
 
 import { FlyerStatusBadge } from "@/components/flyers/FlyerStatusBadge";
+import {
+  FlyerExportActions,
+  useFlyerExportAppearance,
+} from "@/components/flyers/FlyerExportActions";
 import type { RevisionTag } from "@/components/approvals-revision/types";
 import { FLYER_REVISION_TAGS } from "@/lib/approvals-revision/revision-notes";
 import {
   approveUnifiedItemAction,
   requestUnifiedChangesAction,
 } from "@/lib/approvals-scheduling/actions";
-import {
-  downloadFlyerExport,
-  printFlyerExport,
-  saveFlyerToEventFiles,
-} from "@/lib/flyer-composer/flyer-export-client";
+import { saveFlyerToEventFiles } from "@/lib/flyer-composer/flyer-export-client";
 import {
   flyerPrintSizeAspectClass,
   flyerPrintSizeMaxWidthClass,
@@ -69,7 +69,7 @@ export function FlyerApproverReviewShell({
   const [status, setStatus] = useState(flyer.status);
 
   const previewImageUrl = flyer.previewImageUrl;
-  const isHalf = flyer.printSize === "half";
+  const exportAppearance = useFlyerExportAppearance(previewImageUrl);
   const canExport = status === "approved" && Boolean(previewImageUrl);
 
   const schedulingItemId = flyer.approvalSchedulingItemId;
@@ -132,38 +132,13 @@ export function FlyerApproverReviewShell({
   }
 
   const exportActions = canExport ? (
-    <div className="space-y-3">
-      <label className="text-[10px] font-bold tracking-widest text-cos-muted uppercase">
-        Export & Actions
-      </label>
-      <button
-        type="button"
-        onClick={() => {
-          if (!previewImageUrl) return;
-          setError(null);
-          void downloadFlyerExport({
-            imageUrl: previewImageUrl,
-            filenameBase: flyer.title || "flyer",
-            printSize: flyer.printSize,
-          }).catch(() => {
-            setError("Could not download flyer.");
-          });
-        }}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-cos-border bg-white py-3 text-xs font-bold transition hover:bg-cos-bg"
-      >
-        <Download className="h-3.5 w-3.5" />{" "}
-        {isHalf ? "Download PNG (2 per page)" : "Download PNG"}
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          previewImageUrl && printFlyerExport(previewImageUrl, flyer.printSize)
-        }
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-cos-border bg-white py-3 text-xs font-bold transition hover:bg-cos-bg"
-      >
-        <Printer className="h-3.5 w-3.5" />{" "}
-        {isHalf ? "Print (2 per page)" : "Print"}
-      </button>
+    <FlyerExportActions
+      colorImageUrl={previewImageUrl}
+      filenameBase={flyer.title || "flyer"}
+      printSize={flyer.printSize}
+      onError={setError}
+      {...exportAppearance}
+    >
       {flyer.eventId ? (
         <button
           type="button"
@@ -203,7 +178,7 @@ export function FlyerApproverReviewShell({
       {saveMessage ? (
         <p className="text-[11px] font-medium text-[#0d7e5e]">{saveMessage}</p>
       ) : null}
-    </div>
+    </FlyerExportActions>
   ) : null;
 
   return (
@@ -367,7 +342,10 @@ export function FlyerApproverReviewShell({
             {flyer.previewImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={flyer.previewImageUrl}
+                src={
+                  (canExport && exportAppearance.displayImageUrl) ||
+                  flyer.previewImageUrl
+                }
                 alt={flyer.title || "Flyer preview"}
                 className={cn(
                   "w-full object-contain",

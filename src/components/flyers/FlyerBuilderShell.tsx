@@ -7,11 +7,9 @@ import {
   CalendarDays,
   ChevronDown,
   Cloud,
-  Download,
   ImagePlus,
   Loader2,
   MessageSquare,
-  Printer,
   Send,
   Sparkles,
   WandSparkles,
@@ -21,6 +19,10 @@ import { useRef, useState, useTransition } from "react";
 
 import { BackgroundLibraryPicker } from "@/components/background-library/BackgroundLibraryPicker";
 import { EventPickerModal } from "@/components/newsletters/builder/EventPickerModal";
+import {
+  FlyerExportActions,
+  useFlyerExportAppearance,
+} from "@/components/flyers/FlyerExportActions";
 import { updateFlyerDraft } from "@/lib/flyers/actions";
 import {
   buildFlyerGeneratePayload,
@@ -43,11 +45,7 @@ import {
   resolveFlyerInspirationForEvent,
   type FlyerInspirationPhotoSource,
 } from "@/lib/flyer-composer/inspiration-source";
-import {
-  downloadFlyerExport,
-  printFlyerExport,
-  saveFlyerToEventFiles,
-} from "@/lib/flyer-composer/flyer-export-client";
+import { saveFlyerToEventFiles } from "@/lib/flyer-composer/flyer-export-client";
 import { cn } from "@/lib/utils/cn";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error" | "generating";
@@ -131,6 +129,7 @@ export function FlyerBuilderShell({
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(
     flyer.previewImageUrl,
   );
+  const exportAppearance = useFlyerExportAppearance(previewImageUrl);
   const [versions, setVersions] = useState<FlyerVersion[]>(
     initial.versions ?? [],
   );
@@ -149,7 +148,6 @@ export function FlyerBuilderShell({
 
   const selectedEvent =
     events.find((event) => event.id === eventId) ?? null;
-  const isHalf = printSize === "half";
   const isGenerating = saveStatus === "generating";
   const readOnly = !canEdit || status === "needs_approval" || status === "approved";
   const canSendForApproval =
@@ -831,7 +829,7 @@ export function FlyerBuilderShell({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={previewImageUrl}
+                  src={exportAppearance.displayImageUrl || previewImageUrl}
                   alt={title || "Flyer preview"}
                   className={cn(
                     "w-full object-contain",
@@ -967,68 +965,45 @@ export function FlyerBuilderShell({
               </div>
             ) : null}
 
-            <div className="space-y-3 border-t border-cos-border pt-6">
-              <label className="text-[10px] font-bold tracking-widest text-cos-muted uppercase">
-                Export & Actions
-              </label>
-              <button
-                type="button"
-                disabled={!previewImageUrl}
-                onClick={() => {
-                  if (!previewImageUrl) return;
-                  void downloadFlyerExport({
-                    imageUrl: previewImageUrl,
-                    filenameBase: title || "flyer",
-                    printSize,
-                  }).catch(() => {
-                    setError("Could not download flyer.");
-                  });
-                }}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-cos-border bg-white py-3 text-xs font-bold transition hover:bg-cos-bg disabled:opacity-50"
+            <div className="border-t border-cos-border pt-6">
+              <FlyerExportActions
+                colorImageUrl={previewImageUrl}
+                filenameBase={title || "flyer"}
+                printSize={printSize}
+                disabled={!previewImageUrl || isGenerating}
+                onError={setError}
+                {...exportAppearance}
               >
-                <Download className="h-3.5 w-3.5" />{" "}
-                {isHalf ? "Download PNG (2 per page)" : "Download PNG"}
-              </button>
-              <button
-                type="button"
-                disabled={!previewImageUrl}
-                onClick={() =>
-                  previewImageUrl && printFlyerExport(previewImageUrl, printSize)
-                }
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-cos-border bg-white py-3 text-xs font-bold transition hover:bg-cos-bg disabled:opacity-50"
-              >
-                <Printer className="h-3.5 w-3.5" />{" "}
-                {isHalf ? "Print (2 per page)" : "Print"}
-              </button>
-              {eventId && previewImageUrl ? (
-                <button
-                  type="button"
-                  disabled={isPending || isGenerating}
-                  onClick={() => {
-                    setError(null);
-                    startTransition(async () => {
-                      try {
-                        const result = await saveFlyerToEventFiles({
-                          eventId,
-                          imageUrl: previewImageUrl,
-                          title: title.trim() || null,
-                          versionId: activeVersionId,
-                        });
-                        if (!result.ok) {
-                          setError(result.error);
-                          return;
+                {eventId && previewImageUrl ? (
+                  <button
+                    type="button"
+                    disabled={isPending || isGenerating}
+                    onClick={() => {
+                      setError(null);
+                      startTransition(async () => {
+                        try {
+                          const result = await saveFlyerToEventFiles({
+                            eventId,
+                            imageUrl: previewImageUrl,
+                            title: title.trim() || null,
+                            versionId: activeVersionId,
+                          });
+                          if (!result.ok) {
+                            setError(result.error);
+                            return;
+                          }
+                          setSendMessage(result.message);
+                        } catch {
+                          setError("Couldn’t save to Files. Try again.");
                         }
-                        setSendMessage(result.message);
-                      } catch {
-                        setError("Couldn’t save to Files. Try again.");
-                      }
-                    });
-                  }}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-cos-border bg-white py-3 text-xs font-bold transition hover:bg-cos-bg disabled:opacity-50"
-                >
-                  Save to Files
-                </button>
-              ) : null}
+                      });
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-cos-border bg-white py-3 text-xs font-bold transition hover:bg-cos-bg disabled:opacity-50"
+                  >
+                    Save to Files
+                  </button>
+                ) : null}
+              </FlyerExportActions>
             </div>
           </div>
           {flyer.changeRequestNote ? (
